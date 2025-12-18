@@ -1,0 +1,42 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalDependencies": ["**/.env.*local"],
+  "ui": "tui",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", ".wxt/**", ".output/**", "build/**"],
+      "env": ["VITE_*", "EXTENSION_ID"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true,
+      "env": ["VITE_*", "EXTENSION_ID"]
+    },
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "clean": {
+      "cache": false
+    },
+    "lint": {
+      "dependsOn": ["^lint"],
+      "outputs": []
+    },
+    "test": {
+      "dependsOn": ["^test"],
+      "outputs": [],
+      "cache": false
+    },
+    "test:run": {
+      "dependsOn": ["^test:run"],
+      "outputs": []
+    },
+    "test:ui": {
+      "dependsOn": ["^test:ui"],
+      "outputs": [],
+      "cache": false
+    }
+  }
+}

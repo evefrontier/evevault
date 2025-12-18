@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+export PATH="$HOME/.bun/bin:$PATH"
+bun x lint-staged
+bun run test

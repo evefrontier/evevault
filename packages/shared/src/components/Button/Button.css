@@ -1,0 +1,210 @@
+/* Button wrapper - transparent with corner decorations */
+.button {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 3px;
+  gap: 0;
+  isolation: isolate;
+  position: relative;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  cursor: pointer;
+  font-family: var(--font-headline, "Headline", "Disket Mono", monospace);
+}
+
+/* Inner content - the actual button surface */
+.button__content {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  padding: 15px 40px;
+  gap: 10px;
+  flex: 1;
+  z-index: 0;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 16px;
+  text-transform: uppercase;
+}
+
+/* Left and right edge lines */
+.button__edge-left,
+.button__edge-right {
+  position: absolute;
+  width: 1px;
+  top: 5px;
+  bottom: 5px;
+  background: rgba(250, 250, 229, 0.3);
+  z-index: 3;
+}
+
+.button__edge-left {
+  left: 0;
+}
+
+.button__edge-right {
+  right: 0;
+}
+
+/* Hover overlay */
+.button__hover {
+  position: absolute;
+  inset: 3px;
+  overflow: hidden;
+  background: transparent;
+  width: 0;
+  height: calc(100% - 6px);
+  transition: width 0.3s ease-in-out;
+  z-index: 2;
+}
+
+.button:hover .button__hover,
+.button:active .button__hover {
+  width: calc(100% - 6px);
+}
+
+.button__hover-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 15px 40px;
+  background-color: var(--neutral, #ffffd6);
+  color: var(--crude, #000000);
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+/* Sizes */
+.button--small .button__content,
+.button--small .button__hover-content {
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+.button--medium .button__content,
+.button--medium .button__hover-content {
+  padding: 10px 32px;
+  font-size: 14px;
+}
+
+.button--large .button__content,
+.button--large .button__hover-content {
+  padding: 16px 32px;
+  font-size: 14px;
+}
+
+.button--fill {
+  width: 100%;
+}
+
+.button--fill .button__content,
+.button--fill .button__hover-content {
+  padding: 10px 32px;
+  line-height: 20px;
+}
+
+/* Variants */
+
+/* Primary - orange background, black text */
+.button--primary .button__content {
+  background: #ff4700;
+  color: #000000;
+}
+
+.button--primary .button__hover-content {
+  background: var(--neutral, #ffffd6);
+  color: #000000;
+}
+
+.button--primary:hover .corners__corner span {
+  background: var(--neutral, #ffffd6) !important;
+}
+
+/* Secondary - semi-transparent background */
+.button--secondary .button__content {
+  background: rgba(255, 255, 214, 0.1);
+  color: rgba(255, 255, 214, 0.8);
+}
+
+.button--secondary .button__hover-content {
+  background: var(--neutral, #ffffd6);
+  color: #000000;
+}
+
+/* Secondary corners - neutral color with opacity */
+.button--secondary .corners__corner span {
+  background: rgba(250, 250, 229, 0.7) !important;
+}
+
+/* Text - no background */
+.button--text {
+  padding: 0;
+}
+
+.button--text .button__content {
+  background: transparent;
+  color: #ff4700;
+  padding: 8px;
+}
+
+.button--text:hover .button__content {
+  color: var(--neutral, #ffffd6);
+}
+
+.button--text .corners__corner,
+.button--text .button__edge-left,
+.button--text .button__edge-right,
+.button--text .button__hover {
+  display: none;
+}
+
+/* Plain - minimal styling */
+.button--plain {
+  padding: 0;
+}
+
+.button--plain .button__content {
+  background: transparent;
+  color: var(--neutral, #ffffd6);
+  padding: 8px;
+}
+
+.button--plain:hover .button__content {
+  color: #ff4700;
+}
+
+.button--plain .corners__corner,
+.button--plain .button__edge-left,
+.button--plain .button__edge-right,
+.button--plain .button__hover {
+  display: none;
+}
+
+/* Disabled state */
+.button--disabled,
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.button:disabled:hover .button__hover {
+  width: 0;
+}
+
+/* Focus state */
+.button:focus-visible {
+  outline: 2px solid #ff4700;
+  outline-offset: 2px;
+}

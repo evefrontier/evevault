@@ -1,0 +1,913 @@
+# EVE Frontier Vault - Cursor AI Rules
+
+This file contains rules and guidelines for Cursor AI to ensure consistent code generation and assistance across all developers working on this project.
+
+## Project Overview
+
+This is a **monorepo** for EVE Vault Wallet, a browser extension and web application for Sui blockchain. The project uses:
+
+- **Bun** workspaces and **Turborepo** for monorepo management
+- **TypeScript** for type safety
+- **React** for UI components
+- **WXT** framework for browser extension
+- **Vite** for web application
+- **Zustand** for state management
+- **Feature-based architecture** with shared packages
+
+## Monorepo Structure
+
+```
+eve-frontier-vault-sui/
+├── packages/              # Shared packages (cross-platform)
+│   └── shared/            # Business logic, design system values, utilities
+└── apps/                  # Platform-specific applications
+    ├── extension/         # Browser extension (WXT)
+    └── web/               # Web application (Vite)
+```
+
+## Import Rules
+
+### ✅ ALWAYS Use Workspace Package Imports
+
+```typescript
+// ✅ CORRECT - Use workspace package imports
+import { zkLoginSignature } from "@evevault/shared/wallet";
+import { colors, spacing } from "@evevault/shared/design";
+import { createSuiClient } from "@evevault/shared/sui";
+import { useAuth } from "@evevault/shared/auth";
+
+// ❌ WRONG - Never use relative paths to packages
+import { zkLoginSignature } from "../../packages/shared/src/wallet";
+import { colors } from "../../../packages/shared/src/design";
+```
+
+### Import Order
+
+1. External dependencies (React, third-party libraries)
+2. Workspace package imports (`@evevault/shared/*`)
+3. App-level shared code (`../../lib/*`)
+4. Feature-level imports (same feature)
+5. Relative imports (same directory)
+
+```typescript
+// Example import order
+import { useState, useEffect } from "react";
+import { Transaction } from "@mysten/sui/transactions";
+import { createSuiClient } from "@evevault/shared/sui";
+import { colors, spacing } from "@evevault/shared/design";
+import { Button } from "@evevault/shared/components";
+import { useAuth } from "../../auth/hooks/useAuth";
+import { useDevice } from "../hooks/useDevice";
+import "./Component.css";
+```
+
+### Dependency Usage
+
+- Prefer using utilities from dependencies that already exist in the relevant `package.json` before hand-rolling alternatives.
+- Do not add, remove, or upgrade dependencies unless a human explicitly provides a command requesting the change.
+- Before creating new helpers/constants, search the repo and promote existing `const` functions to shared exports (or move them to a better home) when they are reused.
+
+### Extension Entrypoint Imports (WXT)
+
+- **Entrypoint files (everything in `apps/extension/entrypoints/**`) must use relative imports.\*\*
+- WXT loads entrypoints in a Node context before Vite runs, so aliases like `@/lib/...` are **not resolved** there.
+- Because every extension feature is imported directly (or indirectly) by an entrypoint, keep using relative paths inside `apps/extension/src/**` as well. Avoid the `@` alias for in-app imports—stick to paths such as `../../auth/hooks/useAuth`.
+- Package aliases (e.g. `@evevault/shared/*`) are still allowed.
+- If you see errors such as `Failed to resolve import "@/features/..."`, it means an alias slipped into the extension bundle—convert it to a relative path.
+
+## File Organization
+
+### File Size Limits
+
+- **Maximum file size: 500 lines** (preferred)
+- **Absolute maximum: 1000 lines** (requires justification)
+- **If a file exceeds 500 lines, split it using MVC pattern** (see below)
+
+### Feature-Based Structure
+
+Each feature should be self-contained with:
+
+```
+src/features/{feature-name}/
+├── components/     # Feature-specific React components (View)
+├── hooks/          # Custom React hooks (Controller logic)
+├── stores/         # Zustand stores (Model/State)
+└── api/            # API calls and data fetching (Model/Data layer)
+```
+
+### MVC Pattern (Model-View-Controller)
+
+Follow the [Model-View-Controller pattern](https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93controller) when organizing code:
+
+**Model (Data & Business Logic):**
+
+- Stores: `src/features/{feature}/stores/` - State management
+- API: `src/features/{feature}/api/` - Data fetching and external services
+- Types: `src/features/{feature}/types.ts` - Data structures
+- Utils: `src/features/{feature}/utils/` - Business logic and transformations
+
+**View (Presentation):**
+
+- Components: `src/features/{feature}/components/` - React components for UI
+- **Views should be pure presentation** - No business logic, only display and user interaction
+
+**Controller (Coordination):**
+
+- Hooks: `src/features/{feature}/hooks/` - Coordinate between Model and View
+- Event handlers and orchestration logic
+- Connects View to Model
+
+```typescript
+// ✅ CORRECT - MVC Separation
+
+// MODEL: stores/transactionStore.ts (State & Business Logic)
+interface TransactionState {
+  transactions: Transaction[];
+  loading: boolean;
+  error: string | null;
+  fetchTransactions: () => Promise<void>;
+  addTransaction: (tx: Transaction) => void;
+}
+
+// MODEL: api/transactionApi.ts (Data Layer)
+export async function fetchTransactions(): Promise<Transaction[]> {
+  // API call logic
+}
+
+// CONTROLLER: hooks/useTransactions.ts (Coordination)
+export function useTransactions() {
+  const store = useTransactionStore();
+
+  useEffect(() => {
+    store.fetchTransactions();
+  }, []);
+
+  return {
+    transactions: store.transactions,
+    loading: store.loading,
+    error: store.error,
+  };
+}
+
+// VIEW: components/TransactionList.tsx (Presentation Only)
+export function TransactionList() {
+  const { transactions, loading, error } = useTransactions();
+
+  if (loading) return <LoadingSpinner />;
+  if (error) return <ErrorMessage message={error} />;
+
+  return (
+    <div>
+      {transactions.map((tx) => (
+        <TransactionCard key={tx.id} transaction={tx} />
+      ))}
+    </div>
+  );
+}
+```
+
+**When splitting large files (>500 lines):**
+
+1. Identify Model (data/state), View (UI), Controller (coordination)
+2. Extract Model to `stores/` or `api/`
+3. Extract Controller logic to `hooks/`
+4. Keep View (components) focused on presentation
+5. Use dependency injection: View → Controller → Model
+
+### Component Placement Decision Tree
+
+1. **Feature-specific?** → `apps/{extension|web}/src/features/{feature}/components/`
+2. **Reusable across features in same app?** → `apps/{extension|web}/src/lib/components/`
+3. **Reusable across platforms?** → Consider `packages/shared/src/components/` (rare, requires React peer dependency)
+
+**Default:** Start feature-specific, move to shared only when needed.
+
+### Entrypoints
+
+Keep entrypoints minimal:
+
+- Only HTML and thin `main.tsx` files
+- Import components from `src/`
+- No business logic in entrypoints
+
+## Naming Conventions
+
+- **Folders**: kebab-case (`sign-transaction/`, `sign-personal-message/`)
+- **Components**: PascalCase (`SignTransaction.tsx`, `PopupApp.tsx`)
+- **Hooks**: camelCase with `use` prefix (`useAuth.ts`, `useDevice.ts`)
+- **Utils**: camelCase (`formatDate.ts`, `buildTx.ts`)
+- **Stores**: camelCase with `Store` suffix (`authStore.ts`, `deviceStore.ts`)
+- **Types/Interfaces**: PascalCase (`AuthConfig`, `DeviceState`)
+- **Constants**: UPPER_SNAKE_CASE or camelCase (be consistent within file)
+
+## Design System Values
+
+### ✅ ALWAYS Use Design System Values
+
+**NEVER use hardcoded values for colors, spacing, or typography.**  
+**Note:** We use "design system values" instead of "design tokens" to avoid confusion with blockchain tokens.
+
+```typescript
+// ✅ CORRECT
+import { colors, spacing, typography } from "@evevault/shared/design";
+
+<div style={{
+  padding: spacing.md,
+  color: colors.text,
+  backgroundColor: colors.surface,
+  fontSize: typography.fontSize.lg,
+}}>
+
+// ❌ WRONG
+<div style={{
+  padding: "16px",
+  color: "#FFFFD6",
+  backgroundColor: "#1C1D1F",
+  fontSize: "18px",
+}}>
+```
+
+### Available Design System Values
+
+- **Colors**: `colors.background`, `colors.surface`, `colors.text`, `colors.textSecondary`, `colors.primary`, `colors.border`, `colors.error`, `colors.success`, `colors.warning`
+- **Spacing**: `spacing.xs`, `spacing.sm`, `spacing.md`, `spacing.lg`, `spacing.xl`, `spacing.xxl`
+- **Typography**: Import from `@evevault/shared/design`
+
+### Inline Styling
+
+- **Minimize inline `style` props**. Prefer Tailwind utility classes, shared CSS files, or component props that map to design system values.
+- Only use inline styles when a value must be computed dynamically at runtime and cannot be expressed with existing classes or tokens. Keep these cases rare and well-documented.
+- When inline styles are unavoidable, continue to source values from the design system (`colors`, `spacing`, `typography`) instead of hardcoded literals.
+
+### Tailwind-First Styling
+
+- Reach for Tailwind utility classes before adding or expanding shared CSS (especially for components like `packages/shared/src/components/Settings/Settings.css` that are currently style-heavy).
+- When editing CSS-heavy components, prefer migrating rules into Tailwind classes incrementally and deleting obsolete CSS rather than growing the stylesheet.
+- Create or update shared CSS only when Tailwind cannot express the desired behavior (complex animations, pseudo-elements, etc.), and document why in the PR or a code comment.
+
+## TypeScript Guidelines
+
+### Type Safety
+
+- **ALWAYS use TypeScript types/interfaces** - Never use `any` unless absolutely necessary
+- Prefer `interface` for object shapes
+- Use `type` for unions, intersections, and aliases
+- Use `enum` for fixed sets of constants
+- Export types from feature `index.ts` files when needed
+- **If `any` must be used, add a comment explaining why it's the only viable option**
+
+```typescript
+// ✅ CORRECT - Use proper types
+interface User {
+  id: string;
+  email: string;
+  role: UserRole;
+}
+
+enum UserRole {
+  ADMIN = "admin",
+  USER = "user",
+  GUEST = "guest",
+}
+
+// ✅ CORRECT - If any is truly needed, document why
+// Using any here because the third-party library's types are incomplete
+// and the actual return type varies based on runtime configuration
+const result: any = thirdPartyLibrary.getData();
+
+// ❌ WRONG - Avoid any without explanation
+const data: any = fetchData();
+```
+
+### Type Placement
+
+- Use `packages/shared/src/types/` for **cross-domain, platform-agnostic** structures (e.g., messages, Enoki responses, shared API contracts). These types should be safe for any consumer to import.
+- Keep **domain-specific** types next to their feature (`apps/{app}/src/features/foo/types.ts`) or package (`packages/shared/src/auth/types.ts`). This keeps ownership obvious and avoids bloating the global type barrel.
+- Re-export domain types through that feature/package’s `index.ts` so other code imports via the workspace alias (`@evevault/shared/auth`), not deep relative paths.
+- Before adding a new type file, search both `packages/shared/src/types` and the relevant feature folder to confirm an equivalent type doesn’t already exist.
+- When consuming shared types from another package, import them through the package’s public barrel (`@evevault/shared/types`, `@evevault/shared/auth`, etc.) instead of deep relative paths so boundaries stay consistent.
+
+### Component Props
+
+```typescript
+// ✅ CORRECT - Explicit interface for props
+interface CardProps {
+  title: string;
+  children: React.ReactNode;
+  variant?: "default" | "outlined";
+}
+
+export function Card({ title, children, variant = "default" }: CardProps) {
+  // Implementation
+}
+```
+
+### Store Patterns
+
+```typescript
+// ✅ CORRECT - Zustand store pattern
+interface DeviceState {
+  ephemeralKeyPair: Ed25519Keypair | null;
+  maxEpoch: number | null;
+  loading: boolean;
+  error: string | null;
+  initialize: () => Promise<void>;
+  // ... other actions
+}
+
+export const useDeviceStore = create<DeviceState>((set) => ({
+  // Initial state
+  ephemeralKeyPair: null,
+  maxEpoch: null,
+  loading: false,
+  error: null,
+  // Actions
+  initialize: async () => {
+    // Implementation
+  },
+}));
+```
+
+## React Component Patterns
+
+### Component Structure
+
+```typescript
+// 1. Imports (external first, then internal)
+import { useState } from "react";
+import { colors, spacing } from "@evevault/shared/design";
+import { useAuth } from "../hooks/useAuth";
+
+// 2. Types/Interfaces
+interface ComponentProps {
+  title: string;
+  children: React.ReactNode;
+}
+
+// 3. Component (named export preferred)
+export function Component({ title, children }: ComponentProps) {
+  // Hooks
+  const { user } = useAuth();
+  const [state, setState] = useState(null);
+
+  // Effects
+  useEffect(() => {
+    // Side effects
+  }, []);
+
+  // ✅ CORRECT - Extract logic before return
+  const computedValue = useMemo(() => {
+    return someComplexCalculation(state);
+  }, [state]);
+
+  const handleClick = () => {
+    // Event handler logic
+  };
+
+  // Render
+  return <div style={{ padding: spacing.md }}>{children}</div>;
+}
+```
+
+### ❌ NEVER Put Logic in JSX Return
+
+**Extract all logic, calculations, and complex expressions before the return statement.**
+
+```typescript
+// ✅ CORRECT - Logic extracted before return
+export function UserList({ users }: UserListProps) {
+  const sortedUsers = useMemo(() => {
+    return users.sort((a, b) => a.name.localeCompare(b.name));
+  }, [users]);
+
+  const activeUsers = useMemo(() => {
+    return sortedUsers.filter((user) => user.isActive);
+  }, [sortedUsers]);
+
+  const handleUserClick = (userId: string) => {
+    // Handle click logic
+  };
+
+  return (
+    <div>
+      {activeUsers.map((user) => (
+        <UserCard key={user.id} user={user} onClick={handleUserClick} />
+      ))}
+    </div>
+  );
+}
+
+// ❌ WRONG - Logic inside JSX
+export function UserList({ users }: UserListProps) {
+  return (
+    <div>
+      {users
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .filter((user) => user.isActive)
+        .map((user) => (
+          <UserCard
+            key={user.id}
+            user={user}
+            onClick={() => {
+              // Complex logic here - BAD!
+              console.log(user.id);
+              navigate(`/users/${user.id}`);
+            }}
+          />
+        ))}
+    </div>
+  );
+}
+```
+
+### Best Practices for React/JavaScript
+
+1. **Extract complex logic** - Use `useMemo` for expensive calculations
+2. **Extract event handlers** - Define handlers before return, not inline
+3. **Extract conditional rendering** - Use variables for complex conditions
+4. **Keep JSX clean** - JSX should only contain simple expressions and component composition
+
+```typescript
+// ✅ CORRECT - Clean JSX with extracted logic
+export function TransactionList({ transactions }: TransactionListProps) {
+  const { user } = useAuth();
+  const [filter, setFilter] = useState<TransactionFilter>("all");
+
+  // Extract filtering logic
+  const filteredTransactions = useMemo(() => {
+    if (filter === "all") return transactions;
+    return transactions.filter((tx) => tx.status === filter);
+  }, [transactions, filter]);
+
+  // Extract sorting logic
+  const sortedTransactions = useMemo(() => {
+    return [...filteredTransactions].sort((a, b) => b.timestamp - a.timestamp);
+  }, [filteredTransactions]);
+
+  // Extract conditional rendering
+  const hasTransactions = sortedTransactions.length > 0;
+  const emptyMessage =
+    filter === "all"
+      ? "No transactions found"
+      : `No ${filter} transactions found`;
+
+  // Extract event handlers
+  const handleFilterChange = (newFilter: TransactionFilter) => {
+    setFilter(newFilter);
+  };
+
+  const handleTransactionClick = (txId: string) => {
+    navigate(`/transactions/${txId}`);
+  };
+
+  // Clean JSX
+  return (
+    <div>
+      <FilterBar filter={filter} onChange={handleFilterChange} />
+      {hasTransactions ? (
+        <TransactionGrid
+          transactions={sortedTransactions}
+          onTransactionClick={handleTransactionClick}
+        />
+      ) : (
+        <EmptyState message={emptyMessage} />
+      )}
+    </div>
+  );
+}
+```
+
+### Hooks
+
+- Custom hooks should start with `use`
+- Co-locate hooks with features: `src/features/{feature}/hooks/`
+- Return objects for multiple values, tuples for pairs
+
+```typescript
+// ✅ CORRECT
+export function useAuth() {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  return {
+    user,
+    loading,
+    login: async () => {
+      /* ... */
+    },
+    logout: () => {
+      /* ... */
+    },
+  };
+}
+```
+
+## State Management
+
+### Zustand Stores
+
+- One store per feature domain
+- Store files: `src/features/{feature}/stores/{feature}Store.ts`
+- Use `create` from Zustand
+- Include initialization guards to prevent overwriting existing data
+- Persist to storage when needed (Chrome storage for extension, localStorage for web)
+
+### Store Initialization
+
+```typescript
+// ✅ CORRECT - Always check before initializing
+const initialize = async () => {
+  const existing = await getFromStorage();
+  if (existing) {
+    set({ ...existing });
+    return; // Don't overwrite
+  }
+  // Initialize new data
+};
+```
+
+## Error Handling
+
+- Always handle errors gracefully
+- Provide user feedback for errors
+- Log errors to console in development
+- Use error states in stores: `error: string | null`
+
+```typescript
+// ✅ CORRECT
+try {
+  await someAsyncOperation();
+} catch (error) {
+  console.error("Operation failed:", error);
+  set({ error: error instanceof Error ? error.message : "Unknown error" });
+}
+```
+
+## Code Style & Formatting
+
+This project uses **[Biome](https://biomejs.dev/)** for formatting and linting. All code is automatically formatted on commit via pre-commit hooks.
+
+### Formatting Rules (Enforced by Biome)
+
+- **Indentation**: 2 spaces (not tabs)
+- **Quotes**: Double quotes for strings
+- **Semicolons**: Always required
+- **Trailing commas**: In multi-line objects/arrays
+- **Import organization**: Automatically sorted and organized
+
+### Running Biome
+
+```bash
+# Check all files
+bun run lint
+
+# Auto-fix issues
+bun run lint --write
+
+# Check specific file
+bunx biome check path/to/file.ts
+```
+
+### Pre-commit Hooks
+
+Files are automatically formatted on commit. If you need to bypass (not recommended):
+```bash
+git commit --no-verify
+```
+
+**Note**: The pre-commit hook only runs on **staged files**, so it's fast even in large changesets.
+
+### Comments
+
+**Let the code speak for itself.** Good naming and clear structure are better than comments.
+
+**When to comment:**
+- **Complex algorithms** - Explain the "why", not the "what"
+- **Non-obvious business logic** - Why this specific behavior exists
+- **Workarounds/hacks** - Why a non-ideal solution was necessary
+- **`any` type usage** - Always explain why it's the only option
+- **Public API documentation** - JSDoc for exported functions/classes that others will use
+
+**When NOT to comment:**
+- Self-explanatory function names (`getPublicKey()`, `isUnlocked()`, `hasKeypair()`)
+- Simple getters/setters
+- Obvious logic that the code already expresses
+- Restating what the code does
+
+```typescript
+// ❌ BAD - Comment restates the obvious
+/**
+ * Gets the public key
+ */
+getPublicKey(): PublicKey | null {
+  return this.signer?.getPublicKey() ?? null;
+}
+
+// ✅ GOOD - No comment needed, name is clear
+getPublicKey(): PublicKey | null {
+  return this.signer?.getPublicKey() ?? null;
+}
+
+// ✅ GOOD - Comment explains non-obvious behavior
+// Auto-lock after expiry to prevent stale sessions
+if (this.unlockExpiry && Date.now() > this.unlockExpiry) {
+  this.lock();
+  return false;
+}
+
+// ✅ GOOD - JSDoc for public API with important context
+/**
+ * Web-specific vault service using WebCryptoSigner (Secp256r1).
+ * Keys are non-extractable and persisted in IndexedDB.
+ */
+class WebVaultService { ... }
+
+// ✅ GOOD - Explain any usage
+// Using any because chrome.runtime.sendMessage has no generic return type
+const res = await chrome.runtime?.sendMessage?.(...) as VaultResponse | undefined;
+```
+
+## Testing Considerations
+
+- Test in both extension and web when modifying shared code
+- Verify state persistence works correctly
+- Check OAuth flows in Fusionauth provider
+- Test network switching functionality
+
+## Testing Philosophy
+
+### ✅ Minimize Mocking - Test Real Behavior
+
+**Tests should mimic the real app as much as possible.** Only mock when absolutely necessary.
+
+**When mocking IS appropriate:**
+- External APIs/network requests (use MSW or similar for realistic mocking)
+- Browser-specific APIs not available in jsdom (e.g., `chrome.runtime` for extension)
+- Time-sensitive operations (use `vi.useFakeTimers()`)
+- IndexedDB in unit tests (use `fake-indexeddb` or in-memory store)
+
+**When mocking is NOT appropriate:**
+- Internal modules or services - test the real implementation
+- Utility functions - they should work as-is
+- Third-party libraries that work in the test environment - don't mock around dependency issues, fix them
+- Type definitions or interfaces
+
+```typescript
+// ❌ BAD - Over-mocking internal implementation
+vi.mock("../services/vaultService", () => ({
+  ephKeyService: { unlockVault: vi.fn() }
+}));
+
+// ✅ GOOD - Test real service, only mock external boundary
+vi.mock("idb-keyval"); // Mock IndexedDB boundary
+import { webVaultService } from "./webVaultService"; // Real service
+```
+
+**If tests fail due to dependency issues:**
+1. Fix the dependency issue (version mismatch, missing module)
+2. Do NOT mock entire libraries to work around broken dependencies
+3. Document any unavoidable mocks with a comment explaining why
+
+## Testing Utilities
+
+- Keep shared test factories/helpers in `packages/shared/src/testing`
+- Before introducing new mocks in specs, look for or extend helpers exported from `@evevault/shared/testing` (e.g., `createMockUser`)
+- Use `fake-indexeddb` for realistic IndexedDB testing when needed
+
+## Common Patterns
+
+### Async Initialization
+
+```typescript
+// ✅ CORRECT - Initialize stores on mount
+useEffect(() => {
+  const initializeStores = async () => {
+    await initializeAuth();
+    await initializeDevice();
+    await useNetworkStore.getState().initialize();
+  };
+  initializeStores();
+}, []);
+```
+
+### Storage Operations
+
+- Use storage adapters from `@evevault/shared/adapters` or `@evevault/shared/adapters`
+- Never access Chrome storage or localStorage directly
+- Handle storage errors gracefully
+
+### Utility Helpers
+
+- Before writing ad-hoc environment or platform checks, reach for the helpers in `@evevault/shared/utils/environment` (`isBrowser`, `isExtension`, `isWeb`, etc.) so behavior stays consistent across the monorepo.
+- When similar helper utilities already exist (e.g., storage adapters, formatters), reuse them instead of duplicating logic.
+
+## Page Layout Pattern
+
+### ✅ ALWAYS Use the Layout Component for New Pages
+
+**All pages MUST use the `Layout` component from `@evevault/shared/components` to ensure consistent structure and prevent layout jumping between pages.**
+
+```typescript
+// ✅ CORRECT - Use Layout component
+import { Layout, Heading, Text } from "@evevault/shared";
+
+export function MyPage() {
+  return (
+    <Layout
+      header={
+        <>
+          <Heading level={1}>Page Title</Heading>
+          <Text>Description text</Text>
+        </>
+      }
+    >
+      <div>Main content here</div>
+    </Layout>
+  );
+}
+
+// ❌ WRONG - Don't manually create app-shell structure
+import { Background } from "@evevault/shared";
+
+export function MyPage() {
+  return (
+    <Background>
+      <div className="app-shell">
+        <header className="app-shell__header">
+          <h1>Page Title</h1>
+        </header>
+        <main className="app-shell__content">
+          <div>Main content here</div>
+        </main>
+      </div>
+    </Background>
+  );
+}
+```
+
+**Layout Component Props:**
+- `header` (optional): Content for the header section (typically Heading, Text, buttons)
+- `children` (required): Main page content
+- `showFooter` (optional, default: `true`): Whether to show the footer section
+
+**Why Use Layout?**
+1. **Consistent width**: All pages have the same margins and spacing
+2. **No layout jumping**: Window size stays consistent between pages
+3. **Maintainability**: Changes to layout structure are centralized
+4. **Type safety**: TypeScript ensures correct usage
+
+**Common Patterns:**
+
+```typescript
+// Page with back button
+<Layout
+  header={
+    <button onClick={() => navigate({ to: "/" })}>
+      ← Back
+    </button>
+  }
+>
+  <MyContent />
+</Layout>
+
+// Page with title and description
+<Layout
+  header={
+    <>
+      <Heading level={1} variant="bold">My Page</Heading>
+      <Text>This is the description</Text>
+    </>
+  }
+>
+  <MyContent />
+</Layout>
+
+// Simple page without header
+<Layout>
+  <MyContent />
+</Layout>
+```
+
+## Reusing Shared Components
+
+### ✅ ALWAYS Use Existing Shared Components
+
+**Before creating a new component, ALWAYS check if a similar component already exists in `packages/shared/src/components/`.**
+
+Available shared components include:
+- **Layout** - Page layout wrapper (header, content, footer structure) - **USE FOR ALL PAGES**
+- **Button** - All button variations (primary, secondary, sizes)
+- **Input** - Text inputs (text, password, email, number, search types)
+- **Heading** - Typography headings (h1-h6)
+- **Text** - Paragraph and text elements with variants
+- **Background** - Background grid and patterns (wrapped by Layout)
+- **Brackets** - Decorative brackets
+- **NotFoundScreen** - 404 error screen
+- **TokenListSection** - Token list with balances
+- **AddTokenForm** - Form for adding custom tokens
+
+```typescript
+// ✅ CORRECT - Use existing shared component
+import Input from "@evevault/shared/components";
+import Button from "@evevault/shared/components";
+
+<Input
+  type="text"
+  placeholder="Enter value"
+  value={value}
+  onChange={handleChange}
+/>
+
+// ❌ WRONG - Creating raw HTML elements when shared component exists
+<input
+  type="text"
+  placeholder="Enter value"
+  value={value}
+  onChange={handleChange}
+/>
+```
+
+**When you need a component:**
+1. Check `packages/shared/src/components/` first
+2. Import from `@evevault/shared/components`
+3. Only create a new component if no suitable one exists
+4. If a shared component is missing features, extend it rather than creating a new one
+
+## What NOT to Do
+
+1. ❌ Don't use relative paths to packages (`../../packages/shared/`)
+2. ❌ Don't hardcode colors, spacing, or typography values
+3. ❌ Don't put business logic in entrypoints
+4. ❌ Don't create shared components prematurely
+5. ❌ Don't duplicate code that exists in `packages/shared/`
+6. ❌ **Don't use raw HTML elements (input, button, h1-h6, p, etc.) when shared components exist** - Always check `packages/shared/src/components/` first
+7. ❌ **Don't manually create app-shell structure** - Always use the `Layout` component for pages
+8. ❌ Don't use `any` type without a comment explaining why it's necessary (prefer `unknown` if type is truly unknown)
+9. ❌ Don't forget initialization guards in stores
+10. ❌ Don't mix platform-specific code in shared packages
+11. ❌ Don't put logic inside JSX return statements - extract to variables, useMemo, or functions
+12. ❌ Don't create files longer than 500 lines (1000 max) - split using MVC pattern
+13. ❌ Don't mix Model, View, and Controller concerns in a single file
+14. ❌ **Don't add ESLint, Prettier, or other formatters** - We use Biome for all formatting and linting
+
+## When Adding New Code
+
+### Adding a New Feature
+
+1. Create feature folder: `src/features/new-feature/`
+2. Add subfolders: `components/`, `hooks/`, `stores/`, `api/`
+3. Follow naming conventions
+4. Import from shared packages when possible
+5. Use design system values for styling
+6. Follow MVC pattern: Model (stores/api) → Controller (hooks) → View (components)
+7. Keep files under 500 lines - split if needed
+
+### Adding a New Page/Route
+
+1. **ALWAYS use the `Layout` component from `@evevault/shared/components`**
+2. Structure: Pass header content to `header` prop, main content as `children`
+3. Use TanStack Router's `createFileRoute` or `createRoute`
+4. Apply auth guards if needed (`beforeLoad: requireAuth`)
+5. Keep page components focused on composition - delegate logic to hooks
+6. Follow naming: `PageName.tsx` or route file naming conventions
+
+### Adding a New Component
+
+1. **FIRST: Check `packages/shared/src/components/` for existing components** - Don't recreate what exists
+2. **For pages: Use the `Layout` component** - Don't manually create app-shell structure
+3. Determine scope (feature-specific vs shared)
+4. Create in appropriate location
+5. Use PascalCase naming
+6. Import hooks/stores from same feature
+7. Use shared design system values (not "tokens" to avoid blockchain confusion)
+8. **Keep component focused on View (presentation)** - Extract logic to hooks
+9. **Extract all logic before return** - No calculations or complex expressions in JSX
+10. Export from feature `index.ts` if needed
+11. **Keep file under 500 lines** - Split if needed using MVC pattern
+
+### Modifying Shared Code
+
+1. Edit in `packages/shared/src/`
+2. Changes automatically available to all apps
+3. Test in both extension and web
+4. Update exports in `packages/shared/src/index.ts` if needed
+
+## Development Workflow
+
+- Use `bun run dev` to start development
+- Use `bun run typecheck` to check types
+- Use `bun run build` to build all apps
+- Hot reload works for shared code automatically
+- Check browser console for errors
+- Use background console for extension debugging
+
+## Additional Resources
+
+- Component Placement Guide: `docs/COMPONENT_PLACEMENT_GUIDE.md`
+- Development Guide: `docs/DEVELOPMENT.md`
+- Monorepo README: `docs/MONOREPO_README.md`
+- Architecture Decision Record: `docs/adr/001-hybrid-monorepo-structure.md`
+
+---
+
+**Remember**: When in doubt, follow the existing patterns in the codebase. Consistency is key!

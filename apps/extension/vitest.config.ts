@@ -1,0 +1,18 @@
+import react from "@vitejs/plugin-react";
+import tsconfigPaths from "vite-tsconfig-paths";
+import { defineConfig } from "vitest/config";
+
+export default defineConfig({
+  plugins: [
+    react(),
+    tsconfigPaths({
+      root: __dirname,
+    }),
+  ],
+  test: {
+    globals: true,
+    environment: "jsdom",
+    setupFiles: ["../../vitest.setup.ts"],
+    passWithNoTests: true, // TODO(test): remove once extension suites exist
+  },
+});

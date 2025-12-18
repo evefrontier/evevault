@@ -1,0 +1,22 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "types": ["react", "react-dom"],
+    "allowImportingTsExtensions": true,
+    "jsx": "react-jsx",
+    "lib": ["ES2020", "DOM"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@evevault/shared/logger": ["../../packages/shared/src/utils/logger.ts"],
+      "@evevault/shared": ["../../packages/shared/src"],
+      "@evevault/shared/*": ["../../packages/shared/src/*"]
+    }
+  },
+  "include": ["entrypoints/**/*", "src/**/*", "../../packages/shared/**/*"],
+  "references": [
+    {
+      "path": "../../packages/shared"
+    }
+  ]
+}

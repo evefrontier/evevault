@@ -1,0 +1,42 @@
+@import "tailwindcss";
+@import "@evevault/shared/theme/global.css";
+@source "../../../../packages/shared/src/**/*.{ts,tsx}";
+
+/* Tailwind theme extensions */
+@theme {
+  --font-body: "Body", "FavoritMonoStd", monospace;
+  --font-headline: "Headline", "Disket Mono", monospace;
+  --color-neutral: #ffffd6;
+  --color-crude: #130904;
+  --color-quantum: #c64f05;
+  --color-matter-01: #181716;
+  --color-matter-02: #2b2827;
+  --color-matter-03: #3c3836;
+  --color-matter-04: #44413f;
+  --color-matter-05: #524e4b;
+  --color-matter-06: #6d6965;
+}
+
+:root {
+  /* Font rendering */
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: var(--crude, #130904);
+  color: var(--neutral, #ffffd6);
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+  background-color: var(--crude, #130904);
+  color: var(--neutral, #ffffd6);
+}

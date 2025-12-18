@@ -1,0 +1,61 @@
+@import "tailwindcss";
+@import "@evevault/shared/theme/global.css";
+
+/* Scan shared package for Tailwind classes */
+@source "../../../packages/shared/src/**/*.{ts,tsx}";
+/* Tailwind theme extensions */
+@theme {
+  --font-body: "Body", "FavoritMonoStd", monospace;
+  --font-headline: "Headline", "Disket Mono", monospace;
+  --color-neutral: #ffffd6;
+  --color-crude: #130904;
+  --color-quantum: #c64f05;
+  --color-matter-01: #181716;
+  --color-matter-02: #2b2827;
+  --color-matter-03: #3c3836;
+  --color-matter-04: #44413f;
+  --color-matter-05: #524e4b;
+  --color-matter-06: #6d6965;
+  --extension-width: 500px;
+  --extension-height: 500px;
+}
+
+:root {
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+}
+
+
+a {
+  font-weight: 500;
+  color: var(--quantum, #c64f05);
+  text-decoration: inherit;
+}
+a:hover {
+  color: var(--bright-quantum, #dd5807);
+}
+
+html,
+body {
+  margin: 0;
+  width: 500px;
+  height: 500px;
+  background-color: var(--crude, #130904);
+  color: var(--neutral, #ffffd6);
+}
+
+main {
+  height: 100vh
+}
+
+
+#root {
+  background-color: var(--crude, #130904);
+  color: var(--neutral, #ffffd6);
+  width: var(--extension-width);
+  height: var(--extension-height);
+}
+

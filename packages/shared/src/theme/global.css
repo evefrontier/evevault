@@ -1,0 +1,267 @@
+/* Global styles */
+
+/* ========================
+   Font Face Definitions
+   ======================== */
+
+/* Body font - FavoritMonoStd */
+@font-face {
+  font-family: "Body";
+  src:
+    url("/fonts/FavoritMonoStd-Light.woff2") format("woff2"),
+    url("/fonts/FavoritMonoStd-Light.woff") format("woff");
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Body";
+  src:
+    url("/fonts/FavoritMonoStd-Book.woff2") format("woff2"),
+    url("/fonts/FavoritMonoStd-Book.woff") format("woff");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Body";
+  src:
+    url("/fonts/FavoritMonoStd-Regular.woff2") format("woff2"),
+    url("/fonts/FavoritMonoStd-Regular.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Body";
+  src:
+    url("/fonts/FavoritMonoStd-Bold.woff2") format("woff2"),
+    url("/fonts/FavoritMonoStd-Bold.woff") format("woff");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Headline font - Disket Mono */
+@font-face {
+  font-family: "Headline";
+  src:
+    url("/fonts/Disket-Mono-Regular.woff2") format("woff2"),
+    url("/fonts/Disket-Mono-Regular.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Headline";
+  src:
+    url("/fonts/Disket-Mono-Bold.woff2") format("woff2"),
+    url("/fonts/Disket-Mono-Bold.woff") format("woff");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Legacy fonts - keep for backwards compatibility */
+@font-face {
+  font-family: "BaiJamjuree";
+  src: url("/fonts/BaiJamjuree-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "BaiJamjuree";
+  src: url("/fonts/BaiJamjuree-SemiBold.ttf") format("truetype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "M42_FLIGHT 721";
+  src: url("/fonts/m42.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+
+/* ========================
+   Theme CSS Variables
+   ======================== */
+:root {
+  /* Font families */
+  --font-body: "Body", "FavoritMonoStd", monospace;
+  --font-headline: "Headline", "Disket Mono", monospace;
+
+  /* Colors */
+  --matter-01: #181716;
+  --matter-02: #2b2827;
+  --matter-03: #3c3836;
+  --matter-04: #44413f;
+  --matter-05: #524e4b;
+  --matter-06: #6d6965;
+  --crude: #130904;
+  --neutral: #ffffd6;
+  --neutral-50: rgba(255, 255, 214, 0.5);
+  --grey-neutral: #8e8c77;
+  --quantum: #c64f05;
+  --quantum-50: rgba(198, 79, 5, 0.5);
+  --quantum-30: rgba(198, 79, 5, 0.3);
+  --quantum-20: rgba(198, 79, 5, 0.2);
+  --quantum-10: rgba(198, 79, 5, 0.1);
+  --dark-quantum: #833302;
+  --bg-top: #180a04;
+  --bg-bottom: #592506;
+  --alert: #0c27d8;
+  --success: #5ee39c;
+  --error: #942922;
+}
+
+/* ========================
+   Base Typography Styles
+   ======================== */
+
+/* All elements use body font by default */
+* {
+  font-family: var(--font-body);
+}
+
+/* Headings use headline font */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-headline);
+}
+
+/* Body text */
+p,
+li {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: 0.02em;
+}
+
+/* Span inherits from parent */
+span {
+  font-family: inherit;
+}
+
+/* Lists */
+ul {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  list-style-type: square;
+  list-style-position: inside;
+}
+
+ul p,
+li p {
+  display: inline;
+}
+
+/* H1 - Large headlines */
+h1 {
+  text-transform: uppercase;
+  font-size: 34px;
+  line-height: 36px;
+  letter-spacing: -0.04em;
+  color: var(--neutral);
+  font-weight: 400;
+}
+
+@media (min-width: 640px) {
+  h1 {
+    font-size: 44px;
+  }
+}
+
+@media (min-width: 768px) {
+  h1 {
+    font-size: 52px;
+  }
+}
+
+@media (min-width: 1024px) {
+  h1 {
+    font-size: 60px;
+  }
+}
+
+/* H2 - Section headlines */
+h2 {
+  text-transform: uppercase;
+  font-size: 24px;
+  line-height: 28px;
+  letter-spacing: -0.03em;
+  color: var(--neutral);
+  font-weight: 400;
+}
+
+@media (min-width: 768px) {
+  h2 {
+    font-size: 32px;
+    line-height: 32px;
+  }
+}
+
+/* H3 - Subsection headlines */
+h3 {
+  text-transform: uppercase;
+  font-size: 15px;
+  letter-spacing: 0.07em;
+  color: var(--neutral);
+  font-weight: 700;
+  font-family: var(--font-body);
+}
+
+/* H4 - Small headlines */
+h4 {
+  text-transform: uppercase;
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.09em;
+  color: var(--neutral);
+  font-weight: 700;
+}
+
+/* ========================
+   App Shell Layout
+   ======================== */
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 400px;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 0 20px;
+  box-sizing: border-box;
+}
+
+.app-shell__header {
+  min-height: 40px;
+  padding-top: 32px;
+  padding-bottom: 32px;
+}
+
+.app-shell__content {
+  flex: 1 1 auto;
+}
+
+.app-shell__footer {
+  padding-top: 20px;
+  min-height: 83px;
+}

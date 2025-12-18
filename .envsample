@@ -1,0 +1,9 @@
+#PROD
+VITE_FUSIONAUTH_CLIENT_ID=
+VITE_FUSION_CLIENT_SECRET=
+VITE_FUSION_SERVER_URL="https://auth.evefrontier.com"
+
+VITE_FUSIONAUTH_REDIRECT_URI=chrome-extension://lbmfdkobfnkfobfahpekbaaombpnafah/callback.html
+
+EXTENSION_ID=
+VITE_ENOKI_API_KEY=

@@ -1,0 +1,64 @@
+/* Global project fonts - Imported via global.css */
+/* This file is kept for backwards compatibility */
+
+/* Body font - FavoritMonoStd */
+@font-face {
+  font-family: "Body";
+  src:
+    url("/fonts/FavoritMonoStd-Light.woff2") format("woff2"),
+    url("/fonts/FavoritMonoStd-Light.woff") format("woff");
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Body";
+  src:
+    url("/fonts/FavoritMonoStd-Book.woff2") format("woff2"),
+    url("/fonts/FavoritMonoStd-Book.woff") format("woff");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Body";
+  src:
+    url("/fonts/FavoritMonoStd-Regular.woff2") format("woff2"),
+    url("/fonts/FavoritMonoStd-Regular.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Body";
+  src:
+    url("/fonts/FavoritMonoStd-Bold.woff2") format("woff2"),
+    url("/fonts/FavoritMonoStd-Bold.woff") format("woff");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Headline font - Disket Mono */
+@font-face {
+  font-family: "Headline";
+  src:
+    url("/fonts/Disket-Mono-Regular.woff2") format("woff2"),
+    url("/fonts/Disket-Mono-Regular.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Headline";
+  src:
+    url("/fonts/Disket-Mono-Bold.woff2") format("woff2"),
+    url("/fonts/Disket-Mono-Bold.woff") format("woff");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}

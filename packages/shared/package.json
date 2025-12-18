@@ -1,0 +1,110 @@
+{
+  "name": "@evevault/shared",
+  "version": "0.1.0",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "development": "./src/index.ts",
+      "default": "./dist/index.js"
+    },
+    "./wallet": {
+      "development": "./src/wallet/index.ts",
+      "default": "./dist/wallet/index.js"
+    },
+    "./sui": {
+      "development": "./src/sui/index.ts",
+      "default": "./dist/sui/index.js"
+    },
+    "./auth": {
+      "development": "./src/auth/index.ts",
+      "default": "./dist/auth/index.js"
+    },
+    "./types": {
+      "development": "./src/types/index.ts",
+      "default": "./dist/types/index.js"
+    },
+    "./utils": {
+      "development": "./src/utils/index.ts",
+      "default": "./dist/utils/index.js"
+    },
+    "./logger": {
+      "development": "./src/utils/logger.ts",
+      "default": "./dist/utils/logger.js"
+    },
+    "./design": {
+      "development": "./src/design/index.ts",
+      "default": "./dist/design/index.js"
+    },
+    "./theme": {
+      "development": "./src/theme/index.ts",
+      "default": "./dist/theme/index.js"
+    },
+    "./theme/global.css": "./src/theme/global.css",
+    "./components": {
+      "development": "./src/components/index.ts",
+      "default": "./dist/components/index.js"
+    },
+    "./screens": {
+      "development": "./src/screens/index.ts",
+      "default": "./dist/screens/index.js"
+    },
+    "./queryClient": {
+      "development": "./src/queryClient.ts",
+      "default": "./dist/queryClient.js"
+    },
+    "./router": {
+      "development": "./src/router/index.ts",
+      "default": "./dist/router/index.js"
+    },
+    "./adapters": {
+      "development": "./src/adapters/index.ts",
+      "default": "./dist/adapters/index.js"
+    },
+    "./testing": {
+      "development": "./src/testing/index.ts",
+      "default": "./dist/testing/index.js"
+    },
+    "./stores": {
+      "development": "./src/stores/index.ts",
+      "default": "./dist/stores/index.js"
+    },
+    "./stores/*": {
+      "development": "./src/stores/*.ts",
+      "default": "./dist/stores/*.js"
+    },
+    "./hooks": {
+      "development": "./src/hooks/index.ts",
+      "default": "./dist/hooks/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc && bun run copy-assets",
+    "copy-assets": "rsync -avm --include='*/' --include='*.css' --exclude='*' src/ dist/",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "lint": "biome check src",
+    "test": "vitest --config ./vitest.config.ts",
+    "test:ui": "vitest --ui --config ./vitest.config.ts",
+    "test:run": "vitest run --config ./vitest.config.ts"
+  },
+  "dependencies": {
+    "@mysten/signers": "^0.6.2",
+    "idb-keyval": "^6.2.2"
+  },
+  "peerDependencies": {
+    "@mysten/sui": "^1.43.1",
+    "@mysten/wallet-standard": "^0.16.3",
+    "@tanstack/react-query": "^5.84.2",
+    "@tanstack/react-router": "^1.95.0",
+    "@suiet/wallet-kit": "^0.5.1",
+    "@types/react": "^19.1.2",
+    "oidc-client-ts": "^3.1.0",
+    "react": "^19.1.0",
+    "jose": "6.0.12"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.0",
+    "typescript": "^5.8.3"
+  }
+}

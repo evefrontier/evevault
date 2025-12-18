@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Authentication Callback</title>
+  </head>
+  <body>
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get("code");
+
+      if (code) {
+        chrome.runtime.sendMessage(
+          {
+            type: "auth_callback",
+            code: code,
+          },
+          () => {
+            // Close this window after sending the message
+            window.close();
+          }
+        );
+      }
+    </script>
+    <p>Completing login...</p>
+  </body>
+</html>
