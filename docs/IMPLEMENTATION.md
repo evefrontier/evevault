@@ -132,30 +132,35 @@ Manages authentication state:
 
 ### Device Store
 
-**Location**: `apps/extension/src/features/wallet/stores/deviceStore.ts`
+**Location**: `packages/shared/src/stores/deviceStore.ts`
 
 Manages zkLogin-specific parameters with **Zustand persist middleware**:
 
 **State:**
 
-- `ephemeralKeyPair`: Ed25519 keypair for signing
-- `jwtRandomness`: Random value for nonce generation
-- `maxEpoch`: Current Sui epoch + 2 (validity window)
-- `maxEpochExpiry`: Timestamp when epoch expires
-- `nonce`: Generated nonce for zkLogin
+- `ephemeralKeyPair`: Ed25519 keypair for signing (shared across networks)
+- `ephemeralPublicKey`: Public key derived from ephemeral keypair
+- `isLocked`: Whether the vault is locked
+- `networkData`: Per-network zkLogin parameters:
+  - `jwtRandomness`: Random value for nonce generation (per-network)
+  - `maxEpoch`: Current Sui epoch + 2 (validity window, per-network)
+  - `nonce`: Generated nonce for zkLogin (per-network)
 
 **Actions:**
 
-- `initialize()`: Generates new zkLogin parameters (with guard against reinitialization)
-- `clearSession()`: Clears session data on logout
+- `initialize(pin: string)`: Creates new ephemeral keypair and unlocks vault
+- `lock()`: Locks the vault (clears ephemeral keypair)
+- `initializeForChain(chain: SuiChain)`: Generates per-network device data (nonce, maxEpoch, jwtRandomness)
+- `getZkProof(chain: SuiChain)`: Retrieves or generates ZK proof for a specific network
 
 **Storage Strategy:**
 
 - **Zustand persist**: Saves to `chrome.storage.local` under key `"evevault:device"`
 - **Automatic hydration**: State restored on popup reopen
+- **Per-network data**: Device data stored per-network to prevent cross-network conflicts
 - **Initialization guard**: Prevents regenerating keys if data exists
 
-**Important:** Subscribes to `authStore` changes to reinitialize on login
+**Important:** Per-network isolation ensures that switching networks doesn't invalidate existing JWTs on other networks
 
 ### Persistent Store
 
@@ -176,6 +181,35 @@ Safe accessors for Zustand stores in non-React environments:
 - `getAuthState()`: Access auth store from service workers
 - `getDeviceState()`: Access device store from service workers
 - Fallback handling for store initialization failures
+
+## Network Switching
+
+**Location**: `packages/shared/src/stores/networkStore.ts`, `packages/shared/src/components/CurrentNetworkDisplay/`
+
+The extension supports multi-network operation with per-network data isolation:
+
+- **Network Store**: Manages current network state with persistence (`useNetworkStore`)
+- **Network Selector**: UI component for switching between networks (`CurrentNetworkDisplay`)
+- **Per-network JWTs**: Each network stores its own JWT tokens in `chrome.storage.local` under `evevault:jwt`
+- **Per-network device data**: Nonce, maxEpoch, and jwtRandomness stored per-network in `deviceStore.networkData`
+- **Automatic rollback**: Login failures trigger rollback to previous network with valid JWT
+- **Seamless switching**: If user is already logged in on target network, switching is instant
+
+**Key Components:**
+- `useNetworkStore` - Network state management (`packages/shared/src/stores/networkStore.ts`)
+- `CurrentNetworkDisplay` - Network selector UI (`packages/shared/src/components/CurrentNetworkDisplay/`)
+- `AVAILABLE_NETWORKS` - Shared network constants (`packages/shared/src/types/networks.ts`)
+
+**Network Switching Flow:**
+1. User clicks network selector → `checkNetworkSwitch()` checks if JWT exists for target network
+2. If JWT exists → `setChain()` performs seamless switch (updates device data if needed)
+3. If no JWT → shows "Sign In Required" dialog → user confirms → switches network → prompts login
+4. If login fails → automatically reverts to previous network (or any network with valid JWT)
+
+**Per-Network Data Isolation:**
+- JWTs: `evevault:jwt[sui:devnet]` vs `evevault:jwt[sui:testnet]`
+- Device data: `deviceStore.networkData[sui:devnet]` vs `deviceStore.networkData[sui:testnet]`
+- Network state: `evevault:network` stores current `chain`
 
 ## React Hooks
 
@@ -236,13 +270,17 @@ Builds Sui transactions with proper sender address.
 ### `chrome.storage.local` (Persistent)
 
 - `evevault:device`: Zustand deviceStore state (JSON)
-- `evevault:jwt`: Raw token data
-- `maxEpoch`, `maxEpochExpiry`: Epoch data
+  - Contains `ephemeralPublicKey`, `isLocked`, and `networkData` object
+  - `networkData[sui:devnet]`: Per-network `jwtRandomness`, `nonce`, `maxEpoch`
+  - `networkData[sui:testnet]`: Per-network `jwtRandomness`, `nonce`, `maxEpoch`
+- `evevault:jwt`: Per-network token data
+  - `evevault:jwt[sui:devnet]`: JWT tokens for devnet
+  - `evevault:jwt[sui:testnet]`: JWT tokens for testnet
+- `evevault:network`: Current network state (`chain`)
 
 ### `chrome.storage.session` (Cleared on browser close)
 
-- `jwtRandomness`: One-time random value
-- `nonce`: zkLogin nonce
+- Ephemeral keypair (stored securely in Keeper offscreen document for extension)
 - Sensitive ephemeral data
 
 ## Current State & Limitations
@@ -281,7 +319,7 @@ Builds Sui transactions with proper sender address.
 - [ ] Improve wallet standard error reporting
 - [ ] Add transaction history and activity log
 - [ ] Implement account switching (multi-user support)
-- [ ] Add network switching UI (devnet/testnet/mainnet)
+- ~~[ ] Add network switching UI (devnet/testnet/mainnet)~~ ✅ **Completed** - Network switching UI implemented with `CurrentNetworkDisplay` component
 
 ## Related Documentation
 

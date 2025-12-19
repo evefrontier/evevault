@@ -8,6 +8,7 @@ export * from "./Heading";
 export * from "./Icon";
 export * from "./Inputs";
 export * from "./Layout";
+export * from "./NetworkSelector";
 export * from "./NotFoundScreen";
 export * from "./Text";
 export * from "./Toast";

@@ -1,25 +1,23 @@
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  type Mock,
-  vi,
-} from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Use string literals to avoid importing @mysten/wallet-standard
 const SUI_DEVNET_CHAIN = "sui:devnet" as const;
 const SUI_TESTNET_CHAIN = "sui:testnet" as const;
 
 // Mock idb-keyval with an in-memory store
-const mockStore = new Map<string, unknown>();
+// Use vi.hoisted() to define variables that can be used in vi.mock factory
+const { mockStore, mockSetFn } = vi.hoisted(() => {
+  const store = new Map<string, unknown>();
+  const setFn = vi.fn((key: string, val: unknown) => {
+    store.set(key, val);
+    return Promise.resolve();
+  });
+  return { mockStore: store, mockSetFn: setFn };
+});
+
 vi.mock("idb-keyval", () => ({
   get: vi.fn((key: string) => Promise.resolve(mockStore.get(key))),
-  set: vi.fn((key: string, val: unknown) => {
-    mockStore.set(key, val);
-    return Promise.resolve();
-  }),
+  set: mockSetFn,
   del: vi.fn((key: string) => {
     mockStore.delete(key);
     return Promise.resolve();
@@ -62,7 +60,6 @@ vi.mock("../utils/logger", () => ({
 
 import { WebCryptoSigner } from "@mysten/signers/webcrypto";
 // Import after mocks are set up
-import { get, set } from "idb-keyval";
 import { webVaultService } from "./webVaultService";
 
 describe("WebVaultService", () => {
@@ -70,6 +67,8 @@ describe("WebVaultService", () => {
     // Clear the mock store before each test
     mockStore.clear();
     vi.clearAllMocks();
+    // Reset mockSetFn call history
+    mockSetFn.mockClear();
   });
 
   afterEach(async () => {
@@ -99,7 +98,7 @@ describe("WebVaultService", () => {
       expect(WebCryptoSigner.generate).toHaveBeenCalled();
 
       // Verify keypair was stored
-      expect(set).toHaveBeenCalledWith(
+      expect(mockSetFn).toHaveBeenCalledWith(
         "evevault:web-ephemeral-keypair",
         expect.anything(),
       );
@@ -114,13 +113,13 @@ describe("WebVaultService", () => {
       await webVaultService.createEphemeralKeyPair(pin);
 
       // Verify PIN hash was stored
-      expect(set).toHaveBeenCalledWith(
+      expect(mockSetFn).toHaveBeenCalledWith(
         "evevault:web-pin-hash",
         expect.any(String),
       );
 
       // Verify the stored hash is 64 chars (SHA-256 hex)
-      const pinHashCall = (set as Mock).mock.calls.find(
+      const pinHashCall = mockSetFn.mock.calls.find(
         (call) => call[0] === "evevault:web-pin-hash",
       );
       expect(pinHashCall[1]).toHaveLength(64);

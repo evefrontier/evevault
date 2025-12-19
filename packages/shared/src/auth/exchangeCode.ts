@@ -1,9 +1,9 @@
-import type { TokenResponse } from "@evevault/shared/types";
+import type { JwtResponse } from "@evevault/shared/types";
 
 export async function exchangeCodeForToken(
   code: string,
   redirectUri: string,
-): Promise<TokenResponse> {
+): Promise<JwtResponse> {
   const clientId = import.meta.env.VITE_FUSIONAUTH_CLIENT_ID;
   const clientSecret = import.meta.env.VITE_FUSION_CLIENT_SECRET;
   const tokenUrl = `${import.meta.env.VITE_FUSION_SERVER_URL}/oauth2/token`;
@@ -30,7 +30,7 @@ export async function exchangeCodeForToken(
     throw new Error(`Token exchange failed: ${errorText}`);
   }
 
-  const data: TokenResponse = await response.json();
+  const data: JwtResponse = await response.json();
 
   return data;
 }

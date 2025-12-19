@@ -9,10 +9,12 @@ import {
   SUI_TESTNET_CHAIN,
   type SuiChain,
 } from "@mysten/wallet-standard";
+import { decodeJwt } from "jose";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { chromeStorageAdapter, localStorageAdapter } from "../adapters";
 import { useAuthStore } from "../auth";
+import { hasJwtForNetwork } from "../auth/storageService";
 import { ephKeyService, zkProofService } from "../services/vaultService";
 import { createSuiClient } from "../sui";
 import {
@@ -70,6 +72,7 @@ const createEmptyNetworkDataEntry = (): NetworkDataEntry => ({
   nonce: null,
   maxEpoch: null,
   maxEpochTimestampMs: null,
+  jwtRandomness: null,
 });
 
 /**
@@ -130,6 +133,14 @@ export const useDeviceStore = create<DeviceState>()(
         return get().networkData[currentChain]?.nonce ?? null;
       },
 
+      getJwtRandomness: (chain?: SuiChain) => {
+        const currentChain = chain || useNetworkStore.getState().chain;
+        // Prefer per-network jwtRandomness, fallback to global for backwards compatibility
+        return (
+          get().networkData[currentChain]?.jwtRandomness ?? get().jwtRandomness
+        );
+      },
+
       // Initialize device state
       initialize: async (pin: string) => {
         set({ loading: true });
@@ -146,8 +157,18 @@ export const useDeviceStore = create<DeviceState>()(
         const currentState = get();
         const currentChain = useNetworkStore.getState().chain;
 
-        const { maxEpoch, nonce, maxEpochTimestampMs } =
-          currentState.networkData[currentChain] ?? {};
+        const networkDataEntry = currentState.networkData[currentChain];
+        const {
+          maxEpoch,
+          nonce,
+          maxEpochTimestampMs,
+          jwtRandomness: networkJwtRandomness,
+        } = networkDataEntry ?? {
+          maxEpoch: null,
+          nonce: null,
+          maxEpochTimestampMs: null,
+          jwtRandomness: null,
+        };
         let { jwtRandomness, networkData, ephemeralKeyPairSecretKey } =
           currentState;
 
@@ -212,8 +233,10 @@ export const useDeviceStore = create<DeviceState>()(
           let storedSecretKey: StoredSecretKey = normalizedCurrentSecretKey;
 
           // Don't reinitialize if we already have data
+          // Check both global jwtRandomness (legacy) and per-network jwtRandomness
+          const hasJwtRandomness = jwtRandomness || networkJwtRandomness;
           if (
-            jwtRandomness &&
+            hasJwtRandomness &&
             maxEpoch !== null &&
             nonce !== null &&
             maxEpochTimestampMs !== null &&
@@ -226,7 +249,7 @@ export const useDeviceStore = create<DeviceState>()(
 
           // Check if we already have device data persisted
           if (
-            !jwtRandomness ||
+            !hasJwtRandomness ||
             !maxEpoch ||
             !nonce ||
             !maxEpochTimestampMs ||
@@ -259,8 +282,14 @@ export const useDeviceStore = create<DeviceState>()(
                 }
 
                 if (persistedDeviceStoreState) {
-                  jwtRandomness =
-                    persistedDeviceStoreState.jwtRandomness ?? jwtRandomness;
+                  // Get jwtRandomness from persisted network data or global (for backwards compatibility)
+                  const persistedNetworkData =
+                    persistedDeviceStoreState.networkData?.[currentChain];
+                  const persistedJwtRandomness =
+                    persistedNetworkData?.jwtRandomness ??
+                    persistedDeviceStoreState.jwtRandomness ??
+                    jwtRandomness;
+                  jwtRandomness = persistedJwtRandomness;
                   storedSecretKey = await resolveStoredSecretKey(
                     persistedDeviceStoreState.ephemeralKeyPairSecretKey ??
                       storedSecretKey,
@@ -271,7 +300,7 @@ export const useDeviceStore = create<DeviceState>()(
                     log.debug("Rehydrating device store from persisted data");
 
                     set({
-                      jwtRandomness,
+                      jwtRandomness, // Keep global for backwards compatibility
                       ephemeralKeyPairSecretKey: storedSecretKey,
                       networkData:
                         persistedDeviceStoreState.networkData ?? networkData,
@@ -347,6 +376,7 @@ export const useDeviceStore = create<DeviceState>()(
           await get().initializeForChain(currentChain);
           set({
             loading: false,
+            isLocked: false, // Vault is now unlocked after successful initialization
           });
         } catch (error) {
           log.error("Error handling private key", error);
@@ -369,7 +399,7 @@ export const useDeviceStore = create<DeviceState>()(
           throw new Error("Ephemeral public key not found");
         }
 
-        // 2. generate new jwtRandomness
+        // 2. generate new jwtRandomness (per-network to prevent cross-network conflicts)
         const jwtRandomness = generateRandomness().toString();
 
         // 3. Get max epoch
@@ -382,21 +412,26 @@ export const useDeviceStore = create<DeviceState>()(
         const maxEpochTimestampMs =
           Number(epochStartTimestampMs) + Number(epochDurationMs) * 2;
 
-        // 5. Generate nonce
+        // 5. Generate nonce using the per-network jwtRandomness
         const nonce = generateNonce(
           ephemeralPubkey,
           numericMaxEpoch,
           jwtRandomness,
         );
 
+        // Store jwtRandomness per-network to prevent cross-network conflicts
+        // Also keep global jwtRandomness for backwards compatibility (use current chain's value)
+        const currentChain = useNetworkStore.getState().chain;
         set({
-          jwtRandomness: jwtRandomness,
+          jwtRandomness:
+            chain === currentChain ? jwtRandomness : get().jwtRandomness, // Only update global if this is current chain
           networkData: {
             ...get().networkData,
             [chain]: {
               maxEpoch: numericMaxEpoch.toString(),
               maxEpochTimestampMs: maxEpochTimestampMs,
               nonce: nonce,
+              jwtRandomness: jwtRandomness, // Store per-network
             },
           },
           error: null,
@@ -447,11 +482,56 @@ export const useDeviceStore = create<DeviceState>()(
           const chain = useNetworkStore.getState().chain;
           const network = chain.replace("sui:", "") as string;
 
+          // Verify that we have a JWT for the current network
+          const hasJwt = await hasJwtForNetwork(chain);
+          if (!hasJwt) {
+            throw new Error(
+              `No valid JWT found for ${network}. Please sign in again.`,
+            );
+          }
+
+          // Verify that the nonce in the JWT matches the nonce for the current network
+          const decodedJwt = decodeJwt(user.id_token);
+          const jwtNonce = decodedJwt.nonce as string | undefined;
+          const deviceNonce = get().getNonce(chain);
+
+          if (jwtNonce && deviceNonce && jwtNonce !== deviceNonce) {
+            log.error(
+              "JWT nonce doesn't match device nonce for current network",
+              {
+                chain,
+                jwtNonce,
+                deviceNonce,
+              },
+            );
+            // Nonce mismatch means device data was regenerated after OAuth
+            // The nonce is derived from ephemeral key + maxEpoch + jwtRandomness
+            // If these don't match what was used during OAuth, the JWT is invalid
+            // We cannot generate a valid zkProof with mismatched parameters
+            // User must re-login to regenerate device data that matches the new JWT
+            throw new Error(
+              `JWT nonce mismatch for ${network}. Device data was regenerated after login. Please sign in again to sync device data with your JWT.`,
+            );
+          }
+
           log.debug("User ID token:", user.id_token);
+          log.debug("Generating ZK proof for network", { chain, network });
+
+          // Get jwtRandomness for the current network (per-network, not global)
+          const networkJwtRandomness = get().getJwtRandomness(chain);
+          if (!networkJwtRandomness) {
+            throw new Error(
+              `JWT randomness not found for ${network}. Please sign in again.`,
+            );
+          }
+
+          if (!maxEpoch) {
+            throw new Error("Max epoch not found for current network");
+          }
 
           const zkProofResponse: ZkProofResponse = await fetchZkProof({
-            jwtRandomness: get().jwtRandomness!,
-            maxEpoch: maxEpoch!,
+            jwtRandomness: networkJwtRandomness,
+            maxEpoch,
             ephemeralPublicKey,
             idToken: user.id_token,
             enokiApiKey: import.meta.env.VITE_ENOKI_API_KEY,
@@ -532,9 +612,19 @@ export const useDeviceStore = create<DeviceState>()(
             return;
           }
 
-          await ephKeyService.unlockVault(storedKey, pin);
+          const publicKey = await ephKeyService.unlockVault(storedKey, pin);
 
-          set({ isLocked: false, error: null });
+          if (publicKey) {
+            set({
+              isLocked: false,
+              error: null,
+              ephemeralPublicKey: publicKey,
+              ephemeralPublicKeyBytes: Array.from(publicKey.toRawBytes()),
+              ephemeralPublicKeyFlag: publicKey.flag(),
+            });
+          } else {
+            set({ isLocked: false, error: null });
+          }
         } catch (error) {
           log.error("Error decrypting secret key", error);
           set({

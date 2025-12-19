@@ -33,8 +33,8 @@ export const Toast: React.FC<ToastProps> = ({
       className={`fixed top-6 left-1/2 -translate-x-1/2 z-[9999] flex flex-col items-start p-0 transition-all duration-300 ease-in-out ${visibilityClass}`}
     >
       <div className="flex flex-col items-start p-1 border border-[rgba(255,255,214,0.5)]">
-        <div className="flex items-center justify-center px-4 py-2 gap-4 bg-[#ffffd6] border border-[rgba(255,255,214,0.3)]">
-          <span className="font-['Bai_Jamjuree'] font-semibold text-base leading-[140%] text-[#130904] whitespace-nowrap">
+        <div className="flex items-center justify-center px-4 py-2 gap-4 bg-[#ffffd6] border border-[rgba(255,255,214,0.3)] max-w-[calc(100vw-32px)]">
+          <span className="font-['Bai_Jamjuree'] font-semibold text-base leading-[140%] text-[#130904] break-words">
             {message}
           </span>
         </div>

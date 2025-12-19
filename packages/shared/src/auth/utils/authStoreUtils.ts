@@ -1,4 +1,4 @@
-import type { TokenResponse } from "@evevault/shared/types";
+import type { JwtResponse } from "@evevault/shared/types";
 
 export const isErrorWithMessage = (
   error: unknown,
@@ -11,12 +11,12 @@ export const isErrorWithMessage = (
   );
 };
 
-export const resolveExpiresAt = (token: TokenResponse): number => {
-  if (typeof token.expires_at === "number") {
-    return token.expires_at;
+export const resolveExpiresAt = (jwt: JwtResponse): number => {
+  if (typeof jwt.expires_at === "number") {
+    return jwt.expires_at;
   }
-  if (typeof token.expires_in === "number") {
-    return Math.floor(Date.now() / 1000) + token.expires_in;
+  if (typeof jwt.expires_in === "number") {
+    return Math.floor(Date.now() / 1000) + jwt.expires_in;
   }
   return Math.floor(Date.now() / 1000);
 };

@@ -17,6 +17,7 @@ Always cover the following areas as features firm up:
 - Hooks (custom orchestrators)
 - API/data transformations
 - Critical user journeys (login, transfer, token management)
+- **Network switching flows** (seamless switch, re-auth required, rollback scenarios)
 
 ## Test File Placement
 
@@ -83,6 +84,41 @@ describe("Button", () => {
   it("renders provided label", () => {
     render(<Button>Click me</Button>);
     expect(screen.getByRole("button", { name: /click me/i })).toBeVisible();
+  });
+});
+```
+
+### Network Switching Example
+
+```typescript
+import { describe, expect, it, vi } from "vitest";
+import { useNetworkStore } from "../stores/networkStore";
+import { hasJwtForNetwork } from "../auth/storageService";
+
+describe("Network switching", () => {
+  it("seamlessly switches when JWT exists", async () => {
+    // Setup: User logged in on both networks
+    vi.mocked(hasJwtForNetwork).mockResolvedValueOnce(true);
+    
+    const result = await useNetworkStore.getState().setChain("sui:testnet");
+    
+    expect(result.success).toBe(true);
+    expect(result.requiresReauth).toBe(false);
+  });
+
+  it("requires re-auth when no JWT exists", async () => {
+    // Setup: User only logged in on devnet
+    vi.mocked(hasJwtForNetwork).mockResolvedValueOnce(false);
+    
+    const result = await useNetworkStore.getState().checkNetworkSwitch("sui:testnet");
+    
+    expect(result.requiresReauth).toBe(true);
+  });
+
+  it("rolls back on login failure", async () => {
+    // Setup: User switches network, login fails
+    // Test: Login attempt triggers rollback
+    // Assert: Reverts to previous network with valid JWT
   });
 });
 ```

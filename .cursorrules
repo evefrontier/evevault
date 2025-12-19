@@ -833,6 +833,90 @@ import Button from "@evevault/shared/components";
 3. Only create a new component if no suitable one exists
 4. If a shared component is missing features, extend it rather than creating a new one
 
+## Logging Guidelines
+
+### ✅ ALWAYS Use Logger Instead of Console
+
+**NEVER use `console.log`, `console.error`, `console.warn`, or `console.info`** in application code.
+
+**ALWAYS use the logger from `@evevault/shared/utils/logger`**:
+
+```typescript
+import { createLogger } from "@evevault/shared/utils";
+
+const log = createLogger();
+
+// ✅ CORRECT
+log.debug("Debug message", { data });
+log.info("Info message", { data });
+log.warn("Warning message", { data });
+log.error("Error message", error);
+
+// ❌ WRONG
+console.log("Debug message", data);
+console.error("Error message", error);
+```
+
+**Use appropriate log levels:**
+- `log.debug()` - Detailed debugging information
+- `log.info()` - General informational messages
+- `log.warn()` - Warning messages
+- `log.error()` - Error messages
+
+**Only exception:** Dev tools and config files may use console for CLI output (e.g., `apps/web/src/dev/registerDevAuthTools.ts`, `apps/extension/wxt.config.ts`).
+
+## Shared Constants and Types
+
+### ✅ ALWAYS Create Shared Constants/Types When Duplicated
+
+**If the same data structure appears in multiple files, create a shared constant/type.**
+
+**Network-related constants** (`AVAILABLE_NETWORKS`, `NetworkOption`) should be in `packages/shared/src/types/networks.ts`:
+
+```typescript
+// ✅ CORRECT - Shared network utilities
+import { AVAILABLE_NETWORKS, getNetworkLabel } from "@evevault/shared/types";
+
+const label = getNetworkLabel(chain);
+
+// ❌ WRONG - Duplicated in multiple files
+const AVAILABLE_NETWORKS = [
+  { chain: SUI_DEVNET_CHAIN, label: "Devnet" },
+  // ...
+];
+```
+
+**Use helper functions** (`getNetworkLabel()`, `getNetworkOption()`) instead of inline ternary logic for conversions.
+
+**Before duplicating a constant/type:**
+1. Search the codebase to see if it already exists
+2. If it exists, import and use it
+3. If it doesn't exist but is used in 2+ places, create a shared version
+
+## Code Duplication
+
+### ✅ Extract Duplicated Logic
+
+**If the same logic appears 2+ times, extract it to a shared utility or helper function.**
+
+```typescript
+// ✅ CORRECT - Extracted helper function
+const handleLoginRollback = useCallback(async (previousNetwork, currentChain) => {
+  // Shared rollback logic
+}, [dependencies]);
+
+// ❌ WRONG - Duplicated logic in multiple places
+if (previousNetwork) {
+  const hasJwt = await hasJwtForNetwork(previousNetwork);
+  if (hasJwt) {
+    // ... rollback logic
+  }
+}
+// ... same logic repeated elsewhere
+```
+
+**Prefer composition over duplication:** Create small, reusable functions that can be composed together.
+
 ## What NOT to Do
 
 1. ❌ Don't use relative paths to packages (`../../packages/shared/`)
@@ -849,6 +933,9 @@ import Button from "@evevault/shared/components";
 12. ❌ Don't create files longer than 500 lines (1000 max) - split using MVC pattern
 13. ❌ Don't mix Model, View, and Controller concerns in a single file
 14. ❌ **Don't add ESLint, Prettier, or other formatters** - We use Biome for all formatting and linting
+15. ❌ **Don't use `console.log`, `console.error`, `console.warn`, or `console.info`** - Always use the logger
+16. ❌ **Don't duplicate constants/types across files** - Create shared versions when used in 2+ places
+17. ❌ **Don't duplicate logic** - Extract to helper functions when the same logic appears 2+ times
 
 ## When Adding New Code
 

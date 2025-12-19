@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as vaultService from "../../services/vaultService";
 import { useDeviceStore } from "../deviceStore";
 
-// Mock the keeper service
+// Mock the vault service (unified service that routes to keeper/web)
 vi.mock("../../services/vaultService", () => ({
   ephKeyService: {
     lock: vi.fn(),

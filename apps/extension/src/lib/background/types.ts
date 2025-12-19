@@ -1,4 +1,4 @@
-import type { TokenResponse } from "@evevault/shared/types/authTypes";
+import type { JwtResponse } from "@evevault/shared/types/authTypes";
 import type {
   StandardEventsOnMethod,
   SuiSignAndExecuteTransactionOutput,
@@ -26,7 +26,8 @@ export type MessageWithId = BackgroundMessage & {
 };
 
 export type WebUnlockMessage = MessageWithId & {
-  token: TokenResponse;
+  /** JWT response from OAuth/OIDC provider */
+  jwt: JwtResponse;
   tabId?: number;
 };
 

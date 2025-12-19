@@ -21,6 +21,7 @@ export interface NetworkDataEntry {
   nonce: string | null;
   maxEpoch: string | null;
   maxEpochTimestampMs: number | null;
+  jwtRandomness: string | null; // Per-network jwtRandomness to prevent cross-network nonce conflicts
 }
 
 export type NetworkDataMap = Partial<Record<SuiChain, NetworkDataEntry>>;
@@ -32,18 +33,11 @@ export interface DeviceState {
   ephemeralPublicKeyBytes: number[] | null; // For persistence
   ephemeralPublicKeyFlag: number | null; // To identify key type (0x00=Ed25519, 0x02=Secp256r1)
   ephemeralKeyPairSecretKey: StoredSecretKey;
+  // jwtRandomness is now per-network (stored in networkData) to prevent cross-network conflicts
+  // Legacy: kept for backwards compatibility during migration, but should use getJwtRandomness(chain)
   jwtRandomness: string | null;
   // Network-specific data stored by chain
-  networkData: Partial<
-    Record<
-      SuiChain,
-      {
-        nonce: string | null;
-        maxEpoch: string | null;
-        maxEpochTimestampMs: number | null;
-      }
-    >
-  >;
+  networkData: Partial<Record<SuiChain, NetworkDataEntry>>;
 
   loading: boolean;
   error: string | null;
@@ -58,6 +52,7 @@ export interface DeviceState {
   getMaxEpoch: (chain?: SuiChain) => string | null;
   getMaxEpochTimestampMs: (chain?: SuiChain) => number | null;
   getNonce: (chain?: SuiChain) => string | null;
+  getJwtRandomness: (chain?: SuiChain) => string | null;
 }
 
 export interface SessionData {
@@ -71,11 +66,20 @@ export interface SessionState extends SessionData {
   loadFromStorage: () => void;
 }
 
+export interface NetworkSwitchResult {
+  success: boolean;
+  requiresReauth: boolean;
+}
+
 export interface NetworkState {
   chain: SuiChain;
   loading: boolean;
   initialize: () => Promise<void>;
-  setChain: (chain: SuiChain) => void;
+  setChain: (chain: SuiChain) => Promise<NetworkSwitchResult>;
+  /** Force set chain without JWT check - for logout-based network switching */
+  forceSetChain: (chain: SuiChain) => void;
+  /** Check if switching to a network requires re-authentication */
+  checkNetworkSwitch: (chain: SuiChain) => Promise<{ requiresReauth: boolean }>;
 }
 
 export type PersistedDeviceStoreState = {

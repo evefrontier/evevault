@@ -41,10 +41,12 @@ describe("useEpochExpiration", () => {
       error: null,
       isAuthenticated: true,
       initialize: vi.fn(),
+      // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
     } as any);
 
     vi.mocked(useNetworkStore).mockReturnValue({
       chain: SUI_DEVNET_CHAIN,
+      // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
     } as any);
 
     vi.mocked(useDeviceStore).mockImplementation((selector) => {
@@ -82,6 +84,7 @@ describe("useEpochExpiration", () => {
       error: null,
       isAuthenticated: false,
       initialize: vi.fn(),
+      // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
     } as any);
 
     renderHook(() => useEpochExpiration());

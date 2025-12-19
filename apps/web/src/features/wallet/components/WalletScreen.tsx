@@ -4,6 +4,7 @@ import {
   Background,
   Button,
   Heading,
+  NetworkSelector,
   Text,
   TokenListSection,
 } from "@evevault/shared/components";
@@ -18,7 +19,7 @@ import { createSuiClient } from "@evevault/shared/sui";
 import { createLogger, formatAddress } from "@evevault/shared/utils";
 import { useBalance, zkSignAny } from "@evevault/shared/wallet";
 import { Transaction } from "@mysten/sui/transactions";
-import { SUI_DEVNET_CHAIN, SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
+import { SUI_DEVNET_CHAIN } from "@mysten/wallet-standard";
 import { useNavigate } from "@tanstack/react-router";
 import React, { useEffect, useState } from "react";
 
@@ -50,7 +51,7 @@ export const WalletScreen = () => {
     unlock,
     lock,
   } = useDevice();
-  const { chain, setChain } = useNetworkStore();
+  const { chain } = useNetworkStore();
   const _isLoggedIn = !!user;
 
   // Use TanStack Query for balance fetching
@@ -182,22 +183,18 @@ export const WalletScreen = () => {
     <Background>
       <div className="app-shell">
         <header className="app-shell__header">
-          <Heading level={1} variant="bold">
-            EVE Vault
-          </Heading>
-          <div style={{ marginTop: "12px" }}>
-            <Button
-              onClick={() => {
-                // Toggle between devnet and testnet
-                const newChain =
-                  chain === SUI_DEVNET_CHAIN
-                    ? SUI_TESTNET_CHAIN
-                    : SUI_DEVNET_CHAIN;
-                setChain(newChain);
-              }}
-            >
-              {chain === SUI_TESTNET_CHAIN ? "Testnet" : "Devnet"}
-            </Button>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              width: "100%",
+            }}
+          >
+            <Heading level={1} variant="bold">
+              EVE Vault
+            </Heading>
+            <NetworkSelector />
           </div>
         </header>
         <main className="app-shell__content">

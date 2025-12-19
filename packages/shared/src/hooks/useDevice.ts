@@ -5,6 +5,9 @@ import { useMemo } from "react";
 import { useDeviceStore } from "../stores/deviceStore";
 import { useNetworkStore } from "../stores/networkStore";
 import { KEY_FLAG_SECP256R1 } from "../types/stores";
+import { createLogger } from "../utils/logger";
+
+const log = createLogger();
 
 export const useDevice = () => {
   const {
@@ -60,7 +63,7 @@ export const useDevice = () => {
         return new Ed25519PublicKey(keyBytes);
       }
     } catch (error) {
-      console.error("Failed to reconstruct public key:", error);
+      log.error("Failed to reconstruct public key:", error);
       return null;
     }
   }, [ephemeralPublicKeyBytes, ephemeralPublicKeyFlag]);
