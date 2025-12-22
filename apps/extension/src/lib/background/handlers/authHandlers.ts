@@ -1,8 +1,13 @@
 import { getDeviceData, storeJwt } from "@evevault/shared";
 import { exchangeCodeForToken } from "@evevault/shared/auth";
 import { useDeviceStore, useNetworkStore } from "@evevault/shared/stores";
+import type {
+  JwtResponse,
+  PersistedDeviceStore,
+  PersistedDeviceStoreState,
+  StoredSecretKey,
+} from "@evevault/shared/types";
 import { KeeperMessageTypes } from "@evevault/shared/types";
-import type { JwtResponse } from "@evevault/shared/types/authTypes";
 import { createLogger } from "@evevault/shared/utils";
 import { Ed25519PublicKey } from "@mysten/sui/keypairs/ed25519";
 import type { SuiChain } from "@mysten/wallet-standard";
@@ -20,6 +25,59 @@ const ensureMessageId = (message: MessageWithId): string => {
   }
   return message.id;
 };
+
+/**
+ * Reads ephemeralKeyPairSecretKey from Chrome storage if it's null in memory.
+ * This handles the race condition where the background script's Zustand store
+ * hasn't rehydrated yet when setState is called.
+ */
+async function getEphemeralKeyPairSecretKeyFromStorage(): Promise<StoredSecretKey | null> {
+  if (typeof chrome === "undefined" || !chrome.storage) {
+    return null;
+  }
+
+  try {
+    const stored = await new Promise<unknown>((resolve) => {
+      chrome.storage.local.get(["evevault:device"], (result) => {
+        resolve(result["evevault:device"] || null);
+      });
+    });
+
+    if (!stored) {
+      return null;
+    }
+
+    let persistedState: PersistedDeviceStoreState | null = null;
+    if (typeof stored === "string") {
+      persistedState =
+        (JSON.parse(stored) as PersistedDeviceStore).state ?? null;
+    } else if (
+      typeof stored === "object" &&
+      stored !== null &&
+      "state" in stored
+    ) {
+      persistedState = (stored as PersistedDeviceStore).state ?? null;
+    }
+
+    const storedKey = persistedState?.ephemeralKeyPairSecretKey;
+    if (
+      storedKey &&
+      typeof storedKey === "object" &&
+      storedKey !== null &&
+      "iv" in storedKey &&
+      "data" in storedKey
+    ) {
+      return storedKey as StoredSecretKey;
+    }
+  } catch (error) {
+    log.warn(
+      "Failed to retrieve ephemeralKeyPairSecretKey from storage",
+      error,
+    );
+  }
+
+  return null;
+}
 
 /**
  * Checks if the keeper has an unlocked ephemeral key and returns the public key bytes if available
@@ -89,11 +147,17 @@ async function handleExtLogin(
       const publicKey = new Ed25519PublicKey(
         new Uint8Array(keeperStatus.publicKeyBytes),
       );
-      // Update deviceStore with the public key (call setState on the store, not getState result)
+      // Preserve ephemeralKeyPairSecretKey - read from storage if null in memory
+      // (handles race condition where background script hasn't rehydrated yet)
+      const secretKeyToPreserve =
+        deviceStore.ephemeralKeyPairSecretKey ||
+        (await getEphemeralKeyPairSecretKeyFromStorage());
+
       useDeviceStore.setState({
         ephemeralPublicKey: publicKey,
         ephemeralPublicKeyBytes: keeperStatus.publicKeyBytes,
         ephemeralPublicKeyFlag: publicKey.flag(),
+        ephemeralKeyPairSecretKey: secretKeyToPreserve,
       });
       log.debug("Successfully synced ephemeral public key to deviceStore");
     } catch (error) {
@@ -262,11 +326,16 @@ async function handleDappLogin(
       const publicKey = new Ed25519PublicKey(
         new Uint8Array(keeperStatus.publicKeyBytes),
       );
-      // Update deviceStore with the public key (call setState on the store, not getState result)
+      // Preserve ephemeralKeyPairSecretKey - read from storage if null in memory
+      const secretKeyToPreserve =
+        deviceStore.ephemeralKeyPairSecretKey ||
+        (await getEphemeralKeyPairSecretKeyFromStorage());
+
       useDeviceStore.setState({
         ephemeralPublicKey: publicKey,
         ephemeralPublicKeyBytes: keeperStatus.publicKeyBytes,
         ephemeralPublicKeyFlag: publicKey.flag(),
+        ephemeralKeyPairSecretKey: secretKeyToPreserve,
       });
       log.debug("Successfully synced ephemeral public key to deviceStore");
     } catch (error) {

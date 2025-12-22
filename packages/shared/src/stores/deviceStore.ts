@@ -29,7 +29,7 @@ import {
   type ZkProofResponse,
 } from "../types";
 import { createLogger, encrypt } from "../utils";
-import { isWeb } from "../utils/environment";
+import { isExtension, isWeb } from "../utils/environment";
 import { createWebCryptoPlaceholder, fetchZkProof } from "../wallet";
 import { useNetworkStore } from "./networkStore";
 
@@ -376,7 +376,7 @@ export const useDeviceStore = create<DeviceState>()(
           await get().initializeForChain(currentChain);
           set({
             loading: false,
-            isLocked: false, // Vault is now unlocked after successful initialization
+            isLocked: false,
           });
         } catch (error) {
           log.error("Error handling private key", error);
@@ -421,17 +421,18 @@ export const useDeviceStore = create<DeviceState>()(
 
         // Store jwtRandomness per-network to prevent cross-network conflicts
         // Also keep global jwtRandomness for backwards compatibility (use current chain's value)
+        // NOTE: ephemeralKeyPairSecretKey is device-level (not network-level) and is NOT modified here
         const currentChain = useNetworkStore.getState().chain;
         set({
           jwtRandomness:
-            chain === currentChain ? jwtRandomness : get().jwtRandomness, // Only update global if this is current chain
+            chain === currentChain ? jwtRandomness : get().jwtRandomness,
           networkData: {
             ...get().networkData,
             [chain]: {
               maxEpoch: numericMaxEpoch.toString(),
               maxEpochTimestampMs: maxEpochTimestampMs,
               nonce: nonce,
-              jwtRandomness: jwtRandomness, // Store per-network
+              jwtRandomness: jwtRandomness,
             },
           },
           error: null,
@@ -651,20 +652,44 @@ export const useDeviceStore = create<DeviceState>()(
         isWeb() ? localStorageAdapter : chromeStorageAdapter,
       ),
       // Exclude the class instance from persistence, only persist bytes and flag
-      partialize: (state) => ({
-        ...state,
-        ephemeralPublicKey: undefined, // Don't persist the class instance
-        // ephemeralPublicKeyBytes and ephemeralPublicKeyFlag will be persisted
-        // Don't persist transient states
-        loading: undefined,
-        error: undefined,
-      }),
+      partialize: (state) => {
+        return {
+          ...state,
+          ephemeralPublicKey: undefined, // Don't persist the class instance
+          // ephemeralPublicKeyBytes and ephemeralPublicKeyFlag will be persisted
+          // ephemeralKeyPairSecretKey is included (even if null) to preserve it in storage
+          // Don't persist transient states
+          loading: undefined,
+          error: undefined,
+        };
+      },
       // Reconstruct the class instance from bytes on rehydration
       onRehydrateStorage: () => {
         return (state, error) => {
           if (error) {
             log.error("Error rehydrating device store", error);
             return;
+          }
+
+          // Validate and clean up ephemeralKeyPairSecretKey if it's an invalid object
+          if (
+            state &&
+            state.ephemeralKeyPairSecretKey &&
+            typeof state.ephemeralKeyPairSecretKey === "object"
+          ) {
+            const key = state.ephemeralKeyPairSecretKey;
+            // If it's an object but doesn't have iv and data, it's invalid - set to null
+            if (!("iv" in key) || !("data" in key)) {
+              log.warn(
+                "Invalid ephemeralKeyPairSecretKey structure on rehydration, setting to null",
+                {
+                  hasIv: "iv" in key,
+                  hasData: "data" in key,
+                  keys: Object.keys(key),
+                },
+              );
+              state.ephemeralKeyPairSecretKey = null;
+            }
           }
 
           if (state?.ephemeralPublicKeyBytes) {
@@ -683,6 +708,25 @@ export const useDeviceStore = create<DeviceState>()(
               state.ephemeralPublicKeyBytes = null;
               state.ephemeralPublicKeyFlag = null;
             }
+          }
+
+          // Detect inconsistency: have public key but no secret key
+          if (
+            state?.ephemeralPublicKeyBytes &&
+            !state?.ephemeralKeyPairSecretKey
+          ) {
+            log.warn(
+              "Inconsistent state on rehydration: have ephemeralPublicKeyBytes but ephemeralKeyPairSecretKey is null/missing. This indicates the secret key was lost from storage.",
+              {
+                hasEphemeralPublicKeyBytes: !!state.ephemeralPublicKeyBytes,
+                hasEphemeralKeyPairSecretKey: !!state.ephemeralKeyPairSecretKey,
+              },
+            );
+            // In this case, we can't recover the secret key without the PIN, so we effectively reset the PIN state
+            state.ephemeralPublicKey = null;
+            state.ephemeralPublicKeyBytes = null;
+            state.ephemeralPublicKeyFlag = null;
+            state.isLocked = true; // Force lock if secret key is lost
           }
 
           // Web: Always start locked after rehydration since the signer is in-memory only
