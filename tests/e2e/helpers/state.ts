@@ -20,7 +20,7 @@ export async function seedPersistedAppState(page: Page) {
         id_token: "test-id-token",
         access_token: "test-access-token",
         token_type: "Bearer",
-        scope: "openid email profile",
+        scope: "openid email profile offline_access",
         profile: {
           sub: "test-user",
           email: "test@example.com",

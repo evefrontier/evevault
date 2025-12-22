@@ -495,7 +495,7 @@ async function handleDappLogin(
   authUrl.searchParams.set("response_type", "code");
   authUrl.searchParams.set("client_id", clientId);
   authUrl.searchParams.set("redirect_uri", chromeRedirectUri);
-  authUrl.searchParams.set("scope", "openid profile email");
+  authUrl.searchParams.set("scope", "openid profile email offline_access");
 
   chrome.identity.launchWebAuthFlow(
     {
