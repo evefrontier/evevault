@@ -5,7 +5,6 @@ import {
   CurrentNetworkDisplay,
   HeaderMobile,
   Heading,
-  Layout,
   Text,
   TokenListSection,
   useToast,
@@ -185,6 +184,28 @@ function App() {
     }
   };
 
+  const handleTestTokenRefresh = async () => {
+    console.log(user?.refresh_token, user?.id_token, user?.access_token);
+
+    try {
+      const fusionAuthUrl = import.meta.env.VITE_FUSION_SERVER_URL;
+      const tokenResponse = await fetch(`${fusionAuthUrl}/api/jwt/refresh`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-FusionAuth-TenantId": import.meta.env.VITE_FUSION_TENANT_ID,
+        },
+        body: JSON.stringify({
+          refreshToken: user?.refresh_token,
+          token: user?.access_token,
+        }),
+      });
+      log.info("Token refreshed", await tokenResponse.json());
+    } catch (err) {
+      log.error("Token refresh error", err);
+    }
+  };
+
   // Authenticated view - show nav
   return (
     <div className="flex flex-col  h-full">
@@ -212,6 +233,13 @@ function App() {
         >
           Submit test
         </Button>
+        <Button
+          variant="secondary"
+          size="small"
+          onClick={handleTestTokenRefresh}
+        >
+          Test token refresh
+        </Button>
       </div>
 
       {authError && <Text color="error">AuthError: {authError}</Text>}
@@ -220,7 +248,10 @@ function App() {
         <Text>
           Transaction digest:{" "}
           <a
-            href={`https://suiscan.xyz/${chain?.replace("sui:", "")}/tx/${txDigest}`}
+            href={`https://suiscan.xyz/${chain?.replace(
+              "sui:",
+              "",
+            )}/tx/${txDigest}`}
             target="_blank"
             rel="noopener noreferrer"
           >

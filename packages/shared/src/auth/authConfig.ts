@@ -75,7 +75,7 @@ const fusionAuthConfig: UserManagerSettings = {
   redirect_uri: getRedirectUri(),
   post_logout_redirect_uri: getOrigin(),
   response_type: "code",
-  scope: "openid email profile",
+  scope: "openid email profile offline_access",
 
   // We can safely use WebStorageStateStore since localStorage is guaranteed to exist
   stateStore: new WebStorageStateStore({

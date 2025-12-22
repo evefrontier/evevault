@@ -100,6 +100,7 @@ export const useAuthStore = create<AuthState>()(
                   const newUser = new User({
                     id_token: token.id_token,
                     access_token: token.access_token,
+                    refresh_token: token.refresh_token,
                     token_type: token.token_type,
                     scope: token.scope,
                     profile: {
@@ -193,6 +194,7 @@ export const useAuthStore = create<AuthState>()(
                   id_token: token.id_token,
                   access_token: token.access_token,
                   token_type: token.token_type,
+                  refresh_token: token.refresh_token,
                   scope: token.scope,
                   profile: {
                     ...(decodedToken as IdTokenClaims),
@@ -366,7 +368,7 @@ export const useAuthStore = create<AuthState>()(
             expires_in: newIdToken.exp
               ? newIdToken.exp - Math.floor(Date.now() / 1000)
               : 3600,
-            scope: "openid email profile",
+            scope: "openid email profile offline_access",
           };
 
           // 7. Store the new token, replacing the previous one

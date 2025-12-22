@@ -5,6 +5,8 @@ export interface TokenResponse extends Partial<User> {
   id_token: string;
   expires_in: number;
   scope: string;
+  refresh_token?: string;
+  refresh_token_id?: string;
   token_type: string;
   userId?: string;
 }
