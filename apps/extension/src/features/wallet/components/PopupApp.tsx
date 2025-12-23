@@ -43,22 +43,13 @@ function App() {
     isPinSet,
     getZkProof,
     maxEpoch,
+    nonce,
     error: deviceError,
     loading: deviceLoading,
     unlock,
   } = useDevice();
   const { chain, initialize: initializeNetwork } = useNetworkStore();
   const _isLoggedIn = !!user;
-
-  // Use TanStack Query for balance fetching
-  const {
-    data: suiTokenBalance,
-    isLoading: balanceLoading,
-    error: balanceError,
-  } = useBalance({
-    user: user || null,
-    chain: chain || null,
-  });
 
   const suiClient = createSuiClient(chain);
 
@@ -201,9 +192,31 @@ function App() {
         }),
       });
       log.info("Token refreshed", await tokenResponse.json());
+
+      // TODO: Update refreshed token in the device store
     } catch (err) {
       log.error("Token refresh error", err);
     }
+  };
+
+  const handleTestPatchUserNonce = async () => {
+    console.log(user?.profile.sub, nonce);
+    console.log("nonce: ", nonce);
+
+    // Fusionauth does not accept API calls from a browser context
+    // It needs to come from a server side application.
+    // For now, pass the nonce into Postman and call the endpoint from there.
+    // curl --location --request PATCH 'https://dev.auth.evefrontier.com/api/user/registration/4c47e3c6-530d-402f-a3d4-5caa7f844b3d' \
+    // --header 'Content-Type: application/json' \
+    // --header 'Authorization: LU95qxfZKc69p8phnEkBnRtAS5LsODl-zkG_QXC9NwgKLIyBgv-O40RF' \
+    // --data '{
+    //     "registration": {
+    //         "applicationId": "f53766b7-fc37-4ed8-90e1-ce1968c146b2",
+    //         "data": {
+    //             "nonce": "nonce"
+    //             }
+    //     }
+    // }'
   };
 
   // Authenticated view - show nav
@@ -232,6 +245,13 @@ function App() {
           onClick={handleTestTransaction}
         >
           Submit test
+        </Button>
+        <Button
+          variant="secondary"
+          size="small"
+          onClick={handleTestPatchUserNonce}
+        >
+          Test patch user nonce
         </Button>
         <Button
           variant="secondary"
