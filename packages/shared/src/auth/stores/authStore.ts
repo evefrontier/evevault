@@ -17,7 +17,7 @@ import { useDeviceStore } from "../../stores/deviceStore";
 import { useNetworkStore } from "../../stores/networkStore";
 import type { AuthMessage, TokenResponse } from "../../types";
 import { getUserManager } from "../authConfig";
-import { getZkLoginAddress } from "../enoki";
+import { getZkLoginAddress } from "../getZkLoginAddress";
 import { clearToken, storeToken } from "../storageService";
 import type { AuthState } from "../types";
 import { vendJwt } from "../vendToken";

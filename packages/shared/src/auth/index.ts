@@ -1,6 +1,6 @@
 export { getUserManager } from "./authConfig";
-export { getZkLoginAddress } from "./enoki";
 export { exchangeCodeForToken } from "./exchangeCode";
+export { getZkLoginAddress } from "./getZkLoginAddress";
 export * from "./hooks/useAuth";
 export { storeToken } from "./storageService";
 export * from "./stores/authStore";
