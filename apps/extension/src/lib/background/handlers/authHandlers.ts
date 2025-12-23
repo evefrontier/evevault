@@ -125,19 +125,39 @@ async function handleExtLogin(
   // Read chain at start for device data initialization
   const initialChain = getCurrentChain();
 
+  // Check device data existence before checking keeper status
+  const deviceStore = useDeviceStore.getState();
+  const hasDeviceData = !!(
+    deviceStore.ephemeralKeyPairSecretKey &&
+    typeof deviceStore.ephemeralKeyPairSecretKey === "object" &&
+    "iv" in deviceStore.ephemeralKeyPairSecretKey &&
+    "data" in deviceStore.ephemeralKeyPairSecretKey
+  );
+
   // Check if the keeper has an unlocked ephemeral key
-  const keeperStatus = await checkKeeperUnlocked();
+  let keeperStatus = await checkKeeperUnlocked();
   if (!keeperStatus.unlocked) {
-    log.error("Cannot login: vault not set up or locked", {
-      chain: initialChain,
-    });
-    return sendAuthError(id, {
-      message: "Vault not set up or locked. Please unlock the vault first.",
-    });
+    // If device data exists, retry once (unlock might be in progress)
+    if (hasDeviceData) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      keeperStatus = await checkKeeperUnlocked();
+    }
+
+    if (!keeperStatus.unlocked) {
+      const errorMessage = hasDeviceData
+        ? "Vault is locked. Please unlock the vault first, then try signing in again."
+        : "Vault not set up or locked. Please unlock the vault first.";
+      log.error("Cannot login: vault not set up or locked", {
+        chain: initialChain,
+        hasDeviceData,
+      });
+      return sendAuthError(id, {
+        message: errorMessage,
+      });
+    }
   }
 
   // Ensure deviceStore has the ephemeral public key (needed for initializeForChain)
-  const deviceStore = useDeviceStore.getState();
   if (!deviceStore.ephemeralPublicKey && keeperStatus.publicKeyBytes) {
     log.info("Syncing ephemeral public key from keeper to deviceStore", {
       chain: initialChain,
@@ -299,24 +319,46 @@ async function handleDappLogin(
 
   const chain = getCurrentChain();
 
+  // Check device data existence before checking keeper status
+  const deviceStore = useDeviceStore.getState();
+  const hasDeviceData = !!(
+    deviceStore.ephemeralKeyPairSecretKey &&
+    typeof deviceStore.ephemeralKeyPairSecretKey === "object" &&
+    "iv" in deviceStore.ephemeralKeyPairSecretKey &&
+    "data" in deviceStore.ephemeralKeyPairSecretKey
+  );
+
   // Check if the keeper has an unlocked ephemeral key
-  const keeperStatus = await checkKeeperUnlocked();
+  let keeperStatus = await checkKeeperUnlocked();
   if (!keeperStatus.unlocked) {
-    log.error("Cannot login: vault not set up or locked", { chain });
-    if (typeof tabId === "number") {
-      chrome.tabs.sendMessage(tabId, {
-        id,
-        type: "auth_error",
-        error: {
-          message: "Vault not set up or locked. Please unlock the vault first.",
-        },
-      });
+    // If device data exists, retry once (unlock might be in progress)
+    if (hasDeviceData) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      keeperStatus = await checkKeeperUnlocked();
     }
-    return;
+
+    if (!keeperStatus.unlocked) {
+      const errorMessage = hasDeviceData
+        ? "Vault is locked. Please unlock the vault first, then try signing in again."
+        : "Vault not set up or locked. Please unlock the vault first.";
+      log.error("Cannot login: vault not set up or locked", {
+        chain,
+        hasDeviceData,
+      });
+      if (typeof tabId === "number") {
+        chrome.tabs.sendMessage(tabId, {
+          id,
+          type: "auth_error",
+          error: {
+            message: errorMessage,
+          },
+        });
+      }
+      return;
+    }
   }
 
   // Ensure deviceStore has the ephemeral public key (needed for initializeForChain)
-  const deviceStore = useDeviceStore.getState();
   if (!deviceStore.ephemeralPublicKey && keeperStatus.publicKeyBytes) {
     log.info("Syncing ephemeral public key from keeper to deviceStore", {
       chain,

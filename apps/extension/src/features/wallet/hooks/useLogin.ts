@@ -1,5 +1,6 @@
 import { hasJwtForNetwork, useAuth } from "@evevault/shared/auth";
 import { useToast } from "@evevault/shared/components";
+import { useDeviceStore } from "@evevault/shared/stores";
 import { useNetworkStore } from "@evevault/shared/stores/networkStore";
 import { AVAILABLE_NETWORKS, getNetworkLabel } from "@evevault/shared/types";
 import { createLogger } from "@evevault/shared/utils";
@@ -74,6 +75,13 @@ export function useLogin() {
 
   const handleLogin = useCallback(
     async (previousNetworkBeforeSwitch: SuiChain | null) => {
+      // Check if vault is locked
+      const { isLocked } = useDeviceStore.getState();
+      if (isLocked) {
+        showToast("Please unlock the vault first before signing in.");
+        return false;
+      }
+
       try {
         const tokenResponse = await login();
         if (!tokenResponse) {

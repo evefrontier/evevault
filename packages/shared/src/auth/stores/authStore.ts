@@ -424,7 +424,8 @@ export const useAuthStore = create<AuthState>()(
 
             // Lock vault (clears ephemeral key) but preserve device data
             // User just needs to re-authenticate, keys should persist across logouts
-            await ephKeyService.lock();
+            // Use deviceStore.lock() to ensure isLocked state is updated
+            await useDeviceStore.getState().lock();
 
             // Build logout URL manually to avoid CORS issues with OIDC discovery
             const fusionAuthUrl = import.meta.env.VITE_FUSION_SERVER_URL;
