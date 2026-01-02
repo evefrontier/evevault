@@ -1,5 +1,5 @@
 import { useAuthStore } from "@evevault/shared/auth";
-import { useDeviceStore, useNetworkStore } from "@evevault/shared/stores";
+import { useNetworkStore } from "@evevault/shared/stores";
 import type { CurrentNetworkDisplayProps } from "@evevault/shared/types";
 import { AVAILABLE_NETWORKS, getNetworkLabel } from "@evevault/shared/types";
 import { createLogger, isExtension } from "@evevault/shared/utils";
@@ -77,61 +77,10 @@ export const CurrentNetworkDisplay: React.FC<CurrentNetworkDisplayProps> = ({
     // Re-initialize auth store to check JWT for new network
     await initializeAuth();
 
-    // Re-initialize device data for new network if vault is unlocked and data is missing/expired
-    const deviceStore = useDeviceStore.getState();
-    if (deviceStore.ephemeralPublicKey && !deviceStore.isLocked) {
-      try {
-        // Check if device data already exists and is valid
-        const existingNonce = deviceStore.getNonce(pendingNetwork);
-        const existingMaxEpoch = deviceStore.getMaxEpoch(pendingNetwork);
-        const existingJwtRandomness =
-          deviceStore.getJwtRandomness(pendingNetwork);
-        const maxEpochTimestampMs =
-          deviceStore.getMaxEpochTimestampMs(pendingNetwork);
-
-        const needsInitialization =
-          !existingNonce ||
-          !existingMaxEpoch ||
-          !existingJwtRandomness ||
-          !maxEpochTimestampMs ||
-          Date.now() >= maxEpochTimestampMs;
-
-        if (needsInitialization) {
-          await deviceStore.initializeForChain(pendingNetwork);
-        } else {
-          log.info(
-            "Device data already exists for network, skipping regeneration",
-            {
-              network: pendingNetwork,
-            },
-          );
-        }
-      } catch (error) {
-        log.error("Failed to initialize device data for new network", error);
-        // Revert to previous network on device init failure
-        const prevNetwork = currentChain; // Use the stored previous network
-        if (prevNetwork && prevNetwork !== pendingNetwork) {
-          log.info("Reverting to previous network after device init failure", {
-            previousNetwork: prevNetwork,
-            targetNetwork: pendingNetwork,
-          });
-          useNetworkStore.getState().forceSetChain(prevNetwork);
-          try {
-            await initializeAuth();
-          } catch (authError) {
-            log.error(
-              "Failed to initialize auth store during rollback",
-              authError,
-            );
-            // Still continue - at least we reverted the network state
-          }
-        }
-        setShowConfirmDialog(false);
-        setPendingNetwork(null);
-        setIsProcessing(false);
-        return;
-      }
-    }
+    // NOTE: Do NOT initialize device data here when switching networks.
+    // Device data should only be created when the user actually logs in (in the background handler).
+    // If we create it here, it will be regenerated again during login, causing nonce mismatch.
+    // The background handler will create device data with the correct nonce during OAuth flow.
 
     setShowConfirmDialog(false);
     setPendingNetwork(null);

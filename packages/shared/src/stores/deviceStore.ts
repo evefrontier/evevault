@@ -29,7 +29,7 @@ import {
   type ZkProofResponse,
 } from "../types";
 import { createLogger, encrypt } from "../utils";
-import { isExtension, isWeb } from "../utils/environment";
+import { isWeb } from "../utils/environment";
 import { createWebCryptoPlaceholder, fetchZkProof } from "../wallet";
 import { useNetworkStore } from "./networkStore";
 
@@ -195,7 +195,41 @@ export const useDeviceStore = create<DeviceState>()(
                 });
 
                 // Check if we need to initialize for chain
+                // BUT: Only regenerate if we don't have a JWT with matching nonce
+                // (regenerating would cause nonce mismatch)
                 if (!nonce || !maxEpoch || !maxEpochTimestampMs) {
+                  // Check if we have a JWT for this network
+                  const hasJwt = await hasJwtForNetwork(currentChain);
+                  if (hasJwt) {
+                    // We have a JWT - check if nonce matches
+                    const { getJwtForNetwork } = await import(
+                      "../auth/storageService"
+                    );
+                    const jwt = await getJwtForNetwork(currentChain);
+                    if (jwt?.id_token) {
+                      try {
+                        const decodedJwt = decodeJwt(jwt.id_token);
+                        const jwtNonce = decodedJwt.nonce as string | undefined;
+                        // If JWT exists but device data is missing, we can't regenerate
+                        // (would cause nonce mismatch). User needs to re-login.
+                        if (jwtNonce) {
+                          log.warn(
+                            "Device data missing but JWT exists - cannot regenerate without causing nonce mismatch",
+                            {
+                              chain: currentChain,
+                              jwtNonce,
+                            },
+                          );
+                          // Don't regenerate - user will need to re-login
+                          set({ loading: false, isLocked: false });
+                          return;
+                        }
+                      } catch (error) {
+                        log.warn("Failed to decode JWT for nonce check", error);
+                      }
+                    }
+                  }
+                  // No JWT or nonce check failed - safe to regenerate
                   await get().initializeForChain(currentChain);
                   set({ loading: false, isLocked: false });
                 } else {
@@ -220,6 +254,8 @@ export const useDeviceStore = create<DeviceState>()(
               ephemeralKeyPairSecretKey: createWebCryptoPlaceholder(),
             });
 
+            // For new keypair creation, always initialize device data
+            // (no JWT exists yet, so no risk of nonce mismatch)
             await get().initializeForChain(currentChain);
             set({ loading: false, isLocked: false });
             return;
@@ -369,6 +405,43 @@ export const useDeviceStore = create<DeviceState>()(
             );
           }
 
+          // Before initializing device data, check if we have a JWT for this network
+          // If we do, we cannot regenerate device data (would cause nonce mismatch)
+          const hasJwt = await hasJwtForNetwork(currentChain);
+          if (hasJwt) {
+            // We have a JWT - check if device data exists
+            const currentDeviceData = get().networkData[currentChain];
+            if (currentDeviceData?.nonce && currentDeviceData?.maxEpoch) {
+              // Device data exists - don't regenerate
+              log.info(
+                "Device data exists for chain, skipping initialization",
+                {
+                  chain: currentChain,
+                },
+              );
+              set({
+                loading: false,
+                isLocked: false,
+              });
+              return;
+            } else {
+              // Device data missing but JWT exists - cannot regenerate
+              log.warn(
+                "Device data missing but JWT exists - cannot regenerate without causing nonce mismatch",
+                {
+                  chain: currentChain,
+                },
+              );
+              // Don't regenerate - user will need to re-login
+              set({
+                loading: false,
+                isLocked: false,
+              });
+              return;
+            }
+          }
+
+          // No JWT exists - safe to initialize device data
           // Then, initialize for current chain
           log.info("Initializing device store for chain", {
             chain: currentChain,
@@ -740,3 +813,37 @@ export const useDeviceStore = create<DeviceState>()(
     },
   ),
 );
+
+/**
+ * Waits for the device store to complete hydration from storage.
+ * If already hydrated, returns immediately.
+ * Otherwise, triggers rehydration and waits for it to complete.
+ */
+export const waitForDeviceHydration = async () => {
+  if (useDeviceStore.persist.hasHydrated()) {
+    return;
+  }
+
+  await new Promise<void>((resolve) => {
+    const unsub = useDeviceStore.persist.onFinishHydration(() => {
+      unsub();
+      resolve();
+    });
+    useDeviceStore.persist.rehydrate();
+  });
+};
+
+/**
+ * Rehydrates the device store from storage.
+ * Useful after the background script updates storage (e.g., after login)
+ * to sync the popup's Zustand state with the latest persisted data.
+ */
+export const rehydrateDeviceStore = async () => {
+  await new Promise<void>((resolve) => {
+    const unsub = useDeviceStore.persist.onFinishHydration(() => {
+      unsub();
+      resolve();
+    });
+    useDeviceStore.persist.rehydrate();
+  });
+};

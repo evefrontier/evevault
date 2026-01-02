@@ -1,5 +1,5 @@
 import { useAuthStore } from "@evevault/shared/auth";
-import { useDeviceStore, useNetworkStore } from "@evevault/shared/stores";
+import { useNetworkStore } from "@evevault/shared/stores";
 import { AVAILABLE_NETWORKS, getNetworkLabel } from "@evevault/shared/types";
 import { createLogger, isExtension } from "@evevault/shared/utils";
 import type { SuiChain } from "@mysten/wallet-standard";
@@ -88,15 +88,10 @@ export const NetworkSelector: FC<NetworkSelectorProps> = ({
     // This will automatically set user to null if no JWT exists for new network
     await initializeAuth();
 
-    // Re-initialize device data for new network if vault is unlocked
-    const deviceStore = useDeviceStore.getState();
-    if (deviceStore.ephemeralPublicKey && !deviceStore.isLocked) {
-      try {
-        await deviceStore.initializeForChain(pendingNetwork);
-      } catch (error) {
-        log.error("Failed to initialize device data for new network", error);
-      }
-    }
+    // NOTE: Do NOT initialize device data here when switching networks.
+    // Device data should only be created when the user actually logs in (in the background handler).
+    // If we create it here, it will be regenerated again during login, causing nonce mismatch.
+    // The background handler will create device data with the correct nonce during OAuth flow.
 
     setShowConfirmDialog(false);
     setPendingNetwork(null);

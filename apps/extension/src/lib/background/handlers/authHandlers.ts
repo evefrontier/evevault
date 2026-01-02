@@ -207,14 +207,43 @@ async function handleExtLogin(
     deviceStore.getJwtRandomness?.(currentChain) ?? deviceStore.jwtRandomness;
   const hasJwtRandomness = !!existingJwtRandomness;
 
+  // Check if we have an existing JWT for this network
+  // If we do, we need to verify the nonce matches before regenerating device data
+  const { getJwtForNetwork } = await import("@evevault/shared/auth");
+  const existingJwt = await getJwtForNetwork(currentChain);
+  const hasExistingJwt = !!existingJwt?.id_token;
+
+  // If we have an existing JWT, check if its nonce matches current device data
+  let jwtNonceMatches = false;
+  if (hasExistingJwt && existingNonce) {
+    try {
+      const decodedJwt = decodeJwt(existingJwt.id_token);
+      const jwtNonce = decodedJwt.nonce as string | undefined;
+      jwtNonceMatches = jwtNonce === existingNonce;
+      log.debug("Checking JWT nonce against device data", {
+        chain: currentChain,
+        jwtNonce,
+        deviceNonce: existingNonce,
+        matches: jwtNonceMatches,
+      });
+    } catch (error) {
+      log.warn("Failed to decode existing JWT for nonce check", error);
+    }
+  }
+
   // Only regenerate if device data is truly missing or expired
-  // If we have valid device data, use it to avoid nonce mismatch
+  // BUT: If we have an existing JWT with a matching nonce, don't regenerate even if expired
+  // (regenerating would create a nonce mismatch - user needs to re-login instead)
+  const isExpired = maxEpochTimestampMs
+    ? Date.now() >= maxEpochTimestampMs
+    : false;
   const needsRegeneration =
-    !existingNonce ||
-    !existingMaxEpoch ||
-    !hasJwtRandomness ||
-    !maxEpochTimestampMs ||
-    Date.now() >= maxEpochTimestampMs;
+    (!existingNonce ||
+      !existingMaxEpoch ||
+      !hasJwtRandomness ||
+      !maxEpochTimestampMs ||
+      isExpired) &&
+    !(hasExistingJwt && jwtNonceMatches);
 
   if (needsRegeneration) {
     log.info("Device data expired or missing, regenerating before login", {
@@ -223,14 +252,37 @@ async function handleExtLogin(
       hasMaxEpoch: !!existingMaxEpoch,
       hasJwtRandomness,
       maxEpochTimestampMs,
-      isExpired: maxEpochTimestampMs ? Date.now() >= maxEpochTimestampMs : true,
+      isExpired,
+      hasExistingJwt,
+      jwtNonceMatches,
     });
     await deviceStore.initializeForChain(currentChain);
+  } else if (hasExistingJwt && jwtNonceMatches && isExpired) {
+    // Device data expired but JWT nonce matches - this is a problem
+    // We can't regenerate device data (would cause nonce mismatch)
+    // User needs to re-login to get fresh device data
+    log.warn(
+      "Device data expired but JWT nonce matches - cannot regenerate without causing mismatch. User needs to re-login.",
+      {
+        chain: currentChain,
+        maxEpochTimestampMs,
+        isExpired,
+      },
+    );
+    // Clear the JWT to force re-login
+    const { removeJwtForNetwork } = await import("@evevault/shared/auth");
+    await removeJwtForNetwork(currentChain);
+    return sendAuthError(id, {
+      message:
+        "Device data expired. Please sign in again to refresh your session.",
+    });
   } else {
     log.info("Using existing device data for login", {
       chain: currentChain,
       nonce: existingNonce,
       maxEpoch: existingMaxEpoch,
+      hasExistingJwt,
+      jwtNonceMatches,
     });
   }
 

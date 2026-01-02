@@ -109,18 +109,10 @@ export const useNetworkStore = create<NetworkState>()(
             );
           }
 
-          // Re-initialize device data for new network if vault is unlocked
-          const deviceStore = useDeviceStore.getState();
-          if (deviceStore.ephemeralPublicKey && !deviceStore.isLocked) {
-            try {
-              await deviceStore.initializeForChain(chain);
-            } catch (error) {
-              log.error(
-                "Failed to initialize device data for new network",
-                error,
-              );
-            }
-          }
+          // NOTE: Do NOT initialize device data here when switching networks without JWT.
+          // Device data should only be created when the user actually logs in (in the background handler).
+          // If we create it here, it will be regenerated again during login, causing nonce mismatch.
+          // The background handler will create device data with the correct nonce during OAuth flow.
 
           set({ loading: false });
           log.info("Switched to chain (no JWT, re-authentication required)", {
@@ -141,56 +133,61 @@ export const useNetworkStore = create<NetworkState>()(
             });
           }
 
-          // Initialize device data for the new chain if needed
+          // Check device data for the new chain
           const deviceStore = useDeviceStore.getState();
           const existingNonce = deviceStore.getNonce(chain);
           const existingMaxEpoch = deviceStore.getMaxEpoch(chain);
           const existingJwtRandomness = deviceStore.getJwtRandomness(chain);
           const maxEpochTimestampMs = deviceStore.getMaxEpochTimestampMs(chain);
 
-          // Only regenerate if device data is truly missing or expired
-          // If we have valid device data that matches our JWT, use it to avoid nonce mismatch
-          const needsInitialization =
-            !existingNonce ||
-            !existingMaxEpoch ||
-            !existingJwtRandomness ||
-            !maxEpochTimestampMs ||
-            Date.now() >= maxEpochTimestampMs;
+          // Check if device data exists and is valid
+          const hasValidDeviceData =
+            existingNonce &&
+            existingMaxEpoch &&
+            existingJwtRandomness &&
+            maxEpochTimestampMs &&
+            Date.now() < maxEpochTimestampMs;
 
-          if (needsInitialization) {
-            // Check if ephemeral key is available (vault unlocked)
-            if (!deviceStore.ephemeralPublicKey) {
-              log.warn(
-                "Cannot initialize device data: vault locked or not set up",
-                { chain },
-              );
-              // Still switch the chain, but warn that device data is missing
-              // User will need to unlock vault to sign transactions
-              set({ loading: false });
-              log.info(
-                "Switched to chain (vault locked, device data pending)",
-                {
-                  chain,
-                },
-              );
-              return { success: true, requiresReauth: false };
-            }
+          if (!hasValidDeviceData) {
+            // Device data is missing or expired, but we have a JWT
+            // We cannot create new device data here because it would have a different nonce
+            // than what's in the existing JWT, causing a nonce mismatch.
+            // Allow the switch to proceed, but the user will need to re-login when they try
+            // to use features that require device data (like signing transactions).
+            // The getZkProof function will detect the nonce mismatch and prompt re-login.
+            log.warn(
+              "JWT exists but device data is missing/expired for chain - switch allowed but re-login will be required for transactions",
+              {
+                chain,
+                hasNonce: !!existingNonce,
+                hasMaxEpoch: !!existingMaxEpoch,
+                hasJwtRandomness: !!existingJwtRandomness,
+                maxEpochTimestampMs,
+                isExpired: maxEpochTimestampMs
+                  ? Date.now() >= maxEpochTimestampMs
+                  : true,
+              },
+            );
 
-            log.info("Initializing device data for chain", { chain });
-            await deviceStore.initializeForChain(chain);
-
-            // Verify device data was created
-            const verifyNonce = deviceStore.getNonce(chain);
-            const verifyMaxEpoch = deviceStore.getMaxEpoch(chain);
-
-            if (!verifyNonce || !verifyMaxEpoch) {
-              throw new Error(
-                `Failed to initialize device data for chain ${chain}. Nonce: ${verifyNonce}, MaxEpoch: ${verifyMaxEpoch}`,
-              );
-            }
-
-            log.debug("Device data verified for chain", { chain });
+            // Still allow the switch - user can see they're logged in
+            // Re-login will be required when they try to sign transactions
+            set({ loading: false });
+            log.info(
+              "Switched to chain (JWT exists but device data missing/expired - re-login required for transactions)",
+              {
+                chain,
+              },
+            );
+            return { success: true, requiresReauth: false };
           }
+
+          // Device data exists and is valid - seamless switch
+          log.debug(
+            "Device data valid for chain, proceeding with seamless switch",
+            {
+              chain,
+            },
+          );
 
           set({ loading: false });
           log.info("Successfully switched to chain", { chain });

@@ -18,9 +18,6 @@ export const useDevice = () => {
     jwtRandomness,
     loading,
     error,
-    getMaxEpoch,
-    getMaxEpochTimestampMs,
-    getNonce,
     initialize,
     initializeForChain,
     getZkProof,
@@ -37,17 +34,28 @@ export const useDevice = () => {
     );
   }, [ephemeralKeyPairSecretKey]);
 
-  const currentChain = useNetworkStore.getState().chain;
+  // Subscribe to chain changes reactively
+  const { chain: currentChain } = useNetworkStore();
 
+  // Subscribe to the entire networkData object to ensure we react to any changes
+  // Using a selector that returns the whole networkData ensures we catch updates
+  // even when a new chain's data is added
+  const networkData = useDeviceStore((state) => state.networkData);
+
+  // Read device data directly from networkData instead of using getter functions
+  // This ensures we react to changes in networkData and don't capture stale values
   const maxEpoch = useMemo(() => {
-    return getMaxEpoch(currentChain);
-  }, [currentChain, getMaxEpoch]);
+    if (!currentChain || !networkData) return null;
+    return networkData[currentChain]?.maxEpoch ?? null;
+  }, [currentChain, networkData]);
   const maxEpochTimestampMs = useMemo(() => {
-    return getMaxEpochTimestampMs(currentChain);
-  }, [currentChain, getMaxEpochTimestampMs]);
+    if (!currentChain || !networkData) return null;
+    return networkData[currentChain]?.maxEpochTimestampMs ?? null;
+  }, [currentChain, networkData]);
   const nonce = useMemo(() => {
-    return getNonce(currentChain);
-  }, [currentChain, getNonce]);
+    if (!currentChain || !networkData) return null;
+    return networkData[currentChain]?.nonce ?? null;
+  }, [currentChain, networkData]);
 
   // Reconstruct public key from bytes using the correct key type
   const ephemeralPublicKey = useMemo((): PublicKey | null => {

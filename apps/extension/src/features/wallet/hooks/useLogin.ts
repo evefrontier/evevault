@@ -1,6 +1,9 @@
 import { hasJwtForNetwork, useAuth } from "@evevault/shared/auth";
 import { useToast } from "@evevault/shared/components";
-import { useDeviceStore } from "@evevault/shared/stores";
+import {
+  rehydrateDeviceStore,
+  useDeviceStore,
+} from "@evevault/shared/stores/deviceStore";
 import { useNetworkStore } from "@evevault/shared/stores/networkStore";
 import { AVAILABLE_NETWORKS, getNetworkLabel } from "@evevault/shared/types";
 import { createLogger } from "@evevault/shared/utils";
@@ -101,6 +104,23 @@ export function useLogin() {
         }
 
         log.info("Login successful", { hasToken: Boolean(tokenResponse) });
+
+        // Rehydrate device store to sync with the latest networkData from background
+        // The background handler updates Chrome storage with new device data (nonce, maxEpoch)
+        // after login, but the popup's Zustand store has a separate instance that needs
+        // to be refreshed from storage to see those updates.
+        try {
+          await rehydrateDeviceStore();
+          log.debug("Device store rehydrated after login");
+        } catch (rehydrateError) {
+          log.warn(
+            "Failed to rehydrate device store after login",
+            rehydrateError,
+          );
+          // Don't fail the login if rehydration fails - user can still use the app
+          // but may need to close/reopen popup for fresh device data
+        }
+
         return true;
       } catch (err) {
         log.error("Login error", err);
