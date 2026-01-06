@@ -149,7 +149,7 @@ export async function clearJwtForNetwork(chain: SuiChain): Promise<void> {
   const allJwts = await getAllJwts();
   if (!allJwts) return;
 
-  const { [chain]: _, ...remainingJwts } = allJwts;
+  const { [chain]: removedJwt, ...remainingJwts } = allJwts;
 
   if (Object.keys(remainingJwts).length === 0) {
     await clearAllJwts();

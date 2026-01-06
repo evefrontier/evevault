@@ -19,6 +19,9 @@ import type { MessageWithId, WebUnlockMessage } from "../types";
 
 const log = createLogger();
 
+/** Delay in ms before retrying keeper unlock check (gives unlock time to complete) */
+const KEEPER_RETRY_DELAY_MS = 100;
+
 const ensureMessageId = (message: MessageWithId): string => {
   if (!message.id) {
     throw new Error("Message id is required");
@@ -139,7 +142,9 @@ async function handleExtLogin(
   if (!keeperStatus.unlocked) {
     // If device data exists, retry once (unlock might be in progress)
     if (hasDeviceData) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) =>
+        setTimeout(resolve, KEEPER_RETRY_DELAY_MS),
+      );
       keeperStatus = await checkKeeperUnlocked();
     }
 
@@ -270,8 +275,8 @@ async function handleExtLogin(
       },
     );
     // Clear the JWT to force re-login
-    const { removeJwtForNetwork } = await import("@evevault/shared/auth");
-    await removeJwtForNetwork(currentChain);
+    const { clearJwtForNetwork } = await import("@evevault/shared/auth");
+    await clearJwtForNetwork(currentChain);
     return sendAuthError(id, {
       message:
         "Device data expired. Please sign in again to refresh your session.",
@@ -385,7 +390,9 @@ async function handleDappLogin(
   if (!keeperStatus.unlocked) {
     // If device data exists, retry once (unlock might be in progress)
     if (hasDeviceData) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) =>
+        setTimeout(resolve, KEEPER_RETRY_DELAY_MS),
+      );
       keeperStatus = await checkKeeperUnlocked();
     }
 
