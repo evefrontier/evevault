@@ -1,5 +1,5 @@
 import {
-  AddTokenForm,
+  AddTokenScreen,
   Layout,
   useAuthStore,
   useNetworkStore,
@@ -17,23 +17,12 @@ function AddTokenPage() {
   };
 
   return (
-    <Layout
-      header={
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => navigate({ to: "/wallet" })}
-            className="text-[var(--neutral)] hover:text-[var(--quantum)]"
-          >
-            ← Back
-          </button>
-        </div>
-      }
-    >
-      <AddTokenForm
+    <Layout>
+      <AddTokenScreen
         user={user}
         chain={chain || null}
         onSuccess={handleSuccess}
+        onCancel={() => navigate({ to: "/wallet" })}
       />
     </Layout>
   );
@@ -44,9 +33,4 @@ export const Route = createFileRoute("/wallet/add-token")({
     await requireAuth();
   },
   component: AddTokenPage,
-  meta: () => [
-    {
-      title: "EVE Vault - Add Token",
-    },
-  ],
 });
