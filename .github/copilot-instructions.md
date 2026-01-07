@@ -335,6 +335,7 @@ useEffect(() => {
   });
 }, [dep]);
 ```
+
 - [ ] Are reactive subscriptions used for UI updates?
 
 ## Component Patterns
