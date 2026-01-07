@@ -261,7 +261,10 @@ export const useFeatureStore = create<FeatureState>()(
           const data = await fetchData();
           set({ data, loading: false });
         } catch (error) {
-          set({ error: error.message, loading: false });
+          set({
+            error: error instanceof Error ? error.message : "Unknown error",
+            loading: false,
+          });
         }
       },
     }),
