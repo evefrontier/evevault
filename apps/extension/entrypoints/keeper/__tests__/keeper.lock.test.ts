@@ -42,7 +42,7 @@ describe("Keeper CLEAR_EPHKEY message handler", () => {
     }
 
     if (message.type === KeeperMessageTypes.CLEAR_EPHKEY) {
-      // Clear ephemeral key and vault state (but NOT zkProofs - that's CLEAR_ZKPROOF)
+      // Clear ephemeral key and vault state only
       mockEphemeralKey = null;
       mockVaultUnlocked = false;
       mockVaultUnlockExpiry = null;

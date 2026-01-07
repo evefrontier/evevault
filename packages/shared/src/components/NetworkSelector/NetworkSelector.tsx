@@ -85,13 +85,7 @@ export const NetworkSelector: FC<NetworkSelectorProps> = ({
     useNetworkStore.getState().forceSetChain(pendingNetwork);
 
     // Re-initialize auth store to check JWT for new network
-    // This will automatically set user to null if no JWT exists for new network
     await initializeAuth();
-
-    // NOTE: Do NOT initialize device data here when switching networks.
-    // Device data should only be created when the user actually logs in (in the background handler).
-    // If we create it here, it will be regenerated again during login, causing nonce mismatch.
-    // The background handler will create device data with the correct nonce during OAuth flow.
 
     setShowConfirmDialog(false);
     setPendingNetwork(null);

@@ -5,7 +5,6 @@ export const getDeviceData = async (chain: SuiChain) => {
   const { useDeviceStore } = await import("../stores/deviceStore");
   const deviceStore = useDeviceStore.getState();
 
-  // Get per-network jwtRandomness (preferred) or fallback to global (for backwards compatibility)
   const jwtRandomness = deviceStore.getJwtRandomness(chain);
   const nonce = deviceStore.getNonce(chain);
   const maxEpoch = deviceStore.getMaxEpoch(chain);
@@ -25,8 +24,7 @@ export const getDeviceData = async (chain: SuiChain) => {
   const networkData = parsedResult.networkData?.[chain];
 
   return {
-    jwtRandomness:
-      jwtRandomness ?? networkData?.jwtRandomness ?? parsedResult.jwtRandomness,
+    jwtRandomness: jwtRandomness ?? networkData?.jwtRandomness ?? null,
     nonce: nonce ?? networkData?.nonce,
     maxEpoch: maxEpoch ?? networkData?.maxEpoch,
   };

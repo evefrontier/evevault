@@ -107,7 +107,6 @@ export const useDeviceStore = create<DeviceState>()(
       ephemeralPublicKeyBytes: null,
       ephemeralPublicKeyFlag: null,
       ephemeralKeyPairSecretKey: null,
-      jwtRandomness: null,
       networkData: {
         [SUI_DEVNET_CHAIN]: createEmptyNetworkDataEntry(),
         [SUI_TESTNET_CHAIN]: createEmptyNetworkDataEntry(),
@@ -135,10 +134,7 @@ export const useDeviceStore = create<DeviceState>()(
 
       getJwtRandomness: (chain?: SuiChain) => {
         const currentChain = chain || useNetworkStore.getState().chain;
-        // Prefer per-network jwtRandomness, fallback to global for backwards compatibility
-        return (
-          get().networkData[currentChain]?.jwtRandomness ?? get().jwtRandomness
-        );
+        return get().networkData[currentChain]?.jwtRandomness ?? null;
       },
 
       // Initialize device state
@@ -169,8 +165,8 @@ export const useDeviceStore = create<DeviceState>()(
           maxEpochTimestampMs: null,
           jwtRandomness: null,
         };
-        let { jwtRandomness, networkData, ephemeralKeyPairSecretKey } =
-          currentState;
+        const { networkData, ephemeralKeyPairSecretKey } = currentState;
+        let jwtRandomness = networkJwtRandomness;
 
         try {
           // Initialize the ephKeyService (needed for web to recover from IndexedDB)
@@ -201,7 +197,7 @@ export const useDeviceStore = create<DeviceState>()(
                   // Check if we have a JWT for this network
                   const hasJwt = await hasJwtForNetwork(currentChain);
                   if (hasJwt) {
-                    // We have a JWT - check if nonce matches
+                    // Dynamic import to avoid circular dependency: deviceStore → auth → authStore → deviceStore
                     const { getJwtForNetwork } = await import(
                       "../auth/storageService"
                     );
@@ -269,10 +265,8 @@ export const useDeviceStore = create<DeviceState>()(
           let storedSecretKey: StoredSecretKey = normalizedCurrentSecretKey;
 
           // Don't reinitialize if we already have data
-          // Check both global jwtRandomness (legacy) and per-network jwtRandomness
-          const hasJwtRandomness = jwtRandomness || networkJwtRandomness;
           if (
-            hasJwtRandomness &&
+            jwtRandomness &&
             maxEpoch !== null &&
             nonce !== null &&
             maxEpochTimestampMs !== null &&
@@ -285,7 +279,7 @@ export const useDeviceStore = create<DeviceState>()(
 
           // Check if we already have device data persisted
           if (
-            !hasJwtRandomness ||
+            !jwtRandomness ||
             !maxEpoch ||
             !nonce ||
             !maxEpochTimestampMs ||
@@ -318,13 +312,10 @@ export const useDeviceStore = create<DeviceState>()(
                 }
 
                 if (persistedDeviceStoreState) {
-                  // Get jwtRandomness from persisted network data or global (for backwards compatibility)
                   const persistedNetworkData =
                     persistedDeviceStoreState.networkData?.[currentChain];
                   const persistedJwtRandomness =
-                    persistedNetworkData?.jwtRandomness ??
-                    persistedDeviceStoreState.jwtRandomness ??
-                    jwtRandomness;
+                    persistedNetworkData?.jwtRandomness ?? null;
                   jwtRandomness = persistedJwtRandomness;
                   storedSecretKey = await resolveStoredSecretKey(
                     persistedDeviceStoreState.ephemeralKeyPairSecretKey ??
@@ -336,7 +327,6 @@ export const useDeviceStore = create<DeviceState>()(
                     log.debug("Rehydrating device store from persisted data");
 
                     set({
-                      jwtRandomness, // Keep global for backwards compatibility
                       ephemeralKeyPairSecretKey: storedSecretKey,
                       networkData:
                         persistedDeviceStoreState.networkData ?? networkData,
@@ -481,9 +471,9 @@ export const useDeviceStore = create<DeviceState>()(
           await suiClient.getLatestSuiSystemState();
         const numericMaxEpoch = Number(epoch); // Set to current epoch for now, can increase validity window in the future
 
-        // 4. Set maxEpoch expiry
+        // 4. Set maxEpoch expiry (aligned with numericMaxEpoch which is current epoch)
         const maxEpochTimestampMs =
-          Number(epochStartTimestampMs) + Number(epochDurationMs) * 2;
+          Number(epochStartTimestampMs) + Number(epochDurationMs);
 
         // 5. Generate nonce using the per-network jwtRandomness
         const nonce = generateNonce(
@@ -493,12 +483,8 @@ export const useDeviceStore = create<DeviceState>()(
         );
 
         // Store jwtRandomness per-network to prevent cross-network conflicts
-        // Also keep global jwtRandomness for backwards compatibility (use current chain's value)
         // NOTE: ephemeralKeyPairSecretKey is device-level (not network-level) and is NOT modified here
-        const currentChain = useNetworkStore.getState().chain;
         set({
-          jwtRandomness:
-            chain === currentChain ? jwtRandomness : get().jwtRandomness,
           networkData: {
             ...get().networkData,
             [chain]: {
@@ -709,7 +695,6 @@ export const useDeviceStore = create<DeviceState>()(
 
       reset: () => {
         set({
-          jwtRandomness: null,
           networkData: {
             [SUI_DEVNET_CHAIN]: createEmptyNetworkDataEntry(),
             [SUI_TESTNET_CHAIN]: createEmptyNetworkDataEntry(),

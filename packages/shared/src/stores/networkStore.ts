@@ -66,8 +66,8 @@ export const useNetworkStore = create<NetworkState>()(
       },
 
       /**
-       * Force set the chain without checking JWT status.
-       * Used during logout-based network switching when we know re-auth is required.
+       * Set chain for re-authentication flow (skips JWT checks).
+       * Called by CurrentNetworkDisplay/NetworkSelector when switching to a network without JWT.
        */
       forceSetChain: (chain: SuiChain) => {
         const currentChain = get().chain;
@@ -109,10 +109,7 @@ export const useNetworkStore = create<NetworkState>()(
             );
           }
 
-          // NOTE: Do NOT initialize device data here when switching networks without JWT.
-          // Device data should only be created when the user actually logs in (in the background handler).
-          // If we create it here, it will be regenerated again during login, causing nonce mismatch.
-          // The background handler will create device data with the correct nonce during OAuth flow.
+          // Don't create device data here - background handler does it during login to prevent nonce mismatch.
 
           set({ loading: false });
           log.info("Switched to chain (no JWT, re-authentication required)", {

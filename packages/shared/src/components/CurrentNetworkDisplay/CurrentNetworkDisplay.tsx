@@ -77,11 +77,6 @@ export const CurrentNetworkDisplay: React.FC<CurrentNetworkDisplayProps> = ({
     // Re-initialize auth store to check JWT for new network
     await initializeAuth();
 
-    // NOTE: Do NOT initialize device data here when switching networks.
-    // Device data should only be created when the user actually logs in (in the background handler).
-    // If we create it here, it will be regenerated again during login, causing nonce mismatch.
-    // The background handler will create device data with the correct nonce during OAuth flow.
-
     setShowConfirmDialog(false);
     setPendingNetwork(null);
     setIsProcessing(false);

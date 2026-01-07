@@ -21,7 +21,7 @@ export interface NetworkDataEntry {
   nonce: string | null;
   maxEpoch: string | null;
   maxEpochTimestampMs: number | null;
-  jwtRandomness: string | null; // Per-network jwtRandomness to prevent cross-network nonce conflicts
+  jwtRandomness: string | null;
 }
 
 export type NetworkDataMap = Partial<Record<SuiChain, NetworkDataEntry>>;
@@ -33,10 +33,7 @@ export interface DeviceState {
   ephemeralPublicKeyBytes: number[] | null; // For persistence
   ephemeralPublicKeyFlag: number | null; // To identify key type (0x00=Ed25519, 0x02=Secp256r1)
   ephemeralKeyPairSecretKey: StoredSecretKey;
-  // jwtRandomness is now per-network (stored in networkData) to prevent cross-network conflicts
-  // Legacy: kept for backwards compatibility during migration, but should use getJwtRandomness(chain)
-  jwtRandomness: string | null;
-  // Network-specific data stored by chain
+  // Network-specific data stored by chain (jwtRandomness is per-network)
   networkData: Partial<Record<SuiChain, NetworkDataEntry>>;
 
   loading: boolean;

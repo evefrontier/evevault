@@ -1,4 +1,4 @@
-import { useAuth } from "@evevault/shared/auth";
+import { getUserForNetwork, useAuth } from "@evevault/shared/auth";
 import { useToast } from "@evevault/shared/components";
 import { useDevice } from "@evevault/shared/hooks";
 import { useNetworkStore } from "@evevault/shared/stores/networkStore";
@@ -14,7 +14,7 @@ const log = createLogger();
  * Hook for handling test transaction submission
  */
 export function useTestTransaction() {
-  const { user } = useAuth();
+  const { user: globalUser } = useAuth();
   const { ephemeralPublicKey, getZkProof, maxEpoch } = useDevice();
   const { chain } = useNetworkStore();
   const { showToast } = useToast();
@@ -24,6 +24,10 @@ export function useTestTransaction() {
 
   const handleTestTransaction = useCallback(async () => {
     try {
+      // Get user from stored JWT for current network, not the global OIDC user
+      // which may be from a different network
+      const user = await getUserForNetwork(chain);
+
       if (!user || !maxEpoch) {
         log.error("User or max epoch not found", { user, maxEpoch });
         throw new Error("User or max epoch not found");
@@ -57,7 +61,7 @@ export function useTestTransaction() {
       log.error("Error submitting transaction", error);
       showToast("Error submitting transaction");
     }
-  }, [user, maxEpoch, ephemeralPublicKey, suiClient, getZkProof, showToast]);
+  }, [chain, maxEpoch, ephemeralPublicKey, suiClient, getZkProof, showToast]);
 
-  return { handleTestTransaction, txDigest };
+  return { handleTestTransaction, txDigest, isAuthenticated: !!globalUser };
 }
