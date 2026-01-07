@@ -7,12 +7,28 @@ This file contains rules and guidelines for Cursor AI to ensure consistent code 
 This is a **monorepo** for EVE Vault Wallet, a browser extension and web application for Sui blockchain. The project uses:
 
 - **Bun** workspaces and **Turborepo** for monorepo management
-- **TypeScript** for type safety
-- **React** for UI components
+- **TypeScript 5.8+** for type safety
+- **React 19** for UI components
 - **WXT** framework for browser extension
 - **Vite** for web application
-- **Zustand** for state management
+- **Zustand 5** for state management with `persist` middleware
+- **TanStack Router** for type-safe routing
+- **TanStack Query** for server state management
 - **Feature-based architecture** with shared packages
+
+### Tech Stack
+
+Use the **latest stable versions** of all dependencies for security and performance. Check `package.json` for current versions.
+
+| Technology | Notes |
+|------------|-------|
+| React | Uses React 19+ features (`use`, `useActionState`, `useOptimistic`) |
+| TypeScript | Strict mode enabled, use latest language features |
+| Zustand | With `persist` middleware and `useShallow` for selectors |
+| TanStack Router | File-based type-safe routing |
+| TanStack Query | For server state management |
+| Biome | Linting and formatting (replaces ESLint/Prettier) |
+| Vitest | Testing framework with React Testing Library |
 
 ## Monorepo Structure
 
@@ -302,6 +318,70 @@ export function Card({ title, children, variant = "default" }: CardProps) {
 }
 ```
 
+### TypeScript 5.8+ Features to Use
+
+```typescript
+// ✅ CORRECT - Use `satisfies` for type checking without widening
+const config = {
+  theme: "dark",
+  timeout: 5000,
+} satisfies AppConfig;
+
+// ✅ CORRECT - Use `const` type parameters for literal inference
+function createAction<const T extends string>(type: T) {
+  return { type };
+}
+
+// ✅ CORRECT - Use discriminated unions for state
+type AsyncState<T> =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "success"; data: T }
+  | { status: "error"; error: Error };
+
+// ✅ CORRECT - Use branded types for IDs
+type UserId = string & { readonly brand: unique symbol };
+type WalletAddress = string & { readonly brand: unique symbol };
+
+// ✅ CORRECT - Use `unknown` instead of `any` when type is truly unknown
+function handleError(error: unknown) {
+  if (error instanceof Error) {
+    log.error(error.message);
+  }
+}
+
+// ❌ WRONG - Using any
+function handleError(error: any) {
+  log.error(error.message); // No type safety
+}
+```
+
+### Strict Null Checks
+
+```typescript
+// ✅ CORRECT - Handle null/undefined explicitly
+function getUser(id: string): User | null {
+  const user = users.get(id);
+  return user ?? null;
+}
+
+// ✅ CORRECT - Use optional chaining and nullish coalescing
+const name = user?.profile?.name ?? "Anonymous";
+
+// ✅ CORRECT - Type guards for narrowing
+function isUser(value: unknown): value is User {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "id" in value &&
+    "email" in value
+  );
+}
+
+// ❌ WRONG - Non-null assertion without validation
+const name = user!.profile!.name; // Dangerous
+```
+
 ### Store Patterns
 
 ```typescript
@@ -330,11 +410,60 @@ export const useDeviceStore = create<DeviceState>((set) => ({
 
 ## React Component Patterns
 
+### React 19 Features
+
+React 19 introduces several new features. Use them appropriately:
+
+```typescript
+// ✅ CORRECT - Use `use` hook for async data (React 19)
+import { use } from "react";
+
+function UserProfile({ userPromise }: { userPromise: Promise<User> }) {
+  const user = use(userPromise); // Suspends until resolved
+  return <Text>{user.name}</Text>;
+}
+
+// ✅ CORRECT - Use Actions for form handling (React 19)
+function TransferForm() {
+  const [state, formAction, isPending] = useActionState(
+    async (prevState, formData) => {
+      const result = await transfer(formData);
+      return result;
+    },
+    null
+  );
+
+  return (
+    <form action={formAction}>
+      <Input name="amount" />
+      <Button type="submit" disabled={isPending}>
+        {isPending ? "Sending..." : "Send"}
+      </Button>
+    </form>
+  );
+}
+
+// ✅ CORRECT - useOptimistic for instant UI feedback
+function LikeButton({ likes }: { likes: number }) {
+  const [optimisticLikes, addOptimisticLike] = useOptimistic(
+    likes,
+    (current, increment: number) => current + increment
+  );
+
+  const handleLike = async () => {
+    addOptimisticLike(1);
+    await submitLike();
+  };
+
+  return <Button onClick={handleLike}>{optimisticLikes} likes</Button>;
+}
+```
+
 ### Component Structure
 
 ```typescript
 // 1. Imports (external first, then internal)
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { colors, spacing } from "@evevault/shared/design";
 import { useAuth } from "../hooks/useAuth";
 
@@ -346,23 +475,24 @@ interface ComponentProps {
 
 // 3. Component (named export preferred)
 export function Component({ title, children }: ComponentProps) {
-  // Hooks
+  // Hooks (in order: external, stores, local state)
   const { user } = useAuth();
-  const [state, setState] = useState(null);
+  const [state, setState] = useState<State | null>(null);
 
-  // Effects
-  useEffect(() => {
-    // Side effects
-  }, []);
-
-  // ✅ CORRECT - Extract logic before return
+  // Derived state with useMemo
   const computedValue = useMemo(() => {
     return someComplexCalculation(state);
   }, [state]);
 
-  const handleClick = () => {
+  // Event handlers with useCallback (when passed to children)
+  const handleClick = useCallback(() => {
     // Event handler logic
-  };
+  }, []);
+
+  // Effects last (before return)
+  useEffect(() => {
+    // Side effects
+  }, []);
 
   // Render
   return <div style={{ padding: spacing.md }}>{children}</div>;
@@ -512,35 +642,175 @@ export function useAuth() {
 - Include initialization guards to prevent overwriting existing data
 - Persist to storage when needed (Chrome storage for extension, localStorage for web)
 
-### Store Initialization
+### Zustand 5 Best Practices
 
 ```typescript
-// ✅ CORRECT - Always check before initializing
-const initialize = async () => {
-  const existing = await getFromStorage();
-  if (existing) {
-    set({ ...existing });
-    return; // Don't overwrite
-  }
-  // Initialize new data
-};
+// ✅ CORRECT - Zustand 5 with persist middleware
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+
+interface FeatureState {
+  data: Data | null;
+  loading: boolean;
+  error: string | null;
+  // Actions
+  initialize: () => Promise<void>;
+  reset: () => void;
+}
+
+export const useFeatureStore = create<FeatureState>()(
+  persist(
+    (set, get) => ({
+      data: null,
+      loading: false,
+      error: null,
+
+      initialize: async () => {
+        if (get().data) return; // Guard against re-init
+        set({ loading: true, error: null });
+        try {
+          const data = await fetchData();
+          set({ data, loading: false });
+        } catch (error) {
+          set({ 
+            error: error instanceof Error ? error.message : "Unknown error",
+            loading: false 
+          });
+        }
+      },
+
+      reset: () => set({ data: null, loading: false, error: null }),
+    }),
+    {
+      name: "evevault:feature", // Namespaced storage key
+      storage: createJSONStorage(() =>
+        isWeb() ? localStorageAdapter : chromeStorageAdapter
+      ),
+      partialize: (state) => ({ data: state.data }), // Only persist data, not loading/error
+    }
+  )
+);
+```
+
+### Store Selectors (Performance)
+
+```typescript
+// ✅ CORRECT - Use selectors to prevent unnecessary re-renders
+const data = useFeatureStore((state) => state.data);
+const loading = useFeatureStore((state) => state.loading);
+
+// ✅ CORRECT - Shallow compare for object selections
+import { useShallow } from "zustand/shallow";
+const { data, loading } = useFeatureStore(
+  useShallow((state) => ({ data: state.data, loading: state.loading }))
+);
+
+// ❌ WRONG - Subscribes to entire store, re-renders on any change
+const store = useFeatureStore();
+```
+
+### Cross-Context State (Extension)
+
+The browser extension runs in multiple contexts (background, popup, content script). State synchronization requires special handling:
+
+```typescript
+// ✅ CORRECT - Rehydrate store after background updates
+import { rehydrateDeviceStore } from "@evevault/shared/stores";
+
+// After background script updates Chrome storage
+rehydrateDeviceStore();
+
+// ✅ CORRECT - Wait for hydration before using store
+import { waitForDeviceHydration } from "@evevault/shared/stores";
+await waitForDeviceHydration();
+const data = useDeviceStore.getState().data;
+```
+
+### TanStack Query for Server State
+
+Use TanStack Query for data fetching, caching, and synchronization:
+
+```typescript
+// ✅ CORRECT - Use TanStack Query for server state
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+
+export function useTokenBalance(address: string) {
+  return useQuery({
+    queryKey: ["balance", address],
+    queryFn: () => fetchBalance(address),
+    staleTime: 30_000, // 30 seconds
+    refetchOnWindowFocus: true,
+  });
+}
+
+// ✅ CORRECT - Mutations with cache invalidation
+export function useTransfer() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: executeTransfer,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["balance"] });
+    },
+  });
+}
 ```
 
 ## Error Handling
 
+### Error Handling Patterns
+
 - Always handle errors gracefully
-- Provide user feedback for errors
-- Log errors to console in development
+- Provide user feedback for errors (toasts, error states)
+- Log errors using the logger (not console)
 - Use error states in stores: `error: string | null`
+- Type errors properly, avoid `any`
 
 ```typescript
-// ✅ CORRECT
-try {
-  await someAsyncOperation();
-} catch (error) {
-  console.error("Operation failed:", error);
-  set({ error: error instanceof Error ? error.message : "Unknown error" });
+// ✅ CORRECT - Comprehensive error handling
+import { createLogger } from "@evevault/shared/utils";
+import { useToast } from "@evevault/shared/components";
+
+const log = createLogger();
+
+export function useAsyncOperation() {
+  const { showToast } = useToast();
+  const [error, setError] = useState<string | null>(null);
+
+  const execute = async () => {
+    setError(null);
+    try {
+      await someAsyncOperation();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      log.error("Operation failed", err);
+      setError(message);
+      showToast(message);
+    }
+  };
+
+  return { execute, error };
 }
+```
+
+### Error Boundaries (React 19)
+
+```typescript
+// ✅ CORRECT - Use error boundaries for component errors
+import { ErrorBoundary } from "react-error-boundary";
+
+function ErrorFallback({ error, resetErrorBoundary }) {
+  return (
+    <div role="alert">
+      <Text>Something went wrong</Text>
+      <Button onClick={resetErrorBoundary}>Try again</Button>
+    </div>
+  );
+}
+
+<ErrorBoundary FallbackComponent={ErrorFallback}>
+  <MyComponent />
+</ErrorBoundary>
 ```
 
 ## Code Style & Formatting
@@ -690,9 +960,64 @@ useEffect(() => {
 }, []);
 ```
 
+### Async Patterns
+
+```typescript
+// ✅ CORRECT - Proper async/await error handling
+async function fetchUserData(userId: string): Promise<User | null> {
+  try {
+    const response = await suiClient.getObject({ id: userId });
+    if (!response.data) return null;
+    return parseUser(response.data);
+  } catch (error) {
+    log.error("Failed to fetch user data", error);
+    throw error; // Re-throw for caller to handle
+  }
+}
+
+// ✅ CORRECT - Parallel async operations
+const [user, balance, transactions] = await Promise.all([
+  fetchUser(address),
+  fetchBalance(address),
+  fetchTransactions(address),
+]);
+
+// ✅ CORRECT - Sequential with early exit
+async function processTransaction(tx: Transaction) {
+  const validation = await validateTransaction(tx);
+  if (!validation.valid) {
+    return { success: false, error: validation.error };
+  }
+  
+  const signature = await signTransaction(tx);
+  const result = await submitTransaction(signature);
+  return { success: true, result };
+}
+
+// ✅ CORRECT - Async cleanup in effects
+useEffect(() => {
+  const controller = new AbortController();
+  
+  const fetchData = async () => {
+    try {
+      const data = await fetch(url, { signal: controller.signal });
+      setData(data);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return; // Ignore abort errors
+      }
+      throw error;
+    }
+  };
+  
+  fetchData();
+  return () => controller.abort();
+}, [url]);
+```
+
 ### Storage Operations
 
-- Use storage adapters from `@evevault/shared/adapters` or `@evevault/shared/adapters`
+- Use storage adapters from `@evevault/shared/adapters`
 - Never access Chrome storage or localStorage directly
 - Handle storage errors gracefully
 
@@ -700,6 +1025,66 @@ useEffect(() => {
 
 - Before writing ad-hoc environment or platform checks, reach for the helpers in `@evevault/shared/utils/environment` (`isBrowser`, `isExtension`, `isWeb`, etc.) so behavior stays consistent across the monorepo.
 - When similar helper utilities already exist (e.g., storage adapters, formatters), reuse them instead of duplicating logic.
+
+## Security Patterns
+
+### Private Key Handling
+
+```typescript
+// ✅ CORRECT - Never log private keys
+log.debug("Keypair created", { publicKey: publicKey.toBase64() });
+
+// ❌ WRONG - Exposing private key
+log.debug("Keypair created", { secretKey: secretKey });
+
+// ✅ CORRECT - Clear sensitive data when done
+const secretKey = await decrypt(encryptedKey, password);
+try {
+  const signature = await sign(data, secretKey);
+  return signature;
+} finally {
+  // Clear the secret key from memory
+  secretKey.fill(0);
+}
+```
+
+### JWT/Token Handling
+
+```typescript
+// ✅ CORRECT - Store tokens per-network to prevent cross-network usage
+await storeJwtForNetwork(chain, jwt);
+const jwt = await getJwtForNetwork(chain);
+
+// ✅ CORRECT - Validate nonce matches device data before use
+const decodedJwt = decodeJwt(jwt.id_token);
+if (decodedJwt.nonce !== deviceNonce) {
+  throw new Error("JWT nonce mismatch - re-login required");
+}
+
+// ✅ CORRECT - Check expiration before use
+if (jwt.expires_at && Date.now() > jwt.expires_at * 1000) {
+  await clearJwtForNetwork(chain);
+  throw new Error("Session expired");
+}
+```
+
+### Input Validation
+
+```typescript
+// ✅ CORRECT - Validate addresses
+import { isValidSuiAddress } from "@mysten/sui/utils";
+
+function validateTransfer(toAddress: string, amount: string) {
+  if (!isValidSuiAddress(toAddress)) {
+    throw new Error("Invalid recipient address");
+  }
+  
+  const amountNum = Number(amount);
+  if (Number.isNaN(amountNum) || amountNum <= 0) {
+    throw new Error("Invalid amount");
+  }
+}
+```
 
 ## Page Layout Pattern
 
