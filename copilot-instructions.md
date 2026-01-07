@@ -30,7 +30,6 @@ Use the **latest stable versions** of all dependencies. Check `package.json` for
 - [Styling and Design System](#styling-and-design-system)
 - [Security Considerations](#security-considerations)
 - [Performance Considerations](#performance-considerations)
-- [Documentation Requirements](#documentation-requirements)
 - [Common Issues to Flag](#common-issues-to-flag)
 - [What NOT to Review](#what-not-to-review)
 
