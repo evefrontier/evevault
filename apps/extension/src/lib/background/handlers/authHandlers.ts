@@ -140,7 +140,7 @@ async function handleExtLogin(
   // Check if the keeper has an unlocked ephemeral key
   let keeperStatus = await checkKeeperUnlocked();
   if (!keeperStatus.unlocked) {
-    // If device data exists, retry once (unlock might be in progress)
+    // Only retry if device data exists - if no device data, vault isn't set up yet so no point retrying
     if (hasDeviceData) {
       await new Promise((resolve) =>
         setTimeout(resolve, KEEPER_RETRY_DELAY_MS),
@@ -207,9 +207,8 @@ async function handleExtLogin(
   const existingNonce = deviceStore.getNonce(currentChain);
   const existingMaxEpoch = deviceStore.getMaxEpoch(currentChain);
   const maxEpochTimestampMs = deviceStore.getMaxEpochTimestampMs(currentChain);
-  // Check per-network jwtRandomness (preferred) or global (for backwards compatibility)
-  const existingJwtRandomness =
-    deviceStore.getJwtRandomness?.(currentChain) ?? deviceStore.jwtRandomness;
+  // Check per-network jwtRandomness
+  const existingJwtRandomness = deviceStore.getJwtRandomness?.(currentChain);
   const hasJwtRandomness = !!existingJwtRandomness;
 
   // Check if we have an existing JWT for this network
@@ -326,19 +325,18 @@ async function handleExtLogin(
           chrome.identity.getRedirectURL(),
         );
 
-        // Read chain RIGHT BEFORE storing JWT from storage (not Zustand) to ensure we use current network state
-        // (user might have switched networks during OAuth flow, and background's Zustand might be stale)
-        const chainForJwt = await getCurrentChainFromStorage();
+        // Read chain after OAuth completes - user might have switched networks during the flow
+        const chainAfterOAuth = await getCurrentChainFromStorage();
 
         // Verify chain hasn't changed during OAuth (if it has, device data won't match)
-        if (chainForJwt !== currentChain) {
+        if (chainAfterOAuth !== currentChain) {
           log.error("Network changed during OAuth flow - aborting login", {
-            originalChain: currentChain,
-            currentChain: chainForJwt,
+            chainAtOAuthStart: currentChain,
+            chainAfterOAuth,
           });
           // Abort login to prevent nonce mismatch
-          // The device data we used for OAuth was for currentChain,
-          // but the user switched to chainForJwt. Storing JWT would cause nonce mismatch.
+          // The device data we used for OAuth was for currentChain (start of flow),
+          // but the user switched to chainAfterOAuth. Storing JWT would cause nonce mismatch.
           return sendAuthError(id, {
             message:
               "Network was switched during login. Please try logging in again.",
@@ -388,7 +386,7 @@ async function handleDappLogin(
   // Check if the keeper has an unlocked ephemeral key
   let keeperStatus = await checkKeeperUnlocked();
   if (!keeperStatus.unlocked) {
-    // If device data exists, retry once (unlock might be in progress)
+    // Only retry if device data exists - if no device data, vault isn't set up yet so no point retrying
     if (hasDeviceData) {
       await new Promise((resolve) =>
         setTimeout(resolve, KEEPER_RETRY_DELAY_MS),

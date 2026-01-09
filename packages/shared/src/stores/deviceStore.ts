@@ -469,9 +469,10 @@ export const useDeviceStore = create<DeviceState>()(
         // Epoch start is a Unix timestamp in milliseconds
         const { epoch, epochDurationMs, epochStartTimestampMs } =
           await suiClient.getLatestSuiSystemState();
-        const numericMaxEpoch = Number(epoch); // Set to current epoch for now, can increase validity window in the future
+        // Use current epoch - must stay aligned with maxEpochTimestampMs below
+        const numericMaxEpoch = Number(epoch);
 
-        // 4. Set maxEpoch expiry (aligned with numericMaxEpoch which is current epoch)
+        // 4. Set maxEpoch expiry - must stay aligned with numericMaxEpoch (current epoch)
         const maxEpochTimestampMs =
           Number(epochStartTimestampMs) + Number(epochDurationMs);
 
@@ -632,6 +633,21 @@ export const useDeviceStore = create<DeviceState>()(
       },
 
       unlock: async (pin: string) => {
+        // Helper to set unlocked state with optional public key
+        const setUnlockedState = (publicKey: PublicKey | null) => {
+          if (publicKey) {
+            set({
+              isLocked: false,
+              error: null,
+              ephemeralPublicKey: publicKey,
+              ephemeralPublicKeyBytes: Array.from(publicKey.toRawBytes()),
+              ephemeralPublicKeyFlag: publicKey.flag(),
+            });
+          } else {
+            set({ isLocked: false, error: null });
+          }
+        };
+
         try {
           const storedKey = get().ephemeralKeyPairSecretKey;
 
@@ -651,18 +667,7 @@ export const useDeviceStore = create<DeviceState>()(
 
             // Unlock the vault with PIN (decrypts the stored key)
             const publicKey = await ephKeyService.unlockVault(null, pin);
-
-            if (publicKey) {
-              set({
-                isLocked: false,
-                error: null,
-                ephemeralPublicKey: publicKey,
-                ephemeralPublicKeyBytes: Array.from(publicKey.toRawBytes()),
-                ephemeralPublicKeyFlag: publicKey.flag(),
-              });
-            } else {
-              set({ isLocked: false, error: null });
-            }
+            setUnlockedState(publicKey);
             return;
           }
 
@@ -673,18 +678,7 @@ export const useDeviceStore = create<DeviceState>()(
           }
 
           const publicKey = await ephKeyService.unlockVault(storedKey, pin);
-
-          if (publicKey) {
-            set({
-              isLocked: false,
-              error: null,
-              ephemeralPublicKey: publicKey,
-              ephemeralPublicKeyBytes: Array.from(publicKey.toRawBytes()),
-              ephemeralPublicKeyFlag: publicKey.flag(),
-            });
-          } else {
-            set({ isLocked: false, error: null });
-          }
+          setUnlockedState(publicKey);
         } catch (error) {
           log.error("Error decrypting secret key", error);
           set({
