@@ -214,7 +214,7 @@ export const WalletScreen = () => {
               </Text>
               <Button
                 variant="secondary"
-                size="xs"
+                size="small"
                 onClick={() =>
                   copyAddress(user?.profile?.sui_address as string)
                 }
@@ -309,6 +309,9 @@ export const WalletScreen = () => {
             user={user}
             chain={chain || null}
             onAddToken={() => navigate({ to: "/wallet/add-token" })}
+            onSendToken={(coinType) =>
+              navigate({ to: "/wallet/send-token", search: { coinType } })
+            }
           />
         </main>
         <footer className="app-shell__footer" />

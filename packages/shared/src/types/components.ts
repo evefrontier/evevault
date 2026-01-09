@@ -27,6 +27,7 @@ export interface TokenListProps {
   user: User | null;
   chain: SuiChain | null;
   onAddToken?: () => void;
+  onSendToken?: (coinType: string) => void;
 }
 
 export interface TokenRowProps {
@@ -233,6 +234,14 @@ export interface AddTokenScreenProps {
   onCancel?: () => void;
 }
 
+export interface SendTokenScreenProps {
+  coinType: string;
+  user: User | null;
+  chain: SuiChain | null;
+  onSuccess?: () => void;
+  onCancel?: () => void;
+}
+
 export interface DropdownItem {
   label: string;
   icon?: IconName;
@@ -285,10 +294,16 @@ export interface TokenRowProps {
   onCopyAddress: (address: string) => void;
 }
 
+export type LayoutVariant = "web" | "extension";
+
 export interface LayoutProps {
   children: React.ReactNode;
+  /** Layout variant: "web" (default) for full app, "extension" for browser popup */
+  variant?: LayoutVariant;
   showNav?: boolean;
   navItems?: NavigationBarProps["items"];
+  /** Extension variant: props for HeaderMobile (required when variant="extension") */
+  headerProps?: HeaderMobileProps;
 }
 
 export type RoutePath = FileRouteTypes["to"];

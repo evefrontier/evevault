@@ -9,9 +9,15 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from "./routes/__root"
+import { Route as SendTokenRouteImport } from "./routes/send-token"
 import { Route as AddTokenRouteImport } from "./routes/add-token"
 import { Route as IndexRouteImport } from "./routes/index"
 
+const SendTokenRoute = SendTokenRouteImport.update({
+  id: "/send-token",
+  path: "/send-token",
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AddTokenRoute = AddTokenRouteImport.update({
   id: "/add-token",
   path: "/add-token",
@@ -26,31 +32,42 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute
   "/add-token": typeof AddTokenRoute
+  "/send-token": typeof SendTokenRoute
 }
 export interface FileRoutesByTo {
   "/": typeof IndexRoute
   "/add-token": typeof AddTokenRoute
+  "/send-token": typeof SendTokenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   "/": typeof IndexRoute
   "/add-token": typeof AddTokenRoute
+  "/send-token": typeof SendTokenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: "/" | "/add-token"
+  fullPaths: "/" | "/add-token" | "/send-token"
   fileRoutesByTo: FileRoutesByTo
-  to: "/" | "/add-token"
-  id: "__root__" | "/" | "/add-token"
+  to: "/" | "/add-token" | "/send-token"
+  id: "__root__" | "/" | "/add-token" | "/send-token"
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AddTokenRoute: typeof AddTokenRoute
+  SendTokenRoute: typeof SendTokenRoute
 }
 
 declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
+    "/send-token": {
+      id: "/send-token"
+      path: "/send-token"
+      fullPath: "/send-token"
+      preLoaderRoute: typeof SendTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/add-token": {
       id: "/add-token"
       path: "/add-token"
@@ -71,6 +88,7 @@ declare module "@tanstack/react-router" {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AddTokenRoute: AddTokenRoute,
+  SendTokenRoute: SendTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

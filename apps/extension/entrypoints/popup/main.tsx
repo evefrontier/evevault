@@ -65,7 +65,9 @@ try {
     <React.StrictMode>
       <QueryClientProvider client={queryClient}>
         <ToastProvider>
-          <Layout showNav={false}>{getComponent()}</Layout>
+          <Layout variant="extension" showNav={false}>
+            {getComponent()}
+          </Layout>
         </ToastProvider>
       </QueryClientProvider>
     </React.StrictMode>,

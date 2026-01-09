@@ -15,6 +15,12 @@
   --color-matter-04: #44413f;
   --color-matter-05: #524e4b;
   --color-matter-06: #6d6965;
+  --color-error: #942922;
+  --color-red-10: #ed4136;
+  --color-quantum-40: rgba(255, 71, 0, 0.4);
+  --color-quantum-10: rgba(255, 71, 0, 0.1);
+  --color-quantum-60: rgba(255, 71, 0, 0.6);
+  --color-crude-dark: #0b0b0b;
 }
 
 :root {

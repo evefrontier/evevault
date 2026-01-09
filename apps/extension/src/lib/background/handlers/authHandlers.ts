@@ -260,7 +260,35 @@ async function handleExtLogin(
       hasExistingJwt,
       jwtNonceMatches,
     });
-    await deviceStore.initializeForChain(currentChain);
+    try {
+      await deviceStore.initializeForChain(currentChain);
+    } catch (error) {
+      // Check if this is a network connectivity error
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      const isNetworkError =
+        errorMessage.includes("503") ||
+        errorMessage.includes("Failed to fetch") ||
+        errorMessage.includes("no healthy upstream") ||
+        errorMessage.includes("ECONNREFUSED") ||
+        errorMessage.includes("ETIMEDOUT");
+
+      if (isNetworkError) {
+        log.error("Network unavailable during device initialization", {
+          chain: currentChain,
+          error: errorMessage,
+        });
+        return sendAuthError(id, {
+          message: `The ${currentChain.replace("sui:", "")} network is currently unavailable. Please try a different network or try again later.`,
+        });
+      }
+
+      // Re-throw other errors
+      log.error("Device initialization failed", { error: errorMessage });
+      return sendAuthError(id, {
+        message: `Failed to initialize device: ${errorMessage}`,
+      });
+    }
   } else if (hasExistingJwt && jwtNonceMatches && isExpired) {
     // Device data expired but JWT nonce matches - this is a problem
     // We can't regenerate device data (would cause nonce mismatch)

@@ -1,16 +1,23 @@
 import {
-  AddTokenScreen,
   HeaderMobile,
+  SendTokenScreen,
   useAuthStore,
   useNetworkStore,
 } from "@evevault/shared";
+import type { SendTokenSearch } from "@evevault/shared/router";
 import { requireAuth } from "@evevault/shared/router";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  redirect,
+  useNavigate,
+  useSearch,
+} from "@tanstack/react-router";
 
-function AddTokenPage() {
+function SendTokenPage() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { chain } = useNetworkStore();
+  const { coinType } = useSearch({ from: "/send-token" });
 
   const handleNavigateBack = () => {
     navigate({ to: "/" });
@@ -18,12 +25,13 @@ function AddTokenPage() {
 
   // Note: Layout is provided by popup entrypoint, so we only render content here
   return (
-    <div className="flex flex-col gap-[40px]">
+    <div className="flex flex-col gap-10">
       <HeaderMobile
         email={user?.profile?.email as string}
         address={user?.profile?.sui_address as string}
       />
-      <AddTokenScreen
+      <SendTokenScreen
+        coinType={coinType}
         user={user}
         chain={chain || null}
         onSuccess={handleNavigateBack}
@@ -33,7 +41,15 @@ function AddTokenPage() {
   );
 }
 
-export const Route = createFileRoute("/add-token")({
+export const Route = createFileRoute("/send-token")({
   beforeLoad: () => requireAuth(),
-  component: AddTokenPage,
+  component: SendTokenPage,
+  validateSearch: (search: Record<string, unknown>): SendTokenSearch => {
+    const coinType = (search.coinType as string) || "";
+    // Redirect to home if coinType is missing
+    if (!coinType) {
+      throw redirect({ to: "/" });
+    }
+    return { coinType };
+  },
 });

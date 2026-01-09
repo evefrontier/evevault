@@ -113,6 +113,9 @@ function App() {
         chain={chain || null}
         walletAddress={user?.profile?.sui_address as string}
         onAddToken={() => navigate({ to: "/add-token" })}
+        onSendToken={(coinType) =>
+          navigate({ to: "/send-token", search: { coinType } })
+        }
       />
 
       {/* Network display and Test transaction button */}

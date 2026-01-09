@@ -223,6 +223,22 @@ Keep entrypoints minimal:
 **NEVER use hardcoded values for colors, spacing, or typography.**  
 **Note:** We use "design system values" instead of "design tokens" to avoid confusion with blockchain tokens.
 
+**This applies to ALL color props including component props like `<Icon color="..." />`:**
+
+```typescript
+// ✅ CORRECT - Use CSS variable names (without var() wrapper)
+<Icon name="Copy" size="small" color="grey-neutral" />
+<Icon name="Arrow" size="medium" color="neutral" />
+<Icon name="Settings" color="quantum" />
+
+// ❌ WRONG - Never use hex codes in component props
+<Icon name="Copy" size="small" color="#8E8C77" />
+<Icon name="Arrow" size="medium" color="#FFFFD6" />
+<Icon name="Settings" color="#FF4700" />
+```
+
+**For inline styles and CSS:**
+
 ```typescript
 // ✅ CORRECT
 import { colors, spacing, typography } from "@evevault/shared/design";
@@ -1305,7 +1321,7 @@ if (previousNetwork) {
 ## What NOT to Do
 
 1. ❌ Don't use relative paths to packages (`../../packages/shared/`)
-2. ❌ Don't hardcode colors, spacing, or typography values
+2. ❌ Don't hardcode colors, spacing, or typography values (including in component props like `<Icon color="#FF4700" />`)
 3. ❌ Don't put business logic in entrypoints
 4. ❌ Don't create shared components prematurely
 5. ❌ Don't duplicate code that exists in `packages/shared/`
