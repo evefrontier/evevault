@@ -24,6 +24,7 @@ export const getDeviceData = async (chain: SuiChain) => {
   const networkData = parsedResult.networkData?.[chain];
 
   return {
+    // Fallback order: use store value, then per-network storage value, then null if still missing.
     jwtRandomness: jwtRandomness ?? networkData?.jwtRandomness ?? null,
     nonce: nonce ?? networkData?.nonce,
     maxEpoch: maxEpoch ?? networkData?.maxEpoch,
