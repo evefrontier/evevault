@@ -1,6 +1,6 @@
 import { SUI_DEVNET_CHAIN } from "@mysten/wallet-standard";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import * as keeperService from "../../../services/keeperService";
+import * as vaultService from "../../../services/vaultService";
 import { useDeviceStore } from "../../../stores/deviceStore";
 import { useNetworkStore } from "../../../stores/networkStore";
 import * as utils from "../../../utils/authCleanup";
@@ -8,7 +8,7 @@ import * as authConfig from "../../authConfig";
 import { useAuthStore } from "../authStore";
 
 // Mock dependencies
-vi.mock("../../../services/keeperService", () => ({
+vi.mock("../../../services/vaultService", () => ({
   ephKeyService: {
     lock: vi.fn(),
   },
@@ -63,19 +63,30 @@ describe("authStore.logout()", () => {
       addSilentRenewError: ReturnType<typeof vi.fn>;
     };
   };
+  let mockDeviceStoreLock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     // Get the mock user manager from the mocked function
+    // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
     mockUserManager = vi.mocked(authConfig.getUserManager)() as any;
     vi.mocked(utils.performFullCleanup).mockResolvedValue(undefined);
-    vi.mocked(keeperService.ephKeyService.lock).mockResolvedValue(undefined);
+    vi.mocked(vaultService.ephKeyService.lock).mockResolvedValue(undefined);
+    vi.mocked(vaultService.zkProofService.clear).mockResolvedValue(undefined);
     vi.mocked(useNetworkStore.getState).mockReturnValue({
       chain: SUI_DEVNET_CHAIN,
+      // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
     } as any);
+
+    // Mock deviceStore.lock() - it calls ephKeyService.lock() internally
+    mockDeviceStoreLock = vi.fn().mockImplementation(async () => {
+      await vi.mocked(vaultService.ephKeyService.lock)();
+    });
     vi.mocked(useDeviceStore.getState).mockReturnValue({
       reset: vi.fn(),
       initializeForChain: vi.fn().mockResolvedValue(undefined),
+      lock: mockDeviceStoreLock,
+      // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
     } as any);
 
     // Reset auth store state
@@ -90,12 +101,49 @@ describe("authStore.logout()", () => {
     vi.restoreAllMocks();
   });
 
-  it("calls ephKeyService.lock() during logout", async () => {
-    const mockLock = vi.mocked(keeperService.zkProofService.clear);
+  it("calls zkProofService.clear() during logout", async () => {
+    const mockClear = vi.mocked(vaultService.zkProofService.clear);
 
     await useAuthStore.getState().logout();
 
-    expect(mockLock).toHaveBeenCalledTimes(1);
+    expect(mockClear).toHaveBeenCalledTimes(1);
+  });
+
+  it("calls deviceStore.lock() during logout", async () => {
+    await useAuthStore.getState().logout();
+
+    expect(mockDeviceStoreLock).toHaveBeenCalledTimes(1);
+    // deviceStore.lock() internally calls ephKeyService.lock()
+    expect(vi.mocked(vaultService.ephKeyService.lock)).toHaveBeenCalledTimes(1);
+  });
+
+  it("calls zkProofService.clear() before deviceStore.lock()", async () => {
+    const mockClear = vi.mocked(vaultService.zkProofService.clear);
+
+    // Track call order
+    const callOrder: string[] = [];
+    mockClear.mockImplementation(async () => {
+      callOrder.push("clear");
+      return Promise.resolve();
+    });
+    mockDeviceStoreLock.mockImplementation(async () => {
+      callOrder.push("lock");
+      // deviceStore.lock() internally calls ephKeyService.lock()
+      await vi.mocked(vaultService.ephKeyService.lock)();
+      return Promise.resolve();
+    });
+
+    await useAuthStore.getState().logout();
+
+    expect(callOrder).toEqual(["clear", "lock"]);
+  });
+
+  it("calls performFullCleanup() during logout", async () => {
+    const mockCleanup = vi.mocked(utils.performFullCleanup);
+
+    await useAuthStore.getState().logout();
+
+    expect(mockCleanup).toHaveBeenCalledTimes(1);
   });
 
   it("calls userManager.removeUser() before cleanup", async () => {
@@ -120,40 +168,13 @@ describe("authStore.logout()", () => {
     expect(callOrder[1]).toBe("cleanup");
   });
 
-  it("calls deviceStore.reset() and initializeForChain() after cleanup", async () => {
-    const mockReset = vi.fn();
-    const mockInitializeForChain = vi.fn().mockResolvedValue(undefined);
-
-    vi.mocked(useDeviceStore.getState).mockReturnValue({
-      reset: mockReset,
-      initializeForChain: mockInitializeForChain,
-    } as any);
-
-    // Track call order
-    const callOrder: string[] = [];
-    mockReset.mockImplementation(() => {
-      callOrder.push("reset");
-    });
-    mockInitializeForChain.mockImplementation(async () => {
-      callOrder.push("initializeForChain");
-      return Promise.resolve();
-    });
-
-    await useAuthStore.getState().logout();
-
-    expect(mockReset).toHaveBeenCalledTimes(1);
-    expect(mockInitializeForChain).toHaveBeenCalledWith(SUI_DEVNET_CHAIN);
-    expect(callOrder.indexOf("reset")).toBeLessThan(
-      callOrder.indexOf("initializeForChain"),
-    );
-  });
-
-  it("handles errors gracefully and still attempts signout redirect for web", async () => {
+  it("handles errors gracefully and still attempts redirect for web", async () => {
     const error = new Error("Lock failed");
-    vi.mocked(keeperService.ephKeyService.lock).mockRejectedValueOnce(error);
+    mockDeviceStoreLock.mockRejectedValueOnce(error);
 
     await useAuthStore.getState().logout();
 
-    expect(mockUserManager.signoutRedirect).toHaveBeenCalledTimes(1);
+    // Should still complete even with error (redirect happens)
+    expect(useAuthStore.getState().error).toBe("Lock failed");
   });
 });

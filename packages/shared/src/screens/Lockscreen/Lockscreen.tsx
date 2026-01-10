@@ -32,7 +32,9 @@ export default function LockScreen({
       setPinError("PIN must be 6 digits long");
       return;
     }
-    if (!isPinSet) await initializeDevice(pin);
+    if (!isPinSet) {
+      await initializeDevice(pin);
+    }
     unlock(pin);
   };
 

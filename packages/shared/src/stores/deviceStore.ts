@@ -9,10 +9,12 @@ import {
   SUI_TESTNET_CHAIN,
   type SuiChain,
 } from "@mysten/wallet-standard";
+import { decodeJwt } from "jose";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { chromeStorageAdapter, localStorageAdapter } from "../adapters";
 import { useAuthStore } from "../auth";
+import { hasJwtForNetwork } from "../auth/storageService";
 import { ephKeyService, zkProofService } from "../services/vaultService";
 import { createSuiClient } from "../sui";
 import {
@@ -70,6 +72,7 @@ const createEmptyNetworkDataEntry = (): NetworkDataEntry => ({
   nonce: null,
   maxEpoch: null,
   maxEpochTimestampMs: null,
+  jwtRandomness: null,
 });
 
 /**
@@ -104,7 +107,6 @@ export const useDeviceStore = create<DeviceState>()(
       ephemeralPublicKeyBytes: null,
       ephemeralPublicKeyFlag: null,
       ephemeralKeyPairSecretKey: null,
-      jwtRandomness: null,
       networkData: {
         [SUI_DEVNET_CHAIN]: createEmptyNetworkDataEntry(),
         [SUI_TESTNET_CHAIN]: createEmptyNetworkDataEntry(),
@@ -130,6 +132,11 @@ export const useDeviceStore = create<DeviceState>()(
         return get().networkData[currentChain]?.nonce ?? null;
       },
 
+      getJwtRandomness: (chain?: SuiChain) => {
+        const currentChain = chain || useNetworkStore.getState().chain;
+        return get().networkData[currentChain]?.jwtRandomness ?? null;
+      },
+
       // Initialize device state
       initialize: async (pin: string) => {
         set({ loading: true });
@@ -146,10 +153,20 @@ export const useDeviceStore = create<DeviceState>()(
         const currentState = get();
         const currentChain = useNetworkStore.getState().chain;
 
-        const { maxEpoch, nonce, maxEpochTimestampMs } =
-          currentState.networkData[currentChain] ?? {};
-        let { jwtRandomness, networkData, ephemeralKeyPairSecretKey } =
-          currentState;
+        const networkDataEntry = currentState.networkData[currentChain];
+        const {
+          maxEpoch,
+          nonce,
+          maxEpochTimestampMs,
+          jwtRandomness: networkJwtRandomness,
+        } = networkDataEntry ?? {
+          maxEpoch: null,
+          nonce: null,
+          maxEpochTimestampMs: null,
+          jwtRandomness: null,
+        };
+        const { networkData, ephemeralKeyPairSecretKey } = currentState;
+        let jwtRandomness = networkJwtRandomness;
 
         try {
           // Initialize the ephKeyService (needed for web to recover from IndexedDB)
@@ -174,7 +191,41 @@ export const useDeviceStore = create<DeviceState>()(
                 });
 
                 // Check if we need to initialize for chain
+                // BUT: Only regenerate if we don't have a JWT with matching nonce
+                // (regenerating would cause nonce mismatch)
                 if (!nonce || !maxEpoch || !maxEpochTimestampMs) {
+                  // Check if we have a JWT for this network
+                  const hasJwt = await hasJwtForNetwork(currentChain);
+                  if (hasJwt) {
+                    // Dynamic import to avoid circular dependency: deviceStore → auth → authStore → deviceStore
+                    const { getJwtForNetwork } = await import(
+                      "../auth/storageService"
+                    );
+                    const jwt = await getJwtForNetwork(currentChain);
+                    if (jwt?.id_token) {
+                      try {
+                        const decodedJwt = decodeJwt(jwt.id_token);
+                        const jwtNonce = decodedJwt.nonce as string | undefined;
+                        // If JWT exists but device data is missing, we can't regenerate
+                        // (would cause nonce mismatch). User needs to re-login.
+                        if (jwtNonce) {
+                          log.warn(
+                            "Device data missing but JWT exists - cannot regenerate without causing nonce mismatch",
+                            {
+                              chain: currentChain,
+                              jwtNonce,
+                            },
+                          );
+                          // Don't regenerate - user will need to re-login
+                          set({ loading: false, isLocked: false });
+                          return;
+                        }
+                      } catch (error) {
+                        log.warn("Failed to decode JWT for nonce check", error);
+                      }
+                    }
+                  }
+                  // No JWT or nonce check failed - safe to regenerate
                   await get().initializeForChain(currentChain);
                   set({ loading: false, isLocked: false });
                 } else {
@@ -199,6 +250,8 @@ export const useDeviceStore = create<DeviceState>()(
               ephemeralKeyPairSecretKey: createWebCryptoPlaceholder(),
             });
 
+            // For new keypair creation, always initialize device data
+            // (no JWT exists yet, so no risk of nonce mismatch)
             await get().initializeForChain(currentChain);
             set({ loading: false, isLocked: false });
             return;
@@ -259,8 +312,11 @@ export const useDeviceStore = create<DeviceState>()(
                 }
 
                 if (persistedDeviceStoreState) {
-                  jwtRandomness =
-                    persistedDeviceStoreState.jwtRandomness ?? jwtRandomness;
+                  const persistedNetworkData =
+                    persistedDeviceStoreState.networkData?.[currentChain];
+                  const persistedJwtRandomness =
+                    persistedNetworkData?.jwtRandomness ?? null;
+                  jwtRandomness = persistedJwtRandomness;
                   storedSecretKey = await resolveStoredSecretKey(
                     persistedDeviceStoreState.ephemeralKeyPairSecretKey ??
                       storedSecretKey,
@@ -271,7 +327,6 @@ export const useDeviceStore = create<DeviceState>()(
                     log.debug("Rehydrating device store from persisted data");
 
                     set({
-                      jwtRandomness,
                       ephemeralKeyPairSecretKey: storedSecretKey,
                       networkData:
                         persistedDeviceStoreState.networkData ?? networkData,
@@ -340,6 +395,43 @@ export const useDeviceStore = create<DeviceState>()(
             );
           }
 
+          // Before initializing device data, check if we have a JWT for this network
+          // If we do, we cannot regenerate device data (would cause nonce mismatch)
+          const hasJwt = await hasJwtForNetwork(currentChain);
+          if (hasJwt) {
+            // We have a JWT - check if device data exists
+            const currentDeviceData = get().networkData[currentChain];
+            if (currentDeviceData?.nonce && currentDeviceData?.maxEpoch) {
+              // Device data exists - don't regenerate
+              log.info(
+                "Device data exists for chain, skipping initialization",
+                {
+                  chain: currentChain,
+                },
+              );
+              set({
+                loading: false,
+                isLocked: false,
+              });
+              return;
+            } else {
+              // Device data missing but JWT exists - cannot regenerate
+              log.warn(
+                "Device data missing but JWT exists - cannot regenerate without causing nonce mismatch",
+                {
+                  chain: currentChain,
+                },
+              );
+              // Don't regenerate - user will need to re-login
+              set({
+                loading: false,
+                isLocked: false,
+              });
+              return;
+            }
+          }
+
+          // No JWT exists - safe to initialize device data
           // Then, initialize for current chain
           log.info("Initializing device store for chain", {
             chain: currentChain,
@@ -347,6 +439,7 @@ export const useDeviceStore = create<DeviceState>()(
           await get().initializeForChain(currentChain);
           set({
             loading: false,
+            isLocked: false,
           });
         } catch (error) {
           log.error("Error handling private key", error);
@@ -369,34 +462,37 @@ export const useDeviceStore = create<DeviceState>()(
           throw new Error("Ephemeral public key not found");
         }
 
-        // 2. generate new jwtRandomness
+        // 2. generate new jwtRandomness (per-network to prevent cross-network conflicts)
         const jwtRandomness = generateRandomness().toString();
 
         // 3. Get max epoch
         // Epoch start is a Unix timestamp in milliseconds
         const { epoch, epochDurationMs, epochStartTimestampMs } =
           await suiClient.getLatestSuiSystemState();
-        const numericMaxEpoch = Number(epoch); // Set to current epoch for now, can increase validity window in the future
+        // Use current epoch - must stay aligned with maxEpochTimestampMs below
+        const numericMaxEpoch = Number(epoch);
 
-        // 4. Set maxEpoch expiry
+        // 4. Set maxEpoch expiry - must stay aligned with numericMaxEpoch (current epoch)
         const maxEpochTimestampMs =
-          Number(epochStartTimestampMs) + Number(epochDurationMs) * 2;
+          Number(epochStartTimestampMs) + Number(epochDurationMs);
 
-        // 5. Generate nonce
+        // 5. Generate nonce using the per-network jwtRandomness
         const nonce = generateNonce(
           ephemeralPubkey,
           numericMaxEpoch,
           jwtRandomness,
         );
 
+        // Store jwtRandomness per-network to prevent cross-network conflicts
+        // NOTE: ephemeralKeyPairSecretKey is device-level (not network-level) and is NOT modified here
         set({
-          jwtRandomness: jwtRandomness,
           networkData: {
             ...get().networkData,
             [chain]: {
               maxEpoch: numericMaxEpoch.toString(),
               maxEpochTimestampMs: maxEpochTimestampMs,
               nonce: nonce,
+              jwtRandomness: jwtRandomness,
             },
           },
           error: null,
@@ -447,11 +543,56 @@ export const useDeviceStore = create<DeviceState>()(
           const chain = useNetworkStore.getState().chain;
           const network = chain.replace("sui:", "") as string;
 
+          // Verify that we have a JWT for the current network
+          const hasJwt = await hasJwtForNetwork(chain);
+          if (!hasJwt) {
+            throw new Error(
+              `No valid JWT found for ${network}. Please sign in again.`,
+            );
+          }
+
+          // Verify that the nonce in the JWT matches the nonce for the current network
+          const decodedJwt = decodeJwt(user.id_token);
+          const jwtNonce = decodedJwt.nonce as string | undefined;
+          const deviceNonce = get().getNonce(chain);
+
+          if (jwtNonce && deviceNonce && jwtNonce !== deviceNonce) {
+            log.error(
+              "JWT nonce doesn't match device nonce for current network",
+              {
+                chain,
+                jwtNonce,
+                deviceNonce,
+              },
+            );
+            // Nonce mismatch means device data was regenerated after OAuth
+            // The nonce is derived from ephemeral key + maxEpoch + jwtRandomness
+            // If these don't match what was used during OAuth, the JWT is invalid
+            // We cannot generate a valid zkProof with mismatched parameters
+            // User must re-login to regenerate device data that matches the new JWT
+            throw new Error(
+              `JWT nonce mismatch for ${network}. Device data was regenerated after login. Please sign in again to sync device data with your JWT.`,
+            );
+          }
+
           log.debug("User ID token:", user.id_token);
+          log.debug("Generating ZK proof for network", { chain, network });
+
+          // Get jwtRandomness for the current network (per-network, not global)
+          const networkJwtRandomness = get().getJwtRandomness(chain);
+          if (!networkJwtRandomness) {
+            throw new Error(
+              `JWT randomness not found for ${network}. Please sign in again.`,
+            );
+          }
+
+          if (!maxEpoch) {
+            throw new Error("Max epoch not found for current network");
+          }
 
           const zkProofResponse: ZkProofResponse = await fetchZkProof({
-            jwtRandomness: get().jwtRandomness!,
-            maxEpoch: maxEpoch!,
+            jwtRandomness: networkJwtRandomness,
+            maxEpoch,
             ephemeralPublicKey,
             idToken: user.id_token,
             enokiApiKey: import.meta.env.VITE_ENOKI_API_KEY,
@@ -492,6 +633,21 @@ export const useDeviceStore = create<DeviceState>()(
       },
 
       unlock: async (pin: string) => {
+        // Helper to set unlocked state with optional public key
+        const setUnlockedState = (publicKey: PublicKey | null) => {
+          if (publicKey) {
+            set({
+              isLocked: false,
+              error: null,
+              ephemeralPublicKey: publicKey,
+              ephemeralPublicKeyBytes: Array.from(publicKey.toRawBytes()),
+              ephemeralPublicKeyFlag: publicKey.flag(),
+            });
+          } else {
+            set({ isLocked: false, error: null });
+          }
+        };
+
         try {
           const storedKey = get().ephemeralKeyPairSecretKey;
 
@@ -511,18 +667,7 @@ export const useDeviceStore = create<DeviceState>()(
 
             // Unlock the vault with PIN (decrypts the stored key)
             const publicKey = await ephKeyService.unlockVault(null, pin);
-
-            if (publicKey) {
-              set({
-                isLocked: false,
-                error: null,
-                ephemeralPublicKey: publicKey,
-                ephemeralPublicKeyBytes: Array.from(publicKey.toRawBytes()),
-                ephemeralPublicKeyFlag: publicKey.flag(),
-              });
-            } else {
-              set({ isLocked: false, error: null });
-            }
+            setUnlockedState(publicKey);
             return;
           }
 
@@ -532,9 +677,8 @@ export const useDeviceStore = create<DeviceState>()(
             return;
           }
 
-          await ephKeyService.unlockVault(storedKey, pin);
-
-          set({ isLocked: false, error: null });
+          const publicKey = await ephKeyService.unlockVault(storedKey, pin);
+          setUnlockedState(publicKey);
         } catch (error) {
           log.error("Error decrypting secret key", error);
           set({
@@ -545,7 +689,6 @@ export const useDeviceStore = create<DeviceState>()(
 
       reset: () => {
         set({
-          jwtRandomness: null,
           networkData: {
             [SUI_DEVNET_CHAIN]: createEmptyNetworkDataEntry(),
             [SUI_TESTNET_CHAIN]: createEmptyNetworkDataEntry(),
@@ -561,20 +704,44 @@ export const useDeviceStore = create<DeviceState>()(
         isWeb() ? localStorageAdapter : chromeStorageAdapter,
       ),
       // Exclude the class instance from persistence, only persist bytes and flag
-      partialize: (state) => ({
-        ...state,
-        ephemeralPublicKey: undefined, // Don't persist the class instance
-        // ephemeralPublicKeyBytes and ephemeralPublicKeyFlag will be persisted
-        // Don't persist transient states
-        loading: undefined,
-        error: undefined,
-      }),
+      partialize: (state) => {
+        return {
+          ...state,
+          ephemeralPublicKey: undefined, // Don't persist the class instance
+          // ephemeralPublicKeyBytes and ephemeralPublicKeyFlag will be persisted
+          // ephemeralKeyPairSecretKey is included (even if null) to preserve it in storage
+          // Don't persist transient states
+          loading: undefined,
+          error: undefined,
+        };
+      },
       // Reconstruct the class instance from bytes on rehydration
       onRehydrateStorage: () => {
         return (state, error) => {
           if (error) {
             log.error("Error rehydrating device store", error);
             return;
+          }
+
+          // Validate and clean up ephemeralKeyPairSecretKey if it's an invalid object
+          if (
+            state &&
+            state.ephemeralKeyPairSecretKey &&
+            typeof state.ephemeralKeyPairSecretKey === "object"
+          ) {
+            const key = state.ephemeralKeyPairSecretKey;
+            // If it's an object but doesn't have iv and data, it's invalid - set to null
+            if (!("iv" in key) || !("data" in key)) {
+              log.warn(
+                "Invalid ephemeralKeyPairSecretKey structure on rehydration, setting to null",
+                {
+                  hasIv: "iv" in key,
+                  hasData: "data" in key,
+                  keys: Object.keys(key),
+                },
+              );
+              state.ephemeralKeyPairSecretKey = null;
+            }
           }
 
           if (state?.ephemeralPublicKeyBytes) {
@@ -595,6 +762,25 @@ export const useDeviceStore = create<DeviceState>()(
             }
           }
 
+          // Detect inconsistency: have public key but no secret key
+          if (
+            state?.ephemeralPublicKeyBytes &&
+            !state?.ephemeralKeyPairSecretKey
+          ) {
+            log.warn(
+              "Inconsistent state on rehydration: have ephemeralPublicKeyBytes but ephemeralKeyPairSecretKey is null/missing. This indicates the secret key was lost from storage.",
+              {
+                hasEphemeralPublicKeyBytes: !!state.ephemeralPublicKeyBytes,
+                hasEphemeralKeyPairSecretKey: !!state.ephemeralKeyPairSecretKey,
+              },
+            );
+            // In this case, we can't recover the secret key without the PIN, so we effectively reset the PIN state
+            state.ephemeralPublicKey = null;
+            state.ephemeralPublicKeyBytes = null;
+            state.ephemeralPublicKeyFlag = null;
+            state.isLocked = true; // Force lock if secret key is lost
+          }
+
           // Web: Always start locked after rehydration since the signer is in-memory only
           // User will need to re-enter PIN to unlock
           if (isWeb() && state) {
@@ -606,3 +792,37 @@ export const useDeviceStore = create<DeviceState>()(
     },
   ),
 );
+
+/**
+ * Waits for the device store to complete hydration from storage.
+ * If already hydrated, returns immediately.
+ * Otherwise, triggers rehydration and waits for it to complete.
+ */
+export const waitForDeviceHydration = async () => {
+  if (useDeviceStore.persist.hasHydrated()) {
+    return;
+  }
+
+  await new Promise<void>((resolve) => {
+    const unsub = useDeviceStore.persist.onFinishHydration(() => {
+      unsub();
+      resolve();
+    });
+    useDeviceStore.persist.rehydrate();
+  });
+};
+
+/**
+ * Rehydrates the device store from storage.
+ * Useful after the background script updates storage (e.g., after login)
+ * to sync the popup's Zustand state with the latest persisted data.
+ */
+export const rehydrateDeviceStore = async () => {
+  await new Promise<void>((resolve) => {
+    const unsub = useDeviceStore.persist.onFinishHydration(() => {
+      unsub();
+      resolve();
+    });
+    useDeviceStore.persist.rehydrate();
+  });
+};

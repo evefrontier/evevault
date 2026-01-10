@@ -11,7 +11,7 @@ import { createSuiClient } from "@evevault/shared/sui";
 import type { PendingTransaction } from "@evevault/shared/types";
 import { buildTx, createLogger } from "@evevault/shared/utils";
 import { zkSignAny } from "@evevault/shared/wallet";
-import type { TransactionData } from "@mysten/sui/transactions";
+import { Transaction, type TransactionData } from "@mysten/sui/transactions";
 import { useEffect, useState } from "react";
 
 const log = createLogger();

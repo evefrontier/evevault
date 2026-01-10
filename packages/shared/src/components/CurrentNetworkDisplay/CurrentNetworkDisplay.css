@@ -1,0 +1,114 @@
+.current-network-display {
+  position: relative;
+  display: inline-block;
+}
+
+.current-network-display__trigger {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.current-network-display__trigger:hover {
+  opacity: 0.8;
+}
+
+.current-network-display__chevron {
+  transition: transform 0.2s ease;
+  margin-left: auto;
+}
+
+.current-network-display__chevron--open {
+  transform: rotate(180deg);
+}
+
+.current-network-display__dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 160px;
+  background: var(--matter-02);
+  border: 1px solid var(--matter-04);
+  border-radius: 4px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  overflow: hidden;
+}
+
+/* In extension, dropdown opens upward */
+.current-network-display--extension .current-network-display__dropdown {
+  top: auto;
+  bottom: calc(100% + 4px);
+}
+
+.current-network-display__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  text-align: left;
+}
+
+.current-network-display__option:hover:not(:disabled) {
+  background: var(--matter-03);
+}
+
+.current-network-display__option--active {
+  background: var(--quantum-10);
+}
+
+.current-network-display__option--active:hover:not(:disabled) {
+  background: var(--quantum-20);
+}
+
+.current-network-display__option:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.current-network-display__check {
+  color: var(--quantum);
+  font-weight: bold;
+}
+
+/* Overlay and Dialog */
+.current-network-display__overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.current-network-display__dialog {
+  background: var(--matter-01);
+  border: 1px solid var(--matter-04);
+  border-radius: 8px;
+  padding: 24px;
+  max-width: 400px;
+  width: 90%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.current-network-display__dialog-message {
+  line-height: 1.5;
+}
+
+.current-network-display__dialog-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+

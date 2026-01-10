@@ -5,6 +5,9 @@ import { useMemo } from "react";
 import { useDeviceStore } from "../stores/deviceStore";
 import { useNetworkStore } from "../stores/networkStore";
 import { KEY_FLAG_SECP256R1 } from "../types/stores";
+import { createLogger } from "../utils/logger";
+
+const log = createLogger();
 
 export const useDevice = () => {
   const {
@@ -12,15 +15,12 @@ export const useDevice = () => {
     ephemeralPublicKeyBytes,
     ephemeralPublicKeyFlag,
     ephemeralKeyPairSecretKey,
-    jwtRandomness,
     loading,
     error,
-    getMaxEpoch,
-    getMaxEpochTimestampMs,
-    getNonce,
     initialize,
     initializeForChain,
     getZkProof,
+    getJwtRandomness,
     unlock,
     lock,
   } = useDeviceStore();
@@ -34,17 +34,28 @@ export const useDevice = () => {
     );
   }, [ephemeralKeyPairSecretKey]);
 
-  const currentChain = useNetworkStore.getState().chain;
+  // Subscribe to chain changes reactively
+  const { chain: currentChain } = useNetworkStore();
 
+  // Subscribe to the entire networkData object to ensure we react to any changes
+  // Using a selector that returns the whole networkData ensures we catch updates
+  // even when a new chain's data is added
+  const networkData = useDeviceStore((state) => state.networkData);
+
+  // Read device data directly from networkData instead of using getter functions
+  // This ensures we react to changes in networkData and don't capture stale values
   const maxEpoch = useMemo(() => {
-    return getMaxEpoch(currentChain);
-  }, [currentChain, getMaxEpoch]);
+    if (!currentChain || !networkData) return null;
+    return networkData[currentChain]?.maxEpoch ?? null;
+  }, [currentChain, networkData]);
   const maxEpochTimestampMs = useMemo(() => {
-    return getMaxEpochTimestampMs(currentChain);
-  }, [currentChain, getMaxEpochTimestampMs]);
+    if (!currentChain || !networkData) return null;
+    return networkData[currentChain]?.maxEpochTimestampMs ?? null;
+  }, [currentChain, networkData]);
   const nonce = useMemo(() => {
-    return getNonce(currentChain);
-  }, [currentChain, getNonce]);
+    if (!currentChain || !networkData) return null;
+    return networkData[currentChain]?.nonce ?? null;
+  }, [currentChain, networkData]);
 
   // Reconstruct public key from bytes using the correct key type
   const ephemeralPublicKey = useMemo((): PublicKey | null => {
@@ -60,7 +71,7 @@ export const useDevice = () => {
         return new Ed25519PublicKey(keyBytes);
       }
     } catch (error) {
-      console.error("Failed to reconstruct public key:", error);
+      log.error("Failed to reconstruct public key:", error);
       return null;
     }
   }, [ephemeralPublicKeyBytes, ephemeralPublicKeyFlag]);
@@ -70,7 +81,7 @@ export const useDevice = () => {
     isPinSet,
     ephemeralPublicKey,
     ephemeralKeyPairSecretKey,
-    jwtRandomness,
+    getJwtRandomness,
     maxEpoch,
     maxEpochTimestampMs,
     nonce,

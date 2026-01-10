@@ -140,13 +140,16 @@ export const ephKeyService = {
   },
 
   /**
-   * Locks the vault
+   * Locks the vault (clears ephemeral key from memory)
    */
-  lock(): void {
+  async lock(): Promise<void> {
     if (isWeb()) {
       webVaultService.lock();
+      return;
     }
-    // Extension: managed by offscreen keeper
+
+    // Extension: forward to keeper service
+    await keeperEphKeyService.lock();
   },
 
   /**
@@ -189,5 +192,22 @@ export const zkProofService = {
 
     // Extension: delegate to keeperService
     return keeperZkProofService.getZkProof(chain);
+  },
+
+  /**
+   * Clears all zkProofs
+   */
+  async clear(): Promise<void> {
+    if (isWeb()) {
+      // Web: clear zkProofs from in-memory/IndexedDB storage
+      await webVaultService.clearZkProof("sui:devnet" as SuiChain);
+      await webVaultService.clearZkProof("sui:testnet" as SuiChain);
+      await webVaultService.clearZkProof("sui:mainnet" as SuiChain);
+      await webVaultService.clearZkProof("sui:localnet" as SuiChain);
+      return;
+    }
+
+    // Extension: delegate to keeperService
+    return keeperZkProofService.clear();
   },
 };

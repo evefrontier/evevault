@@ -5,110 +5,60 @@ import {
   CurrentNetworkDisplay,
   HeaderMobile,
   Heading,
-  Layout,
   Text,
   TokenListSection,
-  useToast,
 } from "@evevault/shared/components";
 import { useDevice, useEpochExpiration } from "@evevault/shared/hooks";
 import { LockScreen } from "@evevault/shared/screens";
-import { useDeviceStore } from "@evevault/shared/stores/deviceStore";
 import { useNetworkStore } from "@evevault/shared/stores/networkStore";
-import { createSuiClient } from "@evevault/shared/sui";
 import { createLogger } from "@evevault/shared/utils";
-import { useBalance, zkSignAny } from "@evevault/shared/wallet";
-import { Transaction } from "@mysten/sui/transactions";
+import { useBalance } from "@evevault/shared/wallet";
+import type { SuiChain } from "@mysten/wallet-standard";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useAppInitialization, useLogin, useTestTransaction } from "../hooks";
 
 const log = createLogger();
 
 function App() {
   const navigate = useNavigate();
-  const [initError, setInitError] = useState<string | null>(null);
-  const [isInitializing, setIsInitializing] = useState(true);
-  const [txDigest, setTxDigest] = useState<string | null>(null);
+  const { initError, isInitializing } = useAppInitialization();
+  const [previousNetworkBeforeSwitch, setPreviousNetworkBeforeSwitch] =
+    useState<SuiChain | null>(null);
 
-  const { showToast } = useToast();
-
-  const {
-    user,
-    login,
-    initialize: initializeAuth,
-    error: authError,
-    loading: authLoading,
-  } = useAuth();
-  const {
-    ephemeralPublicKey,
-    isLocked,
-    isPinSet,
-    getZkProof,
-    maxEpoch,
-    error: deviceError,
-    loading: deviceLoading,
-    unlock,
-  } = useDevice();
-  const { chain, initialize: initializeNetwork } = useNetworkStore();
-  const _isLoggedIn = !!user;
+  const { user, error: authError } = useAuth();
+  const { isLocked, isPinSet, error: deviceError, unlock } = useDevice();
+  const { chain } = useNetworkStore();
+  const { handleLogin } = useLogin();
+  const { handleTestTransaction, txDigest } = useTestTransaction();
 
   // Use TanStack Query for balance fetching
-  const {
-    data: suiTokenBalance,
-    isLoading: balanceLoading,
-    error: balanceError,
-  } = useBalance({
+  useBalance({
     user: user || null,
     chain: chain || null,
   });
 
-  const suiClient = createSuiClient(chain);
-
-  useEffect(() => {
-    const initializeStores = async () => {
-      try {
-        log.info("Initializing stores");
-        await initializeAuth();
-        await initializeNetwork();
-
-        useDeviceStore.subscribe(async (state, prevState) => {
-          log.debug("Device store changed", { state, prevState });
-          const storageSnapshot = await chrome.storage.local.get([
-            "evevault:device",
-          ]);
-          log.debug("Storage after change", storageSnapshot);
-        });
-
-        log.info("Auth & network stores initialized successfully");
-        setIsInitializing(false);
-      } catch (error) {
-        log.error("Error initializing stores", error);
-        setInitError(
-          error instanceof Error ? error.message : "Failed to initialize",
-        );
-        setIsInitializing(false);
-      }
-    };
-
-    initializeStores();
-  }, []);
-
   useEpochExpiration();
 
-  const handleLogin = async () => {
-    try {
-      // TODO: Show login failed if token response is undefined
-      const tokenResponse = await login();
-      log.info("Login successful", { hasToken: Boolean(tokenResponse) });
-    } catch (err) {
-      log.error("Login error", err);
+  // Clear previous network tracking when user successfully logs in
+  useEffect(() => {
+    if (user && previousNetworkBeforeSwitch) {
+      log.info(
+        "User logged in successfully, clearing previous network tracking",
+      );
+      setPreviousNetworkBeforeSwitch(null);
+    }
+  }, [user, previousNetworkBeforeSwitch]);
+
+  const onLoginClick = async () => {
+    const success = await handleLogin(previousNetworkBeforeSwitch);
+    if (success) {
+      setPreviousNetworkBeforeSwitch(null);
     }
   };
 
-  // Determine if user is fully authenticated (unlocked + logged in)
-  const _isAuthenticated = !isLocked && !!user;
-
   // Show loading state while initializing
-  if (isInitializing || authLoading || deviceLoading) {
+  if (isInitializing) {
     return (
       <>
         <Heading level={1} variant="bold">
@@ -143,47 +93,10 @@ function App() {
         <Heading level={1} variant="bold">
           EVE Vault
         </Heading>
-        <Button onClick={async () => handleLogin()}>Sign in</Button>
+        <Button onClick={onLoginClick}>Sign in</Button>
       </>
     );
   }
-
-  const handleTestTransaction = async () => {
-    try {
-      if (!user || !maxEpoch) {
-        log.error("User or max epoch not found", { user, maxEpoch });
-        throw new Error("User or max epoch not found");
-      }
-      if (!ephemeralPublicKey) {
-        throw new Error("Ephemeral public key not found");
-      }
-
-      const tx = new Transaction();
-      tx.setSender(user.profile?.sui_address as string);
-      const txb = await tx.build({ client: suiClient });
-
-      const { bytes, zkSignature } = await zkSignAny("TransactionData", txb, {
-        user,
-        ephemeralPublicKey,
-        maxEpoch,
-        getZkProof,
-      });
-      log.debug("zkSignature ready", { length: zkSignature.length });
-      log.debug("Transaction bytes ready", { length: bytes.length });
-
-      const txDigest = await suiClient.executeTransactionBlock({
-        transactionBlock: bytes,
-        signature: zkSignature,
-      });
-
-      log.info("Transaction executed", { digest: txDigest.digest });
-      setTxDigest(txDigest.digest);
-      showToast("Transaction submitted!");
-    } catch (error) {
-      log.error("Error submitting transaction", error);
-      showToast("Error submitting transaction");
-    }
-  };
 
   // Authenticated view - show nav
   return (
@@ -204,7 +117,16 @@ function App() {
 
       {/* Network display and Test transaction button */}
       <div className=" justify-between  flex items-center gap-4 ">
-        <CurrentNetworkDisplay chain={chain} />
+        <CurrentNetworkDisplay
+          chain={chain}
+          onNetworkSwitchStart={(previousNetwork, targetNetwork) => {
+            log.info("Network switch started", {
+              previousNetwork,
+              targetNetwork,
+            });
+            setPreviousNetworkBeforeSwitch(previousNetwork as SuiChain);
+          }}
+        />
         <Button
           variant="secondary"
           size="small"
@@ -220,7 +142,11 @@ function App() {
         <Text>
           Transaction digest:{" "}
           <a
-            href={`https://suiscan.xyz/${chain?.replace("sui:", "")}/tx/${txDigest}`}
+            href={
+              chain
+                ? `https://suiscan.xyz/${chain.replace("sui:", "")}/tx/${txDigest}`
+                : "#"
+            }
             target="_blank"
             rel="noopener noreferrer"
           >

@@ -1,30 +1,41 @@
 import { useAuthStore } from "@evevault/shared/auth";
 import { useNetworkStore } from "@evevault/shared/stores";
-import type { CurrentNetworkDisplayProps } from "@evevault/shared/types";
 import { AVAILABLE_NETWORKS, getNetworkLabel } from "@evevault/shared/types";
 import { createLogger, isExtension } from "@evevault/shared/utils";
 import type { SuiChain } from "@mysten/wallet-standard";
-import type React from "react";
-import { useCallback, useMemo, useState } from "react";
+import { type FC, useCallback, useMemo, useState } from "react";
 import Button from "../Button";
 import Icon from "../Icon";
 import Text from "../Text";
-import "./CurrentNetworkDisplay.css";
+import "./style.css";
 
 const log = createLogger();
 
-export const CurrentNetworkDisplay: React.FC<CurrentNetworkDisplayProps> = ({
-  chain,
-  className = "",
-  onNetworkSwitchStart,
+export interface NetworkSelectorProps {
+  /** Compact mode shows only the network badge */
+  compact?: boolean;
+  /** Callback when network switch requires re-authentication */
+  onRequiresReauth?: (targetNetwork: SuiChain) => void;
+}
+
+export const NetworkSelector: FC<NetworkSelectorProps> = ({
+  compact = false,
+  onRequiresReauth,
 }) => {
-  const { setChain, checkNetworkSwitch, loading } = useNetworkStore();
+  const { chain, setChain, checkNetworkSwitch, loading } = useNetworkStore();
   const { initialize: initializeAuth } = useAuthStore();
 
   const [isOpen, setIsOpen] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingNetwork, setPendingNetwork] = useState<SuiChain | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  const currentNetwork = useMemo(
+    () =>
+      AVAILABLE_NETWORKS.find((n) => n.chain === chain) ??
+      AVAILABLE_NETWORKS[0],
+    [chain],
+  );
 
   const handleNetworkSelect = useCallback(
     async (targetChain: SuiChain) => {
@@ -65,13 +76,12 @@ export const CurrentNetworkDisplay: React.FC<CurrentNetworkDisplayProps> = ({
 
     setIsProcessing(true);
 
-    // Store previous network before switching (for rollback on failure)
-    const currentChain = useNetworkStore.getState().chain;
-
-    // Notify parent component about network switch
-    onNetworkSwitchStart?.(currentChain, pendingNetwork);
+    // Notify parent if callback provided
+    onRequiresReauth?.(pendingNetwork);
 
     // Force set the target network
+    // This persists the network choice so login flow uses it
+    // We use forceSetChain because we know we don't have a JWT for this network
     useNetworkStore.getState().forceSetChain(pendingNetwork);
 
     // Re-initialize auth store to check JWT for new network
@@ -80,7 +90,7 @@ export const CurrentNetworkDisplay: React.FC<CurrentNetworkDisplayProps> = ({
     setShowConfirmDialog(false);
     setPendingNetwork(null);
     setIsProcessing(false);
-  }, [pendingNetwork, initializeAuth, onNetworkSwitchStart]);
+  }, [pendingNetwork, initializeAuth, onRequiresReauth]);
 
   const handleCancelReauth = useCallback(() => {
     setShowConfirmDialog(false);
@@ -93,49 +103,55 @@ export const CurrentNetworkDisplay: React.FC<CurrentNetworkDisplayProps> = ({
   );
 
   const isDisabled = loading || isProcessing;
+
   const isExtensionContext = isExtension();
 
   return (
     <>
       <div
-        className={`current-network-display ${
-          isExtensionContext ? "current-network-display--extension" : ""
-        } ${className}`}
+        className={`network-selector ${
+          isExtensionContext ? "network-selector--extension" : ""
+        }`}
       >
-        <button
-          type="button"
-          className="current-network-display__trigger"
-          onClick={() => !isDisabled && setIsOpen(!isOpen)}
-          disabled={isDisabled}
-        >
-          <Icon name="Network" color="quantum" />
-          <div className="flex flex-col gap-0.5">
-            <Text variant="label-small" color="neutral-50" size="small">
-              NETWORK
+        {compact ? (
+          <button
+            className="network-selector__badge"
+            onClick={() => setIsOpen(!isOpen)}
+            disabled={isDisabled}
+            type="button"
+          >
+            <Text size="small" variant="bold" color="neutral">
+              {currentNetwork.shortLabel}
             </Text>
-            <Text variant="label-medium" size="medium">
-              {chain.toUpperCase()}
+          </button>
+        ) : (
+          <button
+            className="network-selector__trigger"
+            onClick={() => setIsOpen(!isOpen)}
+            disabled={isDisabled}
+            type="button"
+          >
+            <Text size="medium" variant="regular" color="neutral">
+              {currentNetwork.label}
             </Text>
-          </div>
-          <Icon
-            name="ChevronArrowDown"
-            width={16}
-            height={16}
-            color="neutral"
-            className={`current-network-display__chevron ${
-              isOpen ? "current-network-display__chevron--open" : ""
-            }`}
-          />
-        </button>
+            <Icon
+              name="ChevronArrowDown"
+              width={16}
+              height={16}
+              color="neutral"
+              className={`network-selector__chevron ${isOpen ? "network-selector__chevron--open" : ""}`}
+            />
+          </button>
+        )}
 
         {isOpen && (
-          <div className="current-network-display__dropdown">
+          <div className="network-selector__dropdown">
             {AVAILABLE_NETWORKS.map((network) => (
               <button
                 key={network.chain}
-                className={`current-network-display__option ${
+                className={`network-selector__option ${
                   network.chain === chain
-                    ? "current-network-display__option--active"
+                    ? "network-selector__option--active"
                     : ""
                 }`}
                 onClick={() => handleNetworkSelect(network.chain)}
@@ -150,7 +166,7 @@ export const CurrentNetworkDisplay: React.FC<CurrentNetworkDisplayProps> = ({
                   {network.label}
                 </Text>
                 {network.chain === chain && (
-                  <span className="current-network-display__check">✓</span>
+                  <span className="network-selector__check">✓</span>
                 )}
               </button>
             ))}
@@ -160,8 +176,8 @@ export const CurrentNetworkDisplay: React.FC<CurrentNetworkDisplayProps> = ({
 
       {/* Sign In Required Dialog */}
       {showConfirmDialog && (
-        <div className="current-network-display__overlay">
-          <div className="current-network-display__dialog">
+        <div className="network-selector__overlay">
+          <div className="network-selector__dialog">
             <Text size="large" variant="bold" color="neutral">
               Sign In Required
             </Text>
@@ -169,12 +185,12 @@ export const CurrentNetworkDisplay: React.FC<CurrentNetworkDisplayProps> = ({
               size="medium"
               variant="regular"
               color="grey-neutral"
-              className="current-network-display__dialog-message"
+              className="network-selector__dialog-message"
             >
               You haven't signed in on {pendingNetworkLabel} yet. Sign in to
               continue on this network.
             </Text>
-            <div className="current-network-display__dialog-actions">
+            <div className="network-selector__dialog-actions">
               <Button
                 variant="secondary"
                 size="medium"
@@ -199,4 +215,4 @@ export const CurrentNetworkDisplay: React.FC<CurrentNetworkDisplayProps> = ({
   );
 };
 
-export default CurrentNetworkDisplay;
+export default NetworkSelector;

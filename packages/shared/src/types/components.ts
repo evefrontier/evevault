@@ -220,6 +220,10 @@ export interface CornersProps {
 export interface CurrentNetworkDisplayProps {
   chain: string;
   className?: string;
+  onNetworkSwitchStart?: (
+    previousNetwork: string,
+    targetNetwork: string,
+  ) => void;
 }
 
 export interface AddTokenScreenProps {

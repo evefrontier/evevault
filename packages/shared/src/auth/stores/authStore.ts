@@ -1,4 +1,15 @@
 import {
+  chromeStorageAdapter,
+  localStorageAdapter,
+} from "@evevault/shared/adapters";
+import {
+  type AuthState,
+  getZkLoginAddress,
+  vendJwt,
+} from "@evevault/shared/auth";
+import { useDeviceStore, useNetworkStore } from "@evevault/shared/stores";
+import type { AuthMessage, JwtResponse } from "@evevault/shared/types";
+import {
   createLogger,
   getDeviceData,
   isBrowser,
@@ -11,17 +22,12 @@ import { decodeJwt } from "jose";
 import { type IdTokenClaims, User } from "oidc-client-ts";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { chromeStorageAdapter, localStorageAdapter } from "../../adapters";
-import { zkProofService } from "../../services/keeperService";
-import { useDeviceStore } from "../../stores/deviceStore";
-import { useNetworkStore } from "../../stores/networkStore";
-import type { AuthMessage, TokenResponse } from "../../types";
+import { ephKeyService, zkProofService } from "../../services/vaultService";
 import { getUserManager } from "../authConfig";
-import { getZkLoginAddress } from "../enoki";
-import { clearToken, storeToken } from "../storageService";
-import type { AuthState } from "../types";
-import { vendJwt } from "../vendToken";
+import { clearAllJwts, storeJwt } from "../storageService";
+import { resolveExpiresAt } from "../utils/authStoreUtils";
 
+// biome-ignore lint/suspicious/noExplicitAny: Chrome extension API types are not available in shared package
 declare const chrome: any;
 
 const log = createLogger();
@@ -31,6 +37,7 @@ export const getEnokiApiKey = (): string => {
     const env = (import.meta as unknown as { env: Record<string, string> }).env;
     return env?.VITE_ENOKI_API_KEY ?? "";
   }
+  // biome-ignore lint/suspicious/noExplicitAny: Node.js process.env access requires any type
   return (globalThis as any)?.process?.env?.VITE_ENOKI_API_KEY ?? "";
 };
 
@@ -48,32 +55,38 @@ export const useAuthStore = create<AuthState>()(
           set({ loading: true });
           try {
             if (isExtension() && typeof chrome !== "undefined") {
-              const { "evevault:jwt": allNetworkTokens } = await new Promise<{
-                "evevault:jwt"?: Record<SuiChain, TokenResponse>;
-              }>((resolve) => {
-                chrome.storage.local.get(
-                  "evevault:jwt",
-                  (items: {
-                    "evevault:jwt"?: Record<SuiChain, TokenResponse>;
-                  }) => resolve(items),
-                );
-              });
-
               const network = useNetworkStore.getState().chain;
-              const idToken = allNetworkTokens?.[network]?.id_token;
-              const token = allNetworkTokens?.[network];
 
-              if (token && idToken) {
-                log.info("Found token in chrome.storage, loading user");
+              // Use getJwtForNetwork instead of reading chrome.storage directly
+              // This ensures we use the same logic as hasJwtForNetwork and avoid race conditions
+              const { getJwtForNetwork } = await import("../storageService");
+              const storedJwt = await getJwtForNetwork(network);
+              const idToken = storedJwt?.id_token;
+
+              if (storedJwt && idToken) {
+                // Check if JWT is expired
+                const expiresAt = resolveExpiresAt(storedJwt);
+                const now = Math.floor(Date.now() / 1000);
+                if (now >= expiresAt) {
+                  log.info("JWT expired for current network, clearing user", {
+                    network,
+                    expiresAt,
+                    now,
+                  });
+                  set({ user: null, loading: false });
+                  return;
+                }
+
+                log.info("Found JWT in chrome.storage, loading user");
                 const currentUser = await userManager.getUser();
                 if (!currentUser) {
-                  log.info("Loading user from chrome storage token");
-                  const decodedToken = decodeJwt(idToken);
+                  log.info("Loading user from chrome storage JWT");
+                  const decodedJwt = decodeJwt(idToken);
 
                   // Log nonce comparison
                   const deviceStore = useDeviceStore.getState();
                   const deviceNonce = deviceStore.networkData[network]?.nonce;
-                  const jwtNonce = decodedToken.nonce as string | undefined;
+                  const jwtNonce = decodedJwt.nonce as string | undefined;
 
                   log.debug("Nonce comparison during initialize", {
                     network,
@@ -98,45 +111,36 @@ export const useAuthStore = create<AuthState>()(
                   const { salt, address } = zkLoginResponse.data;
 
                   const newUser = new User({
-                    id_token: token.id_token,
-                    access_token: token.access_token,
-                    token_type: token.token_type,
-                    scope: token.scope,
+                    id_token: storedJwt.id_token,
+                    access_token: storedJwt.access_token,
+                    token_type: storedJwt.token_type,
+                    scope: storedJwt.scope,
                     profile: {
-                      ...(decodedToken as IdTokenClaims),
+                      ...(decodedJwt as IdTokenClaims),
                       sui_address: address,
                       salt,
                     },
                     expires_at:
-                      Math.floor(Date.now() / 1000) + token.expires_at!,
+                      Math.floor(Date.now() / 1000) +
+                      (storedJwt.expires_at ?? 3600),
                   });
                   await userManager.storeUser(newUser);
                   set({ user: newUser, loading: false });
                   return; // Exit early after setting user
-                } else {
-                  // No token found for this network
-                  // Don't set user to null if we already have a user - it might be from another network
-                  // and we're in the process of refreshing
-                  const currentUser = get().user;
-                  if (!currentUser) {
-                    log.info("No token found in storage and no existing user");
-                    set({ user: null, loading: false });
-                  } else {
-                    log.info(
-                      "No token found for this network, keeping existing user",
-                    );
-                    set({ loading: false });
-                  }
                 }
 
                 // Fallback for non-extension context
                 const user = await userManager.getUser();
                 set({ user, loading: false });
+                return;
               }
 
-              // If we get here, there are no tokens for this network
-              // This means we need to login again
-              set({ loading: false });
+              // No JWT found for this network
+              // Set user to null - user needs to sign in again for this network
+              log.info("No JWT found for current network, clearing user", {
+                network,
+              });
+              set({ user: null, loading: false });
             }
             return set({ loading: false });
           } catch (error) {
@@ -156,17 +160,17 @@ export const useAuthStore = create<AuthState>()(
 
           if (isExtension()) {
             try {
-              const token = await get().extensionLogin();
-              if (token) {
-                const decodedToken = decodeJwt<IdTokenClaims>(
-                  token.id_token as string,
+              const jwtResponse = await get().extensionLogin();
+              if (jwtResponse) {
+                const decodedJwt = decodeJwt<IdTokenClaims>(
+                  jwtResponse.id_token as string,
                 );
 
                 // Log nonce comparison
                 const deviceStore = useDeviceStore.getState();
                 const network = useNetworkStore.getState().chain;
                 const deviceNonce = deviceStore.networkData[network]?.nonce;
-                const jwtNonce = decodedToken.nonce as string | undefined;
+                const jwtNonce = decodedJwt.nonce as string | undefined;
 
                 log.debug("Nonce comparison during extension login", {
                   jwtNonce,
@@ -175,7 +179,7 @@ export const useAuthStore = create<AuthState>()(
                 });
 
                 const zkLoginResponse = await getZkLoginAddress({
-                  jwt: token.id_token,
+                  jwt: jwtResponse.id_token,
                   enokiApiKey: getEnokiApiKey(),
                 });
 
@@ -190,27 +194,29 @@ export const useAuthStore = create<AuthState>()(
                 const { salt, address } = zkLoginResponse.data;
 
                 const user = new User({
-                  id_token: token.id_token,
-                  access_token: token.access_token,
-                  token_type: token.token_type,
-                  scope: token.scope,
+                  id_token: jwtResponse.id_token,
+                  access_token: jwtResponse.access_token,
+                  token_type: jwtResponse.token_type,
+                  scope: jwtResponse.scope,
                   profile: {
-                    ...(decodedToken as IdTokenClaims),
+                    ...(decodedJwt as IdTokenClaims),
                     sui_address: address,
                     salt,
                   },
-                  expires_at: Math.floor(Date.now() / 1000) + token.expires_in,
+                  expires_at:
+                    Math.floor(Date.now() / 1000) + jwtResponse.expires_in,
                 });
 
                 await userManager.storeUser(user);
                 set({ user });
+
                 return user as User;
               }
             } catch (error) {
               log.error("Extension login failed", error);
-              if (
-                (error as any)?.message !== "The user did not approve access."
-              ) {
+              const errorMessage =
+                error instanceof Error ? error.message : String(error);
+              if (errorMessage !== "The user did not approve access.") {
                 set({
                   error:
                     error instanceof Error ? error.message : "Unknown error",
@@ -218,17 +224,32 @@ export const useAuthStore = create<AuthState>()(
               }
             }
           } else {
+            // Web login flow
+            const deviceStore = useDeviceStore.getState();
+
+            // Check if device data exists for current network, initialize if missing
+            const networkData = deviceStore.networkData[network];
+            if (!networkData?.nonce || !networkData?.maxEpoch) {
+              log.info("Initializing device data for network before login", {
+                network,
+              });
+              await deviceStore.initializeForChain(network);
+            }
+
+            // Get device params for OAuth
             const getDeviceParams = () => {
-              const deviceStore = useDeviceStore.getState();
-              const { jwtRandomness } = deviceStore;
+              const currentDeviceStore = useDeviceStore.getState();
+              // Get per-network jwtRandomness (preferred) or fallback to global (for backwards compatibility)
+              const jwtRandomness =
+                currentDeviceStore.getJwtRandomness(network);
+              const currentNetworkData =
+                currentDeviceStore.networkData[network];
 
-              const networkData = deviceStore.networkData[network];
-
-              if (!networkData) {
-                throw new Error("Network data not found");
+              if (!currentNetworkData) {
+                throw new Error("Network data not found after initialization");
               }
 
-              const { nonce, maxEpoch } = networkData;
+              const { nonce, maxEpoch } = currentNetworkData;
 
               if (!nonce || !jwtRandomness || !maxEpoch) {
                 throw new Error(
@@ -293,29 +314,29 @@ export const useAuthStore = create<AuthState>()(
         },
 
         refreshJwt: async (network: SuiChain) => {
-          // 1. Get existing token
-          const { "evevault:jwt": allNetworkTokens } = await new Promise<{
-            "evevault:jwt"?: Record<SuiChain, TokenResponse>;
+          // 1. Get existing JWT
+          const { "evevault:jwt": allNetworkJwts } = await new Promise<{
+            "evevault:jwt"?: Record<SuiChain, JwtResponse>;
           }>((resolve) => {
             chrome.storage.local.get(
               "evevault:jwt",
-              (items: { "evevault:jwt"?: Record<SuiChain, TokenResponse> }) =>
+              (items: { "evevault:jwt"?: Record<SuiChain, JwtResponse> }) =>
                 resolve(items),
             );
           });
 
-          const existingToken = allNetworkTokens?.[network];
-          if (!existingToken?.id_token) {
-            console.info(`No idToken found for network ${network}`);
+          const existingJwt = allNetworkJwts?.[network];
+          if (!existingJwt?.id_token) {
+            log.info(`No idToken found for network ${network}`);
           }
 
-          // If no existing token for this chain, fallback to any available token
-          const targetToken =
-            existingToken ??
-            allNetworkTokens?.[Object.keys(allNetworkTokens)[0] as SuiChain];
+          // If no existing JWT for this chain, fallback to any available JWT
+          const targetJwt =
+            existingJwt ??
+            allNetworkJwts?.[Object.keys(allNetworkJwts)[0] as SuiChain];
 
-          if (!targetToken) {
-            throw new Error(`No token or fallback found in storage`);
+          if (!targetJwt) {
+            throw new Error(`No JWT or fallback found in storage`);
           }
 
           // 2. Refresh device parameters (nonce, maxEpoch)
@@ -336,7 +357,7 @@ export const useAuthStore = create<AuthState>()(
           }
 
           // 4. Vend new JWT with updated parameters
-          const vendResult = await vendJwt(targetToken.id_token, {
+          const vendResult = await vendJwt(targetJwt.id_token, {
             nonce,
             jwtRandomness,
             maxEpoch: maxEpoch.toString(),
@@ -346,11 +367,11 @@ export const useAuthStore = create<AuthState>()(
           const newIdToken = decodeJwt<IdTokenClaims>(vendResult as string);
           const jwtNonce = newIdToken.nonce;
 
-          console.log("=== NONCE VALIDATION ===");
-          console.log("Nonce sent in request:", nonce);
-          console.log("Nonce in returned JWT:", jwtNonce);
-          console.log("Nonces match:", jwtNonce === nonce);
-          console.log("========================");
+          log.debug("Nonce validation", {
+            nonceSent: nonce,
+            nonceInJwt: jwtNonce,
+            noncesMatch: jwtNonce === nonce,
+          });
 
           if (jwtNonce !== nonce) {
             throw new Error(
@@ -358,8 +379,8 @@ export const useAuthStore = create<AuthState>()(
             );
           }
 
-          // 6. Construct new token response
-          const newToken: TokenResponse = {
+          // 6. Construct new JWT response
+          const newJwt: JwtResponse = {
             id_token: vendResult,
             access_token: vendResult,
             token_type: "Bearer",
@@ -369,23 +390,23 @@ export const useAuthStore = create<AuthState>()(
             scope: "openid email profile",
           };
 
-          // 7. Store the new token, replacing the previous one
-          await storeToken(newToken, network);
+          // 7. Store the new JWT, replacing the previous one
+          await storeJwt(newJwt, network);
 
-          // 8. Update existing user with new token (preserve profile, address, salt, etc.)
+          // 8. Update existing user with new JWT (preserve profile, address, salt, etc.)
           const currentUser = get().user;
           if (currentUser) {
             const updatedUser = new User({
               ...currentUser,
-              id_token: newToken.id_token,
-              access_token: newToken.access_token,
-              expires_at: Math.floor(Date.now() / 1000) + newToken.expires_in,
+              id_token: newJwt.id_token,
+              access_token: newJwt.access_token,
+              expires_at: Math.floor(Date.now() / 1000) + newJwt.expires_in,
             });
 
             await userManager.storeUser(updatedUser);
             get().setUser(updatedUser);
           } else {
-            console.warn("No existing user found to update");
+            log.warn("No existing user found to update");
           }
         },
 
@@ -393,17 +414,25 @@ export const useAuthStore = create<AuthState>()(
           try {
             await userManager.removeUser();
             await performFullCleanup();
+
+            // Clear JWTs and user state
+            await clearAllJwts();
+            set({ user: null });
+
+            // Clear zkProofs first (separate from ephemeral key)
             await zkProofService.clear();
 
-            const network = useNetworkStore.getState().chain;
+            // Lock vault (clears ephemeral key) but preserve device data
+            // User just needs to re-authenticate, keys should persist across logouts
+            // Use deviceStore.lock() to ensure isLocked state is updated
+            await useDeviceStore.getState().lock();
 
-            useDeviceStore.getState().reset();
-            await useDeviceStore.getState().initializeForChain(network);
+            // Build logout URL manually to avoid CORS issues with OIDC discovery
+            const fusionAuthUrl = import.meta.env.VITE_FUSION_SERVER_URL;
+            const clientId = import.meta.env.VITE_FUSIONAUTH_CLIENT_ID;
 
             if (isExtension() && typeof chrome !== "undefined") {
               // Extensions use chrome.identity.launchWebAuthFlow to trigger OIDC logout
-              const fusionAuthUrl = import.meta.env.VITE_FUSION_SERVER_URL;
-              const clientId = import.meta.env.VITE_FUSIONAUTH_CLIENT_ID;
               const redirectUri = chrome.identity.getRedirectURL();
 
               const logoutUrl = new URL(
@@ -418,31 +447,30 @@ export const useAuthStore = create<AuthState>()(
               chrome.identity.launchWebAuthFlow(
                 { url: logoutUrl.toString(), interactive: true },
                 async () => {
-                  await clearToken();
-
                   chrome.runtime.sendMessage({
                     __from: "Eve Vault",
                     event: "change",
                     payload: { accounts: [] },
                   });
-
-                  set({ user: null });
                 },
               );
             } else {
-              // For web, use standard OIDC signout redirect
-              await userManager.signoutRedirect();
-              set({ user: null });
+              // For web, just redirect to home - FusionAuth session can remain
+              // (user will re-authenticate to get new JWT with correct network params)
+              // Note: If full FusionAuth logout is needed, configure post_logout_redirect_uri
+              // in FusionAuth OAuth settings
+              window.location.href = window.location.origin;
             }
           } catch (error) {
             log.error("Error during logout cleanup", error);
             set({
+              user: null,
               error: error instanceof Error ? error.message : "Unknown error",
             });
 
-            // Fallback: try signout redirect even if there was an error
-            if (!isExtension()) {
-              userManager.signoutRedirect();
+            // Fallback: redirect to home if there was an error
+            if (!isExtension() && typeof window !== "undefined") {
+              window.location.href = window.location.origin;
             }
           }
         },

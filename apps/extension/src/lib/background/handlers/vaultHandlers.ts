@@ -8,6 +8,7 @@ const log = createLogger();
  * Sends a message to the keeper and returns the response
  * Retries if the keeper isn't ready yet
  */
+// biome-ignore lint/suspicious/noExplicitAny: Keeper messages have dynamic types
 async function sendToKeeper(message: any, retries = 3): Promise<any> {
   await ensureOffscreen(true);
 
@@ -50,7 +51,7 @@ export async function handleUnlockVault(
   _sender: chrome.runtime.MessageSender,
   sendResponse: (response?: unknown) => void,
 ): Promise<boolean | undefined> {
-  const { hashedSecretKey, pin, unlockDurationMs } = message;
+  const { hashedSecretKey, pin } = message;
 
   // Validate that we have a key to decrypt
   if (!hashedSecretKey) {
@@ -69,13 +70,13 @@ export async function handleUnlockVault(
       pin,
     });
 
-    console.log("[VaultHandler] Keeper response:", keeperResponse);
+    log.debug("[VaultHandler] Keeper response:", keeperResponse);
 
     if (keeperResponse?.ok) {
       sendResponse({ ok: true });
     } else {
       const errorMessage = keeperResponse?.error || "Failed to unlock vault";
-      console.error("[VaultHandler] Unlock failed:", errorMessage);
+      log.error("[VaultHandler] Unlock failed:", errorMessage);
       sendResponse({
         ok: false,
         error: errorMessage,
@@ -84,7 +85,7 @@ export async function handleUnlockVault(
 
     return true;
   } catch (error) {
-    console.error("[VaultHandler] Error decrypting secret key:", error);
+    log.error("[VaultHandler] Error decrypting secret key:", error);
     sendResponse({
       ok: false,
       error: error instanceof Error ? error.message : "Unknown error",
@@ -111,14 +112,14 @@ export async function handleLock(
       sendResponse({ ok: true });
     } else {
       const errorMessage = keeperResponse?.error || "Failed to lock vault";
-      console.error("[VaultHandler] Lock failed:", errorMessage);
+      log.error("[VaultHandler] Lock failed:", errorMessage);
       sendResponse({
         ok: false,
         error: errorMessage,
       });
     }
   } catch (error) {
-    console.error("[VaultHandler] Error locking vault:", error);
+    log.error("[VaultHandler] Error locking vault:", error);
     sendResponse({
       ok: false,
       error: error instanceof Error ? error.message : "Unknown error",

@@ -10,6 +10,7 @@ EVE Vault Wallet is a Chrome MV3 extension built with WXT and React. It implemen
 - ✅ zkLogin address derivation via Enoki
 - ✅ Wallet Standard implementation for dApp discovery
 - ✅ Transaction signing with zkLogin
+- ✅ **Multi-network support** (Devnet, Testnet) with seamless switching
 - ✅ Reactive state management with Zustand
 - ✅ Chrome storage persistence
 
@@ -80,6 +81,7 @@ bun run dev
 2. Click "Sign in with EVE Vault"
 3. Complete the OAuth flow
 4. After success, the popup displays your zkLogin address and Sui balance
+5. Switch between Devnet and Testnet using the network selector in the bottom-left corner
 
 ## Build
 
@@ -129,6 +131,21 @@ Install the Biome extension for real-time feedback:
 code --install-extension biomejs.biome
 ```
 
+### Testing
+
+```bash
+# Run all tests
+bun run test
+
+# Run tests once (for CI)
+bun run test --run
+
+# Run tests for specific workspace
+bunx turbo run test --filter=@evevault/shared
+```
+
+See [Testing Guide](./docs/TESTING.md) for detailed testing information.
+
 ## Project Structure
 
 This is a **monorepo** using Bun workspaces and Turborepo:
@@ -151,6 +168,7 @@ For detailed structure and architecture, see [Monorepo Documentation](./docs/MON
 - **[Bun + Turborepo Setup](./docs/BUN_TURBO_SETUP.md)** - Tooling deep-dive
 - **[Development Guide](./docs/DEVELOPMENT.md)** - Development workflow, debugging, tips
 - **[Implementation Details](./docs/IMPLEMENTATION.md)** - Core scripts, authentication, wallet implementation
+- **[Testing Guide](./docs/TESTING.md)** - Testing setup, examples, and best practices
 - **[Troubleshooting](./docs/TROUBLESHOOTING.md)** - Common issues and solutions
 
 ## Usage
@@ -173,8 +191,9 @@ The extension registers as "Eve Vault" in the page context. Connecting triggers 
 ### For Extension Users
 
 1. Click the extension icon to open the popup
-2. Complete the OAuth flow
+2. Complete the OAuth flow (or switch networks using the network selector)
 3. The wallet is automatically available to all dApps once authenticated
+4. Switch between Devnet and Testnet using the network selector in the bottom-left corner
 
 ## Current State
 
@@ -187,11 +206,12 @@ The extension registers as "Eve Vault" in the page context. Connecting triggers 
 - ZK proof request preparation
 - Wallet Standard registration
 - Reactive state management
+- **Multi-network support** with seamless switching between Devnet and Testnet
+- **Per-network authentication** with automatic rollback on login failures
 
 ### Known Limitations
 
 - MaxEpoch expiry requires manual re-login
-- Network switching is not gracefully handled for different epochs
 
 For detailed limitations and TODOs, see [Implementation Details](./docs/IMPLEMENTATION.md#current-state--limitations).
 

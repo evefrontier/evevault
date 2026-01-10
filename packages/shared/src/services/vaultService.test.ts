@@ -25,6 +25,7 @@ vi.mock("./webVaultService", () => ({
     clear: vi.fn(() => Promise.resolve()),
     setZkProof: vi.fn(() => Promise.resolve()),
     getZkProof: vi.fn(() => Promise.resolve({ data: { test: true } })),
+    clearZkProof: vi.fn(() => Promise.resolve()),
   },
 }));
 
@@ -43,10 +44,12 @@ vi.mock("./keeperService", () => ({
     getEphemeralPublicKey: vi.fn(() =>
       Promise.resolve({ toRawBytes: () => new Uint8Array(32) }),
     ),
+    lock: vi.fn(() => Promise.resolve()),
   },
   zkProofService: {
     setZkProof: vi.fn(() => Promise.resolve()),
     getZkProof: vi.fn(() => Promise.resolve({ data: { keeper: true } })),
+    clear: vi.fn(() => Promise.resolve()),
   },
 }));
 
@@ -157,8 +160,8 @@ describe("ephKeyService routing", () => {
       expect(result).toBe(true);
     });
 
-    it("routes lock to webVaultService", () => {
-      ephKeyService.lock();
+    it("routes lock to webVaultService", async () => {
+      await ephKeyService.lock();
 
       expect(webVaultService.lock).toHaveBeenCalled();
     });
@@ -220,10 +223,11 @@ describe("ephKeyService routing", () => {
       expect(keeperEphKeyService.getEphemeralPublicKey).toHaveBeenCalled();
     });
 
-    it("does not call webVaultService.lock in extension context", () => {
-      ephKeyService.lock();
+    it("routes lock to keeperService in extension context", async () => {
+      await ephKeyService.lock();
 
       expect(webVaultService.lock).not.toHaveBeenCalled();
+      expect(keeperEphKeyService.lock).toHaveBeenCalled();
     });
 
     it("does not call webVaultService.clear in extension context", async () => {
@@ -284,6 +288,15 @@ describe("zkProofService routing", () => {
       expect(webVaultService.getZkProof).toHaveBeenCalledWith(SUI_DEVNET_CHAIN);
       expect(result).toEqual({ data: { test: true } });
     });
+
+    it("routes clear to webVaultService.clearZkProof for all chains", async () => {
+      await zkProofService.clear();
+
+      expect(webVaultService.clearZkProof).toHaveBeenCalledWith("sui:devnet");
+      expect(webVaultService.clearZkProof).toHaveBeenCalledWith("sui:testnet");
+      expect(webVaultService.clearZkProof).toHaveBeenCalledWith("sui:mainnet");
+      expect(webVaultService.clearZkProof).toHaveBeenCalledWith("sui:localnet");
+    });
   });
 
   describe("when isWeb() returns false (extension)", () => {
@@ -311,6 +324,13 @@ describe("zkProofService routing", () => {
         SUI_DEVNET_CHAIN,
       );
       expect(result).toEqual({ data: { keeper: true } });
+    });
+
+    it("routes clear to keeperService", async () => {
+      await zkProofService.clear();
+
+      expect(keeperZkProofService.clear).toHaveBeenCalled();
+      expect(webVaultService.clearZkProof).not.toHaveBeenCalled();
     });
   });
 });

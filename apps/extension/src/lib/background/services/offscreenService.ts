@@ -29,7 +29,7 @@ export async function ensureOffscreen(waitForReady = false): Promise<void> {
         reasons: ["LOCAL_STORAGE", "DOM_SCRAPING"],
         justification: "Hold ephemeral key in RAM only.",
       });
-      console.log("Keeper offscreen document created");
+      log.info("Keeper offscreen document created");
 
       if (waitForReady) {
         // Wait for keeper to signal it's ready (with timeout)

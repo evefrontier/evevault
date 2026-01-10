@@ -1,18 +1,18 @@
 import { decodeJwt } from "jose";
 import type { IdTokenClaims } from "oidc-client-ts";
-import type { TokenResponse } from "../types/authTypes";
+import type { JwtResponse } from "../types/authTypes";
 
 // TODO: This will change to use a Quasar Go API vend endpoint
 // In order to exposing the API key to the extension
 
 export const vendJwt = async (
-  token: TokenResponse["id_token"],
+  token: JwtResponse["id_token"],
   deviceParams: {
     nonce: string;
     jwtRandomness: string;
     maxEpoch: string;
   },
-): Promise<TokenResponse["id_token"]> => {
+): Promise<JwtResponse["id_token"]> => {
   const apiKey = import.meta.env.VITE_FUSIONAUTH_API_KEY;
   const fusionAuthUrl = import.meta.env.VITE_FUSION_SERVER_URL;
   const vendUrl = `${fusionAuthUrl}/api/jwt/vend`;

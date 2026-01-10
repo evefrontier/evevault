@@ -1,4 +1,4 @@
-import type { TokenResponse } from "./authTypes";
+import type { JwtResponse } from "./authTypes";
 import type { ZkProofResponse } from "./enoki";
 import type { StoredSecretKey } from "./stores";
 
@@ -11,7 +11,8 @@ export enum AuthMessageTypes {
 
 export type AuthMessage = {
   type: AuthMessageTypes | string;
-  token?: TokenResponse;
+  /** JWT response from OAuth/OIDC provider */
+  token?: JwtResponse;
   error?: unknown;
   id?: string;
 };

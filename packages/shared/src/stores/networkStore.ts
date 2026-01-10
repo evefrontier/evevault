@@ -2,11 +2,11 @@ import {
   chromeStorageAdapter,
   localStorageAdapter,
 } from "@evevault/shared/adapters";
-import type { NetworkState, TokenResponse } from "@evevault/shared/types";
+import { hasJwtForNetwork, useAuthStore } from "@evevault/shared/auth";
+import type { NetworkState, NetworkSwitchResult } from "@evevault/shared/types";
 import { SUI_DEVNET_CHAIN, type SuiChain } from "@mysten/wallet-standard";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { useAuthStore } from "../auth";
 import { isExtension, isWeb } from "../utils/environment";
 import { createLogger } from "../utils/logger";
 import { useDeviceStore } from "./deviceStore";
@@ -38,7 +38,7 @@ const getInitialChain = (): SuiChain => {
 // Create the store
 export const useNetworkStore = create<NetworkState>()(
   persist(
-    (set, _get) => ({
+    (set, get) => ({
       chain: getInitialChain(),
       loading: false,
 
@@ -50,69 +50,151 @@ export const useNetworkStore = create<NetworkState>()(
         });
       },
 
-      setChain: async (chain: SuiChain) => {
-        log.info("Setting chain", { chain });
+      checkNetworkSwitch: async (
+        chain: SuiChain,
+      ): Promise<{ requiresReauth: boolean }> => {
+        const currentChain = get().chain;
 
-        // Set the chain first
-        set({ chain: chain as SuiChain });
+        // Same chain - no switch needed
+        if (currentChain === chain) {
+          return { requiresReauth: false };
+        }
 
-        if (isExtension()) {
+        // Check if we have a JWT for the target network
+        const hasJwt = await hasJwtForNetwork(chain);
+        return { requiresReauth: !hasJwt };
+      },
+
+      /**
+       * Set chain for re-authentication flow (skips JWT checks).
+       * Called by CurrentNetworkDisplay/NetworkSelector when switching to a network without JWT.
+       */
+      forceSetChain: (chain: SuiChain) => {
+        const currentChain = get().chain;
+        if (currentChain !== chain) {
+          log.info("Force setting chain (for logout-based switch)", {
+            from: currentChain,
+            to: chain,
+          });
+          set({ chain });
+        }
+      },
+
+      setChain: async (chain: SuiChain): Promise<NetworkSwitchResult> => {
+        const currentChain = get().chain;
+
+        // Same chain - no switch needed
+        if (currentChain === chain) {
+          return { success: true, requiresReauth: false };
+        }
+
+        log.info("Setting chain", { from: currentChain, to: chain });
+
+        // Check if we have a JWT for the target network
+        const hasJwt = await hasJwtForNetwork(chain);
+
+        // Switch network state immediately (even if no JWT)
+        set({ chain, loading: true });
+
+        if (!hasJwt) {
+          // No JWT for target network - requires re-authentication
+          // Re-initialize auth store to check JWT for new network
+          // This will automatically set user to null if no JWT exists
           try {
+            await useAuthStore.getState().initialize();
+          } catch (error) {
+            log.error(
+              "Failed to initialize auth store after network switch",
+              error,
+            );
+          }
+
+          // Don't create device data here - background handler does it during login to prevent nonce mismatch.
+
+          set({ loading: false });
+          log.info("Switched to chain (no JWT, re-authentication required)", {
+            chain,
+          });
+          return { success: true, requiresReauth: true };
+        }
+
+        // We have a JWT - proceed with seamless switch
+
+        try {
+          // Notify extension about network change
+          if (isExtension()) {
             chrome.runtime?.sendMessage?.({
               __from: "Eve Vault",
               event: "change",
               payload: { chains: [chain] },
             });
-
-            try {
-              // CRITICAL: Ensure device data exists for this chain BEFORE refreshing JWT
-              const deviceStore = useDeviceStore.getState();
-              const existingNonce = deviceStore.getNonce(chain);
-              const existingMaxEpoch = deviceStore.getMaxEpoch(chain);
-
-              if (!existingNonce || !existingMaxEpoch) {
-                log.info("Initializing device data before refreshing JWT", {
-                  chain,
-                });
-                await deviceStore.initializeForChain(chain);
-
-                // Verify device data was created
-                const verifyNonce = deviceStore.getNonce(chain);
-                const verifyMaxEpoch = deviceStore.getMaxEpoch(chain);
-
-                if (!verifyNonce || !verifyMaxEpoch) {
-                  throw new Error(
-                    `Failed to initialize device data for chain ${chain}. Nonce: ${verifyNonce}, MaxEpoch: ${verifyMaxEpoch}`,
-                  );
-                }
-
-                log.debug("Device data verified for chain", { chain });
-              }
-
-              const { "evevault:jwt": allNetworkTokens } = await new Promise<{
-                "evevault:jwt"?: Record<SuiChain, TokenResponse>;
-              }>((resolve) => {
-                chrome.storage.local.get("evevault:jwt", (items) =>
-                  resolve(items),
-                );
-              });
-
-              const token = allNetworkTokens?.[chain];
-
-              if (!token) {
-                log.info("Refreshing JWT for chain", { chain });
-                const authStore = useAuthStore.getState();
-                await authStore.refreshJwt(chain);
-              } else {
-                log.debug("Existing JWT found for chain", { chain });
-              }
-            } catch (error) {
-              log.error("Token refresh failed during chain change", error);
-              throw error;
-            }
-          } catch (error) {
-            log.error("Failed to notify extension about network change", error);
           }
+
+          // Check device data for the new chain
+          const deviceStore = useDeviceStore.getState();
+          const existingNonce = deviceStore.getNonce(chain);
+          const existingMaxEpoch = deviceStore.getMaxEpoch(chain);
+          const existingJwtRandomness = deviceStore.getJwtRandomness(chain);
+          const maxEpochTimestampMs = deviceStore.getMaxEpochTimestampMs(chain);
+
+          // Check if device data exists and is valid
+          const hasValidDeviceData =
+            existingNonce &&
+            existingMaxEpoch &&
+            existingJwtRandomness &&
+            maxEpochTimestampMs &&
+            Date.now() < maxEpochTimestampMs;
+
+          if (!hasValidDeviceData) {
+            // Device data is missing or expired, but we have a JWT
+            // We cannot create new device data here because it would have a different nonce
+            // than what's in the existing JWT, causing a nonce mismatch.
+            // Allow the switch to proceed, but the user will need to re-login when they try
+            // to use features that require device data (like signing transactions).
+            // The getZkProof function will detect the nonce mismatch and prompt re-login.
+            log.warn(
+              "JWT exists but device data is missing/expired for chain - switch allowed but re-login will be required for transactions",
+              {
+                chain,
+                hasNonce: !!existingNonce,
+                hasMaxEpoch: !!existingMaxEpoch,
+                hasJwtRandomness: !!existingJwtRandomness,
+                maxEpochTimestampMs,
+                isExpired: maxEpochTimestampMs
+                  ? Date.now() >= maxEpochTimestampMs
+                  : true,
+              },
+            );
+
+            // Still allow the switch - user can see they're logged in
+            // Re-login will be required when they try to sign transactions
+            set({ loading: false });
+            log.info(
+              "Switched to chain (JWT exists but device data missing/expired - re-login required for transactions)",
+              {
+                chain,
+              },
+            );
+            return { success: true, requiresReauth: false };
+          }
+
+          // Device data exists and is valid - seamless switch
+          log.debug(
+            "Device data valid for chain, proceeding with seamless switch",
+            {
+              chain,
+            },
+          );
+
+          set({ loading: false });
+          log.info("Successfully switched to chain", { chain });
+          return { success: true, requiresReauth: false };
+        } catch (error) {
+          log.error("Failed to complete network switch", error);
+          set({ loading: false });
+          // Revert to previous chain on error
+          set({ chain: currentChain });
+          return { success: false, requiresReauth: false };
         }
       },
     }),

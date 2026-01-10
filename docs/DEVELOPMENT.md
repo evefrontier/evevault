@@ -118,11 +118,24 @@ useDeviceStore.subscribe((state) => {
 
 ### Network Switching
 
-The SuiClient is configured for specific networks. To switch:
+The extension supports seamless network switching between Sui devnet and testnet:
 
-- Update `createSuiClient()` calls
-- Check network configuration in `packages/shared/src/sui/`
-- Verify RPC endpoints are accessible
+- **Network selector UI**: Click the network display in the bottom-left corner to switch networks
+- **Per-network authentication**: Each network requires separate login (JWTs stored per-network)
+- **Per-network device data**: Nonce, maxEpoch, and jwtRandomness are stored per-network to prevent conflicts
+- **Automatic rollback**: If login fails after switching networks, the app automatically reverts to a network where you're still logged in
+- **Seamless switching**: If you're already logged in on a network, switching is instant
+
+**Network switching flow:**
+1. User clicks network selector → checks if JWT exists for target network
+2. If JWT exists → seamless switch (updates device data if needed)
+3. If no JWT → shows "Sign In Required" dialog → user confirms → switches network → prompts login
+
+**Testing network switching:**
+- Test seamless switch (already logged in on both networks)
+- Test switch requiring re-auth (only logged in on one network)
+- Test login rollback on failure
+- Verify per-network data isolation (no cross-network data leakage)
 
 ### Hot Reload Issues
 
@@ -132,6 +145,25 @@ If hot reload doesn't work:
 2. Reload the extension manually
 3. Clear browser cache
 4. Restart dev server
+
+### Logging
+
+**NEVER use `console.log`, `console.error`, `console.warn`, or `console.info`** in application code.
+
+**ALWAYS use the logger from `@evevault/shared/utils/logger`**:
+
+```typescript
+import { createLogger } from "@evevault/shared/utils";
+
+const log = createLogger();
+
+log.debug("Debug message", { data });
+log.info("Info message");
+log.warn("Warning message");
+log.error("Error message", error);
+```
+
+See [Logger Guide](./LOGGER.md) for detailed logging information.
 
 ### Import Paths
 

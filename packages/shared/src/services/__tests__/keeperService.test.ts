@@ -8,6 +8,7 @@ global.chrome = {
   runtime: {
     sendMessage: mockSendMessage,
   },
+  // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
 } as any;
 
 describe("ephKeyService.lock()", () => {
