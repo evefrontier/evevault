@@ -2,11 +2,6 @@ import {
   chromeStorageAdapter,
   localStorageAdapter,
 } from "@evevault/shared/adapters";
-import {
-  type AuthState,
-  getZkLoginAddress,
-  vendJwt,
-} from "@evevault/shared/auth";
 import { useDeviceStore, useNetworkStore } from "@evevault/shared/stores";
 import type { AuthMessage, JwtResponse } from "@evevault/shared/types";
 import {
@@ -24,10 +19,12 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { zkProofService } from "../../services/vaultService";
 import { getUserManager } from "../authConfig";
+import { getZkLoginAddress } from "../getZkLoginAddress";
 import { clearAllJwts, storeJwt } from "../storageService";
+import type { AuthState } from "../types";
 import { resolveExpiresAt } from "../utils/authStoreUtils";
+import { vendJwt } from "../vendToken";
 
-// biome-ignore lint/suspicious/noExplicitAny: Chrome extension API types are not available in shared package
 declare const chrome: any;
 
 const log = createLogger();
@@ -198,8 +195,8 @@ export const useAuthStore = create<AuthState>()(
                   id_token: jwtResponse.id_token,
                   access_token: jwtResponse.access_token,
                   token_type: jwtResponse.token_type,
-                  refresh_token: jwtResponse.refresh_token,
                   scope: jwtResponse.scope,
+                  refresh_token: jwtResponse.refresh_token,
                   profile: {
                     ...(decodedJwt as IdTokenClaims),
                     sui_address: address,
