@@ -42,7 +42,6 @@ test-results/
 
 # Misc
 *.tsbuildinfo
-services/
 
 # Temporary files
 temp_*.txt

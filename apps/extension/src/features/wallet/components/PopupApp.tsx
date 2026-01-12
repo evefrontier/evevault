@@ -16,7 +16,7 @@ import { useBalance } from "@evevault/shared/wallet";
 import type { SuiChain } from "@mysten/wallet-standard";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { handleTestPatchUserNonce } from "../api/patchNonce";
+import { handleTestPatchUserNonce } from "../../../../../../packages/shared/src/auth/patchNonce";
 import { handleTestTokenRefresh } from "../api/tokenRefresh";
 import { useAppInitialization, useLogin, useTestTransaction } from "../hooks";
 
@@ -159,21 +159,6 @@ function App() {
           </a>
         </Text>
       )}
-
-      <Button
-        variant="secondary"
-        size="small"
-        onClick={() => handleTestPatchUserNonce(user, nonce)}
-      >
-        Test patch user nonce
-      </Button>
-      <Button
-        variant="secondary"
-        size="small"
-        onClick={() => handleTestTokenRefresh(user)}
-      >
-        Test token refresh
-      </Button>
     </div>
   );
 }

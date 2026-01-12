@@ -3,10 +3,7 @@ import type { User } from "oidc-client-ts";
 
 const log = createLogger();
 
-export const handleTestPatchUserNonce = async (
-  user: User,
-  nonce: string | null,
-) => {
+export const patchUserNonce = async (user: User, nonce: string | null) => {
   log.info("Patch user nonce test", {
     user,
     nonce,

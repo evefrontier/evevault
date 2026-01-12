@@ -5,6 +5,7 @@ import {
 } from "oidc-client-ts";
 import { isExtension } from "../utils/environment";
 import { createLogger } from "../utils/logger";
+import { patchUserNonce } from "./patchNonce";
 import type { GlobalWithLocalStorage, StorageLike } from "./types";
 
 const ensureLocalStorage = () => {
@@ -75,6 +76,7 @@ const fusionAuthConfig: UserManagerSettings = {
   redirect_uri: getRedirectUri(),
   post_logout_redirect_uri: getOrigin(),
   response_type: "code",
+  automaticSilentRenew: true,
   scope: "openid email profile offline_access",
 
   // We can safely use WebStorageStateStore since localStorage is guaranteed to exist
@@ -103,6 +105,11 @@ export function getUserManager(): UserManager {
 
     userManagerInstance.events.addSilentRenewError((error) => {
       log.error("OIDC silent renew error", error);
+    });
+
+    userManagerInstance.events.addAccessTokenExpiring(async (user) => {
+      log.info("Access token expiring, patching user nonce before refresh");
+      await patchUserNonce(user);
     });
   }
   return userManagerInstance;
