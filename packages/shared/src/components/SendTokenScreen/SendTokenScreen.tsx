@@ -20,9 +20,6 @@ function getSuiscanUrl(chain: string, txDigest: string): string {
 
 export const SendTokenScreen: React.FC<SendTokenScreenProps> = ({
   coinType,
-  user: _user,
-  chain: _chain,
-  onSuccess: _onSuccess,
   onCancel,
 }) => {
   const { showToast } = useToast();
@@ -32,11 +29,6 @@ export const SendTokenScreen: React.FC<SendTokenScreenProps> = ({
   // Store the submitted values to show on success screen
   const [submittedRecipient, setSubmittedRecipient] = useState("");
   const [submittedAmount, setSubmittedAmount] = useState("");
-
-  // Props reserved for future use (e.g., passing user/chain from parent instead of store)
-  void _user;
-  void _chain;
-  void _onSuccess;
 
   const {
     currentBalance,

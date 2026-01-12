@@ -1,9 +1,4 @@
-import {
-  HeaderMobile,
-  SendTokenScreen,
-  useAuthStore,
-  useNetworkStore,
-} from "@evevault/shared";
+import { HeaderMobile, SendTokenScreen, useAuthStore } from "@evevault/shared";
 import type { SendTokenSearch } from "@evevault/shared/router";
 import { requireAuth } from "@evevault/shared/router";
 import {
@@ -16,7 +11,6 @@ import {
 function SendTokenPage() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { chain } = useNetworkStore();
   const { coinType } = useSearch({ from: "/send-token" });
 
   const handleNavigateBack = () => {
@@ -30,13 +24,7 @@ function SendTokenPage() {
         email={user?.profile?.email as string}
         address={user?.profile?.sui_address as string}
       />
-      <SendTokenScreen
-        coinType={coinType}
-        user={user}
-        chain={chain || null}
-        onSuccess={handleNavigateBack}
-        onCancel={handleNavigateBack}
-      />
+      <SendTokenScreen coinType={coinType} onCancel={handleNavigateBack} />
     </div>
   );
 }

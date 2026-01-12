@@ -263,15 +263,56 @@ async function handleExtLogin(
     try {
       await deviceStore.initializeForChain(currentChain);
     } catch (error) {
-      // Check if this is a network connectivity error
+      // Check if this is a network connectivity error using structured checks
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      const isNetworkError =
+
+      // Prefer structured checks over brittle message matching
+      const withNetworkMeta = error as {
+        code?: unknown;
+        status?: unknown;
+        cause?: unknown;
+      };
+
+      const status =
+        typeof withNetworkMeta.status === "number"
+          ? withNetworkMeta.status
+          : undefined;
+      const errorCode =
+        typeof withNetworkMeta.code === "string"
+          ? withNetworkMeta.code
+          : undefined;
+
+      const causeMessage =
+        withNetworkMeta.cause instanceof Error
+          ? withNetworkMeta.cause.message
+          : undefined;
+
+      const isFetchTypeError = error instanceof TypeError;
+      const isStatusNetworkError =
+        typeof status === "number" &&
+        (status === 0 || (status >= 500 && status < 600));
+      const isCodeNetworkError =
+        errorCode === "ECONNREFUSED" ||
+        errorCode === "ETIMEDOUT" ||
+        errorCode === "ECONNRESET";
+
+      const isMessageNetworkError =
         errorMessage.includes("503") ||
         errorMessage.includes("Failed to fetch") ||
         errorMessage.includes("no healthy upstream") ||
         errorMessage.includes("ECONNREFUSED") ||
-        errorMessage.includes("ETIMEDOUT");
+        errorMessage.includes("ETIMEDOUT") ||
+        (typeof causeMessage === "string" &&
+          (causeMessage.includes("Failed to fetch") ||
+            causeMessage.includes("ECONNREFUSED") ||
+            causeMessage.includes("ETIMEDOUT")));
+
+      const isNetworkError =
+        isFetchTypeError ||
+        isStatusNetworkError ||
+        isCodeNetworkError ||
+        isMessageNetworkError;
 
       if (isNetworkError) {
         log.error("Network unavailable during device initialization", {

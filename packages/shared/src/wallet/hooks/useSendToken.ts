@@ -182,6 +182,17 @@ export function useSendToken({
           throw new Error("No coins found for this token");
         }
 
+        // Race condition guard: validate total balance still covers the requested amount
+        // (balance may have changed between initial validation and now)
+        const totalBalance = coins.data.reduce(
+          (sum, coin) => sum + BigInt(coin.balance),
+          0n,
+        );
+
+        if (totalBalance < amountInSmallestUnit) {
+          throw new Error("Insufficient token balance");
+        }
+
         // Find a coin with sufficient balance, or merge if needed
         const suitableCoin = coins.data.find(
           (c) => BigInt(c.balance) >= amountInSmallestUnit,

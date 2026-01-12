@@ -1,10 +1,4 @@
-import {
-  Button,
-  Layout,
-  SendTokenScreen,
-  useAuthStore,
-  useNetworkStore,
-} from "@evevault/shared";
+import { Button, Layout, SendTokenScreen } from "@evevault/shared";
 import type { SendTokenSearch } from "@evevault/shared/router";
 import { requireAuth } from "@evevault/shared/router";
 import {
@@ -16,13 +10,7 @@ import {
 
 function SendTokenPage() {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
-  const { chain } = useNetworkStore();
   const { coinType } = useSearch({ from: "/wallet/send-token" });
-
-  const handleSuccess = () => {
-    navigate({ to: "/wallet" });
-  };
 
   const handleCancel = () => {
     navigate({ to: "/wallet" });
@@ -39,13 +27,7 @@ function SendTokenPage() {
         >
           ← Back
         </Button>
-        <SendTokenScreen
-          coinType={coinType}
-          user={user}
-          chain={chain || null}
-          onSuccess={handleSuccess}
-          onCancel={handleCancel}
-        />
+        <SendTokenScreen coinType={coinType} onCancel={handleCancel} />
       </div>
     </Layout>
   );

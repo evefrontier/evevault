@@ -236,9 +236,6 @@ export interface AddTokenScreenProps {
 
 export interface SendTokenScreenProps {
   coinType: string;
-  user: User | null;
-  chain: SuiChain | null;
-  onSuccess?: () => void;
   onCancel?: () => void;
 }
 
