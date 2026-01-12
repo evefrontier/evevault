@@ -16,6 +16,8 @@ import { useBalance } from "@evevault/shared/wallet";
 import type { SuiChain } from "@mysten/wallet-standard";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { handleTestPatchUserNonce } from "../api/patchNonce";
+import { handleTestTokenRefresh } from "../api/tokenRefresh";
 import { useAppInitialization, useLogin, useTestTransaction } from "../hooks";
 
 const log = createLogger();
@@ -27,7 +29,7 @@ function App() {
     useState<SuiChain | null>(null);
 
   const { user, error: authError } = useAuth();
-  const { isLocked, isPinSet, error: deviceError, unlock } = useDevice();
+  const { isLocked, isPinSet, error: deviceError, unlock, nonce } = useDevice();
   const { chain } = useNetworkStore();
   const { handleLogin } = useLogin();
   const { handleTestTransaction, txDigest } = useTestTransaction();
@@ -44,7 +46,7 @@ function App() {
   useEffect(() => {
     if (user && previousNetworkBeforeSwitch) {
       log.info(
-        "User logged in successfully, clearing previous network tracking"
+        "User logged in successfully, clearing previous network tracking",
       );
       setPreviousNetworkBeforeSwitch(null);
     }
@@ -98,28 +100,6 @@ function App() {
     );
   }
 
-  const handleTestTokenRefresh = async () => {
-    console.log(user?.refresh_token, user?.id_token, user?.access_token);
-
-    try {
-      const fusionAuthUrl = import.meta.env.VITE_FUSION_SERVER_URL;
-      const tokenResponse = await fetch(`${fusionAuthUrl}/api/jwt/refresh`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-FusionAuth-TenantId": import.meta.env.VITE_FUSION_TENANT_ID,
-        },
-        body: JSON.stringify({
-          refreshToken: user?.refresh_token,
-          token: user?.access_token,
-        }),
-      });
-      log.info("Token refreshed", await tokenResponse.json());
-    } catch (err) {
-      log.error("Token refresh error", err);
-    }
-  };
-
   // Authenticated view - show nav
   return (
     <div className="flex flex-col  h-full">
@@ -156,13 +136,6 @@ function App() {
         >
           Submit test
         </Button>
-        <Button
-          variant="secondary"
-          size="small"
-          onClick={handleTestTokenRefresh}
-        >
-          Test token refresh
-        </Button>
       </div>
 
       {authError && <Text color="error">AuthError: {authError}</Text>}
@@ -171,10 +144,14 @@ function App() {
         <Text>
           Transaction digest:{" "}
           <a
-            href={`https://suiscan.xyz/${chain?.replace(
-              "sui:",
-              ""
-            )}/tx/${txDigest}`}
+            href={
+              chain
+                ? `https://suiscan.xyz/${chain.replace(
+                    "sui:",
+                    "",
+                  )}/tx/${txDigest}`
+                : "#"
+            }
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -182,6 +159,21 @@ function App() {
           </a>
         </Text>
       )}
+
+      <Button
+        variant="secondary"
+        size="small"
+        onClick={() => handleTestPatchUserNonce(user, nonce)}
+      >
+        Test patch user nonce
+      </Button>
+      <Button
+        variant="secondary"
+        size="small"
+        onClick={() => handleTestTokenRefresh(user)}
+      >
+        Test token refresh
+      </Button>
     </div>
   );
 }

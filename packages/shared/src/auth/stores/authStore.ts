@@ -22,7 +22,7 @@ import { decodeJwt } from "jose";
 import { type IdTokenClaims, User } from "oidc-client-ts";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { ephKeyService, zkProofService } from "../../services/vaultService";
+import { zkProofService } from "../../services/vaultService";
 import { getUserManager } from "../authConfig";
 import { clearAllJwts, storeJwt } from "../storageService";
 import { resolveExpiresAt } from "../utils/authStoreUtils";
@@ -115,11 +115,7 @@ export const useAuthStore = create<AuthState>()(
                     access_token: storedJwt.access_token,
                     token_type: storedJwt.token_type,
                     scope: storedJwt.scope,
-                    id_token: token.id_token,
-                    access_token: token.access_token,
-                    refresh_token: token.refresh_token,
-                    token_type: token.token_type,
-                    scope: token.scope,
+                    refresh_token: storedJwt.refresh_token,
                     profile: {
                       ...(decodedJwt as IdTokenClaims),
                       sui_address: address,
@@ -168,7 +164,7 @@ export const useAuthStore = create<AuthState>()(
               const jwtResponse = await get().extensionLogin();
               if (jwtResponse) {
                 const decodedJwt = decodeJwt<IdTokenClaims>(
-                  jwtResponse.id_token as string
+                  jwtResponse.id_token as string,
                 );
 
                 // Log nonce comparison
@@ -202,7 +198,7 @@ export const useAuthStore = create<AuthState>()(
                   id_token: jwtResponse.id_token,
                   access_token: jwtResponse.access_token,
                   token_type: jwtResponse.token_type,
-                  refresh_token: token.refresh_token,
+                  refresh_token: jwtResponse.refresh_token,
                   scope: jwtResponse.scope,
                   profile: {
                     ...(decodedJwt as IdTokenClaims),
@@ -259,7 +255,7 @@ export const useAuthStore = create<AuthState>()(
 
               if (!nonce || !jwtRandomness || !maxEpoch) {
                 throw new Error(
-                  "Device data not initialized. OAuth params may be missing."
+                  "Device data not initialized. OAuth params may be missing.",
                 );
               }
 
@@ -294,7 +290,7 @@ export const useAuthStore = create<AuthState>()(
               if (message.id === id) {
                 if (message.type === "auth_success") {
                   chrome.runtime?.onMessage?.removeListener(
-                    authSuccessListener
+                    authSuccessListener,
                   );
                   if (!message.token) {
                     reject(new Error("No token received from auth"));
@@ -303,7 +299,7 @@ export const useAuthStore = create<AuthState>()(
                   resolve(message.token);
                 } else if (message.type === "auth_error") {
                   chrome.runtime?.onMessage?.removeListener(
-                    authSuccessListener
+                    authSuccessListener,
                   );
                   reject(message.error);
                 }
@@ -327,7 +323,7 @@ export const useAuthStore = create<AuthState>()(
             chrome.storage.local.get(
               "evevault:jwt",
               (items: { "evevault:jwt"?: Record<SuiChain, JwtResponse> }) =>
-                resolve(items)
+                resolve(items),
             );
           });
 
@@ -349,9 +345,8 @@ export const useAuthStore = create<AuthState>()(
           await useDeviceStore.getState().initializeForChain(network);
 
           // 3. Get updated device parameters (reads from store first, falls back to storage if needed)
-          const { jwtRandomness, nonce, maxEpoch } = await getDeviceData(
-            network
-          );
+          const { jwtRandomness, nonce, maxEpoch } =
+            await getDeviceData(network);
 
           if (!nonce || !jwtRandomness || !maxEpoch) {
             throw new Error(
@@ -359,7 +354,7 @@ export const useAuthStore = create<AuthState>()(
                 !nonce ? "nonce" : ""
               } ${!jwtRandomness ? "jwtRandomness" : ""} ${
                 !maxEpoch ? "maxEpoch" : ""
-              }`
+              }`,
             );
           }
 
@@ -382,7 +377,7 @@ export const useAuthStore = create<AuthState>()(
 
           if (jwtNonce !== nonce) {
             throw new Error(
-              `Nonce mismatch: Expected ${nonce}, but JWT contains ${jwtNonce}. `
+              `Nonce mismatch: Expected ${nonce}, but JWT contains ${jwtNonce}. `,
             );
           }
 
@@ -443,12 +438,12 @@ export const useAuthStore = create<AuthState>()(
               const redirectUri = chrome.identity.getRedirectURL();
 
               const logoutUrl = new URL(
-                `${fusionAuthUrl.replace(/\/$/, "")}/oauth2/logout`
+                `${fusionAuthUrl.replace(/\/$/, "")}/oauth2/logout`,
               );
               logoutUrl.searchParams.set("client_id", clientId);
               logoutUrl.searchParams.set(
                 "post_logout_redirect_uri",
-                redirectUri
+                redirectUri,
               );
 
               chrome.identity.launchWebAuthFlow(
@@ -459,7 +454,7 @@ export const useAuthStore = create<AuthState>()(
                     event: "change",
                     payload: { accounts: [] },
                   });
-                }
+                },
               );
             } else {
               // For web, just redirect to home - FusionAuth session can remain
@@ -486,7 +481,7 @@ export const useAuthStore = create<AuthState>()(
     {
       name: "evevault:auth",
       storage: createJSONStorage(() =>
-        isWeb() ? localStorageAdapter : chromeStorageAdapter
+        isWeb() ? localStorageAdapter : chromeStorageAdapter,
       ),
       onRehydrateStorage: () => {
         return async (state, error) => {
@@ -500,8 +495,8 @@ export const useAuthStore = create<AuthState>()(
           }
         };
       },
-    }
-  )
+    },
+  ),
 );
 
 export const waitForAuthHydration = async () => {
