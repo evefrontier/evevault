@@ -263,10 +263,11 @@ async function handleExtLogin(
     try {
       await deviceStore.initializeForChain(currentChain);
     } catch (error) {
-      // Check if this is a network connectivity error using structured checks (prefer structured checks over brittle message matching)
+      // Check if this is a network connectivity error using structured checks
       const errorMessage =
         error instanceof Error ? error.message : String(error);
 
+      // Prefer structured checks over brittle message matching
       const withNetworkMeta = error as {
         code?: unknown;
         status?: unknown;
