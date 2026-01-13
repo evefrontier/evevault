@@ -20,6 +20,7 @@ import {
   createLogger,
   formatAddress,
   getSuiscanUrl,
+  WEB_ROUTES,
 } from "@evevault/shared/utils";
 import { useBalance, zkSignAny } from "@evevault/shared/wallet";
 import { Transaction } from "@mysten/sui/transactions";
@@ -314,6 +315,12 @@ export const WalletScreen = () => {
               navigate({ to: "/wallet/send-token", search: { coinType } })
             }
           />
+          <Button
+            variant="secondary"
+            onClick={() => navigate({ to: WEB_ROUTES.WALLET_TRANSACTIONS })}
+          >
+            View Transaction History
+          </Button>
         </main>
         <footer className="app-shell__footer" />
       </div>

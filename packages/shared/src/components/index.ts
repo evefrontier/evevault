@@ -14,3 +14,4 @@ export * from "./SendTokenScreen";
 export * from "./Text";
 export * from "./Toast";
 export * from "./TokenList";
+export * from "./TransactionsScreen";

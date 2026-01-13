@@ -1,43 +1,47 @@
 import {
-  AddTokenScreen,
   HeaderMobile,
+  TransactionsScreen,
   useAuthStore,
-  useNetworkStore,
 } from "@evevault/shared";
 import { requireAuth } from "@evevault/shared/router";
+import { useNetworkStore } from "@evevault/shared/stores/networkStore";
 import { EXTENSION_ROUTES } from "@evevault/shared/utils";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
-function AddTokenPage() {
+function TransactionsPage() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { chain } = useNetworkStore();
 
   const handleNavigateBack = () => {
-    navigate({ to: "/" });
+    navigate({ to: EXTENSION_ROUTES.HOME });
   };
 
-  // Note: Layout is provided by popup entrypoint, so we only render content here
+  const handleTransactionsClick = () => {
+    // Already on transactions page, no-op
+  };
+
+  if (!user || !chain) {
+    return null;
+  }
+
   return (
-    <div className="flex flex-col gap-[40px]">
+    <div className="flex flex-col gap-10">
       <HeaderMobile
         email={user?.profile?.email as string}
         address={user?.profile?.sui_address as string}
-        onTransactionsClick={() =>
-          navigate({ to: EXTENSION_ROUTES.TRANSACTIONS })
-        }
+        onTransactionsClick={handleTransactionsClick}
       />
-      <AddTokenScreen
+      <TransactionsScreen
         user={user}
-        chain={chain || null}
-        onSuccess={handleNavigateBack}
-        onCancel={handleNavigateBack}
+        chain={chain}
+        onBack={handleNavigateBack}
       />
     </div>
   );
 }
 
-export const Route = createFileRoute("/add-token")({
+export const Route = createFileRoute("/transactions")({
   beforeLoad: () => requireAuth(),
-  component: AddTokenPage,
+  component: TransactionsPage,
 });
