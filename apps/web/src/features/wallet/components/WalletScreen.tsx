@@ -16,7 +16,11 @@ import {
 import { useDeviceStore } from "@evevault/shared/stores/deviceStore";
 import { useNetworkStore } from "@evevault/shared/stores/networkStore";
 import { createSuiClient } from "@evevault/shared/sui";
-import { createLogger, formatAddress } from "@evevault/shared/utils";
+import {
+  createLogger,
+  formatAddress,
+  WEB_ROUTES,
+} from "@evevault/shared/utils";
 import { useBalance, zkSignAny } from "@evevault/shared/wallet";
 import { Transaction } from "@mysten/sui/transactions";
 import { SUI_DEVNET_CHAIN } from "@mysten/wallet-standard";
@@ -313,6 +317,12 @@ export const WalletScreen = () => {
               navigate({ to: "/wallet/send-token", search: { coinType } })
             }
           />
+          <Button
+            variant="secondary"
+            onClick={() => navigate({ to: WEB_ROUTES.WALLET_TRANSACTIONS })}
+          >
+            View Transaction History
+          </Button>
         </main>
         <footer className="app-shell__footer" />
       </div>

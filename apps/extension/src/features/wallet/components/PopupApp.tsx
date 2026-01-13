@@ -11,7 +11,7 @@ import {
 import { useDevice, useEpochExpiration } from "@evevault/shared/hooks";
 import { LockScreen } from "@evevault/shared/screens";
 import { useNetworkStore } from "@evevault/shared/stores/networkStore";
-import { createLogger } from "@evevault/shared/utils";
+import { createLogger, EXTENSION_ROUTES } from "@evevault/shared/utils";
 import { useBalance } from "@evevault/shared/wallet";
 import type { SuiChain } from "@mysten/wallet-standard";
 import { useNavigate } from "@tanstack/react-router";
@@ -105,6 +105,9 @@ function App() {
       <HeaderMobile
         address={user?.profile?.sui_address as string}
         email={user?.profile?.email as string}
+        onTransactionsClick={() =>
+          navigate({ to: EXTENSION_ROUTES.TRANSACTIONS })
+        }
       />
 
       {/* Token Section */}

@@ -1,6 +1,7 @@
 import { formatAddress } from "@evevault/shared";
 import { useNetworkStore } from "@evevault/shared/stores/networkStore";
 import type { SendTokenScreenProps } from "@evevault/shared/types";
+import { getSuiscanUrl } from "@evevault/shared/utils";
 import { useSendToken } from "@evevault/shared/wallet";
 import type React from "react";
 import { useEffect, useState } from "react";
@@ -9,14 +10,6 @@ import Heading from "../Heading";
 import { Input } from "../Inputs";
 import Text from "../Text";
 import { useToast } from "../Toast";
-
-/**
- * Generates a Suiscan URL for a transaction
- */
-function getSuiscanUrl(chain: string, txDigest: string): string {
-  const network = chain.replace("sui:", "");
-  return `https://suiscan.xyz/${network}/tx/${txDigest}`;
-}
 
 export const SendTokenScreen: React.FC<SendTokenScreenProps> = ({
   coinType,

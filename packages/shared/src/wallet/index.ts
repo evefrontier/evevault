@@ -13,5 +13,6 @@ export {
 export { ephSign } from "./ephSign";
 export { useBalance } from "./hooks/useBalance";
 export { useSendToken } from "./hooks/useSendToken";
+export { useTransactions } from "./hooks/useTransactions";
 export { fetchZkProof } from "./zkProof";
 export { zkSignAny } from "./zkSignAny";
