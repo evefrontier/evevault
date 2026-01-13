@@ -28,10 +28,25 @@ const SUI_COIN_TYPE = "0x2::sui::SUI";
 const DEFAULT_PAGE_SIZE = 50;
 
 // Cache for coin metadata to avoid repeated fetches
-const coinMetadataCache = new Map<
-  string,
-  { decimals: number; symbol: string }
->();
+// Includes expiry to prevent stale metadata in long-running sessions
+interface CacheEntry {
+  data: { decimals: number; symbol: string };
+  timestamp: number;
+}
+
+const coinMetadataCache = new Map<string, CacheEntry>();
+const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes cache expiry
+
+/**
+ * Manually invalidate cache for a specific coin type or clear entire cache
+ */
+export function invalidateCoinMetadataCache(coinType?: string): void {
+  if (coinType) {
+    coinMetadataCache.delete(coinType);
+  } else {
+    coinMetadataCache.clear();
+  }
+}
 
 /**
  * Fetches coin metadata for a given coin type
@@ -41,16 +56,24 @@ async function fetchCoinMetadata(
   coinType: string,
 ): Promise<{ decimals: number; symbol: string } | null> {
   try {
-    // Check cache first
+    // Check cache first with expiry
     const cached = coinMetadataCache.get(coinType);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+      return cached.data;
+    }
+
+    // Remove expired entry if it exists
     if (cached) {
-      return cached;
+      coinMetadataCache.delete(coinType);
     }
 
     // For SUI, we know the metadata
     if (coinType === SUI_COIN_TYPE) {
       const metadata = { decimals: 9, symbol: "SUI" };
-      coinMetadataCache.set(coinType, metadata);
+      coinMetadataCache.set(coinType, {
+        data: metadata,
+        timestamp: Date.now(),
+      });
       return metadata;
     }
 
@@ -67,8 +90,8 @@ async function fetchCoinMetadata(
       symbol: metadata.symbol,
     };
 
-    // Cache the result
-    coinMetadataCache.set(coinType, result);
+    // Cache the result with timestamp
+    coinMetadataCache.set(coinType, { data: result, timestamp: Date.now() });
     return result;
   } catch (error) {
     log.error("Failed to fetch coin metadata", { coinType, error });
@@ -100,7 +123,21 @@ async function formatTransactionAmount(
   suiClient: ReturnType<typeof createSuiClient>,
 ): Promise<string> {
   const metadata = await fetchCoinMetadata(suiClient, coinType);
-  const decimals = metadata?.decimals ?? 9; // Fallback to 9 decimals if metadata unavailable
+  let decimals: number;
+
+  if (metadata) {
+    decimals = metadata.decimals;
+  } else {
+    // Fallback to 9 decimals (SUI default) if metadata is unavailable.
+    // This may be incorrect for non-SUI tokens, so we log a warning for observability.
+    decimals = 9;
+    log.warn("Falling back to default decimals for coin type", {
+      coinType,
+      rawAmount,
+      defaultDecimals: decimals,
+    });
+  }
+
   return formatByDecimals(rawAmount, decimals);
 }
 
@@ -155,8 +192,8 @@ async function parseGraphQLTransaction(
       return ownerAddress?.toLowerCase() !== userAddress.toLowerCase();
     });
 
-    // If no recipient found, it's likely a gas-only transaction
-    const counterparty = recipientChange?.owner?.address || "Gas";
+    // If no recipient found, it's likely a gas-only or system-level transaction
+    const counterparty = recipientChange?.owner?.address || "System";
 
     const amountAbs = BigInt(outgoingChange.amount) * -1n;
     const coinType = outgoingChange.coinType?.repr || SUI_COIN_TYPE;
@@ -193,8 +230,8 @@ async function parseGraphQLTransaction(
       return ownerAddress?.toLowerCase() !== userAddress.toLowerCase();
     });
 
-    // If no sender found, it's likely a faucet/mint
-    counterparty = senderChange?.owner?.address || "Faucet";
+    // If no sender found, it's likely a mint/system-originated transfer
+    counterparty = senderChange?.owner?.address || "System";
   } else {
     // Find who received it (positive balance change)
     const recipientChange = balanceChanges.find((bc) => {
@@ -205,8 +242,8 @@ async function parseGraphQLTransaction(
       return ownerAddress?.toLowerCase() !== userAddress.toLowerCase();
     });
 
-    // If no recipient found, it's likely a gas-only transaction
-    counterparty = recipientChange?.owner?.address || "Gas";
+    // If no recipient found, it's likely a gas-only or system-level transaction
+    counterparty = recipientChange?.owner?.address || "System";
   }
 
   const amountAbs = amount >= 0n ? amount : amount * -1n;

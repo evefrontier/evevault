@@ -131,7 +131,7 @@ export const SendTokenScreen: React.FC<SendTokenScreenProps> = ({
           <Button onClick={onCancel}>close</Button>
           {suiscanUrl && (
             <Button variant="secondary" onClick={handleViewOnSuiscan}>
-              View on suiscan
+              View on Suiscan
             </Button>
           )}
         </div>

@@ -221,8 +221,8 @@ describe("formatDisplayAmount", () => {
     expect(result).toBeTruthy();
   });
 
-  it("returns original value for invalid numbers", () => {
-    expect(formatDisplayAmount("invalid")).toBe("invalid");
+  it("returns placeholder for invalid numbers", () => {
+    expect(formatDisplayAmount("invalid")).toBe("—");
   });
 
   it("produces locale-formatted output using Intl.NumberFormat", () => {

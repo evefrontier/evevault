@@ -103,7 +103,7 @@ const TransactionRow: React.FC<TransactionRowProps> = ({
             size="small"
             onClick={handleViewOnSuiscan}
           >
-            View on suiscan
+            View on Suiscan
           </Button>
         </div>
       )}

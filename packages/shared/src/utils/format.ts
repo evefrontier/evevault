@@ -77,7 +77,14 @@ export function formatDisplayAmount(value: string, maxDecimals = 5): string {
   const num = Number.parseFloat(value);
 
   if (Number.isNaN(num)) {
-    return value;
+    // Log a warning so invalid numeric usage is visible during development
+    // while returning a clear non-numeric placeholder for the UI.
+    // eslint-disable-next-line no-console
+    console.warn(
+      "[formatDisplayAmount] Received non-numeric value, returning placeholder:",
+      value,
+    );
+    return "—";
   }
 
   // Use Intl.NumberFormat for locale-aware formatting
