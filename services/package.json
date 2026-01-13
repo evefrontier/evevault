@@ -1,5 +1,6 @@
 {
   "name": "@evevault/vend-service",
+  "description": "⚠️ TEMPORARY: This service will be removed in favor of a Go-based Quasar API service",
   "version": "0.1.0",
   "type": "module",
   "scripts": {

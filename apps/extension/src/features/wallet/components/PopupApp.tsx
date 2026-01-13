@@ -16,8 +16,6 @@ import { useBalance } from "@evevault/shared/wallet";
 import type { SuiChain } from "@mysten/wallet-standard";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { handleTestPatchUserNonce } from "../../../../../../packages/shared/src/auth/patchNonce";
-import { handleTestTokenRefresh } from "../api/tokenRefresh";
 import { useAppInitialization, useLogin, useTestTransaction } from "../hooks";
 
 const log = createLogger();
@@ -29,7 +27,7 @@ function App() {
     useState<SuiChain | null>(null);
 
   const { user, error: authError } = useAuth();
-  const { isLocked, isPinSet, error: deviceError, unlock, nonce } = useDevice();
+  const { isLocked, isPinSet, error: deviceError, unlock } = useDevice();
   const { chain } = useNetworkStore();
   const { handleLogin } = useLogin();
   const { handleTestTransaction, txDigest } = useTestTransaction();

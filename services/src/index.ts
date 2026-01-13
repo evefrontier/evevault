@@ -1,3 +1,17 @@
+/**
+ * ⚠️ TEMPORARY SERVICE - DEPRECATED
+ *
+ * This service is a temporary implementation that will be removed once the
+ * Go-based Quasar API service is ready. It provides:
+ * - JWT vend functionality via FusionAuth
+ * - User nonce patching via FusionAuth
+ *
+ * DO NOT add new features or make significant changes.
+ * This service exists only as a stopgap until the production Go service is available.
+ *
+ * @deprecated This entire service will be removed in favor of a Go service
+ */
+
 import { decodeJwt } from "jose";
 
 declare const Bun: {
@@ -36,9 +50,8 @@ interface PatchUserNonceResponse {
 }
 
 const PORT = Bun.env.PORT ? parseInt(Bun.env.PORT, 10) : 3002;
-const FUSIONAUTH_API_KEY =
-  "tWtKjVdl7rwo4NXXNB-79-HFuLbtISZ4SilmdAPEbwSXXH9yWDXzBIX4";
-const FUSION_SERVER_URL = "https://dev.auth.evefrontier.com";
+const FUSIONAUTH_API_KEY = Bun.env.FUSIONAUTH_API_KEY;
+const FUSION_SERVER_URL = Bun.env.FUSION_SERVER_URL;
 
 if (!FUSIONAUTH_API_KEY) {
   throw new Error(

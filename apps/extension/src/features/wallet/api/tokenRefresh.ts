@@ -1,4 +1,5 @@
 import { createLogger } from "@evevault/shared/utils";
+import type { User } from "oidc-client-ts";
 
 const log = createLogger();
 
