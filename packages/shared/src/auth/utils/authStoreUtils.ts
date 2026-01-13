@@ -67,6 +67,9 @@ export async function getUserForNetwork(chain: SuiChain): Promise<User | null> {
       sui_address: address,
       salt,
     } as User["profile"],
-    expires_at: storedJwt.expires_at ?? Math.floor(Date.now() / 1000) + 3600,
+    expires_at:
+      decodedJwt.exp ??
+      storedJwt.expires_at ??
+      Math.floor(Date.now() / 1000) + (storedJwt.expires_in ?? 3600),
   });
 }

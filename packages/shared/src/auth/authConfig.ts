@@ -1,4 +1,5 @@
 import {
+  type User,
   UserManager,
   type UserManagerSettings,
   WebStorageStateStore,
@@ -77,6 +78,7 @@ const fusionAuthConfig: UserManagerSettings = {
   post_logout_redirect_uri: getOrigin(),
   response_type: "code",
   automaticSilentRenew: true,
+  accessTokenExpiringNotificationTimeInSeconds: 3,
   scope: "openid email profile offline_access",
 
   // We can safely use WebStorageStateStore since localStorage is guaranteed to exist
@@ -107,9 +109,34 @@ export function getUserManager(): UserManager {
       log.error("OIDC silent renew error", error);
     });
 
-    userManagerInstance.events.addAccessTokenExpiring(async (user) => {
+    userManagerInstance.events.addAccessTokenExpiring(async () => {
       log.info("Access token expiring, patching user nonce before refresh");
-      await patchUserNonce(user);
+
+      // Get user from parameter or fallback to UserManager
+      const currentUser = await userManagerInstance?.getUser();
+      if (!currentUser) {
+        log.warn("User parameter is undefined");
+      }
+
+      const { useDeviceStore } = await import("../stores/deviceStore");
+      const { useNetworkStore } = await import("../stores/networkStore");
+      const deviceStore = useDeviceStore.getState();
+      const networkStore = useNetworkStore.getState();
+      const currentChain = networkStore.chain;
+      const nonce = deviceStore.getNonce(currentChain);
+
+      if (!nonce) {
+        log.error("No nonce available for patching before token refresh");
+        return;
+      }
+
+      await patchUserNonce(currentUser as User, nonce);
+    });
+
+    userManagerInstance.events.addAccessTokenExpired(() => {
+      log.warn(
+        "Access token has already expired - addAccessTokenExpiring may have missed it",
+      );
     });
   }
   return userManagerInstance;

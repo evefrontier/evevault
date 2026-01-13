@@ -119,8 +119,9 @@ export const useAuthStore = create<AuthState>()(
                       salt,
                     },
                     expires_at:
+                      decodedJwt.exp ??
                       Math.floor(Date.now() / 1000) +
-                      (storedJwt.expires_at ?? 3600),
+                        (storedJwt.expires_at ?? storedJwt.expires_in ?? 3600),
                   });
                   await userManager.storeUser(newUser);
                   set({ user: newUser, loading: false });
