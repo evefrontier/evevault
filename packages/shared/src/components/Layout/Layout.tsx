@@ -14,7 +14,8 @@ const MOBILE_NAV_HEIGHT = 64;
 export const Layout: React.FC<LayoutProps> = ({ children, showNav = true }) => {
   const { isMobile, isTablet, isDesktop } = useResponsive();
   const showMobileNav = isMobile && showNav;
-  const showSidebar = (isTablet || isDesktop) && showNav;
+  /// TODO: add sidebar
+  const showSidebar = false;
 
   const paddingStyle = isMobile
     ? {
@@ -29,7 +30,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, showNav = true }) => {
       };
 
   return (
-    <div className="flex h-full min-h-screen w-full overflow-hidden">
+    <div className="flex h-full min-h-screen w-full min-w-screen overflow-hidden">
       {/* Sidebar - visible on tablet and desktop */}
       {showSidebar && <DesktopLeftSideBar items={NAV_ITEMS} />}
 
@@ -37,7 +38,10 @@ export const Layout: React.FC<LayoutProps> = ({ children, showNav = true }) => {
       <Background bottomOffset={showMobileNav ? MOBILE_NAV_HEIGHT : 0}>
         <div className="flex h-full flex-1 flex-col overflow-hidden">
           {/* Scrollable content */}
-          <main className="flex-1 overflow-y-auto" style={paddingStyle}>
+          <main
+            className="flex-1 overflow-y-auto w-full max-w-4xl mx-auto"
+            style={paddingStyle}
+          >
             {children}
           </main>
         </div>

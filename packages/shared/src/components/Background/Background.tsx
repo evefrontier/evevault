@@ -8,10 +8,10 @@ interface BackgroundProps {
 const Background = ({ children, bottomOffset = 0 }: BackgroundProps) => {
   return (
     <div
-      className="relative h-full w-full flex-1 overflow-hidden"
+      className="relative h-full w-full min-h-screen flex-1 overflow-hidden"
       style={{
         backgroundImage: `url("/images/evevault-background.png")`,
-        backgroundSize: "inherit",
+        backgroundSize: "cover",
         backgroundRepeat: "no-repeat",
         backgroundPosition: "center center",
         paddingBottom: bottomOffset,

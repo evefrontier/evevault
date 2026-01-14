@@ -1,6 +1,7 @@
 /* Button wrapper - transparent with corner decorations */
 .button {
   display: flex;
+  width: fit-content;
   flex-direction: row;
   align-items: center;
   padding: 3px;

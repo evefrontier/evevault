@@ -8,7 +8,11 @@ import {
   Text,
   TokenListSection,
 } from "@evevault/shared/components";
-import { useDevice, useEpochExpiration } from "@evevault/shared/hooks";
+import {
+  useDevice,
+  useEpochExpiration,
+  useTestTransaction,
+} from "@evevault/shared/hooks";
 import { LockScreen } from "@evevault/shared/screens";
 import { useNetworkStore } from "@evevault/shared/stores/networkStore";
 import { createLogger } from "@evevault/shared/utils";
@@ -16,7 +20,7 @@ import { useBalance } from "@evevault/shared/wallet";
 import type { SuiChain } from "@mysten/wallet-standard";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useAppInitialization, useLogin, useTestTransaction } from "../hooks";
+import { useAppInitialization, useLogin } from "../hooks";
 
 const log = createLogger();
 
