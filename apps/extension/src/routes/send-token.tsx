@@ -17,7 +17,6 @@ function SendTokenPage() {
     navigate({ to: "/" });
   };
 
-  // Note: Layout is provided by popup entrypoint, so we only render content here
   return (
     <div className="flex flex-col gap-10">
       <HeaderMobile

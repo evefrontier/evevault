@@ -136,14 +136,14 @@ describe("useSendToken", () => {
       queryClient.clear();
     });
 
-    it("rejects address without 0x prefix", () => {
+    it("rejects address with invalid characters", () => {
       const queryClient = new QueryClient();
       const { result } = renderHook(
         () =>
           useSendToken({
             coinType: "0x2::sui::SUI",
             recipientAddress:
-              "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+              "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdeg", // Invalid character 'g'
             amount: "1",
           }),
         { wrapper: createWrapper(queryClient) },

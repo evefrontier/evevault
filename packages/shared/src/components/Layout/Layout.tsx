@@ -1,4 +1,5 @@
 import { useResponsive } from "@evevault/shared/hooks";
+import { spacing } from "@evevault/shared/theme";
 import type { LayoutProps } from "@evevault/shared/types";
 import type React from "react";
 import { NAV_ITEMS } from "../../utils/routes";
@@ -7,14 +8,17 @@ import { HeaderMobile } from "./Header/HeaderMobile";
 import DesktopLeftSideBar from "./NavigationBar/DesktopLeftSideBar";
 import MobileBottomTabBar from "./NavigationBar/MobileBottomTabBar";
 
-/** Grid margin: mobile top/bottom 24px, left/right 16px; desktop 40px all sides */
-const GRID_MARGIN = { mobile: { vertical: 24, horizontal: 16 }, default: 40 };
-/** Extension popup margins: py-24px, px-16px (from Figma) */
-const EXTENSION_MARGIN = { vertical: 24, horizontal: 16 };
-/** Gap between header and content in extension (from Figma) */
-const EXTENSION_CONTENT_GAP = 40;
-/** Mobile nav bar height */
-const MOBILE_NAV_HEIGHT = 64;
+/** Grid margin: mobile top/bottom 24px (6 * 4px), left/right 16px (4 * 4px); desktop 40px (10 * 4px) all sides */
+const GRID_MARGIN = {
+  mobile: { vertical: spacing.lg, horizontal: spacing.md },
+  default: spacing.xxl - spacing.sm,
+};
+/** Extension popup margins: py-24px (6 * 4px), px-16px (4 * 4px) */
+const EXTENSION_MARGIN = { vertical: spacing.lg, horizontal: spacing.md };
+/** Gap between header and content in extension: 40px (10 * 4px) */
+const EXTENSION_CONTENT_GAP = spacing.xxl - spacing.sm;
+/** Mobile nav bar height: 64px (16 * 4px) */
+const MOBILE_NAV_HEIGHT = spacing.xs * 16;
 
 export const Layout: React.FC<LayoutProps> = ({
   children,

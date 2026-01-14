@@ -2,15 +2,18 @@ import { getUserForNetwork, useAuth } from "@evevault/shared/auth";
 import { useDevice } from "@evevault/shared/hooks";
 import { useNetworkStore } from "@evevault/shared/stores/networkStore";
 import { createSuiClient } from "@evevault/shared/sui";
-import { createLogger, toSmallestUnit } from "@evevault/shared/utils";
+import {
+  createLogger,
+  SUI_COIN_TYPE,
+  toSmallestUnit,
+} from "@evevault/shared/utils";
 import { Transaction } from "@mysten/sui/transactions";
+import { isValidSuiAddress } from "@mysten/sui/utils";
 import { useCallback, useMemo, useState } from "react";
 import { zkSignAny } from "../zkSignAny";
 import { useBalance } from "./useBalance";
 
 const log = createLogger();
-
-const SUI_COIN_TYPE = "0x2::sui::SUI";
 
 interface UseSendTokenParams {
   coinType: string;
@@ -40,13 +43,6 @@ interface UseSendTokenResult {
   isLoading: boolean;
   error: string | null;
   txDigest: string | null;
-}
-
-/**
- * Validates a Sui address format (0x followed by 64 hex characters)
- */
-function isValidSuiAddress(address: string): boolean {
-  return /^0x[a-fA-F0-9]{64}$/.test(address);
 }
 
 /**

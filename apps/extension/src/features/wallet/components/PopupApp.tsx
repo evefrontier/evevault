@@ -11,7 +11,7 @@ import {
 import { useDevice, useEpochExpiration } from "@evevault/shared/hooks";
 import { LockScreen } from "@evevault/shared/screens";
 import { useNetworkStore } from "@evevault/shared/stores/networkStore";
-import { createLogger } from "@evevault/shared/utils";
+import { createLogger, getSuiscanUrl } from "@evevault/shared/utils";
 import { useBalance } from "@evevault/shared/wallet";
 import type { SuiChain } from "@mysten/wallet-standard";
 import { useNavigate } from "@tanstack/react-router";
@@ -145,11 +145,7 @@ function App() {
         <Text>
           Transaction digest:{" "}
           <a
-            href={
-              chain
-                ? `https://suiscan.xyz/${chain.replace("sui:", "")}/tx/${txDigest}`
-                : "#"
-            }
+            href={chain ? getSuiscanUrl(chain, txDigest) : "#"}
             target="_blank"
             rel="noopener noreferrer"
           >
