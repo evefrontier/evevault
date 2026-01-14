@@ -1,7 +1,10 @@
 import type { JwtResponse } from "@evevault/shared/types/authTypes";
+import type { Transaction } from "@mysten/sui/transactions";
 import type {
   StandardEventsOnMethod,
+  SuiSignAndExecuteTransactionInput,
   SuiSignAndExecuteTransactionOutput,
+  SuiWalletFeatures,
 } from "@mysten/wallet-standard";
 
 export type WalletActionMessage = BackgroundMessage & {
@@ -42,3 +45,27 @@ export type SignAndExecuteTransactionMessage =
       type: "sign_and_execute_transaction_error";
       error: string;
     };
+
+/* EveFrontierSponsoredTransactions custom types */
+
+export const EVEFRONTIER_SPONSORED_TRANSACTION =
+  "evefrontier:sponsoredTransaction" as const;
+
+export type EveFrontierSponsoredTransactionInput = {
+  transaction: Transaction;
+};
+export type EveFrontierSponsoredTransactionOutput = {
+  digest: string;
+  effects: string;
+};
+
+export type EveFrontierSponsoredTransactionMethod = (
+  input: EveFrontierSponsoredTransactionInput,
+) => Promise<EveFrontierSponsoredTransactionOutput>;
+
+export type EveVaultWalletFeatures = SuiWalletFeatures & {
+  [EVEFRONTIER_SPONSORED_TRANSACTION]: {
+    version: "1.0.0";
+    signSponsoredTransaction: EveFrontierSponsoredTransactionMethod;
+  };
+};

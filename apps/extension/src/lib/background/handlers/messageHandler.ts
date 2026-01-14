@@ -59,6 +59,12 @@ export function handleMessage(
     return handleApprovePopup(message, sender, sendResponse);
   }
 
+  if (
+    action === WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION
+  ) {
+    return handleApprovePopup(message, sender, sendResponse);
+  }
+
   if (action === "report_transaction_effects") {
     handleReportTransactionEffects(message, sender, sendResponse);
     return true;

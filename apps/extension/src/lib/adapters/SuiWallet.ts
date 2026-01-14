@@ -1,35 +1,43 @@
 import { WalletStandardMessageTypes } from "@evevault/shared";
 import { getZkLoginAddress } from "@evevault/shared/auth";
 import { createLogger } from "@evevault/shared/utils";
+import type {
+  IdentifierRecord,
+  SignedTransaction,
+  StandardConnectMethod,
+  StandardConnectOutput,
+  StandardEventsOnMethod,
+  SuiChain,
+  SuiSignAndExecuteTransactionInput,
+  SuiSignAndExecuteTransactionMethod,
+  SuiSignAndExecuteTransactionOutput,
+  SuiSignPersonalMessageInput,
+  SuiSignPersonalMessageMethod,
+  SuiSignPersonalMessageOutput,
+  SuiSignTransactionInput,
+  SuiSignTransactionMethod,
+  Wallet,
+} from "@mysten/wallet-standard";
 import {
-  type IdentifierRecord,
   ReadonlyWalletAccount,
-  type SignedTransaction,
   StandardConnect,
-  type StandardConnectMethod,
-  type StandardConnectOutput,
   StandardDisconnect,
   StandardEvents,
   SUI_DEVNET_CHAIN,
   SUI_TESTNET_CHAIN,
-  type SuiChain,
   SuiSignAndExecuteTransaction,
-  type SuiSignAndExecuteTransactionInput,
-  type SuiSignAndExecuteTransactionMethod,
   SuiSignPersonalMessage,
-  type SuiSignPersonalMessageInput,
-  type SuiSignPersonalMessageMethod,
-  type SuiSignPersonalMessageOutput,
   SuiSignTransaction,
-  type SuiSignTransactionInput,
-  type SuiSignTransactionMethod,
-  type SuiWalletFeatures,
-  type Wallet,
 } from "@mysten/wallet-standard";
 import type {
+  EveFrontierSponsoredTransactionInput,
+  EveFrontierSponsoredTransactionMethod,
+  EveFrontierSponsoredTransactionOutput,
+  EveVaultWalletFeatures,
   SignAndExecuteTransactionMessage,
   WalletEventListener,
 } from "../background/types";
+import { EVEFRONTIER_SPONSORED_TRANSACTION } from "../background/types";
 
 const log = createLogger();
 
@@ -86,12 +94,13 @@ export class EveVaultWallet implements Wallet {
             SuiSignPersonalMessage,
             SuiSignTransaction,
             SuiSignAndExecuteTransaction,
+            EVEFRONTIER_SPONSORED_TRANSACTION,
           ],
         }),
     );
   }
 
-  get features(): SuiWalletFeatures {
+  get features(): EveVaultWalletFeatures {
     return {
       [StandardConnect]: {
         version: "1.0.0",
@@ -112,6 +121,10 @@ export class EveVaultWallet implements Wallet {
       [SuiSignAndExecuteTransaction]: {
         version: "2.0.0",
         signAndExecuteTransaction: this.#signAndExecuteTransaction,
+      },
+      [EVEFRONTIER_SPONSORED_TRANSACTION]: {
+        version: "1.0.0",
+        signSponsoredTransaction: this.#signEveFrontierSponsoredTransaction,
       },
     };
   }
@@ -334,6 +347,7 @@ export class EveVaultWallet implements Wallet {
       );
     });
   };
+
   #signAndExecuteTransaction: SuiSignAndExecuteTransactionMethod = async (
     input: SuiSignAndExecuteTransactionInput,
   ) => {
@@ -364,4 +378,41 @@ export class EveVaultWallet implements Wallet {
       },
     );
   };
+
+  #signEveFrontierSponsoredTransaction: EveFrontierSponsoredTransactionMethod =
+    async (input: EveFrontierSponsoredTransactionInput) => {
+      const tx = await input.transaction.toJSON();
+
+      return new Promise<EveFrontierSponsoredTransactionOutput>(
+        (resolve, reject) => {
+          const onMsg = async (e: MessageEvent) => {
+            const m = e.data || {};
+
+            log.debug("[SuiWallet] #signSponsoredTransaction message", m);
+
+            if (m.type === "sign_success") {
+              resolve({
+                digest: "123",
+                effects: "123",
+              });
+            } else if (m.type === "sign_transaction_error") {
+              reject(new Error(m.error));
+            }
+          };
+
+          window.addEventListener("message", onMsg);
+
+          window.postMessage(
+            {
+              __to: "Eve Vault",
+              id: crypto.randomUUID(),
+              action:
+                WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION,
+              transaction: tx,
+            },
+            "*",
+          );
+        },
+      );
+    };
 }
