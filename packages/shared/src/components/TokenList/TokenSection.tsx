@@ -1,20 +1,26 @@
 import { formatAddress } from "@evevault/shared";
 import type { TokenListProps, TokenRowProps } from "@evevault/shared/types";
 import { useBalance } from "@evevault/shared/wallet";
-import { useState } from "react";
+import type React from "react";
+import { type KeyboardEvent, useState } from "react";
 import { useTokenListStore } from "../../stores/tokenListStore";
 import Button from "../Button";
 import Icon from "../Icon";
 import Text from "../Text";
 import { useToast } from "../Toast";
 
-const TokenRow: React.FC<TokenRowProps> = ({
+interface ExtendedTokenRowProps extends TokenRowProps {
+  onTransfer?: () => void;
+}
+
+const TokenRow: React.FC<ExtendedTokenRowProps> = ({
   coinType,
   user,
   chain,
   isSelected,
   onSelect,
   onCopyAddress,
+  onTransfer,
 }) => {
   const { data, isLoading } = useBalance({
     user,
@@ -27,50 +33,87 @@ const TokenRow: React.FC<TokenRowProps> = ({
   const balance = isLoading ? "..." : (data?.formattedBalance ?? "0");
   const symbol = data?.metadata?.symbol || "";
 
-  const rowClasses = [
-    "flex w-full items-center justify-between gap-1 p-2 h-[38px] min-h-[38px]",
+  // Container classes - expands when selected
+  const containerClasses = [
+    "flex flex-col w-full p-2 gap-4",
     "border-none cursor-pointer text-left transition-colors",
     isSelected
-      ? "bg-[rgba(255,71,0,0.4)] hover:bg-[rgba(255,71,0,0.4)]"
-      : "bg-transparent hover:bg-[rgba(255,71,0,0.1)]",
+      ? "bg-quantum-40 hover:bg-quantum-40"
+      : "bg-transparent hover:bg-quantum-10",
   ].join(" ");
 
+  const handleTransferClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onTransfer) {
+      onTransfer();
+    }
+  };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLButtonElement>) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      onSelect();
+    }
+  };
+
   return (
-    <button type="button" className={rowClasses} onClick={onSelect}>
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2 w-[140px]">
-          <Text variant="bold" size="medium">
-            {tokenName}
+    <button
+      type="button"
+      className={containerClasses}
+      onClick={onSelect}
+      onKeyDown={handleKeyDown}
+      aria-pressed={isSelected}
+    >
+      {/* Token Row Content */}
+      <div className="flex w-full items-center justify-between gap-1">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 w-[140px]">
+            <Text variant="bold" size="medium">
+              {tokenName}
+            </Text>
+          </div>
+          <div className="flex items-center gap-1">
+            <Text variant="light" size="small" color="grey-neutral">
+              {shortAddress}
+            </Text>
+            <button
+              type="button"
+              className="flex items-center justify-center w-4 h-4 p-0 bg-transparent border-none cursor-pointer opacity-70 hover:opacity-100 transition-opacity"
+              onClick={(e) => {
+                e.stopPropagation();
+                onCopyAddress(coinType);
+              }}
+            >
+              <Icon name="Copy" size="small" color="grey-neutral" />
+            </button>
+          </div>
+        </div>
+        <div className="flex items-center gap-6 text-right">
+          <Text variant="regular" size="medium">
+            {balance} {symbol}
           </Text>
         </div>
-        <div className="flex items-center gap-1">
-          <Text variant="light" size="small" color="grey-neutral">
-            {shortAddress}
-          </Text>
-          <button
-            type="button"
-            className="flex items-center justify-center w-4 h-4 p-0 bg-transparent border-none cursor-pointer opacity-70 hover:opacity-100 transition-opacity"
-            onClick={(e) => {
-              e.stopPropagation();
-              onCopyAddress(coinType);
-            }}
+      </div>
+
+      {/* Transfer Button - Only visible when selected */}
+      {isSelected && onTransfer && (
+        <div className="flex justify-end w-full">
+          <Button
+            variant="secondary"
+            size="small"
+            onClick={handleTransferClick}
           >
-            <Icon name="Copy" size="small" color="#8E8C77" />
-          </button>
+            Transfer
+          </Button>
         </div>
-      </div>
-      <div className="flex items-center gap-6 text-right">
-        <Text variant="regular" size="medium">
-          {balance} {symbol}
-        </Text>
-      </div>
+      )}
     </button>
   );
 };
 
 export const TokenSection: React.FC<
   TokenListProps & { walletAddress?: string }
-> = ({ user, chain, onAddToken, walletAddress }) => {
+> = ({ user, chain, onAddToken, onSendToken, walletAddress }) => {
   const { tokens, removeToken } = useTokenListStore();
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
   const { showToast } = useToast();
@@ -94,6 +137,12 @@ export const TokenSection: React.FC<
     }
   };
 
+  const handleTransfer = (coinType: string) => {
+    if (onSendToken) {
+      onSendToken(coinType);
+    }
+  };
+
   const hasTokens = tokens.length > 0;
 
   return (
@@ -113,14 +162,14 @@ export const TokenSection: React.FC<
               <Text variant="light" size="small" color="grey-neutral">
                 {formatAddress(walletAddress)}
               </Text>
-              <Icon name="Copy" size="small" color="#8E8C77" />
+              <Icon name="Copy" size="small" color="grey-neutral" />
             </button>
           </div>
         </div>
       )}
 
       {/* Token List */}
-      <div className="flex flex-col items-start p-4 px-2 gap-3 w-full min-h-[207px] max-h-[207px] bg-[#0b0b0b] border border-[rgba(255,71,0,0.6)]">
+      <div className="flex flex-col items-start p-4 px-2 gap-3 w-full min-h-[207px] max-h-[207px] bg-crude-dark border border-quantum-60">
         {/* Labels Row */}
         <div className="flex justify-between items-start gap-2 w-full">
           <div className="flex items-center gap-[60px]">
@@ -171,17 +220,20 @@ export const TokenSection: React.FC<
                   setSelectedToken(selectedToken === coinType ? null : coinType)
                 }
                 onCopyAddress={handleCopyAddress}
+                onTransfer={
+                  onSendToken ? () => handleTransfer(coinType) : undefined
+                }
               />
             ))
           )}
         </div>
       </div>
 
-      {/* Add/Remove Token Buttons */}
-      <div className="flex justify-center items-center gap-4 mt-4 w-full">
+      {/* Add / Remove Token Buttons */}
+      <div className="flex justify-center items-center gap-1 w-full">
         {onAddToken && (
           <Button variant="primary" size="small" onClick={onAddToken}>
-            Add Token
+            Add token
           </Button>
         )}
         <Button
@@ -190,7 +242,7 @@ export const TokenSection: React.FC<
           onClick={handleRemoveToken}
           disabled={!selectedToken}
         >
-          Remove Token
+          Remove token
         </Button>
       </div>
     </div>

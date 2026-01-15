@@ -223,6 +223,22 @@ Keep entrypoints minimal:
 **NEVER use hardcoded values for colors, spacing, or typography.**  
 **Note:** We use "design system values" instead of "design tokens" to avoid confusion with blockchain tokens.
 
+**This applies to ALL color props including component props like `<Icon color="..." />`:**
+
+```typescript
+// ✅ CORRECT - Use CSS variable names (without var() wrapper)
+<Icon name="Copy" size="small" color="grey-neutral" />
+<Icon name="Arrow" size="medium" color="neutral" />
+<Icon name="Settings" color="quantum" />
+
+// ❌ WRONG - Never use hex codes in component props
+<Icon name="Copy" size="small" color="#8E8C77" />
+<Icon name="Arrow" size="medium" color="#FFFFD6" />
+<Icon name="Settings" color="#FF4700" />
+```
+
+**For inline styles and CSS:**
+
 ```typescript
 // ✅ CORRECT
 import { colors, spacing, typography } from "@evevault/shared/design";
@@ -260,6 +276,54 @@ import { colors, spacing, typography } from "@evevault/shared/design";
 - Reach for Tailwind utility classes before adding or expanding shared CSS (especially for components like `packages/shared/src/components/Settings/Settings.css` that are currently style-heavy).
 - When editing CSS-heavy components, prefer migrating rules into Tailwind classes incrementally and deleting obsolete CSS rather than growing the stylesheet.
 - Create or update shared CSS only when Tailwind cannot express the desired behavior (complex animations, pseudo-elements, etc.), and document why in the PR or a code comment.
+
+### Layout Spacing and Figma Sizes
+
+**ALWAYS use Figma sizes and Tailwind utility classes instead of hardcoded pixel values.** All spacing values should align with the 4px grid system (multiples of 4px).
+
+**For layout spacing:**
+- Use spacing design system values from `@evevault/shared/theme` (which follow the 4px grid: `spacing.xs = 4px`, `spacing.sm = 8px`, `spacing.md = 16px`, `spacing.lg = 24px`, `spacing.xl = 32px`, `spacing.xxl = 48px`)
+- Prefer Tailwind utility classes (e.g., `p-4`, `gap-6`, `mb-8`) over inline styles
+- When inline styles are necessary, use spacing values or calculate as multiples of `spacing.xs` (4px)
+
+```typescript
+// ✅ CORRECT - Use Tailwind classes (preferred)
+<div className="p-6 gap-10">
+  <div className="mb-4">Content</div>
+</div>
+
+// ✅ CORRECT - Use spacing design system values in inline styles
+import { spacing } from "@evevault/shared/theme";
+
+const paddingStyle = {
+  paddingTop: spacing.lg,        // 24px (6 * 4px)
+  paddingBottom: spacing.lg,     // 24px (6 * 4px)
+  paddingLeft: spacing.md,       // 16px (4 * 4px)
+  paddingRight: spacing.md,      // 16px (4 * 4px)
+  gap: spacing.xxl - spacing.sm, // 40px (10 * 4px)
+};
+
+// ✅ CORRECT - Calculate as multiples of 4px when needed
+const MOBILE_NAV_HEIGHT = spacing.xs * 16; // 64px (16 * 4px)
+
+// ❌ WRONG - Hardcoded pixel values
+const paddingStyle = {
+  paddingTop: 24,
+  paddingBottom: 24,
+  paddingLeft: 16,
+  paddingRight: 16,
+  gap: 40,
+};
+
+// ❌ WRONG - Hardcoded pixel values in Tailwind (if not in design system)
+<div className="p-[24px] gap-[40px]">
+```
+
+**When implementing from Figma:**
+1. Check if the size matches a spacing design system value (4px, 8px, 16px, 24px, 32px, 48px)
+2. If it matches, use the corresponding spacing value or Tailwind class
+3. If it doesn't match, calculate as a multiple of 4px and use spacing values (e.g., `spacing.xs * 10` for 40px)
+4. Document any non-standard sizes with a comment explaining why they deviate from the 4px grid
 
 ## TypeScript Guidelines
 
@@ -1305,8 +1369,9 @@ if (previousNetwork) {
 ## What NOT to Do
 
 1. ❌ Don't use relative paths to packages (`../../packages/shared/`)
-2. ❌ Don't hardcode colors, spacing, or typography values
-3. ❌ Don't put business logic in entrypoints
+2. ❌ Don't hardcode colors, spacing, or typography values (including in component props like `<Icon color="#FF4700" />`)
+3. ❌ **Don't use hardcoded pixel values for layout spacing** - Always use Figma sizes, Tailwind utility classes, or spacing design system values (multiples of 4px)
+4. ❌ Don't put business logic in entrypoints
 4. ❌ Don't create shared components prematurely
 5. ❌ Don't duplicate code that exists in `packages/shared/`
 6. ❌ **Don't use raw HTML elements (input, button, h1-h6, p, etc.) when shared components exist** - Always check `packages/shared/src/components/` first
@@ -1321,6 +1386,7 @@ if (previousNetwork) {
 15. ❌ **Don't use `console.log`, `console.error`, `console.warn`, or `console.info`** - Always use the logger
 16. ❌ **Don't duplicate constants/types across files** - Create shared versions when used in 2+ places
 17. ❌ **Don't duplicate logic** - Extract to helper functions when the same logic appears 2+ times
+18. ❌ **Don't use hardcoded pixel values for layout** - Use Tailwind classes or spacing design system values aligned with the 4px grid
 
 ## When Adding New Code
 

@@ -13,6 +13,7 @@ import { Route as NotFoundRouteImport } from "./routes/not-found"
 import { Route as CallbackRouteImport } from "./routes/callback"
 import { Route as IndexRouteImport } from "./routes/index"
 import { Route as WalletIndexRouteImport } from "./routes/wallet/index"
+import { Route as WalletSendTokenRouteImport } from "./routes/wallet.send-token"
 import { Route as WalletAddTokenRouteImport } from "./routes/wallet/add-token"
 
 const NotFoundRoute = NotFoundRouteImport.update({
@@ -31,14 +32,19 @@ const IndexRoute = IndexRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const WalletIndexRoute = WalletIndexRouteImport.update({
-  id: "/wallet/",
-  path: "/wallet/",
-  getParentRoute: () => rootRouteImport,
+  id: "/",
+  path: "/",
+  getParentRoute: () => WalletRoute,
+} as any)
+const WalletSendTokenRoute = WalletSendTokenRouteImport.update({
+  id: "/send-token",
+  path: "/send-token",
+  getParentRoute: () => WalletRoute,
 } as any)
 const WalletAddTokenRoute = WalletAddTokenRouteImport.update({
-  id: "/wallet/add-token",
-  path: "/wallet/add-token",
-  getParentRoute: () => rootRouteImport,
+  id: "/add-token",
+  path: "/add-token",
+  getParentRoute: () => WalletRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -46,13 +52,15 @@ export interface FileRoutesByFullPath {
   "/callback": typeof CallbackRoute
   "/not-found": typeof NotFoundRoute
   "/wallet/add-token": typeof WalletAddTokenRoute
-  "/wallet": typeof WalletIndexRoute
+  "/wallet/send-token": typeof WalletSendTokenRoute
+  "/wallet/": typeof WalletIndexRoute
 }
 export interface FileRoutesByTo {
   "/": typeof IndexRoute
   "/callback": typeof CallbackRoute
   "/not-found": typeof NotFoundRoute
   "/wallet/add-token": typeof WalletAddTokenRoute
+  "/wallet/send-token": typeof WalletSendTokenRoute
   "/wallet": typeof WalletIndexRoute
 }
 export interface FileRoutesById {
@@ -61,19 +69,33 @@ export interface FileRoutesById {
   "/callback": typeof CallbackRoute
   "/not-found": typeof NotFoundRoute
   "/wallet/add-token": typeof WalletAddTokenRoute
+  "/wallet/send-token": typeof WalletSendTokenRoute
   "/wallet/": typeof WalletIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: "/" | "/callback" | "/not-found" | "/wallet/add-token" | "/wallet"
+  fullPaths:
+    | "/"
+    | "/callback"
+    | "/not-found"
+    | "/wallet/add-token"
+    | "/wallet/send-token"
+    | "/wallet/"
   fileRoutesByTo: FileRoutesByTo
-  to: "/" | "/callback" | "/not-found" | "/wallet/add-token" | "/wallet"
+  to:
+    | "/"
+    | "/callback"
+    | "/not-found"
+    | "/wallet/add-token"
+    | "/wallet/send-token"
+    | "/wallet"
   id:
     | "__root__"
     | "/"
     | "/callback"
     | "/not-found"
     | "/wallet/add-token"
+    | "/wallet/send-token"
     | "/wallet/"
   fileRoutesById: FileRoutesById
 }
@@ -81,8 +103,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CallbackRoute: typeof CallbackRoute
   NotFoundRoute: typeof NotFoundRoute
-  WalletAddTokenRoute: typeof WalletAddTokenRoute
-  WalletIndexRoute: typeof WalletIndexRoute
 }
 
 declare module "@tanstack/react-router" {
@@ -110,17 +130,24 @@ declare module "@tanstack/react-router" {
     }
     "/wallet/": {
       id: "/wallet/"
-      path: "/wallet"
-      fullPath: "/wallet"
+      path: "/"
+      fullPath: "/wallet/"
       preLoaderRoute: typeof WalletIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof WalletRoute
+    }
+    "/wallet/send-token": {
+      id: "/wallet/send-token"
+      path: "/send-token"
+      fullPath: "/wallet/send-token"
+      preLoaderRoute: typeof WalletSendTokenRouteImport
+      parentRoute: typeof WalletRoute
     }
     "/wallet/add-token": {
       id: "/wallet/add-token"
-      path: "/wallet/add-token"
+      path: "/add-token"
       fullPath: "/wallet/add-token"
       preLoaderRoute: typeof WalletAddTokenRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof WalletRoute
     }
   }
 }
@@ -129,8 +156,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CallbackRoute: CallbackRoute,
   NotFoundRoute: NotFoundRoute,
-  WalletAddTokenRoute: WalletAddTokenRoute,
-  WalletIndexRoute: WalletIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
