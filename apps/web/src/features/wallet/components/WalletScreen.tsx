@@ -104,16 +104,14 @@ export const WalletScreen = () => {
   if (isInitializing || authLoading || deviceLoading) {
     return (
       <Background>
-        <div className="app-shell">
-          <header className="app-shell__header">
-            <Heading level={1} variant="bold">
-              EVE Vault
-            </Heading>
-          </header>
-          <main className="app-shell__content">
-            <Text>Loading...</Text>
-          </main>
-        </div>
+        <header className="app-shell__header">
+          <Heading level={1} variant="bold">
+            EVE Vault
+          </Heading>
+        </header>
+        <main className="app-shell__content">
+          <Text>Loading...</Text>
+        </main>
       </Background>
     );
   }
@@ -121,17 +119,15 @@ export const WalletScreen = () => {
   if (initError) {
     return (
       <Background>
-        <div className="app-shell">
-          <header className="app-shell__header">
-            <Heading level={1} variant="bold">
-              EVE Vault
-            </Heading>
-          </header>
-          <main className="app-shell__content">
-            <Text color="error">Error: {initError}</Text>
-            <Button onClick={() => window.location.reload()}>Reload</Button>
-          </main>
-        </div>
+        <header className="app-shell__header">
+          <Heading level={1} variant="bold">
+            EVE Vault
+          </Heading>
+        </header>
+        <main className="app-shell__content">
+          <Text color="error">Error: {initError}</Text>
+          <Button onClick={() => window.location.reload()}>Reload</Button>
+        </main>
       </Background>
     );
   }
@@ -144,78 +140,74 @@ export const WalletScreen = () => {
   if (!user) {
     return (
       <Background>
-        <div className="app-shell">
-          <header className="app-shell__header">
-            <Heading level={1} variant="bold">
-              EVE Vault
-            </Heading>
-          </header>
-          <main className="app-shell__content">
-            <Button onClick={async () => handleLogin()}>Sign in</Button>
-          </main>
-        </div>
+        <header className="app-shell__header">
+          <Heading level={1} variant="bold">
+            EVE Vault
+          </Heading>
+        </header>
+        <main className="app-shell__content">
+          <Button onClick={async () => handleLogin()}>Sign in</Button>
+        </main>
       </Background>
     );
   }
 
   return (
-    <Background>
-      <div className="app-shell">
-        <HeaderMobile
-          address={user?.profile?.sui_address as string}
-          email={user?.profile?.email as string}
+    <div>
+      <HeaderMobile
+        address={user?.profile?.sui_address as string}
+        email={user?.profile?.email as string}
+      />
+      <main>
+        {/* Token Section */}
+        <TokenListSection
+          user={user}
+          chain={chain || null}
+          walletAddress={user?.profile?.sui_address as string}
+          onAddToken={() => navigate({ to: "/wallet/add-token" })}
         />
-        <main className="app-shell__content">
-          {/* Token Section */}
-          <TokenListSection
-            user={user}
-            chain={chain || null}
-            walletAddress={user?.profile?.sui_address as string}
-            onAddToken={() => navigate({ to: "/wallet/add-token" })}
+        {/* Network display and Test transaction button */}
+        <div className=" justify-between  flex items-center gap-4 ">
+          <CurrentNetworkDisplay
+            chain={chain}
+            onNetworkSwitchStart={(previousNetwork, targetNetwork) => {
+              log.info("Network switch started", {
+                previousNetwork,
+                targetNetwork,
+              });
+              setPreviousNetworkBeforeSwitch(previousNetwork as SuiChain);
+            }}
           />
-          {/* Network display and Test transaction button */}
-          <div className=" justify-between  flex items-center gap-4 ">
-            <CurrentNetworkDisplay
-              chain={chain}
-              onNetworkSwitchStart={(previousNetwork, targetNetwork) => {
-                log.info("Network switch started", {
-                  previousNetwork,
-                  targetNetwork,
-                });
-                setPreviousNetworkBeforeSwitch(previousNetwork as SuiChain);
-              }}
-            />
-            <Button
-              variant="secondary"
-              size="small"
-              onClick={handleTestTransaction}
-            >
-              Submit test
-            </Button>
+          <Button
+            variant="secondary"
+            size="small"
+            onClick={handleTestTransaction}
+          >
+            Submit test
+          </Button>
+        </div>
+        {txDigest && (
+          <div>
+            <Text>
+              Tx digest:{" "}
+              <a
+                href={`https://suiscan.xyz/${chain.replace(
+                  "sui:",
+                  "",
+                )}/tx/${txDigest}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: "var(--quantum)" }}
+              >
+                {txDigest}
+              </a>
+            </Text>
           </div>
-          {txDigest && (
-            <div>
-              <Text>
-                Tx digest:{" "}
-                <a
-                  href={`https://suiscan.xyz/${chain.replace(
-                    "sui:",
-                    "",
-                  )}/tx/${txDigest}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ color: "var(--quantum)" }}
-                >
-                  {txDigest}
-                </a>
-              </Text>
-            </div>
-          )}
-          {authError && <Text color="error">Error: {authError}</Text>}
-          {deviceError && <Text color="error">Error: {deviceError}</Text>}
-        </main>
-        <footer className="app-shell__footer" />
-      </div>
-    </Background>
+        )}
+        {authError && <Text color="error">Error: {authError}</Text>}
+        {deviceError && <Text color="error">Error: {deviceError}</Text>}
+      </main>
+      <footer className="app-shell__footer" />
+    </div>
   );
 };

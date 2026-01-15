@@ -30,13 +30,13 @@ export const Layout: React.FC<LayoutProps> = ({ children, showNav = true }) => {
       };
 
   return (
-    <div className="flex h-full min-h-screen w-full min-w-screen overflow-hidden">
+    <div className="flex h-screen w-full min-w-screen overflow-hidden">
       {/* Sidebar - visible on tablet and desktop */}
       {showSidebar && <DesktopLeftSideBar items={NAV_ITEMS} />}
 
       {/* Main content area with background */}
       <Background bottomOffset={showMobileNav ? MOBILE_NAV_HEIGHT : 0}>
-        <div className="flex h-full flex-1 flex-col overflow-hidden">
+        <div className="flex  flex-1 flex-col overflow-hidden">
           {/* Scrollable content */}
           <main
             className="flex-1 overflow-y-auto w-full max-w-4xl mx-auto"

@@ -110,7 +110,12 @@ export const CurrentNetworkDisplay: React.FC<CurrentNetworkDisplayProps> = ({
         >
           <Icon name="Network" color="quantum" />
           <div className="flex flex-col gap-0.5">
-            <Text variant="label-small" color="neutral-50" size="small">
+            <Text
+              className="text-start"
+              variant="label-small"
+              color="neutral-50"
+              size="small"
+            >
               NETWORK
             </Text>
             <Text variant="label-medium" size="medium">

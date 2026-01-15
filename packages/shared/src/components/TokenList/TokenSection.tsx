@@ -97,7 +97,7 @@ export const TokenSection: React.FC<
   const hasTokens = tokens.length > 0;
 
   return (
-    <div className="flex flex-col items-start gap-2 w-full max-w-[468px] flex-1">
+    <div className="flex flex-col items-start gap-2 w-full  flex-1">
       {/* Wallet Address  */}
       {walletAddress && (
         <div className="flex justify-end items-center gap-2 w-full">

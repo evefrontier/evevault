@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useResponsive } from "src/hooks/useResponsive";
 
 interface BackgroundProps {
   children: ReactNode;
@@ -6,12 +7,15 @@ interface BackgroundProps {
 }
 
 const Background = ({ children, bottomOffset = 0 }: BackgroundProps) => {
+  const { isMobile } = useResponsive();
+  const backgroundSize = isMobile ? "inherit" : "cover";
+
   return (
     <div
       className="relative h-full w-full min-h-screen flex-1 overflow-hidden"
       style={{
         backgroundImage: `url("/images/evevault-background.png")`,
-        backgroundSize: "cover",
+        backgroundSize: backgroundSize,
         backgroundRepeat: "no-repeat",
         backgroundPosition: "center center",
         paddingBottom: bottomOffset,
