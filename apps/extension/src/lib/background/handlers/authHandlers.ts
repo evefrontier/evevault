@@ -260,7 +260,75 @@ async function handleExtLogin(
       hasExistingJwt,
       jwtNonceMatches,
     });
-    await deviceStore.initializeForChain(currentChain);
+    try {
+      await deviceStore.initializeForChain(currentChain);
+    } catch (error) {
+      // Check if this is a network connectivity error using structured checks (prefer structured checks over brittle message matching)
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
+      const withNetworkMeta = error as {
+        code?: unknown;
+        status?: unknown;
+        cause?: unknown;
+      };
+
+      const status =
+        typeof withNetworkMeta.status === "number"
+          ? withNetworkMeta.status
+          : undefined;
+      const errorCode =
+        typeof withNetworkMeta.code === "string"
+          ? withNetworkMeta.code
+          : undefined;
+
+      const causeMessage =
+        withNetworkMeta.cause instanceof Error
+          ? withNetworkMeta.cause.message
+          : undefined;
+
+      const isFetchTypeError = error instanceof TypeError;
+      const isStatusNetworkError =
+        typeof status === "number" &&
+        (status === 0 || (status >= 500 && status < 600));
+      const isCodeNetworkError =
+        errorCode === "ECONNREFUSED" ||
+        errorCode === "ETIMEDOUT" ||
+        errorCode === "ECONNRESET";
+
+      const isMessageNetworkError =
+        errorMessage.includes("503") ||
+        errorMessage.includes("Failed to fetch") ||
+        errorMessage.includes("no healthy upstream") ||
+        errorMessage.includes("ECONNREFUSED") ||
+        errorMessage.includes("ETIMEDOUT") ||
+        (typeof causeMessage === "string" &&
+          (causeMessage.includes("Failed to fetch") ||
+            causeMessage.includes("ECONNREFUSED") ||
+            causeMessage.includes("ETIMEDOUT")));
+
+      const isNetworkError =
+        isFetchTypeError ||
+        isStatusNetworkError ||
+        isCodeNetworkError ||
+        isMessageNetworkError;
+
+      if (isNetworkError) {
+        log.error("Network unavailable during device initialization", {
+          chain: currentChain,
+          error: errorMessage,
+        });
+        return sendAuthError(id, {
+          message: `The ${currentChain.replace("sui:", "")} network is currently unavailable. Please try a different network or try again later.`,
+        });
+      }
+
+      // Re-throw other errors
+      log.error("Device initialization failed", { error: errorMessage });
+      return sendAuthError(id, {
+        message: `Failed to initialize device: ${errorMessage}`,
+      });
+    }
   } else if (hasExistingJwt && jwtNonceMatches && isExpired) {
     // Device data expired but JWT nonce matches - this is a problem
     // We can't regenerate device data (would cause nonce mismatch)

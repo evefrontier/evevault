@@ -12,5 +12,6 @@ export {
 } from "../types/wallet";
 export { ephSign } from "./ephSign";
 export { useBalance } from "./hooks/useBalance";
+export { useSendToken } from "./hooks/useSendToken";
 export { fetchZkProof } from "./zkProof";
 export { zkSignAny } from "./zkSignAny";

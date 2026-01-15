@@ -10,6 +10,7 @@ export * from "./Inputs";
 export * from "./Layout";
 export * from "./NetworkSelector";
 export * from "./NotFoundScreen";
+export * from "./SendTokenScreen";
 export * from "./Text";
 export * from "./Toast";
 export * from "./TokenList";
