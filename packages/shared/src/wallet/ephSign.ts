@@ -1,10 +1,10 @@
-import type { EphSignParams } from "@evevault/shared/types";
 import {
   type IntentScope,
   messageWithIntent,
   type SignatureWithBytes,
 } from "@mysten/sui/cryptography";
 import { toBase64 } from "@mysten/sui/utils";
+import type { EphSignParams } from "../types";
 import { createLogger } from "../utils/logger";
 
 const log = createLogger();

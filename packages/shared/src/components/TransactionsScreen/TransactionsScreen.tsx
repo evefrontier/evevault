@@ -8,7 +8,7 @@ import {
   formatShortDate,
   getSuiscanUrl,
 } from "@evevault/shared/utils";
-import { useTransactions } from "@evevault/shared/wallet";
+import { useTransactionHistory } from "@evevault/shared/wallet";
 import type React from "react";
 import { type KeyboardEvent, useMemo, useState } from "react";
 import Button from "../Button";
@@ -126,7 +126,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
     hasNextPage,
     fetchNextPage,
     isFetchingNextPage,
-  } = useTransactions({
+  } = useTransactionHistory({
     user,
     chain: chain as `sui:${"mainnet" | "testnet" | "devnet" | "localnet"}`,
   });

@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock dependencies before imports
+// Using workspace aliases in test files due to Vite resolution limitations with relative imports
 vi.mock("@evevault/shared/auth", () => ({
   useAuth: vi.fn(),
   getUserForNetwork: vi.fn(),
@@ -51,6 +52,7 @@ vi.mock("../../zkSignAny", () => ({
 }));
 
 // Import after mocks
+// Using workspace aliases in test files due to Vite resolution limitations with relative imports
 import { useAuth } from "@evevault/shared/auth";
 import { useDevice } from "@evevault/shared/hooks";
 import { useNetworkStore } from "@evevault/shared/stores/networkStore";

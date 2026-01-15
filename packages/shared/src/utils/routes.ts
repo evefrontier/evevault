@@ -1,4 +1,4 @@
-import type { NavPath } from "@evevault/shared/types";
+import type { NavPath } from "../types";
 
 /**
  * Extension route paths

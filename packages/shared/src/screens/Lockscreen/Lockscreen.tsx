@@ -1,12 +1,12 @@
+import type React from "react";
+import { useState } from "react";
 import {
   Button,
   CurrentNetworkDisplay,
   Heading,
   Input,
   Text,
-} from "@evevault/shared/components";
-import type React from "react";
-import { useState } from "react";
+} from "../../components";
 import { useDevice } from "../../hooks/useDevice";
 import { useNetworkStore } from "../../stores/networkStore";
 

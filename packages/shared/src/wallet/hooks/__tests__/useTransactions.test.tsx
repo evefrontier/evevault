@@ -13,9 +13,13 @@ vi.mock("../../../sui/graphqlClient", () => ({
   })),
 }));
 
-// Mock the types/graphql module for TRANSACTIONS_QUERY
-vi.mock("../../types/graphql", () => ({
+// Mock the queries module for TRANSACTIONS_QUERY
+vi.mock("../../queries/transactions", () => ({
   TRANSACTIONS_QUERY: "mocked-query",
+}));
+
+// Mock the types/graphql module
+vi.mock("../../types/graphql", () => ({
   GraphQLBalanceChange: {},
   GraphQLTransactionNode: {},
   TransactionsQueryResponse: {},
@@ -41,7 +45,7 @@ vi.mock("@evevault/shared/utils", () => ({
 }));
 
 import { createMockUser } from "@evevault/shared/testing";
-import { useTransactions } from "../useTransactions";
+import { useTransactionHistory } from "../useTransactionHistory";
 
 const createWrapper = (queryClient: QueryClient) => {
   return ({ children }: { children: ReactNode }) => (
@@ -111,7 +115,7 @@ function createMockGraphQLResponse(
   };
 }
 
-describe("useTransactions hook (GraphQL)", () => {
+describe("useTransactionHistory hook (GraphQL)", () => {
   let queryClient: QueryClient;
 
   beforeEach(() => {
@@ -133,7 +137,7 @@ describe("useTransactions hook (GraphQL)", () => {
 
     const { result, unmount } = renderHook(
       () =>
-        useTransactions({
+        useTransactionHistory({
           user,
           chain: SUI_DEVNET_CHAIN,
         }),
@@ -173,7 +177,7 @@ describe("useTransactions hook (GraphQL)", () => {
 
     const { result, unmount } = renderHook(
       () =>
-        useTransactions({
+        useTransactionHistory({
           user,
           chain: SUI_DEVNET_CHAIN,
         }),
@@ -223,7 +227,7 @@ describe("useTransactions hook (GraphQL)", () => {
 
     const { result, unmount } = renderHook(
       () =>
-        useTransactions({
+        useTransactionHistory({
           user,
           chain: SUI_DEVNET_CHAIN,
         }),
@@ -257,7 +261,7 @@ describe("useTransactions hook (GraphQL)", () => {
 
     const { result, unmount } = renderHook(
       () =>
-        useTransactions({
+        useTransactionHistory({
           user,
           chain: SUI_DEVNET_CHAIN,
         }),
@@ -290,7 +294,7 @@ describe("useTransactions hook (GraphQL)", () => {
 
     const { result, unmount } = renderHook(
       () =>
-        useTransactions({
+        useTransactionHistory({
           user,
           chain: SUI_DEVNET_CHAIN,
         }),
@@ -338,7 +342,7 @@ describe("useTransactions hook (GraphQL)", () => {
 
     const { result, unmount } = renderHook(
       () =>
-        useTransactions({
+        useTransactionHistory({
           user,
           chain: SUI_DEVNET_CHAIN,
         }),
@@ -360,7 +364,7 @@ describe("useTransactions hook (GraphQL)", () => {
 
     const { result, unmount } = renderHook(
       () =>
-        useTransactions({
+        useTransactionHistory({
           user: null,
           chain: SUI_DEVNET_CHAIN,
         }),
@@ -390,7 +394,7 @@ describe("useTransactions hook (GraphQL)", () => {
 
     const { result, unmount } = renderHook(
       () =>
-        useTransactions({
+        useTransactionHistory({
           user,
           chain: SUI_DEVNET_CHAIN,
         }),
@@ -415,7 +419,7 @@ describe("useTransactions hook (GraphQL)", () => {
 
     const { unmount } = renderHook(
       () =>
-        useTransactions({
+        useTransactionHistory({
           user,
           chain: SUI_DEVNET_CHAIN,
           pageSize: 50,

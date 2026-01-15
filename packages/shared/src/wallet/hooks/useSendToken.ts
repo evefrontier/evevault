@@ -1,15 +1,11 @@
-import { getUserForNetwork, useAuth } from "@evevault/shared/auth";
-import { useDevice } from "@evevault/shared/hooks";
-import { useNetworkStore } from "@evevault/shared/stores/networkStore";
-import { createSuiClient } from "@evevault/shared/sui";
-import {
-  createLogger,
-  SUI_COIN_TYPE,
-  toSmallestUnit,
-} from "@evevault/shared/utils";
 import { Transaction } from "@mysten/sui/transactions";
 import { isValidSuiAddress } from "@mysten/sui/utils";
 import { useCallback, useMemo, useState } from "react";
+import { getUserForNetwork, useAuth } from "../../auth";
+import { useDevice } from "../../hooks";
+import { useNetworkStore } from "../../stores/networkStore";
+import { createSuiClient } from "../../sui";
+import { createLogger, SUI_COIN_TYPE, toSmallestUnit } from "../../utils";
 import { zkSignAny } from "../zkSignAny";
 import { useBalance } from "./useBalance";
 

@@ -1,7 +1,7 @@
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import "./Dropdown.css";
-import type { DropdownItem, DropdownProps } from "@evevault/shared/types";
+import type { DropdownItem, DropdownProps } from "../../types";
 import { Corners } from "../Corners";
 import Icon from "../Icon";
 import Text from "../Text";

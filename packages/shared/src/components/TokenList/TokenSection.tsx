@@ -1,9 +1,9 @@
-import { formatAddress } from "@evevault/shared";
-import type { TokenListProps, TokenRowProps } from "@evevault/shared/types";
-import { useBalance } from "@evevault/shared/wallet";
 import type React from "react";
 import { type KeyboardEvent, useState } from "react";
 import { useTokenListStore } from "../../stores/tokenListStore";
+import type { TokenListProps, TokenRowProps } from "../../types";
+import { formatAddress } from "../../utils";
+import { useBalance } from "../../wallet";
 import Button from "../Button";
 import Icon from "../Icon";
 import Text from "../Text";

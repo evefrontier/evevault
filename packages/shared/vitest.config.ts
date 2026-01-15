@@ -23,6 +23,8 @@ export default defineConfig({
         replacement: path.resolve(__dirname, "./src"),
       },
     ],
+    extensions: [".ts", ".tsx", ".js", ".jsx", ".json"],
+    mainFields: ["module", "main"],
   },
   test: {
     globals: true,

@@ -1,6 +1,5 @@
-import type { CheckBoxProps } from "@evevault/shared/types";
-
 import { type FC, useState } from "react";
+import type { CheckBoxProps } from "../../types";
 import "./style.css";
 import Text from "../Text";
 

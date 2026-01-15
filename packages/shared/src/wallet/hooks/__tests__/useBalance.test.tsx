@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from "vitest";
 const mockGetBalance = vi.fn();
 const mockGetCoinMetadata = vi.fn();
 
+// Using workspace alias in test files due to Vite resolution limitations with relative imports
 vi.mock("@evevault/shared/sui", () => ({
   createSuiClient: vi.fn(),
 }));
@@ -15,6 +16,7 @@ vi.mock("@suiet/wallet-kit", () => ({
   formatSUI: vi.fn(),
 }));
 
+// Using workspace alias in test files due to Vite resolution limitations with relative imports
 vi.mock("@evevault/shared/utils", () => ({
   formatSUI: vi.fn(),
   createLogger: vi.fn(() => ({
@@ -29,6 +31,7 @@ vi.mock("@evevault/shared/utils", () => ({
   SUI_COIN_TYPE: "0x2::sui::SUI",
 }));
 
+// Using workspace alias in test files due to Vite resolution limitations with relative imports
 import { createSuiClient } from "@evevault/shared/sui";
 import { createMockUser } from "@evevault/shared/testing";
 import { formatSUI } from "@suiet/wallet-kit";

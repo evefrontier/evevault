@@ -1,7 +1,7 @@
-import { useResponsive } from "@evevault/shared/hooks";
-import { spacing } from "@evevault/shared/theme";
-import type { LayoutProps } from "@evevault/shared/types";
 import type React from "react";
+import { useResponsive } from "../../hooks";
+import { spacing } from "../../theme";
+import type { LayoutProps } from "../../types";
 import { NAV_ITEMS } from "../../utils/routes";
 import Background from "../Background";
 import { HeaderMobile } from "./Header/HeaderMobile";
