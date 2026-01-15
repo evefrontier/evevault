@@ -195,6 +195,8 @@ export interface HeaderMobileProps {
   email: string;
   logoSrc?: string;
   identicon?: number;
+  /** Callback when "Transactions" menu item is clicked */
+  onTransactionsClick?: () => void;
 }
 
 export type CornersColor =
@@ -306,3 +308,36 @@ export interface LayoutProps {
 export type RoutePath = FileRouteTypes["to"];
 
 export type NavPath = RoutePath | "/tokens" | "/assets" | "/history";
+
+// Transaction History Types
+export type TransactionDirection = "sent" | "received";
+
+export interface Transaction {
+  /** Unique transaction digest */
+  digest: string;
+  /** Unix timestamp in milliseconds */
+  timestamp: number;
+  /** Whether user sent or received this transaction */
+  direction: TransactionDirection;
+  /** Recipient if sent, sender if received */
+  counterparty: string;
+  /** Formatted amount (human-readable) */
+  amount: string;
+  /** Token symbol (e.g., "SUI", "USDC") */
+  tokenSymbol: string;
+  /** Full coin type identifier */
+  coinType: string;
+}
+
+export interface TransactionsScreenProps {
+  user: User;
+  chain: string;
+  onBack: () => void;
+}
+
+export interface TransactionRowProps {
+  transaction: Transaction;
+  chain: string;
+  isExpanded: boolean;
+  onToggle: () => void;
+}

@@ -13,5 +13,7 @@ export {
 export { ephSign } from "./ephSign";
 export { useBalance } from "./hooks/useBalance";
 export { useSendToken } from "./hooks/useSendToken";
+export { useTransactionHistory } from "./hooks/useTransactionHistory";
+export { invalidateCoinMetadataCache } from "./utils/coinMetadata";
 export { fetchZkProof } from "./zkProof";
 export { zkSignAny } from "./zkSignAny";

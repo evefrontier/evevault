@@ -51,6 +51,7 @@ export const Layout: React.FC<LayoutProps> = ({
                 email={headerProps.email}
                 logoSrc={headerProps.logoSrc}
                 identicon={headerProps.identicon}
+                onTransactionsClick={headerProps.onTransactionsClick}
               />
             )}
             {/* Scrollable content */}

@@ -234,16 +234,33 @@ Keep entrypoints minimal:
 - Extension installed and logged in
 - Web app running: `bun run dev:web`
 
-**Steps:**
+**Quick Method (Recommended):**
 
-1. **Get token from extension**
+1. **Get and seed JWT in one step**
 
    Open extension background console (`chrome://extensions` → EVE Vault → click "service worker"):
    ```js
-   await chrome.storage.local.get("evevault:jwt")
+   const jwtData = await chrome.storage.local.get("evevault:jwt");
    ```
 
-   This returns a nested structure like:
+   Copy the result, then paste into web app console (`http://localhost:3001`):
+   ```js
+   window.seedEvevaultAuth(jwtData);
+   ```
+
+2. **Refresh and enter PIN**
+
+   After seeing `[dev-auth] Seeded evevault:auth...`, refresh the page and enter your 6-digit PIN.
+
+**Manual Method (Alternative):**
+
+If you need more control or want to inspect the token data:
+
+1. **Get token from extension**
+   ```js
+   await chrome.storage.local.get("evevault:jwt")
+   ```
+   This returns:
    ```js
    {
      "evevault:jwt": {
@@ -258,14 +275,9 @@ Keep entrypoints minimal:
    }
    ```
 
-2. **Copy the inner token object**
-
-   Copy just the object inside `sui:devnet` (with `access_token`, `id_token`, etc.)
-
-3. **Seed the web app**
-
-   In web app console (`http://localhost:3001`), run:
+2. **Extract and seed the token**
    ```js
+   // Copy just the inner token object and seed:
    window.seedEvevaultAuth({
      "access_token": "eyJ...",
      "id_token": "eyJ...",
@@ -275,9 +287,7 @@ Keep entrypoints minimal:
    })
    ```
 
-4. **Refresh and enter PIN**
-
-   After seeing `[dev-auth] Seeded evevault:auth...`, refresh the page and enter your 6-digit PIN.
+3. **Refresh and enter PIN**
 
 **Clearing auth state:**
 

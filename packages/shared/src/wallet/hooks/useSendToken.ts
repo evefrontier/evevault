@@ -182,7 +182,9 @@ export function useSendToken({
         );
 
         if (totalBalance < amountInSmallestUnit) {
-          throw new Error("Insufficient token balance");
+          throw new Error(
+            "Token balance changed during transaction preparation",
+          );
         }
 
         // Find a coin with sufficient balance, or merge if needed
