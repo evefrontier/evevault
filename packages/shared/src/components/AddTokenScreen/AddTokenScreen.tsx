@@ -1,7 +1,7 @@
-import type { AddTokenScreenProps } from "@evevault/shared/types";
 import type React from "react";
 import { useState } from "react";
 import { useTokenListStore } from "../../stores/tokenListStore";
+import type { AddTokenScreenProps } from "../../types";
 import Button from "../Button";
 import Heading from "../Heading";
 import { Input } from "../Inputs";

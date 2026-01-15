@@ -1,14 +1,12 @@
-import {
-  chromeStorageAdapter,
-  localStorageAdapter,
-} from "@evevault/shared/adapters";
-import {
-  type AuthState,
-  getZkLoginAddress,
-  vendJwt,
-} from "@evevault/shared/auth";
-import { useDeviceStore, useNetworkStore } from "@evevault/shared/stores";
-import type { AuthMessage, JwtResponse } from "@evevault/shared/types";
+import type { SuiChain } from "@mysten/wallet-standard";
+import { decodeJwt } from "jose";
+import { type IdTokenClaims, User } from "oidc-client-ts";
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
+import { chromeStorageAdapter, localStorageAdapter } from "../../adapters";
+import { zkProofService } from "../../services/vaultService";
+import { useDeviceStore, useNetworkStore } from "../../stores";
+import type { AuthMessage, JwtResponse } from "../../types";
 import {
   createLogger,
   getDeviceData,
@@ -16,15 +14,11 @@ import {
   isExtension,
   isWeb,
   performFullCleanup,
-} from "@evevault/shared/utils";
-import type { SuiChain } from "@mysten/wallet-standard";
-import { decodeJwt } from "jose";
-import { type IdTokenClaims, User } from "oidc-client-ts";
-import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
-import { ephKeyService, zkProofService } from "../../services/vaultService";
+} from "../../utils";
 import { getUserManager } from "../authConfig";
+import { getZkLoginAddress, vendJwt } from "../index";
 import { clearAllJwts, storeJwt } from "../storageService";
+import type { AuthState } from "../types";
 import { resolveExpiresAt } from "../utils/authStoreUtils";
 
 // biome-ignore lint/suspicious/noExplicitAny: Chrome extension API types are not available in shared package

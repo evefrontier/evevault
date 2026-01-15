@@ -1,2 +1,2 @@
-export type { DropdownItem, DropdownProps } from "@evevault/shared/types";
+export type { DropdownItem, DropdownProps } from "../../types";
 export { Dropdown, default } from "./Dropdown";
