@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { WalletScreen } from "../../features/wallet/components/WalletScreen";
 import { requireAuth } from "../../lib/router/guards";
 
-export const Route = createFileRoute("/wallet")({
+export const Route = createFileRoute("/wallet/")({
   beforeLoad: async () => {
     document.title = "EVE Vault - Wallet";
     await requireAuth();

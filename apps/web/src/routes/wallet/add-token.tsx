@@ -25,7 +25,7 @@ function AddTokenPage() {
   );
 }
 
-export const Route = createFileRoute("/wallet_/add-token")({
+export const Route = createFileRoute("/wallet/add-token")({
   beforeLoad: async () => {
     await requireAuth();
   },
