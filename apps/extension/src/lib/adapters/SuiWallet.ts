@@ -223,7 +223,7 @@ export class EveVaultWallet implements Wallet {
 
           if (result) {
             const zkLoginResponse = await getZkLoginAddress({
-              jwt: result.id_token,
+              jwt: result.access_token,
               enokiApiKey: import.meta.env.VITE_ENOKI_API_KEY,
             });
 

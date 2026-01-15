@@ -2,11 +2,6 @@ import {
   chromeStorageAdapter,
   localStorageAdapter,
 } from "@evevault/shared/adapters";
-import {
-  type AuthState,
-  getZkLoginAddress,
-  vendJwt,
-} from "@evevault/shared/auth";
 import { useDeviceStore, useNetworkStore } from "@evevault/shared/stores";
 import type { AuthMessage, JwtResponse } from "@evevault/shared/types";
 import {
@@ -22,12 +17,14 @@ import { decodeJwt } from "jose";
 import { type IdTokenClaims, User } from "oidc-client-ts";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { ephKeyService, zkProofService } from "../../services/vaultService";
+import { zkProofService } from "../../services/vaultService";
 import { getUserManager } from "../authConfig";
+import { getZkLoginAddress } from "../getZkLoginAddress";
 import { clearAllJwts, storeJwt } from "../storageService";
+import type { AuthState } from "../types";
 import { resolveExpiresAt } from "../utils/authStoreUtils";
+import { vendJwt } from "../vendToken";
 
-// biome-ignore lint/suspicious/noExplicitAny: Chrome extension API types are not available in shared package
 declare const chrome: any;
 
 const log = createLogger();
@@ -115,14 +112,16 @@ export const useAuthStore = create<AuthState>()(
                     access_token: storedJwt.access_token,
                     token_type: storedJwt.token_type,
                     scope: storedJwt.scope,
+                    refresh_token: storedJwt.refresh_token,
                     profile: {
                       ...(decodedJwt as IdTokenClaims),
                       sui_address: address,
                       salt,
                     },
                     expires_at:
+                      decodedJwt.exp ??
                       Math.floor(Date.now() / 1000) +
-                      (storedJwt.expires_at ?? 3600),
+                        (storedJwt.expires_at ?? storedJwt.expires_in ?? 3600),
                   });
                   await userManager.storeUser(newUser);
                   set({ user: newUser, loading: false });
@@ -198,6 +197,7 @@ export const useAuthStore = create<AuthState>()(
                   access_token: jwtResponse.access_token,
                   token_type: jwtResponse.token_type,
                   scope: jwtResponse.scope,
+                  refresh_token: jwtResponse.refresh_token,
                   profile: {
                     ...(decodedJwt as IdTokenClaims),
                     sui_address: address,
@@ -387,7 +387,7 @@ export const useAuthStore = create<AuthState>()(
             expires_in: newIdToken.exp
               ? newIdToken.exp - Math.floor(Date.now() / 1000)
               : 3600,
-            scope: "openid email profile",
+            scope: "openid email profile offline_access",
           };
 
           // 7. Store the new JWT, replacing the previous one
