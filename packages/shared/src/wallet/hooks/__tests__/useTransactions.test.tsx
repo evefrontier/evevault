@@ -34,6 +34,7 @@ vi.mock("@evevault/shared/utils", () => ({
     warn: vi.fn(),
     error: vi.fn(),
   })),
+  SUI_COIN_TYPE: "0x2::sui::SUI",
   isExtension: vi.fn(() => false),
   isWeb: vi.fn(() => true),
   isBrowser: vi.fn(() => true),

@@ -8,6 +8,7 @@
  * Reference: https://docs.sui.io/concepts/data-access/graphql-rpc
  */
 
+import { parseStructTag } from "@mysten/sui/utils";
 import { SUI_DEVNET_CHAIN, type SuiChain } from "@mysten/wallet-standard";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import type { User } from "oidc-client-ts";
@@ -15,24 +16,17 @@ import { useMemo } from "react";
 import { createSuiClient } from "../../sui";
 import { createSuiGraphQLClient } from "../../sui/graphqlClient";
 import type { Transaction, TransactionDirection } from "../../types/components";
-import { createLogger, formatByDecimals } from "../../utils";
+import { createLogger, formatByDecimals, SUI_COIN_TYPE } from "../../utils";
 import {
   type GraphQLTransactionNode,
   TRANSACTIONS_QUERY,
   type TransactionPage,
   type TransactionsQueryResponse,
 } from "../types/graphql";
+import type { CacheEntry, UseTransactionsParams } from "../types/hooks";
 
 const log = createLogger();
-const SUI_COIN_TYPE = "0x2::sui::SUI";
 const DEFAULT_PAGE_SIZE = 50;
-
-// Cache for coin metadata to avoid repeated fetches
-// Includes expiry to prevent stale metadata in long-running sessions
-interface CacheEntry {
-  data: { decimals: number; symbol: string };
-  timestamp: number;
-}
 
 const coinMetadataCache = new Map<string, CacheEntry>();
 const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes cache expiry
@@ -99,19 +93,20 @@ async function fetchCoinMetadata(
   }
 }
 
-interface UseTransactionsParams {
-  user: User | null;
-  chain: SuiChain | null;
-  pageSize?: number;
-}
-
 /**
  * Extracts the symbol from a coin type string
+ * Uses Mysten Labs parseStructTag for proper parsing
  * e.g., "0x2::sui::SUI" -> "SUI"
  */
 function extractSymbolFromCoinType(coinType: string): string {
-  const parts = coinType.split("::");
-  return parts[parts.length - 1] || coinType;
+  try {
+    const struct = parseStructTag(coinType);
+    return struct.name || coinType;
+  } catch {
+    // Fallback to simple parsing if parseStructTag fails
+    const parts = coinType.split("::");
+    return parts[parts.length - 1] || coinType;
+  }
 }
 
 /**
