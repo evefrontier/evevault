@@ -1,11 +1,9 @@
+import { requireAuth } from "@evevault/shared/router";
 import { createFileRoute } from "@tanstack/react-router";
 import { WalletScreen } from "../features/wallet/components/WalletScreen";
-import { requireAuth } from "../lib/router/guards";
 
 export const Route = createFileRoute("/wallet")({
-  beforeLoad: async () => {
-    await requireAuth();
-  },
+  beforeLoad: () => requireAuth({ preserveRedirectPath: true }),
   component: WalletScreen,
   meta: () => [
     {

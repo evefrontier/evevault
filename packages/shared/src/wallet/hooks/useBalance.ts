@@ -4,10 +4,9 @@ import { useQuery } from "@tanstack/react-query";
 import type { User } from "oidc-client-ts";
 import { useMemo } from "react";
 import { createSuiClient } from "../../sui";
-import { createLogger, formatByDecimals } from "../../utils";
+import { createLogger, formatByDecimals, SUI_COIN_TYPE } from "../../utils";
 
 const log = createLogger();
-const SUI_COIN_TYPE = "0x2::sui::SUI";
 
 interface UseBalanceParams {
   user: User | null;

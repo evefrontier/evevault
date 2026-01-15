@@ -19,6 +19,7 @@
     "build:web": "turbo run build --filter=@evevault/web",
     "typecheck": "turbo run typecheck",
     "clean": "turbo run clean",
+    "clean:cache": "node scripts/clean-cache.js",
     "clean:all": "./scripts/clean-all.sh",
     "lint": "turbo run lint",
     "test": "turbo run test",

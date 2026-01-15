@@ -26,6 +26,7 @@ vi.mock("@evevault/shared/utils", () => ({
   isExtension: vi.fn(() => false),
   isWeb: vi.fn(() => true),
   isBrowser: vi.fn(() => true),
+  SUI_COIN_TYPE: "0x2::sui::SUI",
 }));
 
 import { createSuiClient } from "@evevault/shared/sui";
