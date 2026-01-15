@@ -14,7 +14,7 @@ function getAuthUrl(params: {
   url.searchParams.set("response_type", "code");
   url.searchParams.set("client_id", clientId);
   url.searchParams.set("redirect_uri", redirectUri);
-  url.searchParams.set("scope", "openid profile email");
+  url.searchParams.set("scope", "openid profile email offline_access");
   url.searchParams.set("nonce", params.nonce);
 
   return url;

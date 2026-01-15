@@ -1,9 +1,9 @@
-import { formatAddress, getSuiscanUrl } from "@evevault/shared";
-import { useNetworkStore } from "@evevault/shared/stores/networkStore";
-import type { SendTokenScreenProps } from "@evevault/shared/types";
-import { useSendToken } from "@evevault/shared/wallet";
 import type React from "react";
 import { useEffect, useState } from "react";
+import { useNetworkStore } from "../../stores/networkStore";
+import type { SendTokenScreenProps } from "../../types";
+import { formatAddress, getSuiscanUrl } from "../../utils";
+import { useSendToken } from "../../wallet";
 import Button from "../Button";
 import Heading from "../Heading";
 import { Input } from "../Inputs";

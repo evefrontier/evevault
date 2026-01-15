@@ -1,4 +1,4 @@
-import type { NavPath } from "@evevault/shared/types";
+import type { NavPath } from "../types";
 
 /** All valid route paths from the router */
 export const ROUTE_PATHS = [

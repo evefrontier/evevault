@@ -1,4 +1,4 @@
-import type { JwtResponse } from "@evevault/shared/types";
+import type { JwtResponse } from "../types";
 
 export async function exchangeCodeForToken(
   code: string,

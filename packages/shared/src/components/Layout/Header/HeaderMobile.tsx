@@ -1,8 +1,8 @@
-import { formatAddress } from "@evevault/shared";
-import { useAuth } from "@evevault/shared/auth";
-import { useCopyToClipboard, useDevice } from "@evevault/shared/hooks";
-import type { HeaderMobileProps, IconName } from "@evevault/shared/types";
 import type React from "react";
+import { useAuth } from "../../../auth";
+import { useCopyToClipboard, useDevice } from "../../../hooks";
+import type { HeaderMobileProps, IconName } from "../../../types";
+import { formatAddress } from "../../../utils";
 import { Dropdown, type DropdownItem } from "../../Dropdown";
 
 export const HeaderMobile: React.FC<HeaderMobileProps> = ({

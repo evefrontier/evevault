@@ -43,21 +43,42 @@ eve-frontier-vault-sui/
 
 ## Import Rules
 
-### ✅ ALWAYS Use Workspace Package Imports
+### ✅ Use Workspace Package Imports (Apps Only)
+
+**When importing from `packages/shared` into apps (`apps/extension/` or `apps/web/`), always use workspace package imports.**
 
 ```typescript
-// ✅ CORRECT - Use workspace package imports
+// ✅ CORRECT - Apps importing from shared package
 import { zkLoginSignature } from "@evevault/shared/wallet";
 import { colors, spacing } from "@evevault/shared/design";
 import { createSuiClient } from "@evevault/shared/sui";
 import { useAuth } from "@evevault/shared/auth";
 
-// ❌ WRONG - Never use relative paths to packages
+// ❌ WRONG - Apps should not use relative paths to packages
 import { zkLoginSignature } from "../../packages/shared/src/wallet";
 import { colors } from "../../../packages/shared/src/design";
 ```
 
+### ✅ Relative Imports Within Shared Package
+
+**When importing within `packages/shared/src/`, use relative imports to avoid build errors.**
+
+```typescript
+// ✅ CORRECT - Relative imports within shared package
+import { formatAddress } from "../utils/format";
+import { Button } from "./components/Button";
+import { colors } from "../theme/colors";
+
+// ❌ WRONG - Don't use workspace alias within shared package
+import { formatAddress } from "@evevault/shared/utils/format";
+import { Button } from "@evevault/shared/components/Button";
+```
+
+**Why?** Using workspace aliases like `@evevault/shared/*` within the shared package itself can cause build errors because the package is importing from itself. Relative imports work reliably within the same package.
+
 ### Import Order
+
+**For apps (`apps/extension/` or `apps/web/`):**
 
 1. External dependencies (React, third-party libraries)
 2. Workspace package imports (`@evevault/shared/*`)
@@ -66,7 +87,7 @@ import { colors } from "../../../packages/shared/src/design";
 5. Relative imports (same directory)
 
 ```typescript
-// Example import order
+// Example import order in apps
 import { useState, useEffect } from "react";
 import { Transaction } from "@mysten/sui/transactions";
 import { createSuiClient } from "@evevault/shared/sui";
@@ -74,6 +95,22 @@ import { colors, spacing } from "@evevault/shared/design";
 import { Button } from "@evevault/shared/components";
 import { useAuth } from "../../auth/hooks/useAuth";
 import { useDevice } from "../hooks/useDevice";
+import "./Component.css";
+```
+
+**For shared package (`packages/shared/src/`):**
+
+1. External dependencies (React, third-party libraries)
+2. Relative imports within shared package (`../utils/format`, `./components/Button`)
+3. Relative imports (same directory)
+
+```typescript
+// Example import order in shared package
+import { useState, useEffect } from "react";
+import { Transaction } from "@mysten/sui/transactions";
+import { formatAddress } from "../utils/format";
+import { colors } from "../theme/colors";
+import { Button } from "./components/Button";
 import "./Component.css";
 ```
 
@@ -1368,10 +1405,11 @@ if (previousNetwork) {
 
 ## What NOT to Do
 
-1. ❌ Don't use relative paths to packages (`../../packages/shared/`)
-2. ❌ Don't hardcode colors, spacing, or typography values (including in component props like `<Icon color="#FF4700" />`)
-3. ❌ **Don't use hardcoded pixel values for layout spacing** - Always use Figma sizes, Tailwind utility classes, or spacing design system values (multiples of 4px)
-4. ❌ Don't put business logic in entrypoints
+1. ❌ Don't use relative paths to packages from apps (`../../packages/shared/`) - Use `@evevault/shared/*` instead
+2. ❌ Don't use workspace aliases (`@evevault/shared/*`) within the shared package itself - Use relative imports instead
+3. ❌ Don't hardcode colors, spacing, or typography values (including in component props like `<Icon color="#FF4700" />`)
+4. ❌ **Don't use hardcoded pixel values for layout spacing** - Always use Figma sizes, Tailwind utility classes, or spacing design system values (multiples of 4px)
+5. ❌ Don't put business logic in entrypoints
 4. ❌ Don't create shared components prematurely
 5. ❌ Don't duplicate code that exists in `packages/shared/`
 6. ❌ **Don't use raw HTML elements (input, button, h1-h6, p, etc.) when shared components exist** - Always check `packages/shared/src/components/` first
@@ -1386,7 +1424,6 @@ if (previousNetwork) {
 15. ❌ **Don't use `console.log`, `console.error`, `console.warn`, or `console.info`** - Always use the logger
 16. ❌ **Don't duplicate constants/types across files** - Create shared versions when used in 2+ places
 17. ❌ **Don't duplicate logic** - Extract to helper functions when the same logic appears 2+ times
-18. ❌ **Don't use hardcoded pixel values for layout** - Use Tailwind classes or spacing design system values aligned with the 4px grid
 
 ## When Adding New Code
 

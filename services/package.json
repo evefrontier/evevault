@@ -1,0 +1,17 @@
+{
+  "name": "@evevault/vend-service",
+  "description": "⚠️ TEMPORARY: This service will be removed in favor of a Go-based Quasar API service",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "start": "bun run src/index.ts"
+  },
+  "dependencies": {
+    "jose": "6.0.12"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.8.3"
+  }
+}

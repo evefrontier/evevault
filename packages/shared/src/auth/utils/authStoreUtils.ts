@@ -3,7 +3,7 @@ import { decodeJwt } from "jose";
 import { User } from "oidc-client-ts";
 import type { JwtResponse } from "../../types/authTypes";
 import { createLogger } from "../../utils/logger";
-import { getZkLoginAddress } from "../enoki";
+import { getZkLoginAddress } from "../getZkLoginAddress";
 import { getJwtForNetwork } from "../storageService";
 import { getEnokiApiKey } from "../stores/authStore";
 
@@ -67,6 +67,9 @@ export async function getUserForNetwork(chain: SuiChain): Promise<User | null> {
       sui_address: address,
       salt,
     } as User["profile"],
-    expires_at: storedJwt.expires_at ?? Math.floor(Date.now() / 1000) + 3600,
+    expires_at:
+      decodedJwt.exp ??
+      storedJwt.expires_at ??
+      Math.floor(Date.now() / 1000) + (storedJwt.expires_in ?? 3600),
   });
 }

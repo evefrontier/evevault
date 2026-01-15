@@ -1,14 +1,10 @@
-import {
-  chromeStorageAdapter,
-  localStorageAdapter,
-} from "@evevault/shared/adapters";
-import { hasJwtForNetwork, useAuthStore } from "@evevault/shared/auth";
-import type { NetworkState, NetworkSwitchResult } from "@evevault/shared/types";
 import { SUI_DEVNET_CHAIN, type SuiChain } from "@mysten/wallet-standard";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { isExtension, isWeb } from "../utils/environment";
-import { createLogger } from "../utils/logger";
+import { chromeStorageAdapter, localStorageAdapter } from "../adapters";
+import { hasJwtForNetwork, useAuthStore } from "../auth";
+import type { NetworkState, NetworkSwitchResult } from "../types";
+import { createLogger, isExtension, isWeb } from "../utils";
 import { useDeviceStore } from "./deviceStore";
 
 const log = createLogger();

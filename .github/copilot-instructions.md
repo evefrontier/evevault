@@ -89,10 +89,16 @@ src/features/{feature-name}/
 
 **Review Checklist:**
 
-- [ ] Are workspace package imports used? (`@evevault/shared/*`)
-- [ ] Are relative paths to packages avoided? (`../../packages/shared/`)
-- [ ] Is the import order correct? (External → Workspace → App-level → Feature → Relative)
+- [ ] **For apps importing from shared**: Are workspace package imports used? (`@evevault/shared/*`)
+- [ ] **For apps**: Are relative paths to packages avoided? (`../../packages/shared/`)
+- [ ] **For shared package**: Are relative imports used within `packages/shared/src/`? (e.g., `../utils/format`, `./components/Button`)
+- [ ] **For shared package**: Are workspace aliases (`@evevault/shared/*`) avoided within the shared package itself?
+- [ ] Is the import order correct?
+  - **Apps**: External → Workspace (`@evevault/shared/*`) → App-level → Feature → Relative
+  - **Shared package**: External → Relative within shared → Relative
 - [ ] For extension entrypoints: Are relative imports used instead of aliases?
+
+**Why?** Using workspace aliases like `@evevault/shared/*` within the shared package itself can cause build errors because the package is importing from itself. Relative imports work reliably within the same package.
 
 ### Dependency Injection
 
@@ -552,7 +558,8 @@ getPublicKey(): PublicKey | null {
 
 ### Import Issues
 
-- Relative paths to packages (`../../packages/shared/`)
+- **From apps**: Relative paths to packages (`../../packages/shared/`) - should use `@evevault/shared/*` instead
+- **Within shared package**: Using workspace aliases (`@evevault/shared/*`) - should use relative imports instead
 - Wrong import order
 - Circular dependencies
 - Importing from internal paths instead of public exports
