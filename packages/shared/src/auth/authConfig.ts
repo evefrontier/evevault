@@ -1,10 +1,12 @@
 import {
+  type User,
   UserManager,
   type UserManagerSettings,
   WebStorageStateStore,
 } from "oidc-client-ts";
 import { isExtension } from "../utils/environment";
 import { createLogger } from "../utils/logger";
+import { patchUserNonce } from "./patchNonce";
 import type { GlobalWithLocalStorage, StorageLike } from "./types";
 
 const ensureLocalStorage = () => {
@@ -75,7 +77,9 @@ const fusionAuthConfig: UserManagerSettings = {
   redirect_uri: getRedirectUri(),
   post_logout_redirect_uri: getOrigin(),
   response_type: "code",
-  scope: "openid email profile",
+  automaticSilentRenew: true,
+  accessTokenExpiringNotificationTimeInSeconds: 3,
+  scope: "openid email profile offline_access",
 
   // We can safely use WebStorageStateStore since localStorage is guaranteed to exist
   stateStore: new WebStorageStateStore({
@@ -103,6 +107,36 @@ export function getUserManager(): UserManager {
 
     userManagerInstance.events.addSilentRenewError((error) => {
       log.error("OIDC silent renew error", error);
+    });
+
+    userManagerInstance.events.addAccessTokenExpiring(async () => {
+      log.info("Access token expiring, patching user nonce before refresh");
+
+      // Get user from parameter or fallback to UserManager
+      const currentUser = await userManagerInstance?.getUser();
+      if (!currentUser) {
+        log.warn("User parameter is undefined");
+      }
+
+      const { useDeviceStore } = await import("../stores/deviceStore");
+      const { useNetworkStore } = await import("../stores/networkStore");
+      const deviceStore = useDeviceStore.getState();
+      const networkStore = useNetworkStore.getState();
+      const currentChain = networkStore.chain;
+      const nonce = deviceStore.getNonce(currentChain);
+
+      if (!nonce) {
+        log.error("No nonce available for patching before token refresh");
+        return;
+      }
+
+      await patchUserNonce(currentUser as User, nonce);
+    });
+
+    userManagerInstance.events.addAccessTokenExpired(() => {
+      log.warn(
+        "Access token has already expired - addAccessTokenExpiring may have missed it",
+      );
     });
   }
   return userManagerInstance;

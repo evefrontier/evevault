@@ -594,7 +594,7 @@ export const useDeviceStore = create<DeviceState>()(
             jwtRandomness: networkJwtRandomness,
             maxEpoch,
             ephemeralPublicKey,
-            idToken: user.id_token,
+            idToken: user.access_token,
             enokiApiKey: import.meta.env.VITE_ENOKI_API_KEY,
             network,
           });
@@ -752,7 +752,9 @@ export const useDeviceStore = create<DeviceState>()(
             if (publicKey) {
               state.ephemeralPublicKey = publicKey;
               log.debug(
-                `Reconstructed ${isWeb() ? "Secp256r1" : "Ed25519"} public key from storage`,
+                `Reconstructed ${
+                  isWeb() ? "Secp256r1" : "Ed25519"
+                } public key from storage`,
               );
             } else {
               state.ephemeralPublicKey = null;
