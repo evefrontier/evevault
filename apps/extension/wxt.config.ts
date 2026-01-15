@@ -148,6 +148,7 @@ export default defineConfig(() => {
               "openid",
               "profile",
               "email",
+              "offline_access",
               "https://www.googleapis.com/auth/userinfo.email",
               "https://www.googleapis.com/auth/userinfo.profile",
             ],
