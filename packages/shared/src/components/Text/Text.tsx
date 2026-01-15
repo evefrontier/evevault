@@ -1,5 +1,5 @@
-import type { TextProps } from "@evevault/shared/types";
 import type React from "react";
+import type { TextProps } from "../../types";
 
 // Size classes for regular text
 const sizeClasses: Record<string, string> = {

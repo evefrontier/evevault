@@ -1,6 +1,6 @@
-import type { JwtResponse } from "@evevault/shared/types";
 import type { SuiChain } from "@mysten/wallet-standard";
 import { useNetworkStore } from "../stores/networkStore";
+import type { JwtResponse } from "../types";
 import { isExtension, isWeb } from "../utils/environment";
 import { createLogger } from "../utils/logger";
 import { resolveExpiresAt } from "./utils/authStoreUtils";
@@ -149,7 +149,7 @@ export async function clearJwtForNetwork(chain: SuiChain): Promise<void> {
   const allJwts = await getAllJwts();
   if (!allJwts) return;
 
-  const { [chain]: removedJwt, ...remainingJwts } = allJwts;
+  const { [chain]: _removedJwt, ...remainingJwts } = allJwts;
 
   if (Object.keys(remainingJwts).length === 0) {
     await clearAllJwts();

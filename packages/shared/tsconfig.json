@@ -15,7 +15,10 @@
     "resolveJsonModule": true,
     "composite": true,
     "types": [],
-    "baseUrl": "."
+    "baseUrl": ".",
+    "paths": {
+      "@evevault/shared/*": ["./src/*"]
+    }
   },
   "include": ["src/**/*"],
   "exclude": [

@@ -1,7 +1,7 @@
 import type React from "react";
 import { forwardRef, useState } from "react";
 import "./style.css";
-import type { InputProps } from "@evevault/shared/types";
+import type { InputProps } from "../../types";
 import { Corners } from "../Corners";
 import Text from "../Text";
 

@@ -1,12 +1,12 @@
 // Icon/index.tsx
 
+import type { FC, SVGProps } from "react";
 import type {
   BaseIconProps,
   IconComponent,
   IconName,
   IconWithoutNameProps,
-} from "@evevault/shared/types";
-import type { FC, SVGProps } from "react";
+} from "../../types";
 import {
   Add,
   ArrowDown,

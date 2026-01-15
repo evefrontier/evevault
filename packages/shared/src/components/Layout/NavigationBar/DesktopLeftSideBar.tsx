@@ -1,5 +1,5 @@
-import type { IconName, NavigationBarProps } from "@evevault/shared/types";
 import { Link, useLocation } from "@tanstack/react-router";
+import type { IconName, NavigationBarProps } from "../../../types";
 import { Corners } from "../../Corners";
 import Icon from "../../Icon";
 import Text from "../../Text";
