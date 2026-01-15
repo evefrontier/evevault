@@ -312,7 +312,10 @@ export const WalletScreen = () => {
             chain={chain || null}
             onAddToken={() => navigate({ to: "/wallet/add-token" })}
             onSendToken={(coinType) =>
-              navigate({ to: "/wallet/send-token", search: { coinType } })
+              navigate({
+                to: WEB_ROUTES.WALLET_SEND_TOKEN,
+                search: { coinType },
+              })
             }
           />
           <Button

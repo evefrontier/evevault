@@ -1,16 +1,16 @@
-import { formatAddress } from "@evevault/shared";
+import type React from "react";
+import { type KeyboardEvent, useMemo, useState } from "react";
 import type {
   TransactionRowProps,
   TransactionsScreenProps,
-} from "@evevault/shared/types";
+} from "../../types/components";
 import {
+  formatAddress,
   formatDisplayAmount,
   formatShortDate,
   getSuiscanUrl,
-} from "@evevault/shared/utils";
-import { useTransactionHistory } from "@evevault/shared/wallet";
-import type React from "react";
-import { type KeyboardEvent, useMemo, useState } from "react";
+} from "../../utils";
+import { useTransactionHistory } from "../../wallet";
 import Button from "../Button";
 import Heading from "../Heading";
 import Icon from "../Icon";
@@ -149,6 +149,35 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
 
   const hasTransactions = transactions.length > 0;
 
+  // Status message structure for better organization
+  type StatusMessage = {
+    text: string;
+    color: "error" | "grey-neutral";
+  };
+
+  const isEmpty = !isLoading && !isError && transactions.length === 0;
+  const statusMessage: StatusMessage | null = (() => {
+    switch (true) {
+      case isError:
+        return {
+          text: error?.message || "Failed to load transactions",
+          color: "error",
+        };
+      case isLoading:
+        return {
+          text: "Loading transactions...",
+          color: "grey-neutral",
+        };
+      case isEmpty:
+        return {
+          text: "No transactions found",
+          color: "grey-neutral",
+        };
+      default:
+        return null;
+    }
+  })();
+
   return (
     <div className="flex flex-col gap-4 w-full">
       {/* Header with back button */}
@@ -192,33 +221,13 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
 
         {/* Transaction List */}
         <div className="flex flex-col items-start gap-1 w-full max-h-[350px] overflow-y-auto">
-          {isLoading && (
+          {statusMessage ? (
             <div className="flex justify-center items-center py-6 w-full">
-              <Text size="large" color="grey-neutral">
-                Loading transactions...
+              <Text size="large" color={statusMessage.color}>
+                {statusMessage.text}
               </Text>
             </div>
-          )}
-
-          {isError && (
-            <div className="flex justify-center items-center py-6 w-full">
-              <Text size="large" color="error">
-                {error?.message || "Failed to load transactions"}
-              </Text>
-            </div>
-          )}
-
-          {!isLoading && !isError && !hasTransactions && (
-            <div className="flex justify-center items-center py-6 w-full">
-              <Text size="large" color="grey-neutral">
-                No transactions found
-              </Text>
-            </div>
-          )}
-
-          {!isLoading &&
-            !isError &&
-            hasTransactions &&
+          ) : (
             transactions.map((tx) => (
               <TransactionRow
                 key={tx.digest}
@@ -227,7 +236,8 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                 isExpanded={expandedTx === tx.digest}
                 onToggle={() => handleToggleExpand(tx.digest)}
               />
-            ))}
+            ))
+          )}
         </div>
 
         {/* Load More Button */}

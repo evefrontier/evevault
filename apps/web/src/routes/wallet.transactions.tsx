@@ -6,6 +6,7 @@ import {
 } from "@evevault/shared";
 import { requireAuth } from "@evevault/shared/router";
 import { useNetworkStore } from "@evevault/shared/stores/networkStore";
+import { WEB_ROUTES } from "@evevault/shared/utils";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
 function TransactionsPage() {
@@ -14,7 +15,7 @@ function TransactionsPage() {
   const { chain } = useNetworkStore();
 
   const handleBack = () => {
-    navigate({ to: "/wallet" });
+    navigate({ to: WEB_ROUTES.WALLET });
   };
 
   if (!user || !chain) {
