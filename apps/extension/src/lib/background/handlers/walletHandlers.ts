@@ -119,8 +119,7 @@ async function handleSponsoredTransaction(
   sendResponse: (response?: unknown) => void,
 ): Promise<boolean> {
   // Return boolean to indicate async response
-
-  const { action, assembly, chain } = message;
+  // Message can be deconstructed as const { action, assembly, chain }
 
   const senderTabId = sender.tab?.id;
 
@@ -131,6 +130,8 @@ async function handleSponsoredTransaction(
       chain: message.chain,
     });
 
+    // This is a temporary solution to send the success message to the tab
+    // The actual tx digest will depend on the quasar service
     chrome.tabs
       .sendMessage(senderTabId as number, {
         type: "sign_success",

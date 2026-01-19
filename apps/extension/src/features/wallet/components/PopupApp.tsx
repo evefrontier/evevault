@@ -20,6 +20,7 @@ import { useBalance } from "@evevault/shared/wallet";
 import type { SuiChain } from "@mysten/wallet-standard";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { handleTestTokenRefresh } from "../api/tokenRefresh";
 import { useAppInitialization, useLogin, useTestTransaction } from "../hooks";
 
 const log = createLogger();
@@ -34,6 +35,7 @@ function App() {
   const { isLocked, isPinSet, error: deviceError, unlock } = useDevice();
   const { chain } = useNetworkStore();
   const { handleLogin } = useLogin();
+  const { nonce } = useDevice();
   const { handleTestTransaction, txDigest } = useTestTransaction();
 
   // Use TanStack Query for balance fetching
@@ -143,6 +145,15 @@ function App() {
           onClick={handleTestTransaction}
         >
           Submit test
+        </Button>
+        <Button
+          variant="secondary"
+          size="small"
+          onClick={async () =>
+            await handleTestTokenRefresh(user, nonce || "nononcefound")
+          }
+        >
+          Token refresh test
         </Button>
       </div>
 

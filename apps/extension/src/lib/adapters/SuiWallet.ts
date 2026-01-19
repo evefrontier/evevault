@@ -381,8 +381,6 @@ export class EveVaultWallet implements Wallet {
 
   #signEveFrontierSponsoredTransaction: EveFrontierSponsoredTransactionMethod =
     async (input: EveFrontierSponsoredTransactionInput) => {
-      // const { txAction, assembly, chain } = input;
-
       return new Promise<EveFrontierSponsoredTransactionOutput>(
         (resolve, reject) => {
           const onMsg = async (e: MessageEvent) => {
@@ -391,11 +389,13 @@ export class EveVaultWallet implements Wallet {
             log.debug("[SuiWallet] #signSponsoredTransaction message", m);
 
             if (m.type === "sign_success") {
+              window.removeEventListener("message", onMsg);
               resolve({
                 digest: m.digest,
                 effects: m.effects,
               });
-            } else if (m.type === "sign_transaction_error") {
+            } else if (m.type === "sign_sponsored_transaction_error") {
+              window.removeEventListener("message", onMsg);
               reject(new Error(m.error));
             }
           };
