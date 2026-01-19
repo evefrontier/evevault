@@ -1,5 +1,5 @@
-import type { CornersColor, CornersProps } from "@evevault/shared/types";
 import type { CSSProperties } from "react";
+import type { CornersColor, CornersProps } from "../../types";
 
 const colorMap: Record<CornersColor, string> = {
   quantum: "#ff4700",

@@ -1,9 +1,12 @@
-import {
-  chromeStorageAdapter,
-  localStorageAdapter,
-} from "@evevault/shared/adapters";
-import { useDeviceStore, useNetworkStore } from "@evevault/shared/stores";
-import type { AuthMessage, JwtResponse } from "@evevault/shared/types";
+import type { SuiChain } from "@mysten/wallet-standard";
+import { decodeJwt } from "jose";
+import { type IdTokenClaims, User } from "oidc-client-ts";
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
+import { chromeStorageAdapter, localStorageAdapter } from "../../adapters";
+import { zkProofService } from "../../services/vaultService";
+import { useDeviceStore, useNetworkStore } from "../../stores";
+import type { AuthMessage, JwtResponse } from "../../types";
 import {
   createLogger,
   getDeviceData,
@@ -11,13 +14,7 @@ import {
   isExtension,
   isWeb,
   performFullCleanup,
-} from "@evevault/shared/utils";
-import type { SuiChain } from "@mysten/wallet-standard";
-import { decodeJwt } from "jose";
-import { type IdTokenClaims, User } from "oidc-client-ts";
-import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
-import { zkProofService } from "../../services/vaultService";
+} from "../../utils";
 import { getUserManager } from "../authConfig";
 import { getZkLoginAddress } from "../getZkLoginAddress";
 import { clearAllJwts, storeJwt } from "../storageService";

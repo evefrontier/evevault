@@ -10,22 +10,21 @@ export const patchUserNonce = async (user: User, nonce: string | null) => {
   });
 
   if (!user?.id_token) {
-    log.error("No user token available for patch user nonce");
+    log.error("No user token available to patch user nonce");
     return;
   }
 
   if (!user?.profile?.sub) {
-    log.error("No user profile sub available for patch user nonce");
+    log.error("No user profile sub available to patch user nonce");
     return;
   }
 
   if (!nonce) {
-    log.error("No nonce available for patch user nonce");
+    log.error("No nonce available to patch user nonce");
     return;
   }
 
-  const serviceUrl =
-    import.meta.env.VITE_NONCE_PATCH_SERVICE_URL || "http://localhost:3002";
+  const serviceUrl = import.meta.env.VITE_NONCE_PATCH_SERVICE_URL;
 
   try {
     log.info("Patching user nonce", {

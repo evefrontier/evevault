@@ -1,6 +1,6 @@
-import type { ToastProps } from "@evevault/shared/types";
 import type React from "react";
 import { useEffect, useState } from "react";
+import type { ToastProps } from "../../types";
 
 export const Toast: React.FC<ToastProps> = ({
   message,

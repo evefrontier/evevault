@@ -15,7 +15,11 @@ const Json: React.FC<JsonProps> = ({
   errorText,
   fallback,
 }) => {
-  const { error, prettyJson } = useMemo(() => {
+  const {
+    parsed: _parsed,
+    error,
+    prettyJson,
+  } = useMemo(() => {
     if (!value || value.trim() === "") {
       return {
         parsed: null,

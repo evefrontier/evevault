@@ -1,7 +1,7 @@
 import type { FC } from "react";
 import { useEffect, useRef, useState } from "react";
 import "./Button.css";
-import type { ButtonProps } from "@evevault/shared/types";
+import type { ButtonProps } from "../../types";
 import { Corners } from "../Corners";
 
 export const Button: FC<ButtonProps> = ({

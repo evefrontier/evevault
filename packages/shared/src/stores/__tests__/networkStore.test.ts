@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock dependencies before importing the store
 // Note: vi.mock is hoisted, so we use vi.fn() directly in the mock factory
+// Using workspace alias in test files due to Vite resolution limitations with relative imports
 vi.mock("@evevault/shared/auth", () => ({
   hasJwtForNetwork: vi.fn(),
   useAuthStore: {
@@ -41,6 +42,7 @@ vi.mock("../deviceStore", () => ({
 }));
 
 // Import mocked modules after vi.mock calls
+// Using workspace alias in test files due to Vite resolution limitations with relative imports
 import { hasJwtForNetwork } from "@evevault/shared/auth";
 import { useDeviceStore } from "../deviceStore";
 import { useNetworkStore } from "../networkStore";

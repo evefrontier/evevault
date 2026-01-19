@@ -4,8 +4,8 @@ import {
   useAuthStore,
   useNetworkStore,
 } from "@evevault/shared";
+import { requireAuth } from "@evevault/shared/router";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { requireAuth } from "../lib/router/guards";
 
 function AddTokenPage() {
   const navigate = useNavigate();
@@ -29,8 +29,6 @@ function AddTokenPage() {
 }
 
 export const Route = createFileRoute("/wallet/add-token")({
-  beforeLoad: async () => {
-    await requireAuth();
-  },
+  beforeLoad: () => requireAuth({ preserveRedirectPath: true }),
   component: AddTokenPage,
 });

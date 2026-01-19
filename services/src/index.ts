@@ -53,16 +53,29 @@ const PORT = Bun.env.PORT ? parseInt(Bun.env.PORT, 10) : 3002;
 const FUSIONAUTH_API_KEY = Bun.env.FUSIONAUTH_API_KEY;
 const FUSION_SERVER_URL = Bun.env.FUSION_SERVER_URL;
 
-if (!FUSIONAUTH_API_KEY) {
-  throw new Error(
-    "FUSIONAUTH_API_KEY environment variable is required. Set it in your .env file.",
+// Skip service startup if required env vars are missing (for local dev without FusionAuth)
+if (!FUSIONAUTH_API_KEY || !FUSION_SERVER_URL) {
+  console.warn(
+    "⚠️  Vend service skipped: FUSIONAUTH_API_KEY and FUSION_SERVER_URL are required.",
   );
-}
-
-if (!FUSION_SERVER_URL) {
-  throw new Error(
-    "FUSION_SERVER_URL environment variable is required. Set it in your .env file.",
+  console.warn(
+    "   To enable the service, create a .env file in the services/ directory with:",
   );
+  console.warn("   FUSION_SERVER_URL=https://auth.evefrontier.com");
+  console.warn("   FUSIONAUTH_API_KEY=your-api-key");
+  console.warn("   See services/env.example for more details.");
+  // Exit gracefully with code 0 (success) so turbo doesn't fail
+  // This allows the dev command to continue even if this service isn't configured
+  if (typeof Bun !== "undefined" && typeof Bun.exit === "function") {
+    Bun.exit(0);
+  } else if (
+    typeof process !== "undefined" &&
+    typeof process.exit === "function"
+  ) {
+    process.exit(0);
+  }
+  // If neither is available, the script will just complete (no server started)
+  // All code below this point is skipped when env vars are missing
 }
 
 const VEND_URL = `${FUSION_SERVER_URL.replace(/\/$/, "")}/api/jwt/vend`;

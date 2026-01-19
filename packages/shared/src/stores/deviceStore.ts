@@ -725,8 +725,7 @@ export const useDeviceStore = create<DeviceState>()(
 
           // Validate and clean up ephemeralKeyPairSecretKey if it's an invalid object
           if (
-            state &&
-            state.ephemeralKeyPairSecretKey &&
+            state?.ephemeralKeyPairSecretKey &&
             typeof state.ephemeralKeyPairSecretKey === "object"
           ) {
             const key = state.ephemeralKeyPairSecretKey;

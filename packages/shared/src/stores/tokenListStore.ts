@@ -1,10 +1,7 @@
-import {
-  chromeStorageAdapter,
-  localStorageAdapter,
-} from "@evevault/shared/adapters";
-import type { TokenListState } from "@evevault/shared/types";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+import { chromeStorageAdapter, localStorageAdapter } from "../adapters";
+import type { TokenListState } from "../types";
 import { isWeb } from "../utils/environment";
 
 const sanitizeCoinType = (coinType: string) => coinType.trim();

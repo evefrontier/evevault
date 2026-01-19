@@ -16,7 +16,12 @@ import {
 import { useDeviceStore } from "@evevault/shared/stores/deviceStore";
 import { useNetworkStore } from "@evevault/shared/stores/networkStore";
 import { createSuiClient } from "@evevault/shared/sui";
-import { createLogger, formatAddress } from "@evevault/shared/utils";
+import {
+  createLogger,
+  formatAddress,
+  getSuiscanUrl,
+  WEB_ROUTES,
+} from "@evevault/shared/utils";
 import { useBalance, zkSignAny } from "@evevault/shared/wallet";
 import { Transaction } from "@mysten/sui/transactions";
 import { SUI_DEVNET_CHAIN } from "@mysten/wallet-standard";
@@ -214,7 +219,7 @@ export const WalletScreen = () => {
               </Text>
               <Button
                 variant="secondary"
-                size="xs"
+                size="small"
                 onClick={() =>
                   copyAddress(user?.profile?.sui_address as string)
                 }
@@ -290,10 +295,7 @@ export const WalletScreen = () => {
               <Text>
                 Tx digest:{" "}
                 <a
-                  href={`https://suiscan.xyz/${chain.replace(
-                    "sui:",
-                    "",
-                  )}/tx/${txDigest}`}
+                  href={chain ? getSuiscanUrl(chain, txDigest) : "#"}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{ color: "var(--quantum)" }}
@@ -309,7 +311,19 @@ export const WalletScreen = () => {
             user={user}
             chain={chain || null}
             onAddToken={() => navigate({ to: "/wallet/add-token" })}
+            onSendToken={(coinType) =>
+              navigate({
+                to: WEB_ROUTES.WALLET_SEND_TOKEN,
+                search: { coinType },
+              })
+            }
           />
+          <Button
+            variant="secondary"
+            onClick={() => navigate({ to: WEB_ROUTES.WALLET_TRANSACTIONS })}
+          >
+            View Transaction History
+          </Button>
         </main>
         <footer className="app-shell__footer" />
       </div>

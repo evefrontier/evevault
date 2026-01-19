@@ -1,11 +1,11 @@
-import { useAuthStore } from "@evevault/shared/auth";
-import { useNetworkStore } from "@evevault/shared/stores";
-import type { CurrentNetworkDisplayProps } from "@evevault/shared/types";
-import { AVAILABLE_NETWORKS, getNetworkLabel } from "@evevault/shared/types";
-import { createLogger, isExtension } from "@evevault/shared/utils";
 import type { SuiChain } from "@mysten/wallet-standard";
 import type React from "react";
 import { useCallback, useMemo, useState } from "react";
+import { useAuthStore } from "../../auth";
+import { useNetworkStore } from "../../stores";
+import type { CurrentNetworkDisplayProps } from "../../types";
+import { AVAILABLE_NETWORKS, getNetworkLabel } from "../../types";
+import { createLogger, isExtension } from "../../utils";
 import Button from "../Button";
 import Icon from "../Icon";
 import Text from "../Text";
