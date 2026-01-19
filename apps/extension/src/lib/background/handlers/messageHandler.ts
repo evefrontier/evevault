@@ -22,6 +22,7 @@ import {
 import {
   handleApprovePopup,
   handleReportTransactionEffects,
+  handleSponsoredTransaction,
 } from "./walletHandlers";
 
 const log = createLogger();
@@ -62,7 +63,7 @@ export function handleMessage(
   if (
     action === WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION
   ) {
-    return handleApprovePopup(message, sender, sendResponse);
+    return handleSponsoredTransaction(message, sender, sendResponse);
   }
 
   if (action === "report_transaction_effects") {

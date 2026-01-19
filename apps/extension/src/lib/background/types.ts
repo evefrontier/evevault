@@ -52,7 +52,9 @@ export const EVEFRONTIER_SPONSORED_TRANSACTION =
   "evefrontier:sponsoredTransaction" as const;
 
 export type EveFrontierSponsoredTransactionInput = {
-  transaction: Transaction;
+  txAction: string;
+  assembly: string;
+  chain: string;
 };
 export type EveFrontierSponsoredTransactionOutput = {
   digest: string;

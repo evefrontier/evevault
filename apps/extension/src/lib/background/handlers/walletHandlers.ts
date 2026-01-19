@@ -1,5 +1,5 @@
 import { createLogger } from "@evevault/shared/utils";
-import type { WalletActionMessage } from "../types";
+import type { BackgroundMessage, WalletActionMessage } from "../types";
 
 const log = createLogger();
 
@@ -113,6 +113,46 @@ async function handleApprovePopup(
   }
 }
 
+async function handleSponsoredTransaction(
+  message: BackgroundMessage,
+  sender: chrome.runtime.MessageSender,
+  sendResponse: (response?: unknown) => void,
+): Promise<boolean> {
+  // Return boolean to indicate async response
+
+  const { action, assembly, chain } = message;
+
+  const senderTabId = sender.tab?.id;
+
+  try {
+    log.info("Eve Frontier sponsored transaction request received", {
+      action: message.action,
+      assembly: message.assembly,
+      chain: message.chain,
+    });
+
+    chrome.tabs
+      .sendMessage(senderTabId as number, {
+        type: "sign_success",
+        digest: "0x1234567890",
+        effects: "0x1234567890",
+        id: message.id,
+      })
+      .catch((err) => {
+        log.error("Failed to send success message", err);
+      });
+
+    return true; // Keep message channel open for async response
+  } catch (error) {
+    log.error("Transaction signing failed", error);
+    sendResponse({
+      type: "sign_transaction_error",
+      error: error instanceof Error ? error.message : "Unknown error occurred",
+    });
+    return false;
+  }
+}
+
 async function handleReportTransactionEffects(
   message: Record<string, unknown>,
   _sender: chrome.runtime.MessageSender,
@@ -127,4 +167,8 @@ async function handleReportTransactionEffects(
   });
 }
 
-export { handleApprovePopup, handleReportTransactionEffects };
+export {
+  handleApprovePopup,
+  handleSponsoredTransaction,
+  handleReportTransactionEffects,
+};

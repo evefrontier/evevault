@@ -381,7 +381,7 @@ export class EveVaultWallet implements Wallet {
 
   #signEveFrontierSponsoredTransaction: EveFrontierSponsoredTransactionMethod =
     async (input: EveFrontierSponsoredTransactionInput) => {
-      const tx = await input.transaction.toJSON();
+      // const { txAction, assembly, chain } = input;
 
       return new Promise<EveFrontierSponsoredTransactionOutput>(
         (resolve, reject) => {
@@ -392,8 +392,8 @@ export class EveVaultWallet implements Wallet {
 
             if (m.type === "sign_success") {
               resolve({
-                digest: "123",
-                effects: "123",
+                digest: m.digest,
+                effects: m.effects,
               });
             } else if (m.type === "sign_transaction_error") {
               reject(new Error(m.error));
@@ -401,17 +401,18 @@ export class EveVaultWallet implements Wallet {
           };
 
           window.addEventListener("message", onMsg);
-
-          window.postMessage(
-            {
-              __to: "Eve Vault",
-              id: crypto.randomUUID(),
-              action:
-                WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION,
-              transaction: tx,
-            },
-            "*",
+          log.debug(
+            "[SuiWallet] #signEveFrontierSponsoredTransaction input",
+            input,
           );
+
+          window.postMessage({
+            __to: "Eve Vault",
+            id: crypto.randomUUID(),
+            action:
+              WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION,
+            message: input.txAction,
+          });
         },
       );
     };
