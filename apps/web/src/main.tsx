@@ -8,7 +8,6 @@ import "@evevault/shared/theme/fonts.css";
 import "@evevault/shared/theme/global.css";
 import { applyTheme } from "@evevault/shared/theme";
 import "./styles/index.css";
-import "./dev/registerDevAuthTools"; // TODO(dev-auth): remove when local login flow works
 import { Button, ToastProvider } from "@evevault/shared/components";
 import { createLogger } from "@evevault/shared/utils";
 

@@ -1,4 +1,9 @@
-import { getZkLoginAddress, useAuthStore } from "@evevault/shared/auth";
+import { useNetworkStore } from "@evevault/shared";
+import {
+  getZkLoginAddress,
+  storeJwt,
+  useAuthStore,
+} from "@evevault/shared/auth";
 import { getUserManager } from "@evevault/shared/auth/authConfig";
 import { Background, Heading, Text } from "@evevault/shared/components";
 import type { RoutePath } from "@evevault/shared/types";
@@ -64,6 +69,19 @@ export const CallbackScreen = () => {
 
         await userManager.storeUser(updatedUser);
         useAuthStore.getState().setUser(updatedUser);
+
+        const network = useNetworkStore.getState().chain;
+        await storeJwt(
+          {
+            id_token: user.id_token,
+            access_token: user.access_token ?? user.id_token,
+            token_type: user.token_type ?? "Bearer",
+            expires_in: user.expires_in ?? 3600,
+            scope: user.scope ?? "openid email profile offline_access",
+            refresh_token: user.refresh_token,
+          },
+          network,
+        );
 
         log.info("FusionAuth callback successful");
         const destination = isRoutePath(redirectTo)
