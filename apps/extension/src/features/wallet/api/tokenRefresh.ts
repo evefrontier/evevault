@@ -7,12 +7,6 @@ import { User, type UserProfile } from "oidc-client-ts";
 
 const log = createLogger();
 
-interface FusionAuthRefreshResponse {
-  refreshToken?: string;
-  refreshTokenId?: string;
-  token: string;
-}
-
 export const handleTestTokenRefresh = async (user: User, nonce: string) => {
   log.debug("Token refresh test", {
     hasRefreshToken: !!user?.refresh_token,
@@ -22,6 +16,12 @@ export const handleTestTokenRefresh = async (user: User, nonce: string) => {
 
   try {
     const fusionAuthUrl = import.meta.env.VITE_FUSION_SERVER_URL;
+    const clientId = import.meta.env.VITE_FUSIONAUTH_CLIENT_ID;
+    const clientSecret = import.meta.env.VITE_FUSION_CLIENT_SECRET;
+
+    if (!clientId || !clientSecret) {
+      throw new Error("Client ID or client secret is not set");
+    }
 
     //First, call the nonce update service
     log.info("Access token expiring, patching user nonce before refresh");
@@ -29,15 +29,22 @@ export const handleTestTokenRefresh = async (user: User, nonce: string) => {
     // Get user from parameter or fallback to UserManager
     await patchUserNonce(user as User, nonce);
 
-    const response = await fetch(`${fusionAuthUrl}/api/jwt/refresh`, {
+    log.info("refresh_token value:", user?.refresh_token);
+    log.info("client_id value:", clientId);
+    log.info("client_secret value:", clientSecret);
+    log.info("fusionAuthUrl value:", fusionAuthUrl);
+
+    const response = await fetch(`${fusionAuthUrl}/oauth2/token`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        "X-FusionAuth-TenantId": import.meta.env.VITE_FUSION_TENANT_ID,
+        "Content-Type": "application/x-www-form-urlencoded",
+        Accept: "application/json",
       },
-      body: JSON.stringify({
-        refreshToken: user?.refresh_token,
-        token: user?.access_token,
+      body: new URLSearchParams({
+        grant_type: "refresh_token",
+        refresh_token: user?.refresh_token ?? "",
+        client_id: import.meta.env.VITE_FUSIONAUTH_CLIENT_ID,
+        client_secret: import.meta.env.VITE_FUSION_CLIENT_SECRET,
       }),
     });
 
@@ -45,46 +52,29 @@ export const handleTestTokenRefresh = async (user: User, nonce: string) => {
       throw new Error(`Token refresh failed: ${response.status}`);
     }
 
-    const refreshedData: FusionAuthRefreshResponse = await response.json();
-    log.info("Token refreshed", { hasToken: !!refreshedData.token });
+    const refreshedData: JwtResponse = await response.json();
+    log.info("Token refreshed", refreshedData);
 
-    // Decode the new token to get expiration
-    const decodedToken = decodeJwt(refreshedData.token);
-    const expiresIn = decodedToken.exp
-      ? decodedToken.exp - Math.floor(Date.now() / 1000)
-      : 3600;
-
-    // Construct the new JWT response
-    const newJwt: JwtResponse = {
-      id_token: refreshedData.token,
-      access_token: refreshedData.token,
-      token_type: "Bearer",
-      expires_in: expiresIn,
-      scope: "openid email profile offline_access",
-      refresh_token: refreshedData.refreshToken ?? user?.refresh_token,
-      refresh_token_id: refreshedData.refreshTokenId,
-    };
-    // Store the refreshed JWT for the current network
-    await storeJwt(newJwt);
+    // // Store the refreshed JWT for the current network
+    await storeJwt(refreshedData as JwtResponse);
 
     // Update the auth store user with the new tokens
     const currentUser = useAuthStore.getState().user;
     if (currentUser) {
       const updatedUser = new User({
-        id_token: newJwt.id_token,
-        access_token: newJwt.access_token,
-        token_type: newJwt.token_type,
-        scope: newJwt.scope,
+        id_token: refreshedData.id_token,
+        access_token: refreshedData.access_token,
+        token_type: refreshedData.token_type,
         profile: currentUser.profile as UserProfile,
-        expires_at: Math.floor(Date.now() / 1000) + expiresIn,
-        refresh_token: newJwt.refresh_token,
+        expires_at: Math.floor(Date.now() / 1000) + refreshedData.expires_in,
+        refresh_token: refreshedData.refresh_token,
       });
 
       useAuthStore.getState().setUser(updatedUser);
       log.info("Auth store user updated with refreshed tokens");
     }
 
-    return newJwt;
+    return refreshedData;
   } catch (err) {
     log.error("Token refresh error", err);
     throw err;
