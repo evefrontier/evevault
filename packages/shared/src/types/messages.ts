@@ -32,6 +32,7 @@ export enum WalletStandardMessageTypes {
   SIGN_PERSONAL_MESSAGE = "sign_personal_message",
   SIGN_TRANSACTION = "sign_transaction",
   SIGN_AND_EXECUTE_TRANSACTION = "sign_and_execute_transaction",
+  EVEFRONTIER_SIGN_SPONSORED_TRANSACTION = "sign_sponsored_transaction",
 }
 
 export enum KeeperMessageTypes {
