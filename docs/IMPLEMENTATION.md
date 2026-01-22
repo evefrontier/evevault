@@ -184,12 +184,12 @@ Safe accessors for Zustand stores in non-React environments:
 
 ## Network Switching
 
-**Location**: `packages/shared/src/stores/networkStore.ts`, `packages/shared/src/components/CurrentNetworkDisplay/`
+**Location**: `packages/shared/src/stores/networkStore.ts`, `packages/shared/src/components/NetworkSelector/`
 
 The extension supports multi-network operation with per-network data isolation:
 
 - **Network Store**: Manages current network state with persistence (`useNetworkStore`)
-- **Network Selector**: UI component for switching between networks (`CurrentNetworkDisplay`)
+- **Network Selector**: UI component for switching between networks (`NetworkSelector`)
 - **Per-network JWTs**: Each network stores its own JWT tokens in `chrome.storage.local` under `evevault:jwt`
 - **Per-network device data**: Nonce, maxEpoch, and jwtRandomness stored per-network in `deviceStore.networkData`
 - **Automatic rollback**: Login failures trigger rollback to previous network with valid JWT
@@ -197,7 +197,7 @@ The extension supports multi-network operation with per-network data isolation:
 
 **Key Components:**
 - `useNetworkStore` - Network state management (`packages/shared/src/stores/networkStore.ts`)
-- `CurrentNetworkDisplay` - Network selector UI (`packages/shared/src/components/CurrentNetworkDisplay/`)
+- `NetworkSelector` - Network selector UI (`packages/shared/src/components/NetworkSelector/`)
 - `AVAILABLE_NETWORKS` - Shared network constants (`packages/shared/src/types/networks.ts`)
 
 **Network Switching Flow:**
@@ -319,7 +319,7 @@ Builds Sui transactions with proper sender address.
 - [ ] Improve wallet standard error reporting
 - [ ] Add transaction history and activity log
 - [ ] Implement account switching (multi-user support)
-- ~~[ ] Add network switching UI (devnet/testnet/mainnet)~~ ✅ **Completed** - Network switching UI implemented with `CurrentNetworkDisplay` component
+- ~~[ ] Add network switching UI (devnet/testnet/mainnet)~~ ✅ **Completed** - Network switching UI implemented with `NetworkSelector` component
 
 ## Related Documentation
 

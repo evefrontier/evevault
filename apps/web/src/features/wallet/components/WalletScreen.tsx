@@ -1,9 +1,4 @@
-import {
-  CurrentNetworkDisplay,
-  HeaderMobile,
-  LockScreen,
-  NetworkSelector,
-} from "@evevault/shared";
+import { HeaderMobile, LockScreen, NetworkSelector } from "@evevault/shared";
 import { useAuth } from "@evevault/shared/auth";
 import {
   Background,
@@ -12,21 +7,16 @@ import {
   Text,
   TokenListSection,
 } from "@evevault/shared/components";
-import {
-  useCopyToClipboard,
-  useDevice,
-  useEpochExpiration,
-} from "@evevault/shared/hooks";
+import { useDevice, useEpochExpiration } from "@evevault/shared/hooks";
 import { useDeviceStore } from "@evevault/shared/stores/deviceStore";
 import { useNetworkStore } from "@evevault/shared/stores/networkStore";
 import { createSuiClient } from "@evevault/shared/sui";
 import {
   createLogger,
-  formatAddress,
   getSuiscanUrl,
   WEB_ROUTES,
 } from "@evevault/shared/utils";
-import { useBalance, zkSignAny } from "@evevault/shared/wallet";
+import { zkSignAny } from "@evevault/shared/wallet";
 import { Transaction } from "@mysten/sui/transactions";
 import type { SuiChain } from "@mysten/wallet-standard";
 import { SUI_DEVNET_CHAIN } from "@mysten/wallet-standard";
@@ -40,14 +30,12 @@ export const WalletScreen = () => {
   const [initError, setInitError] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const [txDigest, setTxDigest] = useState<string | null>(null);
-  const [previousNetworkBeforeSwitch, setPreviousNetworkBeforeSwitch] =
+  const [_previousNetworkBeforeSwitch, setPreviousNetworkBeforeSwitch] =
     useState<SuiChain | null>(null);
-  const { copy: copyAddress } = useCopyToClipboard();
 
   const {
     user,
     login,
-    logout,
     initialize: initializeAuth,
     error: authError,
     loading: authLoading,
@@ -61,19 +49,8 @@ export const WalletScreen = () => {
     error: deviceError,
     loading: deviceLoading,
     unlock,
-    lock,
   } = useDevice();
   const { chain } = useNetworkStore();
-
-  // Use TanStack Query for balance fetching
-  const {
-    data: suiTokenBalance,
-    isLoading: balanceLoading,
-    error: balanceError,
-  } = useBalance({
-    user: user || null,
-    chain: chain || null,
-  });
 
   // Create suiClient with useMemo to recreate when chain changes
   const suiClient = React.useMemo(() => {
@@ -186,12 +163,18 @@ export const WalletScreen = () => {
         user={user}
         chain={chain || null}
         walletAddress={user?.profile?.sui_address as string}
-        onAddToken={() => navigate({ to: "/wallet/add-token" })}
+        onAddToken={() => navigate({ to: WEB_ROUTES.WALLET_ADD_TOKEN })}
+        onSendToken={(coinType) =>
+          navigate({
+            to: WEB_ROUTES.WALLET_SEND_TOKEN,
+            search: { coinType },
+          })
+        }
       />
       {/* Network display and Test transaction button */}
-      <div className=" justify-between  flex items-center gap-4 ">
-        <CurrentNetworkDisplay
-          chain={chain}
+      <div className=" justify-between pt-8 flex gap-4 ">
+        <NetworkSelector
+          chain={chain || SUI_DEVNET_CHAIN}
           onNetworkSwitchStart={(previousNetwork, targetNetwork) => {
             log.info("Network switch started", {
               previousNetwork,
@@ -200,128 +183,78 @@ export const WalletScreen = () => {
             setPreviousNetworkBeforeSwitch(previousNetwork as SuiChain);
           }}
         />
-
-        <NetworkSelector />
-      </div>
-
-      <div>
-        <Text>ZK Login User Address:</Text>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            marginTop: "8px",
-            marginBottom: "8px",
-          }}
-        >
-          <Text style={{ wordBreak: "break-all", flex: 1 }}>
-            {formatAddress(user?.profile?.sui_address as string)}
-          </Text>
-          <Button
-            variant="secondary"
-            size="small"
-            onClick={() => copyAddress(user?.profile?.sui_address as string)}
-          >
-            📋
-          </Button>
-        </div>
-        <Text data-testid="wallet-balance">
-          Sui token balance on {chain}:{" "}
-          {balanceLoading
-            ? "Loading..."
-            : (suiTokenBalance?.formattedBalance ?? "0")}
-        </Text>
-        {balanceError && (
-          <Text color="error">
-            Error loading balance:{" "}
-            {balanceError instanceof Error
-              ? balanceError.message
-              : "Unknown error"}
-          </Text>
-        )}
-        <Button onClick={() => logout()}>Logout</Button>
-        <Button onClick={() => lock()}>Lock</Button>
-
         <div>
-          <Button
-            onClick={async () => {
-              if (!user || !maxEpoch) return;
-              if (!ephemeralPublicKey) {
-                throw new Error(
-                  "[Wallet Screen] Ephemeral public key not found",
+          <div className="flex align-items-end flex-col items-center gap-2">
+            <Button
+              size="small"
+              onClick={async () => {
+                if (!user || !maxEpoch) return;
+                if (!ephemeralPublicKey) {
+                  throw new Error(
+                    "[Wallet Screen] Ephemeral public key not found",
+                  );
+                }
+
+                const tx = new Transaction();
+                tx.setSender(user.profile?.sui_address as string);
+                const txb = await tx.build({ client: suiClient });
+
+                const { bytes, zkSignature } = await zkSignAny(
+                  "TransactionData",
+                  txb,
+                  {
+                    user,
+                    ephemeralPublicKey,
+                    maxEpoch,
+                    getZkProof,
+                  },
                 );
-              }
+                log.debug("zkSignature ready", {
+                  length: zkSignature.length,
+                });
+                log.debug("Transaction block bytes ready", {
+                  length: bytes.length,
+                });
 
-              const tx = new Transaction();
-              tx.setSender(user.profile?.sui_address as string);
-              const txb = await tx.build({ client: suiClient });
+                const txDigest = await suiClient.executeTransactionBlock({
+                  transactionBlock: bytes,
+                  signature: zkSignature,
+                });
 
-              const { bytes, zkSignature } = await zkSignAny(
-                "TransactionData",
-                txb,
-                {
-                  user,
-                  ephemeralPublicKey,
-                  maxEpoch,
-                  getZkProof,
-                },
-              );
-              log.debug("zkSignature ready", {
-                length: zkSignature.length,
-              });
-              log.debug("Transaction block bytes ready", {
-                length: bytes.length,
-              });
-
-              const txDigest = await suiClient.executeTransactionBlock({
-                transactionBlock: bytes,
-                signature: zkSignature,
-              });
-
-              log.info("Transaction executed", {
-                digest: txDigest.digest,
-              });
-              setTxDigest(txDigest.digest);
-            }}
-          >
-            Sign and submit tx Wallet Screen
-          </Button>
-        </div>
-        {txDigest && (
-          <div>
-            <Text>
-              Tx digest:{" "}
-              <a
-                href={chain ? getSuiscanUrl(chain, txDigest) : "#"}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ color: "var(--quantum)" }}
-              >
-                {txDigest}
-              </a>
-            </Text>
+                log.info("Transaction executed", {
+                  digest: txDigest.digest,
+                });
+                setTxDigest(txDigest.digest);
+              }}
+            >
+              Sign and submit tx Wallet Screen
+            </Button>
+            <Button
+              variant="secondary"
+              size="small"
+              onClick={() => navigate({ to: WEB_ROUTES.WALLET_TRANSACTIONS })}
+            >
+              View Transaction History
+            </Button>
           </div>
-        )}
-        {authError && <Text color="error">Error: {authError}</Text>}
-        {deviceError && <Text color="error">Error: {deviceError}</Text>}
-        <TokenListSection
-          user={user}
-          chain={chain || null}
-          onAddToken={() => navigate({ to: "/wallet/add-token" })}
-          onSendToken={(coinType) =>
-            navigate({
-              to: WEB_ROUTES.WALLET_SEND_TOKEN,
-              search: { coinType },
-            })
-          }
-        />
-        <Button
-          variant="secondary"
-          onClick={() => navigate({ to: WEB_ROUTES.WALLET_TRANSACTIONS })}
-        >
-          View Transaction History
-        </Button>
+          {txDigest && (
+            <div>
+              <Text>
+                Tx digest:{" "}
+                <a
+                  href={chain ? getSuiscanUrl(chain, txDigest) : "#"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: "var(--quantum)" }}
+                >
+                  {txDigest}
+                </a>
+              </Text>
+            </div>
+          )}
+          {authError && <Text color="error">Error: {authError}</Text>}
+          {deviceError && <Text color="error">Error: {deviceError}</Text>}
+        </div>
       </div>
     </div>
   );

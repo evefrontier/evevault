@@ -1,19 +1,22 @@
 import { useAuth } from "@evevault/shared/auth";
 import {
   Button,
-  CurrentNetworkDisplay,
   Heading,
+  NetworkSelector,
   Text,
 } from "@evevault/shared/components";
 import { useDevice } from "@evevault/shared/hooks/useDevice";
+import { useNetwork } from "@evevault/shared/hooks/useNetwork";
 import type { PendingPersonalMessage } from "@evevault/shared/types";
 import { createLogger } from "@evevault/shared/utils";
 import { zkSignAny } from "@evevault/shared/wallet";
+import { SUI_DEVNET_CHAIN } from "@mysten/wallet-standard";
 import { useEffect, useState } from "react";
 
 const log = createLogger();
 
 function SignPersonalMessage() {
+  const { chain } = useNetwork();
   const [pendingMessage, setPendingMessage] =
     useState<PendingPersonalMessage | null>(null);
   const [loading, setLoading] = useState(false);
@@ -170,9 +173,9 @@ function SignPersonalMessage() {
           </Button>
         </div>
       </div>
-      <CurrentNetworkDisplay
+      <NetworkSelector
         className="justify-start w-full items-end"
-        chain={pendingMessage.chain || "devnet"}
+        chain={chain || SUI_DEVNET_CHAIN}
       />
     </div>
   );

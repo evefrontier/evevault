@@ -1,106 +1,45 @@
 import type React from "react";
-import { useEffect, useRef, useState } from "react";
-import "./Dropdown.css";
-import type { DropdownItem, DropdownProps } from "../../types";
+import { useEffect, useRef } from "react";
+import type { DropdownProps } from "../../types";
 import { Corners } from "../Corners";
-import Icon from "../Icon";
-import Text from "../Text";
-import { getIdenticon } from "./Identicons";
+import "./Dropdown.css";
 
+/**
+ * Simple dropdown menu container with corners/edges styling.
+ * Use this when you have your own trigger and just need the menu container.
+ */
 export const Dropdown: React.FC<DropdownProps> = ({
-  items,
-  trigger,
+  children,
   className = "",
-  identicon = 0,
+  onClickOutside,
+  triggerRef,
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [menuHeight, setMenuHeight] = useState(0);
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdown when clicking outside
+  // Close when clicking outside (but not on trigger)
   useEffect(() => {
+    if (!onClickOutside) return;
+
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false);
+      const target = event.target as Node;
+      const isInsideMenu = menuRef.current?.contains(target);
+      const isOnTrigger = triggerRef?.current?.contains(target);
+
+      if (!isInsideMenu && !isOnTrigger) {
+        onClickOutside();
       }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  // Measure menu height when open
-  useEffect(() => {
-    if (isOpen && menuRef.current) {
-      setMenuHeight(menuRef.current.offsetHeight);
-    }
-  }, [isOpen]);
-
-  const handleItemClick = (item: DropdownItem) => {
-    item.onClick();
-    setIsOpen(false);
-  };
+  }, [onClickOutside, triggerRef]);
 
   return (
-    <div
-      className={`dropdown ${isOpen ? "dropdown--open" : ""} ${className}`}
-      ref={dropdownRef}
-      style={{ "--menu-height": `${menuHeight}px` } as React.CSSProperties}
-    >
-      <button
-        type="button"
-        className="dropdown__trigger"
-        onClick={() => setIsOpen(!isOpen)}
-        aria-expanded={isOpen}
-        aria-haspopup="true"
-      >
-        {/* Inner content */}
-        <div className="dropdown__inner">
-          <div className="dropdown__content">
-            {getIdenticon(identicon)}
-            <span className="dropdown__text">{trigger}</span>
-          </div>
-          <span
-            className={`dropdown__arrow ${isOpen ? "dropdown__arrow--open" : ""}`}
-          >
-            <Icon name="ChevronArrowDown" size="small" color="#FF4700" />
-          </span>
-        </div>
-
-        <Corners
-          color="quantum"
-          size={5}
-          thickness={1}
-          bottomOffset={isOpen ? menuHeight + 3 : 0}
-          transition="bottom 0.3s ease"
-        />
-
-        {/* Edge lines */}
-        <span className="dropdown__edge dropdown__edge--left" />
-        <span className="dropdown__edge dropdown__edge--right" />
-      </button>
-
-      {isOpen && (
-        <div className="dropdown__menu" ref={menuRef}>
-          {items.map((item, index) => (
-            <div
-              key={item.label}
-              className="dropdown__item"
-              onClick={() => handleItemClick(item)}
-              onKeyDown={(e) => e.key === "Enter" && handleItemClick(item)}
-              role="menuitem"
-              tabIndex={0}
-            >
-              {getIdenticon(index)}
-              <Text variant="label">{item.label}</Text>
-            </div>
-          ))}
-        </div>
-      )}
+    <div className={`dropdown ${className}`} ref={menuRef}>
+      <Corners color="quantum" size={5} thickness={1} />
+      <span className="dropdown__edge dropdown__edge--left" />
+      <span className="dropdown__edge dropdown__edge--right" />
+      <div className="dropdown__content">{children}</div>
     </div>
   );
 };

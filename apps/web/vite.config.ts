@@ -1,4 +1,4 @@
-import path from "node:path";
+import path, { resolve } from "node:path";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
@@ -23,5 +23,11 @@ export default defineConfig({
   envDir: path.resolve(__dirname, "../.."),
   optimizeDeps: {
     include: ["@evevault/shared", "@evevault/shared/adapters"],
+  },
+  build: {
+    rollupOptions: {
+      external: (id) =>
+        id === "@evevault/shared" || id.startsWith("@evevault/shared/"),
+    },
   },
 });

@@ -1,0 +1,148 @@
+/* Modal Overlay */
+.modal__overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+  padding: 16px;
+}
+
+/* Modal Container */
+.modal {
+  position: relative;
+  max-width: 800px;
+  width: 100%;
+  max-height: 90vh;
+  overflow: auto;
+}
+
+/* Size variants */
+.modal--small {
+  max-width: 400px;
+}
+
+.modal--medium {
+  max-width: 600px;
+}
+
+.modal--large {
+  max-width: 800px;
+}
+
+.modal--full {
+  max-width: 90vw;
+}
+
+/* Edge lines */
+.modal__edge {
+  position: absolute;
+  width: 1px;
+  background: rgba(250, 250, 229, 0.3);
+  z-index: 2;
+  top: 5px;
+  bottom: 5px;
+  pointer-events: none;
+}
+
+.modal__edge--left {
+  left: 0;
+}
+
+.modal__edge--right {
+  right: 0;
+}
+
+/* Content area */
+.modal__content {
+  background: var(--matter-01);
+  margin: 3px;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Two-column layout */
+.modal__content--row {
+  flex-direction: row;
+  gap: 32px;
+}
+
+/* Title */
+.modal__title {
+  margin: 0;
+}
+
+/* Message text */
+.modal__message {
+  line-height: 1.5;
+  color: rgba(250, 250, 229, 0.4);
+}
+
+/* Action buttons */
+.modal__actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.modal__actions--full {
+  flex-direction: column;
+}
+
+.modal__actions--full button {
+  width: 100%;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .modal {
+    max-width: 90vw;
+  }
+
+  .modal__content {
+    padding: 24px;
+    gap: 16px;
+  }
+
+  .modal__content--row {
+    flex-direction: column;
+  }
+
+  .modal__actions {
+    flex-direction: column-reverse;
+  }
+
+  .modal__actions button {
+    width: 100%;
+  }
+}
+
+/* Scrollable content area */
+.modal__scroll {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+/* Divider */
+.modal__divider {
+  width: 100%;
+  height: 1px;
+  background: rgba(250, 250, 229, 0.1);
+}
+
+/* Column helper */
+.modal__column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.modal__column--wide {
+  flex: 1;
+}

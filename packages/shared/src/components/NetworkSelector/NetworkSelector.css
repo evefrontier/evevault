@@ -1,9 +1,32 @@
-.current-network-display {
+.network-selector {
   position: relative;
   display: inline-block;
+  height: min-content;
 }
 
-.current-network-display__trigger {
+/* Compact badge mode */
+.network-selector__badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  background: var(--quantum-20);
+  border: 1px solid var(--quantum-30);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.network-selector__badge:hover:not(:disabled) {
+  background: var(--quantum-30);
+}
+
+.network-selector__badge:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.network-selector__trigger {
   display: flex;
   align-items: flex-end;
   gap: 8px;
@@ -11,20 +34,20 @@
   transition: opacity 0.2s ease;
 }
 
-.current-network-display__trigger:hover {
+.network-selector__trigger:hover {
   opacity: 0.8;
 }
 
-.current-network-display__chevron {
+.network-selector__chevron {
   transition: transform 0.2s ease;
   margin-left: auto;
 }
 
-.current-network-display__chevron--open {
+.network-selector__chevron--open {
   transform: rotate(180deg);
 }
 
-.current-network-display__dropdown {
+.network-selector__dropdown {
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
@@ -38,12 +61,12 @@
 }
 
 /* In extension, dropdown opens upward */
-.current-network-display--extension .current-network-display__dropdown {
+.network-selector--extension .network-selector__dropdown {
   top: auto;
   bottom: calc(100% + 4px);
 }
 
-.current-network-display__option {
+.network-selector__option {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -56,30 +79,29 @@
   text-align: left;
 }
 
-.current-network-display__option:hover:not(:disabled) {
+.network-selector__option:hover:not(:disabled) {
   background: var(--matter-03);
 }
 
-.current-network-display__option--active {
+.network-selector__option--active {
   background: var(--quantum-10);
 }
 
-.current-network-display__option--active:hover:not(:disabled) {
+.network-selector__option--active:hover:not(:disabled) {
   background: var(--quantum-20);
 }
 
-.current-network-display__option:disabled {
+.network-selector__option:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.current-network-display__check {
+.network-selector__check {
   color: var(--quantum);
   font-weight: bold;
 }
 
-/* Overlay and Dialog */
-.current-network-display__overlay {
+.network-selector__overlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.7);
@@ -89,7 +111,7 @@
   z-index: 1000;
 }
 
-.current-network-display__dialog {
+.network-selector__dialog {
   background: var(--matter-01);
   border: 1px solid var(--matter-04);
   border-radius: 8px;
@@ -101,14 +123,13 @@
   gap: 16px;
 }
 
-.current-network-display__dialog-message {
+.network-selector__dialog-message {
   line-height: 1.5;
 }
 
-.current-network-display__dialog-actions {
+.network-selector__dialog-actions {
   display: flex;
   gap: 12px;
   justify-content: flex-end;
   margin-top: 8px;
 }
-

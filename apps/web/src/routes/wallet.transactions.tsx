@@ -1,9 +1,4 @@
-import {
-  Button,
-  Layout,
-  TransactionsScreen,
-  useAuthStore,
-} from "@evevault/shared";
+import { TransactionsScreen, useAuthStore } from "@evevault/shared";
 import { requireAuth } from "@evevault/shared/router";
 import { useNetworkStore } from "@evevault/shared/stores/networkStore";
 import { WEB_ROUTES } from "@evevault/shared/utils";
@@ -22,21 +17,7 @@ function TransactionsPage() {
     return null;
   }
 
-  return (
-    <Layout>
-      <div className="flex flex-col gap-10">
-        <Button
-          variant="secondary"
-          size="small"
-          onClick={handleBack}
-          className="self-start"
-        >
-          ← Back
-        </Button>
-        <TransactionsScreen user={user} chain={chain} onBack={handleBack} />
-      </div>
-    </Layout>
-  );
+  return <TransactionsScreen user={user} chain={chain} onBack={handleBack} />;
 }
 
 export const Route = createFileRoute("/wallet/transactions")({

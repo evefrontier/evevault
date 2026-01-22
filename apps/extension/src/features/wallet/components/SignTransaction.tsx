@@ -1,8 +1,8 @@
 import { useAuth } from "@evevault/shared/auth";
 import {
   Button,
-  CurrentNetworkDisplay,
   Heading,
+  NetworkSelector,
   Text,
 } from "@evevault/shared/components";
 import Json from "@evevault/shared/components/Json";
@@ -172,7 +172,7 @@ function SignTransaction() {
           </Button>
         </div>
       </div>
-      <CurrentNetworkDisplay
+      <NetworkSelector
         className="justify-start w-full items-end"
         chain={pendingTransaction.chain}
       />

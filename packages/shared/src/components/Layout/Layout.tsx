@@ -26,7 +26,7 @@ export const Layout: React.FC<LayoutProps> = ({
   showNav = true,
   headerProps,
 }) => {
-  const { isMobile, isTablet, isDesktop } = useResponsive();
+  const { isMobile } = useResponsive();
 
   // Extension variant: compact layout for browser popup
   if (variant === "extension") {
@@ -86,7 +86,7 @@ export const Layout: React.FC<LayoutProps> = ({
 
       {/* Main content area with background */}
       <Background bottomOffset={showMobileNav ? MOBILE_NAV_HEIGHT : 0}>
-        <div className="flex  flex-1 flex-col overflow-hidden">
+        <div className="flex  flex-1 flex-col overflow-hidden h-full">
           {/* Scrollable content */}
           <main
             className="flex-1 overflow-y-auto w-full max-w-4xl mx-auto"

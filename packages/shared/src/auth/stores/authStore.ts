@@ -22,6 +22,7 @@ import type { AuthState } from "../types";
 import { resolveExpiresAt } from "../utils/authStoreUtils";
 import { vendJwt } from "../vendToken";
 
+// biome-ignore lint/suspicious/noExplicitAny: chrome is a global object
 declare const chrome: any;
 
 const log = createLogger();

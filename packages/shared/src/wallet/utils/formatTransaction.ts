@@ -1,5 +1,4 @@
 import { parseStructTag } from "@mysten/sui/utils";
-import { SUI_COIN_TYPE } from "../../utils";
 import { formatByDecimals } from "../../utils/format";
 import { createLogger } from "../../utils/logger";
 import { fetchCoinMetadata } from "./coinMetadata";

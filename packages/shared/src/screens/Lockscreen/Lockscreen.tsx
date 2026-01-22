@@ -2,9 +2,9 @@ import type React from "react";
 import { useState } from "react";
 import {
   Button,
-  CurrentNetworkDisplay,
   Heading,
   Input,
+  NetworkSelector,
   Text,
 } from "../../components";
 import { useDevice } from "../../hooks/useDevice";
@@ -77,11 +77,8 @@ export default function LockScreen({
             </Button>
           </div>
         </form>
+        <NetworkSelector chain={chain} className="align-self-start w-full" />
       </section>
-
-      <div className="w-full">
-        <CurrentNetworkDisplay chain={chain} className="justify-start" />
-      </div>
     </div>
   );
 }

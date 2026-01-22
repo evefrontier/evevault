@@ -220,13 +220,18 @@ export interface CornersProps {
   transition?: string;
 }
 
-export interface CurrentNetworkDisplayProps {
+export interface NetworkSelectorProps {
   chain: string;
   className?: string;
+  /** Compact mode shows only a badge with short network label */
+  compact?: boolean;
+  /** Callback when network switch starts (before re-auth) */
   onNetworkSwitchStart?: (
     previousNetwork: string,
     targetNetwork: string,
   ) => void;
+  /** Callback when network switch requires re-authentication */
+  onRequiresReauth?: (targetNetwork: string) => void;
 }
 
 export interface AddTokenScreenProps {
@@ -247,12 +252,30 @@ export interface DropdownItem {
   onClick: () => void;
 }
 
-export interface DropdownProps {
-  items: DropdownItem[];
+export interface DropdownSelectProps {
+  /** Dropdown menu items (used if children not provided) */
+  items?: DropdownItem[];
   trigger: React.ReactNode;
   className?: string;
   /** Identicon index (0-3) for avatar display */
   identicon?: number;
+  /** Custom menu content (overrides items) */
+  children?: React.ReactNode;
+  /** Controlled open state */
+  isOpen?: boolean;
+  /** Callback when open state changes */
+  onOpenChange?: (isOpen: boolean) => void;
+}
+
+export interface DropdownProps {
+  /** Menu content */
+  children: React.ReactNode;
+  /** Additional class name */
+  className?: string;
+  /** Callback when clicking outside the menu */
+  onClickOutside?: () => void;
+  /** Ref to the trigger element (clicks on trigger won't trigger onClickOutside) */
+  triggerRef?: React.RefObject<HTMLElement | null>;
 }
 
 export type HeadingProps = React.HTMLAttributes<HTMLHeadingElement> & {

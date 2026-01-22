@@ -1,4 +1,4 @@
-import { Button, Layout, SendTokenScreen } from "@evevault/shared";
+import { SendTokenScreen } from "@evevault/shared";
 import type { SendTokenSearch } from "@evevault/shared/router";
 import { requireAuth } from "@evevault/shared/router";
 import {
@@ -16,21 +16,7 @@ function SendTokenPage() {
     navigate({ to: "/wallet" });
   };
 
-  return (
-    <Layout>
-      <div className="flex flex-col gap-10">
-        <Button
-          variant="secondary"
-          size="small"
-          onClick={handleCancel}
-          className="self-start"
-        >
-          ← Back
-        </Button>
-        <SendTokenScreen coinType={coinType} onCancel={handleCancel} />
-      </div>
-    </Layout>
-  );
+  return <SendTokenScreen coinType={coinType} onCancel={handleCancel} />;
 }
 
 export const Route = createFileRoute("/wallet/send-token")({

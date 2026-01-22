@@ -1,5 +1,1 @@
-export {
-  default,
-  NetworkSelector,
-  type NetworkSelectorProps,
-} from "./NetworkSelector";
+export { default, NetworkSelector } from "./NetworkSelector";

@@ -1,8 +1,6 @@
 import type { JwtResponse } from "@evevault/shared/types/authTypes";
-import type { Transaction } from "@mysten/sui/transactions";
 import type {
   StandardEventsOnMethod,
-  SuiSignAndExecuteTransactionInput,
   SuiSignAndExecuteTransactionOutput,
   SuiWalletFeatures,
 } from "@mysten/wallet-standard";

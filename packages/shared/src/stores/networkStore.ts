@@ -63,7 +63,7 @@ export const useNetworkStore = create<NetworkState>()(
 
       /**
        * Set chain for re-authentication flow (skips JWT checks).
-       * Called by CurrentNetworkDisplay/NetworkSelector when switching to a network without JWT.
+       * Called by NetworkSelector when switching to a network without JWT.
        */
       forceSetChain: (chain: SuiChain) => {
         const currentChain = get().chain;

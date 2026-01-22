@@ -2,9 +2,9 @@ import "./PopupApp.css";
 import { useAuth } from "@evevault/shared/auth";
 import {
   Button,
-  CurrentNetworkDisplay,
   HeaderMobile,
   Heading,
+  NetworkSelector,
   Text,
   TokenListSection,
 } from "@evevault/shared/components";
@@ -133,7 +133,7 @@ function App() {
 
       {/* Network display and Test transaction button */}
       <div className=" justify-between  flex items-center gap-4 ">
-        <CurrentNetworkDisplay
+        <NetworkSelector
           chain={chain}
           onNetworkSwitchStart={(previousNetwork, targetNetwork) => {
             log.info("Network switch started", {

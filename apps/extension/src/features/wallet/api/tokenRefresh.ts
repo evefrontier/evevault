@@ -2,7 +2,6 @@ import { storeJwt, useAuthStore } from "@evevault/shared/auth";
 import { patchUserNonce } from "@evevault/shared/auth/patchNonce";
 import type { JwtResponse } from "@evevault/shared/types";
 import { createLogger } from "@evevault/shared/utils";
-import { decodeJwt } from "jose";
 import { User, type UserProfile } from "oidc-client-ts";
 
 const log = createLogger();

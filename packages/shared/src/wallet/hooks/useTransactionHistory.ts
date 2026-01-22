@@ -6,9 +6,8 @@
  * Reference: https://docs.sui.io/concepts/data-access/graphql-rpc
  */
 
-import { SUI_DEVNET_CHAIN, type SuiChain } from "@mysten/wallet-standard";
+import { SUI_DEVNET_CHAIN } from "@mysten/wallet-standard";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import type { User } from "oidc-client-ts";
 import { useMemo } from "react";
 import { createSuiClient } from "../../sui";
 import { createSuiGraphQLClient } from "../../sui/graphqlClient";

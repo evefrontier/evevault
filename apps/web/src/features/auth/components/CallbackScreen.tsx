@@ -1,6 +1,6 @@
 import { getZkLoginAddress, useAuthStore } from "@evevault/shared/auth";
 import { getUserManager } from "@evevault/shared/auth/authConfig";
-import { Background, Heading, Text } from "@evevault/shared/components";
+import { Heading, Text } from "@evevault/shared/components";
 import type { RoutePath } from "@evevault/shared/types";
 import { createLogger, ROUTE_PATHS } from "@evevault/shared/utils";
 import { useNavigate, useSearch } from "@tanstack/react-router";
@@ -84,34 +84,22 @@ export const CallbackScreen = () => {
 
   if (error) {
     return (
-      <Background>
-        <div className="app-shell">
-          <main className="app-shell__content">
-            <div className="card">
-              <Heading level={1} variant="bold">
-                Authentication Error
-              </Heading>
-              <Text color="error">{error}</Text>
-              <Text>Redirecting to login...</Text>
-            </div>
-          </main>
-        </div>
-      </Background>
+      <div className="app-shell">
+        <Heading level={1} variant="bold">
+          Authentication Error
+        </Heading>
+        <Text color="error">{error}</Text>
+        <Text>Redirecting to login...</Text>
+      </div>
     );
   }
 
   return (
-    <Background>
-      <div className="app-shell">
-        <main className="app-shell__content">
-          <div className="card">
-            <Heading level={1} variant="bold">
-              Completing authentication...
-            </Heading>
-            <Text>Please wait while we finish signing you in.</Text>
-          </div>
-        </main>
-      </div>
-    </Background>
+    <div className="app-shell">
+      <Heading level={1} variant="bold">
+        Completing authentication...
+      </Heading>
+      <Text>Please wait while we finish signing you in.</Text>
+    </div>
   );
 };

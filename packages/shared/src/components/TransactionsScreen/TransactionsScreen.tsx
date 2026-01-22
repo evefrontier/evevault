@@ -14,6 +14,7 @@ import { useTransactionHistory } from "../../wallet";
 import Button from "../Button";
 import Heading from "../Heading";
 import Icon from "../Icon";
+import { HeaderMobile } from "../Layout";
 import Text from "../Text";
 
 const TransactionRow: React.FC<TransactionRowProps> = ({
@@ -155,7 +156,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
     color: "error" | "grey-neutral";
   };
 
-  const isEmpty = !isLoading && !isError && transactions.length === 0;
+  const isEmpty = !isLoading && !isError && !hasTransactions;
   const statusMessage: StatusMessage | null = (() => {
     switch (true) {
       case isError:
@@ -181,6 +182,11 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
   return (
     <div className="flex flex-col gap-4 w-full">
       {/* Header with back button */}
+      <HeaderMobile
+        address={user?.profile?.sui_address as string}
+        email={user?.profile?.email as string}
+        onTransactionsClick={onBack}
+      />
       <div className="flex items-center gap-4">
         <button
           type="button"
