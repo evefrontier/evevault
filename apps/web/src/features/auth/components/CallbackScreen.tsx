@@ -13,6 +13,8 @@ import { User } from "oidc-client-ts";
 import { useEffect, useState } from "react";
 
 const log = createLogger();
+const DEFAULT_TOKEN_EXPIRY_SECONDS = 3600;
+const DEFAULT_AUTH_SCOPE = "openid email profile offline_access";
 
 const isRoutePath = (value: string): value is RoutePath => {
   return ROUTE_PATHS.includes(value as RoutePath);
@@ -74,10 +76,10 @@ export const CallbackScreen = () => {
         await storeJwt(
           {
             id_token: user.id_token,
-            access_token: user.access_token ?? user.id_token,
+            access_token: user.access_token,
             token_type: user.token_type ?? "Bearer",
-            expires_in: user.expires_in ?? 3600,
-            scope: user.scope ?? "openid email profile offline_access",
+            expires_in: user.expires_in ?? DEFAULT_TOKEN_EXPIRY_SECONDS,
+            scope: user.scope ?? DEFAULT_AUTH_SCOPE,
             refresh_token: user.refresh_token,
           },
           network,
