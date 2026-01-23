@@ -594,7 +594,7 @@ export const useDeviceStore = create<DeviceState>()(
             jwtRandomness: networkJwtRandomness,
             maxEpoch,
             ephemeralPublicKey,
-            idToken: user.access_token,
+            idToken: user.id_token,
             enokiApiKey: import.meta.env.VITE_ENOKI_API_KEY,
             network,
           });
