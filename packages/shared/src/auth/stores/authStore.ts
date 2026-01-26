@@ -17,7 +17,12 @@ import {
 } from "../../utils";
 import { getUserManager } from "../authConfig";
 import { getZkLoginAddress } from "../getZkLoginAddress";
-import { clearAllJwts, storeJwt } from "../storageService";
+import {
+  clearAllJwts,
+  getAllStoredJwts,
+  getJwtForNetwork,
+  storeJwt,
+} from "../storageService";
 import type { AuthState } from "../types";
 import { resolveExpiresAt } from "../utils/authStoreUtils";
 import { vendJwt } from "../vendToken";
@@ -49,13 +54,63 @@ export const useAuthStore = create<AuthState>()(
 
         initialize: async () => {
           set({ loading: true });
+          const platform = isExtension()
+            ? "extension"
+            : isWeb()
+              ? "web"
+              : "unknown";
+          const network = useNetworkStore.getState().chain;
+
+          // Log nonce comparison on app init for both platforms
+          try {
+            const deviceStore = useDeviceStore.getState();
+            const deviceNonce = deviceStore.networkData[network]?.nonce;
+            const storedJwtForNonceCheck = await getJwtForNetwork(network);
+
+            if (storedJwtForNonceCheck?.id_token) {
+              const decodedJwtForNonceCheck = decodeJwt(
+                storedJwtForNonceCheck.id_token,
+              );
+              const jwtNonce = decodedJwtForNonceCheck.nonce as
+                | string
+                | undefined;
+
+              log.info(
+                `🔑 [${platform.toUpperCase()}] App init nonce check`,
+                deviceNonce && jwtNonce ? deviceNonce === jwtNonce : "N/A",
+                {
+                  network,
+                  deviceNonce: deviceNonce ?? "(not set)",
+                  jwtNonce: jwtNonce ?? "(not set)",
+                  noncesMatch:
+                    deviceNonce && jwtNonce ? deviceNonce === jwtNonce : "N/A",
+                  jwtSub: decodedJwtForNonceCheck.sub,
+                  jwtExp: decodedJwtForNonceCheck.exp,
+                },
+              );
+            } else {
+              log.info(
+                `🔑 [${platform.toUpperCase()}] App init nonce check`,
+                "No JWT stored",
+                {
+                  network,
+                  deviceNonce: deviceNonce ?? "(not set)",
+                  jwtNonce: "(no JWT stored)",
+                  noncesMatch: "N/A",
+                },
+              );
+            }
+          } catch (nonceCheckError) {
+            log.warn(
+              `[${platform.toUpperCase()}] Failed to check nonces on init`,
+              nonceCheckError,
+            );
+          }
+
           try {
             if (isExtension() && typeof chrome !== "undefined") {
-              const network = useNetworkStore.getState().chain;
-
               // Use getJwtForNetwork instead of reading chrome.storage directly
               // This ensures we use the same logic as hasJwtForNetwork and avoid race conditions
-              const { getJwtForNetwork } = await import("../storageService");
               const storedJwt = await getJwtForNetwork(network);
               const idToken = storedJwt?.id_token;
 
@@ -78,18 +133,6 @@ export const useAuthStore = create<AuthState>()(
                 if (!currentUser) {
                   log.info("Loading user from chrome storage JWT");
                   const decodedJwt = decodeJwt(idToken);
-
-                  // Log nonce comparison
-                  const deviceStore = useDeviceStore.getState();
-                  const deviceNonce = deviceStore.networkData[network]?.nonce;
-                  const jwtNonce = decodedJwt.nonce as string | undefined;
-
-                  log.debug("Nonce comparison during initialize", {
-                    network,
-                    jwtNonce,
-                    deviceNonce,
-                    matches: jwtNonce === deviceNonce,
-                  });
 
                   const zkLoginResponse = await getZkLoginAddress({
                     jwt: idToken,
@@ -164,16 +207,17 @@ export const useAuthStore = create<AuthState>()(
                   jwtResponse.id_token as string,
                 );
 
-                // Log nonce comparison
+                // Log nonce comparison after login
                 const deviceStore = useDeviceStore.getState();
-                const network = useNetworkStore.getState().chain;
                 const deviceNonce = deviceStore.networkData[network]?.nonce;
                 const jwtNonce = decodedJwt.nonce as string | undefined;
 
-                log.debug("Nonce comparison during extension login", {
-                  jwtNonce,
-                  deviceNonce,
-                  matches: jwtNonce === deviceNonce,
+                log.info("🔑 [EXTENSION] Nonce check after login", {
+                  network,
+                  deviceNonce: deviceNonce ?? "(not set)",
+                  jwtNonce: jwtNonce ?? "(not set)",
+                  noncesMatch:
+                    deviceNonce && jwtNonce ? deviceNonce === jwtNonce : "N/A",
                 });
 
                 const zkLoginResponse = await getZkLoginAddress({
@@ -313,26 +357,21 @@ export const useAuthStore = create<AuthState>()(
         },
 
         refreshJwt: async (network: SuiChain) => {
-          // 1. Get existing JWT
-          const { "evevault:jwt": allNetworkJwts } = await new Promise<{
-            "evevault:jwt"?: Record<SuiChain, JwtResponse>;
-          }>((resolve) => {
-            chrome.storage.local.get(
-              "evevault:jwt",
-              (items: { "evevault:jwt"?: Record<SuiChain, JwtResponse> }) =>
-                resolve(items),
+          // 1. Get existing JWT using cross-platform storage service
+          const existingJwt = await getJwtForNetwork(network);
+
+          // If no existing JWT for this chain, try to get any available JWT
+          let targetJwt = existingJwt;
+          if (!targetJwt?.id_token) {
+            log.info(
+              `No idToken found for network ${network}, checking other networks`,
             );
-          });
-
-          const existingJwt = allNetworkJwts?.[network];
-          if (!existingJwt?.id_token) {
-            log.info(`No idToken found for network ${network}`);
+            const allNetworkJwts = await getAllStoredJwts();
+            if (allNetworkJwts) {
+              const firstNetwork = Object.keys(allNetworkJwts)[0] as SuiChain;
+              targetJwt = allNetworkJwts[firstNetwork] ?? null;
+            }
           }
-
-          // If no existing JWT for this chain, fallback to any available JWT
-          const targetJwt =
-            existingJwt ??
-            allNetworkJwts?.[Object.keys(allNetworkJwts)[0] as SuiChain];
 
           if (!targetJwt) {
             throw new Error(`No JWT or fallback found in storage`);
