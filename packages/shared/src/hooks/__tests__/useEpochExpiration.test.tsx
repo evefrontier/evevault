@@ -204,19 +204,99 @@ describe("useEpochExpiration", () => {
     expect(mockLogout).toHaveBeenCalled();
   });
 
-  it("logs out when expiration time is reached", () => {
+  it("attempts JWT refresh 3 seconds before expiration, then logs out if already expired", async () => {
+    const mockRefreshJwt = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(useAuth).mockReturnValue({
+      logout: mockLogout,
+      user: mockUser,
+      login: vi.fn(),
+      extensionLogin: vi.fn(),
+      setUser: vi.fn(),
+      refreshJwt: mockRefreshJwt,
+      loading: false,
+      error: null,
+      isAuthenticated: true,
+      initialize: vi.fn(),
+      // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
+    } as any);
+
+    // Set expiration 5 seconds in the future
     const futureTimestamp = Date.now() + 5000;
     mockGetMaxEpochTimestampMs.mockReturnValue(futureTimestamp);
 
     renderHook(() => useEpochExpiration());
 
-    // Should not be called immediately (timestamp is 5 seconds in future)
+    // Should not be called immediately (timestamp is 5 seconds in future, outside 3s threshold)
+    expect(mockRefreshJwt).not.toHaveBeenCalled();
     expect(mockLogout).not.toHaveBeenCalled();
 
-    // Advance time past expiration AND past the interval duration (30 seconds)
-    // so the interval callback fires and checks expiration
-    vi.advanceTimersByTime(30000); // 30 seconds - interval fires, checks expiration
+    // Advance 3 seconds - now within 3s threshold (2s remaining)
+    // The hook uses 5-second polling when < 1 minute remaining
+    vi.advanceTimersByTime(5000);
+    await vi.advanceTimersByTimeAsync(100);
 
+    // At this point, we're past expiration so logout should be called
+    expect(mockLogout).toHaveBeenCalledTimes(1);
+  });
+
+  it("calls refreshJwt when within 3 seconds of expiration", async () => {
+    const mockRefreshJwt = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(useAuth).mockReturnValue({
+      logout: mockLogout,
+      user: mockUser,
+      login: vi.fn(),
+      extensionLogin: vi.fn(),
+      setUser: vi.fn(),
+      refreshJwt: mockRefreshJwt,
+      loading: false,
+      error: null,
+      isAuthenticated: true,
+      initialize: vi.fn(),
+      // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
+    } as any);
+
+    // Set expiration 2 seconds in the future (within 3s threshold)
+    const futureTimestamp = Date.now() + 2000;
+    mockGetMaxEpochTimestampMs.mockReturnValue(futureTimestamp);
+
+    renderHook(() => useEpochExpiration());
+    await vi.advanceTimersByTimeAsync(100);
+
+    // Should call refreshJwt immediately since we're within 3s threshold
+    expect(mockRefreshJwt).toHaveBeenCalledTimes(1);
+    expect(mockRefreshJwt).toHaveBeenCalledWith(SUI_DEVNET_CHAIN);
+    // Should NOT call logout since refresh succeeded
+    expect(mockLogout).not.toHaveBeenCalled();
+  });
+
+  it("falls back to logout when JWT refresh fails", async () => {
+    const mockRefreshJwt = vi
+      .fn()
+      .mockRejectedValue(new Error("Refresh failed"));
+    vi.mocked(useAuth).mockReturnValue({
+      logout: mockLogout,
+      user: mockUser,
+      login: vi.fn(),
+      extensionLogin: vi.fn(),
+      setUser: vi.fn(),
+      refreshJwt: mockRefreshJwt,
+      loading: false,
+      error: null,
+      isAuthenticated: true,
+      initialize: vi.fn(),
+      // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
+    } as any);
+
+    // Set expiration 2 seconds in the future (within 3s threshold)
+    const futureTimestamp = Date.now() + 2000;
+    mockGetMaxEpochTimestampMs.mockReturnValue(futureTimestamp);
+
+    renderHook(() => useEpochExpiration());
+    await vi.advanceTimersByTimeAsync(100);
+
+    // Should attempt refresh
+    expect(mockRefreshJwt).toHaveBeenCalledTimes(1);
+    // Should fall back to logout since refresh failed
     expect(mockLogout).toHaveBeenCalledTimes(1);
   });
 });
