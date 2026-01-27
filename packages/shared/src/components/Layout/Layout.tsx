@@ -1,38 +1,83 @@
 import type React from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useResponsive } from "../../hooks";
 import { spacing } from "../../theme";
 import type { LayoutProps } from "../../types";
-import { NAV_ITEMS } from "../../utils/routes";
+import {
+  calculateResponsivePadding,
+  NAV_ITEMS,
+  type PaddingConfig,
+} from "../../utils";
 import Background from "../Background";
 import { HeaderMobile } from "./Header/HeaderMobile";
 import DesktopLeftSideBar from "./NavigationBar/DesktopLeftSideBar";
-import MobileBottomTabBar from "./NavigationBar/MobileBottomTabBar";
 
-/** Grid margin: mobile top/bottom 24px (6 * 4px), left/right 16px (4 * 4px); desktop 40px (10 * 4px) all sides */
-const GRID_MARGIN = {
-  mobile: { vertical: spacing.lg, horizontal: spacing.md },
-  default: spacing.xxl - spacing.sm,
+/** Padding configuration for responsive layout */
+const PADDING_CONFIG: PaddingConfig = {
+  desktop: {
+    top: spacing.xs * 30, // 120px
+    sides: spacing.xxl, // 48px
+  },
+  mobile: {
+    minTop: spacing.lg, // 24px
+    minHorizontal: spacing.md, // 16px
+    topVh: 5, // 5vh
+    horizontalVh: 4, // 4vh
+  },
 };
 /** Extension popup margins: py-24px (6 * 4px), px-16px (4 * 4px) */
 const EXTENSION_MARGIN = { vertical: spacing.lg, horizontal: spacing.md };
 /** Gap between header and content in extension: 40px (10 * 4px) */
 const EXTENSION_CONTENT_GAP = spacing.xxl - spacing.sm;
-/** Mobile nav bar height: 64px (16 * 4px) */
-const MOBILE_NAV_HEIGHT = spacing.xs * 16;
 
 export const Layout: React.FC<LayoutProps> = ({
   children,
   variant = "web",
-  showNav = true,
+  showNav: _showNav = true, // Reserved for future mobile nav bar visibility
   headerProps,
 }) => {
-  const { isMobile } = useResponsive();
+  const { width } = useResponsive();
+  const [viewportHeight, setViewportHeight] = useState<number>(() => {
+    if (typeof window === "undefined") return 800;
+    return window.innerHeight;
+  });
+
+  useEffect(() => {
+    let rafId: number | null = null;
+
+    const handleResize = () => {
+      // Use requestAnimationFrame for smooth, performant updates
+      // This batches resize events and only updates once per frame (~60fps max)
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+      rafId = requestAnimationFrame(() => {
+        setViewportHeight(window.innerHeight);
+        rafId = null;
+      });
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+    };
+  }, []);
+
+  // Calculate responsive padding that starts from desktop values and scales down smoothly
+  // Memoize to avoid recalculating on every render (only recalculates when width/height change)
+  const paddingStyle = useMemo(
+    () => calculateResponsivePadding(width, viewportHeight, PADDING_CONFIG),
+    [width, viewportHeight],
+  );
 
   // Extension variant: compact layout for browser popup
   if (variant === "extension") {
     const extensionPaddingStyle = {
       paddingTop: EXTENSION_MARGIN.vertical,
-      paddingBottom: EXTENSION_MARGIN.vertical,
+      paddingBottom: 0,
       paddingLeft: EXTENSION_MARGIN.horizontal,
       paddingRight: EXTENSION_MARGIN.horizontal,
     };
@@ -62,22 +107,8 @@ export const Layout: React.FC<LayoutProps> = ({
     );
   }
 
-  // Web variant: full layout with sidebar/bottom nav
-  const showMobileNav = isMobile && showNav;
   /// TODO: add sidebar
   const showSidebar = false;
-
-  const paddingStyle = isMobile
-    ? {
-        paddingTop: GRID_MARGIN.mobile.vertical,
-        paddingBottom: showMobileNav ? 80 : GRID_MARGIN.mobile.vertical,
-        paddingLeft: GRID_MARGIN.mobile.horizontal,
-        paddingRight: GRID_MARGIN.mobile.horizontal,
-      }
-    : {
-        padding: GRID_MARGIN.default,
-        paddingBottom: showMobileNav ? 80 : GRID_MARGIN.default,
-      };
 
   return (
     <div className="flex h-screen w-full min-w-screen overflow-hidden">
@@ -85,7 +116,7 @@ export const Layout: React.FC<LayoutProps> = ({
       {showSidebar && <DesktopLeftSideBar items={NAV_ITEMS} />}
 
       {/* Main content area with background */}
-      <Background bottomOffset={showMobileNav ? MOBILE_NAV_HEIGHT : 0}>
+      <Background>
         <div className="flex  flex-1 flex-col overflow-hidden h-full">
           {/* Scrollable content */}
           <main
@@ -96,9 +127,6 @@ export const Layout: React.FC<LayoutProps> = ({
           </main>
         </div>
       </Background>
-
-      {/* Mobile Bottom Tab Bar */}
-      {showMobileNav && <MobileBottomTabBar items={NAV_ITEMS} />}
     </div>
   );
 };

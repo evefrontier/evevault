@@ -39,7 +39,8 @@ export const getEnokiApiKey = (): string => {
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => {
-      const userManager = getUserManager();
+      // Lazy getter for userManager to avoid initialization order issues
+      const getUserManagerInstance = () => getUserManager();
 
       return {
         user: null,
@@ -73,7 +74,7 @@ export const useAuthStore = create<AuthState>()(
                 }
 
                 log.info("Found JWT in chrome.storage, loading user");
-                const currentUser = await userManager.getUser();
+                const currentUser = await getUserManagerInstance().getUser();
                 if (!currentUser) {
                   log.info("Loading user from chrome storage JWT");
                   const decodedJwt = decodeJwt(idToken);
@@ -121,13 +122,13 @@ export const useAuthStore = create<AuthState>()(
                       Math.floor(Date.now() / 1000) +
                         (storedJwt.expires_at ?? storedJwt.expires_in ?? 3600),
                   });
-                  await userManager.storeUser(newUser);
+                  await getUserManagerInstance().storeUser(newUser);
                   set({ user: newUser, loading: false });
                   return; // Exit early after setting user
                 }
 
                 // Fallback for non-extension context
-                const user = await userManager.getUser();
+                const user = await getUserManagerInstance().getUser();
                 set({ user, loading: false });
                 return;
               }
@@ -205,7 +206,7 @@ export const useAuthStore = create<AuthState>()(
                     Math.floor(Date.now() / 1000) + jwtResponse.expires_in,
                 });
 
-                await userManager.storeUser(user);
+                await getUserManagerInstance().storeUser(user);
                 set({ user });
 
                 return user as User;
@@ -262,7 +263,7 @@ export const useAuthStore = create<AuthState>()(
               };
             };
 
-            userManager.signinRedirect({
+            getUserManagerInstance().signinRedirect({
               nonce: getDeviceParams().nonce,
               extraQueryParams: {
                 jwtRandomness: getDeviceParams().jwtRandomness,
@@ -401,7 +402,7 @@ export const useAuthStore = create<AuthState>()(
               expires_at: Math.floor(Date.now() / 1000) + newJwt.expires_in,
             });
 
-            await userManager.storeUser(updatedUser);
+            await getUserManagerInstance().storeUser(updatedUser);
             get().setUser(updatedUser);
           } else {
             log.warn("No existing user found to update");
@@ -410,7 +411,7 @@ export const useAuthStore = create<AuthState>()(
 
         logout: async () => {
           try {
-            await userManager.removeUser();
+            await getUserManagerInstance().removeUser();
             await performFullCleanup();
 
             // Clear JWTs and user state
@@ -509,13 +510,24 @@ export const waitForAuthHydration = async () => {
   });
 };
 
-// Set up event listeners outside the store
-const userManager = getUserManager();
+// Set up event listeners outside the store (lazy initialization to avoid module load order issues)
+let eventListenersInitialized = false;
 
-userManager.events.addUserLoaded((user) => {
-  useAuthStore.getState().setUser(user);
-});
+function initializeEventListeners() {
+  if (eventListenersInitialized) return;
+  eventListenersInitialized = true;
 
-userManager.events.addUserUnloaded(() => {
-  useAuthStore.getState().setUser(null);
-});
+  const userManager = getUserManager();
+
+  userManager.events.addUserLoaded((user) => {
+    useAuthStore.getState().setUser(user);
+  });
+
+  userManager.events.addUserUnloaded(() => {
+    useAuthStore.getState().setUser(null);
+  });
+}
+
+if (typeof window !== "undefined") {
+  setTimeout(initializeEventListeners, 0);
+}

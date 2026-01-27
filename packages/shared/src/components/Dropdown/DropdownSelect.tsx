@@ -85,7 +85,7 @@ export const DropdownSelect: React.FC<DropdownSelectProps> = ({
           <span
             className={`dropdown-select__arrow ${isOpen ? "dropdown-select__arrow--open" : ""}`}
           >
-            <Icon name="ChevronArrowDown" size="small" color="#FF4700" />
+            <Icon name="ChevronArrowDown" size="small" color="quantum" />
           </span>
         </div>
 

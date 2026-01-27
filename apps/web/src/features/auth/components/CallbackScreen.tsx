@@ -84,7 +84,7 @@ export const CallbackScreen = () => {
 
   if (error) {
     return (
-      <div className="app-shell">
+      <div>
         <Heading level={1} variant="bold">
           Authentication Error
         </Heading>
@@ -95,7 +95,7 @@ export const CallbackScreen = () => {
   }
 
   return (
-    <div className="app-shell">
+    <div>
       <Heading level={1} variant="bold">
         Completing authentication...
       </Heading>

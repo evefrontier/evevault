@@ -21,14 +21,33 @@ export const Button: FC<ButtonProps> = ({
   const [contentWidth, setContentWidth] = useState<number | undefined>();
 
   useEffect(() => {
+    let rafId: number | null = null;
+
     const updateWidth = () => {
       if (contentRef.current) {
         setContentWidth(contentRef.current.offsetWidth);
       }
     };
+
+    // Initial measurement
     updateWidth();
-    window.addEventListener("resize", updateWidth);
-    return () => window.removeEventListener("resize", updateWidth);
+
+    const handleResize = () => {
+      // Use requestAnimationFrame for smooth, performant updates
+      // This batches resize events and only updates once per frame
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+      rafId = requestAnimationFrame(updateWidth);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+    };
   }, []);
 
   return (

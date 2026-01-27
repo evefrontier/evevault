@@ -45,12 +45,27 @@ export function useResponsive(): ResponsiveState {
   });
 
   useEffect(() => {
+    let rafId: number | null = null;
+
     const handleResize = () => {
-      setState(getResponsiveState(window.innerWidth));
+      // Use requestAnimationFrame for smooth, performant updates
+      // This batches resize events and only updates once per frame (~60fps max)
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+      rafId = requestAnimationFrame(() => {
+        setState(getResponsiveState(window.innerWidth));
+        rafId = null;
+      });
     };
 
     window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
+    };
   }, []);
 
   return state;

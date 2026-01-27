@@ -1,3 +1,4 @@
+import { useResponsive } from "@evevault/shared/hooks";
 import type React from "react";
 import { type KeyboardEvent, useState } from "react";
 import { useTokenListStore } from "../../stores/tokenListStore";
@@ -117,6 +118,7 @@ export const TokenSection: React.FC<
   const { tokens, removeToken } = useTokenListStore();
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
   const { showToast } = useToast();
+  const { isMobile } = useResponsive();
 
   const handleCopyAddress = async (address: string) => {
     try {
@@ -142,13 +144,13 @@ export const TokenSection: React.FC<
       onSendToken(coinType);
     }
   };
-
+  const tokenSectionHeight = isMobile ? 207 : 400;
   const hasTokens = tokens.length > 0;
-
+  console.log(walletAddress);
   return (
     <div className="flex flex-col items-start gap-2 w-full  flex-1">
-      {/* Wallet Address  */}
-      {walletAddress && (
+      {/* Wallet Address or spacer */}
+      {walletAddress ? (
         <div className="flex justify-end items-center gap-2 w-full">
           <div className="flex items-center gap-1">
             <Text variant="regular" size="small" color="neutral-80">
@@ -166,10 +168,17 @@ export const TokenSection: React.FC<
             </button>
           </div>
         </div>
+      ) : (
+        <div className="h-6" />
       )}
 
       {/* Token List */}
-      <div className="flex flex-col items-start p-4 px-2 gap-3 w-full min-h-[207px] max-h-[207px] bg-crude-dark border border-quantum-60">
+      <div
+        className="flex flex-col items-start p-4 px-2 gap-3 w-full    bg-crude-dark border border-quantum-60"
+        style={{
+          height: tokenSectionHeight,
+        }}
+      >
         {/* Labels Row */}
         <div className="flex justify-between items-start gap-2 w-full">
           <div className="flex items-center gap-[60px]">
