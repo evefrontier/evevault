@@ -1,4 +1,9 @@
-import { getZkLoginAddress, useAuthStore } from "@evevault/shared/auth";
+import { useNetworkStore } from "@evevault/shared";
+import {
+  getZkLoginAddress,
+  storeJwt,
+  useAuthStore,
+} from "@evevault/shared/auth";
 import { getUserManager } from "@evevault/shared/auth/authConfig";
 import { Heading, Text } from "@evevault/shared/components";
 import type { RoutePath } from "@evevault/shared/types";
@@ -8,6 +13,8 @@ import { User } from "oidc-client-ts";
 import { useEffect, useState } from "react";
 
 const log = createLogger();
+const DEFAULT_TOKEN_EXPIRY_SECONDS = 3600;
+const DEFAULT_AUTH_SCOPE = "openid email profile offline_access";
 
 const isRoutePath = (value: string): value is RoutePath => {
   return ROUTE_PATHS.includes(value as RoutePath);
@@ -64,6 +71,19 @@ export const CallbackScreen = () => {
 
         await userManager.storeUser(updatedUser);
         useAuthStore.getState().setUser(updatedUser);
+
+        const network = useNetworkStore.getState().chain;
+        await storeJwt(
+          {
+            id_token: user.id_token,
+            access_token: user.access_token,
+            token_type: user.token_type ?? "Bearer",
+            expires_in: user.expires_in ?? DEFAULT_TOKEN_EXPIRY_SECONDS,
+            scope: user.scope ?? DEFAULT_AUTH_SCOPE,
+            refresh_token: user.refresh_token,
+          },
+          network,
+        );
 
         log.info("FusionAuth callback successful");
         const destination = isRoutePath(redirectTo)
