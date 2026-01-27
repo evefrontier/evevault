@@ -529,5 +529,5 @@ function initializeEventListeners() {
 }
 
 if (typeof window !== "undefined") {
-  setTimeout(initializeEventListeners, 0);
+  queueMicrotask(initializeEventListeners);
 }
