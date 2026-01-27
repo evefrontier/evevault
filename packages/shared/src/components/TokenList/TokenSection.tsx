@@ -1,6 +1,6 @@
-import { useResponsive } from "@evevault/shared/hooks";
 import type React from "react";
 import { type KeyboardEvent, useState } from "react";
+import { useResponsive } from "../../hooks";
 import { useTokenListStore } from "../../stores/tokenListStore";
 import type { TokenListProps, TokenRowProps } from "../../types";
 import { formatAddress } from "../../utils";
@@ -144,14 +144,13 @@ export const TokenSection: React.FC<
       onSendToken(coinType);
     }
   };
-  const tokenSectionHeight = isMobile ? 207 : 400;
   const hasTokens = tokens.length > 0;
-  console.log(walletAddress);
+
   return (
-    <div className="flex flex-col items-start gap-2 w-full  flex-1">
+    <div className="flex flex-col items-start gap-2 w-full flex-1 min-h-0">
       {/* Wallet Address or spacer */}
       {walletAddress ? (
-        <div className="flex justify-end items-center gap-2 w-full">
+        <div className="flex justify-end items-center gap-2 w-full flex-shrink-0">
           <div className="flex items-center gap-1">
             <Text variant="regular" size="small" color="neutral-80">
               Wallet address:
@@ -169,18 +168,16 @@ export const TokenSection: React.FC<
           </div>
         </div>
       ) : (
-        <div className="h-6" />
+        <div className="h-6 flex-shrink-0" />
       )}
 
       {/* Token List */}
       <div
-        className="flex flex-col items-start p-4 px-2 gap-3 w-full    bg-crude-dark border border-quantum-60"
-        style={{
-          height: tokenSectionHeight,
-        }}
+        className={`flex flex-col items-start p-4 px-2 gap-3 w-full bg-crude-dark border border-quantum-60 overflow-hidden ${isMobile ? "" : "flex-1 min-h-0"}`}
+        style={isMobile ? { height: "207px", flexShrink: 0 } : undefined}
       >
         {/* Labels Row */}
-        <div className="flex justify-between items-start gap-2 w-full">
+        <div className="flex justify-between items-start gap-2 w-full flex-shrink-0">
           <div className="flex items-center gap-[60px]">
             <Text
               variant="label-semi"
@@ -209,10 +206,10 @@ export const TokenSection: React.FC<
           </Text>
         </div>
 
-        {/* Token List */}
-        <div className="flex flex-col items-start gap-1 w-full min-h-[122px] max-h-[150px] overflow-y-auto">
+        {/* Token List - Scrollable */}
+        <div className="flex flex-col items-start gap-1 w-full flex-1 min-h-0 overflow-y-auto">
           {!hasTokens ? (
-            <div className="flex justify-center items-center py-6 w-full h-full min-h-[122px]">
+            <div className="flex justify-center items-center py-6 w-full">
               <Text size="large" color="grey-neutral">
                 No tokens added yet
               </Text>
@@ -239,7 +236,7 @@ export const TokenSection: React.FC<
       </div>
 
       {/* Add / Remove Token Buttons */}
-      <div className="flex justify-center items-center gap-1 w-full">
+      <div className="flex justify-center items-center gap-1 w-full flex-shrink-0">
         {onAddToken && (
           <Button variant="primary" size="small" onClick={onAddToken}>
             Add token

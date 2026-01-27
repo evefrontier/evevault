@@ -41,6 +41,30 @@ vi.mock("../../../utils/environment", () => ({
   isWeb: vi.fn(() => true),
 }));
 
+vi.mock("../../../utils/logger", () => ({
+  createLogger: () => ({
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  }),
+}));
+
+// Also mock the utils index to catch imports from components that use createLogger
+vi.mock("../../../utils", async () => {
+  const actual =
+    await vi.importActual<typeof import("../../../utils")>("../../../utils");
+  return {
+    ...actual,
+    createLogger: () => ({
+      debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    }),
+  };
+});
+
 vi.mock("../../../stores/deviceStore", () => ({
   useDeviceStore: {
     getState: vi.fn(),

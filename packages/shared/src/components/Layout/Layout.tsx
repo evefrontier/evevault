@@ -111,7 +111,7 @@ export const Layout: React.FC<LayoutProps> = ({
   const showSidebar = false;
 
   return (
-    <div className="flex h-screen w-full min-w-screen overflow-hidden">
+    <div className="flex h-screen w-full overflow-hidden">
       {/* Sidebar - visible on tablet and desktop */}
       {showSidebar && <DesktopLeftSideBar items={NAV_ITEMS} />}
 

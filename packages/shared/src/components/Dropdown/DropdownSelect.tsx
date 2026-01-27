@@ -1,6 +1,7 @@
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import "./DropdownSelect.css";
+import { useResponsive } from "../../hooks";
 import type { DropdownItem, DropdownSelectProps } from "../../types";
 import { Corners } from "../Corners";
 import Icon from "../Icon";
@@ -20,10 +21,14 @@ export const DropdownSelect: React.FC<DropdownSelectProps> = ({
   const [menuHeight, setMenuHeight] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const { width } = useResponsive();
 
   // Support both controlled and uncontrolled modes
   const isControlled = controlledIsOpen !== undefined;
   const isOpen = isControlled ? controlledIsOpen : internalIsOpen;
+
+  // Show only icon when width is less than 500px
+  const showIconOnly = width < 500;
 
   const setIsOpen = useCallback(
     (open: boolean) => {
@@ -71,7 +76,7 @@ export const DropdownSelect: React.FC<DropdownSelectProps> = ({
     >
       <button
         type="button"
-        className="dropdown-select__trigger"
+        className={`dropdown-select__trigger ${showIconOnly ? "dropdown-select__trigger--icon-only" : ""}`}
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
         aria-haspopup="true"
@@ -80,7 +85,9 @@ export const DropdownSelect: React.FC<DropdownSelectProps> = ({
         <div className="dropdown-select__inner">
           <div className="dropdown-select__content">
             {getIdenticon(identicon)}
-            <span className="dropdown-select__text">{trigger}</span>
+            {!showIconOnly && (
+              <span className="dropdown-select__text">{trigger}</span>
+            )}
           </div>
           <span
             className={`dropdown-select__arrow ${isOpen ? "dropdown-select__arrow--open" : ""}`}
@@ -93,8 +100,8 @@ export const DropdownSelect: React.FC<DropdownSelectProps> = ({
           color="quantum"
           size={5}
           thickness={1}
-          bottomOffset={isOpen ? menuHeight + 3 : 0}
-          transition="bottom 0.3s ease"
+          bottomOffset={isOpen && !showIconOnly ? menuHeight + 3 : 0}
+          transition={showIconOnly ? undefined : "bottom 0.3s ease"}
         />
 
         {/* Edge lines */}

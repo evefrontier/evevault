@@ -172,7 +172,7 @@ export const WalletScreen = () => {
         }
       />
       {/* Network display and Test transaction button */}
-      <div className=" justify-between pt-8 flex gap-4 ">
+      <div className="justify-between pt-8 flex gap-4 flex-col sm:flex-row">
         <NetworkSelector
           chain={chain || SUI_DEVNET_CHAIN}
           onNetworkSwitchStart={(previousNetwork, targetNetwork) => {

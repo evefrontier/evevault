@@ -17,6 +17,30 @@ vi.mock("../../stores/networkStore", () => ({
   useNetworkStore: vi.fn(),
 }));
 
+vi.mock("../../utils/logger", () => ({
+  createLogger: () => ({
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  }),
+}));
+
+// Also mock the utils index to catch imports from components that use createLogger
+vi.mock("../../utils", async () => {
+  const actual =
+    await vi.importActual<typeof import("../../utils")>("../../utils");
+  return {
+    ...actual,
+    createLogger: () => ({
+      debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    }),
+  };
+});
+
 import { useAuth } from "../../auth/hooks/useAuth";
 import { useDeviceStore } from "../../stores/deviceStore";
 import { useNetworkStore } from "../../stores/networkStore";
