@@ -8,11 +8,9 @@ const searchSchema = z.object({
 });
 
 export const Route = createFileRoute("/callback")({
+  beforeLoad: () => {
+    document.title = "EVE Vault - Authenticating";
+  },
   component: CallbackScreen,
   validateSearch: searchSchema,
-  meta: () => [
-    {
-      title: "EVE Vault - Authenticating",
-    },
-  ],
 });

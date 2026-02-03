@@ -5,6 +5,7 @@ node_modules/
 
 # Build outputs
 dist/
+dev-dist/
 build/
 .wxt/
 .output/
