@@ -17,7 +17,12 @@ export default defineConfig({
     }),
     VitePWA({
       registerType: "prompt",
-      includeAssets: ["icon/favicon-32.png", "icon/favicon-192.png"],
+      includeAssets: [
+        "icon/favicon-16.png",
+        "icon/favicon-32.png",
+        "icon/favicon-192.png",
+        "icon/favicon-512.png",
+      ],
       manifest: {
         name: "EVE Vault",
         short_name: "EVE Vault",
@@ -43,7 +48,7 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
-        maximumFileSizeToCacheInBytes: 2.5 * 1024 * 1024, // 2.5 MB (public/images/evevault-background.png ~2.16 MB)
+        maximumFileSizeToCacheInBytes: 2.5 * 1024 * 1024, // 2.5 MB to accommodate large background image assets (~2.1 MB)
         runtimeCaching: [
           {
             urlPattern:
