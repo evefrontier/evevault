@@ -84,9 +84,9 @@
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
     "lint": "biome check src",
-    "test": "vitest --config ./vitest.config.ts",
-    "test:ui": "vitest --ui --config ./vitest.config.ts",
-    "test:run": "vitest run --config ./vitest.config.ts"
+    "test": "vitest run --config ./vitest.config.mts",
+    "test:ui": "vitest --ui --config ./vitest.config.mts",
+    "test:run": "vitest run --config ./vitest.config.mts"
   },
   "dependencies": {
     "@mysten/signers": "^0.6.2",
