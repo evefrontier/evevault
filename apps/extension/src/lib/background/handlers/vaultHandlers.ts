@@ -1,6 +1,7 @@
 import { createLogger, KeeperMessageTypes } from "@evevault/shared";
 import { ensureOffscreen } from "../services/offscreenService";
 import type { VaultMessage } from "../types";
+import { checkPendingAuthAfterUnlock } from "./authHandlers";
 
 const log = createLogger();
 
@@ -74,6 +75,7 @@ export async function handleUnlockVault(
 
     if (keeperResponse?.ok) {
       sendResponse({ ok: true });
+      checkPendingAuthAfterUnlock();
     } else {
       const errorMessage = keeperResponse?.error || "Failed to unlock vault";
       log.error("[VaultHandler] Unlock failed:", errorMessage);

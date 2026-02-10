@@ -23,6 +23,90 @@ const log = createLogger();
 /** Delay in ms before retrying keeper unlock check (gives unlock time to complete) */
 const KEEPER_RETRY_DELAY_MS = 100;
 
+/** Time to wait for vault unlock before sending auth_error (2 minutes) */
+const PENDING_AUTH_TIMEOUT_MS = 2 * 60 * 1000;
+
+interface PendingAuthAfterUnlock {
+  id: string;
+  type: "ext" | "dapp";
+  tabId?: number;
+  windowId?: number;
+}
+
+let pendingAuthAfterUnlock: PendingAuthAfterUnlock | null = null;
+let pendingAuthTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+function clearPendingAuth(): void {
+  if (pendingAuthTimeoutId !== null) {
+    clearTimeout(pendingAuthTimeoutId);
+    pendingAuthTimeoutId = null;
+  }
+  pendingAuthAfterUnlock = null;
+}
+
+function sendPendingAuthError(pending: PendingAuthAfterUnlock): void {
+  const errorPayload = {
+    message: "Vault unlock was cancelled or timed out.",
+  };
+  if (pending.type === "ext") {
+    sendAuthError(pending.id, errorPayload);
+  } else if (pending.tabId !== undefined) {
+    chrome.tabs.sendMessage(pending.tabId, {
+      id: pending.id,
+      type: "auth_error",
+      error: errorPayload,
+    });
+  }
+}
+
+function setPendingAuthAfterUnlock(
+  id: string,
+  type: "ext" | "dapp",
+  tabId?: number,
+  windowId?: number,
+): void {
+  clearPendingAuth();
+  pendingAuthAfterUnlock = { id, type, tabId, windowId };
+  pendingAuthTimeoutId = setTimeout(() => {
+    pendingAuthTimeoutId = null;
+    const pending = pendingAuthAfterUnlock;
+    pendingAuthAfterUnlock = null;
+    if (pending) {
+      sendPendingAuthError(pending);
+    }
+  }, PENDING_AUTH_TIMEOUT_MS);
+}
+
+function checkPendingAuthAfterUnlock(): void {
+  const pending = pendingAuthAfterUnlock;
+  if (!pending) return;
+  clearPendingAuth();
+  if (pending.type === "ext") {
+    void handleExtLogin(
+      { action: "ext_login", id: pending.id } as MessageWithId,
+      undefined as unknown as chrome.runtime.MessageSender,
+      () => {},
+    );
+  } else if (pending.tabId !== undefined) {
+    void handleDappLogin(
+      { action: "dapp_login", id: pending.id } as MessageWithId,
+      { tab: { id: pending.tabId } } as chrome.runtime.MessageSender,
+      () => {},
+      pending.tabId,
+    );
+  }
+}
+
+if (typeof chrome !== "undefined" && chrome.windows?.onRemoved) {
+  chrome.windows.onRemoved.addListener((removedWindowId) => {
+    const pending = pendingAuthAfterUnlock;
+    if (pending?.windowId === removedWindowId) {
+      clearPendingAuth();
+      sendPendingAuthError(pending);
+    }
+  });
+}
+
 const ensureMessageId = (message: MessageWithId): string => {
   if (!message.id) {
     throw new Error("Message id is required");
@@ -160,12 +244,14 @@ async function handleExtLogin(
         log.warn("Failed to open vault popup window");
       }
 
-      const errorMessage = hasDeviceData
-        ? "Please unlock the vault, then try again."
-        : "Please set up or unlock the vault, then try again.";
+      if (hasDeviceData) {
+        setPendingAuthAfterUnlock(id, "ext", undefined, windowId);
+        return;
+      }
 
       return sendAuthError(id, {
-        message: errorMessage,
+        message:
+          "Please set up or unlock the vault in the window we opened, then try again.",
         vaultOpened: true,
       });
     }
@@ -483,18 +569,18 @@ async function handleDappLogin(
         log.warn("Failed to open vault popup window");
       }
 
-      const errorMessage = hasDeviceData
-        ? "Please unlock the vault in the popup, then try again."
-        : "Please set up or unlock the vault in the popup, then try again.";
+      if (hasDeviceData) {
+        setPendingAuthAfterUnlock(id, "dapp", tabId, windowId);
+        return;
+      }
 
+      const errorMessage =
+        "Please set up or unlock the vault in the window we opened, then try again.";
       if (typeof tabId === "number") {
         chrome.tabs.sendMessage(tabId, {
           id,
           type: "auth_error",
-          error: {
-            message: errorMessage,
-            vaultOpened: true,
-          },
+          error: { message: errorMessage, vaultOpened: true },
         });
       }
       return;
@@ -749,4 +835,9 @@ function extractUserIdFromJwt(jwt: JwtResponse) {
   return decoded.sub as string;
 }
 
-export { handleExtLogin, handleDappLogin, handleWebUnlock };
+export {
+  checkPendingAuthAfterUnlock,
+  handleDappLogin,
+  handleExtLogin,
+  handleWebUnlock,
+};
