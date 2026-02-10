@@ -82,18 +82,22 @@ function checkPendingAuthAfterUnlock(): void {
   if (!pending) return;
   clearPendingAuth();
   if (pending.type === "ext") {
-    void handleExtLogin(
+    handleExtLogin(
       { action: "ext_login", id: pending.id } as MessageWithId,
       undefined as unknown as chrome.runtime.MessageSender,
       () => {},
-    );
+    ).catch((error) => {
+      log.error("Failed to resume extension login after unlock", error);
+    });
   } else if (pending.tabId !== undefined) {
-    void handleDappLogin(
+    handleDappLogin(
       { action: "dapp_login", id: pending.id } as MessageWithId,
       { tab: { id: pending.tabId } } as chrome.runtime.MessageSender,
       () => {},
       pending.tabId,
-    );
+    ).catch((error) => {
+      log.error("Failed to resume dapp login after unlock", error);
+    });
   }
 }
 
