@@ -1,27 +1,8 @@
 import { createLogger } from "@evevault/shared/utils";
+import { openPopupWindow } from "../services/popupWindow";
 import type { BackgroundMessage, WalletActionMessage } from "../types";
 
 const log = createLogger();
-
-async function openPopupWindow(url: string): Promise<number | undefined> {
-  try {
-    const popupUrl = chrome.runtime.getURL(`${url}.html`);
-
-    // Open as a standalone window
-    const window = await chrome.windows.create({
-      url: popupUrl,
-      type: "popup",
-      width: 500,
-      height: 500,
-      focused: true,
-    });
-
-    return window.id;
-  } catch (error) {
-    log.error("Failed to open popup", error);
-    return undefined;
-  }
-}
 
 async function handleApprovePopup(
   message: WalletActionMessage,

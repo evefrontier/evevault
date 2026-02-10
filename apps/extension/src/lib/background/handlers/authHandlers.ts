@@ -15,6 +15,7 @@ import { decodeJwt } from "jose";
 import type { IdTokenClaims } from "oidc-client-ts";
 import { getAuthUrl } from "../services/oauthService";
 import { ensureOffscreen } from "../services/offscreenService";
+import { openPopupWindow } from "../services/popupWindow";
 import type { MessageWithId, WebUnlockMessage } from "../types";
 
 const log = createLogger();
@@ -149,15 +150,23 @@ async function handleExtLogin(
     }
 
     if (!keeperStatus.unlocked) {
-      const errorMessage = hasDeviceData
-        ? "Vault is locked. Please unlock the vault first, then try signing in again."
-        : "Vault not set up or locked. Please unlock the vault first.";
       log.error("Cannot login: vault not set up or locked", {
         chain: initialChain,
         hasDeviceData,
       });
+
+      const windowId = await openPopupWindow("popup");
+      if (windowId === undefined) {
+        log.warn("Failed to open vault popup window");
+      }
+
+      const errorMessage = hasDeviceData
+        ? "Please unlock the vault, then try again."
+        : "Please set up or unlock the vault, then try again.";
+
       return sendAuthError(id, {
         message: errorMessage,
+        vaultOpened: true,
       });
     }
   }
@@ -464,19 +473,27 @@ async function handleDappLogin(
     }
 
     if (!keeperStatus.unlocked) {
-      const errorMessage = hasDeviceData
-        ? "Vault is locked. Please unlock the vault first, then try signing in again."
-        : "Vault not set up or locked. Please unlock the vault first.";
       log.error("Cannot login: vault not set up or locked", {
         chain,
         hasDeviceData,
       });
+
+      const windowId = await openPopupWindow("popup");
+      if (windowId === undefined) {
+        log.warn("Failed to open vault popup window");
+      }
+
+      const errorMessage = hasDeviceData
+        ? "Please unlock the vault in the popup, then try again."
+        : "Please set up or unlock the vault in the popup, then try again.";
+
       if (typeof tabId === "number") {
         chrome.tabs.sendMessage(tabId, {
           id,
           type: "auth_error",
           error: {
             message: errorMessage,
+            vaultOpened: true,
           },
         });
       }
