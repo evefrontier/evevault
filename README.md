@@ -20,6 +20,13 @@ EVE Vault uses **zkLogin** to create a Sui wallet address from your OAuth creden
 
 For detailed technical information, see the [Architecture Documentation](https://github.com/evefrontier/architecture-decision-log/blob/main/adr/0008-zklogin-implementation-auth-flow.md) and [Sui zkLogin docs](https://docs.sui.io/concepts/cryptography/zklogin).
 
+## Download
+
+**Latest extension (Chrome):**  
+[https://github.com/evefrontier/evevault/releases/latest/download/eve-vault-chrome.zip](https://github.com/evefrontier/evevault/releases/latest/download/eve-vault-chrome.zip)
+
+This link always points to the most recent release. Use it in docs (e.g. GitBook) or share it for one-click download.
+
 ## Requirements
 
 - Node.js 22+
