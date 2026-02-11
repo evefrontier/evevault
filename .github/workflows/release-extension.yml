@@ -11,6 +11,8 @@ on:
 jobs:
   release-extension:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -31,7 +33,23 @@ jobs:
         working-directory: apps/extension
 
       - name: Copy zip to fixed name
-        run: cp apps/extension/.output/*-chrome.zip ./eve-vault-chrome.zip
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          files=(apps/extension/.output/*-chrome.zip)
+
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "Error: No Chrome ZIP found matching 'apps/extension/.output/*-chrome.zip'."
+            exit 1
+          fi
+
+          if [ "${#files[@]}" -gt 1 ]; then
+            echo "Error: Multiple Chrome ZIPs found matching 'apps/extension/.output/*-chrome.zip':"
+            printf '  %s\n' "${files[@]}"
+            exit 1
+          fi
+
+          cp "${files[0]}" ./eve-vault-chrome.zip
 
       - name: Upload to release
         if: github.event_name == 'release'
