@@ -782,10 +782,10 @@ export const useDeviceStore = create<DeviceState>()(
             state.isLocked = true; // Force lock if secret key is lost
           }
 
-          // Web: Always start locked after rehydration since the signer is in-memory only
-          // User will need to re-enter PIN to unlock
+          // Web: Respect persisted isLocked so that after OAuth redirect we don't show the
+          // lock screen again when the user had already unlocked before logging in.
+          // Clear loading flag; leave isLocked as stored (avoids double PIN after OIDC).
           if (isWeb() && state) {
-            state.isLocked = true;
             state.loading = false;
           }
         };

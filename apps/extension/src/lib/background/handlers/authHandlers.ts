@@ -1,5 +1,9 @@
 import { getDeviceData, storeJwt } from "@evevault/shared";
-import { exchangeCodeForToken } from "@evevault/shared/auth";
+import {
+  exchangeCodeForToken,
+  getJwtForNetwork,
+  hasJwtForNetwork,
+} from "@evevault/shared/auth";
 import { useDeviceStore, useNetworkStore } from "@evevault/shared/stores";
 import type {
   JwtResponse,
@@ -229,12 +233,16 @@ async function handleExtLogin(
   // Check if the keeper has an unlocked ephemeral key
   let keeperStatus = await checkKeeperUnlocked();
   if (!keeperStatus.unlocked) {
-    // Only retry if device data exists - if no device data, vault isn't set up yet so no point retrying
+    // Retry if device data exists (keeper may still be starting or responding slowly)
     if (hasDeviceData) {
       await new Promise((resolve) =>
         setTimeout(resolve, KEEPER_RETRY_DELAY_MS),
       );
       keeperStatus = await checkKeeperUnlocked();
+      if (!keeperStatus.unlocked) {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        keeperStatus = await checkKeeperUnlocked();
+      }
     }
 
     if (!keeperStatus.unlocked) {
@@ -282,6 +290,7 @@ async function handleExtLogin(
         ephemeralPublicKeyBytes: keeperStatus.publicKeyBytes,
         ephemeralPublicKeyFlag: publicKey.flag(),
         ephemeralKeyPairSecretKey: secretKeyToPreserve,
+        isLocked: false,
       });
       log.debug("Successfully synced ephemeral public key to deviceStore");
     } catch (error) {
@@ -554,12 +563,16 @@ async function handleDappLogin(
   // Check if the keeper has an unlocked ephemeral key
   let keeperStatus = await checkKeeperUnlocked();
   if (!keeperStatus.unlocked) {
-    // Only retry if device data exists - if no device data, vault isn't set up yet so no point retrying
+    // Retry if device data exists (keeper may still be starting or responding slowly)
     if (hasDeviceData) {
       await new Promise((resolve) =>
         setTimeout(resolve, KEEPER_RETRY_DELAY_MS),
       );
       keeperStatus = await checkKeeperUnlocked();
+      if (!keeperStatus.unlocked) {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        keeperStatus = await checkKeeperUnlocked();
+      }
     }
 
     if (!keeperStatus.unlocked) {
@@ -568,6 +581,8 @@ async function handleDappLogin(
         hasDeviceData,
       });
 
+      // So the opened popup shows the Lock (PIN) screen, not the Sign in screen
+      useDeviceStore.setState({ isLocked: true });
       const windowId = await openPopupWindow("popup");
       if (windowId === undefined) {
         log.warn("Failed to open vault popup window");
@@ -611,6 +626,7 @@ async function handleDappLogin(
         ephemeralPublicKeyBytes: keeperStatus.publicKeyBytes,
         ephemeralPublicKeyFlag: publicKey.flag(),
         ephemeralKeyPairSecretKey: secretKeyToPreserve,
+        isLocked: false,
       });
       log.debug("Successfully synced ephemeral public key to deviceStore");
     } catch (error) {
@@ -641,6 +657,32 @@ async function handleDappLogin(
       });
     }
     return;
+  }
+
+  // Already connected: valid JWT for this network and keeper unlocked → approve immediately (no OIDC)
+  if (typeof tabId === "number") {
+    const hasJwt = await hasJwtForNetwork(chain);
+    if (hasJwt) {
+      const existingJwt = await getJwtForNetwork(chain);
+      if (existingJwt?.id_token) {
+        const decodedJwt = decodeJwt<IdTokenClaims>(
+          existingJwt.id_token as string,
+        );
+        log.debug(
+          "Connect: already connected, sending auth_success without OIDC",
+        );
+        chrome.tabs.sendMessage(tabId, {
+          id,
+          type: "auth_success",
+          token: {
+            ...existingJwt,
+            email: decodedJwt.email,
+            userId: decodedJwt.sub,
+          },
+        });
+        return;
+      }
+    }
   }
 
   // Check if device data is expired and regenerate if needed BEFORE starting OAuth

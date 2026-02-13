@@ -3,7 +3,11 @@ import {
   WalletStandardMessageTypes,
 } from "@evevault/shared";
 import { createLogger } from "@evevault/shared/utils";
-import type { BackgroundMessage } from "../types";
+import type {
+  BackgroundMessage,
+  WalletActionMessage,
+  WebUnlockMessage,
+} from "../types";
 import {
   handleDappLogin,
   handleExtLogin,
@@ -47,7 +51,7 @@ export function handleMessage(
   }
 
   if (action === "web_unlock") {
-    handleWebUnlock(message, sender, sendResponse);
+    handleWebUnlock(message as WebUnlockMessage, sender, sendResponse);
     return true;
   }
 
@@ -57,7 +61,11 @@ export function handleMessage(
     action === WalletStandardMessageTypes.SIGN_TRANSACTION ||
     action === WalletStandardMessageTypes.SIGN_AND_EXECUTE_TRANSACTION
   ) {
-    return handleApprovePopup(message, sender, sendResponse);
+    return handleApprovePopup(
+      message as WalletActionMessage,
+      sender,
+      sendResponse,
+    );
   }
 
   if (
