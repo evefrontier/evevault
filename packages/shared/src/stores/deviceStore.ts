@@ -35,6 +35,17 @@ import { useNetworkStore } from "./networkStore";
 
 const log = createLogger();
 
+/** Callback invoked when lock() completes (e.g. extension uses it to broadcast disconnect). */
+let onLockCallback: (() => void) | null = null;
+
+/**
+ * Register a callback to run when the device store lock() action completes.
+ * Used by the extension to broadcast wallet disconnect to all tabs.
+ */
+export function registerOnLock(callback: (() => void) | null): void {
+  onLockCallback = callback;
+}
+
 const isHashedSecretKey = (value: unknown): value is HashedData => {
   if (
     typeof value !== "object" ||
@@ -630,6 +641,7 @@ export const useDeviceStore = create<DeviceState>()(
       lock: async () => {
         await ephKeyService.lock();
         set({ isLocked: true });
+        onLockCallback?.();
       },
 
       unlock: async (pin: string) => {

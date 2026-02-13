@@ -1,5 +1,8 @@
 import { useAuth } from "@evevault/shared/auth";
-import { useDeviceStore } from "@evevault/shared/stores/deviceStore";
+import {
+  registerOnLock,
+  useDeviceStore,
+} from "@evevault/shared/stores/deviceStore";
 import { useNetworkStore } from "@evevault/shared/stores/networkStore";
 import { createLogger } from "@evevault/shared/utils";
 import { useEffect, useState } from "react";
@@ -16,6 +19,18 @@ export function useAppInitialization() {
 
   const [initError, setInitError] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
+
+  useEffect(() => {
+    registerOnLock(() => {
+      if (typeof chrome !== "undefined" && chrome.runtime?.sendMessage) {
+        chrome.runtime.sendMessage({
+          event: "change",
+          payload: { accounts: [] },
+        });
+      }
+    });
+    return () => registerOnLock(null);
+  }, []);
 
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;

@@ -1,4 +1,5 @@
 export {
+  registerOnLock,
   rehydrateDeviceStore,
   useDeviceStore,
   waitForDeviceHydration,
