@@ -15,23 +15,39 @@ export async function handleWebUnlock(
 ): Promise<void> {
   log.info("Evefrontier web unlock request");
 
-  const { jwt, tabId } = message;
   const id = ensureMessageId(message);
 
-  const decodedJwt = decodeJwt<IdTokenClaims>(jwt.id_token as string);
-  const network = useNetworkStore.getState().chain;
+  try {
+    const { jwt, tabId } = message;
 
-  await storeJwt(jwt, network);
+    const decodedJwt = decodeJwt<IdTokenClaims>(jwt.id_token as string);
+    const network = useNetworkStore.getState().chain;
 
-  if (typeof tabId === "number") {
-    chrome.tabs.sendMessage(tabId, {
-      id,
-      type: "auth_success",
-      token: {
-        ...jwt,
-        email: decodedJwt.email,
-        userId: decodedJwt.sub,
-      },
-    });
+    await storeJwt(jwt, network);
+
+    if (typeof tabId === "number") {
+      chrome.tabs.sendMessage(tabId, {
+        id,
+        type: "auth_success",
+        token: {
+          ...jwt,
+          email: decodedJwt.email,
+          userId: decodedJwt.sub,
+        },
+      });
+    }
+  } catch (error) {
+    const tabId = typeof message.tabId === "number" ? message.tabId : null;
+
+    const errorMessage =
+      error instanceof Error ? error.message : "Failed to complete web unlock";
+    log.error("Web unlock failed", { error });
+    if (tabId !== null) {
+      chrome.tabs.sendMessage(tabId, {
+        id,
+        type: "auth_error",
+        error: errorMessage,
+      });
+    }
   }
 }

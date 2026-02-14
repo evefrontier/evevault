@@ -34,11 +34,7 @@ export async function getEphemeralKeyPairSecretKeyFromStorage(): Promise<StoredS
     if (typeof stored === "string") {
       persistedState =
         (JSON.parse(stored) as PersistedDeviceStore).state ?? null;
-    } else if (
-      typeof stored === "object" &&
-      stored !== null &&
-      "state" in stored
-    ) {
+    } else if (typeof stored === "object" && "state" in stored) {
       persistedState = (stored as PersistedDeviceStore).state ?? null;
     }
 
@@ -46,7 +42,6 @@ export async function getEphemeralKeyPairSecretKeyFromStorage(): Promise<StoredS
     if (
       storedKey &&
       typeof storedKey === "object" &&
-      storedKey !== null &&
       "iv" in storedKey &&
       "data" in storedKey
     ) {

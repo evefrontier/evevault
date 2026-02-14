@@ -46,12 +46,22 @@ export function handleMessage(
   }
 
   if (action === "dapp_login" || type === "connect") {
-    handleDappLogin(message, sender, sendResponse, tabId);
+    void handleDappLogin(message, sender, sendResponse, tabId).catch(
+      (error) => {
+        log.error("handleDappLogin failed", error);
+      },
+    );
     return true;
   }
 
   if (action === "web_unlock") {
-    handleWebUnlock(message as WebUnlockMessage, sender, sendResponse);
+    void handleWebUnlock(
+      message as WebUnlockMessage,
+      sender,
+      sendResponse,
+    ).catch((error) => {
+      log.error("handleWebUnlock failed", error);
+    });
     return true;
   }
 

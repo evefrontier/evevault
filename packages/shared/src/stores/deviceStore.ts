@@ -641,7 +641,11 @@ export const useDeviceStore = create<DeviceState>()(
       lock: async () => {
         await ephKeyService.lock();
         set({ isLocked: true });
-        onLockCallback?.();
+        if (onLockCallback) {
+          onLockCallback();
+        } else {
+          log.error("No onLockCallback registered");
+        }
       },
 
       unlock: async (pin: string) => {
@@ -794,10 +798,12 @@ export const useDeviceStore = create<DeviceState>()(
             state.isLocked = true; // Force lock if secret key is lost
           }
 
-          // Web: Respect persisted isLocked so that after OAuth redirect we don't show the
-          // lock screen again when the user had already unlocked before logging in.
-          // Clear loading flag; leave isLocked as stored (avoids double PIN after OIDC).
+          // Web: The unlocked state (signer/expiry) is not persisted; after a full reload
+          // the in-memory ephKeyService will be locked even if isLocked persisted as false.
+          // To avoid inconsistent state (UI thinking it's unlocked while signing fails),
+          // recompute isLocked from ephKeyService.isUnlocked() and clear loading.
           if (isWeb() && state) {
+            state.isLocked = !ephKeyService.isUnlocked();
             state.loading = false;
           }
         };
