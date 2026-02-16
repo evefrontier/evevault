@@ -1,5 +1,6 @@
 {
   "lockfileVersion": 1,
+  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "wxt-react-starter",
@@ -30,7 +31,7 @@
     },
     "apps/extension": {
       "name": "@evevault/extension",
-      "version": "0.1.0",
+      "version": "0.0.2",
       "dependencies": {
         "@evevault/shared": "workspace:*",
         "@mysten/dapp-kit": "^0.17.2",

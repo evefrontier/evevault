@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "bunx --bun vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "lint": "biome check src",
