@@ -1,4 +1,22 @@
-import type { NavPath } from "../types";
+/**
+ * File-based route paths (web + extension).
+ * Single source of truth: when adding a new route, add it here and to the app's route tree.
+ */
+export const FILE_ROUTE_PATHS = [
+  "/",
+  "/callback",
+  "/not-found",
+  "/wallet",
+  "/wallet/add-token",
+  "/wallet/send-token",
+  "/wallet/transactions",
+  "/add-token",
+  "/send-token",
+  "/transactions",
+] as const;
+
+export type RoutePath = (typeof FILE_ROUTE_PATHS)[number];
+export type NavPath = RoutePath | "/tokens" | "/assets" | "/history";
 
 /**
  * Extension route paths
@@ -26,18 +44,12 @@ export const WEB_ROUTES = {
 } as const;
 
 /** All valid route paths from the router (for web app) */
-export const ROUTE_PATHS = [
-  "/",
-  "/callback",
-  "/not-found",
-  "/wallet",
-  "/wallet/add-token",
-  "/wallet/send-token",
-  "/wallet/transactions",
+export const ROUTE_PATHS: readonly NavPath[] = [
+  ...FILE_ROUTE_PATHS,
   "/tokens",
   "/assets",
   "/history",
-] as const satisfies readonly NavPath[];
+];
 
 /** Navigation items for the sidebar/bottom bar */
 export const NAV_ITEMS: readonly {

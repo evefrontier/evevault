@@ -1,5 +1,4 @@
 import type { SuiChain } from "@mysten/wallet-standard";
-import type { FileRouteTypes } from "node_modules/@tanstack/react-router/dist/cjs/index.cjs";
 import type { User } from "oidc-client-ts";
 import type {
   ButtonHTMLAttributes,
@@ -328,9 +327,8 @@ export interface LayoutProps {
   headerProps?: HeaderMobileProps;
 }
 
-export type RoutePath = FileRouteTypes["to"];
-
-export type NavPath = RoutePath | "/tokens" | "/assets" | "/history";
+/** Re-exported from utils/routes (single source of truth for route path types). */
+export type { NavPath, RoutePath } from "../utils/routes";
 
 // Transaction History Types
 export type TransactionDirection = "sent" | "received";
