@@ -6,7 +6,7 @@ frontend:
         - yum install -y rsync
         - curl -fsSL https://bun.sh/install | bash -s "bun-v1.3.1"
         - export PATH="$HOME/.bun/bin:$PATH"
-        - bun install
+        - bun install --frozen-lockfile
     build:
       commands:
         - export PATH="$HOME/.bun/bin:$PATH"
