@@ -10,7 +10,7 @@ frontend:
     build:
       commands:
         - export PATH="$HOME/.bun/bin:$PATH"
-        - bun run build
+        - bun run build:web
   artifacts:
     baseDirectory: apps/web/dist
     files:
