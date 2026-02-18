@@ -3,7 +3,7 @@ frontend:
   phases:
     preBuild:
       commands:
-        - yum install -y rsync
+        - sudo yum install -y rsync
         - curl -fsSL https://bun.sh/install | bash -s "bun-v1.3.1"
         - export PATH="$HOME/.bun/bin:$PATH"
         - bun install --frozen-lockfile
