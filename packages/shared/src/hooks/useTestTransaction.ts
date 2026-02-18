@@ -49,13 +49,15 @@ export function useTestTransaction() {
       log.debug("zkSignature ready", { length: zkSignature.length });
       log.debug("Transaction bytes ready", { length: bytes.length });
 
-      const txDigestResult = await suiClient.executeTransactionBlock({
-        transactionBlock: bytes,
-        signature: zkSignature,
+      const txDigestResult = await suiClient.executeTransaction({
+        transaction: new Uint8Array(txb),
+        signatures: [zkSignature],
       });
 
-      log.info("Transaction executed", { digest: txDigestResult.digest });
-      setTxDigest(txDigestResult.digest);
+      log.info("Transaction executed", {
+        digest: txDigestResult.Transaction?.digest,
+      });
+      setTxDigest(txDigestResult.Transaction?.digest ?? null);
       showToast("Transaction submitted!");
     } catch (error) {
       log.error("Error submitting transaction", error);

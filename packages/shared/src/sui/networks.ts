@@ -11,4 +11,8 @@ export const NETWORKS = {
     fullnodeUrl: "https://fullnode.mainnet.sui.io",
     faucetUrl: null,
   },
+  localnet: {
+    fullnodeUrl: "",
+    faucetUrl: null,
+  },
 } as const;

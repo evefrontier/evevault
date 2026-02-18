@@ -54,7 +54,7 @@ describe("useBalance hook", () => {
       getCoinMetadata: mockGetCoinMetadata,
     } as unknown as ReturnType<typeof createSuiClient>);
 
-    mockGetBalance.mockResolvedValueOnce({ totalBalance: "1000" });
+    mockGetBalance.mockResolvedValueOnce({ balance: "1000" });
     mockedFormatSUI.mockReturnValueOnce("formatted-1000");
     const user = createMockUser();
 

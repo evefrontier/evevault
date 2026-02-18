@@ -50,14 +50,14 @@ export async function fetchCoinMetadata(
     // Fetch metadata for other coins
     const metadata = await suiClient.getCoinMetadata({ coinType });
 
-    if (!metadata) {
+    if (!metadata || !metadata.coinMetadata) {
       log.warn("No metadata found for coin type", { coinType });
       return null;
     }
 
     const result = {
-      decimals: metadata.decimals,
-      symbol: metadata.symbol,
+      decimals: metadata.coinMetadata?.decimals,
+      symbol: metadata.coinMetadata?.symbol,
     };
 
     // Cache the result with timestamp

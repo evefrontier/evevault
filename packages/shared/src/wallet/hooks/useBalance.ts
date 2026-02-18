@@ -61,43 +61,40 @@ export function useBalance({
         coinType === SUI_COIN_TYPE
           ? Promise.resolve(DEFAULT_SUI_METADATA)
           : suiClient.getCoinMetadata({ coinType }).then((metadata) => {
-              if (!metadata) {
+              if (!metadata?.coinMetadata) {
                 return null;
               }
               return {
-                decimals: metadata.decimals,
-                symbol: metadata.symbol,
-                name: metadata.name,
-                description: metadata.description,
-                iconUrl: metadata.iconUrl,
+                decimals: metadata.coinMetadata.decimals,
+                symbol: metadata.coinMetadata.symbol,
+                name: metadata.coinMetadata.name,
+                description: metadata.coinMetadata.description,
+                iconUrl: metadata.coinMetadata.iconUrl,
               };
             });
 
-      const balance = await suiClient.getBalance({
+      const { balance } = await suiClient.getBalance({
         owner: address,
         coinType,
       });
 
       const metadata = await metadataPromise;
       log.debug("Balance fetched successfully", {
-        totalBalance: balance.totalBalance,
+        totalBalance: balance.balance,
         coinType,
       });
 
       let formattedBalance: string;
       if (coinType === SUI_COIN_TYPE) {
-        formattedBalance = formatSUI(balance.totalBalance);
+        formattedBalance = formatSUI(balance.balance);
       } else if (metadata?.decimals !== undefined) {
-        formattedBalance = formatByDecimals(
-          balance.totalBalance,
-          metadata.decimals,
-        );
+        formattedBalance = formatByDecimals(balance.balance, metadata.decimals);
       } else {
-        formattedBalance = balance.totalBalance;
+        formattedBalance = balance.balance;
       }
 
       return {
-        rawBalance: balance.totalBalance,
+        rawBalance: balance.balance,
         formattedBalance,
         metadata,
         coinType,
