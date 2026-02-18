@@ -12,7 +12,7 @@ applications:
         build:
           commands:
             - export PATH="$HOME/.bun/bin:$PATH"
-            - cd ../.. && bun run build:web
+            - cd ../.. && bun run build
       artifacts:
         baseDirectory: dist
         files:
