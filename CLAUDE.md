@@ -1,4 +1,4 @@
-# EveVault – Claude Code Guidelines
+# EVE Vault – Claude Code Guidelines
 
 ## Git Workflow
 - **All changes must go through pull requests** — direct pushes to `main` are blocked by branch protection
