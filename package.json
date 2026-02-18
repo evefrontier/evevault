@@ -35,7 +35,7 @@
     ]
   },
   "dependencies": {
-    "@mysten/sui": "^1.43.1",
+    "@mysten/sui": "^2.4.0",
     "@mysten/wallet-standard": "^0.16.3",
     "jose": "6.0.12",
     "react": "^19.1.0",

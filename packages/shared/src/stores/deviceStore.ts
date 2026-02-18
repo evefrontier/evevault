@@ -478,8 +478,13 @@ export const useDeviceStore = create<DeviceState>()(
 
         // 3. Get max epoch
         // Epoch start is a Unix timestamp in milliseconds
-        const { epoch, epochDurationMs, epochStartTimestampMs } =
-          await suiClient.getLatestSuiSystemState();
+        const {
+          systemState: {
+            epoch,
+            parameters: { epochDurationMs },
+            epochStartTimestampMs,
+          },
+        } = await suiClient.core.getCurrentSystemState();
         // Use current epoch - must stay aligned with maxEpochTimestampMs below
         const numericMaxEpoch = Number(epoch);
 

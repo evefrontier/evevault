@@ -165,18 +165,18 @@ export function useSendToken({
         tx.transferObjects([coin], recipientAddress);
       } else {
         // Custom token transfer: get all coins and find one with sufficient balance
-        const coins = await suiClient.getCoins({
+        const coins = await suiClient.listCoins({
           owner: senderAddress,
           coinType,
         });
 
-        if (coins.data.length === 0) {
+        if (coins.objects.length === 0) {
           throw new Error("No coins found for this token");
         }
 
         // Race condition guard: validate total balance still covers the requested amount
         // (balance may have changed between initial validation and now)
-        const totalBalance = coins.data.reduce(
+        const totalBalance = coins.objects.reduce(
           (sum, coin) => sum + BigInt(coin.balance),
           0n,
         );
@@ -188,30 +188,30 @@ export function useSendToken({
         }
 
         // Find a coin with sufficient balance, or merge if needed
-        const suitableCoin = coins.data.find(
+        const suitableCoin = coins.objects.find(
           (c) => BigInt(c.balance) >= amountInSmallestUnit,
         );
 
         if (suitableCoin) {
           // Single coin has enough balance - split from it
-          const [coin] = tx.splitCoins(tx.object(suitableCoin.coinObjectId), [
+          const [coin] = tx.splitCoins(tx.object(suitableCoin.objectId), [
             amountInSmallestUnit,
           ]);
           tx.transferObjects([coin], recipientAddress);
         } else {
           // No single coin has enough - merge all coins then split
           // Use the first coin as the primary and merge others into it
-          const primaryCoin = coins.data[0];
-          const otherCoins = coins.data.slice(1);
+          const primaryCoin = coins.objects[0];
+          const otherCoins = coins.objects.slice(1);
 
           if (otherCoins.length > 0) {
             tx.mergeCoins(
-              tx.object(primaryCoin.coinObjectId),
-              otherCoins.map((c) => tx.object(c.coinObjectId)),
+              tx.object(primaryCoin.objectId),
+              otherCoins.map((c) => tx.object(c.objectId)),
             );
           }
 
-          const [coin] = tx.splitCoins(tx.object(primaryCoin.coinObjectId), [
+          const [coin] = tx.splitCoins(tx.object(primaryCoin.objectId), [
             amountInSmallestUnit,
           ]);
           tx.transferObjects([coin], recipientAddress);
@@ -235,19 +235,19 @@ export function useSendToken({
       });
 
       // Execute transaction
-      const result = await suiClient.executeTransactionBlock({
-        transactionBlock: bytes,
-        signature: zkSignature,
+      const result = await suiClient.executeTransaction({
+        transaction: new Uint8Array(txb),
+        signatures: [zkSignature],
       });
 
       log.info("Token transfer executed", {
-        digest: result.digest,
+        digest: result.Transaction?.digest,
         coinType,
         amount,
         recipient: recipientAddress,
       });
 
-      setTxDigest(result.digest);
+      setTxDigest(result.Transaction?.digest ?? null);
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to send token";

@@ -216,15 +216,15 @@ export const WalletScreen = () => {
                   length: bytes.length,
                 });
 
-                const txDigest = await suiClient.executeTransactionBlock({
-                  transactionBlock: bytes,
-                  signature: zkSignature,
+                const txDigest = await suiClient.executeTransaction({
+                  transaction: new Uint8Array(txb),
+                  signatures: [zkSignature],
                 });
 
                 log.info("Transaction executed", {
-                  digest: txDigest.digest,
+                  digest: txDigest.Transaction?.digest,
                 });
-                setTxDigest(txDigest.digest);
+                setTxDigest(txDigest.Transaction?.digest ?? null);
               }}
             >
               Sign and submit tx Wallet Screen
