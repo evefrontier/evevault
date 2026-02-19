@@ -10,6 +10,8 @@ export {
   clearJwtForNetwork,
   getAllStoredJwts,
   getJwtForNetwork,
+  getStoredChain,
+  getStoredWalletAddress,
   hasJwtForNetwork,
   storeJwt,
 } from "./storageService";

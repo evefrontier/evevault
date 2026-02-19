@@ -1,8 +1,11 @@
-import { zkSignAny } from "@evevault/shared";
+import {
+  getJwtForNetwork,
+  getStoredChain,
+  getStoredWalletAddress,
+} from "@evevault/shared/auth";
 import { createLogger } from "@evevault/shared/utils";
 import { openPopupWindow } from "../services/popupWindow";
 import type {
-  BackgroundMessage,
   EveFrontierSponsoredTransactionMessage,
   WalletActionMessage,
 } from "../types";
@@ -104,22 +107,33 @@ async function handleSponsoredTransaction(
   sender: chrome.runtime.MessageSender,
   sendResponse: (response?: unknown) => void,
 ): Promise<boolean> {
-  // Return boolean to indicate async response
-  // Message can be deconstructed as const { action, assembly, chain }
-
   const senderTabId = sender.tab?.id;
-
-  const { action, assembly, walletId, chain, jwt } = message;
-
-  if (!jwt) {
-    throw new Error("JWT not found");
-  }
-
-  if (!assembly) {
-    throw new Error("Assembly not found");
-  }
+  const { action, assembly } = message.message;
 
   try {
+    const chain = await getStoredChain();
+    const jwt = await getJwtForNetwork(chain);
+    if (!jwt?.access_token) {
+      sendResponse({
+        type: "sign_transaction_error",
+        error: "No JWT for current network. Re-authenticate required.",
+      });
+      return false;
+    }
+
+    const walletId = await getStoredWalletAddress();
+    if (!walletId) {
+      sendResponse({
+        type: "sign_transaction_error",
+        error: "Wallet address not found; sign in in the extension first.",
+      });
+      return false;
+    }
+
+    if (!assembly) {
+      throw new Error("Assembly not found");
+    }
+
     log.info("Eve Frontier sponsored transaction request received", {
       action,
       assembly,
@@ -137,7 +151,7 @@ async function handleSponsoredTransaction(
         }),
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${message.jwt}`,
+          Authorization: `Bearer ${jwt.access_token}`,
         },
       },
     );
