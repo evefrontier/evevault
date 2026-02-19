@@ -134,13 +134,6 @@ export default defineConfig(() => {
       background: {
         service_worker: "background.ts",
       },
-      content_scripts: [
-        {
-          matches: ["<all_urls>"],
-          js: ["content-scripts/content.js"],
-          run_at: "document_start",
-        },
-      ],
       oauth2: envVars.VITE_FUSIONAUTH_CLIENT_ID
         ? {
             client_id: envVars.VITE_FUSIONAUTH_CLIENT_ID,

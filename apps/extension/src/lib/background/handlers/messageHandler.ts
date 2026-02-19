@@ -5,6 +5,7 @@ import {
 import { createLogger } from "@evevault/shared/utils";
 import type {
   BackgroundMessage,
+  EveFrontierSponsoredTransactionMessage,
   WalletActionMessage,
   WebUnlockMessage,
 } from "../types";
@@ -81,7 +82,11 @@ export function handleMessage(
   if (
     action === WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION
   ) {
-    return handleSponsoredTransaction(message, sender, sendResponse);
+    return handleSponsoredTransaction(
+      message as EveFrontierSponsoredTransactionMessage,
+      sender,
+      sendResponse,
+    );
   }
 
   if (action === "report_transaction_effects") {
