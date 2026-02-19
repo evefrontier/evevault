@@ -22,6 +22,16 @@ export type BackgroundMessage = {
   [key: string]: unknown;
 };
 
+export type EveFrontierSponsoredTransactionMessage = BackgroundMessage & {
+  message: {
+    action: string;
+    assembly: string;
+    chain: string;
+    walletId: string;
+    jwt: string;
+  };
+};
+
 export type MessageWithId = BackgroundMessage & {
   id?: string;
 };
@@ -53,6 +63,8 @@ export type EveFrontierSponsoredTransactionInput = {
   txAction: string;
   assembly: string;
   chain: string;
+  walletId: string;
+  jwt: string;
 };
 export type EveFrontierSponsoredTransactionOutput = {
   digest: string;

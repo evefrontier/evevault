@@ -411,7 +411,13 @@ export class EveVaultWallet implements Wallet {
             id: crypto.randomUUID(),
             action:
               WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION,
-            message: input.txAction,
+            message: {
+              action: input.txAction,
+              assembly: input.assembly,
+              chain: input.chain,
+              walletId: input.walletId,
+              jwt: input.jwt,
+            },
           });
         },
       );

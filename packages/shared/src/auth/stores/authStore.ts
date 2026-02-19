@@ -16,7 +16,10 @@ import {
   performFullCleanup,
 } from "../../utils";
 import { getUserManager } from "../authConfig";
-import { getZkLoginAddress } from "../getZkLoginAddress";
+import {
+  clearZkLoginAddressCache,
+  getZkLoginAddress,
+} from "../getZkLoginAddress";
 import {
   clearAllJwts,
   getAllStoredJwts,
@@ -455,6 +458,7 @@ export const useAuthStore = create<AuthState>()(
 
             // Clear JWTs and user state
             await clearAllJwts();
+            clearZkLoginAddressCache();
             set({ user: null });
 
             // Clear zkProofs first (separate from ephemeral key)
