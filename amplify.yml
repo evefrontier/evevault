@@ -1,0 +1,22 @@
+version: 1
+applications:
+  - appRoot: apps/web
+    frontend:
+      phases:
+        preBuild:
+          commands:
+            - sudo yum install -y rsync
+            - curl -fsSL https://bun.sh/install | bash -s "bun-v1.3.1"
+            - export PATH="$HOME/.bun/bin:$PATH"
+            - cd ../.. && bun install --frozen-lockfile
+        build:
+          commands:
+            - export PATH="$HOME/.bun/bin:$PATH"
+            - cd ../.. && bun run build
+      artifacts:
+        baseDirectory: dist
+        files:
+          - '**/*'
+      cache:
+        paths:
+          - ~/.bun/install/cache/**/*
