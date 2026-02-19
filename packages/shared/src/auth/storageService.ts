@@ -1,4 +1,5 @@
 import type { SuiChain } from "@mysten/wallet-standard";
+import { SUI_DEVNET_CHAIN } from "@mysten/wallet-standard";
 import { useNetworkStore } from "../stores/networkStore";
 import type { JwtResponse } from "../types";
 import { isExtension, isWeb } from "../utils/environment";
@@ -7,9 +8,67 @@ import { resolveExpiresAt } from "./utils/authStoreUtils";
 
 const log = createLogger();
 
+const AUTH_STORAGE_KEY = "evevault:auth";
 const JWT_STORAGE_KEY = "evevault:jwt";
+const NETWORK_STORAGE_KEY = "evevault:network";
 
 type JwtStorageMap = Record<SuiChain, JwtResponse>;
+
+/**
+ * Read the connected wallet address (sui_address) from persisted auth state.
+ * Used by the background script where the auth store is not hydrated.
+ * Returns null on web or when no user with profile.sui_address is stored.
+ */
+export async function getStoredWalletAddress(): Promise<string | null> {
+  if (
+    !isExtension() ||
+    typeof chrome === "undefined" ||
+    !chrome.storage?.local
+  ) {
+    return null;
+  }
+  const result = await chrome.storage.local.get([AUTH_STORAGE_KEY]);
+  const raw = result[AUTH_STORAGE_KEY];
+  if (typeof raw !== "string") {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(raw) as {
+      state?: { user?: { profile?: { sui_address?: string } } };
+    };
+    const address = parsed?.state?.user?.profile?.sui_address;
+    return typeof address === "string" ? address : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Read the current chain from extension storage (chrome.storage.local).
+ * Used by the background script where useNetworkStore is not hydrated.
+ * In web context returns the default chain; call only from extension when possible.
+ */
+export async function getStoredChain(): Promise<SuiChain> {
+  if (
+    !isExtension() ||
+    typeof chrome === "undefined" ||
+    !chrome.storage?.local
+  ) {
+    return SUI_DEVNET_CHAIN;
+  }
+  const result = await chrome.storage.local.get([NETWORK_STORAGE_KEY]);
+  const raw = result[NETWORK_STORAGE_KEY];
+  if (typeof raw !== "string") {
+    return SUI_DEVNET_CHAIN;
+  }
+  try {
+    const parsed = JSON.parse(raw) as { state?: { chain?: SuiChain } };
+    const chain = parsed?.state?.chain;
+    return (typeof chain === "string" ? chain : SUI_DEVNET_CHAIN) as SuiChain;
+  } catch {
+    return SUI_DEVNET_CHAIN;
+  }
+}
 
 /**
  * Get all stored JWTs (for all networks)
