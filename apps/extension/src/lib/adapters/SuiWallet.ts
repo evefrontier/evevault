@@ -34,26 +34,11 @@ import type {
   EveFrontierSponsoredTransactionMethod,
   EveFrontierSponsoredTransactionOutput,
   EveVaultWalletFeatures,
-  SignAndExecuteTransactionMessage,
   WalletEventListener,
 } from "../background/types";
 import { EVEFRONTIER_SPONSORED_TRANSACTION } from "../background/types";
 
 const log = createLogger();
-
-const isSignAndExecuteTransactionMessage = (
-  message: unknown,
-): message is SignAndExecuteTransactionMessage => {
-  if (typeof message !== "object" || message === null) {
-    return false;
-  }
-
-  const candidate = message as { type?: unknown };
-  return (
-    candidate.type === "sign_and_execute_transaction_success" ||
-    candidate.type === "sign_and_execute_transaction_error"
-  );
-};
 
 export class EveVaultWallet implements Wallet {
   readonly #version = "1.0.0" as const;
@@ -354,30 +339,36 @@ export class EveVaultWallet implements Wallet {
   #signAndExecuteTransaction: SuiSignAndExecuteTransactionMethod = async (
     input: SuiSignAndExecuteTransactionInput,
   ) => {
+    const tx = await input.transaction.toJSON();
+    const id = crypto.randomUUID();
+
     return new Promise<SuiSignAndExecuteTransactionOutput>(
       (resolve, reject) => {
-        const messageListener = (message: unknown) => {
-          if (!isSignAndExecuteTransactionMessage(message)) {
-            return;
-          }
+        const onMsg = (e: MessageEvent) => {
+          const m = e.data || {};
+          if (m.__from !== "Eve Vault" || m.id !== id) return;
 
-          if (message.type === "sign_and_execute_transaction_success") {
-            chrome.runtime.onMessage.removeListener(messageListener);
-            resolve(message.result);
-          } else if (message.type === "sign_and_execute_transaction_error") {
-            chrome.runtime.onMessage.removeListener(messageListener);
-            reject(new Error(message.error));
+          if (m.type === "sign_and_execute_transaction_success") {
+            window.removeEventListener("message", onMsg);
+            resolve(m.result);
+          } else if (m.type === "sign_and_execute_transaction_error") {
+            window.removeEventListener("message", onMsg);
+            reject(new Error(m.error));
           }
         };
 
-        chrome.runtime.onMessage.addListener(messageListener);
-
-        chrome.runtime.sendMessage({
-          action: WalletStandardMessageTypes.SIGN_AND_EXECUTE_TRANSACTION,
-          transaction: input.transaction,
-          account: input.account,
-          chain: input.chain,
-        });
+        window.addEventListener("message", onMsg);
+        window.postMessage(
+          {
+            __to: "Eve Vault",
+            id,
+            action: WalletStandardMessageTypes.SIGN_AND_EXECUTE_TRANSACTION,
+            transaction: tx,
+            account: input.account,
+            chain: input.chain,
+          },
+          "*",
+        );
       },
     );
   };

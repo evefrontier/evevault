@@ -1,3 +1,4 @@
+import { WalletStandardMessageTypes } from "@evevault/shared";
 import {
   getJwtForNetwork,
   getStoredChain,
@@ -17,8 +18,6 @@ async function handleApprovePopup(
   sender: chrome.runtime.MessageSender,
   sendResponse: (response?: unknown) => void,
 ): Promise<boolean> {
-  // Return boolean to indicate async response
-
   const { action } = message;
 
   try {
@@ -26,14 +25,12 @@ async function handleApprovePopup(
 
     const senderTabId = sender.tab?.id;
 
-    // Open popup for user approval
     const windowId = await openPopupWindow(action);
 
     if (!windowId) {
       throw new Error("Failed to open approval popup");
     }
 
-    // Store the transaction request
     await chrome.storage.local.set({
       pendingAction: {
         ...message,
@@ -43,41 +40,80 @@ async function handleApprovePopup(
       },
     });
 
+    const isSignAndExecute =
+      action === WalletStandardMessageTypes.SIGN_AND_EXECUTE_TRANSACTION;
+
     const storageListener = (changes: {
       [key: string]: chrome.storage.StorageChange;
     }) => {
       const result = changes.transactionResult?.newValue;
 
       if (result?.status === "signed" && senderTabId) {
-        chrome.tabs
-          .sendMessage(senderTabId, {
-            type: "sign_success",
-            bytes: result.bytes,
-            signature: result.signature,
-            id: message.id,
-          })
-          .catch((err) => {
-            log.error("Failed to send success message", err);
-          });
+        if (isSignAndExecute) {
+          const hasRequired = result.bytes != null && result.signature != null;
+          if (!hasRequired) {
+            chrome.tabs
+              .sendMessage(senderTabId, {
+                type: "sign_and_execute_transaction_error",
+                error: "Missing bytes or signature in transaction result",
+                id: message.id,
+              })
+              .catch((err) => {
+                log.error("Failed to send sign_and_execute error", err);
+              });
+          } else {
+            chrome.tabs
+              .sendMessage(senderTabId, {
+                type: "sign_and_execute_transaction_success",
+                result: {
+                  bytes: result.bytes,
+                  signature: result.signature,
+                  digest: result.digest ?? "",
+                  effects: result.effects ?? "",
+                },
+                id: message.id,
+              })
+              .catch((err) => {
+                log.error("Failed to send sign_and_execute success", err);
+              });
+          }
+        } else {
+          chrome.tabs
+            .sendMessage(senderTabId, {
+              type: "sign_success",
+              bytes: result.bytes,
+              signature: result.signature,
+              id: message.id,
+            })
+            .catch((err) => {
+              log.error("Failed to send success message", err);
+            });
+        }
 
-        chrome.storage.local.remove([
-          "pendingTransaction",
-          "transactionResult",
-        ]);
+        chrome.storage.local.remove(["pendingAction", "transactionResult"]);
 
         chrome.storage.onChanged.removeListener(storageListener);
       } else if (result?.status === "error") {
         chrome.storage.onChanged.removeListener(storageListener);
 
-        sendResponse({
-          type: "sign_transaction_error",
-          error: result.error,
-        });
+        if (isSignAndExecute && senderTabId) {
+          chrome.tabs
+            .sendMessage(senderTabId, {
+              type: "sign_and_execute_transaction_error",
+              error: result.error,
+              id: message.id,
+            })
+            .catch((err) => {
+              log.error("Failed to send sign_and_execute error", err);
+            });
+        } else {
+          sendResponse({
+            type: "sign_transaction_error",
+            error: result.error,
+          });
+        }
 
-        chrome.storage.local.remove([
-          "pendingTransaction",
-          "transactionResult",
-        ]);
+        chrome.storage.local.remove(["pendingAction", "transactionResult"]);
       }
     };
 

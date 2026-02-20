@@ -1,11 +1,18 @@
 import { useAuth } from "@evevault/shared/auth";
-import { Button, Heading, Text } from "@evevault/shared/components";
+import {
+  Button,
+  Heading,
+  NetworkSelector,
+  Text,
+} from "@evevault/shared/components";
+import Json from "@evevault/shared/components/Json";
 import { useDevice } from "@evevault/shared/hooks/useDevice";
 import { createSuiClient } from "@evevault/shared/sui";
 import type { PendingTransaction } from "@evevault/shared/types";
 import { buildTx, createLogger } from "@evevault/shared/utils";
 import { zkSignAny } from "@evevault/shared/wallet";
-import { Transaction } from "@mysten/sui/transactions";
+import { Transaction, type TransactionData } from "@mysten/sui/transactions";
+import { toBase64 } from "@mysten/sui/utils";
 import { useEffect, useState } from "react";
 
 const log = createLogger();
@@ -20,9 +27,9 @@ function SignAndExecuteTransaction() {
   const { user } = useAuth();
 
   useEffect(() => {
-    // Retrieve the pending transaction from storage
-    chrome.storage.local.get("pendingTransaction").then((data) => {
-      const pending = data.pendingTransaction;
+    // Retrieve the pending transaction from storage (same key as SignTransaction)
+    chrome.storage.local.get("pendingAction").then((data) => {
+      const pending = data.pendingAction;
       if (pending) {
         setPendingTransaction(pending);
       } else {
@@ -72,13 +79,42 @@ function SignAndExecuteTransaction() {
         getZkProof,
       });
 
+      // Then, execute the transaction
+      const execResult = await suiClient.executeTransaction({
+        transaction: txb,
+        signatures: [zkSignature],
+        include: { effects: true },
+      });
+
+      if (execResult.$kind === "FailedTransaction") {
+        const failedTx = execResult.FailedTransaction;
+        const errorMessage =
+          failedTx?.status &&
+          typeof failedTx.status === "object" &&
+          "error" in failedTx.status
+            ? String(
+                (failedTx.status as { error?: { message?: string } }).error
+                  ?.message ?? "Transaction failed",
+              )
+            : "Transaction failed";
+        throw new Error(errorMessage);
+      }
+
+      const digest = execResult.Transaction?.digest ?? "";
+      const effects =
+        execResult.Transaction?.effects?.bcs != null
+          ? toBase64(execResult.Transaction.effects.bcs)
+          : "";
+
       // Store the result in storage so the background handler can pick it up
       await chrome.storage.local.set({
         transactionResult: {
           windowId,
-          status: "signed",
+          status: "signed_and_executed",
           bytes,
           signature: zkSignature,
+          digest,
+          effects,
         },
       });
 
@@ -135,35 +171,39 @@ function SignAndExecuteTransaction() {
     );
   }
 
+  const transaction: TransactionData = JSON.parse(
+    pendingTransaction.transaction as string,
+  );
+
   return (
     <div style={{ padding: "20px" }}>
-      <Heading level={2}>Approve Transaction</Heading>
-
-      <div style={{ marginBottom: "20px" }}>
-        <Text>
-          <strong>Chain:</strong> {pendingTransaction.chain || "devnet"}
-        </Text>
-        <Text>
-          <strong>Account:</strong>{" "}
-          {pendingTransaction.account?.address || "Unknown"}
-        </Text>
-      </div>
-
-      {error && (
-        <div style={{ marginBottom: "20px" }}>
-          <Text color="error">Error: {error}</Text>
+      <div className="flex flex-col items-center justify-center gap-10">
+        <img src="/images/logo.png" alt="EVE Vault" className="h-20 " />
+        <div className="flex flex-col items-center justify-center gap-4">
+          <Heading level={2}>Approve Transaction</Heading>
+          <Json value={JSON.stringify(transaction)} className={"max-h-24"} />
         </div>
-      )}
 
-      <div className="flex gap-2 w-full">
-        <Button onClick={handleApprove} disabled={loading} variant="primary">
-          {loading ? "Signing..." : "Approve"}
-        </Button>
+        {error && (
+          <div style={{ marginBottom: "20px" }}>
+            <Text color="error">Error: {error}</Text>
+          </div>
+        )}
 
-        <Button onClick={handleReject} disabled={loading} variant="secondary">
-          Reject
-        </Button>
+        <div style={{ display: "flex", gap: "10px" }}>
+          <Button onClick={handleApprove} disabled={loading} variant="primary">
+            {loading ? "Signing..." : "Approve"}
+          </Button>
+
+          <Button onClick={handleReject} disabled={loading} variant="secondary">
+            Reject
+          </Button>
+        </div>
       </div>
+      <NetworkSelector
+        className="justify-start w-full items-end"
+        chain={pendingTransaction.chain}
+      />
     </div>
   );
 }
