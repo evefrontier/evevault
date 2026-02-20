@@ -48,7 +48,9 @@ async function handleApprovePopup(
     }) => {
       const result = changes.transactionResult?.newValue;
 
-      if (result?.status === "signed" && senderTabId) {
+      const isSuccess =
+        result?.status === "signed" || result?.status === "signed_and_executed";
+      if (isSuccess && senderTabId) {
         if (isSignAndExecute) {
           const hasRequired = result.bytes != null && result.signature != null;
           if (!hasRequired) {

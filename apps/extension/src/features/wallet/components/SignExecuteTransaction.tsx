@@ -79,7 +79,7 @@ function SignAndExecuteTransaction() {
         getZkProof,
       });
 
-      // Then, execute the transaction
+      // Execute the transaction
       const execResult = await suiClient.executeTransaction({
         transaction: txb,
         signatures: [zkSignature],
