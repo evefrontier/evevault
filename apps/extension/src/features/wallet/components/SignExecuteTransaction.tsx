@@ -31,7 +31,14 @@ function SignAndExecuteTransaction() {
     chrome.storage.local.get("pendingAction").then((data) => {
       const pending = data.pendingAction;
       if (pending) {
-        setPendingTransaction(pending);
+        // When pending.transaction is present,
+        // pending is a valid PendingTransaction.
+        if (!pending.transaction) {
+          setError("No transaction found");
+          return;
+        }
+
+        setPendingTransaction(pending as PendingTransaction);
       } else {
         setError("No pending transaction found");
       }
@@ -100,11 +107,17 @@ function SignAndExecuteTransaction() {
         throw new Error(errorMessage);
       }
 
-      const digest = execResult.Transaction?.digest ?? "";
-      const effects =
-        execResult.Transaction?.effects?.bcs != null
-          ? toBase64(execResult.Transaction.effects.bcs)
-          : "";
+      if (
+        !execResult.Transaction?.digest ||
+        execResult.Transaction.effects?.bcs == null
+      ) {
+        throw new Error(
+          "Transaction execution result is missing digest or effects",
+        );
+      }
+
+      const digest = execResult.Transaction?.digest;
+      const effects = toBase64(execResult.Transaction.effects.bcs);
 
       // Store the result in storage so the background handler can pick it up
       await chrome.storage.local.set({

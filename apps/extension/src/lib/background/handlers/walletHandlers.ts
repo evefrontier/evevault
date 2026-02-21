@@ -52,7 +52,11 @@ async function handleApprovePopup(
         result?.status === "signed" || result?.status === "signed_and_executed";
       if (isSuccess && senderTabId) {
         if (isSignAndExecute) {
-          const hasRequired = result.bytes != null && result.signature != null;
+          const hasRequired =
+            result.bytes != null &&
+            result.signature != null &&
+            result.digest != null &&
+            result.effects != null;
           if (!hasRequired) {
             chrome.tabs
               .sendMessage(senderTabId, {
@@ -70,8 +74,8 @@ async function handleApprovePopup(
                 result: {
                   bytes: result.bytes,
                   signature: result.signature,
-                  digest: result.digest ?? "",
-                  effects: result.effects ?? "",
+                  digest: result.digest,
+                  effects: result.effects,
                 },
                 id: message.id,
               })

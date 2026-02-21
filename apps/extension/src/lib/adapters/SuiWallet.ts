@@ -40,6 +40,8 @@ import { EVEFRONTIER_SPONSORED_TRANSACTION } from "../background/types";
 
 const log = createLogger();
 
+const APPROVAL_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
+
 export class EveVaultWallet implements Wallet {
   readonly #version = "1.0.0" as const;
   readonly #name = "Eve Vault" as const;
@@ -205,13 +207,18 @@ export class EveVaultWallet implements Wallet {
   #connect: StandardConnectMethod = async () => {
     return new Promise<StandardConnectOutput>((resolve, reject) => {
       const id = crypto.randomUUID();
+      let settled = false;
 
       const onMsg = async (e: MessageEvent) => {
         const m = e.data || {};
 
         if (m.__from !== "Eve Vault" || m.id !== id) return;
-        window.removeEventListener("message", onMsg);
         if (m.type === "auth_success") {
+          if (!settled) {
+            settled = true;
+            clearTimeout(timeoutId);
+            window.removeEventListener("message", onMsg);
+          }
           const result = m.token;
 
           sessionStorage.setItem(
@@ -255,11 +262,24 @@ export class EveVaultWallet implements Wallet {
           }
 
           resolve({ accounts: this.#accounts });
-        } else reject(new Error(m.error?.message || "Authentication failed"));
+        } else {
+          if (!settled) {
+            settled = true;
+            clearTimeout(timeoutId);
+            window.removeEventListener("message", onMsg);
+          }
+          reject(new Error(m.error?.message || "Authentication failed"));
+        }
       };
 
-      // Trigger login
       window.addEventListener("message", onMsg);
+      const timeoutId = setTimeout(() => {
+        if (!settled) {
+          settled = true;
+          window.removeEventListener("message", onMsg);
+          reject(new Error("Connection request timed out"));
+        }
+      }, APPROVAL_TIMEOUT_MS);
       window.postMessage({ __to: "Eve Vault", type: "connect", id }, "*");
     });
   };
@@ -268,28 +288,47 @@ export class EveVaultWallet implements Wallet {
     input: SuiSignPersonalMessageInput,
   ) => {
     return new Promise<SuiSignPersonalMessageOutput>((resolve, reject) => {
+      const id = crypto.randomUUID();
+      let settled = false;
+
       const onMsg = async (e: MessageEvent) => {
         const m = e.data || {};
 
-        if (m.__from !== "Eve Vault") return;
-        window.removeEventListener("message", onMsg);
+        if (m.__from !== "Eve Vault" || m.id !== id) return;
 
         if (m.type === "sign_success") {
+          if (!settled) {
+            settled = true;
+            clearTimeout(timeoutId);
+            window.removeEventListener("message", onMsg);
+          }
           resolve({
             bytes: m.bytes,
             signature: m.signature,
           } as SuiSignPersonalMessageOutput);
         } else if (m.type === "sign_personal_message_error") {
+          if (!settled) {
+            settled = true;
+            clearTimeout(timeoutId);
+            window.removeEventListener("message", onMsg);
+          }
           reject(new Error(m.error));
         }
       };
 
       window.addEventListener("message", onMsg);
+      const timeoutId = setTimeout(() => {
+        if (!settled) {
+          settled = true;
+          window.removeEventListener("message", onMsg);
+          reject(new Error("Message signing timed out"));
+        }
+      }, APPROVAL_TIMEOUT_MS);
       log.debug("[SuiWallet] #signPersonalMessage input", input);
       window.postMessage(
         {
           __to: "Eve Vault",
-          id: crypto.randomUUID(),
+          id,
           action: "sign_personal_message",
           message: input.message,
           account: input.account,
@@ -305,27 +344,50 @@ export class EveVaultWallet implements Wallet {
     const tx = await input.transaction.toJSON();
 
     return new Promise<SignedTransaction>((resolve, reject) => {
+      const id = crypto.randomUUID();
+      let settled = false;
+
       const onMsg = async (e: MessageEvent) => {
         const m = e.data || {};
 
+        if (m.__from !== "Eve Vault" || m.id !== id) return;
         log.debug("[SuiWallet] #signTransaction message", m);
 
         if (m.type === "sign_success") {
+          // Guard to prevent multiple resolutions
+          if (!settled) {
+            settled = true;
+            clearTimeout(timeoutId);
+            window.removeEventListener("message", onMsg);
+          }
           resolve({
             bytes: m.bytes,
             signature: m.signature,
           });
         } else if (m.type === "sign_transaction_error") {
+          // Guard to prevent multiple resolutions
+          if (!settled) {
+            settled = true;
+            clearTimeout(timeoutId);
+            window.removeEventListener("message", onMsg);
+          }
           reject(new Error(m.error));
         }
       };
 
       window.addEventListener("message", onMsg);
+      const timeoutId = setTimeout(() => {
+        if (!settled) {
+          settled = true;
+          window.removeEventListener("message", onMsg);
+          reject(new Error("Transaction signing timed out"));
+        }
+      }, APPROVAL_TIMEOUT_MS);
 
       window.postMessage(
         {
           __to: "Eve Vault",
-          id: crypto.randomUUID(),
+          id,
           action: "sign_transaction",
           transaction: tx,
           account: input.account,
@@ -344,20 +406,37 @@ export class EveVaultWallet implements Wallet {
 
     return new Promise<SuiSignAndExecuteTransactionOutput>(
       (resolve, reject) => {
+        let settled = false;
+
         const onMsg = (e: MessageEvent) => {
           const m = e.data || {};
           if (m.__from !== "Eve Vault" || m.id !== id) return;
 
           if (m.type === "sign_and_execute_transaction_success") {
-            window.removeEventListener("message", onMsg);
+            if (!settled) {
+              settled = true;
+              clearTimeout(timeoutId);
+              window.removeEventListener("message", onMsg);
+            }
             resolve(m.result);
           } else if (m.type === "sign_and_execute_transaction_error") {
-            window.removeEventListener("message", onMsg);
+            if (!settled) {
+              settled = true;
+              clearTimeout(timeoutId);
+              window.removeEventListener("message", onMsg);
+            }
             reject(new Error(m.error));
           }
         };
 
         window.addEventListener("message", onMsg);
+        const timeoutId = setTimeout(() => {
+          if (!settled) {
+            settled = true;
+            window.removeEventListener("message", onMsg);
+            reject(new Error("Transaction approval timed out"));
+          }
+        }, APPROVAL_TIMEOUT_MS);
         window.postMessage(
           {
             __to: "Eve Vault",
@@ -377,24 +456,43 @@ export class EveVaultWallet implements Wallet {
     async (input: EveFrontierSponsoredTransactionInput) => {
       return new Promise<EveFrontierSponsoredTransactionOutput>(
         (resolve, reject) => {
+          const id = crypto.randomUUID();
+          let settled = false;
+
           const onMsg = async (e: MessageEvent) => {
             const m = e.data || {};
 
+            if (m.__from !== "Eve Vault" || m.id !== id) return;
             log.debug("[SuiWallet] #signSponsoredTransaction message", m);
 
             if (m.type === "sign_success") {
-              window.removeEventListener("message", onMsg);
+              if (!settled) {
+                settled = true;
+                clearTimeout(timeoutId);
+                window.removeEventListener("message", onMsg);
+              }
               resolve({
                 digest: m.digest,
                 effects: m.effects,
               });
             } else if (m.type === "sign_sponsored_transaction_error") {
-              window.removeEventListener("message", onMsg);
+              if (!settled) {
+                settled = true;
+                clearTimeout(timeoutId);
+                window.removeEventListener("message", onMsg);
+              }
               reject(new Error(m.error));
             }
           };
 
           window.addEventListener("message", onMsg);
+          const timeoutId = setTimeout(() => {
+            if (!settled) {
+              settled = true;
+              window.removeEventListener("message", onMsg);
+              reject(new Error("Sponsored transaction timed out"));
+            }
+          }, APPROVAL_TIMEOUT_MS);
           log.debug(
             "[SuiWallet] #signEveFrontierSponsoredTransaction input",
             input,
@@ -402,7 +500,7 @@ export class EveVaultWallet implements Wallet {
 
           window.postMessage({
             __to: "Eve Vault",
-            id: crypto.randomUUID(),
+            id,
             action:
               WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION,
             message: {

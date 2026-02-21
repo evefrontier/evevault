@@ -7,7 +7,7 @@ export enum WalletActions {
 import type { SuiChain } from "@mysten/wallet-standard";
 
 export interface PendingTransaction extends VaultMessage {
-  transaction?: string;
+  transaction: string;
   chain: SuiChain;
   account: { address: string };
 }

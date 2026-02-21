@@ -30,7 +30,14 @@ function SignTransaction() {
     chrome.storage.local.get("pendingAction").then((data) => {
       const pending = data.pendingAction;
       if (pending) {
-        setPendingTransaction(pending);
+        // When pending.transaction is present,
+        // pending is a valid PendingTransaction.
+        if (!pending.transaction) {
+          setError("No transaction found");
+          return;
+        }
+
+        setPendingTransaction(pending as PendingTransaction);
       } else {
         setError("No pending transaction found");
       }
