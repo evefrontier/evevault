@@ -93,7 +93,7 @@ export function useLogin() {
           // Attempt to rollback to a network with valid JWT
           const rolledBack = await handleLoginRollback(
             previousNetworkBeforeSwitch,
-            chain || "sui:devnet",
+            chain || "sui:testnet",
           );
 
           if (!rolledBack) {
@@ -128,7 +128,7 @@ export function useLogin() {
         // Attempt to rollback to a network with valid JWT
         const rolledBack = await handleLoginRollback(
           previousNetworkBeforeSwitch,
-          chain || "sui:devnet",
+          chain || "sui:testnet",
         );
 
         if (!rolledBack) {

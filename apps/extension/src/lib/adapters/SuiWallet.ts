@@ -48,7 +48,7 @@ export class EveVaultWallet implements Wallet {
 
   #accounts: ReadonlyWalletAccount[] = [];
   #eventListeners = new Map<string, WalletEventListener[]>();
-  #currentChain: SuiChain = SUI_DEVNET_CHAIN;
+  #currentChain: SuiChain = SUI_TESTNET_CHAIN;
 
   get version() {
     return this.#version;
@@ -64,7 +64,7 @@ export class EveVaultWallet implements Wallet {
   }
 
   get chains(): Wallet["chains"] {
-    return [SUI_DEVNET_CHAIN, SUI_TESTNET_CHAIN] as `sui:${string}`[];
+    return [SUI_TESTNET_CHAIN, SUI_DEVNET_CHAIN] as `sui:${string}`[];
   }
 
   get accounts() {
@@ -73,7 +73,7 @@ export class EveVaultWallet implements Wallet {
         new ReadonlyWalletAccount({
           address: walletAccount.address,
           publicKey: walletAccount.publicKey,
-          chains: [SUI_DEVNET_CHAIN, SUI_TESTNET_CHAIN],
+          chains: [SUI_TESTNET_CHAIN, SUI_DEVNET_CHAIN],
           // The features that this account supports. This can be a subset of the wallet's supported features.
           features: [
             StandardConnect,
@@ -244,7 +244,7 @@ export class EveVaultWallet implements Wallet {
             const newAccount = new ReadonlyWalletAccount({
               address,
               publicKey: new Uint8Array(),
-              chains: [SUI_DEVNET_CHAIN, SUI_TESTNET_CHAIN],
+              chains: [SUI_TESTNET_CHAIN, SUI_DEVNET_CHAIN],
               features: [
                 StandardConnect,
                 StandardDisconnect,

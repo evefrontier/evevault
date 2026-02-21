@@ -1,4 +1,4 @@
-import { SUI_DEVNET_CHAIN, type SuiChain } from "@mysten/wallet-standard";
+import { SUI_TESTNET_CHAIN, type SuiChain } from "@mysten/wallet-standard";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { chromeStorageAdapter, localStorageAdapter } from "../adapters";
@@ -28,7 +28,7 @@ const getInitialChain = (): SuiChain => {
   }
   // For extension, persist middleware will handle hydration asynchronously
   // Return fallback - persist middleware will overwrite with persisted value
-  return SUI_DEVNET_CHAIN;
+  return SUI_TESTNET_CHAIN;
 };
 
 // Create the store

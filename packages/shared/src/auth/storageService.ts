@@ -1,5 +1,5 @@
 import type { SuiChain } from "@mysten/wallet-standard";
-import { SUI_DEVNET_CHAIN } from "@mysten/wallet-standard";
+import { SUI_DEVNET_CHAIN, SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
 import { useNetworkStore } from "../stores/networkStore";
 import type { JwtResponse } from "../types";
 import { isExtension, isWeb } from "../utils/environment";
@@ -59,14 +59,14 @@ export async function getStoredChain(): Promise<SuiChain> {
   const result = await chrome.storage.local.get([NETWORK_STORAGE_KEY]);
   const raw = result[NETWORK_STORAGE_KEY];
   if (typeof raw !== "string") {
-    return SUI_DEVNET_CHAIN;
+    return SUI_TESTNET_CHAIN;
   }
   try {
     const parsed = JSON.parse(raw) as { state?: { chain?: SuiChain } };
     const chain = parsed?.state?.chain;
-    return (typeof chain === "string" ? chain : SUI_DEVNET_CHAIN) as SuiChain;
+    return (typeof chain === "string" ? chain : SUI_TESTNET_CHAIN) as SuiChain;
   } catch {
-    return SUI_DEVNET_CHAIN;
+    return SUI_TESTNET_CHAIN;
   }
 }
 

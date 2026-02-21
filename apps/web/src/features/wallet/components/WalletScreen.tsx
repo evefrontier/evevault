@@ -19,7 +19,7 @@ import {
 import { zkSignAny } from "@evevault/shared/wallet";
 import { Transaction } from "@mysten/sui/transactions";
 import type { SuiChain } from "@mysten/wallet-standard";
-import { SUI_DEVNET_CHAIN } from "@mysten/wallet-standard";
+import { SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
 import { useNavigate } from "@tanstack/react-router";
 import React, { useEffect, useState } from "react";
 
@@ -55,7 +55,7 @@ export const WalletScreen = () => {
   // Create suiClient with useMemo to recreate when chain changes
   const suiClient = React.useMemo(() => {
     // Use chain from store if available, otherwise default to devnet
-    const currentChain = chain || SUI_DEVNET_CHAIN;
+    const currentChain = chain || SUI_TESTNET_CHAIN;
     log.debug("Creating SuiClient for chain", { chain: currentChain });
     return createSuiClient(currentChain);
   }, [chain]);
@@ -174,7 +174,7 @@ export const WalletScreen = () => {
       {/* Network display and Test transaction button */}
       <div className="justify-between pt-8 flex gap-4 flex-col sm:flex-row">
         <NetworkSelector
-          chain={chain || SUI_DEVNET_CHAIN}
+          chain={chain || SUI_TESTNET_CHAIN}
           onNetworkSwitchStart={(previousNetwork, targetNetwork) => {
             log.info("Network switch started", {
               previousNetwork,

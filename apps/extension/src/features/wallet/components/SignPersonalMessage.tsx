@@ -10,7 +10,7 @@ import { useNetwork } from "@evevault/shared/hooks/useNetwork";
 import type { PendingPersonalMessage } from "@evevault/shared/types";
 import { createLogger } from "@evevault/shared/utils";
 import { zkSignAny } from "@evevault/shared/wallet";
-import { SUI_DEVNET_CHAIN } from "@mysten/wallet-standard";
+import { SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
 import { useEffect, useState } from "react";
 
 const log = createLogger();
@@ -175,7 +175,7 @@ function SignPersonalMessage() {
       </div>
       <NetworkSelector
         className="justify-start w-full items-end"
-        chain={chain || SUI_DEVNET_CHAIN}
+        chain={chain || SUI_TESTNET_CHAIN}
       />
     </div>
   );
