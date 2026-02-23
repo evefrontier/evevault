@@ -37,6 +37,7 @@ import type {
   WalletEventListener,
 } from "../background/types";
 import { EVEFRONTIER_SPONSORED_TRANSACTION } from "../background/types";
+import { trySettle } from "../util/timeoutGuard";
 
 const log = createLogger();
 
@@ -207,76 +208,68 @@ export class EveVaultWallet implements Wallet {
   #connect: StandardConnectMethod = async () => {
     return new Promise<StandardConnectOutput>((resolve, reject) => {
       const id = crypto.randomUUID();
-      let settled = false;
+      const state = { settled: false };
 
       const onMsg = async (e: MessageEvent) => {
         const m = e.data || {};
 
         if (m.__from !== "Eve Vault" || m.id !== id) return;
         if (m.type === "auth_success") {
-          if (!settled) {
-            settled = true;
-            clearTimeout(timeoutId);
-            window.removeEventListener("message", onMsg);
-          }
-          const result = m.token;
+          if (trySettle(state, onMsg, timeoutId)) {
+            const result = m.token;
 
-          sessionStorage.setItem(
-            "evevault_jwt",
-            JSON.stringify(result.access_token),
-          );
+            sessionStorage.setItem(
+              "evevault_jwt",
+              JSON.stringify(result.access_token),
+            );
 
-          if (result) {
-            const zkLoginResponse = await getZkLoginAddress({
-              jwt: result.access_token,
-              enokiApiKey: import.meta.env.VITE_ENOKI_API_KEY,
-            });
+            if (result) {
+              const zkLoginResponse = await getZkLoginAddress({
+                jwt: result.access_token,
+                enokiApiKey: import.meta.env.VITE_ENOKI_API_KEY,
+              });
 
-            if (zkLoginResponse.error) {
-              throw new Error(zkLoginResponse.error.message);
+              if (zkLoginResponse.error) {
+                throw new Error(zkLoginResponse.error.message);
+              }
+
+              if (!zkLoginResponse.data) {
+                throw new Error("No data returned from zkLogin address lookup");
+              }
+
+              const { address } = zkLoginResponse.data;
+              const newAccount = new ReadonlyWalletAccount({
+                address,
+                publicKey: new Uint8Array(),
+                chains: [SUI_TESTNET_CHAIN, SUI_DEVNET_CHAIN],
+                features: [
+                  StandardConnect,
+                  StandardDisconnect,
+                  SuiSignPersonalMessage,
+                  SuiSignTransaction,
+                  SuiSignAndExecuteTransaction,
+                  EVEFRONTIER_SPONSORED_TRANSACTION,
+                ],
+              });
+
+              this.#accounts = [newAccount];
+
+              // Emit accounts change event - per spec, accounts array contains all current accounts
+              this.#emitChangeEvent({ accounts: this.#accounts });
             }
 
-            if (!zkLoginResponse.data) {
-              throw new Error("No data returned from zkLogin address lookup");
-            }
-
-            const { address } = zkLoginResponse.data;
-            const newAccount = new ReadonlyWalletAccount({
-              address,
-              publicKey: new Uint8Array(),
-              chains: [SUI_TESTNET_CHAIN, SUI_DEVNET_CHAIN],
-              features: [
-                StandardConnect,
-                StandardDisconnect,
-                SuiSignPersonalMessage,
-                SuiSignTransaction,
-                SuiSignAndExecuteTransaction,
-                EVEFRONTIER_SPONSORED_TRANSACTION,
-              ],
-            });
-
-            this.#accounts = [newAccount];
-
-            // Emit accounts change event - per spec, accounts array contains all current accounts
-            this.#emitChangeEvent({ accounts: this.#accounts });
+            resolve({ accounts: this.#accounts });
           }
-
-          resolve({ accounts: this.#accounts });
         } else {
-          if (!settled) {
-            settled = true;
-            clearTimeout(timeoutId);
-            window.removeEventListener("message", onMsg);
+          if (trySettle(state, onMsg, timeoutId)) {
+            reject(new Error(m.error?.message || "Authentication failed"));
           }
-          reject(new Error(m.error?.message || "Authentication failed"));
         }
       };
 
       window.addEventListener("message", onMsg);
       const timeoutId = setTimeout(() => {
-        if (!settled) {
-          settled = true;
-          window.removeEventListener("message", onMsg);
+        if (trySettle(state, onMsg)) {
           reject(new Error("Connection request timed out"));
         }
       }, APPROVAL_TIMEOUT_MS);
@@ -289,7 +282,7 @@ export class EveVaultWallet implements Wallet {
   ) => {
     return new Promise<SuiSignPersonalMessageOutput>((resolve, reject) => {
       const id = crypto.randomUUID();
-      let settled = false;
+      const state = { settled: false };
 
       const onMsg = async (e: MessageEvent) => {
         const m = e.data || {};
@@ -297,30 +290,22 @@ export class EveVaultWallet implements Wallet {
         if (m.__from !== "Eve Vault" || m.id !== id) return;
 
         if (m.type === "sign_success") {
-          if (!settled) {
-            settled = true;
-            clearTimeout(timeoutId);
-            window.removeEventListener("message", onMsg);
+          if (trySettle(state, onMsg, timeoutId)) {
+            resolve({
+              bytes: m.bytes,
+              signature: m.signature,
+            } as SuiSignPersonalMessageOutput);
           }
-          resolve({
-            bytes: m.bytes,
-            signature: m.signature,
-          } as SuiSignPersonalMessageOutput);
         } else if (m.type === "sign_personal_message_error") {
-          if (!settled) {
-            settled = true;
-            clearTimeout(timeoutId);
-            window.removeEventListener("message", onMsg);
+          if (trySettle(state, onMsg, timeoutId)) {
+            reject(new Error(m.error));
           }
-          reject(new Error(m.error));
         }
       };
 
       window.addEventListener("message", onMsg);
       const timeoutId = setTimeout(() => {
-        if (!settled) {
-          settled = true;
-          window.removeEventListener("message", onMsg);
+        if (trySettle(state, onMsg)) {
           reject(new Error("Message signing timed out"));
         }
       }, APPROVAL_TIMEOUT_MS);
@@ -345,7 +330,7 @@ export class EveVaultWallet implements Wallet {
 
     return new Promise<SignedTransaction>((resolve, reject) => {
       const id = crypto.randomUUID();
-      let settled = false;
+      const state = { settled: false };
 
       const onMsg = async (e: MessageEvent) => {
         const m = e.data || {};
@@ -354,32 +339,22 @@ export class EveVaultWallet implements Wallet {
         log.debug("[SuiWallet] #signTransaction message", m);
 
         if (m.type === "sign_success") {
-          // Guard to prevent multiple resolutions
-          if (!settled) {
-            settled = true;
-            clearTimeout(timeoutId);
-            window.removeEventListener("message", onMsg);
+          if (trySettle(state, onMsg, timeoutId)) {
+            resolve({
+              bytes: m.bytes,
+              signature: m.signature,
+            });
           }
-          resolve({
-            bytes: m.bytes,
-            signature: m.signature,
-          });
         } else if (m.type === "sign_transaction_error") {
-          // Guard to prevent multiple resolutions
-          if (!settled) {
-            settled = true;
-            clearTimeout(timeoutId);
-            window.removeEventListener("message", onMsg);
+          if (trySettle(state, onMsg, timeoutId)) {
+            reject(new Error(m.error));
           }
-          reject(new Error(m.error));
         }
       };
 
       window.addEventListener("message", onMsg);
       const timeoutId = setTimeout(() => {
-        if (!settled) {
-          settled = true;
-          window.removeEventListener("message", onMsg);
+        if (trySettle(state, onMsg)) {
           reject(new Error("Transaction signing timed out"));
         }
       }, APPROVAL_TIMEOUT_MS);
@@ -406,34 +381,26 @@ export class EveVaultWallet implements Wallet {
 
     return new Promise<SuiSignAndExecuteTransactionOutput>(
       (resolve, reject) => {
-        let settled = false;
+        const state = { settled: false };
 
         const onMsg = (e: MessageEvent) => {
           const m = e.data || {};
           if (m.__from !== "Eve Vault" || m.id !== id) return;
 
           if (m.type === "sign_and_execute_transaction_success") {
-            if (!settled) {
-              settled = true;
-              clearTimeout(timeoutId);
-              window.removeEventListener("message", onMsg);
+            if (trySettle(state, onMsg, timeoutId)) {
+              resolve(m.result);
             }
-            resolve(m.result);
           } else if (m.type === "sign_and_execute_transaction_error") {
-            if (!settled) {
-              settled = true;
-              clearTimeout(timeoutId);
-              window.removeEventListener("message", onMsg);
+            if (trySettle(state, onMsg, timeoutId)) {
+              reject(new Error(m.error));
             }
-            reject(new Error(m.error));
           }
         };
 
         window.addEventListener("message", onMsg);
         const timeoutId = setTimeout(() => {
-          if (!settled) {
-            settled = true;
-            window.removeEventListener("message", onMsg);
+          if (trySettle(state, onMsg)) {
             reject(new Error("Transaction approval timed out"));
           }
         }, APPROVAL_TIMEOUT_MS);
@@ -457,7 +424,7 @@ export class EveVaultWallet implements Wallet {
       return new Promise<EveFrontierSponsoredTransactionOutput>(
         (resolve, reject) => {
           const id = crypto.randomUUID();
-          let settled = false;
+          const state = { settled: false };
 
           const onMsg = async (e: MessageEvent) => {
             const m = e.data || {};
@@ -466,30 +433,22 @@ export class EveVaultWallet implements Wallet {
             log.debug("[SuiWallet] #signSponsoredTransaction message", m);
 
             if (m.type === "sign_success") {
-              if (!settled) {
-                settled = true;
-                clearTimeout(timeoutId);
-                window.removeEventListener("message", onMsg);
+              if (trySettle(state, onMsg, timeoutId)) {
+                resolve({
+                  digest: m.digest,
+                  effects: m.effects,
+                });
               }
-              resolve({
-                digest: m.digest,
-                effects: m.effects,
-              });
             } else if (m.type === "sign_sponsored_transaction_error") {
-              if (!settled) {
-                settled = true;
-                clearTimeout(timeoutId);
-                window.removeEventListener("message", onMsg);
+              if (trySettle(state, onMsg, timeoutId)) {
+                reject(new Error(m.error));
               }
-              reject(new Error(m.error));
             }
           };
 
           window.addEventListener("message", onMsg);
           const timeoutId = setTimeout(() => {
-            if (!settled) {
-              settled = true;
-              window.removeEventListener("message", onMsg);
+            if (trySettle(state, onMsg)) {
               reject(new Error("Sponsored transaction timed out"));
             }
           }, APPROVAL_TIMEOUT_MS);
