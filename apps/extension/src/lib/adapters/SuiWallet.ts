@@ -465,8 +465,8 @@ export class EveVaultWallet implements Wallet {
             message: {
               action: input.txAction,
               assembly: input.assembly,
+              assemblyType: input.assemblyType,
               chain: input.chain,
-              walletId: input.walletId,
               jwt: input.jwt,
             },
           });

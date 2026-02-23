@@ -26,8 +26,8 @@ export type EveFrontierSponsoredTransactionMessage = BackgroundMessage & {
   message: {
     action: string;
     assembly: string;
+    assemblyType: string;
     chain: string;
-    walletId: string;
     jwt: string;
   };
 };
@@ -62,8 +62,8 @@ export const EVEFRONTIER_SPONSORED_TRANSACTION =
 export type EveFrontierSponsoredTransactionInput = {
   txAction: string;
   assembly: string;
+  assemblyType: string;
   chain: string;
-  walletId: string;
   jwt: string;
 };
 export type EveFrontierSponsoredTransactionOutput = {
