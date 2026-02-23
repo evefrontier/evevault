@@ -184,7 +184,7 @@ async function handleSponsoredTransaction(
           ownerId: 5,
         }),
         headers: {
-          "X-Tenant": "testevenet",
+          "X-Tenant": import.meta.env.VITE_FRONTIER_TENANT,
           "Content-Type": "application/json",
           Authorization: `Bearer ${jwt.access_token}`,
         },

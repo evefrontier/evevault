@@ -7,6 +7,7 @@ interface ImportMetaEnv {
   readonly VITE_FUSIONAUTH_CLIENT_ID: string;
   readonly VITE_FUSIONAUTH_API_KEY: string;
   readonly VITE_FUSION_CLIENT_SECRET: string;
+  readonly VITE_FRONTIER_TENANT: string;
   readonly [key: string]: string | undefined;
 }
 
