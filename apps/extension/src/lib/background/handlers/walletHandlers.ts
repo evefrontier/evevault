@@ -174,9 +174,12 @@ async function handleSponsoredTransaction(
       chain,
     });
 
+    const encodedAssemblyType = encodeURIComponent(assemblyType);
+    const encodedAction = encodeURIComponent(action);
+
     // Fetch the txb to be signed from the Quasar proxy
     const response = await fetch(
-      `https://api.test.tech.evefrontier.com/transactions/sponsored/${assemblyType}/${action}`,
+      `https://api.test.tech.evefrontier.com/transactions/sponsored/${encodedAssemblyType}/${encodedAction}`,
       {
         method: "POST",
         body: JSON.stringify({
