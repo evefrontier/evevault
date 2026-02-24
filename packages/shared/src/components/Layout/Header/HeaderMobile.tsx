@@ -56,23 +56,7 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
       });
     }
 
-    // 2. Copy Address (always)
-    items.push({
-      label: "Copy Address",
-      icon: "Copy" as IconName,
-      onClick: () => copy(address),
-    });
-
-    // 3. Transaction History (optional)
-    if (onTransactionsClick) {
-      items.push({
-        label: "Transaction History",
-        icon: "History" as IconName,
-        onClick: onTransactionsClick,
-      });
-    }
-
-    // 4. Sign and submit test (only when dev mode on)
+    // 2. Sign and submit test (only when dev mode on) – right under Dev mode
     if (showDevActions && onSignSubmitTxClick) {
       items.push({
         label: "Sign and submit test",
@@ -81,12 +65,28 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
       });
     }
 
-    // 5. Token refresh test (only when dev mode on)
+    // 3. Token refresh test (only when dev mode on)
     if (showDevActions && onTokenRefreshTestClick) {
       items.push({
         label: "Token refresh test",
         icon: "Refresh" as IconName,
         onClick: onTokenRefreshTestClick,
+      });
+    }
+
+    // 4. Copy Address (always)
+    items.push({
+      label: "Copy Address",
+      icon: "Copy" as IconName,
+      onClick: () => copy(address),
+    });
+
+    // 5. Transaction History (optional)
+    if (onTransactionsClick) {
+      items.push({
+        label: "Transaction History",
+        icon: "History" as IconName,
+        onClick: onTransactionsClick,
       });
     }
 

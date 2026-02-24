@@ -287,6 +287,8 @@ export interface DropdownProps {
   onClickOutside?: () => void;
   /** Ref to the trigger element (clicks on trigger won't trigger onClickOutside) */
   triggerRef?: React.RefObject<HTMLElement | null>;
+  /** Open menu above trigger (e.g. for extension footer) or below (default) */
+  placement?: "top" | "bottom";
 }
 
 export type HeadingProps = React.HTMLAttributes<HTMLHeadingElement> & {

@@ -164,6 +164,7 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
           <Dropdown
             onClickOutside={() => setIsOpen(false)}
             triggerRef={triggerRef}
+            placement={isExtensionContext ? "top" : "bottom"}
           >
             {AVAILABLE_NETWORKS.map((network) => (
               <button

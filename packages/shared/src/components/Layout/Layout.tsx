@@ -77,7 +77,7 @@ export const Layout: React.FC<LayoutProps> = ({
   if (variant === "extension") {
     const extensionPaddingStyle = {
       paddingTop: EXTENSION_MARGIN.vertical,
-      paddingBottom: 0,
+      paddingBottom: EXTENSION_MARGIN.vertical,
       paddingLeft: EXTENSION_MARGIN.horizontal,
       paddingRight: EXTENSION_MARGIN.horizontal,
     };
