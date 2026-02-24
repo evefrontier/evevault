@@ -194,8 +194,16 @@ export interface HeaderMobileProps {
   email: string;
   logoSrc?: string;
   identicon?: number;
-  /** Callback when "Transactions" menu item is clicked */
+  /** Callback when "Transaction History" menu item is clicked */
   onTransactionsClick?: () => void;
+  /** When true, show "Sign and submit test" and "Token refresh test" (when callbacks provided) */
+  showDevActions?: boolean;
+  /** Callback when "Dev mode" toggle menu item is clicked */
+  onDevModeToggle?: () => void;
+  /** Callback when "Sign and submit test" menu item is clicked */
+  onSignSubmitTxClick?: () => void;
+  /** Callback when "Token refresh test" menu item is clicked */
+  onTokenRefreshTestClick?: () => void;
 }
 
 export type CornersColor =
@@ -249,6 +257,10 @@ export interface DropdownItem {
   label: string;
   icon?: IconName;
   onClick: () => void;
+  /** When true, clicking this item does not close the dropdown */
+  preventCloseOnClick?: boolean;
+  /** When set, renders this instead of default icon + label (e.g. for a row with a toggle) */
+  customContent?: ReactNode;
 }
 
 export interface DropdownSelectProps {

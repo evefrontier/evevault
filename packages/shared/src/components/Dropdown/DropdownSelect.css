@@ -7,6 +7,11 @@
   --menu-height: 0px;
 }
 
+/* When open, ensure dropdown (trigger + menu) stacks above all other content */
+.dropdown-select--open {
+  z-index: 1000;
+}
+
 /* Trigger Button - Outer wrapper with corners */
 .dropdown-select__trigger {
   display: flex;
@@ -115,28 +120,28 @@
   }
 }
 
-/* Dropdown Menu */
+/* Dropdown Menu - black overlay with opacity, stacks above other UI to prevent overflow */
 .dropdown-select__menu {
   position: absolute;
   top: 100%;
   left: 1px;
   right: 1px;
   width: auto;
-  background: var(--crude-9008);
-  z-index: 0;
+  background: rgba(0, 0, 0, 0.92);
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: 0;
 }
 
-/* Full width menu on mobile */
+/* Match trigger width on narrow viewports (extension popup, mobile) so each item covers full line */
 @media (max-width: 500px) {
   .dropdown-select__menu {
-    left: auto;
+    left: 1px;
     right: 1px;
-    min-width: 180px;
-    width: max-content;
+    min-width: 220px;
+    width: auto;
   }
 }
 

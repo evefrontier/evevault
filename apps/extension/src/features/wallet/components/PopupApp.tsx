@@ -1,5 +1,5 @@
 import "./PopupApp.css";
-import { useAuth } from "@evevault/shared/auth";
+import { handleTestTokenRefresh, useAuth } from "@evevault/shared/auth";
 import {
   Button,
   HeaderMobile,
@@ -18,13 +18,14 @@ import { useNetworkStore } from "@evevault/shared/stores/networkStore";
 import {
   createLogger,
   EXTENSION_ROUTES,
+  getDevModeEnabled,
   getSuiscanUrl,
+  setDevModeEnabled,
 } from "@evevault/shared/utils";
 import { useBalance } from "@evevault/shared/wallet";
 import type { SuiChain } from "@mysten/wallet-standard";
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { handleTestTokenRefresh } from "../api/tokenRefresh";
+import { useCallback, useEffect, useState } from "react";
 import { useAppInitialization, useLogin } from "../hooks";
 
 const log = createLogger();
@@ -32,6 +33,7 @@ const log = createLogger();
 function App() {
   const navigate = useNavigate();
   const { initError, isInitializing } = useAppInitialization();
+  const [devMode, setDevMode] = useState(false);
   const [previousNetworkBeforeSwitch, setPreviousNetworkBeforeSwitch] =
     useState<SuiChain | null>(null);
 
@@ -60,12 +62,27 @@ function App() {
     }
   }, [user, previousNetworkBeforeSwitch]);
 
+  useEffect(() => {
+    getDevModeEnabled().then(setDevMode);
+  }, []);
+
+  const handleDevModeToggle = useCallback(async () => {
+    const next = !devMode;
+    setDevMode(next);
+    await setDevModeEnabled(next);
+  }, [devMode]);
+
   const onLoginClick = async () => {
     const success = await handleLogin(previousNetworkBeforeSwitch);
     if (success) {
       setPreviousNetworkBeforeSwitch(null);
     }
   };
+
+  const handleTokenRefreshTest = useCallback(async () => {
+    if (!user) return;
+    await handleTestTokenRefresh(user, nonce || "nononcefound");
+  }, [user, nonce]);
 
   // Show loading state while initializing
   if (isInitializing) {
@@ -118,6 +135,10 @@ function App() {
         onTransactionsClick={() =>
           navigate({ to: EXTENSION_ROUTES.TRANSACTIONS })
         }
+        showDevActions={devMode}
+        onDevModeToggle={handleDevModeToggle}
+        onSignSubmitTxClick={devMode ? handleTestTransaction : undefined}
+        onTokenRefreshTestClick={devMode ? handleTokenRefreshTest : undefined}
       />
 
       {/* Token Section */}
@@ -131,8 +152,8 @@ function App() {
         }
       />
 
-      {/* Network display and Test transaction button */}
-      <div className=" justify-between  flex items-center gap-4 ">
+      {/* Network selector and test tx result */}
+      <div className="justify-between flex items-center gap-4">
         <NetworkSelector
           chain={chain}
           onNetworkSwitchStart={(previousNetwork, targetNetwork) => {
@@ -143,22 +164,6 @@ function App() {
             setPreviousNetworkBeforeSwitch(previousNetwork as SuiChain);
           }}
         />
-        <Button
-          variant="secondary"
-          size="small"
-          onClick={handleTestTransaction}
-        >
-          Submit test
-        </Button>
-        <Button
-          variant="secondary"
-          size="small"
-          onClick={async () =>
-            await handleTestTokenRefresh(user, nonce || "nononcefound")
-          }
-        >
-          Token refresh test
-        </Button>
       </div>
 
       {authError && <Text color="error">AuthError: {authError}</Text>}
