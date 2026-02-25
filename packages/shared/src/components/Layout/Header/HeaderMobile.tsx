@@ -48,7 +48,7 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
             >
               <Switch
                 isChecked={showDevActions}
-                onChange={() => onDevModeToggle()}
+                onChange={(_checked) => onDevModeToggle()}
               />
             </button>
           </>
