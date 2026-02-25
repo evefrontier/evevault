@@ -87,24 +87,36 @@ function App() {
   // Show loading state while initializing
   if (isInitializing) {
     return (
-      <>
-        <Heading level={1} variant="bold">
-          EVE Vault
-        </Heading>
-        <Text>Loading...</Text>
-      </>
+      <div className="flex flex-col items-center justify-between gap-4 w-full h-full">
+        <section className="flex flex-col items-center gap-10 w-full flex-1">
+          <img src="/images/logo.png" alt="EVE Vault" className="h-20 w-auto" />
+          <header className="flex flex-col items-center gap-4 text-center">
+            <Heading level={2}>Loading...</Heading>
+            <Text variant="light" size="large">
+              Preparing your wallet
+            </Text>
+          </header>
+        </section>
+      </div>
     );
   }
 
   if (initError) {
     return (
-      <>
-        <Heading level={1} variant="bold">
-          EVE Vault
-        </Heading>
-        <Text color="error">Error: {initError}</Text>
-        <Button onClick={() => window.location.reload()}>Reload</Button>
-      </>
+      <div className="flex flex-col items-center justify-between gap-4 w-full h-full">
+        <section className="flex flex-col items-center gap-10 w-full flex-1">
+          <img src="/images/logo.png" alt="EVE Vault" className="h-20 w-auto" />
+          <header className="flex flex-col items-center gap-4 text-center">
+            <Heading level={2}>Error</Heading>
+            <Text color="error">Error: {initError}</Text>
+            <div className="w-full max-w-[300px]">
+              <Button size="fill" onClick={() => window.location.reload()}>
+                Reload
+              </Button>
+            </div>
+          </header>
+        </section>
+      </div>
     );
   }
 
@@ -116,12 +128,19 @@ function App() {
   // If ephemeral keypair exists, but user is not logged in, show login screen
   if (!user) {
     return (
-      <>
-        <Heading level={1} variant="bold">
-          EVE Vault
-        </Heading>
-        <Button onClick={onLoginClick}>Sign in</Button>
-      </>
+      <div className="flex flex-col items-center justify-between gap-4 w-full h-full">
+        <section className="flex flex-col items-center gap-10 w-full flex-1">
+          <img src="/images/logo.png" alt="EVE Vault" className="h-20 w-auto" />
+          <header className="flex flex-col items-center gap-4 text-center">
+            <Heading level={2}>Sign in</Heading>
+          </header>
+          <div className="w-full max-w-[300px]">
+            <Button size="fill" onClick={onLoginClick}>
+              Login
+            </Button>
+          </div>
+        </section>
+      </div>
     );
   }
 
