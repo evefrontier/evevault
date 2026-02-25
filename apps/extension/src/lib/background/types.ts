@@ -81,3 +81,8 @@ export type EveVaultWalletFeatures = SuiWalletFeatures & {
     signSponsoredTransaction: EveFrontierSponsoredTransactionMethod;
   };
 };
+
+export type SponsoredTxReturn = {
+  bcsDataB64Bytes: string;
+  preparationId: string;
+};
