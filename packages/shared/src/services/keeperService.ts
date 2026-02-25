@@ -138,8 +138,10 @@ export const zkProofService = {
     if (res?.ok) {
       log.debug("zkProof stored in keeper");
     } else {
-      log.error("Failed to set zkProof in keeper", res);
-      throw new Error(res?.error || "Failed to set zkProof in keeper");
+      log.warn("Could not cache zkProof in keeper (proof still valid)", {
+        hasResponse: res != null,
+        error: res?.error,
+      });
     }
   },
 

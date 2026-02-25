@@ -1,14 +1,5 @@
-import { WalletStandardMessageTypes, zkSignAny } from "@evevault/shared";
-import {
-  getJwtForNetwork,
-  getStoredChain,
-  useAuthStore,
-} from "@evevault/shared/auth";
-import {
-  useDeviceStore,
-  useNetworkStore,
-  waitForDeviceHydration,
-} from "@evevault/shared/stores";
+import { WalletStandardMessageTypes } from "@evevault/shared";
+import { getJwtForNetwork, getStoredChain } from "@evevault/shared/auth";
 import { createLogger } from "@evevault/shared/utils";
 import { openPopupWindow } from "../services/popupWindow";
 import type {
@@ -194,14 +185,12 @@ async function handleSponsoredTransaction(
     const encodedAction = encodeURIComponent(action);
     const encodedTier = encodeURIComponent(import.meta.env.VITE_QUASAR_TIER);
 
-    // Fetch the txb to be signed from the Quasar proxy
     const response = await fetch(
       `https://api.${encodedTier}.tech.evefrontier.com/transactions/sponsored/${encodedAssemblyType}/${encodedAction}`,
       {
         method: "POST",
         body: JSON.stringify({
           assemblyId: assembly,
-          // ownerId: 5,
         }),
         headers: {
           "X-Tenant": import.meta.env.VITE_FRONTIER_TENANT,
@@ -217,118 +206,111 @@ async function handleSponsoredTransaction(
 
     const sponsoredTxReturn = (await response.json()) as SponsoredTxReturn;
 
-    await waitForDeviceHydration();
+    const actionType =
+      WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION;
+    const windowId = await openPopupWindow(actionType);
 
-    const user = useAuthStore.getState().user;
-    if (!user) {
-      const error = "User not authenticated. Sign in and try again.";
-      if (senderTabId != null) {
-        chrome.tabs
-          .sendMessage(senderTabId, {
-            type: "sign_sponsored_transaction_error",
-            error,
-            id: message.id,
-          })
-          .catch((err) => {
-            log.error("Failed to send error message to tab", err);
-          });
-      } else {
-        log.warn("No sender tab id, cannot send user error to page", { error });
-      }
-      return true;
+    if (!windowId) {
+      throw new Error("Failed to open sponsored transaction popup");
     }
 
-    const deviceStore = useDeviceStore.getState();
-    const ephemeralPublicKey = deviceStore.ephemeralPublicKey;
-    const maxEpoch = deviceStore.getMaxEpoch(chain);
-    if (!ephemeralPublicKey || !maxEpoch) {
-      const error = !ephemeralPublicKey
-        ? "Device key not found. Unlock the wallet and try again."
-        : "Max epoch not set for current network. Re-authenticate and try again.";
-      if (senderTabId != null) {
-        chrome.tabs
-          .sendMessage(senderTabId, {
-            type: "sign_sponsored_transaction_error",
-            error,
-            id: message.id,
-          })
-          .catch((err) => {
-            log.error("Failed to send error message to tab", err);
-          });
-      } else {
-        log.warn("No sender tab id, cannot send device error to page", {
-          error,
-        });
-      }
-      return true;
-    }
-
-    const networkStore = useNetworkStore.getState();
-    const previousChain = networkStore.chain;
-    networkStore.forceSetChain(chain);
-
-    let zkSignature: string;
-    try {
-      const getZkProof = () => useDeviceStore.getState().getZkProof();
-      const txbBytes = new Uint8Array(
-        Buffer.from(sponsoredTxReturn.bcsDataB64Bytes, "base64"),
-      );
-      const result = await zkSignAny("TransactionData", txbBytes, {
-        user,
-        ephemeralPublicKey,
-        maxEpoch,
-        getZkProof,
-      });
-      zkSignature = result.zkSignature;
-    } finally {
-      if (previousChain !== chain) {
-        networkStore.forceSetChain(previousChain);
-      }
-    }
-
-    // Then, send the txb to the quasar service
-    const executeResponse = await fetch(
-      `https://api.${encodedTier}.tech.evefrontier.com/transactions/sponsored/execute`,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          preparationId: sponsoredTxReturn.preparationId,
-          userSignatureB64Bytes: zkSignature,
-        }),
-        headers: {
-          "X-Tenant": import.meta.env.VITE_FRONTIER_TENANT,
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${jwt.id_token}`,
-        },
+    await chrome.storage.local.set({
+      pendingAction: {
+        action: actionType,
+        id: message.id,
+        senderTabId,
+        timestamp: Date.now(),
+        windowId,
+        sponsoredTxB64: sponsoredTxReturn.bcsDataB64Bytes,
+        preparationId: sponsoredTxReturn.preparationId,
+        chain,
       },
+    });
+
+    const storageListener = (changes: {
+      [key: string]: chrome.storage.StorageChange;
+    }) => {
+      const result = changes.transactionResult?.newValue;
+      if (!result || result.windowId !== windowId) return;
+
+      chrome.storage.onChanged.removeListener(storageListener);
+      chrome.storage.local.remove(["pendingAction", "transactionResult"]);
+
+      if (
+        result.status === "signed" &&
+        result.zkSignature != null &&
+        result.preparationId != null &&
+        senderTabId != null
+      ) {
+        (async () => {
+          try {
+            const executeResponse = await fetch(
+              `https://api.${encodedTier}.tech.evefrontier.com/transactions/sponsored/execute`,
+              {
+                method: "POST",
+                body: JSON.stringify({
+                  preparationId: result.preparationId,
+                  userSignatureB64Bytes: result.zkSignature,
+                }),
+                headers: {
+                  "X-Tenant": import.meta.env.VITE_FRONTIER_TENANT,
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${jwt.id_token}`,
+                },
+              },
+            );
+
+            if (!executeResponse.ok) {
+              throw new Error(
+                `Sponsored execute failed: ${executeResponse.status} ${executeResponse.statusText}`,
+              );
+            }
+
+            const executeResult = (await executeResponse.json()) as {
+              digest?: string;
+              effects?: string;
+              [key: string]: unknown;
+            };
+            const digest = executeResult.digest ?? "0x0";
+            const effects = executeResult.effects ?? "0x0";
+
+            await chrome.tabs.sendMessage(senderTabId, {
+              type: "sign_success",
+              digest,
+              effects,
+              id: message.id,
+            });
+          } catch (err) {
+            log.error("Sponsored execute failed", err);
+            const errorMessage =
+              err instanceof Error ? err.message : "Unknown error occurred";
+            await chrome.tabs.sendMessage(senderTabId, {
+              type: "sign_sponsored_transaction_error",
+              error: errorMessage,
+              id: message.id,
+            });
+          }
+        })();
+      } else if (result.status === "error" && senderTabId != null) {
+        chrome.tabs
+          .sendMessage(senderTabId, {
+            type: "sign_sponsored_transaction_error",
+            error: result.error ?? "Transaction rejected or failed",
+            id: message.id,
+          })
+          .catch((err) => {
+            log.error("Failed to send error message to tab", err);
+          });
+      }
+    };
+
+    chrome.storage.onChanged.addListener(storageListener);
+    setTimeout(
+      () => chrome.storage.onChanged.removeListener(storageListener),
+      10 * 60 * 1000,
     );
 
-    if (!executeResponse.ok) {
-      throw new Error(
-        `Sponsored execute failed: ${executeResponse.status} ${executeResponse.statusText}`,
-      );
-    }
-
-    const executeResult = (await executeResponse.json()) as {
-      digest?: string;
-      effects?: string;
-      [key: string]: unknown;
-    };
-    const digest = executeResult.digest ?? "0x0";
-    const effects = executeResult.effects ?? "0x0";
-
-    chrome.tabs
-      .sendMessage(senderTabId as number, {
-        type: "sign_success",
-        digest,
-        effects,
-        id: message.id,
-      })
-      .catch((err) => {
-        log.error("Failed to send success message", err);
-      });
-
-    return true; // Keep message channel open for async response
+    return true;
   } catch (error) {
     log.error("Transaction signing failed", error);
     const errorMessage =
