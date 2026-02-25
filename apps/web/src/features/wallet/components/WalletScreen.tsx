@@ -140,7 +140,14 @@ export const WalletScreen = () => {
 
   const handleTokenRefreshTest = useCallback(async () => {
     if (!user) return;
-    await handleTestTokenRefresh(user, nonce ?? "nononcefound");
+    if (!nonce) {
+      log.error("[Wallet Screen] Cannot refresh token: nonce is missing");
+      window.alert(
+        "Cannot refresh authentication token because the device nonce is missing. Please log in again.",
+      );
+      return;
+    }
+    await handleTestTokenRefresh(user, nonce);
   }, [user, nonce]);
 
   // Show loading state while initializing
