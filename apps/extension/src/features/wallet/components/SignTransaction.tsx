@@ -159,7 +159,7 @@ function SignTransaction() {
       <div className="flex flex-col items-center justify-center gap-10">
         <img src="/images/logo.png" alt="EVE Vault" className="h-20 " />
         <div className="flex flex-col items-center justify-center gap-4">
-          <Heading level={2}>Approve Transaction</Heading>
+          <Heading level={2}>Sign Transaction</Heading>
           <Json value={JSON.stringify(transaction)} className={"max-h-24"} />
         </div>
 
