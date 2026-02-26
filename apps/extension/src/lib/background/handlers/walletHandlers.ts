@@ -150,7 +150,7 @@ async function handleSponsoredTransaction(
   sendResponse: (response?: unknown) => void,
 ): Promise<boolean> {
   const senderTabId = sender.tab?.id;
-  const { action, assembly } = message.message;
+  const { action, assembly, assemblyType } = message.message;
 
   try {
     const chain = await getStoredChain();
@@ -163,35 +163,31 @@ async function handleSponsoredTransaction(
       return false;
     }
 
-    const walletId = await getStoredWalletAddress();
-    if (!walletId) {
-      sendResponse({
-        type: "sign_transaction_error",
-        error: "Wallet address not found; sign in in the extension first.",
-      });
-      return false;
-    }
-
-    if (!assembly) {
-      throw new Error("Assembly not found");
+    if (!assembly || !assemblyType) {
+      throw new Error(`Assembly not found: ${assembly}, ${assemblyType}`);
     }
 
     log.info("Eve Frontier sponsored transaction request received", {
       action,
       assembly,
+      assemblyType,
       chain,
     });
 
+    const encodedAssemblyType = encodeURIComponent(assemblyType);
+    const encodedAction = encodeURIComponent(action);
+
     // Fetch the txb to be signed from the Quasar proxy
     const response = await fetch(
-      `https://api.test.tech.evefrontier.com/transactions/sponsored/assemblies/${action}`,
+      `https://api.test.tech.evefrontier.com/transactions/sponsored/${encodedAssemblyType}/${encodedAction}`,
       {
         method: "POST",
         body: JSON.stringify({
           assemblyId: assembly,
-          ownerId: walletId,
+          ownerId: 5,
         }),
         headers: {
+          "X-Tenant": import.meta.env.VITE_FRONTIER_TENANT,
           "Content-Type": "application/json",
           Authorization: `Bearer ${jwt.access_token}`,
         },
