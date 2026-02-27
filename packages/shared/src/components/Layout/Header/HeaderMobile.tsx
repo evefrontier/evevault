@@ -9,7 +9,7 @@ import {
   DropdownSelect,
   getIdenticon,
 } from "../../Dropdown";
-import Switch from "../../Switch/Switch";
+import Switch from "../../Switch";
 import Text from "../../Text";
 
 export const HeaderMobile: React.FC<HeaderMobileProps> = ({

@@ -37,7 +37,7 @@ function App() {
   const [previousNetworkBeforeSwitch, setPreviousNetworkBeforeSwitch] =
     useState<SuiChain | null>(null);
 
-  const { user, error: authError } = useAuth();
+  const { user, loading: authLoading, error: authError } = useAuth();
   const { isLocked, isPinSet, error: deviceError, unlock } = useDevice();
   const { chain } = useNetworkStore();
   const { handleLogin } = useLogin();
@@ -143,8 +143,8 @@ function App() {
             <Heading level={2}>Sign in</Heading>
           </header>
           <div className="w-full max-w-[300px]">
-            <Button size="fill" onClick={onLoginClick}>
-              Login
+            <Button size="fill" onClick={onLoginClick} disabled={authLoading}>
+              {authLoading ? "Loading..." : "Login"}
             </Button>
           </div>
         </section>
