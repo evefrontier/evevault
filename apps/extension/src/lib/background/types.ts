@@ -64,8 +64,6 @@ export type EveFrontierSponsoredTransactionInput = {
   txAction: string;
   assembly: string;
   assemblyType: string;
-  chain: string;
-  jwt: string;
   tenant: string;
 };
 export type EveFrontierSponsoredTransactionOutput = {

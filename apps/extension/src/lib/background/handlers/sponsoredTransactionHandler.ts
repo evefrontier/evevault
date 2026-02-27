@@ -77,7 +77,18 @@ async function handleSponsoredTransaction(
       throw new Error(`Failed to fetch txb: ${response.statusText}`);
     }
 
-    const sponsoredTxReturn = (await response.json()) as SponsoredTxReturn;
+    const raw = await response.json();
+    if (
+      raw == null ||
+      typeof raw !== "object" ||
+      typeof raw.bcsDataB64Bytes !== "string" ||
+      typeof raw.preparationId !== "string"
+    ) {
+      throw new Error(
+        "Sponsored tx API returned invalid shape: expected { bcsDataB64Bytes: string, preparationId: string }",
+      );
+    }
+    const sponsoredTxReturn = raw as SponsoredTxReturn;
 
     const actionType =
       WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION;
@@ -126,7 +137,7 @@ async function handleSponsoredTransaction(
                   userSignatureB64Bytes: result.zkSignature,
                 }),
                 headers: {
-                  "X-Tenant": import.meta.env.VITE_FRONTIER_TENANT,
+                  "X-Tenant": tenant,
                   "Content-Type": "application/json",
                   Authorization: `Bearer ${jwt.id_token}`,
                 },
