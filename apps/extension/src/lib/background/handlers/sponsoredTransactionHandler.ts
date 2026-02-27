@@ -1,6 +1,8 @@
 import { WalletStandardMessageTypes } from "@evevault/shared";
 import { getJwtForNetwork, getStoredChain } from "@evevault/shared/auth";
 import { createLogger } from "@evevault/shared/utils";
+import { decodeJwt } from "jose";
+import type { IdTokenClaims } from "oidc-client-ts";
 import { openPopupWindow } from "../services/popupWindow";
 import type {
   EveFrontierSponsoredTransactionMessage,
@@ -15,7 +17,7 @@ async function handleSponsoredTransaction(
   _sendResponse: (response?: unknown) => void,
 ): Promise<boolean> {
   const senderTabId = sender.tab?.id;
-  const { action, assembly, assemblyType, tenant } = message.message;
+  const { action, assembly, assemblyType } = message.message;
 
   try {
     const chain = await getStoredChain();
@@ -42,24 +44,22 @@ async function handleSponsoredTransaction(
       throw new Error(`Assembly not found: ${assembly}, ${assemblyType}`);
     }
 
-    if (!tenant) {
-      throw new Error("Tenant not found");
-    }
-
     log.info("Eve Frontier sponsored transaction request received", {
       action,
       assembly,
       assemblyType,
       chain,
-      tenant,
     });
 
     const encodedAssemblyType = encodeURIComponent(assemblyType);
     const encodedAction = encodeURIComponent(action);
-    const encodedTier = encodeURIComponent(import.meta.env.VITE_QUASAR_TIER);
+
+    const decodedJwt = decodeJwt<IdTokenClaims>(jwt.id_token);
+    const tier = decodedJwt.tier;
+    const tenant = (decodedJwt.tenant as string) || "";
 
     const response = await fetch(
-      `https://api.${encodedTier}.tech.evefrontier.com/transactions/sponsored/${encodedAssemblyType}/${encodedAction}`,
+      `https://api.${tier}.tech.evefrontier.com/transactions/sponsored/${encodedAssemblyType}/${encodedAction}`,
       {
         method: "POST",
         body: JSON.stringify({
