@@ -29,6 +29,7 @@ export type EveFrontierSponsoredTransactionMessage = BackgroundMessage & {
     assemblyType: string;
     chain: string;
     jwt: string;
+    tenant: string;
   };
 };
 
@@ -65,6 +66,7 @@ export type EveFrontierSponsoredTransactionInput = {
   assemblyType: string;
   chain: string;
   jwt: string;
+  tenant: string;
 };
 export type EveFrontierSponsoredTransactionOutput = {
   digest: string;

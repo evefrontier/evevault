@@ -468,6 +468,7 @@ export class EveVaultWallet implements Wallet {
               assemblyType: input.assemblyType,
               chain: input.chain,
               jwt: input.jwt,
+              tenant: input.tenant,
             },
           });
         },

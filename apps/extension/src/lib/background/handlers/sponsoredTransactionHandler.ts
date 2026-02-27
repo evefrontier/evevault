@@ -15,7 +15,7 @@ async function handleSponsoredTransaction(
   _sendResponse: (response?: unknown) => void,
 ): Promise<boolean> {
   const senderTabId = sender.tab?.id;
-  const { action, assembly, assemblyType } = message.message;
+  const { action, assembly, assemblyType, tenant } = message.message;
 
   try {
     const chain = await getStoredChain();
@@ -42,11 +42,16 @@ async function handleSponsoredTransaction(
       throw new Error(`Assembly not found: ${assembly}, ${assemblyType}`);
     }
 
+    if (!tenant) {
+      throw new Error("Tenant not found");
+    }
+
     log.info("Eve Frontier sponsored transaction request received", {
       action,
       assembly,
       assemblyType,
       chain,
+      tenant,
     });
 
     const encodedAssemblyType = encodeURIComponent(assemblyType);
@@ -61,7 +66,7 @@ async function handleSponsoredTransaction(
           assemblyId: assembly,
         }),
         headers: {
-          "X-Tenant": import.meta.env.VITE_FRONTIER_TENANT,
+          "X-Tenant": tenant,
           "Content-Type": "application/json",
           Authorization: `Bearer ${jwt.id_token}`,
         },
