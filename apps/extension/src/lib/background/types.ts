@@ -79,7 +79,7 @@ export type EveFrontierSponsoredTransactionMethod = (
 
 export type EveVaultWalletFeatures = SuiWalletFeatures & {
   [EVEFRONTIER_SPONSORED_TRANSACTION]: {
-    version: "1.0.0";
+    version: "1.0.1";
     signSponsoredTransaction: EveFrontierSponsoredTransactionMethod;
   };
 };

@@ -111,7 +111,7 @@ export class EveVaultWallet implements Wallet {
         signAndExecuteTransaction: this.#signAndExecuteTransaction,
       },
       [EVEFRONTIER_SPONSORED_TRANSACTION]: {
-        version: "1.0.0",
+        version: "1.0.1",
         signSponsoredTransaction: this.#signEveFrontierSponsoredTransaction,
       },
     };
