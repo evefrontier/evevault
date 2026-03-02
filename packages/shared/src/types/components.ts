@@ -3,20 +3,16 @@ import type { User } from "oidc-client-ts";
 import type {
   ButtonHTMLAttributes,
   CSSProperties,
-  Dispatch,
   FC,
   InputHTMLAttributes,
   ReactNode,
-  SetStateAction,
   SVGProps,
 } from "react";
 import type { ThemeToken } from "../theme/colorTheme";
 
 export interface SwitchProps {
   isChecked: boolean;
-  onChange: (
-    isChecked: boolean,
-  ) => undefined | Dispatch<SetStateAction<boolean>>;
+  onChange: (isChecked: boolean) => void;
   disabled?: boolean;
   className?: string;
   style?: CSSProperties;
@@ -198,8 +194,8 @@ export interface HeaderMobileProps {
   onTransactionsClick?: () => void;
   /** When true, show "Sign and submit test" and "Token refresh test" (when callbacks provided) */
   showDevActions?: boolean;
-  /** Callback when "Dev mode" toggle menu item is clicked */
-  onDevModeToggle?: () => undefined | Dispatch<SetStateAction<boolean>>;
+  /** Callback when "Dev mode" toggle menu item is clicked (may be async). */
+  onDevModeToggle?: () => void | Promise<void>;
   /** Callback when "Sign and submit test" menu item is clicked */
   onSignSubmitTxClick?: () => void;
   /** Callback when "Token refresh test" menu item is clicked */
