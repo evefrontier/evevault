@@ -199,7 +199,7 @@ export interface HeaderMobileProps {
   /** When true, show "Sign and submit test" and "Token refresh test" (when callbacks provided) */
   showDevActions?: boolean;
   /** Callback when "Dev mode" toggle menu item is clicked */
-  onDevModeToggle?: () => void;
+  onDevModeToggle?: () => undefined | Dispatch<SetStateAction<boolean>>;
   /** Callback when "Sign and submit test" menu item is clicked */
   onSignSubmitTxClick?: () => void;
   /** Callback when "Token refresh test" menu item is clicked */
