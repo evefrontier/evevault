@@ -92,8 +92,8 @@ export type PersistedDeviceStore = {
 };
 
 export interface TokenListState {
-  tokens: string[];
-  addToken: (coinType: string) => void;
-  removeToken: (coinType: string) => void;
-  clearTokens: () => void;
+  tokens: Partial<Record<SuiChain, string[]>>;
+  addToken: (chain: SuiChain, coinType: string) => void;
+  removeToken: (chain: SuiChain, coinType: string) => void;
+  clearTokens: (chain?: SuiChain) => void;
 }
