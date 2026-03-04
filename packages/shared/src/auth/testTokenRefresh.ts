@@ -27,6 +27,9 @@ export async function handleTestTokenRefresh(
     const clientId = import.meta.env.VITE_FUSIONAUTH_CLIENT_ID;
     const clientSecret = import.meta.env.VITE_FUSION_CLIENT_SECRET;
 
+    if (!fusionAuthUrl?.trim()) {
+      throw new Error("VITE_FUSION_SERVER_URL is not set");
+    }
     if (!clientId || !clientSecret) {
       throw new Error("Client ID or client secret is not set");
     }
@@ -53,7 +56,10 @@ export async function handleTestTokenRefresh(
     }
 
     const refreshedData: JwtResponse = await response.json();
-    log.info("Token refreshed", refreshedData);
+    log.info("Token refreshed", {
+      expires_in: refreshedData.expires_in,
+      token_type: refreshedData.token_type,
+    });
 
     await storeJwt(refreshedData as JwtResponse);
 
