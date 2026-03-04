@@ -5,7 +5,12 @@ import { getUserForNetwork, useAuth } from "../../auth";
 import { useDevice } from "../../hooks";
 import { useNetworkStore } from "../../stores/networkStore";
 import { createSuiClient } from "../../sui";
-import { createLogger, SUI_COIN_TYPE, toSmallestUnit } from "../../utils";
+import {
+  createLogger,
+  EVE_TESTNET_COIN_TYPE,
+  SUI_COIN_TYPE,
+  toSmallestUnit,
+} from "../../utils";
 import { zkSignAny } from "../zkSignAny";
 import { useBalance } from "./useBalance";
 
@@ -69,8 +74,12 @@ export function useSendToken({
   // Extract balance info
   const currentBalance = balanceData?.formattedBalance ?? "0";
   const rawBalance = balanceData?.rawBalance ?? "0";
-  const tokenSymbol = balanceData?.metadata?.symbol ?? "";
-  const tokenName = balanceData?.metadata?.name ?? "Token";
+  const tokenSymbol =
+    balanceData?.metadata?.symbol ??
+    (coinType === EVE_TESTNET_COIN_TYPE ? "EVE" : "");
+  const tokenName =
+    balanceData?.metadata?.name ??
+    (coinType === EVE_TESTNET_COIN_TYPE ? "EVE test token" : "Token");
   const decimals = balanceData?.metadata?.decimals ?? 9;
 
   // Validation checks
@@ -165,8 +174,8 @@ export function useSendToken({
         tx.transferObjects([coin], recipientAddress);
       } else {
         // Custom token transfer: get all coins and find one with sufficient balance
-        const coins = await suiClient.listCoins({
-          owner: senderAddress,
+        const coins = await suiClient.core.getCoins({
+          address: senderAddress,
           coinType,
         });
 
@@ -177,7 +186,8 @@ export function useSendToken({
         // Race condition guard: validate total balance still covers the requested amount
         // (balance may have changed between initial validation and now)
         const totalBalance = coins.objects.reduce(
-          (sum, coin) => sum + BigInt(coin.balance),
+          (sum: bigint, coin: { balance: string }) =>
+            sum + BigInt(coin.balance),
           0n,
         );
 
@@ -189,12 +199,13 @@ export function useSendToken({
 
         // Find a coin with sufficient balance, or merge if needed
         const suitableCoin = coins.objects.find(
-          (c) => BigInt(c.balance) >= amountInSmallestUnit,
+          (c: { balance: string }) =>
+            BigInt(c.balance) >= amountInSmallestUnit,
         );
 
         if (suitableCoin) {
           // Single coin has enough balance - split from it
-          const [coin] = tx.splitCoins(tx.object(suitableCoin.objectId), [
+          const [coin] = tx.splitCoins(tx.object(suitableCoin.id), [
             amountInSmallestUnit,
           ]);
           tx.transferObjects([coin], recipientAddress);
@@ -206,12 +217,12 @@ export function useSendToken({
 
           if (otherCoins.length > 0) {
             tx.mergeCoins(
-              tx.object(primaryCoin.objectId),
-              otherCoins.map((c) => tx.object(c.objectId)),
+              tx.object(primaryCoin.id),
+              otherCoins.map((c: { id: string }) => tx.object(c.id)),
             );
           }
 
-          const [coin] = tx.splitCoins(tx.object(primaryCoin.objectId), [
+          const [coin] = tx.splitCoins(tx.object(primaryCoin.id), [
             amountInSmallestUnit,
           ]);
           tx.transferObjects([coin], recipientAddress);
@@ -235,19 +246,19 @@ export function useSendToken({
       });
 
       // Execute transaction
-      const result = await suiClient.executeTransaction({
+      const result = await suiClient.core.executeTransaction({
         transaction: new Uint8Array(txb),
         signatures: [zkSignature],
       });
 
       log.info("Token transfer executed", {
-        digest: result.Transaction?.digest,
+        digest: result.transaction.digest,
         coinType,
         amount,
         recipient: recipientAddress,
       });
 
-      setTxDigest(result.Transaction?.digest ?? null);
+      setTxDigest(result.transaction.digest ?? null);
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to send token";
