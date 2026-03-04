@@ -16,7 +16,7 @@ import { chromeStorageAdapter, localStorageAdapter } from "../adapters";
 import { useAuthStore } from "../auth";
 import { hasJwtForNetwork } from "../auth/storageService";
 import { ephKeyService, zkProofService } from "../services/vaultService";
-import { createSuiClient } from "../sui";
+import { getCurrentEpochFromGraphQL } from "../sui/graphqlEpoch";
 import {
   type DeviceState,
   type HashedData,
@@ -464,8 +464,6 @@ export const useDeviceStore = create<DeviceState>()(
       initializeForChain: async (chain: SuiChain) => {
         log.info("Generating device data for chain", { chain });
 
-        const suiClient = createSuiClient(chain);
-
         // 1. Get ephemeral public key
         const ephemeralPubkey = get().ephemeralPublicKey;
 
@@ -476,21 +474,9 @@ export const useDeviceStore = create<DeviceState>()(
         // 2. generate new jwtRandomness (per-network to prevent cross-network conflicts)
         const jwtRandomness = generateRandomness().toString();
 
-        // 3. Get max epoch
-        // Epoch start is a Unix timestamp in milliseconds
-        const {
-          systemState: {
-            epoch,
-            parameters: { epochDurationMs },
-            epochStartTimestampMs,
-          },
-        } = await suiClient.core.getCurrentSystemState();
-        // Use current epoch - must stay aligned with maxEpochTimestampMs below
-        const numericMaxEpoch = Number(epoch);
-
-        // 4. Set maxEpoch expiry - must stay aligned with numericMaxEpoch (current epoch)
-        const maxEpochTimestampMs =
-          Number(epochStartTimestampMs) + Number(epochDurationMs);
+        // 3. Get max epoch via GraphQL (public endpoints work; gRPC requires provider URL)
+        const { numericMaxEpoch, maxEpochTimestampMs } =
+          await getCurrentEpochFromGraphQL(chain);
 
         // 5. Generate nonce using the per-network jwtRandomness
         const nonce = generateNonce(
