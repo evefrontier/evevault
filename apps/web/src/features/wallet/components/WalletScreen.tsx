@@ -58,7 +58,7 @@ export const WalletScreen = () => {
 
   // Create suiClient with useMemo to recreate when chain changes
   const suiClient = React.useMemo(() => {
-    // Use chain from store if available, otherwise default to devnet
+    // Defined chain so balance/transactions always use the same network; avoids cross-network errors
     const currentChain = chain || SUI_TESTNET_CHAIN;
     log.debug("Creating SuiClient for chain", { chain: currentChain });
     return createSuiClient(currentChain);
@@ -215,7 +215,7 @@ export const WalletScreen = () => {
         onSignSubmitTxClick={devMode ? handleSignAndSubmitTx : undefined}
         onTokenRefreshTestClick={devMode ? handleTokenRefreshTest : undefined}
       />
-      {/* Token Section */}
+      {/* Token Section: pass defined chain (testnet fallback) so balance and token list use the same network and we avoid cross-network transfer/balance errors */}
       <TokenListSection
         user={user}
         chain={chain ?? SUI_TESTNET_CHAIN}

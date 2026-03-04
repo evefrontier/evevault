@@ -115,8 +115,12 @@ describe("useSendToken", () => {
     } as any);
 
     mockCreateSuiClient.mockReturnValue({
-      getCoins: vi.fn(),
-      executeTransactionBlock: vi.fn(),
+      core: {
+        getCoins: vi.fn(),
+        executeTransaction: vi.fn().mockResolvedValue({
+          transaction: { digest: "mock-digest" },
+        }),
+      },
       // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
     } as any);
   });
