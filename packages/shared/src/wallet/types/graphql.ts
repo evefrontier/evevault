@@ -56,3 +56,19 @@ export interface TransactionPage {
   nextCursor: string | null;
   hasNextPage: boolean;
 }
+
+/**
+ * GraphQL response for the balance + coin metadata query (address.balance + coinMetadata)
+ */
+export interface BalanceAndMetadataResponse {
+  address: {
+    balance: { totalBalance: string } | null;
+  } | null;
+  coinMetadata: {
+    decimals: number | null;
+    name: string | null;
+    symbol: string | null;
+    description: string | null;
+    iconUrl: string | null;
+  } | null;
+}
