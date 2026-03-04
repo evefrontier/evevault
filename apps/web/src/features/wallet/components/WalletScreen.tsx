@@ -218,7 +218,7 @@ export const WalletScreen = () => {
       {/* Token Section */}
       <TokenListSection
         user={user}
-        chain={chain || null}
+        chain={chain ?? SUI_TESTNET_CHAIN}
         walletAddress={user?.profile?.sui_address as string}
         onAddToken={() => navigate({ to: WEB_ROUTES.WALLET_ADD_TOKEN })}
         onSendToken={(coinType) =>
