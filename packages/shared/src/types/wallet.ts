@@ -63,24 +63,3 @@ export interface ExtensionEphSignParams {
 export const isEd25519PublicKey = (key: PublicKey): key is Ed25519PublicKey => {
   return key.flag() === 0x00; // Ed25519 flag byte
 };
-
-export interface UseBalanceParams {
-  user: User | null;
-  chain: import("@mysten/wallet-standard").SuiChain | null;
-  coinType?: string;
-}
-
-export interface BalanceMetadata {
-  decimals: number;
-  symbol: string;
-  name: string;
-  description?: string | null;
-  iconUrl?: string | null;
-}
-
-export interface CoinBalanceResult {
-  rawBalance: string;
-  formattedBalance: string;
-  metadata: BalanceMetadata | null;
-  coinType: string;
-}
