@@ -10,9 +10,6 @@ export const FILE_ROUTE_PATHS = [
   "/wallet/add-token",
   "/wallet/send-token",
   "/wallet/transactions",
-  "/add-token",
-  "/send-token",
-  "/transactions",
 ] as const;
 
 export type RoutePath = (typeof FILE_ROUTE_PATHS)[number];

@@ -130,12 +130,14 @@ export const WalletScreen = () => {
     });
     log.debug("zkSignature ready", { length: zkSignature.length });
     log.debug("Transaction block bytes ready", { length: bytes.length });
-    const result = await suiClient.executeTransactionBlock({
-      transactionBlock: bytes,
-      signature: zkSignature,
+    const result = await suiClient.core.executeTransaction({
+      transaction: new Uint8Array(txb),
+      signatures: [zkSignature],
     });
-    log.info("Transaction executed", { digest: result.digest });
-    setTxDigest(result.digest);
+    log.info("Transaction executed", {
+      digest: result.transaction.digest,
+    });
+    setTxDigest(result.transaction.digest ?? null);
   }, [user, maxEpoch, ephemeralPublicKey, getZkProof, suiClient]);
 
   const handleTokenRefreshTest = useCallback(async () => {
