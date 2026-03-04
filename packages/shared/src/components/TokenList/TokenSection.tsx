@@ -6,6 +6,7 @@ import type { TokenListProps, TokenRowProps } from "../../types";
 import { getDefaultTokensForChain } from "../../types/networks";
 import { formatAddress } from "../../utils";
 import { useBalance } from "../../wallet";
+import { getKnownTokenDisplay } from "../../wallet/utils/balanceMetadata";
 import Button from "../Button";
 import Icon from "../Icon";
 import Text from "../Text";
@@ -30,10 +31,15 @@ const TokenRow: React.FC<ExtendedTokenRowProps> = ({
     coinType,
   });
 
-  const tokenName = data?.metadata?.name || data?.metadata?.symbol || "Token";
+  const knownDisplay = getKnownTokenDisplay(coinType);
+  const tokenName =
+    data?.metadata?.name ||
+    data?.metadata?.symbol ||
+    knownDisplay?.name ||
+    "Token";
   const shortAddress = `${coinType.slice(0, 6)}•••${coinType.slice(-4)}`;
   const balance = isLoading ? "..." : (data?.formattedBalance ?? "0");
-  const symbol = data?.metadata?.symbol || "";
+  const symbol = data?.metadata?.symbol || knownDisplay?.symbol || "";
 
   // Container classes - expands when selected
   const containerClasses = [
