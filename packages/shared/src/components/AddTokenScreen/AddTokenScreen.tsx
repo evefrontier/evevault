@@ -2,6 +2,7 @@ import type React from "react";
 import { useState } from "react";
 import { useTokenListStore } from "../../stores/tokenListStore";
 import type { AddTokenScreenProps } from "../../types";
+import { isValidCoinTypeFormat } from "../../wallet/utils/coinTypeFormat";
 import Button from "../Button";
 import Heading from "../Heading";
 import { Input } from "../Inputs";
@@ -31,10 +32,7 @@ export const AddTokenScreen: React.FC<AddTokenScreenProps> = ({
       return;
     }
 
-    // Accept 0x...::module::COIN or 0x2::Coin<0x...::module::COIN>
-    const simpleFormat = /^0x[a-fA-F0-9]+::\w+::\w+$/;
-    const genericCoinFormat = /^0x2::Coin<0x[a-fA-F0-9]+::[^>]+>$/;
-    if (!simpleFormat.test(normalized) && !genericCoinFormat.test(normalized)) {
+    if (!isValidCoinTypeFormat(normalized)) {
       setError(
         "Invalid coin type format. Expected: 0x...::module::COIN or 0x2::Coin<...>",
       );
