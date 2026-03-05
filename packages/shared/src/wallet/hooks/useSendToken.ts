@@ -174,26 +174,16 @@ export function useSendToken({
         tx.transferObjects([coin], recipientAddress);
       } else {
         // Custom token transfer: get all coins and find one with sufficient balance.
-        // SDK 1.x: suiClient.core.getCoins({ address, coinType }); SDK 2.x: suiClient.getCoins({ owner, coinType }).
+        // @mysten/sui 2.x: getCoins on client with { owner, coinType }. Typed via core for compatibility.
         type CoinWithBalance = { balance: string; id: string };
-        const coins =
-          "getCoins" in suiClient && typeof suiClient.getCoins === "function"
-            ? await (
-                suiClient as {
-                  getCoins(opts: {
-                    owner: string;
-                    coinType: string;
-                  }): Promise<{ objects: CoinWithBalance[] }>;
-                }
-              ).getCoins({ owner: senderAddress, coinType })
-            : await (
-                suiClient.core as unknown as {
-                  getCoins(opts: {
-                    address: string;
-                    coinType: string;
-                  }): Promise<{ objects: CoinWithBalance[] }>;
-                }
-              ).getCoins({ address: senderAddress, coinType });
+        const coins = await (
+          suiClient as unknown as {
+            getCoins(opts: {
+              owner: string;
+              coinType: string;
+            }): Promise<{ objects: CoinWithBalance[] }>;
+          }
+        ).getCoins({ owner: senderAddress, coinType });
         const coinObjects = coins.objects;
 
         if (coinObjects.length === 0) {
@@ -266,13 +256,12 @@ export function useSendToken({
         signatures: [zkSignature],
       });
 
-      // SDK 1.x returns .transaction, SDK 2.x returns .Transaction (discriminated union)
-      const txResponse =
-        "$kind" in result && result.$kind === "Transaction"
-          ? (result as unknown as { Transaction: { digest?: string | null } })
-              .Transaction
-          : (result as unknown as { transaction: { digest?: string | null } })
-              .transaction;
+      // @mysten/sui 2.x: discriminated union Transaction | FailedTransaction
+      if ("$kind" in result && result.$kind === "FailedTransaction") {
+        throw new Error("Transaction failed");
+      }
+      const txResponse = (result as { Transaction: { digest?: string | null } })
+        .Transaction;
       const digest = txResponse?.digest ?? null;
 
       log.info("Token transfer executed", {

@@ -115,10 +115,10 @@ describe("useSendToken", () => {
     } as any);
 
     mockCreateSuiClient.mockReturnValue({
+      getCoins: vi.fn().mockResolvedValue({ objects: [] }),
       core: {
-        getCoins: vi.fn(),
         executeTransaction: vi.fn().mockResolvedValue({
-          transaction: { digest: "mock-digest" },
+          Transaction: { digest: "mock-digest" },
         }),
       },
       // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type

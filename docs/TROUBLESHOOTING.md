@@ -212,20 +212,20 @@ Common issues and solutions when working with the EVE Vault extension.
 4. Check for circular dependencies
 5. Clear node_modules and reinstall: `rm -rf node_modules && bun install`
 
-### Build fails after `bun run clean:cache` (works on one machine, fails on another)
+### Build fails after clean / fresh install
 
 **Symptoms:**
 
-- `bun run build` succeeds on your machine but fails on a colleague’s after `bun run clean:cache`
-- TypeScript errors about `Transaction` vs `transaction`, or `getCoins` does not exist on `GrpcCoreClient`
+- `bun run build` fails after `bun run clean:all` (or similar) then `bun install`
+- TypeScript errors about `Transaction`, `getCoins`, or `GrpcCoreClient`
 
-**Cause:** Different resolutions of `@mysten/sui`. The project supports both SDK 1.x and 2.x: in 1.x, `executeTransaction` returns a shape with `.transaction` (lowercase) and `getCoins` lives on `suiClient.core`; in 2.x the result uses `.Transaction` (capital T) and `getCoins` is on the client itself. If the lockfile or cache differs, one environment can get 1.x and another 2.x, so types don’t match.
+**Cause:** The project uses **only** `@mysten/sui` **2.4.0** (pinned in root and shared `package.json`). If the lockfile is out of date or install didn’t run, a different SDK version can be resolved and types won’t match.
 
 **Solutions:**
 
-1. Ensure everyone uses the same install: commit `bun.lockb` (or your lockfile) and run `bun install` (no `clean:cache` before a fresh install) so the same `@mysten/sui` version is resolved everywhere.
-2. The codebase is written to support both 1.x and 2.x (runtime checks and type assertions). If you still see type errors, run `bun install` and then `bun run build` again so TypeScript uses the resolved SDK types consistently.
-3. To force a single version, pin `@mysten/sui` in the root and shared `package.json` to an exact version (e.g. `"2.4.0"` instead of `"^2.4.0"`) and run `bun install`, then commit the updated lockfile.
+1. From a clean state, run **`bun install`** (no `clean:cache` or `clean:all` before it). The committed `bun.lock` ensures everyone gets the same dependency tree, including `@mysten/sui@2.4.0`.
+2. After changing dependencies or lockfile, run **`bun install`** then **`bun run build`** again.
+3. Ensure `bun.lock` is committed so all developers resolve the same versions.
 
 ### Output not found
 

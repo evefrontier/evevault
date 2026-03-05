@@ -54,19 +54,16 @@ export function useTestTransaction() {
         signatures: [zkSignature],
       });
 
-      // SDK 1.x returns .transaction, SDK 2.x returns .Transaction (discriminated union)
-      const txResponse =
-        "$kind" in txDigestResult && txDigestResult.$kind === "Transaction"
-          ? (
-              txDigestResult as unknown as {
-                Transaction: { digest?: string | null };
-              }
-            ).Transaction
-          : (
-              txDigestResult as unknown as {
-                transaction: { digest?: string | null };
-              }
-            ).transaction;
+      // @mysten/sui 2.x: discriminated union Transaction | FailedTransaction
+      if (
+        "$kind" in txDigestResult &&
+        txDigestResult.$kind === "FailedTransaction"
+      ) {
+        throw new Error("Transaction failed");
+      }
+      const txResponse = (
+        txDigestResult as { Transaction: { digest?: string | null } }
+      ).Transaction;
       const digest = txResponse?.digest ?? null;
 
       log.info("Transaction executed", { digest });
