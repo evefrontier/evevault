@@ -173,21 +173,37 @@ export function useSendToken({
         const [coin] = tx.splitCoins(tx.gas, [amountInSmallestUnit]);
         tx.transferObjects([coin], recipientAddress);
       } else {
-        // Custom token transfer: get all coins and find one with sufficient balance
-        const coins = await suiClient.core.getCoins({
-          address: senderAddress,
-          coinType,
-        });
+        // Custom token transfer: get all coins and find one with sufficient balance.
+        // SDK 1.x: suiClient.core.getCoins({ address, coinType }); SDK 2.x: suiClient.getCoins({ owner, coinType }).
+        type CoinWithBalance = { balance: string; id: string };
+        const coins =
+          "getCoins" in suiClient && typeof suiClient.getCoins === "function"
+            ? await (
+                suiClient as {
+                  getCoins(opts: {
+                    owner: string;
+                    coinType: string;
+                  }): Promise<{ objects: CoinWithBalance[] }>;
+                }
+              ).getCoins({ owner: senderAddress, coinType })
+            : await (
+                suiClient.core as unknown as {
+                  getCoins(opts: {
+                    address: string;
+                    coinType: string;
+                  }): Promise<{ objects: CoinWithBalance[] }>;
+                }
+              ).getCoins({ address: senderAddress, coinType });
+        const coinObjects = coins.objects;
 
-        if (coins.objects.length === 0) {
+        if (coinObjects.length === 0) {
           throw new Error("No coins found for this token");
         }
 
         // Race condition guard: validate total balance still covers the requested amount
         // (balance may have changed between initial validation and now)
-        const totalBalance = coins.objects.reduce(
-          (sum: bigint, coin: { balance: string }) =>
-            sum + BigInt(coin.balance),
+        const totalBalance = coinObjects.reduce(
+          (sum: bigint, coin: CoinWithBalance) => sum + BigInt(coin.balance),
           0n,
         );
 
@@ -198,9 +214,8 @@ export function useSendToken({
         }
 
         // Find a coin with sufficient balance, or merge if needed
-        const suitableCoin = coins.objects.find(
-          (c: { balance: string }) =>
-            BigInt(c.balance) >= amountInSmallestUnit,
+        const suitableCoin = coinObjects.find(
+          (c: CoinWithBalance) => BigInt(c.balance) >= amountInSmallestUnit,
         );
 
         if (suitableCoin) {
@@ -212,13 +227,13 @@ export function useSendToken({
         } else {
           // No single coin has enough - merge all coins then split
           // Use the first coin as the primary and merge others into it
-          const primaryCoin = coins.objects[0];
-          const otherCoins = coins.objects.slice(1);
+          const primaryCoin = coinObjects[0];
+          const otherCoins = coinObjects.slice(1);
 
           if (otherCoins.length > 0) {
             tx.mergeCoins(
               tx.object(primaryCoin.id),
-              otherCoins.map((c: { id: string }) => tx.object(c.id)),
+              otherCoins.map((c: CoinWithBalance) => tx.object(c.id)),
             );
           }
 
@@ -251,14 +266,23 @@ export function useSendToken({
         signatures: [zkSignature],
       });
 
+      // SDK 1.x returns .transaction, SDK 2.x returns .Transaction (discriminated union)
+      const txResponse =
+        "$kind" in result && result.$kind === "Transaction"
+          ? (result as unknown as { Transaction: { digest?: string | null } })
+              .Transaction
+          : (result as unknown as { transaction: { digest?: string | null } })
+              .transaction;
+      const digest = txResponse?.digest ?? null;
+
       log.info("Token transfer executed", {
-        digest: result.transaction.digest,
+        digest,
         coinType,
         amount,
         recipient: recipientAddress,
       });
 
-      setTxDigest(result.transaction.digest ?? null);
+      setTxDigest(digest);
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to send token";

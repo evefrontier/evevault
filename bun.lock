@@ -1,6 +1,5 @@
 {
   "lockfileVersion": 1,
-  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "wxt-react-starter",
@@ -31,7 +30,7 @@
     },
     "apps/extension": {
       "name": "@evevault/extension",
-      "version": "0.0.2",
+      "version": "0.0.3",
       "dependencies": {
         "@evevault/shared": "workspace:*",
         "@mysten/wallet-standard": "^0.16.3",

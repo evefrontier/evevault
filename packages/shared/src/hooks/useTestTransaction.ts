@@ -54,10 +54,23 @@ export function useTestTransaction() {
         signatures: [zkSignature],
       });
 
-      log.info("Transaction executed", {
-        digest: txDigestResult.transaction.digest,
-      });
-      setTxDigest(txDigestResult.transaction.digest ?? null);
+      // SDK 1.x returns .transaction, SDK 2.x returns .Transaction (discriminated union)
+      const txResponse =
+        "$kind" in txDigestResult && txDigestResult.$kind === "Transaction"
+          ? (
+              txDigestResult as unknown as {
+                Transaction: { digest?: string | null };
+              }
+            ).Transaction
+          : (
+              txDigestResult as unknown as {
+                transaction: { digest?: string | null };
+              }
+            ).transaction;
+      const digest = txResponse?.digest ?? null;
+
+      log.info("Transaction executed", { digest });
+      setTxDigest(digest);
       showToast("Transaction submitted!");
     } catch (error) {
       log.error("Error submitting transaction", error);
