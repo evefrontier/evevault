@@ -20,6 +20,7 @@ import {
   clearZkLoginAddressCache,
   getZkLoginAddress,
 } from "../getZkLoginAddress";
+import { processOAuthUser } from "../processOAuthUser";
 import {
   clearAllJwts,
   getAllStoredJwts,
@@ -321,6 +322,82 @@ export const useAuthStore = create<AuthState>()(
               },
             });
             set({ loading: false });
+          }
+        },
+
+        loginWithPopup: async () => {
+          if (!isWeb()) {
+            log.warn("loginWithPopup is only supported on web");
+            return undefined;
+          }
+
+          set({ loading: true, error: null });
+
+          try {
+            const deviceStore = useDeviceStore.getState();
+            const network = useNetworkStore.getState().chain;
+
+            const networkData = deviceStore.networkData[network];
+            if (!networkData?.nonce || !networkData?.maxEpoch) {
+              log.info("Initializing device data for network before login", {
+                network,
+              });
+              await deviceStore.initializeForChain(network);
+            }
+
+            const getDeviceParams = () => {
+              const currentDeviceStore = useDeviceStore.getState();
+              const jwtRandomness =
+                currentDeviceStore.getJwtRandomness(network);
+              const currentNetworkData =
+                currentDeviceStore.networkData[network];
+
+              if (!currentNetworkData) {
+                throw new Error("Network data not found after initialization");
+              }
+
+              const { nonce, maxEpoch } = currentNetworkData;
+
+              if (!nonce || !jwtRandomness || !maxEpoch) {
+                throw new Error(
+                  "Device data not initialized. OAuth params may be missing.",
+                );
+              }
+
+              return {
+                nonce,
+                jwtRandomness,
+                maxEpoch: String(maxEpoch),
+              };
+            };
+
+            const user = await getUserManagerInstance().signinPopup({
+              nonce: getDeviceParams().nonce,
+              extraQueryParams: {
+                jwtRandomness: getDeviceParams().jwtRandomness,
+                maxEpoch: getDeviceParams().maxEpoch,
+              },
+            });
+
+            if (!user) {
+              set({ loading: false });
+              return undefined;
+            }
+
+            const updatedUser = await processOAuthUser(
+              user,
+              getEnokiApiKey(),
+              network,
+            );
+            set({ user: updatedUser, loading: false });
+            return updatedUser as User;
+          } catch (error) {
+            log.error("Login popup failed", error);
+            set({
+              error: error instanceof Error ? error.message : "Unknown error",
+              loading: false,
+            });
+            return undefined;
           }
         },
 

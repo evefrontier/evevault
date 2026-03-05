@@ -35,6 +35,7 @@ export interface AuthState {
   loading: boolean;
   error: string | null;
   login: () => Promise<User | undefined>;
+  loginWithPopup: () => Promise<User | undefined>;
   extensionLogin: () => Promise<JwtResponse>;
   refreshJwt: (chain: SuiChain) => Promise<void>;
   logout: () => Promise<void>;

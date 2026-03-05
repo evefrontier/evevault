@@ -1,23 +1,44 @@
 import { useNetworkStore } from "@evevault/shared";
-import {
-  getZkLoginAddress,
-  storeJwt,
-  useAuthStore,
-} from "@evevault/shared/auth";
+import { processOAuthUser } from "@evevault/shared/auth";
 import { getUserManager } from "@evevault/shared/auth/authConfig";
 import { Heading, Text } from "@evevault/shared/components";
 import type { RoutePath } from "@evevault/shared/types";
 import { createLogger, ROUTE_PATHS } from "@evevault/shared/utils";
 import { useNavigate, useSearch } from "@tanstack/react-router";
-import { User } from "oidc-client-ts";
 import { useEffect, useState } from "react";
 
 const log = createLogger();
-const DEFAULT_TOKEN_EXPIRY_SECONDS = 3600;
-const DEFAULT_AUTH_SCOPE = "openid email profile offline_access";
 
 const isRoutePath = (value: string): value is RoutePath => {
   return ROUTE_PATHS.includes(value as RoutePath);
+};
+
+/** Map shared RoutePath to web app route (router expects /wallet/* not /add-token etc.) */
+const toWebRoute = (
+  path: RoutePath,
+):
+  | "/"
+  | "/wallet"
+  | "/callback"
+  | "/not-found"
+  | "/wallet/add-token"
+  | "/wallet/send-token"
+  | "/wallet/transactions" => {
+  if (path === "/add-token") return "/wallet/add-token";
+  if (path === "/send-token") return "/wallet/send-token";
+  if (path === "/transactions") return "/wallet/transactions";
+  if (
+    path === "/" ||
+    path === "/wallet" ||
+    path === "/callback" ||
+    path === "/not-found" ||
+    path === "/wallet/add-token" ||
+    path === "/wallet/send-token" ||
+    path === "/wallet/transactions"
+  ) {
+    return path;
+  }
+  return "/wallet";
 };
 
 export const CallbackScreen = () => {
@@ -28,6 +49,16 @@ export const CallbackScreen = () => {
   useEffect(() => {
     const handleCallback = async () => {
       try {
+        const userManager = getUserManager();
+
+        // Popup flow: callback runs in popup; library passes result to opener
+        if (typeof window !== "undefined" && window.opener) {
+          await userManager.signinPopupCallback();
+          window.close();
+          return;
+        }
+
+        // Redirect flow: process callback and navigate
         const redirectAfterLogin = sessionStorage.getItem(
           "evevault_redirect_after_login",
         );
@@ -35,60 +66,16 @@ export const CallbackScreen = () => {
         const fallbackRoute: RoutePath = "/wallet";
         const redirectTo = redirectAfterLogin || fallbackRoute;
 
-        // Use oidc-client-ts's built-in PKCE support
-        const userManager = getUserManager();
         const user = await userManager.signinRedirectCallback();
-
-        if (!user || !user.id_token) {
-          throw new Error("Failed to authenticate");
-        }
-
-        // Get zkLogin address
-        const zkLoginResponse = await getZkLoginAddress({
-          jwt: user.id_token,
-          enokiApiKey: import.meta.env.VITE_ENOKI_API_KEY,
-        });
-
-        if (zkLoginResponse.error) {
-          throw new Error(zkLoginResponse.error.message);
-        }
-
-        if (!zkLoginResponse.data) {
-          throw new Error("No zkLogin address data received");
-        }
-
-        const { salt, address } = zkLoginResponse.data;
-
-        // Update user profile with zkLogin address
-        const updatedUser = new User({
-          ...user,
-          profile: {
-            ...user.profile,
-            sui_address: address,
-            salt,
-          },
-        });
-
-        await userManager.storeUser(updatedUser);
-        useAuthStore.getState().setUser(updatedUser);
-
+        const enokiApiKey = import.meta.env.VITE_ENOKI_API_KEY ?? "";
         const network = useNetworkStore.getState().chain;
-        await storeJwt(
-          {
-            id_token: user.id_token,
-            access_token: user.access_token,
-            token_type: user.token_type ?? "Bearer",
-            expires_in: user.expires_in ?? DEFAULT_TOKEN_EXPIRY_SECONDS,
-            scope: user.scope ?? DEFAULT_AUTH_SCOPE,
-            refresh_token: user.refresh_token,
-          },
-          network,
-        );
+
+        await processOAuthUser(user, enokiApiKey, network);
 
         log.info("FusionAuth callback successful");
         const destination = isRoutePath(redirectTo)
-          ? redirectTo
-          : fallbackRoute;
+          ? toWebRoute(redirectTo)
+          : "/wallet";
         navigate({ to: destination });
       } catch (err) {
         log.error("OAuth callback error", err);

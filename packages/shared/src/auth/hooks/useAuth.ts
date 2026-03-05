@@ -4,6 +4,7 @@ export const useAuth = () => {
   const {
     user,
     login,
+    loginWithPopup,
     extensionLogin,
     logout,
     setUser,
@@ -19,6 +20,7 @@ export const useAuth = () => {
     error,
 
     login,
+    loginWithPopup,
     extensionLogin,
     logout,
     setUser,

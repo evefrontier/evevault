@@ -5,6 +5,7 @@ export {
   getZkLoginAddress,
 } from "./getZkLoginAddress";
 export * from "./hooks/useAuth";
+export { processOAuthUser } from "./processOAuthUser";
 export {
   clearAllJwts,
   clearJwtForNetwork,

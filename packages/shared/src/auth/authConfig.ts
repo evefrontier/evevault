@@ -4,7 +4,7 @@ import {
   type UserManagerSettings,
   WebStorageStateStore,
 } from "oidc-client-ts";
-import { isExtension } from "../utils/environment";
+import { isExtension, isWeb } from "../utils/environment";
 import { createLogger } from "../utils/logger";
 import { patchUserNonce } from "./patchNonce";
 import type { GlobalWithLocalStorage, StorageLike } from "./types";
@@ -75,6 +75,7 @@ const fusionAuthConfig: UserManagerSettings = {
   client_id: import.meta.env.VITE_FUSIONAUTH_CLIENT_ID,
   client_secret: import.meta.env.VITE_FUSION_CLIENT_SECRET,
   redirect_uri: getRedirectUri(),
+  ...(isWeb() && { popup_redirect_uri: getRedirectUri() }),
   post_logout_redirect_uri: getOrigin(),
   response_type: "code",
   automaticSilentRenew: true,

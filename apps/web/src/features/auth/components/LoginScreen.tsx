@@ -2,11 +2,19 @@ import { LockScreen } from "@evevault/shared";
 import { useAuth } from "@evevault/shared/auth";
 import { Button, Heading, Text } from "@evevault/shared/components";
 import { useDevice } from "@evevault/shared/hooks/useDevice";
+import { useNavigate } from "@tanstack/react-router";
 
 export const LoginScreen = () => {
-  const { login, loading } = useAuth();
-
+  const navigate = useNavigate();
+  const { login, loginWithPopup, loading, error } = useAuth();
   const { isLocked, isPinSet, unlock } = useDevice();
+
+  const handleLoginPopup = async () => {
+    const user = await loginWithPopup();
+    if (user) {
+      navigate({ to: "/wallet" });
+    }
+  };
 
   // First, check for unencrypted ephemeral key pair
   if (isLocked) {
@@ -20,10 +28,23 @@ export const LoginScreen = () => {
         <header className="flex flex-col items-center gap-4 text-center">
           <Heading level={2}>Sign in</Heading>
         </header>
-        <div className="w-full max-w-[300px]">
+        <div className="flex flex-col gap-4 w-full max-w-[300px]">
           <Button size="fill" onClick={() => login()} disabled={loading}>
             {loading ? "Loading..." : "Login"}
           </Button>
+          <Button
+            size="fill"
+            variant="secondary"
+            onClick={handleLoginPopup}
+            disabled={loading}
+          >
+            {loading ? "Loading..." : "Login (popup)"}
+          </Button>
+          {error ? (
+            <Text color="error" size="small">
+              {error}
+            </Text>
+          ) : null}
         </div>
       </section>
     </div>
