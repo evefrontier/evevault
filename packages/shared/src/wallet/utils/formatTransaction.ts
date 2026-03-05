@@ -1,3 +1,4 @@
+import type { SuiGraphQLClient } from "@mysten/sui/graphql";
 import { parseStructTag } from "@mysten/sui/utils";
 import { formatByDecimals } from "../../utils/format";
 import { createLogger } from "../../utils/logger";
@@ -22,14 +23,14 @@ export function extractSymbolFromCoinType(coinType: string): string {
 }
 
 /**
- * Formats transaction amount based on coin type using metadata
+ * Formats transaction amount based on coin type using metadata from GraphQL.
  */
 export async function formatTransactionAmount(
   rawAmount: string,
   coinType: string,
-  suiClient: ReturnType<typeof import("../../sui").createSuiClient>,
+  graphqlClient: SuiGraphQLClient,
 ): Promise<string> {
-  const metadata = await fetchCoinMetadata(suiClient, coinType);
+  const metadata = await fetchCoinMetadata(graphqlClient, coinType);
   let decimals: number;
 
   if (metadata) {

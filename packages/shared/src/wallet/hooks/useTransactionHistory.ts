@@ -6,10 +6,9 @@
  * Reference: https://docs.sui.io/concepts/data-access/graphql-rpc
  */
 
-import { SUI_DEVNET_CHAIN } from "@mysten/wallet-standard";
+import { SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { createSuiClient } from "../../sui";
 import { createSuiGraphQLClient } from "../../sui/graphqlClient";
 import { createLogger } from "../../utils";
 import { TRANSACTIONS_QUERY } from "../queries/transactions";
@@ -42,15 +41,12 @@ export function useTransactionHistory({
   chain,
   pageSize = DEFAULT_PAGE_SIZE,
 }: UseTransactionsParams) {
-  const graphqlClient = useMemo(() => {
-    const currentChain = chain || SUI_DEVNET_CHAIN;
-    return createSuiGraphQLClient(currentChain);
-  }, [chain]);
+  const currentChain = chain || SUI_TESTNET_CHAIN;
 
-  const suiClient = useMemo(() => {
-    const currentChain = chain || SUI_DEVNET_CHAIN;
-    return createSuiClient(currentChain);
-  }, [chain]);
+  const graphqlClient = useMemo(
+    () => createSuiGraphQLClient(currentChain),
+    [currentChain],
+  );
 
   const userAddress = user?.profile?.sui_address as string | undefined;
 
@@ -96,7 +92,7 @@ export function useTransactionHistory({
       // Parse transactions with metadata fetching (async)
       const parsedTransactions = await Promise.all(
         transactionsData.nodes.map((node: GraphQLTransactionNode) =>
-          parseGraphQLTransaction(node, userAddress, suiClient),
+          parseGraphQLTransaction(node, userAddress, graphqlClient),
         ),
       );
 
@@ -122,7 +118,7 @@ export function useTransactionHistory({
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) =>
       lastPage.hasNextPage ? lastPage.nextCursor : undefined,
-    enabled: !!userAddress && !!chain && !!graphqlClient && !!suiClient,
+    enabled: !!userAddress && !!chain && !!graphqlClient,
     staleTime: 1000 * 60, // 1 minute
     retry: 2,
   });

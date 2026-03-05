@@ -58,7 +58,7 @@ export const WalletScreen = () => {
 
   // Create suiClient with useMemo to recreate when chain changes
   const suiClient = React.useMemo(() => {
-    // Use chain from store if available, otherwise default to devnet
+    // Defined chain so balance/transactions always use the same network; avoids cross-network errors
     const currentChain = chain || SUI_TESTNET_CHAIN;
     log.debug("Creating SuiClient for chain", { chain: currentChain });
     return createSuiClient(currentChain);
@@ -130,12 +130,14 @@ export const WalletScreen = () => {
     });
     log.debug("zkSignature ready", { length: zkSignature.length });
     log.debug("Transaction block bytes ready", { length: bytes.length });
-    const result = await suiClient.executeTransactionBlock({
-      transactionBlock: bytes,
-      signature: zkSignature,
+    const result = await suiClient.core.executeTransaction({
+      transaction: new Uint8Array(txb),
+      signatures: [zkSignature],
     });
-    log.info("Transaction executed", { digest: result.digest });
-    setTxDigest(result.digest);
+    log.info("Transaction executed", {
+      digest: result.transaction.digest,
+    });
+    setTxDigest(result.transaction.digest ?? null);
   }, [user, maxEpoch, ephemeralPublicKey, getZkProof, suiClient]);
 
   const handleTokenRefreshTest = useCallback(async () => {
@@ -215,10 +217,10 @@ export const WalletScreen = () => {
         onSignSubmitTxClick={devMode ? handleSignAndSubmitTx : undefined}
         onTokenRefreshTestClick={devMode ? handleTokenRefreshTest : undefined}
       />
-      {/* Token Section */}
+      {/* Token Section: pass defined chain (testnet fallback) so balance and token list use the same network and we avoid cross-network transfer/balance errors */}
       <TokenListSection
         user={user}
-        chain={chain || null}
+        chain={chain ?? SUI_TESTNET_CHAIN}
         walletAddress={user?.profile?.sui_address as string}
         onAddToken={() => navigate({ to: WEB_ROUTES.WALLET_ADD_TOKEN })}
         onSendToken={(coinType) =>

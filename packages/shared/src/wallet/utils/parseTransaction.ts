@@ -1,3 +1,4 @@
+import type { SuiGraphQLClient } from "@mysten/sui/graphql";
 import type { Transaction, TransactionDirection } from "../../types/components";
 import { SUI_COIN_TYPE } from "../../utils";
 import type { GraphQLTransactionNode } from "../types/graphql";
@@ -7,15 +8,13 @@ import {
 } from "./formatTransaction";
 
 /**
- * Parses a GraphQL transaction response into our Transaction format
- *
- * Note: In the current schema (2025+), timestamp is on effects, not transaction,
- * and BalanceChange.owner is an Address object directly (not Owner union).
+ * Parses a GraphQL transaction response into our Transaction format.
+ * Uses GraphQL client for coin metadata lookups when formatting amounts.
  */
 export async function parseGraphQLTransaction(
   txNode: GraphQLTransactionNode,
   userAddress: string,
-  suiClient: ReturnType<typeof import("../../sui").createSuiClient>,
+  graphqlClient: SuiGraphQLClient,
 ): Promise<Transaction | null> {
   const { digest, effects } = txNode;
 
@@ -71,7 +70,7 @@ export async function parseGraphQLTransaction(
       amount: await formatTransactionAmount(
         amountAbs.toString(),
         coinType,
-        suiClient,
+        graphqlClient,
       ),
       tokenSymbol: extractSymbolFromCoinType(coinType),
       coinType,
@@ -121,7 +120,7 @@ export async function parseGraphQLTransaction(
     amount: await formatTransactionAmount(
       amountAbs.toString(),
       coinType,
-      suiClient,
+      graphqlClient,
     ),
     tokenSymbol: extractSymbolFromCoinType(coinType),
     coinType,

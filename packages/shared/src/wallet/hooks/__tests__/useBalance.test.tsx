@@ -4,19 +4,16 @@ import { renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 
-const mockGetBalance = vi.fn();
-const mockGetCoinMetadata = vi.fn();
+const mockQuery = vi.fn();
 
-// Using workspace alias in test files due to Vite resolution limitations with relative imports
-vi.mock("@evevault/shared/sui", () => ({
-  createSuiClient: vi.fn(),
+vi.mock("../../../sui/graphqlClient", () => ({
+  createSuiGraphQLClient: vi.fn(() => ({ query: mockQuery })),
 }));
 
 vi.mock("@suiet/wallet-kit", () => ({
   formatSUI: vi.fn(),
 }));
 
-// Using workspace alias in test files due to Vite resolution limitations with relative imports
 vi.mock("@evevault/shared/utils", () => ({
   formatSUI: vi.fn(),
   createLogger: vi.fn(() => ({
@@ -29,16 +26,15 @@ vi.mock("@evevault/shared/utils", () => ({
   isWeb: vi.fn(() => true),
   isBrowser: vi.fn(() => true),
   SUI_COIN_TYPE: "0x2::sui::SUI",
+  EVE_TESTNET_COIN_TYPE:
+    "0x59d7bb2e0feffb90cb2446fb97c2ce7d4bd24d2fb98939d6cb6c3940110a0de0::EVE::EVE",
+  formatByDecimals: vi.fn((balance: string) => balance),
 }));
 
-// Using workspace alias in test files due to Vite resolution limitations with relative imports
-import { createSuiClient } from "@evevault/shared/sui";
 import { createMockUser } from "@evevault/shared/testing";
 import { formatSUI } from "@suiet/wallet-kit";
-// Import after mocks are declared
 import { useBalance } from "../useBalance";
 
-const mockedCreateSuiClient = vi.mocked(createSuiClient);
 const mockedFormatSUI = vi.mocked(formatSUI);
 
 const createWrapper = (queryClient: QueryClient) => {
@@ -49,12 +45,19 @@ const createWrapper = (queryClient: QueryClient) => {
 
 describe("useBalance hook", () => {
   it("returns a formatted SUI balance for the current user", async () => {
-    mockedCreateSuiClient.mockReturnValue({
-      getBalance: mockGetBalance,
-      getCoinMetadata: mockGetCoinMetadata,
-    } as unknown as ReturnType<typeof createSuiClient>);
-
-    mockGetBalance.mockResolvedValueOnce({ balance: "1000" });
+    mockQuery.mockResolvedValueOnce({
+      data: {
+        address: { balance: { totalBalance: "1000" } },
+        coinMetadata: {
+          decimals: 9,
+          symbol: "SUI",
+          name: "Sui",
+          description: "Sui Native Token",
+          iconUrl: null,
+        },
+      },
+      errors: undefined,
+    });
     mockedFormatSUI.mockReturnValueOnce("formatted-1000");
     const user = createMockUser();
 
@@ -80,11 +83,11 @@ describe("useBalance hook", () => {
       expect(result.current.isSuccess).toBe(true);
     });
 
-    expect(mockedCreateSuiClient).toHaveBeenCalledWith(SUI_DEVNET_CHAIN);
-    expect(mockGetBalance).toHaveBeenCalledWith({
-      owner: "0x123",
-      coinType: "0x2::sui::SUI",
-    });
+    expect(mockQuery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        variables: { address: "0x123", coinType: "0x2::sui::SUI" },
+      }),
+    );
     expect(result.current.data?.formattedBalance).toBe("formatted-1000");
 
     unmount();

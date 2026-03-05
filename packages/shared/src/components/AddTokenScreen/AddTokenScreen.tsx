@@ -2,6 +2,7 @@ import type React from "react";
 import { useState } from "react";
 import { useTokenListStore } from "../../stores/tokenListStore";
 import type { AddTokenScreenProps } from "../../types";
+import { isValidCoinTypeFormat } from "../../wallet/utils/coinTypeFormat";
 import Button from "../Button";
 import Heading from "../Heading";
 import { Input } from "../Inputs";
@@ -20,6 +21,10 @@ export const AddTokenScreen: React.FC<AddTokenScreenProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   const handleAddToken = () => {
+    if (!chain) {
+      showToast("Failed to add token");
+      return;
+    }
     const normalized = inputValue.trim();
     if (!normalized) {
       setError("Please enter a coin type");
@@ -27,14 +32,15 @@ export const AddTokenScreen: React.FC<AddTokenScreenProps> = ({
       return;
     }
 
-    // Basic validation for Sui coin type format
-    if (!normalized.match(/^0x[a-fA-F0-9]+::\w+::\w+$/)) {
-      setError("Invalid coin type format. Expected: 0x...::module::COIN");
+    if (!isValidCoinTypeFormat(normalized)) {
+      setError(
+        "Invalid coin type format. Expected: 0x...::module::COIN or 0x2::Coin<...>",
+      );
       showToast("Failed to add token");
       return;
     }
 
-    addToken(normalized);
+    addToken(chain, normalized);
     setInputValue("");
     setError(null);
     showToast("Token added");

@@ -1,10 +1,12 @@
 import type React from "react";
-import { type KeyboardEvent, useState } from "react";
+import { type KeyboardEvent, useMemo, useState } from "react";
 import { useResponsive } from "../../hooks";
 import { useTokenListStore } from "../../stores/tokenListStore";
 import type { TokenListProps, TokenRowProps } from "../../types";
+import { getDefaultTokensForChain } from "../../types/networks";
 import { formatAddress } from "../../utils";
 import { useBalance } from "../../wallet";
+import { getKnownTokenDisplay } from "../../wallet/utils/balanceMetadata";
 import Button from "../Button";
 import Icon from "../Icon";
 import Text from "../Text";
@@ -29,10 +31,15 @@ const TokenRow: React.FC<ExtendedTokenRowProps> = ({
     coinType,
   });
 
-  const tokenName = data?.metadata?.name || data?.metadata?.symbol || "Token";
+  const knownDisplay = getKnownTokenDisplay(coinType);
+  const tokenName =
+    data?.metadata?.name ||
+    data?.metadata?.symbol ||
+    knownDisplay?.name ||
+    "Token";
   const shortAddress = `${coinType.slice(0, 6)}•••${coinType.slice(-4)}`;
   const balance = isLoading ? "..." : (data?.formattedBalance ?? "0");
-  const symbol = data?.metadata?.symbol || "";
+  const symbol = data?.metadata?.symbol || knownDisplay?.symbol || "";
 
   // Container classes - expands when selected
   const containerClasses = [
@@ -120,6 +127,11 @@ export const TokenSection: React.FC<
   const { showToast } = useToast();
   const { isMobile } = useResponsive();
 
+  const tokensForChain = useMemo(
+    () => (chain ? (tokens[chain] ?? getDefaultTokensForChain(chain)) : []),
+    [chain, tokens],
+  );
+
   const handleCopyAddress = async (address: string) => {
     try {
       if (typeof navigator === "undefined" || !navigator.clipboard) {
@@ -133,8 +145,8 @@ export const TokenSection: React.FC<
   };
 
   const handleRemoveToken = () => {
-    if (selectedToken) {
-      removeToken(selectedToken);
+    if (selectedToken && chain) {
+      removeToken(chain, selectedToken);
       setSelectedToken(null);
     }
   };
@@ -144,7 +156,7 @@ export const TokenSection: React.FC<
       onSendToken(coinType);
     }
   };
-  const hasTokens = tokens.length > 0;
+  const hasTokens = tokensForChain.length > 0;
 
   return (
     <div className="flex flex-col items-start gap-2 w-full flex-1 min-h-0">
@@ -215,7 +227,7 @@ export const TokenSection: React.FC<
               </Text>
             </div>
           ) : (
-            tokens.map((coinType) => (
+            tokensForChain.map((coinType: string) => (
               <TokenRow
                 key={coinType}
                 coinType={coinType}
@@ -246,7 +258,7 @@ export const TokenSection: React.FC<
           variant="secondary"
           size="small"
           onClick={handleRemoveToken}
-          disabled={!selectedToken}
+          disabled={!selectedToken || !chain}
         >
           Remove token
         </Button>

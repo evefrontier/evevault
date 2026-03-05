@@ -17,3 +17,33 @@ export interface UseTransactionsParams {
   chain: SuiChain | null;
   pageSize?: number;
 }
+
+/**
+ * Parameters for the useBalance hook
+ */
+export interface UseBalanceParams {
+  user: User | null;
+  chain: SuiChain | null;
+  coinType?: string;
+}
+
+/**
+ * Token metadata returned with balance (decimals, symbol, name, etc.)
+ */
+export interface BalanceMetadata {
+  decimals: number;
+  symbol: string;
+  name: string;
+  description?: string | null;
+  iconUrl?: string | null;
+}
+
+/**
+ * Result shape returned by useBalance (and balance query)
+ */
+export interface CoinBalanceResult {
+  rawBalance: string;
+  formattedBalance: string;
+  metadata: BalanceMetadata | null;
+  coinType: string;
+}

@@ -212,6 +212,21 @@ Common issues and solutions when working with the EVE Vault extension.
 4. Check for circular dependencies
 5. Clear node_modules and reinstall: `rm -rf node_modules && bun install`
 
+### Build fails after clean / fresh install
+
+**Symptoms:**
+
+- `bun run build` fails after `bun run clean:all` (or similar) then `bun install`
+- TypeScript errors about `Transaction`, `getCoins`, or `GrpcCoreClient`
+
+**Cause:** The project uses **only** `@mysten/sui` **2.4.0** (pinned in root and shared `package.json`). If the lockfile is out of date or install didn’t run, a different SDK version can be resolved and types won’t match.
+
+**Solutions:**
+
+1. From a clean state, run **`bun install`** (no `clean:cache` or `clean:all` before it). The committed `bun.lock` ensures everyone gets the same dependency tree, including `@mysten/sui@2.4.0`.
+2. After changing dependencies or lockfile, run **`bun install`** then **`bun run build`** again.
+3. Ensure `bun.lock` is committed so all developers resolve the same versions.
+
 ### Output not found
 
 **Symptoms:**
