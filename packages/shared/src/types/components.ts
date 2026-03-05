@@ -3,20 +3,16 @@ import type { User } from "oidc-client-ts";
 import type {
   ButtonHTMLAttributes,
   CSSProperties,
-  Dispatch,
   FC,
   InputHTMLAttributes,
   ReactNode,
-  SetStateAction,
   SVGProps,
 } from "react";
 import type { ThemeToken } from "../theme/colorTheme";
 
 export interface SwitchProps {
   isChecked: boolean;
-  onChange: (
-    isChecked: boolean,
-  ) => undefined | Dispatch<SetStateAction<boolean>>;
+  onChange: (isChecked: boolean) => void;
   disabled?: boolean;
   className?: string;
   style?: CSSProperties;
@@ -194,8 +190,16 @@ export interface HeaderMobileProps {
   email: string;
   logoSrc?: string;
   identicon?: number;
-  /** Callback when "Transactions" menu item is clicked */
+  /** Callback when "Transaction History" menu item is clicked */
   onTransactionsClick?: () => void;
+  /** When true, show "Sign and submit test" and "Token refresh test" (when callbacks provided) */
+  showDevActions?: boolean;
+  /** Callback when "Dev mode" toggle menu item is clicked (may be async). */
+  onDevModeToggle?: () => void | Promise<void>;
+  /** Callback when "Sign and submit test" menu item is clicked */
+  onSignSubmitTxClick?: () => void;
+  /** Callback when "Token refresh test" menu item is clicked */
+  onTokenRefreshTestClick?: () => void;
 }
 
 export type CornersColor =
@@ -249,6 +253,10 @@ export interface DropdownItem {
   label: string;
   icon?: IconName;
   onClick: () => void;
+  /** When true, clicking this item does not close the dropdown */
+  preventCloseOnClick?: boolean;
+  /** When set, renders this instead of default icon + label (e.g. for a row with a toggle) */
+  customContent?: ReactNode;
 }
 
 export interface DropdownSelectProps {
@@ -275,6 +283,8 @@ export interface DropdownProps {
   onClickOutside?: () => void;
   /** Ref to the trigger element (clicks on trigger won't trigger onClickOutside) */
   triggerRef?: React.RefObject<HTMLElement | null>;
+  /** Open menu above trigger (e.g. for extension footer) or below (default) */
+  placement?: "top" | "bottom";
 }
 
 export type HeadingProps = React.HTMLAttributes<HTMLHeadingElement> & {

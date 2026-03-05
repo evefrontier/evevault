@@ -173,7 +173,7 @@ export const TokenSection: React.FC<
 
       {/* Token List */}
       <div
-        className={`flex flex-col items-start p-4 px-2 gap-3 w-full bg-crude-dark border border-quantum-60 overflow-hidden ${isMobile ? "" : "flex-1 min-h-0"}`}
+        className={`flex flex-col items-start p-4 px-2 gap-3 w-full bg-crude-dark border border-quantum-60 overflow-hidden ${isMobile ? "" : "flex-1 min-h-[300px]"}`}
         style={isMobile ? { height: "207px", flexShrink: 0 } : undefined}
       >
         {/* Labels Row */}

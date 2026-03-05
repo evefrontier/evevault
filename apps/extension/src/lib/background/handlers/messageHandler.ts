@@ -14,6 +14,7 @@ import {
   handleExtLogin,
   handleWebUnlock,
 } from "./authHandlers";
+import { handleSponsoredTransaction } from "./sponsoredTransactionHandler";
 import {
   _handleClearZkProof,
   _handleCreateKeypair,
@@ -27,7 +28,6 @@ import {
 import {
   handleApprovePopup,
   handleReportTransactionEffects,
-  handleSponsoredTransaction,
 } from "./walletHandlers";
 
 const log = createLogger();

@@ -1,5 +1,5 @@
 import { HeaderMobile, LockScreen, NetworkSelector } from "@evevault/shared";
-import { useAuth } from "@evevault/shared/auth";
+import { handleTestTokenRefresh, useAuth } from "@evevault/shared/auth";
 import {
   Background,
   Button,
@@ -13,7 +13,9 @@ import { useNetworkStore } from "@evevault/shared/stores/networkStore";
 import { createSuiClient } from "@evevault/shared/sui";
 import {
   createLogger,
+  getDevModeEnabled,
   getSuiscanUrl,
+  setDevModeEnabled,
   WEB_ROUTES,
 } from "@evevault/shared/utils";
 import { zkSignAny } from "@evevault/shared/wallet";
@@ -21,7 +23,7 @@ import { Transaction } from "@mysten/sui/transactions";
 import type { SuiChain } from "@mysten/wallet-standard";
 import { SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
 import { useNavigate } from "@tanstack/react-router";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 const log = createLogger();
 
@@ -30,6 +32,7 @@ export const WalletScreen = () => {
   const [initError, setInitError] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const [txDigest, setTxDigest] = useState<string | null>(null);
+  const [devMode, setDevMode] = useState(false);
   const [_previousNetworkBeforeSwitch, setPreviousNetworkBeforeSwitch] =
     useState<SuiChain | null>(null);
 
@@ -46,6 +49,7 @@ export const WalletScreen = () => {
     maxEpoch,
     ephemeralPublicKey,
     getZkProof,
+    nonce,
     error: deviceError,
     loading: deviceLoading,
     unlock,
@@ -91,6 +95,16 @@ export const WalletScreen = () => {
   // Monitor epoch expiration and auto-logout when maxEpochTimestampMs is reached
   useEpochExpiration();
 
+  useEffect(() => {
+    getDevModeEnabled().then(setDevMode);
+  }, []);
+
+  const handleDevModeToggle = useCallback(async () => {
+    const next = !devMode;
+    setDevMode(next);
+    await setDevModeEnabled(next);
+  }, [devMode]);
+
   const handleLogin = async () => {
     try {
       await login();
@@ -99,6 +113,42 @@ export const WalletScreen = () => {
       log.error("Login error", err);
     }
   };
+
+  const handleSignAndSubmitTx = useCallback(async () => {
+    if (!user || !maxEpoch) return;
+    if (!ephemeralPublicKey) {
+      throw new Error("[Wallet Screen] Ephemeral public key not found");
+    }
+    const tx = new Transaction();
+    tx.setSender(user.profile?.sui_address as string);
+    const txb = await tx.build({ client: suiClient });
+    const { bytes, zkSignature } = await zkSignAny("TransactionData", txb, {
+      user,
+      ephemeralPublicKey,
+      maxEpoch,
+      getZkProof,
+    });
+    log.debug("zkSignature ready", { length: zkSignature.length });
+    log.debug("Transaction block bytes ready", { length: bytes.length });
+    const result = await suiClient.executeTransactionBlock({
+      transactionBlock: bytes,
+      signature: zkSignature,
+    });
+    log.info("Transaction executed", { digest: result.digest });
+    setTxDigest(result.digest);
+  }, [user, maxEpoch, ephemeralPublicKey, getZkProof, suiClient]);
+
+  const handleTokenRefreshTest = useCallback(async () => {
+    if (!user) return;
+    if (!nonce) {
+      log.error("[Wallet Screen] Cannot refresh token: nonce is missing");
+      window.alert(
+        "Cannot refresh authentication token because the device nonce is missing. Please log in again.",
+      );
+      return;
+    }
+    await handleTestTokenRefresh(user, nonce);
+  }, [user, nonce]);
 
   // Show loading state while initializing
   if (isInitializing || authLoading || deviceLoading) {
@@ -157,6 +207,13 @@ export const WalletScreen = () => {
       <HeaderMobile
         address={user?.profile?.sui_address as string}
         email={user?.profile?.email as string}
+        onTransactionsClick={() =>
+          navigate({ to: WEB_ROUTES.WALLET_TRANSACTIONS })
+        }
+        showDevActions={devMode}
+        onDevModeToggle={handleDevModeToggle}
+        onSignSubmitTxClick={devMode ? handleSignAndSubmitTx : undefined}
+        onTokenRefreshTestClick={devMode ? handleTokenRefreshTest : undefined}
       />
       {/* Token Section */}
       <TokenListSection
@@ -171,7 +228,7 @@ export const WalletScreen = () => {
           })
         }
       />
-      {/* Network display and Test transaction button */}
+      {/* Network selector and test tx result */}
       <div className="justify-between pt-8 flex gap-4 flex-col sm:flex-row">
         <NetworkSelector
           chain={chain || SUI_TESTNET_CHAIN}
@@ -184,59 +241,6 @@ export const WalletScreen = () => {
           }}
         />
         <div>
-          <div className="flex align-items-end flex-col items-center gap-2">
-            <Button
-              size="small"
-              onClick={async () => {
-                if (!user || !maxEpoch) return;
-                if (!ephemeralPublicKey) {
-                  throw new Error(
-                    "[Wallet Screen] Ephemeral public key not found",
-                  );
-                }
-
-                const tx = new Transaction();
-                tx.setSender(user.profile?.sui_address as string);
-                const txb = await tx.build({ client: suiClient });
-
-                const { bytes, zkSignature } = await zkSignAny(
-                  "TransactionData",
-                  txb,
-                  {
-                    user,
-                    ephemeralPublicKey,
-                    maxEpoch,
-                    getZkProof,
-                  },
-                );
-                log.debug("zkSignature ready", {
-                  length: zkSignature.length,
-                });
-                log.debug("Transaction block bytes ready", {
-                  length: bytes.length,
-                });
-
-                const txDigest = await suiClient.executeTransaction({
-                  transaction: new Uint8Array(txb),
-                  signatures: [zkSignature],
-                });
-
-                log.info("Transaction executed", {
-                  digest: txDigest.Transaction?.digest,
-                });
-                setTxDigest(txDigest.Transaction?.digest ?? null);
-              }}
-            >
-              Sign and submit tx Wallet Screen
-            </Button>
-            <Button
-              variant="secondary"
-              size="small"
-              onClick={() => navigate({ to: WEB_ROUTES.WALLET_TRANSACTIONS })}
-            >
-              View Transaction History
-            </Button>
-          </div>
           {txDigest && (
             <div>
               <Text>

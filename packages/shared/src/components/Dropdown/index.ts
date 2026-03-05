@@ -5,3 +5,4 @@ export type {
 } from "../../types";
 export { Dropdown, default } from "./Dropdown";
 export { DropdownSelect } from "./DropdownSelect";
+export { getIdenticon } from "./Identicons";

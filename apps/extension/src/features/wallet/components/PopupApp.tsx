@@ -1,5 +1,5 @@
 import "./PopupApp.css";
-import { useAuth } from "@evevault/shared/auth";
+import { handleTestTokenRefresh, useAuth } from "@evevault/shared/auth";
 import {
   Button,
   HeaderMobile,
@@ -18,13 +18,14 @@ import { useNetworkStore } from "@evevault/shared/stores/networkStore";
 import {
   createLogger,
   EXTENSION_ROUTES,
+  getDevModeEnabled,
   getSuiscanUrl,
+  setDevModeEnabled,
 } from "@evevault/shared/utils";
 import { useBalance } from "@evevault/shared/wallet";
 import type { SuiChain } from "@mysten/wallet-standard";
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { handleTestTokenRefresh } from "../api/tokenRefresh";
+import { useCallback, useEffect, useState } from "react";
 import { useAppInitialization, useLogin } from "../hooks";
 
 const log = createLogger();
@@ -32,10 +33,11 @@ const log = createLogger();
 function App() {
   const navigate = useNavigate();
   const { initError, isInitializing } = useAppInitialization();
+  const [devMode, setDevMode] = useState(false);
   const [previousNetworkBeforeSwitch, setPreviousNetworkBeforeSwitch] =
     useState<SuiChain | null>(null);
 
-  const { user, error: authError } = useAuth();
+  const { user, loading: authLoading, error: authError } = useAuth();
   const { isLocked, isPinSet, error: deviceError, unlock } = useDevice();
   const { chain } = useNetworkStore();
   const { handleLogin } = useLogin();
@@ -60,6 +62,16 @@ function App() {
     }
   }, [user, previousNetworkBeforeSwitch]);
 
+  useEffect(() => {
+    getDevModeEnabled().then(setDevMode);
+  }, []);
+
+  const handleDevModeToggle = useCallback(async () => {
+    const next = !devMode;
+    setDevMode(next);
+    await setDevModeEnabled(next);
+  }, [devMode]);
+
   const onLoginClick = async () => {
     const success = await handleLogin(previousNetworkBeforeSwitch);
     if (success) {
@@ -67,27 +79,52 @@ function App() {
     }
   };
 
+  const handleTokenRefreshTest = useCallback(async () => {
+    if (!user) return;
+    if (!nonce) {
+      const message =
+        "Cannot refresh token because the device nonce is not available. Please unlock your wallet or try again.";
+      log.error(message);
+      // Show explicit feedback to the user instead of proceeding with an invalid nonce
+      window.alert(message);
+      return;
+    }
+    await handleTestTokenRefresh(user, nonce);
+  }, [user, nonce]);
+
   // Show loading state while initializing
   if (isInitializing) {
     return (
-      <>
-        <Heading level={1} variant="bold">
-          EVE Vault
-        </Heading>
-        <Text>Loading...</Text>
-      </>
+      <div className="flex flex-col items-center justify-between gap-4 w-full h-full">
+        <section className="flex flex-col items-center gap-10 w-full flex-1">
+          <img src="/images/logo.png" alt="EVE Vault" className="h-20 w-auto" />
+          <header className="flex flex-col items-center gap-4 text-center">
+            <Heading level={2}>Loading...</Heading>
+            <Text variant="light" size="large">
+              Preparing your wallet
+            </Text>
+          </header>
+        </section>
+      </div>
     );
   }
 
   if (initError) {
     return (
-      <>
-        <Heading level={1} variant="bold">
-          EVE Vault
-        </Heading>
-        <Text color="error">Error: {initError}</Text>
-        <Button onClick={() => window.location.reload()}>Reload</Button>
-      </>
+      <div className="flex flex-col items-center justify-between gap-4 w-full h-full">
+        <section className="flex flex-col items-center gap-10 w-full flex-1">
+          <img src="/images/logo.png" alt="EVE Vault" className="h-20 w-auto" />
+          <header className="flex flex-col items-center gap-4 text-center">
+            <Heading level={2}>Error</Heading>
+            <Text color="error">Error: {initError}</Text>
+            <div className="w-full max-w-[300px]">
+              <Button size="fill" onClick={() => window.location.reload()}>
+                Reload
+              </Button>
+            </div>
+          </header>
+        </section>
+      </div>
     );
   }
 
@@ -99,12 +136,19 @@ function App() {
   // If ephemeral keypair exists, but user is not logged in, show login screen
   if (!user) {
     return (
-      <>
-        <Heading level={1} variant="bold">
-          EVE Vault
-        </Heading>
-        <Button onClick={onLoginClick}>Sign in</Button>
-      </>
+      <div className="flex flex-col items-center justify-between gap-4 w-full h-full">
+        <section className="flex flex-col items-center gap-10 w-full flex-1">
+          <img src="/images/logo.png" alt="EVE Vault" className="h-20 w-auto" />
+          <header className="flex flex-col items-center gap-4 text-center">
+            <Heading level={2}>Sign in</Heading>
+          </header>
+          <div className="w-full max-w-[300px]">
+            <Button size="fill" onClick={onLoginClick} disabled={authLoading}>
+              {authLoading ? "Loading..." : "Login"}
+            </Button>
+          </div>
+        </section>
+      </div>
     );
   }
 
@@ -118,6 +162,10 @@ function App() {
         onTransactionsClick={() =>
           navigate({ to: EXTENSION_ROUTES.TRANSACTIONS })
         }
+        showDevActions={devMode}
+        onDevModeToggle={handleDevModeToggle}
+        onSignSubmitTxClick={devMode ? handleTestTransaction : undefined}
+        onTokenRefreshTestClick={devMode ? handleTokenRefreshTest : undefined}
       />
 
       {/* Token Section */}
@@ -131,8 +179,8 @@ function App() {
         }
       />
 
-      {/* Network display and Test transaction button */}
-      <div className=" justify-between  flex items-center gap-4 ">
+      {/* Network selector and test tx result */}
+      <div className="justify-between flex items-center gap-4">
         <NetworkSelector
           chain={chain}
           onNetworkSwitchStart={(previousNetwork, targetNetwork) => {
@@ -143,22 +191,6 @@ function App() {
             setPreviousNetworkBeforeSwitch(previousNetwork as SuiChain);
           }}
         />
-        <Button
-          variant="secondary"
-          size="small"
-          onClick={handleTestTransaction}
-        >
-          Submit test
-        </Button>
-        <Button
-          variant="secondary"
-          size="small"
-          onClick={async () =>
-            await handleTestTokenRefresh(user, nonce || "nononcefound")
-          }
-        >
-          Token refresh test
-        </Button>
       </div>
 
       {authError && <Text color="error">AuthError: {authError}</Text>}

@@ -13,6 +13,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
   className = "",
   onClickOutside,
   triggerRef,
+  placement = "bottom",
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -34,8 +35,13 @@ export const Dropdown: React.FC<DropdownProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [onClickOutside, triggerRef]);
 
+  const placementClass = placement === "top" ? "dropdown--placement-top" : "";
+  const dropdownClassName = ["dropdown", placementClass, className]
+    .filter(Boolean)
+    .join(" ");
+
   return (
-    <div className={`dropdown ${className}`} ref={menuRef}>
+    <div className={dropdownClassName} ref={menuRef}>
       <Corners color="quantum" size={5} thickness={1} />
       <span className="dropdown__edge dropdown__edge--left" />
       <span className="dropdown__edge dropdown__edge--right" />

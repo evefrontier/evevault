@@ -1,6 +1,6 @@
 import { LockScreen } from "@evevault/shared";
 import { useAuth } from "@evevault/shared/auth";
-import { Button, Heading } from "@evevault/shared/components";
+import { Button, Heading, Text } from "@evevault/shared/components";
 import { useDevice } from "@evevault/shared/hooks/useDevice";
 
 export const LoginScreen = () => {
@@ -14,14 +14,18 @@ export const LoginScreen = () => {
   }
 
   return (
-    <div className="flex flex-col gap-4 h-full">
-      <Heading level={1} variant="bold">
-        EVE Vault
-      </Heading>
-
-      <Button size="large" onClick={() => login()} disabled={loading}>
-        {loading ? "Loading..." : "Sign in"}
-      </Button>
+    <div className="flex flex-col items-center justify-between gap-4 w-full h-full">
+      <section className="flex flex-col items-center gap-10 w-full flex-1">
+        <img src="/images/logo.png" alt="EVE Vault" className="h-20 w-auto" />
+        <header className="flex flex-col items-center gap-4 text-center">
+          <Heading level={2}>Sign in</Heading>
+        </header>
+        <div className="w-full max-w-[300px]">
+          <Button size="fill" onClick={() => login()} disabled={loading}>
+            {loading ? "Loading..." : "Login"}
+          </Button>
+        </div>
+      </section>
     </div>
   );
 };

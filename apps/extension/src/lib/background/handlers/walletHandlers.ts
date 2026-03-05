@@ -1,15 +1,7 @@
 import { WalletStandardMessageTypes } from "@evevault/shared";
-import {
-  getJwtForNetwork,
-  getStoredChain,
-  getStoredWalletAddress,
-} from "@evevault/shared/auth";
 import { createLogger } from "@evevault/shared/utils";
 import { openPopupWindow } from "../services/popupWindow";
-import type {
-  EveFrontierSponsoredTransactionMessage,
-  WalletActionMessage,
-} from "../types";
+import type { WalletActionMessage } from "../types";
 
 const log = createLogger();
 
@@ -144,95 +136,6 @@ async function handleApprovePopup(
   }
 }
 
-async function handleSponsoredTransaction(
-  message: EveFrontierSponsoredTransactionMessage,
-  sender: chrome.runtime.MessageSender,
-  sendResponse: (response?: unknown) => void,
-): Promise<boolean> {
-  const senderTabId = sender.tab?.id;
-  const { action, assembly, assemblyType } = message.message;
-
-  try {
-    const chain = await getStoredChain();
-    const jwt = await getJwtForNetwork(chain);
-    if (!jwt?.access_token) {
-      sendResponse({
-        type: "sign_transaction_error",
-        error: "No JWT for current network. Re-authenticate required.",
-      });
-      return false;
-    }
-
-    if (!assembly || !assemblyType) {
-      throw new Error(`Assembly not found: ${assembly}, ${assemblyType}`);
-    }
-
-    log.info("Eve Frontier sponsored transaction request received", {
-      action,
-      assembly,
-      assemblyType,
-      chain,
-    });
-
-    const encodedAssemblyType = encodeURIComponent(assemblyType);
-    const encodedAction = encodeURIComponent(action);
-
-    // Fetch the txb to be signed from the Quasar proxy
-    const response = await fetch(
-      `https://api.test.tech.evefrontier.com/transactions/sponsored/${encodedAssemblyType}/${encodedAction}`,
-      {
-        method: "POST",
-        body: JSON.stringify({
-          assemblyId: assembly,
-          ownerId: 5,
-        }),
-        headers: {
-          "X-Tenant": import.meta.env.VITE_FRONTIER_TENANT,
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${jwt.access_token}`,
-        },
-      },
-    );
-
-    const txb = await response.json();
-
-    // Sign the transaction with the zkSignAny function
-    // const { zkSignature, bytes } = await zkSignAny(
-    //   "TransactionData",
-    //   new Uint8Array(txb),
-    //   {
-    //     user,
-    //     ephemeralPublicKey,
-    //     maxEpoch,
-    //     getZkProof,
-    //   },
-    // );
-
-    // This is a temporary solution to send the success message to the tab
-    // The actual tx digest will depend on the quasar service
-    chrome.tabs
-      .sendMessage(senderTabId as number, {
-        type: "sign_success",
-        digest: "0x1234567890",
-        effects: "0x1234567890",
-        txb,
-        id: message.id,
-      })
-      .catch((err) => {
-        log.error("Failed to send success message", err);
-      });
-
-    return true; // Keep message channel open for async response
-  } catch (error) {
-    log.error("Transaction signing failed", error);
-    sendResponse({
-      type: "sign_transaction_error",
-      error: error instanceof Error ? error.message : "Unknown error occurred",
-    });
-    return false;
-  }
-}
-
 async function handleReportTransactionEffects(
   message: Record<string, unknown>,
   _sender: chrome.runtime.MessageSender,
@@ -247,8 +150,4 @@ async function handleReportTransactionEffects(
   });
 }
 
-export {
-  handleApprovePopup,
-  handleSponsoredTransaction,
-  handleReportTransactionEffects,
-};
+export { handleApprovePopup, handleReportTransactionEffects };

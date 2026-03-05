@@ -3,6 +3,7 @@ export * from "./authCleanup";
 export * from "./buildTx";
 export * from "./calculate";
 export * from "./constants";
+export * from "./devMode";
 export * from "./environment";
 export * from "./format";
 export * from "./getters";

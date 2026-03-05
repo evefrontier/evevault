@@ -104,22 +104,30 @@ export const CallbackScreen = () => {
 
   if (error) {
     return (
-      <div>
-        <Heading level={1} variant="bold">
-          Authentication Error
-        </Heading>
-        <Text color="error">{error}</Text>
-        <Text>Redirecting to login...</Text>
+      <div className="flex flex-col items-center justify-between gap-4 w-full h-full">
+        <section className="flex flex-col items-center gap-10 w-full flex-1">
+          <img src="/images/logo.png" alt="EVE Vault" className="h-20 w-auto" />
+          <header className="flex flex-col items-center gap-4 text-center">
+            <Heading level={2}>Authentication Error</Heading>
+            <Text color="error">{error}</Text>
+            <Text>Redirecting to login...</Text>
+          </header>
+        </section>
       </div>
     );
   }
 
   return (
-    <div>
-      <Heading level={1} variant="bold">
-        Completing authentication...
-      </Heading>
-      <Text>Please wait while we finish signing you in.</Text>
+    <div className="flex flex-col items-center justify-between gap-4 w-full h-full">
+      <section className="flex flex-col items-center gap-10 w-full flex-1">
+        <img src="/images/logo.png" alt="EVE Vault" className="h-20 w-auto" />
+        <header className="flex flex-col items-center gap-4 text-center">
+          <Heading level={2}>Completing authentication...</Heading>
+          <Text variant="light" size="large">
+            Please wait while we finish signing you in.
+          </Text>
+        </header>
+      </section>
     </div>
   );
 };

@@ -63,8 +63,6 @@ export type EveFrontierSponsoredTransactionInput = {
   txAction: string;
   assembly: string;
   assemblyType: string;
-  chain: string;
-  jwt: string;
 };
 export type EveFrontierSponsoredTransactionOutput = {
   digest: string;
@@ -77,7 +75,12 @@ export type EveFrontierSponsoredTransactionMethod = (
 
 export type EveVaultWalletFeatures = SuiWalletFeatures & {
   [EVEFRONTIER_SPONSORED_TRANSACTION]: {
-    version: "1.0.0";
+    version: "1.0.1";
     signSponsoredTransaction: EveFrontierSponsoredTransactionMethod;
   };
+};
+
+export type SponsoredTxReturn = {
+  bcsDataB64Bytes: string;
+  preparationId: string;
 };

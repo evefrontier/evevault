@@ -119,7 +119,7 @@ export default defineConfig(() => {
       key: envVars.EXTENSION_ID,
       name: "EVE Vault",
       version: "0.0.3",
-      description: "EVE Vault for EVE Frontier on Testevenet with ZKLogin",
+      description: "EVE Vault for EVE Frontier on Utopia with ZKLogin",
       permissions: [
         "identity",
         "identity.email",

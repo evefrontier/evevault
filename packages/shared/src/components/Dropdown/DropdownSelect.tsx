@@ -65,7 +65,9 @@ export const DropdownSelect: React.FC<DropdownSelectProps> = ({
 
   const handleItemClick = (item: DropdownItem) => {
     item.onClick();
-    setIsOpen(false);
+    if (!item.preventCloseOnClick) {
+      setIsOpen(false);
+    }
   };
 
   return (
@@ -121,8 +123,12 @@ export const DropdownSelect: React.FC<DropdownSelectProps> = ({
                 role="menuitem"
                 tabIndex={0}
               >
-                {getIdenticon(index)}
-                <Text variant="label">{item.label}</Text>
+                {item.customContent ?? (
+                  <>
+                    {getIdenticon(index)}
+                    <Text variant="label">{item.label}</Text>
+                  </>
+                )}
               </div>
             ))}
         </div>

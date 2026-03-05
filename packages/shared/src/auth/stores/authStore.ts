@@ -201,6 +201,7 @@ export const useAuthStore = create<AuthState>()(
 
         login: async () => {
           const network = useNetworkStore.getState().chain;
+          set({ loading: true });
 
           if (isExtension()) {
             try {
@@ -254,10 +255,11 @@ export const useAuthStore = create<AuthState>()(
                 });
 
                 await getUserManagerInstance().storeUser(user);
-                set({ user });
+                set({ user, loading: false });
 
                 return user as User;
               }
+              set({ loading: false });
             } catch (error) {
               log.error("Extension login failed", error);
               const errorMessage =
@@ -268,6 +270,7 @@ export const useAuthStore = create<AuthState>()(
                     error instanceof Error ? error.message : "Unknown error",
                 });
               }
+              set({ loading: false });
             }
           } else {
             // Web login flow
@@ -317,6 +320,7 @@ export const useAuthStore = create<AuthState>()(
                 maxEpoch: getDeviceParams().maxEpoch,
               },
             });
+            set({ loading: false });
           }
         },
 
