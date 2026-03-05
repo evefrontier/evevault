@@ -15,12 +15,12 @@ export default function LockScreen({
   unlock,
 }: {
   isPinSet: boolean;
-  unlock: (pin: string) => void;
+  unlock: (pin: string) => Promise<void>;
 }) {
   const chain = useNetworkStore.getState().chain;
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState<string | null>(null);
-  const { initialize: initializeDevice } = useDevice();
+  const { initialize: initializeDevice, error: deviceError } = useDevice();
 
   const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPin(e.target.value.replace(/\D/g, ""));
@@ -32,10 +32,11 @@ export default function LockScreen({
       setPinError("PIN must be 6 digits long");
       return;
     }
+    setPinError(null);
     if (!isPinSet) {
       await initializeDevice(pin);
     }
-    unlock(pin);
+    await unlock(pin);
   };
 
   const title = isPinSet ? "Enter pin" : "Create pin";
@@ -69,7 +70,7 @@ export default function LockScreen({
             placeholder="6-digit PIN"
             onChange={handlePinChange}
             value={pin}
-            errorText={pinError || undefined}
+            errorText={pinError || deviceError || undefined}
           />
           <div className="w-full max-w-[300px]">
             <Button type="submit" size="fill">
