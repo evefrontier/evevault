@@ -7,6 +7,7 @@ import {
 } from "@evevault/shared/components";
 import Json from "@evevault/shared/components/Json";
 import { useDevice } from "@evevault/shared/hooks/useDevice";
+import { LockScreen } from "@evevault/shared/screens";
 import { createSuiClient } from "@evevault/shared/sui";
 import type { PendingTransaction } from "@evevault/shared/types";
 import { buildTx, createLogger } from "@evevault/shared/utils";
@@ -23,8 +24,12 @@ function SignAndExecuteTransaction() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { maxEpoch, getZkProof, ephemeralPublicKey } = useDevice();
-  const { user } = useAuth();
+  const { maxEpoch, getZkProof, ephemeralPublicKey, isLocked, isPinSet, unlock } = useDevice();
+  const { user, loading: authLoading, login, initialize: initializeAuth } = useAuth();
+
+  useEffect(() => {
+    initializeAuth();
+  }, [initializeAuth]);
 
   useEffect(() => {
     // Retrieve the pending transaction from storage (same key as SignTransaction)
@@ -174,6 +179,37 @@ function SignAndExecuteTransaction() {
       setError("Failed to reject transaction");
     }
   };
+
+  // Show lock screen if vault is locked
+  if (isLocked) {
+    return <LockScreen isPinSet={isPinSet} unlock={unlock} />;
+  }
+
+  // Show login prompt if user is not authenticated
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-6 h-full">
+        <img src="/images/logo.png" alt="EVE Vault" className="h-20" />
+        <Heading level={2}>Sign and Execute Transaction</Heading>
+        <Text variant="light">You need to log in before signing.</Text>
+        <Button
+          onClick={() => login()}
+          disabled={authLoading}
+          variant="primary"
+          size="fill"
+        >
+          {authLoading ? "Logging in..." : "Log In to Sign"}
+        </Button>
+        <Button
+          onClick={handleReject}
+          disabled={authLoading || !pendingTransaction}
+          variant="secondary"
+        >
+          Cancel
+        </Button>
+      </div>
+    );
+  }
 
   if (!pendingTransaction) {
     return (

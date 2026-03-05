@@ -44,7 +44,7 @@ export interface DeviceState {
   initializeForChain: (chain: SuiChain) => Promise<void>;
   getZkProof: () => Promise<ZkProofResponse | { error: string }>;
   lock: () => void;
-  unlock: (pin: string) => void;
+  unlock: (pin: string) => Promise<void>;
   reset: () => void;
   getMaxEpoch: (chain?: SuiChain) => string | null;
   getMaxEpochTimestampMs: (chain?: SuiChain) => number | null;
