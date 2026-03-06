@@ -186,7 +186,15 @@ export const WalletScreen = () => {
 
   // First, check for unencrypted ephemeral key pair
   if (isLocked) {
-    return <LockScreen isPinSet={isPinSet} unlock={unlock} />;
+    return (
+      <LockScreen
+        isPinSet={isPinSet}
+        unlock={unlock}
+        onResetComplete={() => {
+          window.location.href = "/";
+        }}
+      />
+    );
   }
 
   if (!user) {
