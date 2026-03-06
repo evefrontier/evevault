@@ -1,25 +1,32 @@
 import type React from "react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   Button,
   Heading,
   Input,
+  Modal,
   NetworkSelector,
   Text,
 } from "../../components";
+import { resetVaultOnDevice } from "../../auth/resetVaultOnDevice";
 import { useDevice } from "../../hooks/useDevice";
 import { useNetworkStore } from "../../stores/networkStore";
 
 export default function LockScreen({
   isPinSet,
   unlock,
+  onResetComplete,
 }: {
   isPinSet: boolean;
   unlock: (pin: string) => void;
+  /** Called after reset completes; use to redirect to `/` (e.g. window.location.href = "/") */
+  onResetComplete?: () => void;
 }) {
   const chain = useNetworkStore.getState().chain;
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState<string | null>(null);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   const { initialize: initializeDevice } = useDevice();
 
   const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,6 +44,17 @@ export default function LockScreen({
     }
     unlock(pin);
   };
+
+  const handleConfirmReset = useCallback(async () => {
+    setIsResetting(true);
+    try {
+      await resetVaultOnDevice();
+      setShowResetConfirm(false);
+      onResetComplete?.();
+    } finally {
+      setIsResetting(false);
+    }
+  }, [onResetComplete]);
 
   const title = isPinSet ? "Enter pin" : "Create pin";
   const description = isPinSet
@@ -77,8 +95,44 @@ export default function LockScreen({
             </Button>
           </div>
         </form>
+
+        {isPinSet && (
+          <button
+            type="button"
+            onClick={() => setShowResetConfirm(true)}
+            className="text-sm underline text-grey-neutral hover:text-neutral focus:outline-none focus:ring-2 focus:ring-primary rounded"
+          >
+            Forgot PIN? Reset EVE Vault on this device
+          </button>
+        )}
+
         <NetworkSelector chain={chain} className="align-self-start w-full" />
       </section>
+
+      <Modal
+        isOpen={showResetConfirm}
+        onClose={() => !isResetting && setShowResetConfirm(false)}
+        title="Reset EVE Vault on this device?"
+        className="modal--card"
+        secondaryAction={{
+          label: "Cancel",
+          onClick: () => setShowResetConfirm(false),
+          disabled: isResetting,
+        }}
+        primaryAction={{
+          label: "Reset",
+          onClick: handleConfirmReset,
+          isLoading: isResetting,
+        }}
+        closeOnOverlayClick={!isResetting}
+      >
+        <div className="modal__divider" />
+        <Text className="modal__card-message" color="grey-neutral">
+          This will remove all EVE Vault data from this device (including your
+          PIN). You will need to sign in again and create a new PIN. Your wallet
+          and funds are safe and will be available after you sign back in.
+        </Text>
+      </Modal>
     </div>
   );
 }
