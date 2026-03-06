@@ -129,7 +129,7 @@ async function handleSponsoredTransaction(
         (async () => {
           try {
             const executeResponse = await fetch(
-              `https://api.${encodedTier}.tech.evefrontier.com/transactions/sponsored/execute`,
+              `https://api.${tier}.tech.evefrontier.com/transactions/sponsored/execute`,
               {
                 method: "POST",
                 body: JSON.stringify({
