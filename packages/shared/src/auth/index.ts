@@ -1,4 +1,5 @@
 export { getUserManager } from "./authConfig";
+export { resetVaultOnDevice } from "./resetVaultOnDevice";
 export { exchangeCodeForToken } from "./exchangeCode";
 export {
   clearZkLoginAddressCache,

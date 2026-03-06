@@ -20,12 +20,20 @@ const isRoutePath = (value: string): value is RoutePath => {
   return ROUTE_PATHS.includes(value as RoutePath);
 };
 
+/** Guard so the OAuth code is only exchanged once (avoids "Invalid Authorization Code" from double-run in Strict Mode or reload). */
+let callbackExchangeStarted = false;
+
 export const CallbackScreen = () => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const _search = useSearch({ from: "/callback" });
 
   useEffect(() => {
+    if (callbackExchangeStarted) {
+      return;
+    }
+    callbackExchangeStarted = true;
+
     const handleCallback = async () => {
       try {
         const redirectAfterLogin = sessionStorage.getItem(
@@ -96,6 +104,8 @@ export const CallbackScreen = () => {
         setTimeout(() => {
           navigate({ to: "/" });
         }, 3000);
+      } finally {
+        callbackExchangeStarted = false;
       }
     };
 

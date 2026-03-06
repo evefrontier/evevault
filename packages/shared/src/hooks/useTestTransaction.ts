@@ -54,7 +54,6 @@ export function useTestTransaction() {
         signatures: [zkSignature],
       });
 
-      // @mysten/sui 2.x: discriminated union Transaction | FailedTransaction
       if (
         "$kind" in txDigestResult &&
         txDigestResult.$kind === "FailedTransaction"
