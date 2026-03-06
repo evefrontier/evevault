@@ -10,7 +10,15 @@ export const LoginScreen = () => {
 
   // First, check for unencrypted ephemeral key pair
   if (isLocked) {
-    return <LockScreen isPinSet={isPinSet} unlock={unlock} />;
+    return (
+      <LockScreen
+        isPinSet={isPinSet}
+        unlock={unlock}
+        onResetComplete={() => {
+          window.location.href = "/";
+        }}
+      />
+    );
   }
 
   return (
