@@ -134,10 +134,14 @@ export const WalletScreen = () => {
       transaction: new Uint8Array(txb),
       signatures: [zkSignature],
     });
-    log.info("Transaction executed", {
-      digest: result.transaction.digest,
-    });
-    setTxDigest(result.transaction.digest ?? null);
+    if ("$kind" in result && result.$kind === "FailedTransaction") {
+      throw new Error("Transaction failed");
+    }
+    const txResponse = (result as { Transaction: { digest?: string | null } })
+      .Transaction;
+    const digest = txResponse?.digest ?? null;
+    log.info("Transaction executed", { digest });
+    setTxDigest(digest);
   }, [user, maxEpoch, ephemeralPublicKey, getZkProof, suiClient]);
 
   const handleTokenRefreshTest = useCallback(async () => {

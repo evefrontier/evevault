@@ -1,5 +1,6 @@
 import type React from "react";
 import { useCallback, useState } from "react";
+import { resetVaultOnDevice } from "../../auth/resetVaultOnDevice";
 import {
   Button,
   Heading,
@@ -7,8 +8,8 @@ import {
   Modal,
   NetworkSelector,
   Text,
+  useToast,
 } from "../../components";
-import { resetVaultOnDevice } from "../../auth/resetVaultOnDevice";
 import { useDevice } from "../../hooks/useDevice";
 import { useNetworkStore } from "../../stores/networkStore";
 
@@ -28,6 +29,7 @@ export default function LockScreen({
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const { initialize: initializeDevice } = useDevice();
+  const { showToast } = useToast();
 
   const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPin(e.target.value.replace(/\D/g, ""));
@@ -51,10 +53,16 @@ export default function LockScreen({
       await resetVaultOnDevice();
       setShowResetConfirm(false);
       onResetComplete?.();
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : "Something went wrong while resetting the vault. Please try again.";
+      showToast(message);
     } finally {
       setIsResetting(false);
     }
-  }, [onResetComplete]);
+  }, [onResetComplete, showToast]);
 
   const title = isPinSet ? "Enter pin" : "Create pin";
   const description = isPinSet
@@ -100,9 +108,15 @@ export default function LockScreen({
           <button
             type="button"
             onClick={() => setShowResetConfirm(true)}
+            onMouseDown={(e) => {
+              if (e.button === 1) {
+                e.preventDefault();
+                setShowResetConfirm(true);
+              }
+            }}
             className="text-sm underline text-grey-neutral hover:text-neutral focus:outline-none focus:ring-2 focus:ring-primary rounded"
           >
-            Forgot PIN? Reset EVE Vault on this device
+            Forgot PIN
           </button>
         )}
 
