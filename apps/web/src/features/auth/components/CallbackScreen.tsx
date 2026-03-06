@@ -3,7 +3,12 @@ import { processOAuthUser } from "@evevault/shared/auth";
 import { getUserManager } from "@evevault/shared/auth/authConfig";
 import { Heading, Text } from "@evevault/shared/components";
 import type { RoutePath } from "@evevault/shared/types";
-import { createLogger, ROUTE_PATHS } from "@evevault/shared/utils";
+import {
+  createLogger,
+  ROUTE_PATHS,
+  toWebRoute,
+  WEB_ROUTES,
+} from "@evevault/shared/utils";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
@@ -11,34 +16,6 @@ const log = createLogger();
 
 const isRoutePath = (value: string): value is RoutePath => {
   return ROUTE_PATHS.includes(value as RoutePath);
-};
-
-/** Map shared RoutePath to web app route (router expects /wallet/* not /add-token etc.) */
-const toWebRoute = (
-  path: RoutePath,
-):
-  | "/"
-  | "/wallet"
-  | "/callback"
-  | "/not-found"
-  | "/wallet/add-token"
-  | "/wallet/send-token"
-  | "/wallet/transactions" => {
-  if (path === "/add-token") return "/wallet/add-token";
-  if (path === "/send-token") return "/wallet/send-token";
-  if (path === "/transactions") return "/wallet/transactions";
-  if (
-    path === "/" ||
-    path === "/wallet" ||
-    path === "/callback" ||
-    path === "/not-found" ||
-    path === "/wallet/add-token" ||
-    path === "/wallet/send-token" ||
-    path === "/wallet/transactions"
-  ) {
-    return path;
-  }
-  return "/wallet";
 };
 
 export const CallbackScreen = () => {
@@ -63,8 +40,8 @@ export const CallbackScreen = () => {
           "evevault_redirect_after_login",
         );
         sessionStorage.removeItem("evevault_redirect_after_login");
-        const fallbackRoute: RoutePath = "/wallet";
-        const redirectTo = redirectAfterLogin || fallbackRoute;
+        const fallbackRoute = WEB_ROUTES.WALLET;
+        const redirectTo = redirectAfterLogin ?? fallbackRoute;
 
         const user = await userManager.signinRedirectCallback();
         const enokiApiKey = import.meta.env.VITE_ENOKI_API_KEY ?? "";
@@ -75,13 +52,13 @@ export const CallbackScreen = () => {
         log.info("FusionAuth callback successful");
         const destination = isRoutePath(redirectTo)
           ? toWebRoute(redirectTo)
-          : "/wallet";
+          : WEB_ROUTES.WALLET;
         navigate({ to: destination });
       } catch (err) {
         log.error("OAuth callback error", err);
         setError(err instanceof Error ? err.message : "Authentication failed");
         setTimeout(() => {
-          navigate({ to: "/" });
+          navigate({ to: WEB_ROUTES.HOME });
         }, 3000);
       }
     };

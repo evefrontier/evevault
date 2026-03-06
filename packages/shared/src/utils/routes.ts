@@ -40,6 +40,23 @@ export const WEB_ROUTES = {
   WALLET_TRANSACTIONS: "/wallet/transactions",
 } as const;
 
+export type WebRoute = (typeof WEB_ROUTES)[keyof typeof WEB_ROUTES];
+
+const WEB_ROUTE_VALUES: readonly WebRoute[] = Object.values(WEB_ROUTES);
+
+/**
+ * Maps a route path (web or extension format) to a web app route.
+ * Extension paths like /add-token are converted to /wallet/add-token.
+ */
+export function toWebRoute(path: string): WebRoute {
+  if (path === EXTENSION_ROUTES.ADD_TOKEN) return WEB_ROUTES.WALLET_ADD_TOKEN;
+  if (path === EXTENSION_ROUTES.SEND_TOKEN) return WEB_ROUTES.WALLET_SEND_TOKEN;
+  if (path === EXTENSION_ROUTES.TRANSACTIONS)
+    return WEB_ROUTES.WALLET_TRANSACTIONS;
+  if (WEB_ROUTE_VALUES.includes(path as WebRoute)) return path as WebRoute;
+  return WEB_ROUTES.WALLET;
+}
+
 /** All valid route paths from the router (for web app) */
 export const ROUTE_PATHS: readonly NavPath[] = [
   ...FILE_ROUTE_PATHS,
