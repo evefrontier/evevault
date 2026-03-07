@@ -169,7 +169,11 @@ export function redirectToFusionAuthLogout(): void {
   logoutUrl.searchParams.set("client_id", clientId);
   logoutUrl.searchParams.set("post_logout_redirect_uri", postRedirectUri);
 
-  if (isExtension() && typeof chrome !== "undefined" && chrome.identity) {
+  if (
+    isExtension() &&
+    typeof chrome !== "undefined" &&
+    chrome.identity?.launchWebAuthFlow
+  ) {
     chrome.identity.launchWebAuthFlow(
       { url: logoutUrl.toString(), interactive: true },
       () => {
