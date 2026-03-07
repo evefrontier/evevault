@@ -1,5 +1,9 @@
 import "./PopupApp.css";
-import { handleTestTokenRefresh, useAuth } from "@evevault/shared/auth";
+import {
+  handleTestTokenRefresh,
+  redirectToFusionAuthLogout,
+  useAuth,
+} from "@evevault/shared/auth";
 import {
   Button,
   HeaderMobile,
@@ -135,6 +139,7 @@ function App() {
         isPinSet={isPinSet}
         unlock={unlock}
         onResetComplete={() => {
+          redirectToFusionAuthLogout();
           navigate({ to: "/" });
         }}
       />
