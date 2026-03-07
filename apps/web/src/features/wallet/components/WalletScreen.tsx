@@ -19,6 +19,7 @@ import {
   createLogger,
   getDevModeEnabled,
   getSuiscanUrl,
+  SUI_FAUCET_TESTNET_URL,
   setDevModeEnabled,
   WEB_ROUTES,
 } from "@evevault/shared/utils";
@@ -230,6 +231,16 @@ export const WalletScreen = () => {
         onDevModeToggle={handleDevModeToggle}
         onSignSubmitTxClick={devMode ? handleSignAndSubmitTx : undefined}
         onTokenRefreshTestClick={devMode ? handleTokenRefreshTest : undefined}
+        onFaucetTestSuiClick={
+          devMode
+            ? () =>
+                window.open(
+                  SUI_FAUCET_TESTNET_URL,
+                  "_blank",
+                  "noopener,noreferrer",
+                )
+            : undefined
+        }
       />
       {/* Token Section: pass defined chain (testnet fallback) so balance and token list use the same network and we avoid cross-network transfer/balance errors */}
       <TokenListSection

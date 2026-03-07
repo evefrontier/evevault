@@ -24,6 +24,7 @@ import {
   EXTENSION_ROUTES,
   getDevModeEnabled,
   getSuiscanUrl,
+  SUI_FAUCET_TESTNET_URL,
   setDevModeEnabled,
 } from "@evevault/shared/utils";
 import { useBalance } from "@evevault/shared/wallet";
@@ -179,6 +180,16 @@ function App() {
         onDevModeToggle={handleDevModeToggle}
         onSignSubmitTxClick={devMode ? handleTestTransaction : undefined}
         onTokenRefreshTestClick={devMode ? handleTokenRefreshTest : undefined}
+        onFaucetTestSuiClick={
+          devMode
+            ? () =>
+                window.open(
+                  SUI_FAUCET_TESTNET_URL,
+                  "_blank",
+                  "noopener,noreferrer",
+                )
+            : undefined
+        }
       />
 
       {/* Token Section */}
