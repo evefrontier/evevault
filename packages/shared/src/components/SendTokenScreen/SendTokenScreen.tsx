@@ -2,7 +2,11 @@ import type React from "react";
 import { useEffect, useState } from "react";
 import { useNetworkStore } from "../../stores/networkStore";
 import type { SendTokenScreenProps } from "../../types";
-import { formatAddress, getSuiscanUrl } from "../../utils";
+import {
+  formatAddress,
+  getSuiscanUrl,
+  SUI_FAUCET_TESTNET_URL,
+} from "../../utils";
 import { useSendToken } from "../../wallet";
 import Button from "../Button";
 import Heading from "../Heading";
@@ -27,6 +31,8 @@ export const SendTokenScreen: React.FC<SendTokenScreenProps> = ({
     tokenSymbol,
     canSend,
     validationErrors,
+    suiForGasWarning,
+    showFaucetTestSui,
     isLoading,
     error,
     txDigest,
@@ -171,6 +177,37 @@ export const SendTokenScreen: React.FC<SendTokenScreenProps> = ({
                 {err}
               </Text>
             ))}
+          </div>
+        )}
+
+        {/* SUI for gas warning (non-blocking) */}
+        {suiForGasWarning && (
+          <div className="w-full rounded border border-[var(--quantum-30)] bg-[var(--quantum-10)] p-2">
+            <Text variant="light" size="xsmall" color="quantum">
+              {suiForGasWarning}
+            </Text>
+          </div>
+        )}
+
+        {/* Faucet test SUI when 0 SUI balance (transfer EVE or SUI) – opens in new tab (site blocks iframe) */}
+        {showFaucetTestSui && (
+          <div className="flex w-full flex-col gap-2">
+            <Text variant="light" size="small" color="neutral-90">
+              Faucet test SUI
+            </Text>
+            <Button
+              variant="secondary"
+              size="medium"
+              onClick={() =>
+                window.open(
+                  SUI_FAUCET_TESTNET_URL,
+                  "_blank",
+                  "noopener,noreferrer",
+                )
+              }
+            >
+              Open Sui testnet faucet
+            </Button>
           </div>
         )}
 

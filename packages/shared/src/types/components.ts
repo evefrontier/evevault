@@ -200,6 +200,8 @@ export interface HeaderMobileProps {
   onSignSubmitTxClick?: () => void;
   /** Callback when "Token refresh test" menu item is clicked */
   onTokenRefreshTestClick?: () => void;
+  /** Callback when "Faucet test SUI" menu item is clicked (dev mode only) */
+  onFaucetTestSuiClick?: () => void;
 }
 
 export type CornersColor =

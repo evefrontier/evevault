@@ -22,6 +22,7 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
   onDevModeToggle,
   onSignSubmitTxClick,
   onTokenRefreshTestClick,
+  onFaucetTestSuiClick,
 }) => {
   const { copy } = useCopyToClipboard();
   const { lock } = useDevice();
@@ -74,6 +75,15 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
       });
     }
 
+    // 3b. Faucet test SUI (only when dev mode on)
+    if (showDevActions && onFaucetTestSuiClick) {
+      items.push({
+        label: "Faucet test SUI",
+        icon: "OpenWindow" as IconName,
+        onClick: onFaucetTestSuiClick,
+      });
+    }
+
     // 4. Copy Address (always)
     items.push({
       label: "Copy Address",
@@ -111,6 +121,7 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
     onDevModeToggle,
     onSignSubmitTxClick,
     onTokenRefreshTestClick,
+    onFaucetTestSuiClick,
     copy,
     address,
     lock,

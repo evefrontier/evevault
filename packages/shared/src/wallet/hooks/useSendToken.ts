@@ -33,6 +33,12 @@ interface UseSendTokenResult {
   canSend: boolean;
   validationErrors: string[];
 
+  /** Warning when sending a non-SUI token but wallet has no SUI for gas. Non-blocking. */
+  suiForGasWarning: string | null;
+
+  /** True when SUI balance is zero; show faucet iframe/link for testnet. */
+  showFaucetTestSui: boolean;
+
   // Balance info
   currentBalance: string;
   tokenSymbol: string;
@@ -69,6 +75,13 @@ export function useSendToken({
     user: globalUser,
     chain,
     coinType,
+  });
+
+  // Fetch SUI balance for gas warning when sending a non-SUI token
+  const { data: suiBalanceData } = useBalance({
+    user: globalUser,
+    chain,
+    coinType: SUI_COIN_TYPE,
   });
 
   // Extract balance info
@@ -137,6 +150,14 @@ export function useSendToken({
     isValidRecipient &&
     isValidAmount;
 
+  const rawSuiBalance = suiBalanceData?.rawBalance ?? "0";
+  const hasZeroSui = BigInt(rawSuiBalance) === 0n;
+  const suiForGasWarning =
+    coinType !== SUI_COIN_TYPE && hasZeroSui
+      ? "You have no SUI balance. SUI is required to pay for transaction fees."
+      : null;
+  const showFaucetTestSui = hasZeroSui;
+
   const send = useCallback(async () => {
     if (!canSend) {
       setError("Cannot send: validation failed");
@@ -174,17 +195,12 @@ export function useSendToken({
         tx.transferObjects([coin], recipientAddress);
       } else {
         // Custom token transfer: get all coins and find one with sufficient balance.
-        // @mysten/sui 2.x: getCoins on client with { owner, coinType }. Typed via core for compatibility.
-        type CoinWithBalance = { balance: string; id: string };
-        const coins = await (
-          suiClient as unknown as {
-            getCoins(opts: {
-              owner: string;
-              coinType: string;
-            }): Promise<{ objects: CoinWithBalance[] }>;
-          }
-        ).getCoins({ owner: senderAddress, coinType });
-        const coinObjects = coins.objects;
+        // @mysten/sui 2.x: listCoins on SuiGrpcClient returns { objects } with objectId and balance.
+        type CoinWithBalance = { balance: string; objectId: string };
+        const { objects: coinObjects } = await suiClient.listCoins({
+          owner: senderAddress,
+          coinType,
+        });
 
         if (coinObjects.length === 0) {
           throw new Error("No coins found for this token");
@@ -210,7 +226,7 @@ export function useSendToken({
 
         if (suitableCoin) {
           // Single coin has enough balance - split from it
-          const [coin] = tx.splitCoins(tx.object(suitableCoin.id), [
+          const [coin] = tx.splitCoins(tx.object(suitableCoin.objectId), [
             amountInSmallestUnit,
           ]);
           tx.transferObjects([coin], recipientAddress);
@@ -222,12 +238,12 @@ export function useSendToken({
 
           if (otherCoins.length > 0) {
             tx.mergeCoins(
-              tx.object(primaryCoin.id),
-              otherCoins.map((c: CoinWithBalance) => tx.object(c.id)),
+              tx.object(primaryCoin.objectId),
+              otherCoins.map((c: CoinWithBalance) => tx.object(c.objectId)),
             );
           }
 
-          const [coin] = tx.splitCoins(tx.object(primaryCoin.id), [
+          const [coin] = tx.splitCoins(tx.object(primaryCoin.objectId), [
             amountInSmallestUnit,
           ]);
           tx.transferObjects([coin], recipientAddress);
@@ -303,6 +319,8 @@ export function useSendToken({
     isValidAmount,
     canSend,
     validationErrors,
+    suiForGasWarning,
+    showFaucetTestSui,
 
     // Balance info
     currentBalance,
