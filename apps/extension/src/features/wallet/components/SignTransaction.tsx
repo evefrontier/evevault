@@ -1,4 +1,3 @@
-import { useAuth } from "@evevault/shared/auth";
 import {
   Button,
   Heading,
@@ -6,14 +5,14 @@ import {
   Text,
 } from "@evevault/shared/components";
 import Json from "@evevault/shared/components/Json";
-import { useDevice } from "@evevault/shared/hooks/useDevice";
-import { LockScreen } from "@evevault/shared/screens";
 import { createSuiClient } from "@evevault/shared/sui";
 import type { PendingTransaction } from "@evevault/shared/types";
 import { buildTx, createLogger } from "@evevault/shared/utils";
 import { zkSignAny } from "@evevault/shared/wallet";
 import { Transaction, type TransactionData } from "@mysten/sui/transactions";
 import { useEffect, useState } from "react";
+import { useSignPopupAuth } from "../hooks";
+import { SignPopupAuthGate } from "./SignPopupAuthGate";
 
 const log = createLogger();
 
@@ -23,12 +22,7 @@ function SignTransaction() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { maxEpoch, getZkProof, ephemeralPublicKey, isLocked, isPinSet, unlock } = useDevice();
-  const { user, loading: authLoading, login, initialize: initializeAuth } = useAuth();
-
-  useEffect(() => {
-    initializeAuth();
-  }, [initializeAuth]);
+  const auth = useSignPopupAuth();
 
   useEffect(() => {
     // Retrieve the pending transaction from storage
@@ -54,7 +48,7 @@ function SignTransaction() {
       log.error("No pending transaction found");
       return;
     }
-    if (!user) {
+    if (!auth.user) {
       log.error("No user found");
       return;
     }
@@ -72,24 +66,24 @@ function SignTransaction() {
       // And set the sender to the user's address
       const txb = await buildTx(
         Transaction.from(transaction as string),
-        user,
+        auth.user,
         suiClient,
       );
 
-      if (!ephemeralPublicKey) {
-        throw new Error("Ephemeral public skey not found");
+      if (!auth.ephemeralPublicKey) {
+        throw new Error("Ephemeral public key not found");
       }
 
-      if (!maxEpoch) {
+      if (!auth.maxEpoch) {
         throw new Error("Max epoch is not set");
       }
 
       // Sign the transaction using your zkSignAny function
       const { zkSignature, bytes } = await zkSignAny("TransactionData", txb, {
-        user,
-        ephemeralPublicKey,
-        maxEpoch,
-        getZkProof,
+        user: auth.user,
+        ephemeralPublicKey: auth.ephemeralPublicKey,
+        maxEpoch: auth.maxEpoch,
+        getZkProof: auth.getZkProof,
       });
 
       // Store the result in storage so the background handler can pick it up
@@ -146,80 +140,70 @@ function SignTransaction() {
     }
   };
 
-  // Show lock screen if vault is locked
-  if (isLocked) {
-    return <LockScreen isPinSet={isPinSet} unlock={unlock} />;
-  }
-
-  // Show login prompt if user is not authenticated
-  if (!user) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-6 h-full">
-        <img src="/images/logo.png" alt="EVE Vault" className="h-20" />
-        <Heading level={2}>Sign Transaction</Heading>
-        <Text variant="light">You need to log in before signing.</Text>
-        <Button
-          onClick={() => login()}
-          disabled={authLoading}
-          variant="primary"
-          size="fill"
-        >
-          {authLoading ? "Logging in..." : "Log In to Sign"}
-        </Button>
-        <Button
-          onClick={handleReject}
-          disabled={authLoading || !pendingTransaction}
-          variant="secondary"
-        >
-          Cancel
-        </Button>
-      </div>
-    );
-  }
-
-  if (!pendingTransaction) {
-    return (
-      <div>
-        <p>Loading transaction...</p>
-        {error && <p style={{ color: "red" }}>Error: {error}</p>}
-      </div>
-    );
-  }
-
-  const transaction: TransactionData = JSON.parse(
-    pendingTransaction.transaction as string,
-  );
-
   return (
-    <div className="flex flex-col items-center justify-between h-full">
-      <div className="flex flex-col items-center justify-center gap-10">
-        <img src="/images/logo.png" alt="EVE Vault" className="h-20 " />
-        <div className="flex flex-col items-center justify-center gap-4">
-          <Heading level={2}>Sign Transaction</Heading>
-          <Json value={JSON.stringify(transaction)} className={"max-h-24"} />
+    <SignPopupAuthGate
+      isLocked={auth.isLocked}
+      isPinSet={auth.isPinSet}
+      unlock={auth.unlock}
+      user={auth.user}
+      loading={auth.loading}
+      login={auth.login}
+      title="Sign Transaction"
+      onCancel={handleReject}
+      cancelDisabled={auth.loading || !pendingTransaction}
+    >
+      {!pendingTransaction ? (
+        <div>
+          <p>Loading transaction...</p>
+          {error && <p style={{ color: "red" }}>Error: {error}</p>}
         </div>
+      ) : (
+        <div className="flex flex-col items-center justify-between h-full">
+          <div className="flex flex-col items-center justify-center gap-10">
+            <img src="/images/logo.png" alt="EVE Vault" className="h-20 " />
+            <div className="flex flex-col items-center justify-center gap-4">
+              <Heading level={2}>Sign Transaction</Heading>
+              <Json
+                value={JSON.stringify(
+                  JSON.parse(
+                    pendingTransaction.transaction as string,
+                  ) as TransactionData,
+                )}
+                className={"max-h-24"}
+              />
+            </div>
 
-        {error && (
-          <div style={{ marginBottom: "20px" }}>
-            <Text color="error">Error: {error}</Text>
+            {error && (
+              <div style={{ marginBottom: "20px" }}>
+                <Text color="error">Error: {error}</Text>
+              </div>
+            )}
+
+            <div style={{ display: "flex", gap: "10px" }}>
+              <Button
+                onClick={handleApprove}
+                disabled={loading}
+                variant="primary"
+              >
+                {loading ? "Signing..." : "Approve"}
+              </Button>
+
+              <Button
+                onClick={handleReject}
+                disabled={loading}
+                variant="secondary"
+              >
+                Reject
+              </Button>
+            </div>
           </div>
-        )}
-
-        <div style={{ display: "flex", gap: "10px" }}>
-          <Button onClick={handleApprove} disabled={loading} variant="primary">
-            {loading ? "Signing..." : "Approve"}
-          </Button>
-
-          <Button onClick={handleReject} disabled={loading} variant="secondary">
-            Reject
-          </Button>
+          <NetworkSelector
+            className="justify-start w-full items-end"
+            chain={pendingTransaction.chain}
+          />
         </div>
-      </div>
-      <NetworkSelector
-        className="justify-start w-full items-end"
-        chain={pendingTransaction.chain}
-      />
-    </div>
+      )}
+    </SignPopupAuthGate>
   );
 }
 
