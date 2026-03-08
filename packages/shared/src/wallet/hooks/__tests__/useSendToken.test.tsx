@@ -115,7 +115,7 @@ describe("useSendToken", () => {
     } as any);
 
     mockCreateSuiClient.mockReturnValue({
-      getCoins: vi.fn().mockResolvedValue({ objects: [] }),
+      listCoins: vi.fn().mockResolvedValue({ objects: [] }),
       core: {
         executeTransaction: vi.fn().mockResolvedValue({
           Transaction: { digest: "mock-digest" },

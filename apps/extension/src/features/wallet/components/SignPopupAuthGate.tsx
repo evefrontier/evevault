@@ -1,14 +1,15 @@
 import { Button, Heading, Text } from "@evevault/shared/components";
 import { LockScreen } from "@evevault/shared/screens";
+import type { User } from "oidc-client-ts";
 import type { ReactNode } from "react";
 
 export interface SignPopupAuthGateProps {
   isLocked: boolean;
   isPinSet: boolean;
   unlock: (pin: string) => Promise<void>;
-  user: unknown;
+  user: User | null;
   loading: boolean;
-  login: () => unknown;
+  login: () => Promise<User | undefined>;
   title: string;
   onCancel: () => void;
   cancelDisabled?: boolean;
