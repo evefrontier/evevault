@@ -33,6 +33,9 @@ export const SendTokenScreen: React.FC<SendTokenScreenProps> = ({
     validationErrors,
     suiForGasWarning,
     showFaucetTestSui,
+    gasFeeWarning,
+    estimatedGasFee,
+    estimatedGasFeeLoading,
     isLoading,
     error,
     txDigest,
@@ -183,11 +186,38 @@ export const SendTokenScreen: React.FC<SendTokenScreenProps> = ({
         {/* SUI for gas warning (non-blocking) */}
         {suiForGasWarning && (
           <div className="w-full rounded border border-[var(--quantum-30)] bg-[var(--quantum-10)] p-2">
-            <Text variant="light" size="xsmall" color="quantum">
+            <Text variant="light" size="xsmall" color="neutral-90">
               {suiForGasWarning}
             </Text>
           </div>
         )}
+
+        {/* Gas fee warning (all transfers) + optional estimate */}
+        <div className="w-full rounded border border-[var(--quantum-30)] bg-[var(--quantum-10)] p-2">
+          <Text variant="light" size="xsmall" color="neutral-90">
+            {gasFeeWarning}
+          </Text>
+          {estimatedGasFeeLoading && (
+            <Text
+              variant="light"
+              size="xsmall"
+              color="neutral-90"
+              className="mt-1 block"
+            >
+              Estimating fee…
+            </Text>
+          )}
+          {!estimatedGasFeeLoading && estimatedGasFee && (
+            <Text
+              variant="light"
+              size="xsmall"
+              color="neutral-90"
+              className="mt-1 block"
+            >
+              Estimated fee: ~{estimatedGasFee} SUI
+            </Text>
+          )}
+        </div>
 
         {/* Faucet test SUI when 0 SUI balance (transfer EVE or SUI) – opens in new tab (site blocks iframe) */}
         {showFaucetTestSui && (

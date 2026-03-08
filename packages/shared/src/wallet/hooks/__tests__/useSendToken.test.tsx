@@ -44,6 +44,13 @@ vi.mock("@evevault/shared/utils", () => ({
   SUI_COIN_TYPE: "0x2::sui::SUI",
   EVE_TESTNET_COIN_TYPE:
     "0x76cb2c6d2d361c9d0b2d1e0e8e8e8e8e8e8e8e8::evetest::EVETEST",
+  GAS_FEE_WARNING_MESSAGE:
+    "This transfer will incur a network fee (gas) paid in SUI.",
+  formatMistToSui: vi.fn((mist: string | bigint) => {
+    const s = typeof mist === "bigint" ? mist.toString() : mist;
+    const n = Number(BigInt(s) / 10n ** 9n);
+    return n.toFixed(9).replace(/0+$/, "").replace(/\.$/, "") || "0";
+  }),
 }));
 
 vi.mock("../useBalance", () => ({
@@ -119,6 +126,19 @@ describe("useSendToken", () => {
 
     mockCreateSuiClient.mockReturnValue({
       listCoins: vi.fn().mockResolvedValue({ objects: [] }),
+      simulateTransaction: vi.fn().mockResolvedValue({
+        $kind: "Transaction",
+        Transaction: {
+          effects: {
+            gasUsed: {
+              computationCost: "1000000",
+              storageCost: "0",
+              storageRebate: "0",
+              nonRefundableStorageFee: "0",
+            },
+          },
+        },
+      }),
       core: {
         executeTransaction: vi.fn().mockResolvedValue({
           Transaction: { digest: "mock-digest" },
@@ -372,6 +392,46 @@ describe("useSendToken", () => {
 
       expect(result.current.canSend).toBe(false);
       expect(result.current.validationErrors).toContain("No network selected");
+      queryClient.clear();
+    });
+  });
+
+  describe("gas fee warning", () => {
+    it("returns gasFeeWarning message for all transfers", () => {
+      const queryClient = new QueryClient();
+      const { result } = renderHook(
+        () =>
+          useSendToken({
+            coinType: "0x2::sui::SUI",
+            recipientAddress: VALID_SUI_ADDRESS,
+            amount: "1",
+          }),
+        { wrapper: createWrapper(queryClient) },
+      );
+
+      expect(result.current.gasFeeWarning).toBe(
+        "This transfer will incur a network fee (gas) paid in SUI.",
+      );
+      queryClient.clear();
+    });
+
+    it("exposes estimatedGasFee and estimatedGasFeeLoading", () => {
+      const queryClient = new QueryClient();
+      const { result } = renderHook(
+        () =>
+          useSendToken({
+            coinType: "0x2::sui::SUI",
+            recipientAddress: VALID_SUI_ADDRESS,
+            amount: "1",
+          }),
+        { wrapper: createWrapper(queryClient) },
+      );
+
+      expect(typeof result.current.estimatedGasFeeLoading).toBe("boolean");
+      expect(
+        result.current.estimatedGasFee === null ||
+          typeof result.current.estimatedGasFee === "string",
+      ).toBe(true);
       queryClient.clear();
     });
   });
