@@ -3,7 +3,6 @@ import type { SuiChain } from "@mysten/wallet-standard";
 export const NETWORKS = {
   devnet: {
     fullnodeUrl: "https://fullnode.devnet.sui.io",
-    /** Unified faucet with ?network= query param; no faucet on mainnet/localnet. */
     faucetUrl: "https://faucet.sui.io/?network=devnet",
   },
   testnet: {

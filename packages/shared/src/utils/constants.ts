@@ -1,6 +1,5 @@
-export const FULLNODE_URL = "https://fullnode.devnet.sui.io";
-
-/** Faucet URLs are per-network; use getFaucetUrlForChain(chain) from @evevault/shared/sui. */
+export const FULLNODE_URL =
+  "https://fullnode.devnet.sui.io"; /** Faucet URLs are per-network; use getFaucetUrlForChain(chain) from @evevault/shared/sui. */
 
 export const SUI_PROVER_DEV_ENDPOINT = "https://prover-dev.mystenlabs.com/v1";
 
