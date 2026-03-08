@@ -7,7 +7,11 @@ import {
 import { getUserManager } from "@evevault/shared/auth/authConfig";
 import { Heading, Text } from "@evevault/shared/components";
 import type { RoutePath } from "@evevault/shared/types";
-import { createLogger, ROUTE_PATHS } from "@evevault/shared/utils";
+import {
+  createLogger,
+  ROUTE_PATHS,
+  SESSION_STORAGE_REDIRECT_KEY,
+} from "@evevault/shared/utils";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { User } from "oidc-client-ts";
 import { useEffect, useState } from "react";
@@ -37,9 +41,9 @@ export const CallbackScreen = () => {
     const handleCallback = async () => {
       try {
         const redirectAfterLogin = sessionStorage.getItem(
-          "evevault_redirect_after_login",
+          SESSION_STORAGE_REDIRECT_KEY,
         );
-        sessionStorage.removeItem("evevault_redirect_after_login");
+        sessionStorage.removeItem(SESSION_STORAGE_REDIRECT_KEY);
         const fallbackRoute: RoutePath = "/wallet";
         const redirectTo = redirectAfterLogin || fallbackRoute;
 

@@ -28,7 +28,7 @@ export default function LockScreen({
   const [pinError, setPinError] = useState<string | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
-  const { initialize: initializeDevice } = useDevice();
+  const { initialize: initializeDevice, error: deviceError } = useDevice();
   const { showToast } = useToast();
 
   const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {

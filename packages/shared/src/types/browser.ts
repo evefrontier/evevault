@@ -31,7 +31,7 @@ export interface ChromeIdentity {
   getRedirectURL?: () => string;
   launchWebAuthFlow?: (
     options: { url: string; interactive: boolean },
-    callback: () => void,
+    callback: (responseUrl?: string) => void,
   ) => void;
 }
 
