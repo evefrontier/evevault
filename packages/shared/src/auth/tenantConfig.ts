@@ -1,6 +1,6 @@
-import { TENANT_KEYS } from "../utils";
+import { getDevModeEnabled, TENANT_KEYS } from "../utils";
 
-export const DEFAULT_TENANT_ID = "utopia" as const;
+export const DEFAULT_TENANT_ID = "stillness" as const;
 
 export type TenantId =
   | typeof DEFAULT_TENANT_ID
@@ -13,17 +13,13 @@ export interface TenantConfig {
   clientId: string;
   clientSecret: string;
   serverUrl: string;
+  isDev?: boolean;
 }
 
 const KNOWN_TENANT_IDS: TenantId[] = Object.keys(TENANT_KEYS) as TenantId[];
 
 function getDefaultConfig(): TenantConfig {
   return TENANT_KEYS[DEFAULT_TENANT_ID];
-}
-
-function getTenantEnvKey(tenantId: string, suffix: string): string {
-  const upper = tenantId.toUpperCase().replace(/-/g, "_");
-  return `VITE_TENANT_${upper}_${suffix}`;
 }
 
 /**
@@ -48,17 +44,20 @@ export function getDefaultTenantId(): TenantId {
 }
 
 /**
- * Returns tenant ids that have config: always ["default"], plus any named tenant
- * for which VITE_TENANT_<id>_CLIENT_ID is set.
+ * Returns tenant ids that have config: always the default tenant, plus others that have
+ * client secret set. When isDev is false (production), tenants marked isDev: true are
+ * excluded; when isDev is true, all tenants with client secret are included.
  */
 export function getAvailableTenantIds(): TenantId[] {
+  const isDev = getDevModeEnabled();
+
   const ids: TenantId[] = [DEFAULT_TENANT_ID];
   for (const id of KNOWN_TENANT_IDS) {
     if (id === DEFAULT_TENANT_ID) continue;
-    const clientId = TENANT_KEYS[id].clientSecret;
-    if (clientId?.trim()) {
-      ids.push(id);
-    }
+    const clientSecret = TENANT_KEYS[id].clientSecret;
+    if (!clientSecret?.trim()) continue;
+    if (!isDev && TENANT_KEYS[id].isDev) continue;
+    ids.push(id);
   }
   return ids;
 }

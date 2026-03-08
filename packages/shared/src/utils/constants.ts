@@ -30,10 +30,12 @@ export const TENANT_KEYS: Record<string, TenantConfig> = {
     clientId: "c8815001-f950-4147-905e-4833d904cd38",
     clientSecret: import.meta.env.VITE_TENANT_TESTEVENET_CLIENT_SECRET,
     serverUrl: "https://test.auth.evefrontier.com",
+    isDev: true,
   },
   nebula: {
     clientId: "VITE_TENANT_NEBULA_CLIENT_ID",
     clientSecret: import.meta.env.VITE_TENANT_NEBULA_CLIENT_SECRET,
     serverUrl: "https://test.auth.evefrontier.com",
+    isDev: true,
   },
 } as const;
