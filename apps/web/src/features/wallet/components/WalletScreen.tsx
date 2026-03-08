@@ -10,12 +10,11 @@ import {
 import { useDevice, useEpochExpiration } from "@evevault/shared/hooks";
 import { useDeviceStore } from "@evevault/shared/stores/deviceStore";
 import { useNetworkStore } from "@evevault/shared/stores/networkStore";
-import { createSuiClient } from "@evevault/shared/sui";
+import { createSuiClient, getFaucetUrlForChain } from "@evevault/shared/sui";
 import {
   createLogger,
   getDevModeEnabled,
   getSuiscanUrl,
-  SUI_FAUCET_TESTNET_URL,
   setDevModeEnabled,
   WEB_ROUTES,
 } from "@evevault/shared/utils";
@@ -56,6 +55,7 @@ export const WalletScreen = () => {
     unlock,
   } = useDevice();
   const { chain } = useNetworkStore();
+  const faucetUrl = getFaucetUrlForChain(chain);
 
   // Create suiClient with useMemo to recreate when chain changes
   const suiClient = React.useMemo(() => {
@@ -141,10 +141,9 @@ export const WalletScreen = () => {
       setTxDigest(null);
       return;
     }
-    log.info("Transaction executed", {
-      digest: result.Transaction.digest,
-    });
-    setTxDigest(result.Transaction.digest ?? null);
+    const digest = result.Transaction?.digest ?? null;
+    log.info("Transaction executed", { digest });
+    setTxDigest(digest);
   }, [user, maxEpoch, ephemeralPublicKey, getZkProof, suiClient]);
 
   const handleTokenRefreshTest = useCallback(async () => {
@@ -224,13 +223,8 @@ export const WalletScreen = () => {
         onSignSubmitTxClick={devMode ? handleSignAndSubmitTx : undefined}
         onTokenRefreshTestClick={devMode ? handleTokenRefreshTest : undefined}
         onFaucetTestSuiClick={
-          devMode
-            ? () =>
-                window.open(
-                  SUI_FAUCET_TESTNET_URL,
-                  "_blank",
-                  "noopener,noreferrer",
-                )
+          devMode && faucetUrl
+            ? () => window.open(faucetUrl, "_blank", "noopener,noreferrer")
             : undefined
         }
       />

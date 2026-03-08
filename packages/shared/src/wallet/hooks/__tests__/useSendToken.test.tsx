@@ -68,6 +68,7 @@ import { useDevice } from "@evevault/shared/hooks";
 import { useNetworkStore } from "@evevault/shared/stores/networkStore";
 import { createSuiClient } from "@evevault/shared/sui";
 import { createMockUser } from "@evevault/shared/testing";
+import type { UseBalanceParams } from "../../types/hooks";
 import { useBalance } from "../useBalance";
 import { useSendToken } from "../useSendToken";
 
@@ -484,10 +485,10 @@ describe("useSendToken", () => {
 
     it("returns suiForGasWarning when sending non-SUI token and SUI balance is zero", () => {
       mockUseBalance.mockImplementation(
-        ({ coinType }: { coinType: string }) =>
+        (params: UseBalanceParams) =>
           ({
             data:
-              coinType === SUI_COIN_TYPE
+              params.coinType === SUI_COIN_TYPE
                 ? { formattedBalance: "0", rawBalance: "0", metadata: null }
                 : {
                     formattedBalance: "10",
@@ -518,6 +519,7 @@ describe("useSendToken", () => {
         "You have no SUI balance. SUI is required to pay for transaction fees.",
       );
       expect(result.current.showFaucetTestSui).toBe(true);
+      expect(result.current.canSend).toBe(false);
       queryClient.clear();
     });
 
@@ -539,10 +541,10 @@ describe("useSendToken", () => {
 
     it("returns showFaucetTestSui true when SUI balance is zero (sending SUI)", () => {
       mockUseBalance.mockImplementation(
-        ({ coinType }: { coinType: string }) =>
+        (params: UseBalanceParams) =>
           ({
             data:
-              coinType === SUI_COIN_TYPE
+              params.coinType === SUI_COIN_TYPE
                 ? { formattedBalance: "0", rawBalance: "0", metadata: null }
                 : {
                     formattedBalance: "10",
@@ -571,10 +573,10 @@ describe("useSendToken", () => {
 
     it("returns null suiForGasWarning when sending non-SUI token but SUI balance is non-zero", () => {
       mockUseBalance.mockImplementation(
-        ({ coinType }: { coinType: string }) =>
+        (params: UseBalanceParams) =>
           ({
             data:
-              coinType === SUI_COIN_TYPE
+              params.coinType === SUI_COIN_TYPE
                 ? {
                     formattedBalance: "0.1",
                     rawBalance: "100000000",

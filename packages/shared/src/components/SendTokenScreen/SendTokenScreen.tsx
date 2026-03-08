@@ -1,12 +1,9 @@
 import type React from "react";
 import { useEffect, useState } from "react";
 import { useNetworkStore } from "../../stores/networkStore";
+import { getFaucetUrlForChain } from "../../sui";
 import type { SendTokenScreenProps } from "../../types";
-import {
-  formatAddress,
-  getSuiscanUrl,
-  SUI_FAUCET_TESTNET_URL,
-} from "../../utils";
+import { formatAddress, getSuiscanUrl } from "../../utils";
 import { useSendToken } from "../../wallet";
 import Button from "../Button";
 import Heading from "../Heading";
@@ -47,6 +44,8 @@ export const SendTokenScreen: React.FC<SendTokenScreenProps> = ({
     recipientAddress,
     amount,
   });
+
+  const faucetUrl = getFaucetUrlForChain(currentChain);
 
   const handleRecipientChange = (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -219,8 +218,8 @@ export const SendTokenScreen: React.FC<SendTokenScreenProps> = ({
           )}
         </div>
 
-        {/* Faucet test SUI when 0 SUI balance (transfer EVE or SUI) – opens in new tab (site blocks iframe) */}
-        {showFaucetTestSui && (
+        {/* Faucet when 0 SUI balance – only show when current network has a faucet (e.g. devnet/testnet) */}
+        {showFaucetTestSui && faucetUrl && (
           <div className="flex w-full flex-col gap-2">
             <Text variant="light" size="small" color="neutral-90">
               Faucet test SUI
@@ -229,14 +228,10 @@ export const SendTokenScreen: React.FC<SendTokenScreenProps> = ({
               variant="secondary"
               size="medium"
               onClick={() =>
-                window.open(
-                  SUI_FAUCET_TESTNET_URL,
-                  "_blank",
-                  "noopener,noreferrer",
-                )
+                window.open(faucetUrl, "_blank", "noopener,noreferrer")
               }
             >
-              Open Sui testnet faucet
+              Open Sui faucet
             </Button>
           </div>
         )}

@@ -1,9 +1,6 @@
 export const FULLNODE_URL = "https://fullnode.devnet.sui.io";
 
-export const SUI_DEVNET_FAUCET = "https://faucet.devnet.sui.io/gas";
-
-/** Sui testnet faucet – open in iframe or new tab to get test SUI for gas. */
-export const SUI_FAUCET_TESTNET_URL = "https://faucet.sui.io/?network=testnet";
+/** Faucet URLs are per-network; use getFaucetUrlForChain(chain) from @evevault/shared/sui. */
 
 export const SUI_PROVER_DEV_ENDPOINT = "https://prover-dev.mystenlabs.com/v1";
 

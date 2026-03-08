@@ -196,8 +196,8 @@ export function useSendToken({
     coinType,
   });
 
-  // Fetch SUI balance for gas warning when sending a non-SUI token
-  const { data: suiBalanceData } = useBalance({
+  // Fetch SUI balance for gas warning and send eligibility (non-SUI transfers need SUI for gas)
+  const { data: suiBalanceData, isLoading: suiBalanceLoading } = useBalance({
     user: globalUser,
     chain,
     coinType: SUI_COIN_TYPE,
@@ -261,21 +261,25 @@ export function useSendToken({
     amount,
   ]);
 
+  const rawSuiBalance = suiBalanceData?.rawBalance ?? "0";
+  const hasZeroSui = !suiBalanceLoading && BigInt(rawSuiBalance) === 0n;
+  const hasGas =
+    coinType === SUI_COIN_TYPE || (suiBalanceLoading ? false : !hasZeroSui);
+
   const canSend =
     isNetworkReady &&
     isAuthenticated &&
     isWalletUnlocked &&
     hasBalance &&
+    hasGas &&
     isValidRecipient &&
     isValidAmount;
 
-  const rawSuiBalance = suiBalanceData?.rawBalance ?? "0";
-  const hasZeroSui = BigInt(rawSuiBalance) === 0n;
   const suiForGasWarning =
-    coinType !== SUI_COIN_TYPE && hasZeroSui
+    !suiBalanceLoading && coinType !== SUI_COIN_TYPE && hasZeroSui
       ? "You have no SUI balance. SUI is required to pay for transaction fees."
       : null;
-  const showFaucetTestSui = hasZeroSui;
+  const showFaucetTestSui = !suiBalanceLoading && hasZeroSui;
 
   const formValidForEstimate =
     isValidRecipient &&
@@ -297,7 +301,14 @@ export function useSendToken({
       setEstimatedGasFeeLoading(true);
       setEstimatedGasFee(null);
       try {
-        const senderAddress = globalUser!.profile!.sui_address as string;
+        const user = await getUserForNetwork(chain);
+        const senderAddress = user?.profile?.sui_address as string | undefined;
+        if (!senderAddress) {
+          if (runId === estimateRunIdRef.current) {
+            setEstimatedGasFee(null);
+          }
+          return;
+        }
         const amountInSmallestUnit = toSmallestUnit(amount, decimals);
         const txBytes = await buildTransferTransactionBytes(
           senderAddress,
@@ -330,7 +341,7 @@ export function useSendToken({
   }, [
     formValidForEstimate,
     suiClient,
-    globalUser,
+    chain,
     amount,
     decimals,
     recipientAddress,
