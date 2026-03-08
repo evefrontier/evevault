@@ -7,6 +7,7 @@ interface ImportMetaEnv {
   readonly VITE_FUSIONAUTH_CLIENT_ID: string;
   readonly VITE_FUSIONAUTH_API_KEY: string;
   readonly VITE_FUSION_CLIENT_SECRET: string;
+  /** Optional per-tenant overrides for URL ?tenant= (e.g. VITE_TENANT_UTOPIA_CLIENT_ID) */
   readonly [key: string]: string | undefined;
 }
 

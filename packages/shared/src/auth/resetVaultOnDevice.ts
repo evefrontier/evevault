@@ -4,6 +4,7 @@ import { useDeviceStore } from "../stores/deviceStore";
 import { useNetworkStore } from "../stores/networkStore";
 import { useTokenListStore } from "../stores/tokenListStore";
 import { DEFAULT_TOKENS_BY_CHAIN } from "../types/networks";
+import type { NetworkDataEntry } from "../types/stores";
 import {
   cleanupExtensionStorage,
   cleanupOidcStorage,

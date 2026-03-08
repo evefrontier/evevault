@@ -7,6 +7,7 @@ import {
 import { isExtension } from "../utils/environment";
 import { createLogger } from "../utils/logger";
 import { patchUserNonce } from "./patchNonce";
+import { getTenantConfig } from "./tenantConfig";
 import type { GlobalWithLocalStorage, StorageLike } from "./types";
 
 const ensureLocalStorage = () => {
@@ -69,77 +70,99 @@ const getOrigin = () => {
   return ""; // Fallback empty string
 };
 
-// Define FusionAuth OAuth settings
-const fusionAuthConfig: UserManagerSettings = {
-  authority: import.meta.env.VITE_FUSION_SERVER_URL,
-  client_id: import.meta.env.VITE_FUSIONAUTH_CLIENT_ID,
-  client_secret: import.meta.env.VITE_FUSION_CLIENT_SECRET,
-  redirect_uri: getRedirectUri(),
-  post_logout_redirect_uri: getOrigin(),
-  response_type: "code",
-  automaticSilentRenew: true,
-  accessTokenExpiringNotificationTimeInSeconds: 3,
-  scope: "openid email profile offline_access",
-
-  // We can safely use WebStorageStateStore since localStorage is guaranteed to exist
-  stateStore: new WebStorageStateStore({
-    store: localStorage,
-    prefix: "evevault.oidc.",
-  }),
-};
+function buildUserManagerSettings(tenantId: string): UserManagerSettings {
+  const { clientId, clientSecret, serverUrl } = getTenantConfig(tenantId);
+  return {
+    authority: serverUrl,
+    client_id: clientId,
+    client_secret: clientSecret,
+    redirect_uri: getRedirectUri(),
+    post_logout_redirect_uri: getOrigin(),
+    response_type: "code",
+    automaticSilentRenew: true,
+    accessTokenExpiringNotificationTimeInSeconds: 3,
+    scope: "openid email profile offline_access",
+    stateStore: new WebStorageStateStore({
+      store: localStorage,
+      prefix: `evevault.oidc.${tenantId}.`,
+    }),
+  };
+}
 
 const log = createLogger();
 
-let userManagerInstance: UserManager | null = null;
+const userManagerCache = new Map<string, UserManager>();
 
-export function getUserManager(): UserManager {
-  if (!userManagerInstance) {
-    userManagerInstance = new UserManager(fusionAuthConfig);
+function addUserManagerEventHandlers(
+  userManager: UserManager,
+  tenantId: string,
+): void {
+  userManager.events.addUserLoaded((user) => {
+    log.info("OIDC user loaded", { tenantId, subject: user?.profile?.sub });
+    void import("./stores/authStore").then((m) =>
+      m.useAuthStore.getState().setUser(user),
+    );
+  });
 
-    // Add logging to track OIDC operations
-    userManagerInstance.events.addUserLoaded((user) => {
-      log.info("OIDC user loaded", { subject: user?.profile?.sub });
+  userManager.events.addUserUnloaded(() => {
+    log.info("OIDC user unloaded", { tenantId });
+    void import("./stores/authStore").then((m) =>
+      m.useAuthStore.getState().setUser(null),
+    );
+  });
+
+  userManager.events.addSilentRenewError((error) => {
+    log.error("OIDC silent renew error", { tenantId, error });
+  });
+
+  userManager.events.addAccessTokenExpiring(async () => {
+    log.info("Access token expiring, patching user nonce before refresh", {
+      tenantId,
     });
 
-    userManagerInstance.events.addUserUnloaded(() => {
-      log.info("OIDC user unloaded");
-    });
+    const currentUser = await userManager.getUser();
+    if (!currentUser) {
+      log.warn("User parameter is undefined", { tenantId });
+    }
 
-    userManagerInstance.events.addSilentRenewError((error) => {
-      log.error("OIDC silent renew error", error);
-    });
+    const { useDeviceStore } = await import("../stores/deviceStore");
+    const { useNetworkStore } = await import("../stores/networkStore");
+    const deviceStore = useDeviceStore.getState();
+    const networkStore = useNetworkStore.getState();
+    const currentChain = networkStore.chain;
+    const nonce = deviceStore.getNonce(currentChain);
 
-    userManagerInstance.events.addAccessTokenExpiring(async () => {
-      log.info("Access token expiring, patching user nonce before refresh");
+    if (!nonce) {
+      log.error("No nonce available for patching before token refresh", {
+        tenantId,
+      });
+      return;
+    }
 
-      // Get user from parameter or fallback to UserManager
-      const currentUser = await userManagerInstance?.getUser();
-      if (!currentUser) {
-        log.warn("User parameter is undefined");
-      }
+    await patchUserNonce(currentUser as User, nonce);
+  });
 
-      const { useDeviceStore } = await import("../stores/deviceStore");
-      const { useNetworkStore } = await import("../stores/networkStore");
-      const deviceStore = useDeviceStore.getState();
-      const networkStore = useNetworkStore.getState();
-      const currentChain = networkStore.chain;
-      const nonce = deviceStore.getNonce(currentChain);
+  userManager.events.addAccessTokenExpired(() => {
+    log.warn(
+      "Access token has already expired - addAccessTokenExpiring may have missed it",
+      { tenantId },
+    );
+  });
+}
 
-      if (!nonce) {
-        log.error("No nonce available for patching before token refresh");
-        return;
-      }
-
-      await patchUserNonce(currentUser as User, nonce);
-    });
-
-    userManagerInstance.events.addAccessTokenExpired(() => {
-      log.warn(
-        "Access token has already expired - addAccessTokenExpiring may have missed it",
-      );
-    });
+/**
+ * Returns a UserManager for the given tenant. Cached per tenant.
+ * Use getCurrentTenantId() from tenantStore when calling from app code.
+ */
+export function getUserManager(tenantId: string): UserManager {
+  let instance = userManagerCache.get(tenantId);
+  if (!instance) {
+    const settings = buildUserManagerSettings(tenantId);
+    instance = new UserManager(settings);
+    addUserManagerEventHandlers(instance, tenantId);
+    userManagerCache.set(tenantId, instance);
   }
-  return userManagerInstance;
+  return instance;
 }
 
 /**

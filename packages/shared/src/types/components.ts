@@ -202,6 +202,12 @@ export interface HeaderMobileProps {
   onTokenRefreshTestClick?: () => void;
   /** Callback when "Faucet test SUI" menu item is clicked (dev mode only) */
   onFaucetTestSuiClick?: () => void;
+  /** When dev mode is on, optional Server (tenant) switcher: list of tenant ids */
+  availableTenantIds?: string[];
+  /** Current tenant id (for Server dropdown when in dev mode) */
+  currentTenantId?: string;
+  /** Callback when user selects a different Server (tenant) in dev mode */
+  onServerChange?: (tenantId: string) => void;
 }
 
 export type CornersColor =

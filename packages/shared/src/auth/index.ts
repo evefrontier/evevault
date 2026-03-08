@@ -1,7 +1,4 @@
-export {
-  getUserManager,
-  redirectToFusionAuthLogout,
-} from "./authConfig";
+export { getUserManager, redirectToFusionAuthLogout } from "./authConfig";
 export { exchangeCodeForToken } from "./exchangeCode";
 export {
   clearZkLoginAddressCache,
@@ -20,6 +17,22 @@ export {
   storeJwt,
 } from "./storageService";
 export * from "./stores/authStore";
+export {
+  getAvailableTenantIds,
+  getDefaultTenantId,
+  getTenantConfig,
+  getTenantLabel,
+  isAvailableTenantId,
+  type TenantConfig,
+  type TenantId,
+} from "./tenantConfig";
+export {
+  applyTenantFromUrl,
+  getCurrentTenantId,
+  OAuthTenantSessionKey,
+  setCurrentTenantId,
+  useTenantStore,
+} from "./tenantStore";
 export { handleTestTokenRefresh } from "./testTokenRefresh";
 export * from "./types";
 export * from "./utils/authStoreUtils";
