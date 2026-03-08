@@ -385,82 +385,16 @@ export function useSendToken({
         suiClient,
       );
 
-      if (coinType === SUI_COIN_TYPE) {
-        // Native SUI transfer: split from gas coin
-        const [coin] = tx.splitCoins(tx.gas, [amountInSmallestUnit]);
-        tx.transferObjects([coin], recipientAddress);
-      } else {
-        // Custom token transfer: get all coins and find one with sufficient balance.
-        // @mysten/sui 2.x: getCoins on client with { owner, coinType }. Typed via core for compatibility.
-        type CoinWithBalance = { balance: string; id: string };
-        const coins = await (
-          suiClient as unknown as {
-            getCoins(opts: {
-              owner: string;
-              coinType: string;
-            }): Promise<{ objects: CoinWithBalance[] }>;
-          }
-        ).getCoins({ owner: senderAddress, coinType });
-        const coinObjects = coins.objects;
-
-        if (coinObjects.length === 0) {
-          throw new Error("No coins found for this token");
-        }
-
-        // Race condition guard: validate total balance still covers the requested amount
-        // (balance may have changed between initial validation and now)
-        const totalBalance = coinObjects.reduce(
-          (sum: bigint, coin: CoinWithBalance) => sum + BigInt(coin.balance),
-          0n,
-        );
-
-        if (totalBalance < amountInSmallestUnit) {
-          throw new Error(
-            "Token balance changed during transaction preparation",
-          );
-        }
-
-        // Find a coin with sufficient balance, or merge if needed
-        const suitableCoin = coinObjects.find(
-          (c: CoinWithBalance) => BigInt(c.balance) >= amountInSmallestUnit,
-        );
-
-        if (suitableCoin) {
-          // Single coin has enough balance - split from it
-          const [coin] = tx.splitCoins(tx.object(suitableCoin.id), [
-            amountInSmallestUnit,
-          ]);
-          tx.transferObjects([coin], recipientAddress);
-        } else {
-          // No single coin has enough - merge all coins then split
-          // Use the first coin as the primary and merge others into it
-          const primaryCoin = coinObjects[0];
-          const otherCoins = coinObjects.slice(1);
-
-          if (otherCoins.length > 0) {
-            tx.mergeCoins(
-              tx.object(primaryCoin.id),
-              otherCoins.map((c: CoinWithBalance) => tx.object(c.id)),
-            );
-          }
-
-          const [coin] = tx.splitCoins(tx.object(primaryCoin.id), [
-            amountInSmallestUnit,
-          ]);
-          tx.transferObjects([coin], recipientAddress);
-        }
-      }
-
-      // Build transaction
-      const txb = await tx.build({ client: suiClient });
-
-      // Sign with zkLogin
-      const { bytes, zkSignature } = await zkSignAny("TransactionData", txb, {
-        user,
-        ephemeralPublicKey,
-        maxEpoch,
-        getZkProof,
-      });
+      const { bytes, zkSignature } = await zkSignAny(
+        "TransactionData",
+        txBytes,
+        {
+          user,
+          ephemeralPublicKey,
+          maxEpoch,
+          getZkProof,
+        },
+      );
 
       log.debug("Transaction signed", {
         bytesLength: bytes.length,

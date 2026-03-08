@@ -15,6 +15,10 @@ export const EVE_TESTNET_COIN_TYPE =
 /** Default epoch duration (24h in ms) when endTimestamp is not yet set for current epoch */
 export const DEFAULT_EPOCH_DURATION_MS = 86_400_000;
 
+/** Message shown on every transfer screen: network fee is paid in SUI. */
+export const GAS_FEE_WARNING_MESSAGE =
+  "This transfer will incur a network fee (gas) paid in SUI.";
+
 export const TENANT_KEYS: Record<string, TenantConfig> = {
   stillness: {
     clientId: "583ebc6d-abd8-4057-8c77-78405628e42d",
