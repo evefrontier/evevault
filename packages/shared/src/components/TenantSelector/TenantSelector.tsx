@@ -41,7 +41,7 @@ export const TenantSelector: React.FC<TenantSelectorProps> = ({
     // Wrapper only stops propagation so dropdown doesn't close when clicking inside; no semantic role needed
     // biome-ignore lint/a11y/noStaticElementInteractions: div is for event capture only, not interactive content
     <div
-      className={`dropdown-selector dropdown-selector dropdown-selector--${variant} ${className}`.trim()}
+      className={`dropdown-selector dropdown-selector--${variant} ${className}`.trim()}
       onClick={(e: React.MouseEvent) => e.stopPropagation()}
       onKeyDown={(e: React.KeyboardEvent) => e.stopPropagation()}
       role="presentation"

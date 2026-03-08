@@ -5,6 +5,7 @@ import { useDeviceStore } from "../../../stores/deviceStore";
 import { useNetworkStore } from "../../../stores/networkStore";
 import * as utils from "../../../utils/authCleanup";
 import * as authConfig from "../../authConfig";
+import { DEFAULT_TENANT_ID } from "../../tenantConfig";
 import { useAuthStore } from "../authStore";
 
 // Mock dependencies
@@ -94,7 +95,9 @@ describe("authStore.logout()", () => {
     vi.clearAllMocks();
     // Get the mock user manager from the mocked function
     // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
-    mockUserManager = vi.mocked(authConfig.getUserManager)("default") as any;
+    mockUserManager = vi.mocked(authConfig.getUserManager)(
+      DEFAULT_TENANT_ID,
+    ) as any;
     vi.mocked(utils.performFullCleanup).mockResolvedValue(undefined);
     vi.mocked(vaultService.ephKeyService.lock).mockResolvedValue(undefined);
     vi.mocked(vaultService.zkProofService.clear).mockResolvedValue(undefined);

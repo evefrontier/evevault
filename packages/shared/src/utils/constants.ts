@@ -1,4 +1,4 @@
-import type { TenantConfig } from "../auth";
+import type { TenantConfig, TenantId } from "../auth";
 
 export const FULLNODE_URL = "https://fullnode.devnet.sui.io";
 
@@ -19,7 +19,7 @@ export const DEFAULT_EPOCH_DURATION_MS = 86_400_000;
 export const GAS_FEE_WARNING_MESSAGE =
   "This transfer will incur a network fee (gas) paid in SUI.";
 
-export const TENANT_KEYS: Record<string, TenantConfig> = {
+export const TENANT_KEYS: Record<TenantId, TenantConfig> = {
   stillness: {
     clientId: "583ebc6d-abd8-4057-8c77-78405628e42d",
     serverUrl: "https://auth.evefrontier.com",

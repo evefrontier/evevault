@@ -3,6 +3,7 @@ import {
   getCurrentTenantId,
   getUserManager,
   getZkLoginAddress,
+  isAvailableTenantId,
   OAuthTenantSessionKey,
   storeJwt,
   useAuthStore,
@@ -11,6 +12,7 @@ import { Heading, Text } from "@evevault/shared/components";
 import type { RoutePath } from "@evevault/shared/types";
 import {
   createLogger,
+  getDevModeEnabled,
   ROUTE_PATHS,
   SESSION_STORAGE_REDIRECT_KEY,
 } from "@evevault/shared/utils";
@@ -53,6 +55,9 @@ export const CallbackScreen = () => {
         const redirectTo = redirectAfterLogin || fallbackRoute;
 
         // Use oidc-client-ts's built-in PKCE support for the tenant we started login with
+        if (!isAvailableTenantId(tenantId, await getDevModeEnabled())) {
+          throw new Error(`Invalid tenant id: ${tenantId}`);
+        }
         const userManager = getUserManager(tenantId);
         const user = await userManager.signinRedirectCallback();
 

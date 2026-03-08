@@ -7,7 +7,7 @@ import {
 import { isExtension } from "../utils/environment";
 import { createLogger } from "../utils/logger";
 import { patchUserNonce } from "./patchNonce";
-import { getTenantConfig } from "./tenantConfig";
+import { getTenantConfig, type TenantId } from "./tenantConfig";
 import { getCurrentTenantId } from "./tenantStore";
 import type { GlobalWithLocalStorage, StorageLike } from "./types";
 
@@ -71,7 +71,7 @@ const getOrigin = () => {
   return ""; // Fallback empty string
 };
 
-function buildUserManagerSettings(tenantId: string): UserManagerSettings {
+function buildUserManagerSettings(tenantId: TenantId): UserManagerSettings {
   const { clientId, clientSecret, serverUrl } = getTenantConfig(tenantId);
   return {
     authority: serverUrl,

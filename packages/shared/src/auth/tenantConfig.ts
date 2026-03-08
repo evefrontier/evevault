@@ -25,7 +25,7 @@ function getDefaultConfig(): TenantConfig {
 /**
  * Returns FusionAuth client config for the given tenant.
  */
-export function getTenantConfig(tenantId: string): TenantConfig {
+export function getTenantConfig(tenantId: TenantId): TenantConfig {
   const defaultConfig = getDefaultConfig();
 
   if (tenantId === DEFAULT_TENANT_ID) {
@@ -76,7 +76,7 @@ export function isAvailableTenantId(
   return getAvailableTenantIds(devMode).includes(value as TenantId);
 }
 
-/** Display labels for server (tenant) ids in the UI. "default" shows as "Utopia" (server name). */
+/** Display labels for server (tenant) ids in the UI, mapping ids to their human-readable names. */
 const TENANT_LABELS: Record<TenantId, string> = {
   stillness: "Stillness",
   utopia: "Utopia",
