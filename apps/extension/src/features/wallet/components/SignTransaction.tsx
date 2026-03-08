@@ -71,7 +71,7 @@ function SignTransaction() {
       );
 
       if (!auth.ephemeralPublicKey) {
-        throw new Error("Ephemeral public skey not found");
+        throw new Error("Ephemeral public key not found");
       }
 
       if (!auth.maxEpoch) {
