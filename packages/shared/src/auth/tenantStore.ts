@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+import { chromeStorageAdapter, localStorageAdapter } from "../adapters";
 import { isWeb } from "../utils/environment";
 import {
   getAvailableTenantIds,
@@ -15,12 +16,6 @@ interface TenantState {
   setTenantId: (id: TenantId) => void;
 }
 
-const noopStorage = {
-  getItem: () => null,
-  setItem: () => {},
-  removeItem: () => {},
-};
-
 export const useTenantStore = create<TenantState>()(
   persist(
     (set) => ({
@@ -35,16 +30,36 @@ export const useTenantStore = create<TenantState>()(
     {
       name: STORAGE_KEY,
       partialize: (state) => ({ tenantId: state.tenantId }),
-      storage: isWeb()
-        ? createJSONStorage<Pick<TenantState, "tenantId">>(() => localStorage)
-        : noopStorage,
+      storage: createJSONStorage<Pick<TenantState, "tenantId">>(() =>
+        isWeb() ? localStorageAdapter : chromeStorageAdapter,
+      ),
     },
   ),
 );
 
+// In extension, sync tenant store when another context (e.g. popup) updates chrome.storage
+if (typeof chrome !== "undefined" && chrome.storage && !isWeb()) {
+  const storage = chrome.storage as {
+    onChanged?: {
+      addListener: (
+        callback: (changes: Record<string, unknown>, areaName: string) => void,
+      ) => void;
+    };
+  };
+  storage.onChanged?.addListener(
+    (changes: Record<string, unknown>, areaName: string) => {
+      if (areaName === "local" && changes[STORAGE_KEY]) {
+        void useTenantStore.persist.rehydrate();
+      }
+    },
+  );
+}
+
 /**
  * Returns the current tenant id (for auth config, token exchange, etc.).
- * In web, call applyTenantFromUrl() on load to sync from ?tenant= before using this.
+ * Persisted in localStorage (web) or chrome.storage.local (extension); in extension,
+ * background and popup stay in sync via storage.onChanged. In web, call
+ * applyTenantFromUrl() on load to sync from ?tenant= before using this.
  */
 export function getCurrentTenantId(): TenantId {
   const stored = useTenantStore.getState().tenantId;
@@ -52,7 +67,7 @@ export function getCurrentTenantId(): TenantId {
 }
 
 /**
- * Sets the current tenant and persists to storage (web only).
+ * Sets the current tenant and persists to storage (web: localStorage, extension: chrome.storage.local).
  */
 export function setCurrentTenantId(id: TenantId): void {
   useTenantStore.getState().setTenantId(id);
