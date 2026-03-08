@@ -4,8 +4,8 @@ import type { User } from "oidc-client-ts";
 /**
  * Cache entry for coin metadata with expiry timestamp
  */
-export interface CacheEntry {
-  data: { decimals: number; symbol: string };
+export interface CacheEntry<T> {
+  data: T;
   timestamp: number;
 }
 

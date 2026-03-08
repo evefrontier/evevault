@@ -173,19 +173,27 @@ export function useSendToken({
         const [coin] = tx.splitCoins(tx.gas, [amountInSmallestUnit]);
         tx.transferObjects([coin], recipientAddress);
       } else {
-        // Custom token transfer: get all coins and find one with sufficient balance.
-        // @mysten/sui 2.x: getCoins on client with { owner, coinType }. Typed via core for compatibility.
-        type CoinWithBalance = { balance: string; id: string };
-        const coins = await (
-          suiClient as unknown as {
-            getCoins(opts: {
-              owner: string;
-              coinType: string;
-            }): Promise<{ objects: CoinWithBalance[] }>;
-          }
-        ).getCoins({ owner: senderAddress, coinType });
-        const coinObjects = coins.objects;
-
+        // Custom token transfer: list coins via SDK and find one with sufficient balance.
+        const result = await suiClient.listCoins({
+          owner: senderAddress,
+          coinType,
+        });
+        if (
+          result == null ||
+          typeof result !== "object" ||
+          !Array.isArray(result.objects)
+        ) {
+          throw new Error(
+            "listCoins returned invalid shape: expected { objects: array }",
+          );
+        }
+        const coinObjects = result.objects.filter((obj) => {
+          if (obj == null || typeof obj !== "object") return false;
+          const o = obj as { objectId?: unknown; balance?: unknown };
+          return (
+            typeof o.objectId === "string" && typeof o.balance === "string"
+          );
+        }) as { objectId: string; balance: string }[];
         if (coinObjects.length === 0) {
           throw new Error("No coins found for this token");
         }
@@ -193,7 +201,7 @@ export function useSendToken({
         // Race condition guard: validate total balance still covers the requested amount
         // (balance may have changed between initial validation and now)
         const totalBalance = coinObjects.reduce(
-          (sum: bigint, coin: CoinWithBalance) => sum + BigInt(coin.balance),
+          (sum, coin) => sum + BigInt(coin.balance),
           0n,
         );
 
@@ -205,12 +213,12 @@ export function useSendToken({
 
         // Find a coin with sufficient balance, or merge if needed
         const suitableCoin = coinObjects.find(
-          (c: CoinWithBalance) => BigInt(c.balance) >= amountInSmallestUnit,
+          (c) => BigInt(c.balance) >= amountInSmallestUnit,
         );
 
         if (suitableCoin) {
           // Single coin has enough balance - split from it
-          const [coin] = tx.splitCoins(tx.object(suitableCoin.id), [
+          const [coin] = tx.splitCoins(tx.object(suitableCoin.objectId), [
             amountInSmallestUnit,
           ]);
           tx.transferObjects([coin], recipientAddress);
@@ -222,12 +230,12 @@ export function useSendToken({
 
           if (otherCoins.length > 0) {
             tx.mergeCoins(
-              tx.object(primaryCoin.id),
-              otherCoins.map((c: CoinWithBalance) => tx.object(c.id)),
+              tx.object(primaryCoin.objectId),
+              otherCoins.map((c) => tx.object(c.objectId)),
             );
           }
 
-          const [coin] = tx.splitCoins(tx.object(primaryCoin.id), [
+          const [coin] = tx.splitCoins(tx.object(primaryCoin.objectId), [
             amountInSmallestUnit,
           ]);
           tx.transferObjects([coin], recipientAddress);

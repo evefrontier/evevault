@@ -6,7 +6,7 @@ export const DEFAULT_SUI_METADATA: BalanceMetadata = {
   symbol: "SUI",
   name: "Sui",
   description: "Sui Native Token",
-  iconUrl: "",
+  iconUrl: null,
 };
 
 export const DEFAULT_EVE_TESTNET_METADATA: BalanceMetadata = {
@@ -23,7 +23,10 @@ export function getKnownTokenDisplay(coinType: string): {
   symbol: string;
 } | null {
   if (coinType === SUI_COIN_TYPE) {
-    return { name: DEFAULT_SUI_METADATA.name, symbol: DEFAULT_SUI_METADATA.symbol };
+    return {
+      name: DEFAULT_SUI_METADATA.name,
+      symbol: DEFAULT_SUI_METADATA.symbol,
+    };
   }
   if (coinType === EVE_TESTNET_COIN_TYPE) {
     return {

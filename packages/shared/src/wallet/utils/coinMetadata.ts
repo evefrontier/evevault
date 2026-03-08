@@ -1,12 +1,16 @@
 import type { SuiGraphQLClient } from "@mysten/sui/graphql";
 import { SUI_COIN_TYPE } from "../../utils";
 import { createLogger } from "../../utils/logger";
+import type {
+  CoinMetadataQueryResponse,
+  CoinMetadataResult,
+} from "../types/coinMetadata";
 import type { CacheEntry } from "../types/hooks";
 
 const log = createLogger();
 const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes cache expiry
 
-const coinMetadataCache = new Map<string, CacheEntry>();
+const coinMetadataCache = new Map<string, CacheEntry<CoinMetadataResult>>();
 
 const COIN_METADATA_QUERY = `
   query CoinMetadata($coinType: String!) {
@@ -19,24 +23,6 @@ const COIN_METADATA_QUERY = `
     }
   }
 `;
-
-interface CoinMetadataQueryResponse {
-  coinMetadata: {
-    decimals: number | null;
-    name: string | null;
-    symbol: string | null;
-    description: string | null;
-    iconUrl: string | null;
-  } | null;
-}
-
-export interface CoinMetadataResult {
-  decimals: number;
-  symbol: string;
-  name?: string | null;
-  description?: string | null;
-  iconUrl?: string | null;
-}
 
 /**
  * Manually invalidate cache for a specific coin type or clear entire cache
@@ -60,7 +46,7 @@ export async function fetchCoinMetadata(
     // Check cache first with expiry
     const cached = coinMetadataCache.get(coinType);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
-      return cached.data as CoinMetadataResult;
+      return cached.data;
     }
 
     // Remove expired entry if it exists
@@ -77,7 +63,10 @@ export async function fetchCoinMetadata(
         description: "Sui Native Token",
         iconUrl: null,
       };
-      coinMetadataCache.set(coinType, { data: metadata, timestamp: Date.now() });
+      coinMetadataCache.set(coinType, {
+        data: metadata,
+        timestamp: Date.now(),
+      });
       return metadata;
     }
 

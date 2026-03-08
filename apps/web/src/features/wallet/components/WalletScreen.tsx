@@ -134,10 +134,16 @@ export const WalletScreen = () => {
       transaction: new Uint8Array(txb),
       signatures: [zkSignature],
     });
+    // @mysten/sui 2.x: discriminated union Transaction | FailedTransaction
+    if ("$kind" in result && result.$kind === "FailedTransaction") {
+      log.error("Transaction execution failed", { result });
+      setTxDigest(null);
+      return;
+    }
     log.info("Transaction executed", {
-      digest: result.transaction.digest,
+      digest: result.Transaction.digest,
     });
-    setTxDigest(result.transaction.digest ?? null);
+    setTxDigest(result.Transaction.digest ?? null);
   }, [user, maxEpoch, ephemeralPublicKey, getZkProof, suiClient]);
 
   const handleTokenRefreshTest = useCallback(async () => {

@@ -1,15 +1,14 @@
-import { useAuth } from "@evevault/shared/auth";
 import {
   Button,
   Heading,
   NetworkSelector,
   Text,
 } from "@evevault/shared/components";
-import { useDevice } from "@evevault/shared/hooks/useDevice";
-import { LockScreen } from "@evevault/shared/screens";
 import { createLogger } from "@evevault/shared/utils";
 import { zkSignAny } from "@evevault/shared/wallet";
 import { useEffect, useState } from "react";
+import { useSignPopupAuth } from "../hooks";
+import { SignPopupAuthGate } from "./SignPopupAuthGate";
 
 const log = createLogger();
 
@@ -29,12 +28,7 @@ function SignSponsoredTransaction() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { maxEpoch, getZkProof, ephemeralPublicKey, isLocked, isPinSet, unlock } = useDevice();
-  const { user, loading: authLoading, login, initialize: initializeAuth } = useAuth();
-
-  useEffect(() => {
-    initializeAuth();
-  }, [initializeAuth]);
+  const auth = useSignPopupAuth();
 
   useEffect(() => {
     chrome.storage.local.get("pendingAction").then((data) => {
@@ -49,15 +43,15 @@ function SignSponsoredTransaction() {
 
   const handleApprove = async () => {
     if (!pending) return;
-    if (!user) {
+    if (!auth.user) {
       setError("Sign in and try again.");
       return;
     }
-    if (!ephemeralPublicKey) {
+    if (!auth.ephemeralPublicKey) {
       setError("Device key not found. Unlock the wallet and try again.");
       return;
     }
-    if (!maxEpoch) {
+    if (!auth.maxEpoch) {
       setError("Max epoch not set. Re-authenticate and try again.");
       return;
     }
@@ -70,10 +64,10 @@ function SignSponsoredTransaction() {
         c.charCodeAt(0),
       );
       const { zkSignature } = await zkSignAny("TransactionData", txbBytes, {
-        user,
-        ephemeralPublicKey,
-        maxEpoch,
-        getZkProof,
+        user: auth.user,
+        ephemeralPublicKey: auth.ephemeralPublicKey,
+        maxEpoch: auth.maxEpoch,
+        getZkProof: auth.getZkProof,
       });
 
       await chrome.storage.local.set({
@@ -119,75 +113,62 @@ function SignSponsoredTransaction() {
     }
   };
 
-  // Show lock screen if vault is locked
-  if (isLocked) {
-    return <LockScreen isPinSet={isPinSet} unlock={unlock} />;
-  }
-
-  // Show login prompt if user is not authenticated
-  if (!user) {
-    return (
-      <div className="flex flex-col items-center justify-center gap-6 h-full">
-        <img src="/images/logo.png" alt="EVE Vault" className="h-20" />
-        <Heading level={2}>Approve sponsored transaction</Heading>
-        <Text variant="light">You need to log in before signing.</Text>
-        <Button
-          onClick={() => login()}
-          disabled={authLoading}
-          variant="primary"
-          size="fill"
-        >
-          {authLoading ? "Logging in..." : "Log In to Sign"}
-        </Button>
-        <Button
-          onClick={handleReject}
-          disabled={authLoading || !pending}
-          variant="secondary"
-        >
-          Cancel
-        </Button>
-      </div>
-    );
-  }
-
-  if (!pending) {
-    return (
-      <div>
-        <p>Loading...</p>
-        {error && <p style={{ color: "red" }}>{error}</p>}
-      </div>
-    );
-  }
-
   return (
-    <div className="flex flex-col items-center justify-between h-full">
-      <div className="flex flex-col items-center justify-center gap-10">
-        <img src="/images/logo.png" alt="EVE Vault" className="h-20" />
-        <div className="flex flex-col items-center justify-center gap-4">
-          <Heading level={2}>Approve sponsored transaction</Heading>
-          <Text>Sign this sponsored transaction to continue.</Text>
+    <SignPopupAuthGate
+      isLocked={auth.isLocked}
+      isPinSet={auth.isPinSet}
+      unlock={auth.unlock}
+      user={auth.user}
+      loading={auth.loading}
+      login={auth.login}
+      title="Approve sponsored transaction"
+      onCancel={handleReject}
+      cancelDisabled={auth.loading || !pending}
+    >
+      {!pending ? (
+        <div>
+          <p>Loading...</p>
+          {error && <p style={{ color: "red" }}>{error}</p>}
         </div>
+      ) : (
+        <div className="flex flex-col items-center justify-between h-full">
+          <div className="flex flex-col items-center justify-center gap-10">
+            <img src="/images/logo.png" alt="EVE Vault" className="h-20" />
+            <div className="flex flex-col items-center justify-center gap-4">
+              <Heading level={2}>Approve sponsored transaction</Heading>
+              <Text>Sign this sponsored transaction to continue.</Text>
+            </div>
 
-        {error && (
-          <div style={{ marginBottom: "20px" }}>
-            <Text color="error">Error: {error}</Text>
+            {error && (
+              <div style={{ marginBottom: "20px" }}>
+                <Text color="error">Error: {error}</Text>
+              </div>
+            )}
+
+            <div style={{ display: "flex", gap: "10px" }}>
+              <Button
+                onClick={handleApprove}
+                disabled={loading}
+                variant="primary"
+              >
+                {loading ? "Signing..." : "Approve"}
+              </Button>
+              <Button
+                onClick={handleReject}
+                disabled={loading}
+                variant="secondary"
+              >
+                Reject
+              </Button>
+            </div>
           </div>
-        )}
-
-        <div style={{ display: "flex", gap: "10px" }}>
-          <Button onClick={handleApprove} disabled={loading} variant="primary">
-            {loading ? "Signing..." : "Approve"}
-          </Button>
-          <Button onClick={handleReject} disabled={loading} variant="secondary">
-            Reject
-          </Button>
+          <NetworkSelector
+            className="justify-start w-full items-end"
+            chain={pending.chain}
+          />
         </div>
-      </div>
-      <NetworkSelector
-        className="justify-start w-full items-end"
-        chain={pending.chain}
-      />
-    </div>
+      )}
+    </SignPopupAuthGate>
   );
 }
 
