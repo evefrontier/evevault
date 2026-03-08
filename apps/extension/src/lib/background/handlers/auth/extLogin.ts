@@ -1,5 +1,8 @@
 import { getDeviceData, storeJwt } from "@evevault/shared";
-import { exchangeCodeForToken } from "@evevault/shared/auth";
+import {
+  exchangeCodeForToken,
+  getDefaultTenantId,
+} from "@evevault/shared/auth";
 import { useDeviceStore } from "@evevault/shared/stores";
 import { createLogger } from "@evevault/shared/utils";
 import { Ed25519PublicKey } from "@mysten/sui/keypairs/ed25519";
@@ -289,6 +292,7 @@ export async function handleExtLogin(
         const jwtResponse = await exchangeCodeForToken(
           authCode,
           chrome.identity.getRedirectURL(),
+          getDefaultTenantId(),
         );
 
         const chainAfterOAuth = await getCurrentChainFromStorage();

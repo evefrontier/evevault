@@ -26,6 +26,12 @@ import {
   getJwtForNetwork,
   storeJwt,
 } from "../storageService";
+import type { TenantId } from "../tenantConfig";
+import {
+  getCurrentTenantId,
+  OAuthTenantSessionKey,
+  setCurrentTenantId,
+} from "../tenantStore";
 import type { AuthState } from "../types";
 import { resolveExpiresAt } from "../utils/authStoreUtils";
 import { vendJwt } from "../vendToken";
@@ -48,7 +54,7 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => {
       // Lazy getter for userManager to avoid initialization order issues
-      const getUserManagerInstance = () => getUserManager();
+      const getUserManagerInstance = () => getUserManager(getCurrentTenantId());
 
       return {
         user: null,
@@ -313,6 +319,12 @@ export const useAuthStore = create<AuthState>()(
               };
             };
 
+            if (typeof sessionStorage !== "undefined") {
+              sessionStorage.setItem(
+                OAuthTenantSessionKey,
+                getCurrentTenantId(),
+              );
+            }
             getUserManagerInstance().signinRedirect({
               nonce: getDeviceParams().nonce,
               extraQueryParams: {
@@ -543,6 +555,46 @@ export const useAuthStore = create<AuthState>()(
   ),
 );
 
+/**
+ * Clears auth state for the given tenant (no redirect).
+ * Used when switching server so the next login uses the new tenant.
+ */
+export async function runTenantSwitchCleanup(tenantId: string): Promise<void> {
+  try {
+    await getUserManager(tenantId).removeUser();
+    await performFullCleanup();
+    await clearAllJwts();
+    clearZkLoginAddressCache();
+    useAuthStore.getState().setUser(null);
+    await zkProofService.clear();
+    await useDeviceStore.getState().lock();
+  } catch (error) {
+    log.error("Error during tenant switch cleanup", error);
+  }
+}
+
+/**
+ * Clears auth state for current tenant and redirects to app home with new tenant.
+ * Used when switching server (tenant) via dev dropdown.
+ */
+export async function switchTenantAndReload(
+  newTenantId: string,
+): Promise<void> {
+  const current = getCurrentTenantId();
+  if (current === newTenantId) return;
+
+  await runTenantSwitchCleanup(current);
+  setCurrentTenantId(newTenantId as TenantId);
+
+  if (isWeb() && typeof window !== "undefined") {
+    const url =
+      newTenantId === "default"
+        ? window.location.origin
+        : `${window.location.origin}?tenant=${newTenantId}`;
+    window.location.href = url;
+  }
+}
+
 export const waitForAuthHydration = async () => {
   if (useAuthStore.persist.hasHydrated()) {
     return;
@@ -563,16 +615,8 @@ let eventListenersInitialized = false;
 function initializeEventListeners() {
   if (eventListenersInitialized) return;
   eventListenersInitialized = true;
-
-  const userManager = getUserManager();
-
-  userManager.events.addUserLoaded((user) => {
-    useAuthStore.getState().setUser(user);
-  });
-
-  userManager.events.addUserUnloaded(() => {
-    useAuthStore.getState().setUser(null);
-  });
+  // Ensure current tenant's UserManager is created (handlers are registered in authConfig)
+  getUserManager(getCurrentTenantId());
 }
 
 if (typeof window !== "undefined") {

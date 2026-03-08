@@ -9,6 +9,7 @@ import {
   DropdownSelect,
   getIdenticon,
 } from "../../Dropdown";
+import { ServerSelector } from "../../ServerSelector";
 import Switch from "../../Switch";
 import Text from "../../Text";
 
@@ -22,6 +23,9 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
   onDevModeToggle,
   onSignSubmitTxClick,
   onTokenRefreshTestClick,
+  availableTenantIds = [],
+  currentTenantId = "default",
+  onServerChange,
 }) => {
   const { copy } = useCopyToClipboard();
   const { lock } = useDevice();
@@ -74,14 +78,36 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
       });
     }
 
-    // 4. Copy Address (always)
+    // 4. Server (tenant) switcher (only when dev mode on)
+    if (showDevActions && availableTenantIds.length > 0 && onServerChange) {
+      items.push({
+        label: "Server",
+        icon: "Settings" as IconName,
+        onClick: () => {},
+        preventCloseOnClick: true,
+        customContent: (
+          <>
+            {getIdenticon(0)}
+            <Text variant="label">Server</Text>
+            <ServerSelector
+              currentTenantId={currentTenantId}
+              availableTenantIds={availableTenantIds}
+              onServerChange={onServerChange}
+              variant="inline"
+            />
+          </>
+        ),
+      });
+    }
+
+    // 5. Copy Address (always)
     items.push({
       label: "Copy Address",
       icon: "Copy" as IconName,
       onClick: () => copy(address),
     });
 
-    // 5. Transaction History (optional)
+    // 6. Transaction History (optional)
     if (onTransactionsClick) {
       items.push({
         label: "Transaction History",
@@ -90,14 +116,14 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
       });
     }
 
-    // 6. Lock Wallet (always)
+    // 7. Lock Wallet (always)
     items.push({
       label: "Lock Wallet",
       icon: "HideEye" as IconName,
       onClick: lock,
     });
 
-    // 7. Logout (always)
+    // 8. Logout (always)
     items.push({
       label: "Logout",
       icon: "Close" as IconName,
@@ -111,6 +137,9 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
     onDevModeToggle,
     onSignSubmitTxClick,
     onTokenRefreshTestClick,
+    availableTenantIds,
+    currentTenantId,
+    onServerChange,
     copy,
     address,
     lock,

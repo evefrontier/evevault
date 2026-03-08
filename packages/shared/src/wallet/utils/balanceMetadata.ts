@@ -23,7 +23,10 @@ export function getKnownTokenDisplay(coinType: string): {
   symbol: string;
 } | null {
   if (coinType === SUI_COIN_TYPE) {
-    return { name: DEFAULT_SUI_METADATA.name, symbol: DEFAULT_SUI_METADATA.symbol };
+    return {
+      name: DEFAULT_SUI_METADATA.name,
+      symbol: DEFAULT_SUI_METADATA.symbol,
+    };
   }
   if (coinType === EVE_TESTNET_COIN_TYPE) {
     return {

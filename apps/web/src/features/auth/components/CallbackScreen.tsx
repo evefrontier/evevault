@@ -1,10 +1,12 @@
 import { useNetworkStore } from "@evevault/shared";
 import {
+  getCurrentTenantId,
+  getUserManager,
   getZkLoginAddress,
+  OAuthTenantSessionKey,
   storeJwt,
   useAuthStore,
 } from "@evevault/shared/auth";
-import { getUserManager } from "@evevault/shared/auth/authConfig";
 import { Heading, Text } from "@evevault/shared/components";
 import type { RoutePath } from "@evevault/shared/types";
 import { createLogger, ROUTE_PATHS } from "@evevault/shared/utils";
@@ -40,11 +42,14 @@ export const CallbackScreen = () => {
           "evevault_redirect_after_login",
         );
         sessionStorage.removeItem("evevault_redirect_after_login");
+        const tenantId =
+          sessionStorage.getItem(OAuthTenantSessionKey) ?? getCurrentTenantId();
+        sessionStorage.removeItem(OAuthTenantSessionKey);
         const fallbackRoute: RoutePath = "/wallet";
         const redirectTo = redirectAfterLogin || fallbackRoute;
 
-        // Use oidc-client-ts's built-in PKCE support
-        const userManager = getUserManager();
+        // Use oidc-client-ts's built-in PKCE support for the tenant we started login with
+        const userManager = getUserManager(tenantId);
         const user = await userManager.signinRedirectCallback();
 
         if (!user || !user.id_token) {

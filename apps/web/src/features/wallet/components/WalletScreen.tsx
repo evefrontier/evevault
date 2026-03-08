@@ -1,5 +1,11 @@
 import { HeaderMobile, LockScreen, NetworkSelector } from "@evevault/shared";
-import { handleTestTokenRefresh, useAuth } from "@evevault/shared/auth";
+import {
+  getAvailableTenantIds,
+  handleTestTokenRefresh,
+  switchTenantAndReload,
+  useAuth,
+  useTenantStore,
+} from "@evevault/shared/auth";
 import {
   Background,
   Button,
@@ -55,6 +61,8 @@ export const WalletScreen = () => {
     unlock,
   } = useDevice();
   const { chain } = useNetworkStore();
+  const tenantId = useTenantStore((s) => s.tenantId);
+  const availableTenantIds = getAvailableTenantIds();
 
   // Create suiClient with useMemo to recreate when chain changes
   const suiClient = React.useMemo(() => {
@@ -228,6 +236,9 @@ export const WalletScreen = () => {
         onDevModeToggle={handleDevModeToggle}
         onSignSubmitTxClick={devMode ? handleSignAndSubmitTx : undefined}
         onTokenRefreshTestClick={devMode ? handleTokenRefreshTest : undefined}
+        availableTenantIds={devMode ? availableTenantIds : undefined}
+        currentTenantId={devMode ? tenantId : undefined}
+        onServerChange={devMode ? switchTenantAndReload : undefined}
       />
       {/* Token Section: pass defined chain (testnet fallback) so balance and token list use the same network and we avoid cross-network transfer/balance errors */}
       <TokenListSection

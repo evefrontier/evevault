@@ -1,6 +1,6 @@
 import { LockScreen } from "@evevault/shared";
 import { useAuth } from "@evevault/shared/auth";
-import { Button, Heading, Text } from "@evevault/shared/components";
+import { Button, Heading } from "@evevault/shared/components";
 import { useDevice } from "@evevault/shared/hooks/useDevice";
 
 export const LoginScreen = () => {

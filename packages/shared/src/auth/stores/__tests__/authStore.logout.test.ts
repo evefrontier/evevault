@@ -93,7 +93,7 @@ describe("authStore.logout()", () => {
     vi.clearAllMocks();
     // Get the mock user manager from the mocked function
     // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
-    mockUserManager = vi.mocked(authConfig.getUserManager)() as any;
+    mockUserManager = vi.mocked(authConfig.getUserManager)("default") as any;
     vi.mocked(utils.performFullCleanup).mockResolvedValue(undefined);
     vi.mocked(vaultService.ephKeyService.lock).mockResolvedValue(undefined);
     vi.mocked(vaultService.zkProofService.clear).mockResolvedValue(undefined);

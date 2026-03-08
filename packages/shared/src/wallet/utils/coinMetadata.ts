@@ -77,7 +77,10 @@ export async function fetchCoinMetadata(
         description: "Sui Native Token",
         iconUrl: null,
       };
-      coinMetadataCache.set(coinType, { data: metadata, timestamp: Date.now() });
+      coinMetadataCache.set(coinType, {
+        data: metadata,
+        timestamp: Date.now(),
+      });
       return metadata;
     }
 

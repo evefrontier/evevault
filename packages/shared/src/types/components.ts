@@ -200,6 +200,12 @@ export interface HeaderMobileProps {
   onSignSubmitTxClick?: () => void;
   /** Callback when "Token refresh test" menu item is clicked */
   onTokenRefreshTestClick?: () => void;
+  /** When dev mode is on, optional Server (tenant) switcher: list of tenant ids */
+  availableTenantIds?: string[];
+  /** Current tenant id (for Server dropdown when in dev mode) */
+  currentTenantId?: string;
+  /** Callback when user selects a different Server (tenant) in dev mode */
+  onServerChange?: (tenantId: string) => void;
 }
 
 export type CornersColor =

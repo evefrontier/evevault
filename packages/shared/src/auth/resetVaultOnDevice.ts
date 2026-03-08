@@ -5,27 +5,27 @@ import {
   SUI_TESTNET_CHAIN,
   type SuiChain,
 } from "@mysten/wallet-standard";
-import { createLogger } from "../utils/logger";
-import { isExtension, isWeb } from "../utils/environment";
+import { ephKeyService, zkProofService } from "../services/vaultService";
 import { useDeviceStore } from "../stores/deviceStore";
 import { useNetworkStore } from "../stores/networkStore";
 import { useTokenListStore } from "../stores/tokenListStore";
-import type { NetworkDataEntry } from "../types/stores";
 import { DEFAULT_TOKENS_BY_CHAIN } from "../types/networks";
-import { getUserManager } from "./authConfig";
-import { clearZkLoginAddressCache } from "./getZkLoginAddress";
-import { clearAllJwts } from "./storageService";
-import { useAuthStore } from "./stores/authStore";
-import { ephKeyService, zkProofService } from "../services/vaultService";
+import type { NetworkDataEntry } from "../types/stores";
 import {
   cleanupExtensionStorage,
   cleanupOidcStorage,
 } from "../utils/authCleanup";
+import { isExtension, isWeb } from "../utils/environment";
+import { createLogger } from "../utils/logger";
 import {
   EVEVAULT_STORAGE_KEYS,
   EXTENSION_EXTRA_KEYS,
   SESSION_STORAGE_REDIRECT_KEY,
 } from "../utils/storageKeys";
+import { getUserManager } from "./authConfig";
+import { clearZkLoginAddressCache } from "./getZkLoginAddress";
+import { clearAllJwts } from "./storageService";
+import { useAuthStore } from "./stores/authStore";
 
 const log = createLogger();
 
@@ -46,7 +46,9 @@ async function clearWebStorage(): Promise<void> {
   }
   cleanupOidcStorage();
   window.sessionStorage.removeItem(SESSION_STORAGE_REDIRECT_KEY);
-  log.info("[resetVaultOnDevice] Cleared web localStorage, sessionStorage, and OIDC");
+  log.info(
+    "[resetVaultOnDevice] Cleared web localStorage, sessionStorage, and OIDC",
+  );
 }
 
 async function clearExtensionStorage(): Promise<void> {
@@ -55,7 +57,9 @@ async function clearExtensionStorage(): Promise<void> {
     await new Promise<void>((resolve) => {
       chrome.storage.local.remove([...EXTENSION_EXTRA_KEYS], () => resolve());
     });
-    log.info("[resetVaultOnDevice] Cleared extension pendingAction/transactionResult");
+    log.info(
+      "[resetVaultOnDevice] Cleared extension pendingAction/transactionResult",
+    );
   }
 }
 

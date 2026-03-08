@@ -1,0 +1,46 @@
+.server-selector {
+  position: relative;
+  display: inline-block;
+  height: min-content;
+}
+
+.server-selector--inline .server-selector__trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: var(--quantum-10);
+  border: 1px solid var(--quantum-30);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.server-selector--inline .server-selector__trigger:hover {
+  background: var(--quantum-20);
+}
+
+.server-selector--standalone .server-selector__trigger {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  padding: 0;
+  transition: opacity 0.2s ease;
+}
+
+.server-selector--standalone .server-selector__trigger:hover {
+  opacity: 0.8;
+}
+
+.server-selector__chevron {
+  transition: transform 0.2s ease;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.server-selector__chevron--open {
+  transform: rotate(180deg);
+}
