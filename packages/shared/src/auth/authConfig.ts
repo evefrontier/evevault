@@ -8,6 +8,7 @@ import { isExtension } from "../utils/environment";
 import { createLogger } from "../utils/logger";
 import { patchUserNonce } from "./patchNonce";
 import { getTenantConfig } from "./tenantConfig";
+import { getCurrentTenantId } from "./tenantStore";
 import type { GlobalWithLocalStorage, StorageLike } from "./types";
 
 const ensureLocalStorage = () => {
@@ -171,8 +172,8 @@ export function getUserManager(tenantId: string): UserManager {
  * Use for both app logout and after device reset so the next login requires email/password.
  */
 export function redirectToFusionAuthLogout(): void {
-  const fusionAuthUrl = import.meta.env.VITE_FUSION_SERVER_URL;
-  const clientId = import.meta.env.VITE_FUSIONAUTH_CLIENT_ID;
+  const tenantId = getCurrentTenantId();
+  const { clientId, serverUrl: fusionAuthUrl } = getTenantConfig(tenantId);
   const postRedirectUri = isExtension()
     ? (typeof chrome !== "undefined" && chrome.identity?.getRedirectURL?.()) ||
       getOrigin()

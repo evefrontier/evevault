@@ -48,8 +48,6 @@ Create a `.env` file at app root, `apps/extension`:
 
 ```env
 # FusionAuth Configuration
-VITE_FUSION_SERVER_URL="https://auth.evefrontier.com"
-VITE_FUSIONAUTH_CLIENT_ID=your-fusionauth-client-id
 VITE_FUSION_CLIENT_SECRET=your-fusionauth-client-secret
 
 # Enoki Configuration

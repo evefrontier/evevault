@@ -1,4 +1,4 @@
-import { getDevModeEnabled, TENANT_KEYS } from "../utils";
+import { TENANT_KEYS } from "../utils";
 
 export const DEFAULT_TENANT_ID = "stillness" as const;
 
@@ -32,6 +32,10 @@ export function getTenantConfig(tenantId: string): TenantConfig {
     return defaultConfig;
   }
 
+  if (!(tenantId in TENANT_KEYS))
+    throw new Error(
+      `[TenantConfig] Client secret not found for tenant id: ${tenantId}`,
+    );
   if (!TENANT_KEYS[tenantId].clientSecret) {
     throw Error(`Tenant "${tenantId}" has no client secret`);
   }
@@ -45,28 +49,31 @@ export function getDefaultTenantId(): TenantId {
 
 /**
  * Returns tenant ids that have config: always the default tenant, plus others that have
- * client secret set. When isDev is false (production), tenants marked isDev: true are
- * excluded; when isDev is true, all tenants with client secret are included.
+ * client secret set. When devMode is false (production), tenants marked isDev: true are
+ * excluded; when devMode is true, all tenants with client secret are included.
+ * Caller should pass the already-known dev mode flag (e.g. from UI state or getDevModeEnabled()).
  */
-export function getAvailableTenantIds(): TenantId[] {
-  const isDev = getDevModeEnabled();
-
+export function getAvailableTenantIds(devMode: boolean): TenantId[] {
   const ids: TenantId[] = [DEFAULT_TENANT_ID];
   for (const id of KNOWN_TENANT_IDS) {
     if (id === DEFAULT_TENANT_ID) continue;
     const clientSecret = TENANT_KEYS[id].clientSecret;
     if (!clientSecret?.trim()) continue;
-    if (!isDev && TENANT_KEYS[id].isDev) continue;
+    if (!devMode && TENANT_KEYS[id].isDev) continue;
     ids.push(id);
   }
   return ids;
 }
 
 /**
- * Returns true if the given string is a valid/available tenant id.
+ * Returns true if the given string is a valid/available tenant id for the given devMode.
+ * When devMode is false, dev-only tenants are considered unavailable.
  */
-export function isAvailableTenantId(value: string): value is TenantId {
-  return getAvailableTenantIds().includes(value as TenantId);
+export function isAvailableTenantId(
+  value: string,
+  devMode: boolean,
+): value is TenantId {
+  return getAvailableTenantIds(devMode).includes(value as TenantId);
 }
 
 /** Display labels for server (tenant) ids in the UI. "default" shows as "Utopia" (server name). */

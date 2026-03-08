@@ -1,6 +1,7 @@
 import {
   applyTenantFromUrl,
   getCurrentTenantId,
+  getDefaultTenantId,
   runTenantSwitchCleanup,
 } from "@evevault/shared/auth";
 import { useEffect, useRef } from "react";
@@ -16,18 +17,19 @@ export function TenantUrlSync() {
     if (didRun.current) return;
     didRun.current = true;
 
-    const previous = getCurrentTenantId();
-    const { tenantId: newTenantId, changed } = applyTenantFromUrl();
+    void (async () => {
+      const previous = getCurrentTenantId();
+      const { tenantId: newTenantId, changed } = await applyTenantFromUrl();
 
-    if (!changed) return;
+      if (!changed) return;
 
-    runTenantSwitchCleanup(previous).then(() => {
+      await runTenantSwitchCleanup(previous);
       const url =
-        newTenantId === "default"
+        newTenantId === getDefaultTenantId()
           ? window.location.origin
           : `${window.location.origin}?tenant=${newTenantId}`;
       window.location.href = url;
-    });
+    })();
   }, []);
 
   return null;

@@ -10,6 +10,7 @@ import type { AuthMessage, JwtResponse } from "../../types";
 import {
   createLogger,
   getDeviceData,
+  getDevModeEnabled,
   isBrowser,
   isExtension,
   isWeb,
@@ -27,7 +28,12 @@ import {
   getJwtForNetwork,
   storeJwt,
 } from "../storageService";
-import { getTenantConfig, type TenantId } from "../tenantConfig";
+import {
+  DEFAULT_TENANT_ID,
+  getTenantConfig,
+  isAvailableTenantId,
+  type TenantId,
+} from "../tenantConfig";
 import {
   getCurrentTenantId,
   OAuthTenantSessionKey,
@@ -587,11 +593,13 @@ export async function switchTenantAndReload(
   if (current === newTenantId) return;
 
   await runTenantSwitchCleanup(current);
-  setCurrentTenantId(newTenantId as TenantId);
+  await setCurrentTenantId(newTenantId as TenantId);
 
   if (isWeb() && typeof window !== "undefined") {
+    const isDev = await getDevModeEnabled();
+    if (!isAvailableTenantId(newTenantId, isDev)) return;
     const url =
-      newTenantId === "default"
+      newTenantId === DEFAULT_TENANT_ID
         ? window.location.origin
         : `${window.location.origin}?tenant=${newTenantId}`;
     window.location.href = url;

@@ -2,17 +2,30 @@ import { LockScreen } from "@evevault/shared";
 import {
   getAvailableTenantIds,
   getCurrentTenantId,
+  redirectToFusionAuthLogout,
   switchTenantAndReload,
   type TenantId,
   useAuth,
 } from "@evevault/shared/auth";
 import { Button, Heading, TenantSelector } from "@evevault/shared/components";
 import { useDevice } from "@evevault/shared/hooks/useDevice";
+import { getDevModeEnabled } from "@evevault/shared/utils";
+import { useEffect, useMemo, useState } from "react";
 
 export const LoginScreen = () => {
   const { login, loading } = useAuth();
-
   const { isLocked, isPinSet, unlock } = useDevice();
+  const [devMode, setDevMode] = useState(false);
+
+  useEffect(() => {
+    getDevModeEnabled().then(setDevMode);
+  }, []);
+
+  const availableTenantIds = useMemo(
+    () => getAvailableTenantIds(devMode),
+    [devMode],
+  );
+  const currentTenantId = getCurrentTenantId(devMode);
 
   // First, check for unencrypted ephemeral key pair
   if (isLocked) {
@@ -38,8 +51,8 @@ export const LoginScreen = () => {
           </Button>
         </div>
         <TenantSelector
-          currentTenantId={getCurrentTenantId() as TenantId}
-          availableTenantIds={getAvailableTenantIds()}
+          currentTenantId={currentTenantId as TenantId}
+          availableTenantIds={availableTenantIds}
           onServerChange={(tenantId) =>
             switchTenantAndReload(tenantId as TenantId)
           }

@@ -218,7 +218,7 @@ The extension supports multi-network operation with per-network data isolation:
 
 The app supports switching the **auth/test server** (tenant) so login and token exchange use a different FusionAuth instance (e.g. Utopia, Testevenet, Nebula). This is separate from Sui network switching.
 
-- **Tenant config**: `getTenantConfig(tenantId)` returns `clientId`, `clientSecret`, `serverUrl` per tenant. The default tenant uses `VITE_FUSIONAUTH_*` / `VITE_FUSION_SERVER_URL`; other tenants use `VITE_TENANT_<ID>_CLIENT_ID`, `_CLIENT_SECRET`, `_SERVER_URL` when set.
+- **Tenant config**: `getTenantConfig(tenantId)` returns `clientId`, `clientSecret`, `serverUrl` per tenant. `clientId` and `serverUrl` are defined in a static `TENANT_KEYS` map in code for each known tenant; only the `clientSecret` is read from environment variables (default tenant uses `VITE_FUSIONAUTH_CLIENT_SECRET`, other tenants use `VITE_TENANT_<ID>_CLIENT_SECRET`).
 - **Tenant store**: `useTenantStore` persists current `tenantId`; `getCurrentTenantId()` is used by auth config, token exchange, and OIDC. On web, `applyTenantFromUrl()` syncs from `?tenant=<id>`.
 - **Switching**: `switchTenantAndReload(newTenantId)` clears auth state for the current tenant, sets the new tenant, and reloads (on web with `?tenant=` when not default). Used by the dev dropdown when switching test server.
 - **Cleanup**: `runTenantSwitchCleanup(tenantId)` removes user from UserManager, performs full cleanup, clears JWTs and device state so the next login uses the new tenant.

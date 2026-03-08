@@ -1,10 +1,10 @@
 import { HeaderMobile, LockScreen, NetworkSelector } from "@evevault/shared";
 import {
   getAvailableTenantIds,
+  getCurrentTenantId,
   handleTestTokenRefresh,
   switchTenantAndReload,
   useAuth,
-  useTenantStore,
 } from "@evevault/shared/auth";
 import {
   Background,
@@ -30,7 +30,7 @@ import { Transaction } from "@mysten/sui/transactions";
 import type { SuiChain } from "@mysten/wallet-standard";
 import { SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
 import { useNavigate } from "@tanstack/react-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 const log = createLogger();
 
@@ -63,8 +63,11 @@ export const WalletScreen = () => {
   } = useDevice();
   const { chain } = useNetworkStore();
   const faucetUrl = getFaucetUrlForChain(chain);
-  const tenantId = useTenantStore((s) => s.tenantId);
-  const availableTenantIds = getAvailableTenantIds();
+  const availableTenantIds = useMemo(
+    () => getAvailableTenantIds(devMode),
+    [devMode],
+  );
+  const tenantId = getCurrentTenantId(devMode);
 
   // Create suiClient with useMemo to recreate when chain changes
   const suiClient = React.useMemo(() => {

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { chromeStorageAdapter, localStorageAdapter } from "../adapters";
+import { getDevModeEnabled } from "../utils/devMode";
 import { isWeb } from "../utils/environment";
 import {
   getAvailableTenantIds,
@@ -13,15 +14,16 @@ const STORAGE_KEY = "evevault:tenant";
 
 interface TenantState {
   tenantId: TenantId;
-  setTenantId: (id: TenantId) => void;
+  setTenantId: (id: TenantId) => Promise<void>;
 }
 
 export const useTenantStore = create<TenantState>()(
   persist(
     (set) => ({
       tenantId: getDefaultTenantId(),
-      setTenantId: (id: TenantId) => {
-        if (!getAvailableTenantIds().includes(id)) {
+      setTenantId: async (id: TenantId) => {
+        const isDev = await getDevModeEnabled();
+        if (!getAvailableTenantIds(isDev).includes(id)) {
           return;
         }
         set({ tenantId: id });
@@ -60,37 +62,43 @@ if (typeof chrome !== "undefined" && chrome.storage && !isWeb()) {
  * Persisted in localStorage (web) or chrome.storage.local (extension); in extension,
  * background and popup stay in sync via storage.onChanged. In web, call
  * applyTenantFromUrl() on load to sync from ?tenant= before using this.
+ * Pass devMode when known (e.g. from UI); when omitted, defaults to false (production).
  */
-export function getCurrentTenantId(): TenantId {
+export function getCurrentTenantId(devMode = false): TenantId {
   const stored = useTenantStore.getState().tenantId;
-  return isAvailableTenantId(stored) ? stored : getDefaultTenantId();
+  return isAvailableTenantId(stored, devMode) ? stored : getDefaultTenantId();
 }
 
 /**
  * Sets the current tenant and persists to storage (web: localStorage, extension: chrome.storage.local).
+ * Validates against available tenants for current dev mode (async).
  */
-export function setCurrentTenantId(id: TenantId): void {
-  useTenantStore.getState().setTenantId(id);
+export async function setCurrentTenantId(id: TenantId): Promise<void> {
+  await useTenantStore.getState().setTenantId(id);
 }
 
 /**
  * If running in web and URL has ?tenant=<id>, updates store to that tenant and returns true.
  * Does not run tenant-switch flow; caller should do that when tenant actually changes.
  */
-export function applyTenantFromUrl(): { tenantId: TenantId; changed: boolean } {
-  const current = getCurrentTenantId();
+export async function applyTenantFromUrl(): Promise<{
+  tenantId: TenantId;
+  changed: boolean;
+}> {
+  const isDev = await getDevModeEnabled();
+  const current = getCurrentTenantId(isDev);
   if (!isWeb() || typeof window === "undefined") {
     return { tenantId: current, changed: false };
   }
   const params = new URLSearchParams(window.location.search);
   const fromUrl = params.get("tenant");
-  if (!fromUrl || !isAvailableTenantId(fromUrl)) {
+  if (!fromUrl || !isAvailableTenantId(fromUrl, isDev)) {
     return { tenantId: current, changed: false };
   }
   if (fromUrl === current) {
     return { tenantId: current, changed: false };
   }
-  setCurrentTenantId(fromUrl);
+  await setCurrentTenantId(fromUrl);
   return { tenantId: fromUrl, changed: true };
 }
 

@@ -1,6 +1,7 @@
 import { getDeviceData, storeJwt } from "@evevault/shared";
 import {
   exchangeCodeForToken,
+  getCurrentTenantId,
   getDefaultTenantId,
   getJwtForNetwork,
   getTenantConfig,
@@ -232,7 +233,9 @@ export async function handleDappLogin(
 
       log.debug("Auth code received");
 
-      exchangeCodeForToken(authCode, chromeRedirectUri, getDefaultTenantId())
+      const tenantId = getCurrentTenantId();
+
+      exchangeCodeForToken(authCode, chromeRedirectUri, tenantId)
         .then(async (jwtResponse) => {
           const decodedJwt = decodeJwt<IdTokenClaims>(
             jwtResponse.id_token as string,

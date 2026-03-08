@@ -37,7 +37,7 @@ import {
 import { useBalance } from "@evevault/shared/wallet";
 import type { SuiChain } from "@mysten/wallet-standard";
 import { useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAppInitialization, useLogin } from "../hooks";
 
 const log = createLogger();
@@ -79,7 +79,11 @@ function App() {
     getDevModeEnabled().then(setDevMode);
   }, []);
 
-  const tenantId = getCurrentTenantId();
+  const availableTenantIds = useMemo(
+    () => getAvailableTenantIds(devMode),
+    [devMode],
+  );
+  const tenantId = getCurrentTenantId(devMode);
 
   const handleDevModeToggle = useCallback(async () => {
     const next = !devMode;
@@ -173,7 +177,7 @@ function App() {
           </div>
           <TenantSelector
             currentTenantId={tenantId}
-            availableTenantIds={getAvailableTenantIds()}
+            availableTenantIds={availableTenantIds}
             onServerChange={(tenantId) =>
               switchTenantAndReload(tenantId as TenantId)
             }

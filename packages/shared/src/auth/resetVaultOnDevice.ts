@@ -29,6 +29,7 @@ import { getUserManager } from "./authConfig";
 import { clearZkLoginAddressCache } from "./getZkLoginAddress";
 import { clearAllJwts } from "./storageService";
 import { useAuthStore } from "./stores/authStore";
+import { getCurrentTenantId } from "./tenantStore";
 
 const log = createLogger();
 
@@ -112,7 +113,7 @@ export async function resetVaultOnDevice(): Promise<void> {
 
     await clearAllJwts();
 
-    const userManager = getUserManager();
+    const userManager = getUserManager(getCurrentTenantId());
     await userManager.removeUser();
 
     if (isWeb()) {
