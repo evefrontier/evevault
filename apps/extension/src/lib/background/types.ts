@@ -28,7 +28,11 @@ export type EveFrontierSponsoredTransactionMessage = BackgroundMessage & {
     assembly: string;
     assemblyType: string;
     chain: string;
-    jwt: string;
+    metadata?: {
+      name: string;
+      description: string;
+      url: string;
+    };
   };
 };
 
@@ -63,6 +67,11 @@ export type EveFrontierSponsoredTransactionInput = {
   txAction: string;
   assembly: string;
   assemblyType: string;
+  metadata?: {
+    name: string;
+    description: string;
+    dappURL: string;
+  };
 };
 export type EveFrontierSponsoredTransactionOutput = {
   digest: string;
