@@ -5,6 +5,7 @@ export {
   getZkLoginAddress,
 } from "./getZkLoginAddress";
 export * from "./hooks/useAuth";
+export { resetVaultOnDevice } from "./resetVaultOnDevice";
 export {
   clearAllJwts,
   clearJwtForNetwork,
