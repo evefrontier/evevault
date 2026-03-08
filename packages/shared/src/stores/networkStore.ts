@@ -5,6 +5,7 @@ import { chromeStorageAdapter, localStorageAdapter } from "../adapters";
 import { hasJwtForNetwork, useAuthStore } from "../auth";
 import type { NetworkState, NetworkSwitchResult } from "../types";
 import { createLogger, isExtension, isWeb } from "../utils";
+import { NETWORK_STORAGE_KEY } from "../utils/storageKeys";
 import { useDeviceStore } from "./deviceStore";
 
 const log = createLogger();
@@ -15,7 +16,7 @@ const log = createLogger();
 const getInitialChain = (): SuiChain => {
   if (isWeb() && typeof window !== "undefined" && window.localStorage) {
     try {
-      const stored = window.localStorage.getItem("evevault:network");
+      const stored = window.localStorage.getItem(NETWORK_STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
         if (parsed?.state?.chain) {
@@ -195,7 +196,7 @@ export const useNetworkStore = create<NetworkState>()(
       },
     }),
     {
-      name: "evevault:network",
+      name: NETWORK_STORAGE_KEY,
       storage: createJSONStorage(() =>
         isWeb() ? localStorageAdapter : chromeStorageAdapter,
       ),

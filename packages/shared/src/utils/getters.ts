@@ -1,4 +1,5 @@
 import type { SuiChain } from "@mysten/wallet-standard";
+import { DEVICE_STORAGE_KEY } from "./storageKeys";
 
 export const getDeviceData = async (chain: SuiChain) => {
   // Lazy import to avoid circular dependency: utils → getters → deviceStore → auth → authStore → utils
@@ -19,8 +20,8 @@ export const getDeviceData = async (chain: SuiChain) => {
   }
 
   // Fallback: read from storage only if store is missing data
-  const result = await chrome.storage.local.get(["evevault:device"]);
-  const parsedResult = JSON.parse(result["evevault:device"] as string).state;
+  const result = await chrome.storage.local.get([DEVICE_STORAGE_KEY]);
+  const parsedResult = JSON.parse(result[DEVICE_STORAGE_KEY] as string).state;
   const networkData = parsedResult.networkData?.[chain];
 
   return {

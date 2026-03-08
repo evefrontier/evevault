@@ -1,7 +1,6 @@
-import { SUI_TESTNET_CHAIN, type SuiChain } from "@mysten/wallet-standard";
+import { SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
 import { formatSUI } from "@suiet/wallet-kit";
 import { useQuery } from "@tanstack/react-query";
-import type { User } from "oidc-client-ts";
 import { useMemo } from "react";
 import { createSuiGraphQLClient } from "../../sui/graphqlClient";
 import {
@@ -10,12 +9,12 @@ import {
   SUI_COIN_TYPE,
 } from "../../utils";
 import { BALANCE_AND_METADATA_QUERY } from "../queries/balance";
+import type { BalanceAndMetadataResponse } from "../types/graphql";
 import type {
   BalanceMetadata,
   CoinBalanceResult,
   UseBalanceParams,
 } from "../types/hooks";
-import type { BalanceAndMetadataResponse } from "../types/graphql";
 import {
   DEFAULT_EVE_TESTNET_METADATA,
   DEFAULT_SUI_METADATA,
@@ -53,8 +52,7 @@ export function useBalance({
         throw new Error(`GraphQL balance query failed: ${message}`);
       }
 
-      let totalBalance =
-        result.data?.address?.balance?.totalBalance ?? "0";
+      let totalBalance = result.data?.address?.balance?.totalBalance ?? "0";
       if (typeof totalBalance !== "string") {
         totalBalance = String(totalBalance);
       }

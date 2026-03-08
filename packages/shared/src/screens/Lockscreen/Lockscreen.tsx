@@ -143,9 +143,9 @@ export default function LockScreen({
       >
         <div className="modal__divider" />
         <Text className="modal__card-message" color="grey-neutral">
-          This will remove all EVE Vault data from this device (including your
-          PIN). You will need to sign in again and create a new PIN. Your wallet
-          and funds are safe and will be available after you sign back in.
+          This will reset your PIN and remove all EVE Vault data from this
+          device. Your wallet will be available after you recreate your PIN and
+          sign back in.
         </Text>
       </Modal>
     </div>

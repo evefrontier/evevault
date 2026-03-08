@@ -15,6 +15,7 @@ import {
   isWeb,
   performFullCleanup,
 } from "../../utils";
+import { AUTH_STORAGE_KEY } from "../../utils/storageKeys";
 import { getUserManager, redirectToFusionAuthLogout } from "../authConfig";
 import {
   clearZkLoginAddressCache,
@@ -489,7 +490,7 @@ export const useAuthStore = create<AuthState>()(
       };
     },
     {
-      name: "evevault:auth",
+      name: AUTH_STORAGE_KEY,
       storage: createJSONStorage(() =>
         isWeb() ? localStorageAdapter : chromeStorageAdapter,
       ),

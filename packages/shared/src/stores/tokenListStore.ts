@@ -8,6 +8,7 @@ import {
   getDefaultTokensForChain,
 } from "../types/networks";
 import { isWeb } from "../utils/environment";
+import { TOKENLIST_STORAGE_KEY } from "../utils/storageKeys";
 
 const sanitizeCoinType = (coinType: string) => coinType.trim();
 
@@ -60,7 +61,7 @@ export const useTokenListStore = create<TokenListState>()(
       },
     }),
     {
-      name: "evevault:tokenlist",
+      name: TOKENLIST_STORAGE_KEY,
       storage: createJSONStorage(() =>
         isWeb() ? localStorageAdapter : chromeStorageAdapter,
       ),
