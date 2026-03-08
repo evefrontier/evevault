@@ -239,6 +239,11 @@ export function useSendToken({
     }
   }, [amount, rawBalance, decimals]);
 
+  const rawSuiBalance = suiBalanceData?.rawBalance ?? "0";
+  const hasZeroSui = !suiBalanceLoading && BigInt(rawSuiBalance) === 0n;
+  const hasGas =
+    coinType === SUI_COIN_TYPE || (suiBalanceLoading ? false : !hasZeroSui);
+
   // Collect validation errors
   const validationErrors = useMemo(() => {
     const errors: string[] = [];
@@ -246,6 +251,7 @@ export function useSendToken({
     if (!isAuthenticated) errors.push("Not authenticated");
     if (!isWalletUnlocked) errors.push("Wallet is locked");
     if (!hasBalance) errors.push("Insufficient balance");
+    if (!hasGas) errors.push("No SUI for gas (required for transaction fees)");
     if (recipientAddress && !isValidRecipient)
       errors.push("Invalid Sui address");
     if (amount && !isValidAmount) errors.push("Invalid amount");
@@ -255,16 +261,12 @@ export function useSendToken({
     isAuthenticated,
     isWalletUnlocked,
     hasBalance,
+    hasGas,
     isValidRecipient,
     isValidAmount,
     recipientAddress,
     amount,
   ]);
-
-  const rawSuiBalance = suiBalanceData?.rawBalance ?? "0";
-  const hasZeroSui = !suiBalanceLoading && BigInt(rawSuiBalance) === 0n;
-  const hasGas =
-    coinType === SUI_COIN_TYPE || (suiBalanceLoading ? false : !hasZeroSui);
 
   const canSend =
     isNetworkReady &&

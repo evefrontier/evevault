@@ -520,6 +520,9 @@ describe("useSendToken", () => {
       );
       expect(result.current.showFaucetTestSui).toBe(true);
       expect(result.current.canSend).toBe(false);
+      expect(result.current.validationErrors).toContain(
+        "No SUI for gas (required for transaction fees)",
+      );
       queryClient.clear();
     });
 
