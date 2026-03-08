@@ -28,7 +28,7 @@ export default defineConfig(() => {
   // Debug: Log to verify env loading (remove in production)
   if (process.env.NODE_ENV !== "production") {
     logger.info("Env vars loaded", {
-      hasFusion: !!envVars.VITE_FUSIONAUTH_CLIENT_ID,
+      hasFusion: !!envVars.VITE_TENANT_UTOPIA_CLIENT_SECRET,
       rootDir,
     });
   }
@@ -134,19 +134,6 @@ export default defineConfig(() => {
       background: {
         service_worker: "background.ts",
       },
-      oauth2: envVars.VITE_FUSIONAUTH_CLIENT_ID
-        ? {
-            client_id: envVars.VITE_FUSIONAUTH_CLIENT_ID,
-            scopes: [
-              "openid",
-              "profile",
-              "email",
-              "offline_access",
-              "https://www.googleapis.com/auth/userinfo.email",
-              "https://www.googleapis.com/auth/userinfo.profile",
-            ],
-          }
-        : undefined,
       web_accessible_resources: [
         {
           resources: ["injected.js", "announce.js", "callback.html"],

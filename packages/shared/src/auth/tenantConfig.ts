@@ -1,12 +1,11 @@
-import { createLogger } from "../utils/logger";
+import { TENANT_KEYS } from "../utils";
 
-const log = createLogger();
-
-export const DEFAULT_TENANT_ID = "default" as const;
+export const DEFAULT_TENANT_ID = "utopia" as const;
 
 export type TenantId =
   | typeof DEFAULT_TENANT_ID
   | "utopia"
+  | "stillness"
   | "testevenet"
   | "nebula";
 
@@ -17,7 +16,7 @@ export interface TenantConfig {
 }
 
 const KNOWN_TENANT_IDS: TenantId[] = [
-  DEFAULT_TENANT_ID,
+  "stillness",
   "utopia",
   "testevenet",
   "nebula",
@@ -31,10 +30,7 @@ function getEnv(key: string): string | undefined {
 }
 
 function getDefaultConfig(): TenantConfig {
-  const clientId = getEnv("VITE_FUSIONAUTH_CLIENT_ID") ?? "";
-  const clientSecret = getEnv("VITE_FUSION_CLIENT_SECRET") ?? "";
-  const serverUrl = getEnv("VITE_FUSION_SERVER_URL") ?? "";
-  return { clientId, clientSecret, serverUrl };
+  return TENANT_KEYS[DEFAULT_TENANT_ID];
 }
 
 function getTenantEnvKey(tenantId: string, suffix: string): string {
@@ -44,8 +40,6 @@ function getTenantEnvKey(tenantId: string, suffix: string): string {
 
 /**
  * Returns FusionAuth client config for the given tenant.
- * "default" always uses main env (VITE_FUSIONAUTH_CLIENT_ID, etc.).
- * Other ids use VITE_TENANT_<ID>_CLIENT_ID / _CLIENT_SECRET / _SERVER_URL when set.
  */
 export function getTenantConfig(tenantId: string): TenantConfig {
   const defaultConfig = getDefaultConfig();
@@ -54,19 +48,11 @@ export function getTenantConfig(tenantId: string): TenantConfig {
     return defaultConfig;
   }
 
-  const clientId = getEnv(getTenantEnvKey(tenantId, "CLIENT_ID"));
-  const clientSecret = getEnv(getTenantEnvKey(tenantId, "CLIENT_SECRET"));
-  const serverUrl =
-    getEnv(getTenantEnvKey(tenantId, "SERVER_URL")) ?? defaultConfig.serverUrl;
-
-  if (clientId && clientSecret) {
-    return { clientId, clientSecret, serverUrl };
+  if (!TENANT_KEYS[tenantId].clientSecret) {
+    throw Error(`Tenant "${tenantId}" has no client secret`);
   }
 
-  log.warn(
-    `Tenant "${tenantId}" has no VITE_TENANT_* env; falling back to default`,
-  );
-  return defaultConfig;
+  return TENANT_KEYS[tenantId];
 }
 
 export function getDefaultTenantId(): TenantId {
@@ -98,7 +84,7 @@ export function isAvailableTenantId(value: string): value is TenantId {
 
 /** Display labels for server (tenant) ids in the UI. "default" shows as "Utopia" (server name). */
 const TENANT_LABELS: Record<TenantId, string> = {
-  default: "Utopia",
+  stillness: "Stillness",
   utopia: "Utopia",
   testevenet: "Testevenet",
   nebula: "Nebula",

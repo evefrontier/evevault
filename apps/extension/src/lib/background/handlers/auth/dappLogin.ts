@@ -3,7 +3,9 @@ import {
   exchangeCodeForToken,
   getDefaultTenantId,
   getJwtForNetwork,
+  getTenantConfig,
   hasJwtForNetwork,
+  useTenantStore,
 } from "@evevault/shared/auth";
 import { useDeviceStore, useNetworkStore } from "@evevault/shared/stores";
 import { createLogger } from "@evevault/shared/utils";
@@ -33,7 +35,9 @@ export async function handleDappLogin(
 ): Promise<void> {
   const id = ensureMessageId(message);
 
-  const clientId = import.meta.env.VITE_FUSIONAUTH_CLIENT_ID;
+  const tenant = useTenantStore.getState().tenantId;
+
+  const clientId = getTenantConfig(tenant).clientId;
   const chromeRedirectUri = chrome.identity.getRedirectURL();
 
   const chain = getCurrentChain();
@@ -183,6 +187,7 @@ export async function handleDappLogin(
   }
 
   const authUrl = await getAuthUrl({
+    tenantId: tenant,
     nonce,
     jwtRandomness,
     maxEpoch,

@@ -5,9 +5,9 @@ import { getTenantLabel } from "../../auth/tenantConfig";
 import { Dropdown } from "../Dropdown";
 import Icon from "../Icon";
 import Text from "../Text";
-import "./ServerSelector.css";
+import "./TenantSelector.css";
 
-export interface ServerSelectorProps {
+export interface TenantSelectorProps {
   currentTenantId: TenantId | string;
   availableTenantIds: (TenantId | string)[];
   onServerChange: (tenantId: string) => void;
@@ -16,7 +16,7 @@ export interface ServerSelectorProps {
   className?: string;
 }
 
-export const ServerSelector: React.FC<ServerSelectorProps> = ({
+export const TenantSelector: React.FC<TenantSelectorProps> = ({
   currentTenantId,
   availableTenantIds,
   onServerChange,
@@ -127,4 +127,4 @@ export const ServerSelector: React.FC<ServerSelectorProps> = ({
   );
 };
 
-export default ServerSelector;
+export default TenantSelector;

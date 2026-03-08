@@ -9,8 +9,8 @@ import {
   DropdownSelect,
   getIdenticon,
 } from "../../Dropdown";
-import { ServerSelector } from "../../ServerSelector";
 import Switch from "../../Switch";
+import { TenantSelector } from "../../TenantSelector";
 import Text from "../../Text";
 
 export const HeaderMobile: React.FC<HeaderMobileProps> = ({
@@ -89,7 +89,7 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
           <>
             {getIdenticon(0)}
             <Text variant="label">Server</Text>
-            <ServerSelector
+            <TenantSelector
               currentTenantId={currentTenantId}
               availableTenantIds={availableTenantIds}
               onServerChange={onServerChange}

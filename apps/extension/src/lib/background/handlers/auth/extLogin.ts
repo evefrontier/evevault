@@ -1,6 +1,7 @@
 import { getDeviceData, storeJwt } from "@evevault/shared";
 import {
   exchangeCodeForToken,
+  getCurrentTenantId,
   getDefaultTenantId,
 } from "@evevault/shared/auth";
 import { useDeviceStore } from "@evevault/shared/stores";
@@ -264,7 +265,10 @@ export async function handleExtLogin(
 
   const { jwtRandomness, nonce, maxEpoch } = await getDeviceData(currentChain);
 
+  const tenantId = getCurrentTenantId();
+
   const authUrl = getAuthUrl({
+    tenantId: tenantId,
     jwtRandomness,
     nonce,
     maxEpoch,

@@ -26,7 +26,7 @@ import {
   getJwtForNetwork,
   storeJwt,
 } from "../storageService";
-import type { TenantId } from "../tenantConfig";
+import { getTenantConfig, type TenantId } from "../tenantConfig";
 import {
   getCurrentTenantId,
   OAuthTenantSessionKey,
@@ -485,9 +485,11 @@ export const useAuthStore = create<AuthState>()(
             // Use deviceStore.lock() to ensure isLocked state is updated
             await useDeviceStore.getState().lock();
 
+            const tenant = getCurrentTenantId();
+
             // Build logout URL manually to avoid CORS issues with OIDC discovery
-            const fusionAuthUrl = import.meta.env.VITE_FUSION_SERVER_URL;
-            const clientId = import.meta.env.VITE_FUSIONAUTH_CLIENT_ID;
+            const fusionAuthUrl = getTenantConfig(tenant).serverUrl;
+            const clientId = getTenantConfig(tenant).clientId;
 
             if (isExtension() && typeof chrome !== "undefined") {
               // Extensions use chrome.identity.launchWebAuthFlow to trigger OIDC logout
