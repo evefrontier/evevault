@@ -567,7 +567,9 @@ export const useAuthStore = create<AuthState>()(
  * Clears auth state for the given tenant (no redirect).
  * Used when switching server so the next login uses the new tenant.
  */
-export async function runTenantSwitchCleanup(tenantId: string): Promise<void> {
+export async function runTenantSwitchCleanup(
+  tenantId: TenantId,
+): Promise<void> {
   // TODO: Do not clean up PIN, maintain existing ephemeral key and nonce for network
   try {
     await getUserManager(tenantId).removeUser();

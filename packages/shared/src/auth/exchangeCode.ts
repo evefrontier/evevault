@@ -1,10 +1,10 @@
 import type { JwtResponse } from "../types";
-import { getTenantConfig } from "./tenantConfig";
+import { getTenantConfig, type TenantId } from "./tenantConfig";
 
 export async function exchangeCodeForToken(
   code: string,
   redirectUri: string,
-  tenantId: string,
+  tenantId: TenantId,
 ): Promise<JwtResponse> {
   const { clientId, clientSecret, serverUrl } = getTenantConfig(tenantId);
   const tokenUrl = `${serverUrl.replace(/\/$/, "")}/oauth2/token`;
