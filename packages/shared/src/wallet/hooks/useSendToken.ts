@@ -1,6 +1,7 @@
+import type { SuiGrpcClient } from "@mysten/sui/grpc";
 import { Transaction } from "@mysten/sui/transactions";
 import { isValidSuiAddress } from "@mysten/sui/utils";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getUserForNetwork, useAuth } from "../../auth";
 import { useDevice } from "../../hooks";
 import { useNetworkStore } from "../../stores/networkStore";
@@ -8,6 +9,8 @@ import { createSuiClient } from "../../sui";
 import {
   createLogger,
   EVE_TESTNET_COIN_TYPE,
+  formatMistToSui,
+  GAS_FEE_WARNING_MESSAGE,
   SUI_COIN_TYPE,
   toSmallestUnit,
 } from "../../utils";
@@ -15,6 +18,110 @@ import { zkSignAny } from "../zkSignAny";
 import { useBalance } from "./useBalance";
 
 const log = createLogger();
+
+const ESTIMATE_DEBOUNCE_MS = 600;
+
+type CoinWithBalance = { balance: string; objectId: string };
+
+/**
+ * Builds a transfer transaction and returns the BCS bytes (unsigned).
+ * Used for both execution and gas estimation.
+ */
+async function buildTransferTransactionBytes(
+  senderAddress: string,
+  recipientAddress: string,
+  amountInSmallestUnit: bigint,
+  coinType: string,
+  suiClient: SuiGrpcClient,
+): Promise<Uint8Array> {
+  const tx = new Transaction();
+  tx.setSender(senderAddress);
+
+  if (coinType === SUI_COIN_TYPE) {
+    const [coin] = tx.splitCoins(tx.gas, [amountInSmallestUnit]);
+    tx.transferObjects([coin], recipientAddress);
+  } else {
+    const { objects: coinObjects } = await suiClient.listCoins({
+      owner: senderAddress,
+      coinType,
+    });
+    if (coinObjects.length === 0) {
+      throw new Error("No coins found for this token");
+    }
+    const totalBalance = coinObjects.reduce(
+      (sum: bigint, coin: CoinWithBalance) => sum + BigInt(coin.balance),
+      0n,
+    );
+    if (totalBalance < amountInSmallestUnit) {
+      throw new Error("Token balance changed during transaction preparation");
+    }
+    const suitableCoin = coinObjects.find(
+      (c: CoinWithBalance) => BigInt(c.balance) >= amountInSmallestUnit,
+    );
+    if (suitableCoin) {
+      const [coin] = tx.splitCoins(tx.object(suitableCoin.objectId), [
+        amountInSmallestUnit,
+      ]);
+      tx.transferObjects([coin], recipientAddress);
+    } else {
+      const primaryCoin = coinObjects[0];
+      const otherCoins = coinObjects.slice(1);
+      if (otherCoins.length > 0) {
+        tx.mergeCoins(
+          tx.object(primaryCoin.objectId),
+          otherCoins.map((c: CoinWithBalance) => tx.object(c.objectId)),
+        );
+      }
+      const [coin] = tx.splitCoins(tx.object(primaryCoin.objectId), [
+        amountInSmallestUnit,
+      ]);
+      tx.transferObjects([coin], recipientAddress);
+    }
+  }
+
+  const txb = await tx.build({ client: suiClient });
+  return new Uint8Array(txb);
+}
+
+/** SDK simulateTransaction result shape: effects live under Transaction or FailedTransaction. */
+type SimulateResult =
+  | {
+      $kind: "Transaction";
+      Transaction: { effects?: { gasUsed?: GasUsedShape } };
+    }
+  | {
+      $kind: "FailedTransaction";
+      FailedTransaction: { effects?: { gasUsed?: GasUsedShape } };
+    };
+type GasUsedShape = {
+  computationCost?: string;
+  storageCost?: string;
+  storageRebate?: string;
+  nonRefundableStorageFee?: string;
+};
+
+/** Parse gas cost in MIST from simulation result (best-effort). Expects SDK result with include.effects. */
+function parseGasUsedFromSimulation(result: unknown): string | null {
+  try {
+    const r = result as SimulateResult;
+    const effects =
+      r?.$kind === "Transaction"
+        ? r.Transaction?.effects
+        : r?.$kind === "FailedTransaction"
+          ? r.FailedTransaction?.effects
+          : undefined;
+    const gasUsed = effects?.gasUsed;
+    if (!gasUsed) return null;
+    const computation = BigInt(gasUsed.computationCost ?? "0");
+    const storage = BigInt(gasUsed.storageCost ?? "0");
+    const rebate = BigInt(gasUsed.storageRebate ?? "0");
+    const nonRefundable = BigInt(gasUsed.nonRefundableStorageFee ?? "0");
+    const total = computation + storage - rebate + nonRefundable;
+    return total > 0n ? total.toString() : null;
+  } catch {
+    return null;
+  }
+}
 
 interface UseSendTokenParams {
   coinType: string;
@@ -38,6 +145,15 @@ interface UseSendTokenResult {
 
   /** True when SUI balance is zero; show faucet iframe/link for testnet. */
   showFaucetTestSui: boolean;
+
+  /** Static message: transfer incurs a network fee paid in SUI. */
+  gasFeeWarning: string;
+
+  /** Estimated fee in SUI from simulation, or null if unavailable. */
+  estimatedGasFee: string | null;
+
+  /** True while estimating gas (debounced simulation in progress). */
+  estimatedGasFeeLoading: boolean;
 
   // Balance info
   currentBalance: string;
@@ -67,6 +183,9 @@ export function useSendToken({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [txDigest, setTxDigest] = useState<string | null>(null);
+  const [estimatedGasFee, setEstimatedGasFee] = useState<string | null>(null);
+  const [estimatedGasFeeLoading, setEstimatedGasFeeLoading] = useState(false);
+  const estimateRunIdRef = useRef(0);
 
   const suiClient = useMemo(() => createSuiClient(chain), [chain]);
 
@@ -158,6 +277,66 @@ export function useSendToken({
       : null;
   const showFaucetTestSui = hasZeroSui;
 
+  const formValidForEstimate =
+    isValidRecipient &&
+    isValidAmount &&
+    hasBalance &&
+    !balanceLoading &&
+    !!globalUser?.profile?.sui_address &&
+    !!chain;
+
+  useEffect(() => {
+    if (!formValidForEstimate || !suiClient) {
+      setEstimatedGasFee(null);
+      setEstimatedGasFeeLoading(false);
+      return;
+    }
+
+    const runId = ++estimateRunIdRef.current;
+    const timer = setTimeout(async () => {
+      setEstimatedGasFeeLoading(true);
+      setEstimatedGasFee(null);
+      try {
+        const senderAddress = globalUser!.profile!.sui_address as string;
+        const amountInSmallestUnit = toSmallestUnit(amount, decimals);
+        const txBytes = await buildTransferTransactionBytes(
+          senderAddress,
+          recipientAddress,
+          amountInSmallestUnit,
+          coinType,
+          suiClient,
+        );
+        const sim = await suiClient.simulateTransaction({
+          transaction: txBytes,
+          include: { effects: true },
+        });
+        const mist = parseGasUsedFromSimulation(sim);
+        if (runId === estimateRunIdRef.current && mist) {
+          setEstimatedGasFee(formatMistToSui(mist));
+        }
+      } catch (err) {
+        log.warn("Gas estimation failed", { err });
+        if (runId === estimateRunIdRef.current) {
+          setEstimatedGasFee(null);
+        }
+      } finally {
+        if (runId === estimateRunIdRef.current) {
+          setEstimatedGasFeeLoading(false);
+        }
+      }
+    }, ESTIMATE_DEBOUNCE_MS);
+
+    return () => clearTimeout(timer);
+  }, [
+    formValidForEstimate,
+    suiClient,
+    globalUser,
+    amount,
+    decimals,
+    recipientAddress,
+    coinType,
+  ]);
+
   const send = useCallback(async () => {
     if (!canSend) {
       setError("Cannot send: validation failed");
@@ -169,7 +348,6 @@ export function useSendToken({
     setTxDigest(null);
 
     try {
-      // Get user for current network
       const user = await getUserForNetwork(chain);
       if (!user) {
         throw new Error("User not found for current network");
@@ -186,89 +364,32 @@ export function useSendToken({
       const senderAddress = user.profile?.sui_address as string;
       const amountInSmallestUnit = toSmallestUnit(amount, decimals);
 
-      const tx = new Transaction();
-      tx.setSender(senderAddress);
+      const txBytes = await buildTransferTransactionBytes(
+        senderAddress,
+        recipientAddress,
+        amountInSmallestUnit,
+        coinType,
+        suiClient,
+      );
 
-      if (coinType === SUI_COIN_TYPE) {
-        // Native SUI transfer: split from gas coin
-        const [coin] = tx.splitCoins(tx.gas, [amountInSmallestUnit]);
-        tx.transferObjects([coin], recipientAddress);
-      } else {
-        // Custom token transfer: get all coins and find one with sufficient balance.
-        // @mysten/sui 2.x: listCoins on SuiGrpcClient returns { objects } with objectId and balance.
-        type CoinWithBalance = { balance: string; objectId: string };
-        const { objects: coinObjects } = await suiClient.listCoins({
-          owner: senderAddress,
-          coinType,
-        });
-
-        if (coinObjects.length === 0) {
-          throw new Error("No coins found for this token");
-        }
-
-        // Race condition guard: validate total balance still covers the requested amount
-        // (balance may have changed between initial validation and now)
-        const totalBalance = coinObjects.reduce(
-          (sum: bigint, coin: CoinWithBalance) => sum + BigInt(coin.balance),
-          0n,
-        );
-
-        if (totalBalance < amountInSmallestUnit) {
-          throw new Error(
-            "Token balance changed during transaction preparation",
-          );
-        }
-
-        // Find a coin with sufficient balance, or merge if needed
-        const suitableCoin = coinObjects.find(
-          (c: CoinWithBalance) => BigInt(c.balance) >= amountInSmallestUnit,
-        );
-
-        if (suitableCoin) {
-          // Single coin has enough balance - split from it
-          const [coin] = tx.splitCoins(tx.object(suitableCoin.objectId), [
-            amountInSmallestUnit,
-          ]);
-          tx.transferObjects([coin], recipientAddress);
-        } else {
-          // No single coin has enough - merge all coins then split
-          // Use the first coin as the primary and merge others into it
-          const primaryCoin = coinObjects[0];
-          const otherCoins = coinObjects.slice(1);
-
-          if (otherCoins.length > 0) {
-            tx.mergeCoins(
-              tx.object(primaryCoin.objectId),
-              otherCoins.map((c: CoinWithBalance) => tx.object(c.objectId)),
-            );
-          }
-
-          const [coin] = tx.splitCoins(tx.object(primaryCoin.objectId), [
-            amountInSmallestUnit,
-          ]);
-          tx.transferObjects([coin], recipientAddress);
-        }
-      }
-
-      // Build transaction
-      const txb = await tx.build({ client: suiClient });
-
-      // Sign with zkLogin
-      const { bytes, zkSignature } = await zkSignAny("TransactionData", txb, {
-        user,
-        ephemeralPublicKey,
-        maxEpoch,
-        getZkProof,
-      });
+      const { bytes, zkSignature } = await zkSignAny(
+        "TransactionData",
+        txBytes,
+        {
+          user,
+          ephemeralPublicKey,
+          maxEpoch,
+          getZkProof,
+        },
+      );
 
       log.debug("Transaction signed", {
         bytesLength: bytes.length,
         signatureLength: zkSignature.length,
       });
 
-      // Execute transaction
       const result = await suiClient.core.executeTransaction({
-        transaction: new Uint8Array(txb),
+        transaction: txBytes,
         signatures: [zkSignature],
       });
 
@@ -321,6 +442,9 @@ export function useSendToken({
     validationErrors,
     suiForGasWarning,
     showFaucetTestSui,
+    gasFeeWarning: GAS_FEE_WARNING_MESSAGE,
+    estimatedGasFee,
+    estimatedGasFeeLoading,
 
     // Balance info
     currentBalance,

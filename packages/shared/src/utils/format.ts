@@ -60,6 +60,19 @@ export function toSmallestUnit(amount: string, decimals: number): bigint {
   return BigInt(combined === "" ? "0" : combined);
 }
 
+/** SUI decimals (1 SUI = 10^9 MIST). */
+const SUI_DECIMALS = 9;
+
+/**
+ * Formats MIST (Sui smallest unit) as human-readable SUI string.
+ * @param mist - Amount in MIST (string or bigint)
+ * @returns Formatted SUI amount, e.g. "0.001"
+ */
+export function formatMistToSui(mist: string | bigint): string {
+  const s = typeof mist === "bigint" ? mist.toString() : mist;
+  return formatByDecimals(s, SUI_DECIMALS);
+}
+
 /**
  * Formats a number for display with locale-aware thousand separators
  * and a maximum number of decimal places.
