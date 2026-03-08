@@ -1,0 +1,35 @@
+/**
+ * Shared styles for dropdown-trigger selectors (TenantSelector, NetworkSelector).
+ * Both components use the dropdown-selector class names for the common root, trigger, and chevron.
+ */
+
+.dropdown-selector {
+  position: relative;
+  display: inline-block;
+  height: min-content;
+}
+
+.dropdown-selector__trigger {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  padding: 0;
+  transition: opacity 0.2s ease;
+}
+
+.dropdown-selector__trigger:hover {
+  opacity: 0.8;
+}
+
+.dropdown-selector__chevron {
+  transition: transform 0.2s ease;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.dropdown-selector__chevron--open {
+  transform: rotate(180deg);
+}

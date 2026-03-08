@@ -1,10 +1,7 @@
-.tenant-selector {
-  position: relative;
-  display: inline-block;
-  height: min-content;
-}
+@import "../SelectorShared.css";
 
-.tenant-selector--inline .tenant-selector__trigger {
+/* Inline variant: compact trigger with background */
+.dropdown-selector--inline .dropdown-selector__trigger {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -16,31 +13,6 @@
   transition: background 0.15s ease;
 }
 
-.tenant-selector--inline .tenant-selector__trigger:hover {
+.dropdown-selector--inline .dropdown-selector__trigger:hover {
   background: var(--quantum-20);
-}
-
-.tenant-selector--standalone .tenant-selector__trigger {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  cursor: pointer;
-  background: transparent;
-  border: none;
-  padding: 0;
-  transition: opacity 0.2s ease;
-}
-
-.tenant-selector--standalone .tenant-selector__trigger:hover {
-  opacity: 0.8;
-}
-
-.tenant-selector__chevron {
-  transition: transform 0.2s ease;
-  margin-left: auto;
-  flex-shrink: 0;
-}
-
-.tenant-selector__chevron--open {
-  transform: rotate(180deg);
 }

@@ -41,7 +41,7 @@ export const TenantSelector: React.FC<TenantSelectorProps> = ({
     // Wrapper only stops propagation so dropdown doesn't close when clicking inside; no semantic role needed
     // biome-ignore lint/a11y/noStaticElementInteractions: div is for event capture only, not interactive content
     <div
-      className={`tenant-selector tenant-selector--${variant} ${className}`.trim()}
+      className={`dropdown-selector dropdown-selector dropdown-selector--${variant} ${className}`.trim()}
       onClick={(e: React.MouseEvent) => e.stopPropagation()}
       onKeyDown={(e: React.KeyboardEvent) => e.stopPropagation()}
       role="presentation"
@@ -49,7 +49,7 @@ export const TenantSelector: React.FC<TenantSelectorProps> = ({
       <button
         ref={triggerRef}
         type="button"
-        className="tenant-selector__trigger"
+        className="dropdown-selector__trigger"
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
@@ -65,7 +65,7 @@ export const TenantSelector: React.FC<TenantSelectorProps> = ({
               width={16}
               height={16}
               color="neutral"
-              className={`tenant-selector__chevron ${isOpen ? "tenant-selector__chevron--open" : ""}`}
+              className={`dropdown-selector__chevron ${isOpen ? "dropdown-selector__chevron--open" : ""}`}
             />
           </>
         ) : (
@@ -81,7 +81,7 @@ export const TenantSelector: React.FC<TenantSelectorProps> = ({
               width={16}
               height={16}
               color="neutral"
-              className={`tenant-selector__chevron ${isOpen ? "tenant-selector__chevron--open" : ""}`}
+              className={`dropdown-selector__chevron ${isOpen ? "dropdown-selector__chevron--open" : ""}`}
             />
           </>
         )}

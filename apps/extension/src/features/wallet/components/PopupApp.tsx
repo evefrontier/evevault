@@ -1,6 +1,7 @@
 import "./PopupApp.css";
 import {
   getAvailableTenantIds,
+  getCurrentTenantId,
   getTenantLabel,
   handleTestTokenRefresh,
   switchTenantAndReload,
@@ -76,7 +77,7 @@ function App() {
     getDevModeEnabled().then(setDevMode);
   }, []);
 
-  const tenantId = useTenantStore((s) => s.tenantId);
+  const tenantId = getCurrentTenantId();
 
   const handleDevModeToggle = useCallback(async () => {
     const next = !devMode;
@@ -219,9 +220,9 @@ function App() {
           }}
         />
 
-        <div className="tenant-selector--inline">
+        <div className="dropdown-selector--inline">
           <div
-            className="tenant-selector__trigger"
+            className="dropdown-selector__trigger"
             style={{ cursor: "default" }}
           >
             <Icon name="Network" color="quantum" />
