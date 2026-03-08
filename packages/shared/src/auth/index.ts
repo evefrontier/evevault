@@ -1,10 +1,14 @@
-export { getUserManager } from "./authConfig";
+export {
+  getUserManager,
+  redirectToFusionAuthLogout,
+} from "./authConfig";
 export { exchangeCodeForToken } from "./exchangeCode";
 export {
   clearZkLoginAddressCache,
   getZkLoginAddress,
 } from "./getZkLoginAddress";
 export * from "./hooks/useAuth";
+export { resetVaultOnDevice } from "./resetVaultOnDevice";
 export {
   clearAllJwts,
   clearJwtForNetwork,

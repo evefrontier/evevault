@@ -27,7 +27,16 @@ export interface ChromeStorage {
   session: ChromeStorageArea;
 }
 
+export interface ChromeIdentity {
+  getRedirectURL?: () => string;
+  launchWebAuthFlow?: (
+    options: { url: string; interactive: boolean },
+    callback: (responseUrl?: string) => void,
+  ) => void;
+}
+
 export interface ChromeInstance {
   runtime?: ChromeRuntime;
   storage: ChromeStorage;
+  identity?: ChromeIdentity;
 }

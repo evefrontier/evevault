@@ -73,6 +73,7 @@ export async function seedPersistedAppState(page: Page) {
     },
   };
 
+  // Storage keys must match packages/shared/src/utils/storageKeys.ts
   await page.addInitScript(
     ({ auth, device, network }) => {
       window.localStorage.clear();

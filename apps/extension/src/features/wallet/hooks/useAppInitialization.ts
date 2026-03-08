@@ -4,7 +4,7 @@ import {
   useDeviceStore,
 } from "@evevault/shared/stores/deviceStore";
 import { useNetworkStore } from "@evevault/shared/stores/networkStore";
-import { createLogger } from "@evevault/shared/utils";
+import { createLogger, DEVICE_STORAGE_KEY } from "@evevault/shared/utils";
 import { useEffect, useState } from "react";
 
 const log = createLogger();
@@ -45,7 +45,7 @@ export function useAppInitialization() {
         unsubscribe = useDeviceStore.subscribe(async (state, prevState) => {
           log.debug("Device store changed", { state, prevState });
           const storageSnapshot = await chrome.storage.local.get([
-            "evevault:device",
+            DEVICE_STORAGE_KEY,
           ]);
           log.debug("Storage after change", storageSnapshot);
         });

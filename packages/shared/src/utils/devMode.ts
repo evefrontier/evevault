@@ -1,8 +1,7 @@
 import { chromeStorageAdapter } from "../adapters/extension";
 import { localStorageAdapter } from "../adapters/web";
 import { isWeb } from "./environment";
-
-const DEV_MODE_STORAGE_KEY = "evevault:dev-mode";
+import { DEV_MODE_STORAGE_KEY } from "./storageKeys";
 
 function getStorage() {
   return isWeb() ? localStorageAdapter : chromeStorageAdapter;

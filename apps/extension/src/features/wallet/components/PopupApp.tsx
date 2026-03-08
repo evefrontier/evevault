@@ -1,5 +1,9 @@
 import "./PopupApp.css";
-import { handleTestTokenRefresh, useAuth } from "@evevault/shared/auth";
+import {
+  handleTestTokenRefresh,
+  redirectToFusionAuthLogout,
+  useAuth,
+} from "@evevault/shared/auth";
 import {
   Button,
   HeaderMobile,
@@ -132,7 +136,16 @@ function App() {
 
   // First, check for unencrypted ephemeral key pair
   if (isLocked) {
-    return <LockScreen isPinSet={isPinSet} unlock={unlock} />;
+    return (
+      <LockScreen
+        isPinSet={isPinSet}
+        unlock={unlock}
+        onResetComplete={() => {
+          redirectToFusionAuthLogout();
+          navigate({ to: "/" });
+        }}
+      />
+    );
   }
 
   // If ephemeral keypair exists, but user is not logged in, show login screen

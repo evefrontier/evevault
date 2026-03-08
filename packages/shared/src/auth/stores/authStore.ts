@@ -15,7 +15,8 @@ import {
   isWeb,
   performFullCleanup,
 } from "../../utils";
-import { getUserManager } from "../authConfig";
+import { AUTH_STORAGE_KEY } from "../../utils/storageKeys";
+import { getUserManager, redirectToFusionAuthLogout } from "../authConfig";
 import {
   clearZkLoginAddressCache,
   getZkLoginAddress,
@@ -473,40 +474,8 @@ export const useAuthStore = create<AuthState>()(
             // Use deviceStore.lock() to ensure isLocked state is updated
             await useDeviceStore.getState().lock();
 
-            // Build logout URL manually to avoid CORS issues with OIDC discovery
-            const fusionAuthUrl = import.meta.env.VITE_FUSION_SERVER_URL;
-            const clientId = import.meta.env.VITE_FUSIONAUTH_CLIENT_ID;
-
-            if (isExtension() && typeof chrome !== "undefined") {
-              // Extensions use chrome.identity.launchWebAuthFlow to trigger OIDC logout
-              const redirectUri = chrome.identity.getRedirectURL();
-
-              const logoutUrl = new URL(
-                `${fusionAuthUrl.replace(/\/$/, "")}/oauth2/logout`,
-              );
-              logoutUrl.searchParams.set("client_id", clientId);
-              logoutUrl.searchParams.set(
-                "post_logout_redirect_uri",
-                redirectUri,
-              );
-
-              chrome.identity.launchWebAuthFlow(
-                { url: logoutUrl.toString(), interactive: true },
-                async () => {
-                  chrome.runtime.sendMessage({
-                    __from: "Eve Vault",
-                    event: "change",
-                    payload: { accounts: [] },
-                  });
-                },
-              );
-            } else {
-              // For web, just redirect to home - FusionAuth session can remain
-              // (user will re-authenticate to get new JWT with correct network params)
-              // Note: If full FusionAuth logout is needed, configure post_logout_redirect_uri
-              // in FusionAuth OAuth settings
-              window.location.href = window.location.origin;
-            }
+            // Redirect to FusionAuth logout so IdP session is cleared (web and extension)
+            redirectToFusionAuthLogout();
           } catch (error) {
             log.error("Error during logout cleanup", error);
             set({
@@ -514,16 +483,14 @@ export const useAuthStore = create<AuthState>()(
               error: error instanceof Error ? error.message : "Unknown error",
             });
 
-            // Fallback: redirect to home if there was an error
-            if (!isExtension() && typeof window !== "undefined") {
-              window.location.href = window.location.origin;
-            }
+            // Fallback: redirect so user is not stuck
+            redirectToFusionAuthLogout();
           }
         },
       };
     },
     {
-      name: "evevault:auth",
+      name: AUTH_STORAGE_KEY,
       storage: createJSONStorage(() =>
         isWeb() ? localStorageAdapter : chromeStorageAdapter,
       ),

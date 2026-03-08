@@ -1,5 +1,5 @@
 import { LockScreen } from "@evevault/shared";
-import { useAuth } from "@evevault/shared/auth";
+import { redirectToFusionAuthLogout, useAuth } from "@evevault/shared/auth";
 import { Button, Heading, Text } from "@evevault/shared/components";
 import { useDevice } from "@evevault/shared/hooks/useDevice";
 
@@ -10,7 +10,13 @@ export const LoginScreen = () => {
 
   // First, check for unencrypted ephemeral key pair
   if (isLocked) {
-    return <LockScreen isPinSet={isPinSet} unlock={unlock} />;
+    return (
+      <LockScreen
+        isPinSet={isPinSet}
+        unlock={unlock}
+        onResetComplete={() => redirectToFusionAuthLogout()}
+      />
+    );
   }
 
   return (

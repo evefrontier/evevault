@@ -7,7 +7,11 @@ import {
 import { getUserManager } from "@evevault/shared/auth/authConfig";
 import { Heading, Text } from "@evevault/shared/components";
 import type { RoutePath } from "@evevault/shared/types";
-import { createLogger, ROUTE_PATHS } from "@evevault/shared/utils";
+import {
+  createLogger,
+  ROUTE_PATHS,
+  SESSION_STORAGE_REDIRECT_KEY,
+} from "@evevault/shared/utils";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { User } from "oidc-client-ts";
 import { useEffect, useState } from "react";
@@ -20,18 +24,26 @@ const isRoutePath = (value: string): value is RoutePath => {
   return ROUTE_PATHS.includes(value as RoutePath);
 };
 
+/** Guard so the OAuth code is only exchanged once (avoids "Invalid Authorization Code" from double-run in Strict Mode or reload). */
+let callbackExchangeStarted = false;
+
 export const CallbackScreen = () => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const _search = useSearch({ from: "/callback" });
 
   useEffect(() => {
+    if (callbackExchangeStarted) {
+      return;
+    }
+    callbackExchangeStarted = true;
+
     const handleCallback = async () => {
       try {
         const redirectAfterLogin = sessionStorage.getItem(
-          "evevault_redirect_after_login",
+          SESSION_STORAGE_REDIRECT_KEY,
         );
-        sessionStorage.removeItem("evevault_redirect_after_login");
+        sessionStorage.removeItem(SESSION_STORAGE_REDIRECT_KEY);
         const fallbackRoute: RoutePath = "/wallet";
         const redirectTo = redirectAfterLogin || fallbackRoute;
 
@@ -96,6 +108,8 @@ export const CallbackScreen = () => {
         setTimeout(() => {
           navigate({ to: "/" });
         }, 3000);
+      } finally {
+        callbackExchangeStarted = false;
       }
     };
 

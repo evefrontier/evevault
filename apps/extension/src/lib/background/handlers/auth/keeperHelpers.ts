@@ -4,7 +4,7 @@ import type {
   StoredSecretKey,
 } from "@evevault/shared/types";
 import { KeeperMessageTypes } from "@evevault/shared/types";
-import { createLogger } from "@evevault/shared/utils";
+import { createLogger, DEVICE_STORAGE_KEY } from "@evevault/shared/utils";
 import { ensureOffscreen } from "../../services/offscreenService";
 
 const log = createLogger();
@@ -21,8 +21,8 @@ export async function getEphemeralKeyPairSecretKeyFromStorage(): Promise<StoredS
 
   try {
     const stored = await new Promise<unknown>((resolve) => {
-      chrome.storage.local.get(["evevault:device"], (result) => {
-        resolve(result["evevault:device"] || null);
+      chrome.storage.local.get([DEVICE_STORAGE_KEY], (result) => {
+        resolve(result[DEVICE_STORAGE_KEY] || null);
       });
     });
 

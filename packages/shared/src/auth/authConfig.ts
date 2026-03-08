@@ -141,3 +141,50 @@ export function getUserManager(): UserManager {
   }
   return userManagerInstance;
 }
+
+/**
+ * Redirects the user to FusionAuth logout so the IdP session is cleared.
+ * After logout, FusionAuth redirects back to post_logout_redirect_uri (app origin).
+ * Use for both app logout and after device reset so the next login requires email/password.
+ */
+export function redirectToFusionAuthLogout(): void {
+  const fusionAuthUrl = import.meta.env.VITE_FUSION_SERVER_URL;
+  const clientId = import.meta.env.VITE_FUSIONAUTH_CLIENT_ID;
+  const postRedirectUri = isExtension()
+    ? (typeof chrome !== "undefined" && chrome.identity?.getRedirectURL?.()) ||
+      getOrigin()
+    : getOrigin();
+  if (!fusionAuthUrl || !clientId || !postRedirectUri) {
+    log.warn(
+      "Missing FusionAuth config for logout redirect, falling back to origin",
+    );
+    if (typeof window !== "undefined") {
+      window.location.href = window.location.origin;
+    }
+    return;
+  }
+  const logoutUrl = new URL(
+    `${String(fusionAuthUrl).replace(/\/$/, "")}/oauth2/logout`,
+  );
+  logoutUrl.searchParams.set("client_id", clientId);
+  logoutUrl.searchParams.set("post_logout_redirect_uri", postRedirectUri);
+
+  if (
+    isExtension() &&
+    typeof chrome !== "undefined" &&
+    chrome.identity?.launchWebAuthFlow
+  ) {
+    chrome.identity.launchWebAuthFlow(
+      { url: logoutUrl.toString(), interactive: true },
+      () => {
+        chrome.runtime?.sendMessage?.({
+          __from: "Eve Vault",
+          event: "change",
+          payload: { accounts: [] },
+        });
+      },
+    );
+  } else if (typeof window !== "undefined") {
+    window.location.href = logoutUrl.toString();
+  }
+}

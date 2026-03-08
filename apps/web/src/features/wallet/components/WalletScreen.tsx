@@ -1,5 +1,9 @@
 import { HeaderMobile, LockScreen, NetworkSelector } from "@evevault/shared";
-import { handleTestTokenRefresh, useAuth } from "@evevault/shared/auth";
+import {
+  handleTestTokenRefresh,
+  redirectToFusionAuthLogout,
+  useAuth,
+} from "@evevault/shared/auth";
 import {
   Background,
   Button,
@@ -192,7 +196,13 @@ export const WalletScreen = () => {
 
   // First, check for unencrypted ephemeral key pair
   if (isLocked) {
-    return <LockScreen isPinSet={isPinSet} unlock={unlock} />;
+    return (
+      <LockScreen
+        isPinSet={isPinSet}
+        unlock={unlock}
+        onResetComplete={() => redirectToFusionAuthLogout()}
+      />
+    );
   }
 
   if (!user) {

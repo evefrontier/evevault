@@ -146,3 +146,57 @@
 .modal__column--wide {
   flex: 1;
 }
+
+/* Card variant (Figma Basic Card style) */
+.modal--card {
+  max-width: 600px;
+}
+
+.modal--card .modal__content {
+  gap: 0;
+  padding: 32px;
+}
+
+.modal--card .modal__content > h2 {
+  font-family: var(--font-headline);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 24px 0;
+  color: var(--neutral);
+}
+
+.modal--card .modal__divider {
+  margin: 0 0 24px 0;
+}
+
+.modal--card .modal__content .modal__card-message {
+  line-height: 1.5;
+  color: var(--grey-neutral);
+  margin: 0 0 24px 0;
+}
+
+.modal--card .modal__actions {
+  margin-top: 0;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: flex-start;
+}
+
+.modal--card .modal__actions button {
+  max-width: 50%;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+@media (max-width: 480px) {
+  .modal--card .modal__actions {
+    flex-direction: column;
+  }
+
+  .modal--card .modal__actions button {
+    max-width: 100%;
+    width: 100%;
+  }
+}
