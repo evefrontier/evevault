@@ -2,6 +2,8 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "types": ["react", "react-dom"],
+    "noEmit": true,
+    "outDir": "./dist",
     "allowImportingTsExtensions": true,
     "jsx": "react-jsx",
     "lib": ["ES2020", "DOM"],

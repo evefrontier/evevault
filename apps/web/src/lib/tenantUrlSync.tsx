@@ -9,6 +9,7 @@ import { useEffect, useRef } from "react";
 /**
  * Syncs tenant from URL (?tenant=) on load. If the URL tenant differs from
  * stored, clears auth and redirects so the user can log in with the new server.
+ * Only used with web app.
  */
 export function TenantUrlSync() {
   const didRun = useRef(false);
