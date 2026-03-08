@@ -29,6 +29,7 @@ vi.mock("../../authConfig", () => {
   };
   return {
     getUserManager: vi.fn(() => mockUserManager),
+    redirectToFusionAuthLogout: vi.fn(),
   };
 });
 
@@ -198,7 +199,17 @@ describe("authStore.logout()", () => {
 
     await useAuthStore.getState().logout();
 
-    // Should still complete even with error (redirect happens)
     expect(useAuthStore.getState().error).toBe("Lock failed");
+    expect(
+      vi.mocked(authConfig.redirectToFusionAuthLogout),
+    ).toHaveBeenCalledTimes(1);
+  });
+
+  it("calls redirectToFusionAuthLogout() after clearing state", async () => {
+    const mockRedirect = vi.mocked(authConfig.redirectToFusionAuthLogout);
+
+    await useAuthStore.getState().logout();
+
+    expect(mockRedirect).toHaveBeenCalledTimes(1);
   });
 });
