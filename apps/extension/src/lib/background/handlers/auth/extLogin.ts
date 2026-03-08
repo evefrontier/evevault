@@ -6,7 +6,7 @@ import {
   isAvailableTenantId,
 } from "@evevault/shared/auth";
 import { useDeviceStore } from "@evevault/shared/stores";
-import { createLogger, getDevModeEnabled } from "@evevault/shared/utils";
+import { createLogger } from "@evevault/shared/utils";
 import { Ed25519PublicKey } from "@mysten/sui/keypairs/ed25519";
 import { decodeJwt } from "jose";
 import { getAuthUrl } from "../../services/oauthService";
@@ -38,12 +38,11 @@ export async function handleExtLogin(
 ): Promise<void> {
   const id = ensureMessageId(message);
 
-  const isDev = await getDevModeEnabled();
   const tenantId: TenantId =
     typeof message.tenantId === "string" &&
-    isAvailableTenantId(message.tenantId, isDev)
+    isAvailableTenantId(message.tenantId)
       ? (message.tenantId as TenantId)
-      : getCurrentTenantId(isDev);
+      : getCurrentTenantId();
 
   const initialChain = getCurrentChain();
 

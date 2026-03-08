@@ -40,6 +40,11 @@ vi.mock("../storageService", () => ({
   clearAllJwts: vi.fn(),
 }));
 
+vi.mock("../tenantStore", () => ({
+  getCurrentTenantId: vi.fn(() => "stillness"),
+  getTenantIdForAuth: vi.fn(() => "stillness"),
+}));
+
 vi.mock("../../stores/deviceStore", () => ({
   createEmptyNetworkDataEntry: () => ({
     nonce: null,
@@ -145,6 +150,7 @@ describe("resetVaultOnDevice", () => {
     await resetVaultOnDevice();
 
     expect(storageService.clearAllJwts).toHaveBeenCalledTimes(1);
+    expect(authConfig.getUserManager).toHaveBeenCalledWith("stillness");
     expect(mockRemoveUser).toHaveBeenCalledTimes(1);
   });
 

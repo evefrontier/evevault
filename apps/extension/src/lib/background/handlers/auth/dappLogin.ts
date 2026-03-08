@@ -2,7 +2,6 @@ import { getDeviceData, storeJwt } from "@evevault/shared";
 import {
   exchangeCodeForToken,
   getCurrentTenantId,
-  getDefaultTenantId,
   getJwtForNetwork,
   getTenantConfig,
   hasJwtForNetwork,

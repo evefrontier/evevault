@@ -10,7 +10,6 @@ import type { AuthMessage, JwtResponse } from "../../types";
 import {
   createLogger,
   getDeviceData,
-  getDevModeEnabled,
   isBrowser,
   isExtension,
   isWeb,
@@ -598,8 +597,7 @@ export async function switchTenantAndReload(
   await setCurrentTenantId(newTenantId as TenantId);
 
   if (isWeb() && typeof window !== "undefined") {
-    const isDev = await getDevModeEnabled();
-    if (!isAvailableTenantId(newTenantId, isDev)) return;
+    if (!isAvailableTenantId(newTenantId)) return;
     const url =
       newTenantId === DEFAULT_TENANT_ID
         ? window.location.origin

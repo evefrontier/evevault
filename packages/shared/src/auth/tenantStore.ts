@@ -22,8 +22,7 @@ export const useTenantStore = create<TenantState>()(
     (set) => ({
       tenantId: getDefaultTenantId(),
       setTenantId: async (id: TenantId) => {
-        const isDev = await getDevModeEnabled();
-        if (!getAvailableTenantIds(isDev).includes(id)) {
+        if (!getAvailableTenantIds().includes(id)) {
           return;
         }
         set({ tenantId: id });
@@ -66,7 +65,7 @@ if (typeof chrome !== "undefined" && chrome.storage && !isWeb()) {
  */
 export function getCurrentTenantId(devMode = false): TenantId {
   const stored = useTenantStore.getState().tenantId;
-  return isAvailableTenantId(stored, devMode) ? stored : getDefaultTenantId();
+  return isAvailableTenantId(stored) ? stored : getDefaultTenantId();
 }
 
 /**
@@ -92,7 +91,7 @@ export async function applyTenantFromUrl(): Promise<{
   }
   const params = new URLSearchParams(window.location.search);
   const fromUrl = params.get("tenant");
-  if (!fromUrl || !isAvailableTenantId(fromUrl, isDev)) {
+  if (!fromUrl || !isAvailableTenantId(fromUrl)) {
     return { tenantId: current, changed: false };
   }
   if (fromUrl === current) {

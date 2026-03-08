@@ -35,7 +35,7 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
   const { logout } = useAuth();
 
   const devMode = showDevActions ?? false;
-  const availableTenantIds = getAvailableTenantIds(devMode);
+  const availableTenantIds = getAvailableTenantIds();
   const currentTenantId = getCurrentTenantId(devMode);
 
   const dropdownItems: DropdownItem[] = useMemo(() => {
