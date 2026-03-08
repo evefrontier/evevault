@@ -1,6 +1,12 @@
 import { LockScreen } from "@evevault/shared";
-import { useAuth } from "@evevault/shared/auth";
-import { Button, Heading } from "@evevault/shared/components";
+import {
+  getAvailableTenantIds,
+  getCurrentTenantId,
+  switchTenantAndReload,
+  type TenantId,
+  useAuth,
+} from "@evevault/shared/auth";
+import { Button, Heading, TenantSelector } from "@evevault/shared/components";
 import { useDevice } from "@evevault/shared/hooks/useDevice";
 
 export const LoginScreen = () => {
@@ -33,6 +39,13 @@ export const LoginScreen = () => {
             {loading ? "Loading..." : "Login"}
           </Button>
         </div>
+        <TenantSelector
+          currentTenantId={getCurrentTenantId() as TenantId}
+          availableTenantIds={getAvailableTenantIds()}
+          onServerChange={(tenantId) =>
+            switchTenantAndReload(tenantId as TenantId)
+          }
+        />
       </section>
     </div>
   );

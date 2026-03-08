@@ -1,10 +1,10 @@
-.server-selector {
+.tenant-selector {
   position: relative;
   display: inline-block;
   height: min-content;
 }
 
-.server-selector--inline .server-selector__trigger {
+.tenant-selector--inline .tenant-selector__trigger {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -16,11 +16,11 @@
   transition: background 0.15s ease;
 }
 
-.server-selector--inline .server-selector__trigger:hover {
+.tenant-selector--inline .tenant-selector__trigger:hover {
   background: var(--quantum-20);
 }
 
-.server-selector--standalone .server-selector__trigger {
+.tenant-selector--standalone .tenant-selector__trigger {
   display: flex;
   align-items: flex-end;
   gap: 8px;
@@ -31,16 +31,16 @@
   transition: opacity 0.2s ease;
 }
 
-.server-selector--standalone .server-selector__trigger:hover {
+.tenant-selector--standalone .tenant-selector__trigger:hover {
   opacity: 0.8;
 }
 
-.server-selector__chevron {
+.tenant-selector__chevron {
   transition: transform 0.2s ease;
   margin-left: auto;
   flex-shrink: 0;
 }
 
-.server-selector__chevron--open {
+.tenant-selector__chevron--open {
   transform: rotate(180deg);
 }

@@ -118,8 +118,8 @@ export default defineConfig(() => {
     manifest: {
       key: envVars.EXTENSION_ID,
       name: "EVE Vault",
-      version: "0.0.3",
-      description: "EVE Vault for EVE Frontier on Utopia with ZKLogin",
+      version: "0.0.4",
+      description: "EVE Vault for EVE Frontier with ZKLogin",
       permissions: [
         "identity",
         "identity.email",

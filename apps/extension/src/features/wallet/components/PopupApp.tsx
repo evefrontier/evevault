@@ -1,7 +1,10 @@
 import "./PopupApp.css";
 import {
   getAvailableTenantIds,
+  getTenantLabel,
   handleTestTokenRefresh,
+  switchTenantAndReload,
+  type TenantId,
   useAuth,
   useTenantStore,
 } from "@evevault/shared/auth";
@@ -14,6 +17,7 @@ import {
   Text,
   TokenListSection,
 } from "@evevault/shared/components";
+import Icon from "@evevault/shared/components/Icon";
 import {
   useDevice,
   useEpochExpiration,
@@ -166,7 +170,9 @@ function App() {
           <TenantSelector
             currentTenantId={tenantId}
             availableTenantIds={getAvailableTenantIds()}
-            onServerChange={useTenantStore.getState().setTenantId}
+            onServerChange={(tenantId) =>
+              switchTenantAndReload(tenantId as TenantId)
+            }
           />
         </section>
       </div>
@@ -212,6 +218,18 @@ function App() {
             setPreviousNetworkBeforeSwitch(previousNetwork as SuiChain);
           }}
         />
+
+        <div className="tenant-selector--inline">
+          <div
+            className="tenant-selector__trigger"
+            style={{ cursor: "default" }}
+          >
+            <Icon name="Network" color="quantum" />
+            <Text variant="label-medium" size="medium">
+              {getTenantLabel(tenantId)}
+            </Text>
+          </div>
+        </div>
       </div>
 
       {authError && <Text color="error">AuthError: {authError}</Text>}

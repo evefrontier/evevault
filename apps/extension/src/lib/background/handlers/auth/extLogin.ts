@@ -1,8 +1,9 @@
 import { getDeviceData, storeJwt } from "@evevault/shared";
+import type { TenantId } from "@evevault/shared/auth";
 import {
   exchangeCodeForToken,
   getCurrentTenantId,
-  getDefaultTenantId,
+  isAvailableTenantId,
 } from "@evevault/shared/auth";
 import { useDeviceStore } from "@evevault/shared/stores";
 import { createLogger } from "@evevault/shared/utils";
@@ -36,6 +37,12 @@ export async function handleExtLogin(
   _sendResponse: (response?: unknown) => void,
 ): Promise<void> {
   const id = ensureMessageId(message);
+
+  const tenantId: TenantId =
+    typeof message.tenantId === "string" &&
+    isAvailableTenantId(message.tenantId)
+      ? (message.tenantId as TenantId)
+      : getCurrentTenantId();
 
   const initialChain = getCurrentChain();
 
@@ -73,7 +80,7 @@ export async function handleExtLogin(
       }
 
       if (hasDeviceData) {
-        setPendingAuthAfterUnlock(id, "ext", undefined, windowId);
+        setPendingAuthAfterUnlock(id, "ext", undefined, windowId, tenantId);
         return;
       }
 
@@ -265,8 +272,6 @@ export async function handleExtLogin(
 
   const { jwtRandomness, nonce, maxEpoch } = await getDeviceData(currentChain);
 
-  const tenantId = getCurrentTenantId();
-
   const authUrl = getAuthUrl({
     tenantId: tenantId,
     jwtRandomness,
@@ -296,7 +301,7 @@ export async function handleExtLogin(
         const jwtResponse = await exchangeCodeForToken(
           authCode,
           chrome.identity.getRedirectURL(),
-          getDefaultTenantId(),
+          tenantId,
         );
 
         const chainAfterOAuth = await getCurrentChainFromStorage();

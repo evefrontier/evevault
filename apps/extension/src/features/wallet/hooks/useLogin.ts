@@ -1,4 +1,8 @@
-import { hasJwtForNetwork, useAuth } from "@evevault/shared/auth";
+import {
+  getCurrentTenantId,
+  hasJwtForNetwork,
+  useAuth,
+} from "@evevault/shared/auth";
 import { useToast } from "@evevault/shared/components";
 import {
   rehydrateDeviceStore,

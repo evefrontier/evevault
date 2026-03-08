@@ -371,6 +371,7 @@ export const useAuthStore = create<AuthState>()(
             chrome.runtime?.sendMessage?.({
               action: "ext_login",
               id: id,
+              tenantId: getCurrentTenantId(),
             });
           });
         },
@@ -562,6 +563,7 @@ export const useAuthStore = create<AuthState>()(
  * Used when switching server so the next login uses the new tenant.
  */
 export async function runTenantSwitchCleanup(tenantId: string): Promise<void> {
+  // TODO: Do not clean up PIN, maintain existing ephemeral key and nonce for network
   try {
     await getUserManager(tenantId).removeUser();
     await performFullCleanup();

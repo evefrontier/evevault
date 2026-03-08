@@ -27,7 +27,11 @@ export function checkPendingAuthAfterUnlock(): void {
   if (!pending) return;
   if (pending.type === "ext") {
     handleExtLogin(
-      { action: "ext_login", id: pending.id } as MessageWithId,
+      {
+        action: "ext_login",
+        id: pending.id,
+        ...(pending.tenantId && { tenantId: pending.tenantId }),
+      } as MessageWithId,
       undefined as unknown as chrome.runtime.MessageSender,
       () => {},
     ).catch((error) => {
