@@ -30,6 +30,7 @@ import {
 } from "../types";
 import { createLogger, encrypt } from "../utils";
 import { isWeb } from "../utils/environment";
+import { DEVICE_STORAGE_KEY } from "../utils/storageKeys";
 import { createWebCryptoPlaceholder, fetchZkProof } from "../wallet";
 import { useNetworkStore } from "./networkStore";
 
@@ -79,7 +80,8 @@ const resolveStoredSecretKey = async (
   return null;
 };
 
-const createEmptyNetworkDataEntry = (): NetworkDataEntry => ({
+/** Empty network data entry; used for initial state and reset. Exported for reuse (e.g. resetVaultOnDevice). */
+export const createEmptyNetworkDataEntry = (): NetworkDataEntry => ({
   nonce: null,
   maxEpoch: null,
   maxEpochTimestampMs: null,
@@ -298,8 +300,8 @@ export const useDeviceStore = create<DeviceState>()(
           ) {
             const persistedDeviceStore = await new Promise<unknown>(
               (resolve) => {
-                chrome.storage.local.get(["evevault:device"], (result) => {
-                  resolve(result["evevault:device"] || null);
+                chrome.storage.local.get([DEVICE_STORAGE_KEY], (result) => {
+                  resolve(result[DEVICE_STORAGE_KEY] || null);
                 });
               },
             );
@@ -696,17 +698,24 @@ export const useDeviceStore = create<DeviceState>()(
 
       reset: () => {
         set({
+          isLocked: true,
+          ephemeralPublicKey: null,
+          ephemeralPublicKeyBytes: null,
+          ephemeralPublicKeyFlag: null,
+          ephemeralKeyPairSecretKey: null,
           networkData: {
             [SUI_DEVNET_CHAIN]: createEmptyNetworkDataEntry(),
             [SUI_TESTNET_CHAIN]: createEmptyNetworkDataEntry(),
             [SUI_LOCALNET_CHAIN]: createEmptyNetworkDataEntry(),
             [SUI_MAINNET_CHAIN]: createEmptyNetworkDataEntry(),
           },
+          loading: false,
+          error: null,
         });
       },
     }),
     {
-      name: "evevault:device",
+      name: DEVICE_STORAGE_KEY,
       storage: createJSONStorage(() =>
         isWeb() ? localStorageAdapter : chromeStorageAdapter,
       ),

@@ -1,4 +1,4 @@
-export { getUserManager } from "./authConfig";
+export { getUserManager, redirectToFusionAuthLogout } from "./authConfig";
 export { exchangeCodeForToken } from "./exchangeCode";
 export {
   clearZkLoginAddressCache,

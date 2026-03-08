@@ -20,9 +20,7 @@ export const LoginScreen = () => {
       <LockScreen
         isPinSet={isPinSet}
         unlock={unlock}
-        onResetComplete={() => {
-          window.location.href = "/";
-        }}
+        onResetComplete={() => redirectToFusionAuthLogout()}
       />
     );
   }

@@ -30,7 +30,7 @@
     },
     "apps/extension": {
       "name": "@evevault/extension",
-      "version": "0.0.3",
+      "version": "0.0.4",
       "dependencies": {
         "@evevault/shared": "workspace:*",
         "@mysten/wallet-standard": "^0.16.3",

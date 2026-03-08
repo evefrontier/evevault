@@ -1,3 +1,4 @@
+import { formatAddress } from "@evevault/shared/utils";
 import type React from "react";
 import { useMemo } from "react";
 import {
@@ -7,7 +8,6 @@ import {
 } from "../../../auth";
 import { useCopyToClipboard, useDevice } from "../../../hooks";
 import type { HeaderMobileProps, IconName } from "../../../types";
-import { formatAddress } from "../../../utils";
 import {
   type DropdownItem,
   DropdownSelect,
@@ -27,6 +27,7 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
   onDevModeToggle,
   onSignSubmitTxClick,
   onTokenRefreshTestClick,
+  onFaucetTestSuiClick,
   onServerChange,
 }) => {
   const { copy } = useCopyToClipboard();
@@ -83,6 +84,16 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
       });
     }
 
+    // 3b. Faucet test SUI (only when dev mode on)
+    if (showDevActions && onFaucetTestSuiClick) {
+      items.push({
+        label: "Faucet test SUI",
+        icon: "OpenWindow" as IconName,
+        onClick: onFaucetTestSuiClick,
+      });
+    }
+
+    // 4. Copy Address (always)
     // 4. Server (tenant) switcher (only when dev mode on)
     if (showDevActions && availableTenantIds.length > 0 && onServerChange) {
       items.push({
@@ -149,6 +160,7 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
     lock,
     logout,
     availableTenantIds,
+    onFaucetTestSuiClick,
   ]);
 
   const displayText = email || formatAddress(address);

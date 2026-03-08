@@ -17,7 +17,7 @@ import {
 import { useDevice, useEpochExpiration } from "@evevault/shared/hooks";
 import { useDeviceStore } from "@evevault/shared/stores/deviceStore";
 import { useNetworkStore } from "@evevault/shared/stores/networkStore";
-import { createSuiClient } from "@evevault/shared/sui";
+import { createSuiClient, getFaucetUrlForChain } from "@evevault/shared/sui";
 import {
   createLogger,
   getDevModeEnabled,
@@ -62,6 +62,7 @@ export const WalletScreen = () => {
     unlock,
   } = useDevice();
   const { chain } = useNetworkStore();
+  const faucetUrl = getFaucetUrlForChain(chain);
   const tenantId = useTenantStore((s) => s.tenantId);
   const availableTenantIds = getAvailableTenantIds();
 
@@ -143,12 +144,13 @@ export const WalletScreen = () => {
       transaction: new Uint8Array(txb),
       signatures: [zkSignature],
     });
+    // @mysten/sui 2.x: discriminated union Transaction | FailedTransaction
     if ("$kind" in result && result.$kind === "FailedTransaction") {
-      throw new Error("Transaction failed");
+      log.error("Transaction execution failed", { result });
+      setTxDigest(null);
+      return;
     }
-    const txResponse = (result as { Transaction: { digest?: string | null } })
-      .Transaction;
-    const digest = txResponse?.digest ?? null;
+    const digest = result.Transaction?.digest ?? null;
     log.info("Transaction executed", { digest });
     setTxDigest(digest);
   }, [user, maxEpoch, ephemeralPublicKey, getZkProof, suiClient]);
@@ -242,6 +244,11 @@ export const WalletScreen = () => {
         onDevModeToggle={handleDevModeToggle}
         onSignSubmitTxClick={devMode ? handleSignAndSubmitTx : undefined}
         onTokenRefreshTestClick={devMode ? handleTokenRefreshTest : undefined}
+        onFaucetTestSuiClick={
+          devMode && faucetUrl
+            ? () => window.open(faucetUrl, "_blank", "noopener,noreferrer")
+            : undefined
+        }
         availableTenantIds={devMode ? availableTenantIds : undefined}
         currentTenantId={devMode ? tenantId : undefined}
         onServerChange={devMode ? switchTenantAndReload : undefined}

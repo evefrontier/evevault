@@ -5,18 +5,18 @@ import { getTenantLabel } from "../../auth/tenantConfig";
 import { Dropdown } from "../Dropdown";
 import Icon from "../Icon";
 import Text from "../Text";
-import "./TenantSelector.css";
+import "./ServerSelector.css";
 
-export interface TenantSelectorProps {
-  currentTenantId: TenantId;
-  availableTenantIds: TenantId[];
-  onServerChange: (tenantId: TenantId) => void;
+export interface ServerSelectorProps {
+  currentTenantId: TenantId | string;
+  availableTenantIds: (TenantId | string)[];
+  onServerChange: (tenantId: string) => void;
   /** Inline: compact trigger (label + chevron). Standalone: label "SERVER" + value + chevron like NetworkSelector. */
   variant?: "inline" | "standalone";
   className?: string;
 }
 
-export const TenantSelector: React.FC<TenantSelectorProps> = ({
+export const ServerSelector: React.FC<ServerSelectorProps> = ({
   currentTenantId,
   availableTenantIds,
   onServerChange,
@@ -27,7 +27,7 @@ export const TenantSelector: React.FC<TenantSelectorProps> = ({
   const triggerRef = useRef<HTMLButtonElement>(null);
 
   const handleSelect = useCallback(
-    (id: TenantId) => {
+    (id: string) => {
       onServerChange(id);
       setIsOpen(false);
     },
@@ -41,7 +41,7 @@ export const TenantSelector: React.FC<TenantSelectorProps> = ({
     // Wrapper only stops propagation so dropdown doesn't close when clicking inside; no semantic role needed
     // biome-ignore lint/a11y/noStaticElementInteractions: div is for event capture only, not interactive content
     <div
-      className={`dropdown-selector dropdown-selector dropdown-selector--${variant} ${className}`.trim()}
+      className={`server-selector server-selector--${variant} ${className}`.trim()}
       onClick={(e: React.MouseEvent) => e.stopPropagation()}
       onKeyDown={(e: React.KeyboardEvent) => e.stopPropagation()}
       role="presentation"
@@ -49,7 +49,7 @@ export const TenantSelector: React.FC<TenantSelectorProps> = ({
       <button
         ref={triggerRef}
         type="button"
-        className="dropdown-selector__trigger"
+        className="server-selector__trigger"
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
@@ -65,13 +65,21 @@ export const TenantSelector: React.FC<TenantSelectorProps> = ({
               width={16}
               height={16}
               color="neutral"
-              className={`dropdown-selector__chevron ${isOpen ? "dropdown-selector__chevron--open" : ""}`}
+              className={`server-selector__chevron ${isOpen ? "server-selector__chevron--open" : ""}`}
             />
           </>
         ) : (
           <>
             <Icon name="Network" color="quantum" />
             <div className="flex flex-col gap-0.5">
+              <Text
+                className="text-start"
+                variant="label-small"
+                color="neutral-50"
+                size="small"
+              >
+                SERVER
+              </Text>
               <Text variant="label-medium" size="medium">
                 {currentLabel}
               </Text>
@@ -81,7 +89,7 @@ export const TenantSelector: React.FC<TenantSelectorProps> = ({
               width={16}
               height={16}
               color="neutral"
-              className={`dropdown-selector__chevron ${isOpen ? "dropdown-selector__chevron--open" : ""}`}
+              className={`server-selector__chevron ${isOpen ? "server-selector__chevron--open" : ""}`}
             />
           </>
         )}
@@ -119,4 +127,4 @@ export const TenantSelector: React.FC<TenantSelectorProps> = ({
   );
 };
 
-export default TenantSelector;
+export default ServerSelector;

@@ -28,7 +28,7 @@ export default function LockScreen({
   const [pinError, setPinError] = useState<string | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
-  const { initialize: initializeDevice } = useDevice();
+  const { initialize: initializeDevice, error: deviceError } = useDevice();
   const { showToast } = useToast();
 
   const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -41,10 +41,11 @@ export default function LockScreen({
       setPinError("PIN must be 6 digits long");
       return;
     }
+    setPinError(null);
     if (!isPinSet) {
       await initializeDevice(pin);
     }
-    unlock(pin);
+    await unlock(pin);
   };
 
   const handleConfirmReset = useCallback(async () => {
@@ -95,7 +96,7 @@ export default function LockScreen({
             placeholder="6-digit PIN"
             onChange={handlePinChange}
             value={pin}
-            errorText={pinError || undefined}
+            errorText={pinError || deviceError || undefined}
           />
           <div className="w-full max-w-[300px]">
             <Button type="submit" size="fill">
@@ -142,9 +143,9 @@ export default function LockScreen({
       >
         <div className="modal__divider" />
         <Text className="modal__card-message" color="grey-neutral">
-          This will remove all EVE Vault data from this device (including your
-          PIN). You will need to sign in again and create a new PIN. Your wallet
-          and funds are safe and will be available after you sign back in.
+          This will reset your PIN and remove all EVE Vault data from this
+          device. Your wallet will be available after you recreate your PIN and
+          sign back in.
         </Text>
       </Modal>
     </div>

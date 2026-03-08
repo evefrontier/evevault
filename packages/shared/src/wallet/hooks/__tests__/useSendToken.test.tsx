@@ -41,6 +41,16 @@ vi.mock("@evevault/shared/utils", () => ({
       (whole === "0" || whole === "" ? "" : whole) + paddedFraction;
     return BigInt(combined === "" ? "0" : combined);
   }),
+  SUI_COIN_TYPE: "0x2::sui::SUI",
+  EVE_TESTNET_COIN_TYPE:
+    "0x76cb2c6d2d361c9d0b2d1e0e8e8e8e8e8e8e8e8::evetest::EVETEST",
+  GAS_FEE_WARNING_MESSAGE:
+    "This transfer will incur a network fee (gas) paid in SUI.",
+  formatMistToSui: vi.fn((mist: string | bigint) => {
+    const s = typeof mist === "bigint" ? mist.toString() : mist;
+    const n = Number(BigInt(s) / 10n ** 9n);
+    return n.toFixed(9).replace(/0+$/, "").replace(/\.$/, "") || "0";
+  }),
 }));
 
 vi.mock("../useBalance", () => ({
@@ -58,6 +68,7 @@ import { useDevice } from "@evevault/shared/hooks";
 import { useNetworkStore } from "@evevault/shared/stores/networkStore";
 import { createSuiClient } from "@evevault/shared/sui";
 import { createMockUser } from "@evevault/shared/testing";
+import type { UseBalanceParams } from "../../types/hooks";
 import { useBalance } from "../useBalance";
 import { useSendToken } from "../useSendToken";
 
@@ -115,7 +126,20 @@ describe("useSendToken", () => {
     } as any);
 
     mockCreateSuiClient.mockReturnValue({
-      getCoins: vi.fn().mockResolvedValue({ objects: [] }),
+      listCoins: vi.fn().mockResolvedValue({ objects: [] }),
+      simulateTransaction: vi.fn().mockResolvedValue({
+        $kind: "Transaction",
+        Transaction: {
+          effects: {
+            gasUsed: {
+              computationCost: "1000000",
+              storageCost: "0",
+              storageRebate: "0",
+              nonRefundableStorageFee: "0",
+            },
+          },
+        },
+      }),
       core: {
         executeTransaction: vi.fn().mockResolvedValue({
           Transaction: { digest: "mock-digest" },
@@ -373,6 +397,46 @@ describe("useSendToken", () => {
     });
   });
 
+  describe("gas fee warning", () => {
+    it("returns gasFeeWarning message for all transfers", () => {
+      const queryClient = new QueryClient();
+      const { result } = renderHook(
+        () =>
+          useSendToken({
+            coinType: "0x2::sui::SUI",
+            recipientAddress: VALID_SUI_ADDRESS,
+            amount: "1",
+          }),
+        { wrapper: createWrapper(queryClient) },
+      );
+
+      expect(result.current.gasFeeWarning).toBe(
+        "This transfer will incur a network fee (gas) paid in SUI.",
+      );
+      queryClient.clear();
+    });
+
+    it("exposes estimatedGasFee and estimatedGasFeeLoading", () => {
+      const queryClient = new QueryClient();
+      const { result } = renderHook(
+        () =>
+          useSendToken({
+            coinType: "0x2::sui::SUI",
+            recipientAddress: VALID_SUI_ADDRESS,
+            amount: "1",
+          }),
+        { wrapper: createWrapper(queryClient) },
+      );
+
+      expect(typeof result.current.estimatedGasFeeLoading).toBe("boolean");
+      expect(
+        result.current.estimatedGasFee === null ||
+          typeof result.current.estimatedGasFee === "string",
+      ).toBe(true);
+      queryClient.clear();
+    });
+  });
+
   describe("balance info", () => {
     it("returns balance data from useBalance hook", () => {
       const queryClient = new QueryClient();
@@ -410,6 +474,143 @@ describe("useSendToken", () => {
       expect(result.current.isLoading).toBe(false);
       expect(result.current.error).toBeNull();
       expect(result.current.txDigest).toBeNull();
+      queryClient.clear();
+    });
+  });
+
+  describe("SUI for gas warning", () => {
+    const SUI_COIN_TYPE = "0x2::sui::SUI";
+    const EVE_COIN_TYPE =
+      "0x76cb2c6d2d361c9d0b2d1e0e8e8e8e8e8e8e8e8::evetest::EVETEST";
+
+    it("returns suiForGasWarning when sending non-SUI token and SUI balance is zero", () => {
+      mockUseBalance.mockImplementation(
+        (params: UseBalanceParams) =>
+          ({
+            data:
+              params.coinType === SUI_COIN_TYPE
+                ? { formattedBalance: "0", rawBalance: "0", metadata: null }
+                : {
+                    formattedBalance: "10",
+                    rawBalance: "10000000000",
+                    metadata: {
+                      symbol: "EVE",
+                      name: "EVE test token",
+                      decimals: 9,
+                    },
+                  },
+            isLoading: false,
+            // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
+          }) as any,
+      );
+
+      const queryClient = new QueryClient();
+      const { result } = renderHook(
+        () =>
+          useSendToken({
+            coinType: EVE_COIN_TYPE,
+            recipientAddress: VALID_SUI_ADDRESS,
+            amount: "1",
+          }),
+        { wrapper: createWrapper(queryClient) },
+      );
+
+      expect(result.current.suiForGasWarning).toBe(
+        "You have no SUI balance. SUI is required to pay for transaction fees.",
+      );
+      expect(result.current.showFaucetTestSui).toBe(true);
+      expect(result.current.canSend).toBe(false);
+      expect(result.current.validationErrors).toContain(
+        "No SUI for gas (required for transaction fees)",
+      );
+      queryClient.clear();
+    });
+
+    it("returns null suiForGasWarning when sending SUI token", () => {
+      const queryClient = new QueryClient();
+      const { result } = renderHook(
+        () =>
+          useSendToken({
+            coinType: SUI_COIN_TYPE,
+            recipientAddress: VALID_SUI_ADDRESS,
+            amount: "1",
+          }),
+        { wrapper: createWrapper(queryClient) },
+      );
+
+      expect(result.current.suiForGasWarning).toBeNull();
+      queryClient.clear();
+    });
+
+    it("returns showFaucetTestSui true when SUI balance is zero (sending SUI)", () => {
+      mockUseBalance.mockImplementation(
+        (params: UseBalanceParams) =>
+          ({
+            data:
+              params.coinType === SUI_COIN_TYPE
+                ? { formattedBalance: "0", rawBalance: "0", metadata: null }
+                : {
+                    formattedBalance: "10",
+                    rawBalance: "10000000000",
+                    metadata: { symbol: "SUI", name: "Sui", decimals: 9 },
+                  },
+            isLoading: false,
+            // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
+          }) as any,
+      );
+
+      const queryClient = new QueryClient();
+      const { result } = renderHook(
+        () =>
+          useSendToken({
+            coinType: SUI_COIN_TYPE,
+            recipientAddress: VALID_SUI_ADDRESS,
+            amount: "1",
+          }),
+        { wrapper: createWrapper(queryClient) },
+      );
+
+      expect(result.current.showFaucetTestSui).toBe(true);
+      queryClient.clear();
+    });
+
+    it("returns null suiForGasWarning when sending non-SUI token but SUI balance is non-zero", () => {
+      mockUseBalance.mockImplementation(
+        (params: UseBalanceParams) =>
+          ({
+            data:
+              params.coinType === SUI_COIN_TYPE
+                ? {
+                    formattedBalance: "0.1",
+                    rawBalance: "100000000",
+                    metadata: { symbol: "SUI", name: "Sui", decimals: 9 },
+                  }
+                : {
+                    formattedBalance: "10",
+                    rawBalance: "10000000000",
+                    metadata: {
+                      symbol: "EVE",
+                      name: "EVE test token",
+                      decimals: 9,
+                    },
+                  },
+            isLoading: false,
+            // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
+          }) as any,
+      );
+
+      const queryClient = new QueryClient();
+      const { result } = renderHook(
+        () =>
+          useSendToken({
+            coinType: EVE_COIN_TYPE,
+            recipientAddress: VALID_SUI_ADDRESS,
+            amount: "1",
+          }),
+        { wrapper: createWrapper(queryClient) },
+      );
+
+      expect(result.current.suiForGasWarning).toBeNull();
       queryClient.clear();
     });
   });

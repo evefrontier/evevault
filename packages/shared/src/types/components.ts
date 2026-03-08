@@ -200,6 +200,8 @@ export interface HeaderMobileProps {
   onSignSubmitTxClick?: () => void;
   /** Callback when "Token refresh test" menu item is clicked */
   onTokenRefreshTestClick?: () => void;
+  /** Callback when "Faucet test SUI" menu item is clicked (dev mode only) */
+  onFaucetTestSuiClick?: () => void;
   /** When dev mode is on, optional Server (tenant) switcher: list of tenant ids */
   availableTenantIds?: string[];
   /** Current tenant id (for Server dropdown when in dev mode) */

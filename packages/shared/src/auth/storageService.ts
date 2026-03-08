@@ -4,13 +4,14 @@ import { useNetworkStore } from "../stores/networkStore";
 import type { JwtResponse } from "../types";
 import { isExtension, isWeb } from "../utils/environment";
 import { createLogger } from "../utils/logger";
+import {
+  AUTH_STORAGE_KEY,
+  JWT_STORAGE_KEY,
+  NETWORK_STORAGE_KEY,
+} from "../utils/storageKeys";
 import { resolveExpiresAt } from "./utils/authStoreUtils";
 
 const log = createLogger();
-
-const AUTH_STORAGE_KEY = "evevault:auth";
-const JWT_STORAGE_KEY = "evevault:jwt";
-const NETWORK_STORAGE_KEY = "evevault:network";
 
 type JwtStorageMap = Record<SuiChain, JwtResponse>;
 

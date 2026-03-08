@@ -6,7 +6,10 @@ import {
   type SuiChain,
 } from "@mysten/wallet-standard";
 import { ephKeyService, zkProofService } from "../services/vaultService";
-import { useDeviceStore } from "../stores/deviceStore";
+import {
+  createEmptyNetworkDataEntry,
+  useDeviceStore,
+} from "../stores/deviceStore";
 import { useNetworkStore } from "../stores/networkStore";
 import { useTokenListStore } from "../stores/tokenListStore";
 import { DEFAULT_TOKENS_BY_CHAIN } from "../types/networks";
@@ -28,15 +31,6 @@ import { clearAllJwts } from "./storageService";
 import { useAuthStore } from "./stores/authStore";
 
 const log = createLogger();
-
-function createEmptyNetworkDataEntry(): NetworkDataEntry {
-  return {
-    nonce: null,
-    maxEpoch: null,
-    maxEpochTimestampMs: null,
-    jwtRandomness: null,
-  };
-}
 
 async function clearWebStorage(): Promise<void> {
   if (typeof window === "undefined") return;

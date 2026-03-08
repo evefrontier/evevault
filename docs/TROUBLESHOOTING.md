@@ -217,7 +217,7 @@ Common issues and solutions when working with the EVE Vault extension.
 **Symptoms:**
 
 - `bun run build` fails after `bun run clean:all` (or similar) then `bun install`
-- TypeScript errors about `Transaction`, `getCoins`, or `GrpcCoreClient`
+- TypeScript errors about `Transaction`, `getCoins`/`listCoins`, or `GrpcCoreClient` (SuiGrpcClient uses `listCoins`, not `getCoins`)
 
 **Cause:** The project uses **only** `@mysten/sui` **2.4.0** (pinned in root and shared `package.json`). If the lockfile is out of date or install didn’t run, a different SDK version can be resolved and types won’t match.
 

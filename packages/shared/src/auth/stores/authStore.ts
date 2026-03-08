@@ -15,7 +15,8 @@ import {
   isWeb,
   performFullCleanup,
 } from "../../utils";
-import { getUserManager } from "../authConfig";
+import { AUTH_STORAGE_KEY } from "../../utils/storageKeys";
+import { getUserManager, redirectToFusionAuthLogout } from "../authConfig";
 import {
   clearZkLoginAddressCache,
   getZkLoginAddress,
@@ -529,16 +530,14 @@ export const useAuthStore = create<AuthState>()(
               error: error instanceof Error ? error.message : "Unknown error",
             });
 
-            // Fallback: redirect to home if there was an error
-            if (!isExtension() && typeof window !== "undefined") {
-              window.location.href = window.location.origin;
-            }
+            // Fallback: redirect so user is not stuck
+            redirectToFusionAuthLogout();
           }
         },
       };
     },
     {
-      name: "evevault:auth",
+      name: AUTH_STORAGE_KEY,
       storage: createJSONStorage(() =>
         isWeb() ? localStorageAdapter : chromeStorageAdapter,
       ),

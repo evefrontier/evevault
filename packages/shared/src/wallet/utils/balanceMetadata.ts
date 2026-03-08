@@ -6,7 +6,7 @@ export const DEFAULT_SUI_METADATA: BalanceMetadata = {
   symbol: "SUI",
   name: "Sui",
   description: "Sui Native Token",
-  iconUrl: "",
+  iconUrl: null,
 };
 
 export const DEFAULT_EVE_TESTNET_METADATA: BalanceMetadata = {

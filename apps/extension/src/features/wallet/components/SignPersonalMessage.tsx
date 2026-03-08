@@ -1,19 +1,52 @@
-import { useAuth } from "@evevault/shared/auth";
 import {
   Button,
   Heading,
   NetworkSelector,
   Text,
 } from "@evevault/shared/components";
-import { useDevice } from "@evevault/shared/hooks/useDevice";
 import { useNetwork } from "@evevault/shared/hooks/useNetwork";
 import type { PendingPersonalMessage } from "@evevault/shared/types";
 import { createLogger } from "@evevault/shared/utils";
 import { zkSignAny } from "@evevault/shared/wallet";
 import { SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
 import { useEffect, useState } from "react";
+import { useSignPopupAuth } from "../hooks";
+import { SignPopupAuthGate } from "./SignPopupAuthGate";
 
 const log = createLogger();
+
+/**
+ * Converts the message field from a PendingPersonalMessage into a Uint8Array.
+ * The message may arrive as a Uint8Array, a plain object with numeric keys
+ * (after chrome.storage serialization), or a number array.
+ */
+function toMessageBytes(
+  message: Uint8Array | Record<string, number> | number[],
+): Uint8Array {
+  if (message instanceof Uint8Array) {
+    return message;
+  }
+  if (Array.isArray(message)) {
+    return new Uint8Array(message);
+  }
+  return new Uint8Array(Object.values(message));
+}
+
+/**
+ * Decodes message bytes to a human-readable string.
+ * Falls back to showing the raw byte count if decoding fails.
+ */
+function decodeMessageBytes(bytes: Uint8Array): string {
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch (err) {
+    log.warn(
+      "Failed to decode message bytes as UTF-8, falling back to byte count",
+      err,
+    );
+    return `[binary message, ${bytes.length} bytes]`;
+  }
+}
 
 function SignPersonalMessage() {
   const { chain } = useNetwork();
@@ -22,8 +55,7 @@ function SignPersonalMessage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { maxEpoch, getZkProof, ephemeralPublicKey } = useDevice();
-  const { user } = useAuth();
+  const auth = useSignPopupAuth();
 
   useEffect(() => {
     // Retrieve the pending transaction from storage
@@ -42,7 +74,7 @@ function SignPersonalMessage() {
       log.error("No pending transaction found");
       return;
     }
-    if (!user) {
+    if (!auth.user) {
       log.error("No user found");
       return;
     }
@@ -53,28 +85,28 @@ function SignPersonalMessage() {
 
       const { message, windowId } = pendingMessage;
 
-      if (!user) {
-        throw new Error("User not found");
-      }
-
-      if (!ephemeralPublicKey) {
+      if (!auth.ephemeralPublicKey) {
         throw new Error("Ephemeral public key not found");
       }
 
-      if (!maxEpoch) {
+      if (!auth.maxEpoch) {
         throw new Error("Max epoch is not set");
       }
 
-      log.debug("Signing personal message", { length: message.length });
+      // Convert message (may be Uint8Array, object with numeric keys, or array)
+      // to a proper Uint8Array for signing
+      const messageBytes = toMessageBytes(message);
+
+      log.debug("Signing personal message", { length: messageBytes.length });
 
       const { zkSignature, bytes } = await zkSignAny(
         "PersonalMessage",
-        new TextEncoder().encode(message) as Uint8Array,
+        messageBytes,
         {
-          user,
-          ephemeralPublicKey,
-          maxEpoch,
-          getZkProof,
+          user: auth.user,
+          ephemeralPublicKey: auth.ephemeralPublicKey,
+          maxEpoch: auth.maxEpoch,
+          getZkProof: auth.getZkProof,
         },
       );
 
@@ -134,50 +166,65 @@ function SignPersonalMessage() {
     }
   };
 
-  if (!pendingMessage) {
-    return (
-      <div style={{ padding: "20px" }}>
-        <Text>Loading message...</Text>
-        {error && <Text color="error">Error: {error}</Text>}
-      </div>
-    );
-  }
-
   return (
-    <div className="flex flex-col items-center justify-between h-4/5">
-      <div className="flex flex-col items-center justify-center gap-10">
-        <img src="/images/logo.png" alt="EVE Vault" className="h-20 " />
-        <div className="flex flex-col items-center justify-center gap-4">
-          <Heading level={2}>Sign Personal Message</Heading>
-          {/* Transform message from obj to array, then stringify */}
-          <Text>{JSON.stringify(Object.values(pendingMessage.message))}</Text>
+    <SignPopupAuthGate
+      isLocked={auth.isLocked}
+      isPinSet={auth.isPinSet}
+      unlock={auth.unlock}
+      user={auth.user}
+      loading={auth.loading}
+      login={auth.login}
+      title="Sign Personal Message"
+      onCancel={handleReject}
+      cancelDisabled={auth.loading || !pendingMessage}
+    >
+      {!pendingMessage ? (
+        <div style={{ padding: "20px" }}>
+          <Text>Loading message...</Text>
+          {error && <Text color="error">Error: {error}</Text>}
         </div>
+      ) : (
+        <div className="flex flex-col items-center justify-between h-4/5">
+          <div className="flex flex-col items-center justify-center gap-10">
+            <img src="/images/logo.png" alt="EVE Vault" className="h-20 " />
+            <div className="flex flex-col items-center justify-center gap-4">
+              <Heading level={2}>Sign Personal Message</Heading>
+              <Text>
+                {decodeMessageBytes(toMessageBytes(pendingMessage.message))}
+              </Text>
+            </div>
 
-        {error && (
-          <div style={{ marginBottom: "20px" }}>
-            <Text color="error">Error: {error}</Text>
+            {error && (
+              <div style={{ marginBottom: "20px" }}>
+                <Text color="error">Error: {error}</Text>
+              </div>
+            )}
+
+            <div style={{ display: "flex", gap: "10px" }}>
+              <Button
+                onClick={handleSignPersonalMessage}
+                disabled={loading}
+                variant="primary"
+              >
+                {loading ? "Signing..." : "Approve"}
+              </Button>
+
+              <Button
+                onClick={handleReject}
+                disabled={loading}
+                variant="secondary"
+              >
+                Reject
+              </Button>
+            </div>
           </div>
-        )}
-
-        <div style={{ display: "flex", gap: "10px" }}>
-          <Button
-            onClick={handleSignPersonalMessage}
-            disabled={loading}
-            variant="primary"
-          >
-            {loading ? "Signing..." : "Approve"}
-          </Button>
-
-          <Button onClick={handleReject} disabled={loading} variant="secondary">
-            Reject
-          </Button>
+          <NetworkSelector
+            className="justify-start w-full items-end"
+            chain={chain || SUI_TESTNET_CHAIN}
+          />
         </div>
-      </div>
-      <NetworkSelector
-        className="justify-start w-full items-end"
-        chain={chain || SUI_TESTNET_CHAIN}
-      />
-    </div>
+      )}
+    </SignPopupAuthGate>
   );
 }
 
