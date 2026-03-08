@@ -1,10 +1,16 @@
 import "./PopupApp.css";
-import { handleTestTokenRefresh, useAuth } from "@evevault/shared/auth";
+import {
+  getAvailableTenantIds,
+  handleTestTokenRefresh,
+  useAuth,
+  useTenantStore,
+} from "@evevault/shared/auth";
 import {
   Button,
   HeaderMobile,
   Heading,
   NetworkSelector,
+  TenantSelector,
   Text,
   TokenListSection,
 } from "@evevault/shared/components";
@@ -65,6 +71,8 @@ function App() {
   useEffect(() => {
     getDevModeEnabled().then(setDevMode);
   }, []);
+
+  const tenantId = useTenantStore((s) => s.tenantId);
 
   const handleDevModeToggle = useCallback(async () => {
     const next = !devMode;
@@ -155,6 +163,11 @@ function App() {
               {authLoading ? "Loading..." : "Login"}
             </Button>
           </div>
+          <TenantSelector
+            currentTenantId={tenantId}
+            availableTenantIds={getAvailableTenantIds()}
+            onServerChange={useTenantStore.getState().setTenantId}
+          />
         </section>
       </div>
     );

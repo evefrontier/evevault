@@ -1,6 +1,10 @@
 import type React from "react";
 import { useMemo } from "react";
-import { useAuth } from "../../../auth";
+import {
+  getAvailableTenantIds,
+  getCurrentTenantId,
+  useAuth,
+} from "../../../auth";
 import { useCopyToClipboard, useDevice } from "../../../hooks";
 import type { HeaderMobileProps, IconName } from "../../../types";
 import { formatAddress } from "../../../utils";
@@ -23,13 +27,14 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
   onDevModeToggle,
   onSignSubmitTxClick,
   onTokenRefreshTestClick,
-  availableTenantIds = [],
-  currentTenantId = "default",
   onServerChange,
 }) => {
   const { copy } = useCopyToClipboard();
   const { lock } = useDevice();
   const { logout } = useAuth();
+
+  const availableTenantIds = getAvailableTenantIds();
+  const currentTenantId = getCurrentTenantId();
 
   const dropdownItems: DropdownItem[] = useMemo(() => {
     const items: DropdownItem[] = [];
@@ -137,13 +142,13 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
     onDevModeToggle,
     onSignSubmitTxClick,
     onTokenRefreshTestClick,
-    availableTenantIds,
     currentTenantId,
     onServerChange,
     copy,
     address,
     lock,
     logout,
+    availableTenantIds,
   ]);
 
   const displayText = email || formatAddress(address);

@@ -10,6 +10,7 @@ import {
   Background,
   Button,
   Heading,
+  TenantSelector,
   Text,
   TokenListSection,
 } from "@evevault/shared/components";
@@ -220,6 +221,11 @@ export const WalletScreen = () => {
         <main className="app-shell__content">
           <Button onClick={async () => handleLogin()}>Sign in</Button>
         </main>
+        <TenantSelector
+          currentTenantId={tenantId}
+          availableTenantIds={availableTenantIds}
+          onServerChange={(tenantId) => switchTenantAndReload(tenantId)}
+        />
       </Background>
     );
   }

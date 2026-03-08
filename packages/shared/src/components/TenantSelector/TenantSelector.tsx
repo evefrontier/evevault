@@ -1,5 +1,5 @@
 import type React from "react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { TenantId } from "../../auth/tenantConfig";
 import { getTenantLabel } from "../../auth/tenantConfig";
 import { Dropdown } from "../Dropdown";
@@ -8,9 +8,9 @@ import Text from "../Text";
 import "./TenantSelector.css";
 
 export interface TenantSelectorProps {
-  currentTenantId: TenantId | string;
-  availableTenantIds: (TenantId | string)[];
-  onServerChange: (tenantId: string) => void;
+  currentTenantId: TenantId;
+  availableTenantIds: TenantId[];
+  onServerChange: (tenantId: TenantId) => void;
   /** Inline: compact trigger (label + chevron). Standalone: label "SERVER" + value + chevron like NetworkSelector. */
   variant?: "inline" | "standalone";
   className?: string;
@@ -27,7 +27,7 @@ export const TenantSelector: React.FC<TenantSelectorProps> = ({
   const triggerRef = useRef<HTMLButtonElement>(null);
 
   const handleSelect = useCallback(
-    (id: string) => {
+    (id: TenantId) => {
       onServerChange(id);
       setIsOpen(false);
     },
@@ -72,14 +72,6 @@ export const TenantSelector: React.FC<TenantSelectorProps> = ({
           <>
             <Icon name="Network" color="quantum" />
             <div className="flex flex-col gap-0.5">
-              <Text
-                className="text-start"
-                variant="label-small"
-                color="neutral-50"
-                size="small"
-              >
-                SERVER
-              </Text>
               <Text variant="label-medium" size="medium">
                 {currentLabel}
               </Text>

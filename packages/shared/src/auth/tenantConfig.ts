@@ -15,19 +15,7 @@ export interface TenantConfig {
   serverUrl: string;
 }
 
-const KNOWN_TENANT_IDS: TenantId[] = [
-  "stillness",
-  "utopia",
-  "testevenet",
-  "nebula",
-];
-
-function getEnv(key: string): string | undefined {
-  if (typeof import.meta !== "undefined" && import.meta.env) {
-    return (import.meta.env as Record<string, string | undefined>)[key];
-  }
-  return undefined;
-}
+const KNOWN_TENANT_IDS: TenantId[] = Object.keys(TENANT_KEYS) as TenantId[];
 
 function getDefaultConfig(): TenantConfig {
   return TENANT_KEYS[DEFAULT_TENANT_ID];
@@ -67,7 +55,7 @@ export function getAvailableTenantIds(): TenantId[] {
   const ids: TenantId[] = [DEFAULT_TENANT_ID];
   for (const id of KNOWN_TENANT_IDS) {
     if (id === DEFAULT_TENANT_ID) continue;
-    const clientId = getEnv(getTenantEnvKey(id, "CLIENT_ID"));
+    const clientId = TENANT_KEYS[id].clientSecret;
     if (clientId?.trim()) {
       ids.push(id);
     }
