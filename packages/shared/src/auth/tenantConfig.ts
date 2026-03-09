@@ -1,4 +1,4 @@
-import { getDevModeEnabled, TENANT_KEYS } from "../utils";
+import { TENANT_KEYS } from "../utils";
 
 export const DEFAULT_TENANT_ID = "stillness" as const;
 
@@ -48,25 +48,29 @@ export function getDefaultTenantId(): TenantId {
  * client secret set. When isDev is false (production), tenants marked isDev: true are
  * excluded; when isDev is true, all tenants with client secret are included.
  */
-export function getAvailableTenantIds(): TenantId[] {
-  const isDev = getDevModeEnabled();
-
+export function getAvailableTenantIds(devMode = false): TenantId[] {
   const ids: TenantId[] = [DEFAULT_TENANT_ID];
+
   for (const id of KNOWN_TENANT_IDS) {
     if (id === DEFAULT_TENANT_ID) continue;
     const clientSecret = TENANT_KEYS[id].clientSecret;
     if (!clientSecret?.trim()) continue;
-    if (!isDev && TENANT_KEYS[id].isDev) continue;
+    if (!devMode && TENANT_KEYS[id].isDev) continue;
     ids.push(id);
   }
+
   return ids;
 }
 
 /**
  * Returns true if the given string is a valid/available tenant id.
+ * Pass devMode when checking from async context (e.g. callback) so dev-only tenants are allowed when dev mode is on.
  */
-export function isAvailableTenantId(value: string): value is TenantId {
-  return getAvailableTenantIds().includes(value as TenantId);
+export function isAvailableTenantId(
+  value: string,
+  devMode?: boolean,
+): value is TenantId {
+  return getAvailableTenantIds(devMode ?? false).includes(value as TenantId);
 }
 
 /** Display labels for server (tenant) ids in the UI. "default" shows as "Utopia" (server name). */
@@ -81,7 +85,7 @@ const TENANT_LABELS: Record<TenantId, string> = {
  * Returns the display label for a tenant id (e.g. "utopia" -> "Utopia").
  * Falls back to the id with first letter capitalized if unknown.
  */
-export function getTenantLabel(tenantId: string): string {
+export function getTenantLabel(tenantId: TenantId): string {
   return (
     TENANT_LABELS[tenantId as TenantId] ??
     tenantId.charAt(0).toUpperCase() + tenantId.slice(1)

@@ -70,9 +70,11 @@ export interface NetworkSwitchResult {
 
 export interface NetworkState {
   chain: SuiChain;
+  devMode: boolean;
   loading: boolean;
   initialize: () => Promise<void>;
   setChain: (chain: SuiChain) => Promise<NetworkSwitchResult>;
+  setDevMode: (value: boolean) => void;
   /** Force set chain without JWT check - for logout-based network switching */
   forceSetChain: (chain: SuiChain) => void;
   /** Check if switching to a network requires re-authentication */

@@ -9,17 +9,13 @@ import {
 } from "@evevault/shared/auth";
 import { Button, Heading, TenantSelector } from "@evevault/shared/components";
 import { useDevice } from "@evevault/shared/hooks/useDevice";
-import { getDevModeEnabled } from "@evevault/shared/utils";
-import { useEffect, useMemo, useState } from "react";
+import { useNetworkStore } from "@evevault/shared/stores";
+import { useMemo } from "react";
 
 export const LoginScreen = () => {
   const { login, loading } = useAuth();
   const { isLocked, isPinSet, unlock } = useDevice();
-  const [devMode, setDevMode] = useState(false);
-
-  useEffect(() => {
-    getDevModeEnabled().then(setDevMode);
-  }, []);
+  const { devMode } = useNetworkStore();
 
   const availableTenantIds = useMemo(
     () => getAvailableTenantIds(devMode),

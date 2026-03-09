@@ -15,19 +15,15 @@ import {
   TokenListSection,
 } from "@evevault/shared/components";
 import { useDevice, useEpochExpiration } from "@evevault/shared/hooks";
-import { useDeviceStore } from "@evevault/shared/stores/deviceStore";
-import { useNetworkStore } from "@evevault/shared/stores/networkStore";
+import { useDeviceStore, useNetworkStore } from "@evevault/shared/stores";
 import { createSuiClient, getFaucetUrlForChain } from "@evevault/shared/sui";
 import {
   createLogger,
-  getDevModeEnabled,
   getSuiscanUrl,
-  setDevModeEnabled,
   WEB_ROUTES,
 } from "@evevault/shared/utils";
 import { zkSignAny } from "@evevault/shared/wallet";
 import { Transaction } from "@mysten/sui/transactions";
-import type { SuiChain } from "@mysten/wallet-standard";
 import { SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
 import { useNavigate } from "@tanstack/react-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
@@ -39,9 +35,7 @@ export const WalletScreen = () => {
   const [initError, setInitError] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const [txDigest, setTxDigest] = useState<string | null>(null);
-  const [devMode, setDevMode] = useState(false);
-  const [_previousNetworkBeforeSwitch, setPreviousNetworkBeforeSwitch] =
-    useState<SuiChain | null>(null);
+  const { devMode, setDevMode } = useNetworkStore();
 
   const {
     user,
@@ -108,15 +102,9 @@ export const WalletScreen = () => {
   // Monitor epoch expiration and auto-logout when maxEpochTimestampMs is reached
   useEpochExpiration();
 
-  useEffect(() => {
-    getDevModeEnabled().then(setDevMode);
-  }, []);
-
-  const handleDevModeToggle = useCallback(async () => {
-    const next = !devMode;
-    setDevMode(next);
-    await setDevModeEnabled(next);
-  }, [devMode]);
+  const handleDevModeToggle = useCallback(() => {
+    setDevMode(!devMode);
+  }, [devMode, setDevMode]);
 
   const handleLogin = async () => {
     try {
@@ -278,7 +266,6 @@ export const WalletScreen = () => {
               previousNetwork,
               targetNetwork,
             });
-            setPreviousNetworkBeforeSwitch(previousNetwork as SuiChain);
           }}
         />
         <div>

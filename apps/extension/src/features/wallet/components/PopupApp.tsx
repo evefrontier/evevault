@@ -25,14 +25,12 @@ import {
   useTestTransaction,
 } from "@evevault/shared/hooks";
 import { LockScreen } from "@evevault/shared/screens";
-import { useNetworkStore } from "@evevault/shared/stores/networkStore";
+import { useNetworkStore } from "@evevault/shared/stores";
 import { getFaucetUrlForChain } from "@evevault/shared/sui";
 import {
   createLogger,
   EXTENSION_ROUTES,
-  getDevModeEnabled,
   getSuiscanUrl,
-  setDevModeEnabled,
 } from "@evevault/shared/utils";
 import { useBalance } from "@evevault/shared/wallet";
 import type { SuiChain } from "@mysten/wallet-standard";
@@ -45,7 +43,7 @@ const log = createLogger();
 function App() {
   const navigate = useNavigate();
   const { initError, isInitializing } = useAppInitialization();
-  const [devMode, setDevMode] = useState(false);
+  const { devMode, setDevMode } = useNetworkStore();
   const [previousNetworkBeforeSwitch, setPreviousNetworkBeforeSwitch] =
     useState<SuiChain | null>(null);
 
@@ -75,21 +73,15 @@ function App() {
     }
   }, [user, previousNetworkBeforeSwitch]);
 
-  useEffect(() => {
-    getDevModeEnabled().then(setDevMode);
-  }, []);
-
   const availableTenantIds = useMemo(
     () => getAvailableTenantIds(devMode),
     [devMode],
   );
   const tenantId = getCurrentTenantId(devMode);
 
-  const handleDevModeToggle = useCallback(async () => {
-    const next = !devMode;
-    setDevMode(next);
-    await setDevModeEnabled(next);
-  }, [devMode]);
+  const handleDevModeToggle = useCallback(() => {
+    setDevMode(!devMode);
+  }, [devMode, setDevMode]);
 
   const onLoginClick = async () => {
     const success = await handleLogin(previousNetworkBeforeSwitch);
