@@ -2,6 +2,7 @@ import { HeaderMobile, LockScreen, NetworkSelector } from "@evevault/shared";
 import {
   getAvailableTenantIds,
   getCurrentTenantId,
+  getTenantLabel,
   handleTestTokenRefresh,
   switchTenantAndReload,
   useAuth,
@@ -14,6 +15,7 @@ import {
   Text,
   TokenListSection,
 } from "@evevault/shared/components";
+import Icon from "@evevault/shared/components/Icon";
 import { useDevice, useEpochExpiration } from "@evevault/shared/hooks";
 import { useDeviceStore, useNetworkStore } from "@evevault/shared/stores";
 import { createSuiClient, getFaucetUrlForChain } from "@evevault/shared/sui";
@@ -61,7 +63,7 @@ export const WalletScreen = () => {
     () => getAvailableTenantIds(devMode),
     [devMode],
   );
-  const tenantId = getCurrentTenantId(devMode);
+  const tenantId = getCurrentTenantId();
 
   // Create suiClient with useMemo to recreate when chain changes
   const suiClient = React.useMemo(() => {
@@ -259,15 +261,28 @@ export const WalletScreen = () => {
       />
       {/* Network selector and test tx result */}
       <div className="justify-between pt-8 flex gap-4 flex-col sm:flex-row">
-        <NetworkSelector
-          chain={chain || SUI_TESTNET_CHAIN}
-          onNetworkSwitchStart={(previousNetwork, targetNetwork) => {
-            log.info("Network switch started", {
-              previousNetwork,
-              targetNetwork,
-            });
-          }}
-        />
+        <div className="flex justify-between items-center gap-2 w-full">
+          <NetworkSelector
+            chain={chain || SUI_TESTNET_CHAIN}
+            onNetworkSwitchStart={(previousNetwork, targetNetwork) => {
+              log.info("Network switch started", {
+                previousNetwork,
+                targetNetwork,
+              });
+            }}
+          />
+          <div className="dropdown-selector--inline">
+            <div
+              className="dropdown-selector__trigger"
+              style={{ cursor: "default" }}
+            >
+              <Icon name="Network" color="quantum" />
+              <Text variant="label-medium" size="medium">
+                {getTenantLabel(tenantId)}
+              </Text>
+            </div>
+          </div>
+        </div>
         <div>
           {txDigest && (
             <div>

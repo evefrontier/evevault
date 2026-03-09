@@ -1,11 +1,7 @@
 import { formatAddress } from "@evevault/shared/utils";
 import type React from "react";
 import { useMemo } from "react";
-import {
-  getAvailableTenantIds,
-  getCurrentTenantId,
-  useAuth,
-} from "../../../auth";
+import { useAuth } from "../../../auth";
 import { useCopyToClipboard, useDevice } from "../../../hooks";
 import type { HeaderMobileProps, IconName } from "../../../types";
 import {
@@ -14,7 +10,6 @@ import {
   getIdenticon,
 } from "../../Dropdown";
 import Switch from "../../Switch";
-import { TenantSelector } from "../../TenantSelector";
 import Text from "../../Text";
 
 export const HeaderMobile: React.FC<HeaderMobileProps> = ({
@@ -28,15 +23,10 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
   onSignSubmitTxClick,
   onTokenRefreshTestClick,
   onFaucetTestSuiClick,
-  onServerChange,
 }) => {
   const { copy } = useCopyToClipboard();
   const { lock } = useDevice();
   const { logout } = useAuth();
-
-  const devMode = showDevActions ?? false;
-  const availableTenantIds = getAvailableTenantIds();
-  const currentTenantId = getCurrentTenantId(devMode);
 
   const dropdownItems: DropdownItem[] = useMemo(() => {
     const items: DropdownItem[] = [];
@@ -94,29 +84,6 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
       });
     }
 
-    // 4. Copy Address (always)
-    // 4. Server (tenant) switcher (only when dev mode on)
-    if (showDevActions && availableTenantIds.length > 0 && onServerChange) {
-      items.push({
-        label: "Server",
-        icon: "Settings" as IconName,
-        onClick: () => {},
-        preventCloseOnClick: true,
-        customContent: (
-          <>
-            {getIdenticon(0)}
-            <Text variant="label">Server</Text>
-            <TenantSelector
-              currentTenantId={currentTenantId}
-              availableTenantIds={availableTenantIds}
-              onServerChange={onServerChange}
-              variant="inline"
-            />
-          </>
-        ),
-      });
-    }
-
     // 5. Copy Address (always)
     items.push({
       label: "Copy Address",
@@ -154,13 +121,10 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
     onDevModeToggle,
     onSignSubmitTxClick,
     onTokenRefreshTestClick,
-    currentTenantId,
-    onServerChange,
     copy,
     address,
     lock,
     logout,
-    availableTenantIds,
     onFaucetTestSuiClick,
   ]);
 

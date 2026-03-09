@@ -53,7 +53,7 @@ export const TenantSelector: React.FC<TenantSelectorProps> = ({
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
-        aria-label="Server"
+        aria-label="Tenant"
       >
         {isInline ? (
           <>

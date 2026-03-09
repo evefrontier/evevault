@@ -63,7 +63,7 @@ if (typeof chrome !== "undefined" && chrome.storage && !isWeb()) {
  * applyTenantFromUrl() on load to sync from ?tenant= before using this.
  * Pass devMode when known (e.g. from UI); when omitted, defaults to false (production).
  */
-export function getCurrentTenantId(devMode = false): TenantId {
+export function getCurrentTenantId(): TenantId {
   const stored = useTenantStore.getState().tenantId;
   return isAvailableTenantId(stored) ? stored : getDefaultTenantId();
 }
