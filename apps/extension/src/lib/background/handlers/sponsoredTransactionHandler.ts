@@ -54,9 +54,9 @@ async function handleSponsoredTransaction(
 
     if (metadata) {
       log.info("Sponsored transaction metadata", {
-        name: metadata.name,
-        description: metadata.description,
-        dappURL: metadata.url,
+        name: metadata?.name,
+        description: metadata?.description,
+        url: metadata?.url,
       });
     }
 
