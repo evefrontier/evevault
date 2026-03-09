@@ -23,10 +23,11 @@ export default defineConfig(() => {
   // Load env from root directory (monorepo root)
   // When running from apps/extension, __dirname is apps/extension, so go up 2 levels
   const rootDir = path.resolve(__dirname, "../..");
-  const rootPkg = JSON.parse(
-    readFileSync(path.join(rootDir, "package.json"), "utf-8"),
+  // Version comes from extension package.json (updated by Changesets fixed group).
+  const extPkg = JSON.parse(
+    readFileSync(path.join(__dirname, "package.json"), "utf-8"),
   ) as { version?: string };
-  const version = rootPkg.version ?? "0.0.0";
+  const version = extPkg.version ?? "0.0.0";
   const envVars = loadEnv(env?.mode || "development", rootDir, "");
 
   // Debug: Log to verify env loading (remove in production)
