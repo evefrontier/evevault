@@ -26,6 +26,7 @@ import { zkSignAny } from "@evevault/shared/wallet";
 import { Transaction } from "@mysten/sui/transactions";
 import type { SuiChain } from "@mysten/wallet-standard";
 import { SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import React, { useCallback, useEffect, useState } from "react";
 
@@ -33,6 +34,7 @@ const log = createLogger();
 
 export const WalletScreen = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [initError, setInitError] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const [txDigest, setTxDigest] = useState<string | null>(null);
@@ -148,7 +150,9 @@ export const WalletScreen = () => {
     const digest = result.Transaction?.digest ?? null;
     log.info("Transaction executed", { digest });
     setTxDigest(digest);
-  }, [user, maxEpoch, ephemeralPublicKey, getZkProof, suiClient]);
+    await queryClient.refetchQueries({ queryKey: ["coin-balance"] });
+    await queryClient.refetchQueries({ queryKey: ["transactions"] });
+  }, [user, maxEpoch, ephemeralPublicKey, getZkProof, suiClient, queryClient]);
 
   const handleTokenRefreshTest = useCallback(async () => {
     if (!user) return;

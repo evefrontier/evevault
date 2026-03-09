@@ -94,5 +94,6 @@ export function useBalance({
       !!user?.profile?.sui_address && !!chain && !!graphqlClient && !!coinType,
     staleTime: 1000 * 30, // 30 seconds
     retry: 2,
+    refetchOnMount: true, // refresh when navigating back to wallet/token list after a transfer
   });
 }

@@ -1,5 +1,13 @@
+import { useQueryClient } from "@tanstack/react-query";
 import type React from "react";
-import { type KeyboardEvent, useMemo, useState } from "react";
+import {
+  type KeyboardEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useResponsive } from "../../hooks";
 import { useTokenListStore } from "../../stores/tokenListStore";
 import type { TokenListProps, TokenRowProps } from "../../types";
@@ -12,8 +20,39 @@ import Icon from "../Icon";
 import Text from "../Text";
 import { useToast } from "../Toast";
 
+/** Replaces each digit in the string with a random digit (0-9); non-digits unchanged. */
+function scrambleDigits(text: string): string {
+  return text
+    .split("")
+    .map((char) =>
+      char >= "0" && char <= "9"
+        ? String(Math.floor(Math.random() * 10))
+        : char,
+    )
+    .join("");
+}
+
+/** Replaces each letter (a-z, A-Z) with a random uppercase letter; non-letters unchanged. */
+function scrambleLetters(text: string): string {
+  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  return text
+    .split("")
+    .map((char) => {
+      if (char >= "a" && char <= "z")
+        return letters[Math.floor(Math.random() * 26)];
+      if (char >= "A" && char <= "Z")
+        return letters[Math.floor(Math.random() * 26)];
+      return char;
+    })
+    .join("");
+}
+
+const SCRAMBLE_INTERVAL_MS = 200;
+const REFRESH_LOADING_MS = 1000;
+
 interface ExtendedTokenRowProps extends TokenRowProps {
   onTransfer?: () => void;
+  isRefreshing?: boolean;
 }
 
 const TokenRow: React.FC<ExtendedTokenRowProps> = ({
@@ -24,6 +63,7 @@ const TokenRow: React.FC<ExtendedTokenRowProps> = ({
   onSelect,
   onCopyAddress,
   onTransfer,
+  isRefreshing = false,
 }) => {
   const { data, isLoading } = useBalance({
     user,
@@ -40,6 +80,27 @@ const TokenRow: React.FC<ExtendedTokenRowProps> = ({
   const shortAddress = `${coinType.slice(0, 6)}•••${coinType.slice(-4)}`;
   const balance = isLoading ? "..." : (data?.formattedBalance ?? "0");
   const symbol = data?.metadata?.symbol || knownDisplay?.symbol || "";
+
+  const [scrambledBalance, setScrambledBalance] = useState(balance);
+  const [scrambledSymbol, setScrambledSymbol] = useState(symbol);
+
+  useEffect(() => {
+    if (!isRefreshing) {
+      setScrambledBalance(balance);
+      setScrambledSymbol(symbol);
+      return;
+    }
+    setScrambledBalance(scrambleDigits(balance));
+    setScrambledSymbol(scrambleLetters(symbol));
+    const id = setInterval(() => {
+      setScrambledBalance(scrambleDigits(balance));
+      setScrambledSymbol(scrambleLetters(symbol));
+    }, SCRAMBLE_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [isRefreshing, balance, symbol]);
+
+  const displayBalance = isRefreshing ? scrambledBalance : balance;
+  const displaySymbol = isRefreshing ? scrambledSymbol : symbol;
 
   // Container classes - expands when selected
   const containerClasses = [
@@ -98,7 +159,7 @@ const TokenRow: React.FC<ExtendedTokenRowProps> = ({
         </div>
         <div className="flex items-center gap-6 text-right">
           <Text variant="regular" size="medium">
-            {balance} {symbol}
+            {displayBalance} {displaySymbol}
           </Text>
         </div>
       </div>
@@ -122,10 +183,36 @@ const TokenRow: React.FC<ExtendedTokenRowProps> = ({
 export const TokenSection: React.FC<
   TokenListProps & { walletAddress?: string }
 > = ({ user, chain, onAddToken, onSendToken, walletAddress }) => {
+  const queryClient = useQueryClient();
   const { tokens, removeToken } = useTokenListStore();
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { showToast } = useToast();
   const { isMobile } = useResponsive();
+
+  useEffect(() => {
+    return () => {
+      if (refreshTimerRef.current != null) {
+        clearTimeout(refreshTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleRefreshBalances = useCallback(() => {
+    if (isRefreshing) return;
+    if (refreshTimerRef.current != null) {
+      clearTimeout(refreshTimerRef.current);
+      refreshTimerRef.current = null;
+    }
+    setIsRefreshing(true);
+    void queryClient.refetchQueries({ queryKey: ["coin-balance"] });
+    void queryClient.refetchQueries({ queryKey: ["transactions"] });
+    refreshTimerRef.current = setTimeout(() => {
+      refreshTimerRef.current = null;
+      setIsRefreshing(false);
+    }, REFRESH_LOADING_MS);
+  }, [queryClient, isRefreshing]);
 
   const tokensForChain = useMemo(
     () => (chain ? (tokens[chain] ?? getDefaultTokensForChain(chain)) : []),
@@ -208,14 +295,30 @@ export const TokenSection: React.FC<
               ADDRESS
             </Text>
           </div>
-          <Text
-            variant="label-semi"
-            size="small"
-            color="neutral-50"
-            className="text-right"
+          <button
+            type="button"
+            className="flex items-center justify-end gap-1 bg-transparent border-none cursor-pointer rounded opacity-90 hover:opacity-100 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed text-left min-w-0"
+            onClick={handleRefreshBalances}
+            disabled={isRefreshing}
+            title="Refresh balances"
+            aria-label="Refresh balances"
           >
-            BALANCE
-          </Text>
+            <Text
+              variant="label-semi"
+              size="small"
+              color="neutral-50"
+              className="text-right"
+            >
+              BALANCE
+            </Text>
+            <Icon
+              name="Refresh"
+              width={12}
+              height={12}
+              color="grey-neutral"
+              className={`flex-shrink-0 -mt-1 ${isRefreshing ? "animate-spin" : ""}`}
+            />
+          </button>
         </div>
 
         {/* Token List - Scrollable */}
@@ -241,6 +344,7 @@ export const TokenSection: React.FC<
                 onTransfer={
                   onSendToken ? () => handleTransfer(coinType) : undefined
                 }
+                isRefreshing={isRefreshing}
               />
             ))
           )}
