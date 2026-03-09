@@ -466,6 +466,11 @@ export class EveVaultWallet implements Wallet {
               action: input.txAction,
               assembly: input.assembly,
               assemblyType: input.assemblyType,
+              metadata: {
+                name: input.metadata?.name,
+                description: input.metadata?.description,
+                url: input.metadata?.dappURL,
+              },
             },
           });
         },
