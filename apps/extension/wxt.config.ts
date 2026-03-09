@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { env } from "node:process";
 import tailwindcss from "@tailwindcss/vite";
@@ -23,6 +23,10 @@ export default defineConfig(() => {
   // Load env from root directory (monorepo root)
   // When running from apps/extension, __dirname is apps/extension, so go up 2 levels
   const rootDir = path.resolve(__dirname, "../..");
+  const rootPkg = JSON.parse(
+    readFileSync(path.join(rootDir, "package.json"), "utf-8"),
+  ) as { version?: string };
+  const version = rootPkg.version ?? "0.0.0";
   const envVars = loadEnv(env?.mode || "development", rootDir, "");
 
   // Debug: Log to verify env loading (remove in production)
@@ -118,7 +122,7 @@ export default defineConfig(() => {
     manifest: {
       key: envVars.EXTENSION_ID,
       name: "EVE Vault",
-      version: "0.0.4",
+      version,
       description: "EVE Vault for EVE Frontier on Utopia with ZKLogin",
       permissions: [
         "identity",
