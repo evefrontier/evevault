@@ -18,4 +18,4 @@ We use [Changesets](https://github.com/changesets/changesets) for versioning. Ex
 
 3. Commit the changes and open a PR. After merge, create a GitHub release with the same tag (e.g. `v0.0.5`) to trigger the release workflow.
 
-The root `package.json` version is synced from the extension when you run `bun run version` (or `bun run version:sync`). The extension manifest version is read from `apps/extension/package.json` at build time.
+Root, extension, web, and shared are in the same fixed group, so `bun run version` updates all of them. The extension manifest version is read from `apps/extension/package.json` at build time.

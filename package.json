@@ -29,8 +29,7 @@
     "e2e:ui": "playwright test --ui",
     "prepare": "husky",
     "changeset": "changeset",
-    "version": "changeset version && node scripts/sync-version.js",
-    "version:sync": "node scripts/sync-version.js"
+    "version": "changeset version"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx,json,css}": [
