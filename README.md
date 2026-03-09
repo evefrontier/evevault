@@ -44,11 +44,14 @@ bun install
 
 ### 2. Environment Configuration
 
-Create a `.env` file at app root, `apps/extension`:
+Create a `.env` file at app root, `./.env`:
 
 ```env
 # FusionAuth Configuration
-VITE_FUSION_CLIENT_SECRET=your-fusionauth-client-secret
+VITE_TENANT_STILLNESS_CLIENT_SECRET=your-fusionauth-client-secret
+VITE_TENANT_UTOPIA_CLIENT_SECRET=your-fusionauth-client-secret
+VITE_TENANT_TESTEVENET_CLIENT_SECRET=your-fusionauth-client-secret
+VITE_TENANT_NEBULA_CLIENT_SECRET=your-fusionauth-client-secret
 
 # Enoki Configuration
 VITE_ENOKI_API_KEY=your-enoki-api-key
