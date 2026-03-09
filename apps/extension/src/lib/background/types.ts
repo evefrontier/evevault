@@ -27,12 +27,7 @@ export type EveFrontierSponsoredTransactionMessage = BackgroundMessage & {
     action: string;
     assembly: string;
     assemblyType: string;
-    chain: string;
-    metadata?: {
-      name: string;
-      description: string;
-      url: string;
-    };
+    metadata?: SponsoredTransactionMetadata;
   };
 };
 
@@ -67,12 +62,9 @@ export type EveFrontierSponsoredTransactionInput = {
   txAction: string;
   assembly: string;
   assemblyType: string;
-  metadata?: {
-    name: string;
-    description: string;
-    dappURL: string;
-  };
+  metadata?: SponsoredTransactionMetadata;
 };
+
 export type EveFrontierSponsoredTransactionOutput = {
   digest: string;
   effects: string;
@@ -93,3 +85,10 @@ export type SponsoredTxReturn = {
   bcsDataB64Bytes: string;
   preparationId: string;
 };
+
+//** This should be replaced by @evefrontier/dapp-kit@v0.1.4 after it is published */
+export interface SponsoredTransactionMetadata {
+  name?: string;
+  description?: string;
+  url?: string;
+}
