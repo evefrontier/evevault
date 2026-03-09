@@ -457,6 +457,13 @@ export class EveVaultWallet implements Wallet {
             input,
           );
 
+          // Check if metadata is truthy
+          const hasMetadata =
+            input.metadata &&
+            (input.metadata.name != null ||
+              input.metadata.description != null ||
+              input.metadata.url != null);
+
           window.postMessage({
             __to: "Eve Vault",
             id,
@@ -466,6 +473,13 @@ export class EveVaultWallet implements Wallet {
               action: input.txAction,
               assembly: input.assembly,
               assemblyType: input.assemblyType,
+              ...(hasMetadata && {
+                metadata: {
+                  name: input.metadata?.name,
+                  description: input.metadata?.description,
+                  url: input.metadata?.url,
+                },
+              }),
             },
           });
         },

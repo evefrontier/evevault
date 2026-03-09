@@ -17,7 +17,7 @@ async function handleSponsoredTransaction(
   _sendResponse: (response?: unknown) => void,
 ): Promise<boolean> {
   const senderTabId = sender.tab?.id;
-  const { action, assembly, assemblyType } = message.message;
+  const { action, assembly, assemblyType, metadata } = message.message;
 
   try {
     const chain = await getStoredChain();
@@ -49,7 +49,16 @@ async function handleSponsoredTransaction(
       assembly,
       assemblyType,
       chain,
+      metadata,
     });
+
+    if (metadata) {
+      log.info("Sponsored transaction metadata", {
+        name: metadata?.name,
+        description: metadata?.description,
+        url: metadata?.url,
+      });
+    }
 
     const encodedAssemblyType = encodeURIComponent(assemblyType);
     const encodedAction = encodeURIComponent(action);
@@ -64,6 +73,9 @@ async function handleSponsoredTransaction(
         method: "POST",
         body: JSON.stringify({
           assemblyId: assembly,
+          name: metadata?.name,
+          description: metadata?.description,
+          url: metadata?.url,
         }),
         headers: {
           "X-Tenant": tenant,
