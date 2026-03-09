@@ -21,7 +21,7 @@ export const LoginScreen = () => {
     () => getAvailableTenantIds(devMode),
     [devMode],
   );
-  const currentTenantId = getCurrentTenantId(devMode);
+  const currentTenantId = getCurrentTenantId();
 
   // First, check for unencrypted ephemeral key pair
   if (isLocked) {

@@ -77,7 +77,7 @@ function App() {
     () => getAvailableTenantIds(devMode),
     [devMode],
   );
-  const tenantId = getCurrentTenantId(devMode);
+  const tenantId = getCurrentTenantId();
 
   const handleDevModeToggle = useCallback(() => {
     setDevMode(!devMode);
