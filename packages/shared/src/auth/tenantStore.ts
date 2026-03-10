@@ -84,8 +84,7 @@ export async function applyTenantFromUrl(): Promise<{
   tenantId: TenantId;
   changed: boolean;
 }> {
-  const isDev = await getDevModeEnabled();
-  const current = getCurrentTenantId(isDev);
+  const current = getCurrentTenantId();
   if (!isWeb() || typeof window === "undefined") {
     return { tenantId: current, changed: false };
   }
