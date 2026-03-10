@@ -651,7 +651,7 @@ describe("useSendToken", () => {
       const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
       const refetchSpy = vi.spyOn(queryClient, "refetchQueries");
 
-      const { result } = renderHook(
+      const { result, unmount } = renderHook(
         () =>
           useSendToken({
             coinType: "0x2::sui::SUI",
@@ -676,10 +676,18 @@ describe("useSendToken", () => {
       });
       expect(invalidateSpy).toHaveBeenCalledTimes(2);
 
-      expect(refetchSpy).toHaveBeenCalledWith({ queryKey: ["coin-balance"] });
-      expect(refetchSpy).toHaveBeenCalledWith({ queryKey: ["transactions"] });
+      expect(refetchSpy).toHaveBeenCalledWith({
+        queryKey: ["coin-balance"],
+        type: "all",
+      });
+      expect(refetchSpy).toHaveBeenCalledWith({
+        queryKey: ["transactions"],
+        type: "all",
+      });
       expect(refetchSpy.mock.calls.length).toBeGreaterThanOrEqual(2);
 
+      unmount();
+      vi.clearAllTimers();
       invalidateSpy.mockRestore();
       refetchSpy.mockRestore();
       queryClient.clear();
@@ -691,7 +699,7 @@ describe("useSendToken", () => {
       const queryClient = new QueryClient();
       const refetchSpy = vi.spyOn(queryClient, "refetchQueries");
 
-      const { result } = renderHook(
+      const { result, unmount } = renderHook(
         () =>
           useSendToken({
             coinType: "0x2::sui::SUI",
@@ -714,6 +722,8 @@ describe("useSendToken", () => {
 
       expect(refetchSpy).toHaveBeenCalledTimes(callsAfterSend + 2);
 
+      unmount();
+      vi.clearAllTimers();
       refetchSpy.mockRestore();
       queryClient.clear();
       vi.useRealTimers();

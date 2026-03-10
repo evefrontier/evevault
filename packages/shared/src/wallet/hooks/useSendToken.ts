@@ -442,10 +442,16 @@ export function useSendToken({
       queryClient.invalidateQueries({ queryKey: ["coin-balance"] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
 
-      // Immediate refetch in parallel (indexer may already have updated)
-      await Promise.all([
-        queryClient.refetchQueries({ queryKey: ["coin-balance"] }),
-        queryClient.refetchQueries({ queryKey: ["transactions"] }),
+      // Refetch in background (type: "all" so inactive queries refresh too); don't block isLoading
+      void Promise.all([
+        queryClient.refetchQueries({
+          queryKey: ["coin-balance"],
+          type: "all",
+        }),
+        queryClient.refetchQueries({
+          queryKey: ["transactions"],
+          type: "all",
+        }),
       ]);
 
       // Delayed refetch: GraphQL indexer often lags; refetch after 2s so cache has correct balance
@@ -456,8 +462,14 @@ export function useSendToken({
       }
       postTransferRefetchTimerRef.current = setTimeout(() => {
         postTransferRefetchTimerRef.current = null;
-        void queryClient.refetchQueries({ queryKey: ["coin-balance"] });
-        void queryClient.refetchQueries({ queryKey: ["transactions"] });
+        void queryClient.refetchQueries({
+          queryKey: ["coin-balance"],
+          type: "all",
+        });
+        void queryClient.refetchQueries({
+          queryKey: ["transactions"],
+          type: "all",
+        });
       }, BALANCE_REFETCH_DELAY_MS);
     } catch (err) {
       const errorMessage =

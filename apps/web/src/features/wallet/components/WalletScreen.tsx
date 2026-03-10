@@ -150,7 +150,7 @@ export const WalletScreen = () => {
     const digest = result.Transaction?.digest ?? null;
     log.info("Transaction executed", { digest });
     setTxDigest(digest);
-    await Promise.all([
+    void Promise.all([
       queryClient.refetchQueries({ queryKey: ["coin-balance"] }),
       queryClient.refetchQueries({ queryKey: ["transactions"] }),
     ]);
