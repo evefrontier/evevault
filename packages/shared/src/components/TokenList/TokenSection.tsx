@@ -24,8 +24,8 @@ const SCRAMBLE_INTERVAL_MS = 200;
 
 /**
  * Scrambles the balance so the first digit never changes and the displayed value
- * never exceeds the actual balance. Each subsequent digit is chosen at random
- * but capped so that the running total stays <= balance (like recalculating).
+ * never exceeds the actual balance. Uses BigInt so large balances don't hit
+ * Number.MAX_SAFE_INTEGER or lose precision.
  */
 function scrambleBalanceWithFixedFirst(text: string): string {
   if (!text || text === "...") return text;
@@ -38,8 +38,8 @@ function scrambleBalanceWithFixedFirst(text: string): string {
   if (fullDigits.length === 0) return text;
 
   const valueInUnits =
-    Number.parseInt(integerPart || "0", 10) * 10 ** decimalPart.length +
-    Number.parseInt(decimalPart || "0", 10);
+    BigInt(integerPart || "0") * 10n ** BigInt(decimalPart.length) +
+    BigInt(decimalPart || "0");
   const totalDigits = fullDigits.length;
   const integerDigitsCount = integerPart.length;
 
@@ -49,16 +49,15 @@ function scrambleBalanceWithFixedFirst(text: string): string {
       result.push(fullDigits[0] ?? "0");
       continue;
     }
-    const currentValue = Number.parseInt(
-      result.join("") + "0".repeat(totalDigits - i),
-      10,
-    );
-    const remainingPower = 10 ** (totalDigits - i - 1);
+    const currentValue = BigInt(result.join("") + "0".repeat(totalDigits - i));
+    const remainingPower = 10n ** BigInt(totalDigits - i - 1);
     const headroom = valueInUnits - currentValue;
-    const maxDigit = Math.min(
-      9,
-      Math.max(0, Math.floor(headroom / remainingPower)),
-    );
+    if (headroom < 0n) {
+      result.push("0");
+      continue;
+    }
+    const maxDigitNum = Number(headroom / remainingPower);
+    const maxDigit = Math.min(9, Math.max(0, maxDigitNum));
     const digit = Math.floor(Math.random() * (maxDigit + 1));
     result.push(String(digit));
   }
@@ -94,11 +93,11 @@ function LoadingDots() {
   );
 }
 
-const REFRESH_LOADING_MS = 1000;
-
 interface ExtendedTokenRowProps extends TokenRowProps {
   onTransfer?: () => void;
   isRefreshing?: boolean;
+  /** When isRefreshing, each tick drives a new scramble so one timer can update all rows. */
+  refreshTick?: number;
 }
 
 const TokenRow: React.FC<ExtendedTokenRowProps> = ({
@@ -110,6 +109,7 @@ const TokenRow: React.FC<ExtendedTokenRowProps> = ({
   onCopyAddress,
   onTransfer,
   isRefreshing = false,
+  refreshTick = 0,
 }) => {
   const { data, isLoading } = useBalance({
     user,
@@ -127,26 +127,17 @@ const TokenRow: React.FC<ExtendedTokenRowProps> = ({
   const balance = isLoading ? "..." : (data?.formattedBalance ?? "0");
   const symbol = data?.metadata?.symbol || knownDisplay?.symbol || "";
 
-  const [scrambledBalance, setScrambledBalance] = useState(balance);
-  const [scrambledSymbol, setScrambledSymbol] = useState(symbol);
-
-  useEffect(() => {
-    if (!isRefreshing) {
-      setScrambledBalance(balance);
-      setScrambledSymbol(symbol);
-      return;
-    }
-    setScrambledBalance(scrambleBalanceWithFixedFirst(balance));
-    setScrambledSymbol(scrambleLetters(symbol));
-    const id = setInterval(() => {
-      setScrambledBalance(scrambleBalanceWithFixedFirst(balance));
-      setScrambledSymbol(scrambleLetters(symbol));
-    }, SCRAMBLE_INTERVAL_MS);
-    return () => clearInterval(id);
-  }, [isRefreshing, balance, symbol]);
-
-  const displayBalance = isRefreshing ? scrambledBalance : balance;
-  const displaySymbol = isRefreshing ? scrambledSymbol : symbol;
+  // refreshTick is a prop that drives re-scramble each tick; linter doesn't see it as triggering re-render
+  // biome-ignore lint/correctness/useExhaustiveDependencies: refreshTick prop drives re-scramble each 200ms
+  const displayBalance = useMemo(
+    () => (isRefreshing ? scrambleBalanceWithFixedFirst(balance) : balance),
+    [isRefreshing, balance, refreshTick],
+  );
+  // biome-ignore lint/correctness/useExhaustiveDependencies: refreshTick prop drives re-scramble each 200ms
+  const displaySymbol = useMemo(
+    () => (isRefreshing ? scrambleLetters(symbol) : symbol),
+    [isRefreshing, symbol, refreshTick],
+  );
 
   // Container classes - expands when selected
   const containerClasses = [
@@ -227,6 +218,8 @@ const TokenRow: React.FC<ExtendedTokenRowProps> = ({
   );
 };
 
+const REFRESH_TIMEOUT_MS = 10000;
+
 export const TokenSection: React.FC<
   TokenListProps & { walletAddress?: string }
 > = ({ user, chain, onAddToken, onSendToken, walletAddress }) => {
@@ -234,31 +227,53 @@ export const TokenSection: React.FC<
   const { tokens, removeToken } = useTokenListStore();
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [refreshTick, setRefreshTick] = useState(0);
+  const scrambleIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+    null,
+  );
   const { showToast } = useToast();
   const { isMobile } = useResponsive();
 
   useEffect(() => {
     return () => {
-      if (refreshTimerRef.current != null) {
-        clearTimeout(refreshTimerRef.current);
+      if (scrambleIntervalRef.current != null) {
+        clearInterval(scrambleIntervalRef.current);
       }
     };
   }, []);
 
-  const handleRefreshBalances = useCallback(() => {
+  const handleRefreshBalances = useCallback(async () => {
     if (isRefreshing) return;
-    if (refreshTimerRef.current != null) {
-      clearTimeout(refreshTimerRef.current);
-      refreshTimerRef.current = null;
+    if (scrambleIntervalRef.current != null) {
+      clearInterval(scrambleIntervalRef.current);
+      scrambleIntervalRef.current = null;
     }
     setIsRefreshing(true);
-    void queryClient.refetchQueries({ queryKey: ["coin-balance"] });
-    void queryClient.refetchQueries({ queryKey: ["transactions"] });
-    refreshTimerRef.current = setTimeout(() => {
-      refreshTimerRef.current = null;
+    setRefreshTick(0);
+    scrambleIntervalRef.current = setInterval(() => {
+      setRefreshTick((t) => t + 1);
+    }, SCRAMBLE_INTERVAL_MS);
+    try {
+      await Promise.race([
+        Promise.all([
+          queryClient.refetchQueries({
+            queryKey: ["coin-balance"],
+            type: "all",
+          }),
+          queryClient.refetchQueries({
+            queryKey: ["transactions"],
+            type: "all",
+          }),
+        ]),
+        new Promise<void>((resolve) => setTimeout(resolve, REFRESH_TIMEOUT_MS)),
+      ]);
+    } finally {
+      if (scrambleIntervalRef.current != null) {
+        clearInterval(scrambleIntervalRef.current);
+        scrambleIntervalRef.current = null;
+      }
       setIsRefreshing(false);
-    }, REFRESH_LOADING_MS);
+    }
   }, [queryClient, isRefreshing]);
 
   const tokensForChain = useMemo(
@@ -392,6 +407,7 @@ export const TokenSection: React.FC<
                   onSendToken ? () => handleTransfer(coinType) : undefined
                 }
                 isRefreshing={isRefreshing}
+                refreshTick={refreshTick}
               />
             ))
           )}

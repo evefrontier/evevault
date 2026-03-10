@@ -448,6 +448,10 @@ export function useSendToken({
 
       // Delayed refetch: GraphQL indexer often lags; refetch after 2s so cache has correct balance
       const BALANCE_REFETCH_DELAY_MS = 2000;
+      if (postTransferRefetchTimerRef.current != null) {
+        clearTimeout(postTransferRefetchTimerRef.current);
+        postTransferRefetchTimerRef.current = null;
+      }
       postTransferRefetchTimerRef.current = setTimeout(() => {
         postTransferRefetchTimerRef.current = null;
         void queryClient.refetchQueries({ queryKey: ["coin-balance"] });

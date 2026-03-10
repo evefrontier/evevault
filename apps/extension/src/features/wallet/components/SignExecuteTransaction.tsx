@@ -132,10 +132,10 @@ function SignAndExecuteTransaction() {
         },
       });
 
-      await queryClient.refetchQueries({ queryKey: ["coin-balance"] });
-      await queryClient.refetchQueries({ queryKey: ["transactions"] });
+      // Invalidate so next time the popup opens it refetches; don't await so close isn't delayed
+      queryClient.invalidateQueries({ queryKey: ["coin-balance"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
 
-      // Close the popup window
       window.close();
     } catch (err) {
       log.error("Transaction signing failed", err);
