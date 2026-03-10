@@ -1,20 +1,7 @@
-import { TENANT_KEYS } from "../utils";
+import type { TenantConfig, TenantId } from "../types";
+import { TENANT_KEYS } from ".";
 
 export const DEFAULT_TENANT_ID = "stillness" as const;
-
-export type TenantId =
-  | typeof DEFAULT_TENANT_ID
-  | "utopia"
-  | "stillness"
-  | "testevenet"
-  | "nebula";
-
-export interface TenantConfig {
-  clientId: string;
-  clientSecret: string;
-  serverUrl: string;
-  isDev?: boolean;
-}
 
 const KNOWN_TENANT_IDS: TenantId[] = Object.keys(TENANT_KEYS) as TenantId[];
 

@@ -3,10 +3,12 @@ import {
   getAvailableTenantIds,
   getCurrentTenantId,
   getTenantLabel,
-  handleTestTokenRefresh,
-  redirectToFusionAuthLogout,
   switchTenantAndReload,
   type TenantId,
+} from "@evevault/shared";
+import {
+  handleTestTokenRefresh,
+  redirectToFusionAuthLogout,
   useAuth,
 } from "@evevault/shared/auth";
 import {
@@ -22,6 +24,7 @@ import Icon from "@evevault/shared/components/Icon";
 import {
   useDevice,
   useEpochExpiration,
+  useTenant,
   useTestTransaction,
 } from "@evevault/shared/hooks";
 import { LockScreen } from "@evevault/shared/screens";
@@ -43,7 +46,7 @@ const log = createLogger();
 function App() {
   const navigate = useNavigate();
   const { initError, isInitializing } = useAppInitialization();
-  const { devMode, setDevMode } = useNetworkStore();
+  const { devMode, setDevMode } = useTenant();
   const [previousNetworkBeforeSwitch, setPreviousNetworkBeforeSwitch] =
     useState<SuiChain | null>(null);
 

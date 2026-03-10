@@ -4,8 +4,8 @@ import * as vaultService from "../../../services/vaultService";
 import { useDeviceStore } from "../../../stores/deviceStore";
 import { useNetworkStore } from "../../../stores/networkStore";
 import * as utils from "../../../utils/authCleanup";
+import { DEFAULT_TENANT_ID } from "../../../utils/tenantConfig";
 import * as authConfig from "../../authConfig";
-import { DEFAULT_TENANT_ID } from "../../tenantConfig";
 import { useAuthStore } from "../authStore";
 
 // Mock dependencies

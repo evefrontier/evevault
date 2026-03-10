@@ -1,10 +1,11 @@
-import { useNetworkStore } from "@evevault/shared";
 import {
   getCurrentTenantId,
+  OAuthTenantSessionKey,
+  useNetworkStore,
+} from "@evevault/shared";
+import {
   getUserManager,
   getZkLoginAddress,
-  isAvailableTenantId,
-  OAuthTenantSessionKey,
   storeJwt,
   useAuthStore,
 } from "@evevault/shared/auth";
@@ -13,6 +14,7 @@ import type { RoutePath } from "@evevault/shared/types";
 import {
   createLogger,
   getDevModeEnabled,
+  isAvailableTenantId,
   ROUTE_PATHS,
   SESSION_STORAGE_REDIRECT_KEY,
 } from "@evevault/shared/utils";

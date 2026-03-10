@@ -1,8 +1,8 @@
 import { decodeJwt } from "jose";
 import type { IdTokenClaims } from "oidc-client-ts";
+import { getCurrentTenantId } from "../stores/tenantStore";
 import type { JwtResponse } from "../types/authTypes";
-import { getTenantConfig } from "./tenantConfig";
-import { getCurrentTenantId } from "./tenantStore";
+import { getTenantConfig } from "../utils/tenantConfig";
 
 // TODO: This will change to use a Quasar Go API vend endpoint
 // In order to exposing the API key to the extension

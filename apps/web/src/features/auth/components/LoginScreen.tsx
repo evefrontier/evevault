@@ -1,21 +1,21 @@
-import { LockScreen } from "@evevault/shared";
+import {
+  LockScreen,
+  switchTenantAndReload,
+  type TenantId,
+} from "@evevault/shared";
+import { redirectToFusionAuthLogout, useAuth } from "@evevault/shared/auth";
+import { Button, Heading, TenantSelector } from "@evevault/shared/components";
+import { useDevice, useTenant } from "@evevault/shared/hooks";
 import {
   getAvailableTenantIds,
   getCurrentTenantId,
-  redirectToFusionAuthLogout,
-  switchTenantAndReload,
-  type TenantId,
-  useAuth,
-} from "@evevault/shared/auth";
-import { Button, Heading, TenantSelector } from "@evevault/shared/components";
-import { useDevice } from "@evevault/shared/hooks/useDevice";
-import { useNetworkStore } from "@evevault/shared/stores";
+} from "@evevault/shared/stores";
 import { useMemo } from "react";
 
 export const LoginScreen = () => {
   const { login, loading } = useAuth();
   const { isLocked, isPinSet, unlock } = useDevice();
-  const { devMode } = useNetworkStore();
+  const { devMode } = useTenant();
 
   const availableTenantIds = useMemo(
     () => getAvailableTenantIds(devMode),

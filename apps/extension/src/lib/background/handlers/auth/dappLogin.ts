@@ -1,13 +1,16 @@
 import { getDeviceData, storeJwt } from "@evevault/shared";
 import {
   exchangeCodeForToken,
-  getCurrentTenantId,
   getJwtForNetwork,
-  getTenantConfig,
   hasJwtForNetwork,
-  useTenantStore,
 } from "@evevault/shared/auth";
-import { useDeviceStore, useNetworkStore } from "@evevault/shared/stores";
+import {
+  getCurrentTenantId,
+  getTenantConfig,
+  useDeviceStore,
+  useNetworkStore,
+  useTenantStore,
+} from "@evevault/shared/stores";
 import { createLogger } from "@evevault/shared/utils";
 import { Ed25519PublicKey } from "@mysten/sui/keypairs/ed25519";
 import { decodeJwt } from "jose";

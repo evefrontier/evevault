@@ -1,5 +1,5 @@
-import type { JwtResponse } from "../types";
-import { getTenantConfig, type TenantId } from "./tenantConfig";
+import type { JwtResponse, TenantId } from "../types";
+import { getTenantConfig } from "../utils/tenantConfig";
 
 export async function exchangeCodeForToken(
   code: string,

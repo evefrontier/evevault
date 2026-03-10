@@ -4,11 +4,12 @@ import {
   type UserManagerSettings,
   WebStorageStateStore,
 } from "oidc-client-ts";
+import { getCurrentTenantId } from "../stores/tenantStore";
+import type { TenantId } from "../types";
 import { isExtension } from "../utils/environment";
 import { createLogger } from "../utils/logger";
+import { getTenantConfig } from "../utils/tenantConfig";
 import { patchUserNonce } from "./patchNonce";
-import { getTenantConfig, type TenantId } from "./tenantConfig";
-import { getCurrentTenantId } from "./tenantStore";
 import type { GlobalWithLocalStorage, StorageLike } from "./types";
 
 const ensureLocalStorage = () => {

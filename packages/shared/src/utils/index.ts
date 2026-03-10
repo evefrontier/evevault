@@ -12,3 +12,4 @@ export * from "./logger";
 export * from "./routes";
 export * from "./storageKeys";
 export * from "./suiscan";
+export * from "./tenantConfig";

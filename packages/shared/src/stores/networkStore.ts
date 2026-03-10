@@ -37,10 +37,7 @@ export const useNetworkStore = create<NetworkState>()(
   persist(
     (set, get) => ({
       chain: getInitialChain(),
-      devMode: false,
       loading: false,
-
-      setDevMode: (value) => set({ devMode: value }),
 
       initialize: async () => {
         // Note: persist middleware already hydrates state from storage
@@ -203,7 +200,7 @@ export const useNetworkStore = create<NetworkState>()(
       storage: createJSONStorage(() =>
         isWeb() ? localStorageAdapter : chromeStorageAdapter,
       ),
-      partialize: (state) => ({ chain: state.chain, devMode: state.devMode }),
+      partialize: (state) => ({ chain: state.chain }),
     },
   ),
 );

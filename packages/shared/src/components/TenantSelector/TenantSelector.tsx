@@ -1,11 +1,11 @@
 import type React from "react";
 import { useCallback, useRef, useState } from "react";
-import type { TenantId } from "../../auth/tenantConfig";
-import { getTenantLabel } from "../../auth/tenantConfig";
+import { getTenantLabel } from "../../utils/tenantConfig";
 import { Dropdown } from "../Dropdown";
 import Icon from "../Icon";
 import Text from "../Text";
 import "./TenantSelector.css";
+import type { TenantId } from "@evevault/shared/types";
 
 export interface TenantSelectorProps {
   currentTenantId: TenantId;

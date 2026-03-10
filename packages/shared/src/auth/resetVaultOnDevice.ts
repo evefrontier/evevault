@@ -11,6 +11,7 @@ import {
   useDeviceStore,
 } from "../stores/deviceStore";
 import { useNetworkStore } from "../stores/networkStore";
+import { getCurrentTenantId } from "../stores/tenantStore";
 import { useTokenListStore } from "../stores/tokenListStore";
 import { DEFAULT_TOKENS_BY_CHAIN } from "../types/networks";
 import type { NetworkDataEntry } from "../types/stores";
@@ -29,7 +30,6 @@ import { getUserManager } from "./authConfig";
 import { clearZkLoginAddressCache } from "./getZkLoginAddress";
 import { clearAllJwts } from "./storageService";
 import { useAuthStore } from "./stores/authStore";
-import { getCurrentTenantId } from "./tenantStore";
 
 const log = createLogger();
 

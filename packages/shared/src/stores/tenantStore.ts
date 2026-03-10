@@ -1,36 +1,37 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { chromeStorageAdapter, localStorageAdapter } from "../adapters";
-import { getDevModeEnabled } from "../utils/devMode";
+import type { TenantId, TenantState } from "../types";
 import { isWeb } from "../utils/environment";
 import {
   getAvailableTenantIds,
-  getDefaultTenantId,
   isAvailableTenantId,
-  type TenantId,
-} from "./tenantConfig";
+} from "../utils/tenantConfig";
 
 const STORAGE_KEY = "evevault:tenant";
 
-interface TenantState {
-  tenantId: TenantId;
-  setTenantId: (id: TenantId) => Promise<void>;
-}
+/** Must match DEFAULT_TENANT_ID in utils/tenantConfig; avoid getDefaultTenantId() here to prevent circular load (tenantConfig imports from stores). */
+const INITIAL_TENANT_ID = "stillness" as TenantId;
 
 export const useTenantStore = create<TenantState>()(
   persist(
     (set) => ({
-      tenantId: getDefaultTenantId(),
+      tenantId: INITIAL_TENANT_ID,
       setTenantId: async (id: TenantId) => {
         if (!getAvailableTenantIds().includes(id)) {
           return;
         }
         set({ tenantId: id });
       },
+      devMode: false,
+      setDevMode: (value) => set({ devMode: value }),
     }),
     {
       name: STORAGE_KEY,
-      partialize: (state) => ({ tenantId: state.tenantId }),
+      partialize: (state) => ({
+        tenantId: state.tenantId,
+        devMode: state.devMode,
+      }),
       storage: createJSONStorage<Pick<TenantState, "tenantId">>(() =>
         isWeb() ? localStorageAdapter : chromeStorageAdapter,
       ),
@@ -65,7 +66,7 @@ if (typeof chrome !== "undefined" && chrome.storage && !isWeb()) {
  */
 export function getCurrentTenantId(): TenantId {
   const stored = useTenantStore.getState().tenantId;
-  return isAvailableTenantId(stored) ? stored : getDefaultTenantId();
+  return isAvailableTenantId(stored) ? stored : INITIAL_TENANT_ID;
 }
 
 /**
@@ -84,8 +85,7 @@ export async function applyTenantFromUrl(): Promise<{
   tenantId: TenantId;
   changed: boolean;
 }> {
-  const isDev = await getDevModeEnabled();
-  const current = getCurrentTenantId(isDev);
+  const current = getCurrentTenantId();
   if (!isWeb() || typeof window === "undefined") {
     return { tenantId: current, changed: false };
   }

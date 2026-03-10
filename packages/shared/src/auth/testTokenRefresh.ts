@@ -1,11 +1,11 @@
 import { User, type UserProfile } from "oidc-client-ts";
+import { getCurrentTenantId } from "../stores/tenantStore";
 import type { JwtResponse } from "../types";
 import { createLogger } from "../utils";
+import { getTenantConfig } from "../utils/tenantConfig";
 import { patchUserNonce } from "./patchNonce";
 import { storeJwt } from "./storageService";
 import { useAuthStore } from "./stores/authStore";
-import { getTenantConfig } from "./tenantConfig";
-import { getCurrentTenantId } from "./tenantStore";
 
 const log = createLogger();
 

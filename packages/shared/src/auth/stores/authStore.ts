@@ -6,7 +6,12 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import { chromeStorageAdapter, localStorageAdapter } from "../../adapters";
 import { zkProofService } from "../../services/vaultService";
 import { useDeviceStore, useNetworkStore } from "../../stores";
-import type { AuthMessage, JwtResponse } from "../../types";
+import {
+  getCurrentTenantId,
+  OAuthTenantSessionKey,
+  setCurrentTenantId,
+} from "../../stores/tenantStore";
+import type { AuthMessage, JwtResponse, TenantId } from "../../types";
 import {
   createLogger,
   getDeviceData,
@@ -16,6 +21,11 @@ import {
   performFullCleanup,
 } from "../../utils";
 import { AUTH_STORAGE_KEY } from "../../utils/storageKeys";
+import {
+  DEFAULT_TENANT_ID,
+  getTenantConfig,
+  isAvailableTenantId,
+} from "../../utils/tenantConfig";
 import { getUserManager, redirectToFusionAuthLogout } from "../authConfig";
 import {
   clearZkLoginAddressCache,
@@ -27,17 +37,6 @@ import {
   getJwtForNetwork,
   storeJwt,
 } from "../storageService";
-import {
-  DEFAULT_TENANT_ID,
-  getTenantConfig,
-  isAvailableTenantId,
-  type TenantId,
-} from "../tenantConfig";
-import {
-  getCurrentTenantId,
-  OAuthTenantSessionKey,
-  setCurrentTenantId,
-} from "../tenantStore";
 import type { AuthState } from "../types";
 import { resolveExpiresAt } from "../utils/authStoreUtils";
 import { vendJwt } from "../vendToken";

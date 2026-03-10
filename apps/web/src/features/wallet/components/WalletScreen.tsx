@@ -1,8 +1,5 @@
 import { HeaderMobile, LockScreen, NetworkSelector } from "@evevault/shared";
 import {
-  getAvailableTenantIds,
-  getCurrentTenantId,
-  getTenantLabel,
   handleTestTokenRefresh,
   switchTenantAndReload,
   useAuth,
@@ -16,8 +13,18 @@ import {
   TokenListSection,
 } from "@evevault/shared/components";
 import Icon from "@evevault/shared/components/Icon";
-import { useDevice, useEpochExpiration } from "@evevault/shared/hooks";
-import { useDeviceStore, useNetworkStore } from "@evevault/shared/stores";
+import {
+  useDevice,
+  useEpochExpiration,
+  useTenant,
+} from "@evevault/shared/hooks";
+import {
+  getAvailableTenantIds,
+  getCurrentTenantId,
+  getTenantLabel,
+  useDeviceStore,
+  useNetworkStore,
+} from "@evevault/shared/stores";
 import { createSuiClient, getFaucetUrlForChain } from "@evevault/shared/sui";
 import {
   createLogger,
@@ -37,7 +44,7 @@ export const WalletScreen = () => {
   const [initError, setInitError] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const [txDigest, setTxDigest] = useState<string | null>(null);
-  const { devMode, setDevMode } = useNetworkStore();
+  const { devMode, setDevMode } = useTenant();
 
   const {
     user,

@@ -2,8 +2,8 @@ import {
   applyTenantFromUrl,
   getCurrentTenantId,
   getDefaultTenantId,
-  runTenantSwitchCleanup,
-} from "@evevault/shared/auth";
+} from "@evevault/shared";
+import { runTenantSwitchCleanup } from "@evevault/shared/auth";
 import { useEffect, useRef } from "react";
 
 /**

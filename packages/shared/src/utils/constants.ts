@@ -1,4 +1,4 @@
-import type { TenantConfig, TenantId } from "../auth";
+import type { TenantConfig, TenantId } from "../types";
 
 export const FULLNODE_URL = "https://fullnode.devnet.sui.io";
 
