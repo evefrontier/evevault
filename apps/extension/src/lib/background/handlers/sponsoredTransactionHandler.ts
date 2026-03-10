@@ -10,6 +10,8 @@ import type {
 } from "../types";
 
 const log = createLogger();
+const UTOPIA_TENANT = "utopia";
+const UAT_TIER = "uat";
 
 async function handleSponsoredTransaction(
   message: EveFrontierSponsoredTransactionMessage,
@@ -64,8 +66,12 @@ async function handleSponsoredTransaction(
     const encodedAction = encodeURIComponent(action);
 
     const decodedJwt = decodeJwt<IdTokenClaims>(jwt.id_token);
-    const tier = decodedJwt.tier;
+    let tier = decodedJwt.tier;
     const tenant = (decodedJwt.tenant as string) || "";
+
+    if (tenant === UTOPIA_TENANT) {
+      tier = UAT_TIER;
+    }
 
     const response = await fetch(
       `https://api.${tier}.tech.evefrontier.com/transactions/sponsored/${encodedAssemblyType}/${encodedAction}`,
