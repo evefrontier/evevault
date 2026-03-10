@@ -1,8 +1,0 @@
-# @evevault/extension
-
-## 0.0.5
-
-### Patch Changes
-
-- implement tenant switching
-  - @evevault/shared@0.0.5

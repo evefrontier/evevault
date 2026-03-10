@@ -1,13 +1,11 @@
 import { LockScreen } from "@evevault/shared";
 import {
   getAvailableTenantIds,
-  getDefaultTenantId,
-  isAvailableTenantId,
+  getCurrentTenantId,
   redirectToFusionAuthLogout,
   switchTenantAndReload,
   type TenantId,
   useAuth,
-  useTenantStore,
 } from "@evevault/shared/auth";
 import { Button, Heading, TenantSelector } from "@evevault/shared/components";
 import { useDevice } from "@evevault/shared/hooks/useDevice";
@@ -18,15 +16,12 @@ export const LoginScreen = () => {
   const { login, loading } = useAuth();
   const { isLocked, isPinSet, unlock } = useDevice();
   const { devMode } = useNetworkStore();
-  const { tenantId: storedTenantId } = useTenantStore();
-  const currentTenantId = isAvailableTenantId(storedTenantId)
-    ? storedTenantId
-    : getDefaultTenantId();
 
   const availableTenantIds = useMemo(
     () => getAvailableTenantIds(devMode),
     [devMode],
   );
+  const currentTenantId = getCurrentTenantId();
 
   // First, check for unencrypted ephemeral key pair
   if (isLocked) {
