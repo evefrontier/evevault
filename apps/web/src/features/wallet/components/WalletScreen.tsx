@@ -150,8 +150,10 @@ export const WalletScreen = () => {
     const digest = result.Transaction?.digest ?? null;
     log.info("Transaction executed", { digest });
     setTxDigest(digest);
-    await queryClient.refetchQueries({ queryKey: ["coin-balance"] });
-    await queryClient.refetchQueries({ queryKey: ["transactions"] });
+    await Promise.all([
+      queryClient.refetchQueries({ queryKey: ["coin-balance"] }),
+      queryClient.refetchQueries({ queryKey: ["transactions"] }),
+    ]);
   }, [user, maxEpoch, ephemeralPublicKey, getZkProof, suiClient, queryClient]);
 
   const handleTokenRefreshTest = useCallback(async () => {

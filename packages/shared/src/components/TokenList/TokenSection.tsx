@@ -12,7 +12,7 @@ import { useResponsive } from "../../hooks";
 import { useTokenListStore } from "../../stores/tokenListStore";
 import type { TokenListProps, TokenRowProps } from "../../types";
 import { getDefaultTokensForChain } from "../../types/networks";
-import { formatAddress } from "../../utils";
+import { createLogger, formatAddress } from "../../utils";
 import { useBalance } from "../../wallet";
 import { getKnownTokenDisplay } from "../../wallet/utils/balanceMetadata";
 import Button from "../Button";
@@ -220,6 +220,8 @@ const TokenRow: React.FC<ExtendedTokenRowProps> = ({
 
 const REFRESH_TIMEOUT_MS = 10000;
 
+const log = createLogger();
+
 export const TokenSection: React.FC<
   TokenListProps & { walletAddress?: string }
 > = ({ user, chain, onAddToken, onSendToken, walletAddress }) => {
@@ -253,6 +255,10 @@ export const TokenSection: React.FC<
     scrambleIntervalRef.current = setInterval(() => {
       setRefreshTick((t) => t + 1);
     }, SCRAMBLE_INTERVAL_MS);
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    const timeoutPromise = new Promise<void>((resolve) => {
+      timeoutId = setTimeout(resolve, REFRESH_TIMEOUT_MS);
+    });
     try {
       await Promise.race([
         Promise.all([
@@ -265,16 +271,20 @@ export const TokenSection: React.FC<
             type: "all",
           }),
         ]),
-        new Promise<void>((resolve) => setTimeout(resolve, REFRESH_TIMEOUT_MS)),
+        timeoutPromise,
       ]);
+    } catch (err) {
+      log.error("Refresh balances failed", err);
+      showToast("Failed to refresh balances");
     } finally {
+      if (timeoutId != null) clearTimeout(timeoutId);
       if (scrambleIntervalRef.current != null) {
         clearInterval(scrambleIntervalRef.current);
         scrambleIntervalRef.current = null;
       }
       setIsRefreshing(false);
     }
-  }, [queryClient, isRefreshing]);
+  }, [queryClient, isRefreshing, showToast]);
 
   const tokensForChain = useMemo(
     () => (chain ? (tokens[chain] ?? getDefaultTokensForChain(chain)) : []),

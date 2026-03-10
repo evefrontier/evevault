@@ -442,9 +442,11 @@ export function useSendToken({
       queryClient.invalidateQueries({ queryKey: ["coin-balance"] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
 
-      // Immediate refetch (indexer may already have updated)
-      await queryClient.refetchQueries({ queryKey: ["coin-balance"] });
-      await queryClient.refetchQueries({ queryKey: ["transactions"] });
+      // Immediate refetch in parallel (indexer may already have updated)
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ["coin-balance"] }),
+        queryClient.refetchQueries({ queryKey: ["transactions"] }),
+      ]);
 
       // Delayed refetch: GraphQL indexer often lags; refetch after 2s so cache has correct balance
       const BALANCE_REFETCH_DELAY_MS = 2000;
