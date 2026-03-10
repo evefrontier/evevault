@@ -577,7 +577,6 @@ export async function runTenantSwitchCleanup(
     clearZkLoginAddressCache();
     useAuthStore.getState().setUser(null);
     await zkProofService.clear();
-    await useDeviceStore.getState().lock();
   } catch (error) {
     log.error("Error during tenant switch cleanup", error);
   }
@@ -602,7 +601,8 @@ export async function switchTenantAndReload(
       newTenantId === DEFAULT_TENANT_ID
         ? window.location.origin
         : `${window.location.origin}?tenant=${newTenantId}`;
-    window.location.href = url;
+    // Use replaceState instead of reload so device store is not rehydrated
+    window.history.replaceState({}, "", url);
   }
 }
 
