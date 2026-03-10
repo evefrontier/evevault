@@ -23,26 +23,49 @@ import { useToast } from "../Toast";
 const SCRAMBLE_INTERVAL_MS = 200;
 
 /**
- * Keeps the first digit of the balance unchanged and scrambles only the remaining
- * digits (non-digits like "." are left in place). Does not append ellipsis;
- * use <LoadingDots /> in the UI when refreshing for animated "..." .
+ * Scrambles the balance so the first digit never changes and the displayed value
+ * never exceeds the actual balance. Each subsequent digit is chosen at random
+ * but capped so that the running total stays <= balance (like recalculating).
  */
 function scrambleBalanceWithFixedFirst(text: string): string {
   if (!text || text === "...") return text;
-  const chars = text.split("");
-  let firstDigitIndex = -1;
-  for (let i = 0; i < chars.length; i++) {
-    if (chars[i] >= "0" && chars[i] <= "9") {
-      firstDigitIndex = i;
-      break;
+  const normalized = text.replace(/,/g, "");
+  const dotIndex = normalized.indexOf(".");
+  const integerPart =
+    dotIndex >= 0 ? normalized.slice(0, dotIndex) : normalized;
+  const decimalPart = dotIndex >= 0 ? normalized.slice(dotIndex + 1) : "";
+  const fullDigits = (integerPart + decimalPart).split("");
+  if (fullDigits.length === 0) return text;
+
+  const valueInUnits =
+    Number.parseInt(integerPart || "0", 10) * 10 ** decimalPart.length +
+    Number.parseInt(decimalPart || "0", 10);
+  const totalDigits = fullDigits.length;
+  const integerDigitsCount = integerPart.length;
+
+  const result: string[] = [];
+  for (let i = 0; i < totalDigits; i++) {
+    if (i === 0) {
+      result.push(fullDigits[0] ?? "0");
+      continue;
     }
+    const currentValue = Number.parseInt(
+      result.join("") + "0".repeat(totalDigits - i),
+      10,
+    );
+    const remainingPower = 10 ** (totalDigits - i - 1);
+    const headroom = valueInUnits - currentValue;
+    const maxDigit = Math.min(
+      9,
+      Math.max(0, Math.floor(headroom / remainingPower)),
+    );
+    const digit = Math.floor(Math.random() * (maxDigit + 1));
+    result.push(String(digit));
   }
-  const result = chars.map((char, i) => {
-    if (char >= "0" && char <= "9" && i > firstDigitIndex)
-      return String(Math.floor(Math.random() * 10));
-    return char;
-  });
-  return result.join("");
+
+  const resultInteger = result.slice(0, integerDigitsCount).join("");
+  const resultDecimal = result.slice(integerDigitsCount).join("");
+  return resultDecimal ? `${resultInteger}.${resultDecimal}` : resultInteger;
 }
 
 /** Replaces each letter (a-z, A-Z) with a random uppercase letter; non-letters unchanged. */
