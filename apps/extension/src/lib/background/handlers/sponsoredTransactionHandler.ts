@@ -10,6 +10,8 @@ import type {
 } from "../types";
 
 const log = createLogger();
+const UTOPIA_TENANT = "utopia";
+const UAT_TIER = "uat";
 
 async function handleSponsoredTransaction(
   message: EveFrontierSponsoredTransactionMessage,
@@ -67,8 +69,8 @@ async function handleSponsoredTransaction(
     let tier = decodedJwt.tier;
     const tenant = (decodedJwt.tenant as string) || "";
 
-    if (tenant === "utopia") {
-      tier = "uat";
+    if (tenant === UTOPIA_TENANT) {
+      tier = UAT_TIER;
     }
 
     const response = await fetch(
