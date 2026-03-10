@@ -45,19 +45,24 @@ const createWrapper = (queryClient: QueryClient) => {
 
 describe("useBalance hook", () => {
   it("returns a formatted SUI balance for the current user", async () => {
-    mockQuery.mockResolvedValueOnce({
-      data: {
-        address: { balance: { totalBalance: "1000" } },
-        coinMetadata: {
-          decimals: 9,
-          symbol: "SUI",
-          name: "Sui",
-          description: "Sui Native Token",
-          iconUrl: null,
+    mockQuery
+      .mockResolvedValueOnce({
+        data: { checkpoint: { sequenceNumber: 12345 } },
+        errors: undefined,
+      })
+      .mockResolvedValueOnce({
+        data: {
+          address: { balance: { totalBalance: "1000" } },
+          coinMetadata: {
+            decimals: 9,
+            symbol: "SUI",
+            name: "Sui",
+            description: "Sui Native Token",
+            iconUrl: null,
+          },
         },
-      },
-      errors: undefined,
-    });
+        errors: undefined,
+      });
     mockedFormatSUI.mockReturnValueOnce("formatted-1000");
     const user = createMockUser();
 
@@ -83,9 +88,15 @@ describe("useBalance hook", () => {
       expect(result.current.isSuccess).toBe(true);
     });
 
-    expect(mockQuery).toHaveBeenCalledWith(
+    expect(mockQuery).toHaveBeenCalledTimes(2);
+    expect(mockQuery).toHaveBeenNthCalledWith(
+      2,
       expect.objectContaining({
-        variables: { address: "0x123", coinType: "0x2::sui::SUI" },
+        variables: {
+          address: "0x123",
+          coinType: "0x2::sui::SUI",
+          atCheckpoint: 12345,
+        },
       }),
     );
     expect(result.current.data?.formattedBalance).toBe("formatted-1000");

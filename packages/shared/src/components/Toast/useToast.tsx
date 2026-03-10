@@ -8,8 +8,17 @@ import {
 } from "react";
 import { Toast } from "./Toast";
 
+type ToastState = {
+  message: string;
+  isVisible: boolean;
+  duration: number;
+  variant: "default" | "error";
+  title?: string;
+};
+
 interface ToastContextType {
   showToast: (message: string, duration?: number) => void;
+  showErrorToast: (title: string, message: string, duration?: number) => void;
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
@@ -18,33 +27,52 @@ interface ToastProviderProps {
   children: ReactNode;
 }
 
+const initialToastState: ToastState = {
+  message: "",
+  isVisible: false,
+  duration: 3000,
+  variant: "default",
+};
+
 export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
-  const [toast, setToast] = useState<{
-    message: string;
-    isVisible: boolean;
-    duration: number;
-  }>({
-    message: "",
-    isVisible: false,
-    duration: 3000,
-  });
+  const [toast, setToast] = useState<ToastState>(initialToastState);
 
   const showToast = useCallback((message: string, duration = 3000) => {
-    setToast({ message, isVisible: true, duration });
+    setToast({
+      message,
+      isVisible: true,
+      duration,
+      variant: "default",
+    });
   }, []);
+
+  const showErrorToast = useCallback(
+    (title: string, message: string, duration = 5000) => {
+      setToast({
+        message,
+        isVisible: true,
+        duration,
+        variant: "error",
+        title,
+      });
+    },
+    [],
+  );
 
   const hideToast = useCallback(() => {
     setToast((prev) => ({ ...prev, isVisible: false }));
   }, []);
 
   return (
-    <ToastContext.Provider value={{ showToast }}>
+    <ToastContext.Provider value={{ showToast, showErrorToast }}>
       {children}
       <Toast
         message={toast.message}
         isVisible={toast.isVisible}
         onClose={hideToast}
         duration={toast.duration}
+        variant={toast.variant}
+        title={toast.title}
       />
     </ToastContext.Provider>
   );
