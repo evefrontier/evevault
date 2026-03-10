@@ -356,21 +356,29 @@ export type { NavPath, RoutePath } from "../utils/routes";
 // Transaction History Types
 export type TransactionDirection = "sent" | "received";
 
+/** Single balance change within a transaction (e.g. EVE transfer or SUI gas) */
+export interface TransactionBalanceChange {
+  /** Formatted amount (human-readable) */
+  amount: string;
+  /** Token symbol (e.g., "SUI", "EVE") */
+  tokenSymbol: string;
+  /** Human-readable token name from metadata (e.g. "Sui", "EVE Token") */
+  tokenName?: string;
+  /** Full coin type identifier */
+  coinType: string;
+}
+
 export interface Transaction {
   /** Unique transaction digest */
   digest: string;
   /** Unix timestamp in milliseconds */
   timestamp: number;
-  /** Whether user sent or received this transaction */
+  /** Whether user sent or received this transaction (from primary change) */
   direction: TransactionDirection;
   /** Recipient if sent, sender if received */
   counterparty: string;
-  /** Formatted amount (human-readable) */
-  amount: string;
-  /** Token symbol (e.g., "SUI", "USDC") */
-  tokenSymbol: string;
-  /** Full coin type identifier */
-  coinType: string;
+  /** All balance changes for the user in this tx (e.g. EVE + SUI gas) */
+  balanceChanges: TransactionBalanceChange[];
 }
 
 export interface TransactionsScreenProps {

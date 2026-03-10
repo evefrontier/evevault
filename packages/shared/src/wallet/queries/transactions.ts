@@ -14,7 +14,7 @@ export const TRANSACTIONS_QUERY = `
     $after: String
   ) {
     address(address: $address) {
-      transactions(first: $first, after: $after) {
+      transactions(first: $first, after: $after, relation: AFFECTED) {
         pageInfo {
           hasNextPage
           endCursor

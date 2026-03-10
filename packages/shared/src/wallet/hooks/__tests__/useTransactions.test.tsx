@@ -195,7 +195,8 @@ describe("useTransactionHistory hook (GraphQL)", () => {
     expect(tx?.digest).toBe("tx123");
     expect(tx?.direction).toBe("sent");
     expect(tx?.counterparty).toBe("0xrecipient456");
-    expect(tx?.tokenSymbol).toBe("SUI");
+    expect(tx?.balanceChanges).toHaveLength(1);
+    expect(tx?.balanceChanges[0]?.tokenSymbol).toBe("SUI");
 
     unmount();
   });
