@@ -64,8 +64,12 @@ async function handleSponsoredTransaction(
     const encodedAction = encodeURIComponent(action);
 
     const decodedJwt = decodeJwt<IdTokenClaims>(jwt.id_token);
-    const tier = decodedJwt.tier;
+    let tier = decodedJwt.tier;
     const tenant = (decodedJwt.tenant as string) || "";
+
+    if (tenant === "utopia") {
+      tier = "uat";
+    }
 
     const response = await fetch(
       `https://api.${tier}.tech.evefrontier.com/transactions/sponsored/${encodedAssemblyType}/${encodedAction}`,
