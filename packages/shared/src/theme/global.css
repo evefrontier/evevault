@@ -266,3 +266,39 @@ h4 {
   padding-top: 20px;
   min-height: 83px;
 }
+
+/* Loading dots (blinking) – used next to balance during refresh. Uses design system --quantum. */
+@keyframes loading-dot-blink {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+
+.loading-dots {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 1px;
+  margin-left: 2px;
+  color: var(--quantum);
+}
+
+.loading-dots span {
+  animation: loading-dot-blink 1.2s ease-in-out infinite;
+}
+
+.loading-dots span:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.loading-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.loading-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}

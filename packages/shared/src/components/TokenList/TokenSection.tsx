@@ -20,16 +20,29 @@ import Icon from "../Icon";
 import Text from "../Text";
 import { useToast } from "../Toast";
 
-/** Replaces each digit in the string with a random digit (0-9); non-digits unchanged. */
-function scrambleDigits(text: string): string {
-  return text
-    .split("")
-    .map((char) =>
-      char >= "0" && char <= "9"
-        ? String(Math.floor(Math.random() * 10))
-        : char,
-    )
-    .join("");
+const SCRAMBLE_INTERVAL_MS = 200;
+
+/**
+ * Keeps the first digit of the balance unchanged and scrambles only the remaining
+ * digits (non-digits like "." are left in place). Does not append ellipsis;
+ * use <LoadingDots /> in the UI when refreshing for animated "..." .
+ */
+function scrambleBalanceWithFixedFirst(text: string): string {
+  if (!text || text === "...") return text;
+  const chars = text.split("");
+  let firstDigitIndex = -1;
+  for (let i = 0; i < chars.length; i++) {
+    if (chars[i] >= "0" && chars[i] <= "9") {
+      firstDigitIndex = i;
+      break;
+    }
+  }
+  const result = chars.map((char, i) => {
+    if (char >= "0" && char <= "9" && i > firstDigitIndex)
+      return String(Math.floor(Math.random() * 10));
+    return char;
+  });
+  return result.join("");
 }
 
 /** Replaces each letter (a-z, A-Z) with a random uppercase letter; non-letters unchanged. */
@@ -47,7 +60,17 @@ function scrambleLetters(text: string): string {
     .join("");
 }
 
-const SCRAMBLE_INTERVAL_MS = 200;
+/** Three dots with staggered blink animation (uses --quantum in theme). */
+function LoadingDots() {
+  return (
+    <span className="loading-dots" aria-hidden>
+      <span>.</span>
+      <span>.</span>
+      <span>.</span>
+    </span>
+  );
+}
+
 const REFRESH_LOADING_MS = 1000;
 
 interface ExtendedTokenRowProps extends TokenRowProps {
@@ -90,10 +113,10 @@ const TokenRow: React.FC<ExtendedTokenRowProps> = ({
       setScrambledSymbol(symbol);
       return;
     }
-    setScrambledBalance(scrambleDigits(balance));
+    setScrambledBalance(scrambleBalanceWithFixedFirst(balance));
     setScrambledSymbol(scrambleLetters(symbol));
     const id = setInterval(() => {
-      setScrambledBalance(scrambleDigits(balance));
+      setScrambledBalance(scrambleBalanceWithFixedFirst(balance));
       setScrambledSymbol(scrambleLetters(symbol));
     }, SCRAMBLE_INTERVAL_MS);
     return () => clearInterval(id);
@@ -159,7 +182,8 @@ const TokenRow: React.FC<ExtendedTokenRowProps> = ({
         </div>
         <div className="flex items-center gap-6 text-right">
           <Text variant="regular" size="medium">
-            {displayBalance} {displaySymbol}
+            {displayBalance}
+            {isRefreshing ? <LoadingDots /> : null} {displaySymbol}
           </Text>
         </div>
       </div>
