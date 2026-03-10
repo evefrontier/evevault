@@ -110,8 +110,8 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
   return (
     <>
       <div
-        className={`network-selector ${
-          isExtensionContext ? "network-selector--extension" : ""
+        className={`dropdown-selector ${
+          isExtensionContext ? "dropdown-selector--extension" : ""
         } ${className}`}
       >
         {compact ? (
@@ -130,7 +130,7 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
           <button
             ref={triggerRef}
             type="button"
-            className="network-selector__trigger"
+            className="dropdown-selector__trigger"
             onClick={() => !isDisabled && setIsOpen(!isOpen)}
             disabled={isDisabled}
           >
@@ -153,8 +153,8 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
               width={16}
               height={16}
               color="neutral"
-              className={`network-selector__chevron ${
-                isOpen ? "network-selector__chevron--open" : ""
+              className={`dropdown-selector__chevron ${
+                isOpen ? "dropdown-selector__chevron--open" : ""
               }`}
             />
           </button>

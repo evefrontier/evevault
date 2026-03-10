@@ -1,6 +1,8 @@
 import { User, type UserProfile } from "oidc-client-ts";
+import { getCurrentTenantId } from "../stores/tenantStore";
 import type { JwtResponse } from "../types";
 import { createLogger } from "../utils";
+import { getTenantConfig } from "../utils/tenantConfig";
 import { patchUserNonce } from "./patchNonce";
 import { storeJwt } from "./storageService";
 import { useAuthStore } from "./stores/authStore";
@@ -23,9 +25,12 @@ export async function handleTestTokenRefresh(
   });
 
   try {
-    const fusionAuthUrl = import.meta.env.VITE_FUSION_SERVER_URL;
-    const clientId = import.meta.env.VITE_FUSIONAUTH_CLIENT_ID;
-    const clientSecret = import.meta.env.VITE_FUSION_CLIENT_SECRET;
+    const tenantId = getCurrentTenantId();
+    const {
+      clientId,
+      clientSecret,
+      serverUrl: fusionAuthUrl,
+    } = getTenantConfig(tenantId);
 
     if (!fusionAuthUrl?.trim()) {
       throw new Error("VITE_FUSION_SERVER_URL is not set");
@@ -37,19 +42,22 @@ export async function handleTestTokenRefresh(
     log.info("Access token expiring, patching user nonce before refresh");
     await patchUserNonce(user, nonce);
 
-    const response = await fetch(`${fusionAuthUrl}/oauth2/token`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        Accept: "application/json",
+    const response = await fetch(
+      `${String(fusionAuthUrl).replace(/\/$/, "")}/oauth2/token`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Accept: "application/json",
+        },
+        body: new URLSearchParams({
+          grant_type: "refresh_token",
+          refresh_token: user?.refresh_token ?? "",
+          client_id: clientId,
+          client_secret: clientSecret,
+        }),
       },
-      body: new URLSearchParams({
-        grant_type: "refresh_token",
-        refresh_token: user?.refresh_token ?? "",
-        client_id: clientId,
-        client_secret: clientSecret,
-      }),
-    });
+    );
 
     if (!response.ok) {
       throw new Error(`Token refresh failed: ${response.status}`);

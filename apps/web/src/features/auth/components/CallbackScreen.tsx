@@ -1,14 +1,20 @@
-import { useNetworkStore } from "@evevault/shared";
 import {
+  getCurrentTenantId,
+  OAuthTenantSessionKey,
+  useNetworkStore,
+} from "@evevault/shared";
+import {
+  getUserManager,
   getZkLoginAddress,
   storeJwt,
   useAuthStore,
 } from "@evevault/shared/auth";
-import { getUserManager } from "@evevault/shared/auth/authConfig";
 import { Heading, Text } from "@evevault/shared/components";
 import type { RoutePath } from "@evevault/shared/types";
 import {
   createLogger,
+  getDevModeEnabled,
+  isAvailableTenantId,
   ROUTE_PATHS,
   SESSION_STORAGE_REDIRECT_KEY,
 } from "@evevault/shared/utils";
@@ -43,12 +49,19 @@ export const CallbackScreen = () => {
         const redirectAfterLogin = sessionStorage.getItem(
           SESSION_STORAGE_REDIRECT_KEY,
         );
-        sessionStorage.removeItem(SESSION_STORAGE_REDIRECT_KEY);
+        sessionStorage.removeItem("evevault_redirect_after_login");
+        const tenantId =
+          sessionStorage.getItem(OAuthTenantSessionKey) ?? getCurrentTenantId();
+        sessionStorage.removeItem(OAuthTenantSessionKey);
         const fallbackRoute: RoutePath = "/wallet";
         const redirectTo = redirectAfterLogin || fallbackRoute;
 
-        // Use oidc-client-ts's built-in PKCE support
-        const userManager = getUserManager();
+        const devMode = await getDevModeEnabled();
+        // Use oidc-client-ts's built-in PKCE support for the tenant we started login with
+        if (!isAvailableTenantId(tenantId, devMode)) {
+          throw new Error(`Invalid tenant id: ${tenantId}`);
+        }
+        const userManager = getUserManager(tenantId);
         const user = await userManager.signinRedirectCallback();
 
         if (!user || !user.id_token) {

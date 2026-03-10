@@ -4,7 +4,13 @@ import {
   getJwtForNetwork,
   hasJwtForNetwork,
 } from "@evevault/shared/auth";
-import { useDeviceStore, useNetworkStore } from "@evevault/shared/stores";
+import {
+  getCurrentTenantId,
+  getTenantConfig,
+  useDeviceStore,
+  useNetworkStore,
+  useTenantStore,
+} from "@evevault/shared/stores";
 import { createLogger } from "@evevault/shared/utils";
 import { Ed25519PublicKey } from "@mysten/sui/keypairs/ed25519";
 import { decodeJwt } from "jose";
@@ -32,7 +38,9 @@ export async function handleDappLogin(
 ): Promise<void> {
   const id = ensureMessageId(message);
 
-  const clientId = import.meta.env.VITE_FUSIONAUTH_CLIENT_ID;
+  const tenant = useTenantStore.getState().tenantId;
+
+  const clientId = getTenantConfig(tenant).clientId;
   const chromeRedirectUri = chrome.identity.getRedirectURL();
 
   const chain = getCurrentChain();
@@ -182,6 +190,7 @@ export async function handleDappLogin(
   }
 
   const authUrl = await getAuthUrl({
+    tenantId: tenant,
     nonce,
     jwtRandomness,
     maxEpoch,
@@ -226,7 +235,9 @@ export async function handleDappLogin(
 
       log.debug("Auth code received");
 
-      exchangeCodeForToken(authCode, chromeRedirectUri)
+      const tenantId = getCurrentTenantId();
+
+      exchangeCodeForToken(authCode, chromeRedirectUri, tenantId)
         .then(async (jwtResponse) => {
           const decodedJwt = decodeJwt<IdTokenClaims>(
             jwtResponse.id_token as string,

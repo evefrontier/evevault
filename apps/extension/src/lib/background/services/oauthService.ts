@@ -1,14 +1,18 @@
+import { getTenantConfig, type TenantId } from "@evevault/shared";
+
 function getAuthUrl(params: {
+  tenantId: TenantId;
   nonce: string;
   jwtRandomness: string;
   maxEpoch: string;
 }) {
-  const clientId = import.meta.env.VITE_FUSIONAUTH_CLIENT_ID;
+  const tenantConfig = getTenantConfig(params.tenantId);
+
+  const clientId = tenantConfig.clientId;
   const redirectUri = chrome.identity.getRedirectURL();
 
   const url = new URL(
-    import.meta.env.VITE_FUSION_SERVER_URL.replace(/\/$/, "") +
-      "/oauth2/authorize",
+    `${tenantConfig.serverUrl.replace(/\/$/, "")}/oauth2/authorize`,
   );
 
   url.searchParams.set("response_type", "code");

@@ -1,12 +1,13 @@
-import type { JwtResponse } from "../types";
+import type { JwtResponse, TenantId } from "../types";
+import { getTenantConfig } from "../utils/tenantConfig";
 
 export async function exchangeCodeForToken(
   code: string,
   redirectUri: string,
+  tenantId: TenantId,
 ): Promise<JwtResponse> {
-  const clientId = import.meta.env.VITE_FUSIONAUTH_CLIENT_ID;
-  const clientSecret = import.meta.env.VITE_FUSION_CLIENT_SECRET;
-  const tokenUrl = `${import.meta.env.VITE_FUSION_SERVER_URL}/oauth2/token`;
+  const { clientId, clientSecret, serverUrl } = getTenantConfig(tenantId);
+  const tokenUrl = `${serverUrl.replace(/\/$/, "")}/oauth2/token`;
 
   const requestBody = {
     grant_type: "authorization_code",

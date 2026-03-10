@@ -4,6 +4,7 @@ import * as vaultService from "../../../services/vaultService";
 import { useDeviceStore } from "../../../stores/deviceStore";
 import { useNetworkStore } from "../../../stores/networkStore";
 import * as utils from "../../../utils/authCleanup";
+import { DEFAULT_TENANT_ID } from "../../../utils/tenantConfig";
 import * as authConfig from "../../authConfig";
 import { useAuthStore } from "../authStore";
 
@@ -93,8 +94,10 @@ describe("authStore.logout()", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Get the mock user manager from the mocked function
-    // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
-    mockUserManager = vi.mocked(authConfig.getUserManager)() as any;
+    mockUserManager = vi.mocked(authConfig.getUserManager)(
+      DEFAULT_TENANT_ID,
+      // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
+    ) as any;
     vi.mocked(utils.performFullCleanup).mockResolvedValue(undefined);
     vi.mocked(vaultService.ephKeyService.lock).mockResolvedValue(undefined);
     vi.mocked(vaultService.zkProofService.clear).mockResolvedValue(undefined);
@@ -205,11 +208,12 @@ describe("authStore.logout()", () => {
     ).toHaveBeenCalledTimes(1);
   });
 
-  it("calls redirectToFusionAuthLogout() after clearing state", async () => {
+  it("calls redirectToFusionAuthLogout() only when logout throws (fallback)", async () => {
     const mockRedirect = vi.mocked(authConfig.redirectToFusionAuthLogout);
 
     await useAuthStore.getState().logout();
 
-    expect(mockRedirect).toHaveBeenCalledTimes(1);
+    // On success, web uses window.location.href (not redirect); redirect is only used in catch block
+    expect(mockRedirect).not.toHaveBeenCalled();
   });
 });

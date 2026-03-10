@@ -1,9 +1,9 @@
+import { formatAddress } from "@evevault/shared/utils";
 import type React from "react";
 import { useMemo } from "react";
 import { useAuth } from "../../../auth";
 import { useCopyToClipboard, useDevice } from "../../../hooks";
 import type { HeaderMobileProps, IconName } from "../../../types";
-import { formatAddress } from "../../../utils";
 import {
   type DropdownItem,
   DropdownSelect,
@@ -84,14 +84,14 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
       });
     }
 
-    // 4. Copy Address (always)
+    // 5. Copy Address (always)
     items.push({
       label: "Copy Address",
       icon: "Copy" as IconName,
       onClick: () => copy(address),
     });
 
-    // 5. Transaction History (optional)
+    // 6. Transaction History (optional)
     if (onTransactionsClick) {
       items.push({
         label: "Transaction History",
@@ -100,14 +100,14 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
       });
     }
 
-    // 6. Lock Wallet (always)
+    // 7. Lock Wallet (always)
     items.push({
       label: "Lock Wallet",
       icon: "HideEye" as IconName,
       onClick: lock,
     });
 
-    // 7. Logout (always)
+    // 8. Logout (always)
     items.push({
       label: "Logout",
       icon: "Close" as IconName,
@@ -121,11 +121,11 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
     onDevModeToggle,
     onSignSubmitTxClick,
     onTokenRefreshTestClick,
-    onFaucetTestSuiClick,
     copy,
     address,
     lock,
     logout,
+    onFaucetTestSuiClick,
   ]);
 
   const displayText = email || formatAddress(address);

@@ -61,18 +61,19 @@ The background service worker handles:
 
 ### Auth Configuration
 
-**Location**: `apps/extension/src/features/auth/api/authConfig.ts`
+**Location**: `packages/shared/src/auth/authConfig.ts`
 
 - Configures `oidc-client-ts` with localStorage polyfill for extension contexts
-- Sets up `UserManager` for OIDC flows
-- Handles EVE Frontier FusionAuth OAuth providers
+- Sets up `UserManager` per tenant via `getUserManager(tenantId)` (cached per tenant)
+- Tenant-specific OIDC state prefix: `evevault.oidc.${tenantId}.`
+- Handles EVE Frontier FusionAuth OAuth; authority, client_id, client_secret come from `getTenantConfig(tenantId)`
 
 ### Token Exchange
 
-**Location**: `apps/extension/src/features/auth/api/exchangeCode.ts`
+**Location**: `packages/shared/src/auth/exchangeCode.ts`
 
-- Provider-aware token exchange (FusionAuth)
-- Different endpoints and credentials per provider
+- Provider-aware token exchange (FusionAuth) using tenant config
+- Token URL and credentials from `getTenantConfig(tenantId)` so each tenant can use a different auth server
 - Returns tokens with provider identification
 
 ### Enoki Integration
@@ -210,6 +211,28 @@ The extension supports multi-network operation with per-network data isolation:
 - JWTs: `evevault:jwt[sui:devnet]` vs `evevault:jwt[sui:testnet]`
 - Device data: `deviceStore.networkData[sui:devnet]` vs `deviceStore.networkData[sui:testnet]`
 - Network state: `evevault:network` stores current `chain`
+
+## Server (tenant) switching
+
+**Location**: `packages/shared/src/auth/tenantConfig.ts`, `packages/shared/src/auth/tenantStore.ts`, `packages/shared/src/auth/stores/authStore.ts`
+
+The app supports switching the **auth/test server** (tenant) so login and token exchange use a different FusionAuth instance (e.g. Utopia, Testevenet, Nebula). This is separate from Sui network switching.
+
+- **Tenant config**: `getTenantConfig(tenantId)` returns `clientId`, `clientSecret`, `serverUrl` per tenant. `clientId` and `serverUrl` are defined in a static `TENANT_KEYS` map in code for each known tenant; only the `clientSecret` is read from environment variables (default tenant uses `VITE_FUSIONAUTH_CLIENT_SECRET`, other tenants use `VITE_TENANT_<ID>_CLIENT_SECRET`).
+- **Tenant store**: `useTenantStore` persists current `tenantId`; `getCurrentTenantId()` is used by auth config, token exchange, and OIDC. On web, `applyTenantFromUrl()` syncs from `?tenant=<id>`.
+- **Switching**: `switchTenantAndReload(newTenantId)` clears auth state for the current tenant, sets the new tenant, and reloads (on web with `?tenant=` when not default). Used by the dev dropdown when switching test server.
+- **Cleanup**: `runTenantSwitchCleanup(tenantId)` removes user from UserManager, performs full cleanup, clears JWTs and device state so the next login uses the new tenant.
+
+**Key components:**
+- `tenantConfig.ts` – Tenant IDs (default, utopia, testevenet, nebula), env-based config, `getTenantLabel()` for UI (e.g. "Utopia", "Testevenet", "Nebula")
+- `tenantStore.ts` – Current tenant state and `getCurrentTenantId()` / `setCurrentTenantId()` / `applyTenantFromUrl()`
+- `authStore` – `switchTenantAndReload()`, `runTenantSwitchCleanup()`; `getUserManager(tenantId)` and token exchange take `tenantId`
+
+**Flow (e.g. dev dropdown):**
+1. User selects another server (tenant) in the dev dropdown.
+2. App calls `switchTenantAndReload(newTenantId)`.
+3. Cleanup runs for the current tenant; store switches to the new tenant; page reloads with `?tenant=newTenantId` on web.
+4. Next login uses the new tenant’s FusionAuth server (from `getTenantConfig(newTenantId)`).
 
 ## React Hooks
 

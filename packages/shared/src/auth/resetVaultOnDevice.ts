@@ -1,9 +1,20 @@
-import { SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
+import {
+  SUI_DEVNET_CHAIN,
+  SUI_LOCALNET_CHAIN,
+  SUI_MAINNET_CHAIN,
+  SUI_TESTNET_CHAIN,
+  type SuiChain,
+} from "@mysten/wallet-standard";
 import { ephKeyService, zkProofService } from "../services/vaultService";
-import { useDeviceStore } from "../stores/deviceStore";
+import {
+  createEmptyNetworkDataEntry,
+  useDeviceStore,
+} from "../stores/deviceStore";
 import { useNetworkStore } from "../stores/networkStore";
+import { getCurrentTenantId } from "../stores/tenantStore";
 import { useTokenListStore } from "../stores/tokenListStore";
 import { DEFAULT_TOKENS_BY_CHAIN } from "../types/networks";
+import type { NetworkDataEntry } from "../types/stores";
 import {
   cleanupExtensionStorage,
   cleanupOidcStorage,
@@ -54,7 +65,23 @@ function resetStoresToInitial(): void {
     error: null,
   });
 
-  useDeviceStore.getState().reset();
+  const emptyNetworkData: Partial<Record<SuiChain, NetworkDataEntry>> = {
+    [SUI_DEVNET_CHAIN]: createEmptyNetworkDataEntry(),
+    [SUI_TESTNET_CHAIN]: createEmptyNetworkDataEntry(),
+    [SUI_LOCALNET_CHAIN]: createEmptyNetworkDataEntry(),
+    [SUI_MAINNET_CHAIN]: createEmptyNetworkDataEntry(),
+  };
+
+  useDeviceStore.setState({
+    isLocked: true,
+    ephemeralPublicKey: null,
+    ephemeralPublicKeyBytes: null,
+    ephemeralPublicKeyFlag: null,
+    ephemeralKeyPairSecretKey: null,
+    networkData: emptyNetworkData,
+    loading: false,
+    error: null,
+  });
 
   useNetworkStore.setState({
     chain: SUI_TESTNET_CHAIN,
@@ -86,7 +113,7 @@ export async function resetVaultOnDevice(): Promise<void> {
 
     await clearAllJwts();
 
-    const userManager = getUserManager();
+    const userManager = getUserManager(getCurrentTenantId());
     await userManager.removeUser();
 
     if (isWeb()) {

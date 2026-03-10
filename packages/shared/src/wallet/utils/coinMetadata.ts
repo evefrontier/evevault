@@ -46,7 +46,7 @@ export async function fetchCoinMetadata(
     // Check cache first with expiry
     const cached = coinMetadataCache.get(coinType);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
-      return cached.data;
+      return cached.data as CoinMetadataResult;
     }
 
     // Remove expired entry if it exists

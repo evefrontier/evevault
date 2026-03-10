@@ -1,8 +1,4 @@
-.network-selector {
-  position: relative;
-  display: inline-block;
-  height: min-content;
-}
+@import "../SelectorShared.css";
 
 /* Compact badge mode */
 .network-selector__badge {
@@ -26,27 +22,6 @@
   cursor: not-allowed;
 }
 
-.network-selector__trigger {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  cursor: pointer;
-  transition: opacity 0.2s ease;
-}
-
-.network-selector__trigger:hover {
-  opacity: 0.8;
-}
-
-.network-selector__chevron {
-  transition: transform 0.2s ease;
-  margin-left: auto;
-}
-
-.network-selector__chevron--open {
-  transform: rotate(180deg);
-}
-
 .network-selector__dropdown {
   position: absolute;
   top: calc(100% + 4px);
@@ -61,7 +36,7 @@
 }
 
 /* In extension, dropdown opens upward */
-.network-selector--extension .network-selector__dropdown {
+.dropdown-selector--extension .network-selector__dropdown {
   top: auto;
   bottom: calc(100% + 4px);
 }

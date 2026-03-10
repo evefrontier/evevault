@@ -164,7 +164,7 @@ describe("networkStore", () => {
       // Mock valid device data
       const deviceStore = useDeviceStore.getState();
       vi.mocked(deviceStore.getNonce).mockReturnValue("valid-nonce");
-      vi.mocked(deviceStore.getMaxEpoch).mockReturnValue(100);
+      vi.mocked(deviceStore.getMaxEpoch).mockReturnValue("100");
       vi.mocked(deviceStore.getJwtRandomness).mockReturnValue(
         "valid-randomness",
       );
@@ -210,7 +210,7 @@ describe("networkStore", () => {
       // Mock expired device data
       const deviceStore = useDeviceStore.getState();
       vi.mocked(deviceStore.getNonce).mockReturnValue("expired-nonce");
-      vi.mocked(deviceStore.getMaxEpoch).mockReturnValue(100);
+      vi.mocked(deviceStore.getMaxEpoch).mockReturnValue("100");
       vi.mocked(deviceStore.getJwtRandomness).mockReturnValue(
         "valid-randomness",
       );

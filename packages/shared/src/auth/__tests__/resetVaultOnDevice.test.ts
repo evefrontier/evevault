@@ -40,9 +40,21 @@ vi.mock("../storageService", () => ({
   clearAllJwts: vi.fn(),
 }));
 
+vi.mock("../tenantStore", () => ({
+  getCurrentTenantId: vi.fn(() => "stillness"),
+  getTenantIdForAuth: vi.fn(() => "stillness"),
+}));
+
 vi.mock("../../stores/deviceStore", () => ({
+  createEmptyNetworkDataEntry: () => ({
+    nonce: null,
+    maxEpoch: null,
+    maxEpochTimestampMs: null,
+    jwtRandomness: null,
+  }),
   useDeviceStore: {
     getState: vi.fn(),
+    setState: vi.fn(),
   },
 }));
 
@@ -76,7 +88,6 @@ vi.mock("../../utils/logger", () => ({
 describe("resetVaultOnDevice", () => {
   let mockRemoveUser: ReturnType<typeof vi.fn>;
   let mockDeviceLock: ReturnType<typeof vi.fn>;
-  let mockDeviceReset: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -86,10 +97,8 @@ describe("resetVaultOnDevice", () => {
     } as unknown as ReturnType<typeof authConfig.getUserManager>);
 
     mockDeviceLock = vi.fn().mockResolvedValue(undefined);
-    mockDeviceReset = vi.fn();
     vi.mocked(useDeviceStore.getState).mockReturnValue({
       lock: mockDeviceLock,
-      reset: mockDeviceReset,
     } as unknown as ReturnType<typeof useDeviceStore.getState>);
 
     vi.mocked(vaultService.zkProofService.clear).mockResolvedValue(undefined);
@@ -141,16 +150,24 @@ describe("resetVaultOnDevice", () => {
     await resetVaultOnDevice();
 
     expect(storageService.clearAllJwts).toHaveBeenCalledTimes(1);
+    expect(authConfig.getUserManager).toHaveBeenCalledWith("stillness");
     expect(mockRemoveUser).toHaveBeenCalledTimes(1);
   });
 
-  it("calls deviceStore.reset() and clears in-memory stores", async () => {
+  it("calls deviceStore.setState and clears in-memory stores", async () => {
     vi.mocked(env.isWeb).mockReturnValue(true);
     vi.mocked(env.isExtension).mockReturnValue(false);
 
     await resetVaultOnDevice();
 
-    expect(mockDeviceReset).toHaveBeenCalledTimes(1);
+    expect(useDeviceStore.setState).toHaveBeenCalledWith(
+      expect.objectContaining({
+        isLocked: true,
+        ephemeralPublicKey: null,
+        loading: false,
+        error: null,
+      }),
+    );
     expect(useAuthStore.setState).toHaveBeenCalledWith({
       user: null,
       loading: false,

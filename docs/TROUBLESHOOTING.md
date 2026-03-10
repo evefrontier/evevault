@@ -60,7 +60,7 @@ Common issues and solutions when working with the EVE Vault extension.
    - Must match exactly in FusionAuth OAuth settings
 2. Check environment variables are loaded:
    ```javascript
-   import.meta.env.VITE_FUSIONAUTH_CLIENT_ID;
+   import.meta.env.VITE_FUSIONAUTH_REDIRECT_URI
    ```
 3. Verify OAuth client IDs are correct
 4. Check OAuth provider logs for errors

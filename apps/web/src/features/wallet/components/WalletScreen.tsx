@@ -1,34 +1,47 @@
-import { HeaderMobile, LockScreen, NetworkSelector } from "@evevault/shared";
+import {
+  HeaderMobile,
+  LockScreen,
+  NetworkSelector,
+  type TenantId,
+} from "@evevault/shared";
 import {
   handleTestTokenRefresh,
-  redirectToFusionAuthLogout,
+  switchTenantAndReload,
   useAuth,
 } from "@evevault/shared/auth";
 import {
   Background,
   Button,
   Heading,
+  TenantSelector,
   Text,
   TokenListSection,
 } from "@evevault/shared/components";
-import { useDevice, useEpochExpiration } from "@evevault/shared/hooks";
-import { useDeviceStore } from "@evevault/shared/stores/deviceStore";
-import { useNetworkStore } from "@evevault/shared/stores/networkStore";
+import Icon from "@evevault/shared/components/Icon";
+import {
+  useDevice,
+  useEpochExpiration,
+  useTenant,
+} from "@evevault/shared/hooks";
+import {
+  getAvailableTenantIds,
+  getCurrentTenantId,
+  getTenantLabel,
+  useDeviceStore,
+  useNetworkStore,
+} from "@evevault/shared/stores";
 import { createSuiClient, getFaucetUrlForChain } from "@evevault/shared/sui";
 import {
   createLogger,
-  getDevModeEnabled,
   getSuiscanUrl,
-  setDevModeEnabled,
   WEB_ROUTES,
 } from "@evevault/shared/utils";
 import { zkSignAny } from "@evevault/shared/wallet";
 import { Transaction } from "@mysten/sui/transactions";
-import type { SuiChain } from "@mysten/wallet-standard";
 import { SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 const log = createLogger();
 
@@ -38,9 +51,7 @@ export const WalletScreen = () => {
   const [initError, setInitError] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const [txDigest, setTxDigest] = useState<string | null>(null);
-  const [devMode, setDevMode] = useState(false);
-  const [_previousNetworkBeforeSwitch, setPreviousNetworkBeforeSwitch] =
-    useState<SuiChain | null>(null);
+  const { devMode, setDevMode } = useTenant();
 
   const {
     user,
@@ -62,6 +73,11 @@ export const WalletScreen = () => {
   } = useDevice();
   const { chain } = useNetworkStore();
   const faucetUrl = getFaucetUrlForChain(chain);
+  const availableTenantIds = useMemo(
+    () => getAvailableTenantIds(devMode),
+    [devMode],
+  );
+  const tenantId = getCurrentTenantId();
 
   // Create suiClient with useMemo to recreate when chain changes
   const suiClient = React.useMemo(() => {
@@ -102,15 +118,9 @@ export const WalletScreen = () => {
   // Monitor epoch expiration and auto-logout when maxEpochTimestampMs is reached
   useEpochExpiration();
 
-  useEffect(() => {
-    getDevModeEnabled().then(setDevMode);
-  }, []);
-
-  const handleDevModeToggle = useCallback(async () => {
-    const next = !devMode;
-    setDevMode(next);
-    await setDevModeEnabled(next);
-  }, [devMode]);
+  const handleDevModeToggle = useCallback(() => {
+    setDevMode(!devMode);
+  }, [devMode, setDevMode]);
 
   const handleLogin = async () => {
     try {
@@ -206,7 +216,9 @@ export const WalletScreen = () => {
       <LockScreen
         isPinSet={isPinSet}
         unlock={unlock}
-        onResetComplete={() => redirectToFusionAuthLogout()}
+        onResetComplete={() => {
+          window.location.href = "/";
+        }}
       />
     );
   }
@@ -222,6 +234,7 @@ export const WalletScreen = () => {
         <main className="app-shell__content">
           <Button onClick={async () => handleLogin()}>Sign in</Button>
         </main>
+        <TenantSelector currentTenantId={tenantId} viewOnly={true} />
       </Background>
     );
   }
@@ -243,6 +256,8 @@ export const WalletScreen = () => {
             ? () => window.open(faucetUrl, "_blank", "noopener,noreferrer")
             : undefined
         }
+        currentTenantId={devMode ? tenantId : undefined}
+        onServerChange={(tenantId: TenantId) => switchTenantAndReload(tenantId)}
       />
       {/* Token Section: pass defined chain (testnet fallback) so balance and token list use the same network and we avoid cross-network transfer/balance errors */}
       <TokenListSection
@@ -259,16 +274,28 @@ export const WalletScreen = () => {
       />
       {/* Network selector and test tx result */}
       <div className="justify-between pt-8 flex gap-4 flex-col sm:flex-row">
-        <NetworkSelector
-          chain={chain || SUI_TESTNET_CHAIN}
-          onNetworkSwitchStart={(previousNetwork, targetNetwork) => {
-            log.info("Network switch started", {
-              previousNetwork,
-              targetNetwork,
-            });
-            setPreviousNetworkBeforeSwitch(previousNetwork as SuiChain);
-          }}
-        />
+        <div className="flex justify-between items-center gap-2 w-full">
+          <NetworkSelector
+            chain={chain || SUI_TESTNET_CHAIN}
+            onNetworkSwitchStart={(previousNetwork, targetNetwork) => {
+              log.info("Network switch started", {
+                previousNetwork,
+                targetNetwork,
+              });
+            }}
+          />
+          <div className="dropdown-selector--inline">
+            <div
+              className="dropdown-selector__trigger"
+              style={{ cursor: "default" }}
+            >
+              <Icon name="Network" color="quantum" />
+              <Text variant="label-medium" size="medium">
+                {getTenantLabel(tenantId)}
+              </Text>
+            </div>
+          </div>
+        </div>
         <div>
           {txDigest && (
             <div>

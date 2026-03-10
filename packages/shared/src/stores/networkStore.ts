@@ -200,6 +200,25 @@ export const useNetworkStore = create<NetworkState>()(
       storage: createJSONStorage(() =>
         isWeb() ? localStorageAdapter : chromeStorageAdapter,
       ),
+      partialize: (state) => ({ chain: state.chain }),
     },
   ),
 );
+
+// In extension, sync network store when another context updates chrome.storage
+if (typeof chrome !== "undefined" && chrome.storage && !isWeb()) {
+  const storage = chrome.storage as {
+    onChanged?: {
+      addListener: (
+        callback: (changes: Record<string, unknown>, areaName: string) => void,
+      ) => void;
+    };
+  };
+  storage.onChanged?.addListener(
+    (changes: Record<string, unknown>, areaName: string) => {
+      if (areaName === "local" && changes[NETWORK_STORAGE_KEY]) {
+        void useNetworkStore.persist.rehydrate();
+      }
+    },
+  );
+}

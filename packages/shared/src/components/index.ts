@@ -11,6 +11,7 @@ export * from "./Modal";
 export * from "./NetworkSelector";
 export * from "./NotFoundScreen";
 export * from "./SendTokenScreen";
+export * from "./TenantSelector";
 export * from "./Text";
 export * from "./Toast";
 export * from "./TokenList";

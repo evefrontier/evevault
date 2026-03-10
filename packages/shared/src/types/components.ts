@@ -9,6 +9,7 @@ import type {
   SVGProps,
 } from "react";
 import type { ThemeToken } from "../theme/colorTheme";
+import type { TenantId } from "./tenant";
 
 export interface SwitchProps {
   isChecked: boolean;
@@ -202,6 +203,10 @@ export interface HeaderMobileProps {
   onTokenRefreshTestClick?: () => void;
   /** Callback when "Faucet test SUI" menu item is clicked (dev mode only) */
   onFaucetTestSuiClick?: () => void;
+  /** Current tenant id (for Server dropdown when in dev mode) */
+  currentTenantId?: string;
+  /** Callback when user selects a different Server (tenant) in dev mode */
+  onServerChange?: (tenantId: TenantId) => void;
 }
 
 export type CornersColor =

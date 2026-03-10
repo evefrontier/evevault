@@ -5,6 +5,7 @@ export const NETWORK_STORAGE_KEY = "evevault:network";
 export const TOKENLIST_STORAGE_KEY = "evevault:tokenlist";
 export const JWT_STORAGE_KEY = "evevault:jwt";
 export const DEV_MODE_STORAGE_KEY = "evevault:dev-mode";
+export const TENANT_STORAGE_KEY = "evevault:tenant";
 
 /** Persist keys used by Zustand and auth (localStorage / chrome.storage.local). Cleared on reset. */
 export const EVEVAULT_STORAGE_KEYS = [
@@ -14,6 +15,7 @@ export const EVEVAULT_STORAGE_KEYS = [
   TOKENLIST_STORAGE_KEY,
   JWT_STORAGE_KEY,
   DEV_MODE_STORAGE_KEY,
+  TENANT_STORAGE_KEY,
 ] as const;
 
 /** Extension-only chrome.storage.local keys cleared on reset (not covered by cleanupExtensionStorage). */

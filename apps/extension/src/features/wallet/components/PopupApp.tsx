@@ -1,5 +1,11 @@
 import "./PopupApp.css";
 import {
+  getAvailableTenantIds,
+  getCurrentTenantId,
+  switchTenantAndReload,
+  type TenantId,
+} from "@evevault/shared";
+import {
   handleTestTokenRefresh,
   redirectToFusionAuthLogout,
   useAuth,
@@ -9,28 +15,29 @@ import {
   HeaderMobile,
   Heading,
   NetworkSelector,
+  TenantSelector,
   Text,
   TokenListSection,
 } from "@evevault/shared/components";
+import Icon from "@evevault/shared/components/Icon";
 import {
   useDevice,
   useEpochExpiration,
+  useTenant,
   useTestTransaction,
 } from "@evevault/shared/hooks";
 import { LockScreen } from "@evevault/shared/screens";
-import { useNetworkStore } from "@evevault/shared/stores/networkStore";
+import { useNetworkStore } from "@evevault/shared/stores";
 import { getFaucetUrlForChain } from "@evevault/shared/sui";
 import {
   createLogger,
   EXTENSION_ROUTES,
-  getDevModeEnabled,
   getSuiscanUrl,
-  setDevModeEnabled,
 } from "@evevault/shared/utils";
 import { useBalance } from "@evevault/shared/wallet";
 import type { SuiChain } from "@mysten/wallet-standard";
 import { useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAppInitialization, useLogin } from "../hooks";
 
 const log = createLogger();
@@ -38,7 +45,7 @@ const log = createLogger();
 function App() {
   const navigate = useNavigate();
   const { initError, isInitializing } = useAppInitialization();
-  const [devMode, setDevMode] = useState(false);
+  const { devMode, setDevMode } = useTenant();
   const [previousNetworkBeforeSwitch, setPreviousNetworkBeforeSwitch] =
     useState<SuiChain | null>(null);
 
@@ -68,15 +75,15 @@ function App() {
     }
   }, [user, previousNetworkBeforeSwitch]);
 
-  useEffect(() => {
-    getDevModeEnabled().then(setDevMode);
-  }, []);
+  const availableTenantIds = useMemo(
+    () => getAvailableTenantIds(devMode),
+    [devMode],
+  );
+  const tenantId = getCurrentTenantId();
 
-  const handleDevModeToggle = useCallback(async () => {
-    const next = !devMode;
-    setDevMode(next);
-    await setDevModeEnabled(next);
-  }, [devMode]);
+  const handleDevModeToggle = useCallback(() => {
+    setDevMode(!devMode);
+  }, [devMode, setDevMode]);
 
   const onLoginClick = async () => {
     const success = await handleLogin(previousNetworkBeforeSwitch);
@@ -162,7 +169,26 @@ function App() {
               {authLoading ? "Loading..." : "Login"}
             </Button>
           </div>
+          <TenantSelector
+            currentTenantId={tenantId}
+            availableTenantIds={availableTenantIds}
+            onServerChange={(tenantId) =>
+              switchTenantAndReload(tenantId as TenantId)
+            }
+          />
         </section>
+        <Button
+          variant="secondary"
+          size="small"
+          className="absolute! bottom-4 right-4"
+          onClick={handleDevModeToggle}
+        >
+          <Icon
+            name={devMode ? "Eye" : "HideEye"}
+            color="#ED4136"
+            size="small"
+          />
+        </Button>
       </div>
     );
   }
@@ -211,6 +237,8 @@ function App() {
             setPreviousNetworkBeforeSwitch(previousNetwork as SuiChain);
           }}
         />
+
+        <TenantSelector currentTenantId={tenantId} viewOnly={true} />
       </div>
 
       {authError && <Text color="error">AuthError: {authError}</Text>}

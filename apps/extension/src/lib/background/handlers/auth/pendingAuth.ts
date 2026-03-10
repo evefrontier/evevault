@@ -11,6 +11,8 @@ export interface PendingAuthAfterUnlock {
   type: "ext" | "dapp";
   tabId?: number;
   windowId?: number;
+  /** Tenant id for ext_login resume (popup context tenant when vault was locked). */
+  tenantId?: string;
 }
 
 let pendingAuthAfterUnlock: PendingAuthAfterUnlock | null = null;
@@ -44,9 +46,10 @@ export function setPendingAuthAfterUnlock(
   type: "ext" | "dapp",
   tabId?: number,
   windowId?: number,
+  tenantId?: string,
 ): void {
   clearPendingAuth();
-  pendingAuthAfterUnlock = { id, type, tabId, windowId };
+  pendingAuthAfterUnlock = { id, type, tabId, windowId, tenantId };
   pendingAuthTimeoutId = setTimeout(() => {
     pendingAuthTimeoutId = null;
     const pending = pendingAuthAfterUnlock;

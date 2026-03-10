@@ -1,0 +1,18 @@
+@import "../SelectorShared.css";
+
+/* Inline variant: compact trigger with background */
+.dropdown-selector--inline .dropdown-selector__trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: var(--quantum-10);
+  border: 1px solid var(--quantum-30);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.dropdown-selector--inline .dropdown-selector__trigger:hover {
+  background: var(--quantum-20);
+}

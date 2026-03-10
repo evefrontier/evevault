@@ -6,7 +6,12 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import { chromeStorageAdapter, localStorageAdapter } from "../../adapters";
 import { zkProofService } from "../../services/vaultService";
 import { useDeviceStore, useNetworkStore } from "../../stores";
-import type { AuthMessage, JwtResponse } from "../../types";
+import {
+  getCurrentTenantId,
+  OAuthTenantSessionKey,
+  setCurrentTenantId,
+} from "../../stores/tenantStore";
+import type { AuthMessage, JwtResponse, TenantId } from "../../types";
 import {
   createLogger,
   getDeviceData,
@@ -16,6 +21,11 @@ import {
   performFullCleanup,
 } from "../../utils";
 import { AUTH_STORAGE_KEY } from "../../utils/storageKeys";
+import {
+  DEFAULT_TENANT_ID,
+  getTenantConfig,
+  isAvailableTenantId,
+} from "../../utils/tenantConfig";
 import { getUserManager, redirectToFusionAuthLogout } from "../authConfig";
 import {
   clearZkLoginAddressCache,
@@ -49,7 +59,7 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => {
       // Lazy getter for userManager to avoid initialization order issues
-      const getUserManagerInstance = () => getUserManager();
+      const getUserManagerInstance = () => getUserManager(getCurrentTenantId());
 
       return {
         user: null,
@@ -314,6 +324,12 @@ export const useAuthStore = create<AuthState>()(
               };
             };
 
+            if (typeof sessionStorage !== "undefined") {
+              sessionStorage.setItem(
+                OAuthTenantSessionKey,
+                getCurrentTenantId(),
+              );
+            }
             getUserManagerInstance().signinRedirect({
               nonce: getDeviceParams().nonce,
               extraQueryParams: {
@@ -360,6 +376,7 @@ export const useAuthStore = create<AuthState>()(
             chrome.runtime?.sendMessage?.({
               action: "ext_login",
               id: id,
+              tenantId: getCurrentTenantId(),
             });
           });
         },
@@ -474,8 +491,42 @@ export const useAuthStore = create<AuthState>()(
             // Use deviceStore.lock() to ensure isLocked state is updated
             await useDeviceStore.getState().lock();
 
-            // Redirect to FusionAuth logout so IdP session is cleared (web and extension)
-            redirectToFusionAuthLogout();
+            const tenant = getCurrentTenantId();
+
+            // Build logout URL manually to avoid CORS issues with OIDC discovery
+            const fusionAuthUrl = getTenantConfig(tenant).serverUrl;
+            const clientId = getTenantConfig(tenant).clientId;
+
+            if (isExtension() && typeof chrome !== "undefined") {
+              // Extensions use chrome.identity.launchWebAuthFlow to trigger OIDC logout
+              const redirectUri = chrome.identity.getRedirectURL();
+
+              const logoutUrl = new URL(
+                `${fusionAuthUrl.replace(/\/$/, "")}/oauth2/logout`,
+              );
+              logoutUrl.searchParams.set("client_id", clientId);
+              logoutUrl.searchParams.set(
+                "post_logout_redirect_uri",
+                redirectUri,
+              );
+
+              chrome.identity.launchWebAuthFlow(
+                { url: logoutUrl.toString(), interactive: true },
+                async () => {
+                  chrome.runtime.sendMessage({
+                    __from: "Eve Vault",
+                    event: "change",
+                    payload: { accounts: [] },
+                  });
+                },
+              );
+            } else {
+              // For web, just redirect to home - FusionAuth session can remain
+              // (user will re-authenticate to get new JWT with correct network params)
+              // Note: If full FusionAuth logout is needed, configure post_logout_redirect_uri
+              // in FusionAuth OAuth settings
+              window.location.href = window.location.origin;
+            }
           } catch (error) {
             log.error("Error during logout cleanup", error);
             set({
@@ -510,6 +561,49 @@ export const useAuthStore = create<AuthState>()(
   ),
 );
 
+/**
+ * Clears auth state for the given tenant (no redirect).
+ * Used when switching server so the next login uses the new tenant.
+ */
+export async function runTenantSwitchCleanup(
+  tenantId: TenantId,
+): Promise<void> {
+  // TODO: Do not clean up PIN, maintain existing ephemeral key and nonce for network
+  try {
+    await getUserManager(tenantId).removeUser();
+    await performFullCleanup();
+    await clearAllJwts();
+    clearZkLoginAddressCache();
+    useAuthStore.getState().setUser(null);
+    await zkProofService.clear();
+    await useDeviceStore.getState().lock();
+  } catch (error) {
+    log.error("Error during tenant switch cleanup", error);
+  }
+}
+
+/**
+ * Clears auth state for current tenant and redirects to app home with new tenant.
+ * Used when switching server (tenant) via dev dropdown.
+ */
+export async function switchTenantAndReload(
+  newTenantId: TenantId,
+): Promise<void> {
+  const current = getCurrentTenantId();
+  if (current === newTenantId) return;
+
+  await runTenantSwitchCleanup(current);
+  await setCurrentTenantId(newTenantId as TenantId);
+
+  if (isWeb() && typeof window !== "undefined") {
+    const url =
+      newTenantId === DEFAULT_TENANT_ID
+        ? window.location.origin
+        : `${window.location.origin}?tenant=${newTenantId}`;
+    window.location.href = url;
+  }
+}
+
 export const waitForAuthHydration = async () => {
   if (useAuthStore.persist.hasHydrated()) {
     return;
@@ -530,16 +624,8 @@ let eventListenersInitialized = false;
 function initializeEventListeners() {
   if (eventListenersInitialized) return;
   eventListenersInitialized = true;
-
-  const userManager = getUserManager();
-
-  userManager.events.addUserLoaded((user) => {
-    useAuthStore.getState().setUser(user);
-  });
-
-  userManager.events.addUserUnloaded(() => {
-    useAuthStore.getState().setUser(null);
-  });
+  // Ensure current tenant's UserManager is created (handlers are registered in authConfig)
+  getUserManager(getCurrentTenantId());
 }
 
 if (typeof window !== "undefined") {
