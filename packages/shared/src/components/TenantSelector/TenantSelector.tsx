@@ -5,24 +5,37 @@ import { Dropdown } from "../Dropdown";
 import Icon from "../Icon";
 import Text from "../Text";
 import "./TenantSelector.css";
-import type { TenantId } from "@evevault/shared/types";
+import type {
+  TenantId,
+  TenantSelectorInteractiveProps,
+  TenantSelectorProps,
+  TenantSelectorPropsBase,
+} from "@evevault/shared/types";
 
-export interface TenantSelectorProps {
-  currentTenantId: TenantId;
-  availableTenantIds: TenantId[];
-  onServerChange: (tenantId: TenantId) => void;
-  /** Inline: compact trigger (label + chevron). Standalone: label "SERVER" + value + chevron like NetworkSelector. */
-  variant?: "inline" | "standalone";
-  className?: string;
-}
+const TenantSelectorViewOnly = ({
+  currentTenantId,
+  className = "",
+}: TenantSelectorPropsBase & { viewOnly: true }) => {
+  return (
+    <div
+      className={`dropdown-selector dropdown-selector--inline ${className}`.trim()}
+      role="presentation"
+    >
+      <div className="dropdown-selector__trigger">
+        <Text size="medium" variant="regular" color="neutral">
+          {getTenantLabel(currentTenantId)}
+        </Text>
+      </div>
+    </div>
+  );
+};
 
-export const TenantSelector: React.FC<TenantSelectorProps> = ({
+const TenantSelectorInteractive = ({
   currentTenantId,
   availableTenantIds,
   onServerChange,
-  variant = "standalone",
   className = "",
-}) => {
+}: TenantSelectorInteractiveProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
@@ -35,13 +48,11 @@ export const TenantSelector: React.FC<TenantSelectorProps> = ({
   );
 
   const currentLabel = getTenantLabel(currentTenantId);
-  const isInline = variant === "inline";
 
   return (
-    // Wrapper only stops propagation so dropdown doesn't close when clicking inside; no semantic role needed
     // biome-ignore lint/a11y/noStaticElementInteractions: div is for event capture only, not interactive content
     <div
-      className={`dropdown-selector dropdown-selector--${variant} ${className}`.trim()}
+      className={`dropdown-selector ${className}`.trim()}
       onClick={(e: React.MouseEvent) => e.stopPropagation()}
       onKeyDown={(e: React.KeyboardEvent) => e.stopPropagation()}
       role="presentation"
@@ -55,36 +66,19 @@ export const TenantSelector: React.FC<TenantSelectorProps> = ({
         aria-haspopup="listbox"
         aria-label="Tenant"
       >
-        {isInline ? (
-          <>
-            <Text size="medium" variant="regular" color="neutral">
-              {currentLabel}
-            </Text>
-            <Icon
-              name="ChevronArrowDown"
-              width={16}
-              height={16}
-              color="neutral"
-              className={`dropdown-selector__chevron ${isOpen ? "dropdown-selector__chevron--open" : ""}`}
-            />
-          </>
-        ) : (
-          <>
-            <Icon name="Network" color="quantum" />
-            <div className="flex flex-col gap-0.5">
-              <Text variant="label-medium" size="medium">
-                {currentLabel}
-              </Text>
-            </div>
-            <Icon
-              name="ChevronArrowDown"
-              width={16}
-              height={16}
-              color="neutral"
-              className={`dropdown-selector__chevron ${isOpen ? "dropdown-selector__chevron--open" : ""}`}
-            />
-          </>
-        )}
+        <Icon name="Network" color="quantum" />
+        <div className="flex flex-col gap-0.5">
+          <Text variant="label-medium" size="medium">
+            {currentLabel}
+          </Text>
+        </div>
+        <Icon
+          name="ChevronArrowDown"
+          width={16}
+          height={16}
+          color="neutral"
+          className={`dropdown-selector__chevron ${isOpen ? "dropdown-selector__chevron--open" : ""}`}
+        />
       </button>
 
       {isOpen && (
@@ -93,7 +87,7 @@ export const TenantSelector: React.FC<TenantSelectorProps> = ({
           triggerRef={triggerRef}
           placement="bottom"
         >
-          {availableTenantIds.map((id) => {
+          {availableTenantIds.map((id: TenantId) => {
             const isActive = id === currentTenantId;
             return (
               <button
@@ -117,6 +111,13 @@ export const TenantSelector: React.FC<TenantSelectorProps> = ({
       )}
     </div>
   );
+};
+
+export const TenantSelector: React.FC<TenantSelectorProps> = (props) => {
+  if (props.viewOnly === true) {
+    return <TenantSelectorViewOnly {...props} />;
+  }
+  return <TenantSelectorInteractive {...props} />;
 };
 
 export default TenantSelector;

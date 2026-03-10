@@ -5,6 +5,7 @@ import {
 } from "@evevault/shared";
 import { redirectToFusionAuthLogout, useAuth } from "@evevault/shared/auth";
 import { Button, Heading, TenantSelector } from "@evevault/shared/components";
+import Icon from "@evevault/shared/components/Icon";
 import { useDevice, useTenant } from "@evevault/shared/hooks";
 import {
   getAvailableTenantIds,
@@ -15,7 +16,7 @@ import { useMemo } from "react";
 export const LoginScreen = () => {
   const { login, loading } = useAuth();
   const { isLocked, isPinSet, unlock } = useDevice();
-  const { devMode } = useTenant();
+  const { devMode, setDevMode } = useTenant();
 
   const availableTenantIds = useMemo(
     () => getAvailableTenantIds(devMode),
@@ -54,6 +55,16 @@ export const LoginScreen = () => {
           }
         />
       </section>
+      <Button
+        variant="secondary"
+        size="small"
+        className="absolute! bottom-4 right-4"
+        onClick={() => {
+          setDevMode(!devMode);
+        }}
+      >
+        <Icon name={devMode ? "Eye" : "HideEye"} color="#ED4136" size="small" />
+      </Button>
     </div>
   );
 };

@@ -587,7 +587,7 @@ export async function runTenantSwitchCleanup(
  * Used when switching server (tenant) via dev dropdown.
  */
 export async function switchTenantAndReload(
-  newTenantId: string,
+  newTenantId: TenantId,
 ): Promise<void> {
   const current = getCurrentTenantId();
   if (current === newTenantId) return;
@@ -596,7 +596,6 @@ export async function switchTenantAndReload(
   await setCurrentTenantId(newTenantId as TenantId);
 
   if (isWeb() && typeof window !== "undefined") {
-    if (!isAvailableTenantId(newTenantId)) return;
     const url =
       newTenantId === DEFAULT_TENANT_ID
         ? window.location.origin

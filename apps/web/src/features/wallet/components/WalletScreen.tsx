@@ -1,4 +1,9 @@
-import { HeaderMobile, LockScreen, NetworkSelector } from "@evevault/shared";
+import {
+  HeaderMobile,
+  LockScreen,
+  NetworkSelector,
+  type TenantId,
+} from "@evevault/shared";
 import {
   handleTestTokenRefresh,
   switchTenantAndReload,
@@ -223,11 +228,7 @@ export const WalletScreen = () => {
         <main className="app-shell__content">
           <Button onClick={async () => handleLogin()}>Sign in</Button>
         </main>
-        <TenantSelector
-          currentTenantId={tenantId}
-          availableTenantIds={availableTenantIds}
-          onServerChange={(tenantId) => switchTenantAndReload(tenantId)}
-        />
+        <TenantSelector currentTenantId={tenantId} viewOnly={true} />
       </Background>
     );
   }
@@ -249,9 +250,8 @@ export const WalletScreen = () => {
             ? () => window.open(faucetUrl, "_blank", "noopener,noreferrer")
             : undefined
         }
-        availableTenantIds={devMode ? availableTenantIds : undefined}
         currentTenantId={devMode ? tenantId : undefined}
-        onServerChange={devMode ? switchTenantAndReload : undefined}
+        onServerChange={(tenantId: TenantId) => switchTenantAndReload(tenantId)}
       />
       {/* Token Section: pass defined chain (testnet fallback) so balance and token list use the same network and we avoid cross-network transfer/balance errors */}
       <TokenListSection

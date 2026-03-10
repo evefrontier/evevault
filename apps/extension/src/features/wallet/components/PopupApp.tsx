@@ -2,7 +2,6 @@ import "./PopupApp.css";
 import {
   getAvailableTenantIds,
   getCurrentTenantId,
-  getTenantLabel,
   switchTenantAndReload,
   type TenantId,
 } from "@evevault/shared";
@@ -178,6 +177,18 @@ function App() {
             }
           />
         </section>
+        <Button
+          variant="secondary"
+          size="small"
+          className="absolute! bottom-4 right-4"
+          onClick={handleDevModeToggle}
+        >
+          <Icon
+            name={devMode ? "Eye" : "HideEye"}
+            color="#ED4136"
+            size="small"
+          />
+        </Button>
       </div>
     );
   }
@@ -227,17 +238,7 @@ function App() {
           }}
         />
 
-        <div className="dropdown-selector--inline">
-          <div
-            className="dropdown-selector__trigger"
-            style={{ cursor: "default" }}
-          >
-            <Icon name="Network" color="quantum" />
-            <Text variant="label-medium" size="medium">
-              {getTenantLabel(tenantId)}
-            </Text>
-          </div>
-        </div>
+        <TenantSelector currentTenantId={tenantId} viewOnly={true} />
       </div>
 
       {authError && <Text color="error">AuthError: {authError}</Text>}

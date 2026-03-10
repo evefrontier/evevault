@@ -110,7 +110,7 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
   return (
     <>
       <div
-        className={`dropdown-selector dropdown-selector ${
+        className={`dropdown-selector ${
           isExtensionContext ? "dropdown-selector--extension" : ""
         } ${className}`}
       >
