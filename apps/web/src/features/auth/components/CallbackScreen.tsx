@@ -56,8 +56,9 @@ export const CallbackScreen = () => {
         const fallbackRoute: RoutePath = "/wallet";
         const redirectTo = redirectAfterLogin || fallbackRoute;
 
+        const devMode = await getDevModeEnabled();
         // Use oidc-client-ts's built-in PKCE support for the tenant we started login with
-        if (!isAvailableTenantId(tenantId, await getDevModeEnabled())) {
+        if (!isAvailableTenantId(tenantId, devMode)) {
           throw new Error(`Invalid tenant id: ${tenantId}`);
         }
         const userManager = getUserManager(tenantId);
