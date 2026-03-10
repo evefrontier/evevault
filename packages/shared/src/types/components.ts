@@ -327,6 +327,12 @@ export interface TokenRowProps {
   onCopyAddress: (address: string) => void;
 }
 
+export interface ExtendedTokenRowProps extends TokenRowProps {
+  onTransfer?: () => void;
+  isRefreshing?: boolean;
+  refreshTick?: number;
+}
+
 export type LayoutVariant = "web" | "extension";
 
 export interface LayoutProps {
