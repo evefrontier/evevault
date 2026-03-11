@@ -31,6 +31,14 @@ describe("eveToken", () => {
       expect(isEveCoinType(getEveCoinType("stillness"))).toBe(true);
     });
 
+    it("returns true for the legacy EVE coin type", () => {
+      expect(
+        isEveCoinType(
+          "0x59d7bb2e0feffb90cb2446fb97c2ce7d4bd24d2fb98939d6cb6c3940110a0de0::EVE::EVE",
+        ),
+      ).toBe(true);
+    });
+
     it("returns false for SUI coin type", () => {
       expect(isEveCoinType("0x2::sui::SUI")).toBe(false);
     });

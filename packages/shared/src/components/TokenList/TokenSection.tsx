@@ -15,6 +15,7 @@ import type { ExtendedTokenRowProps, TokenListProps } from "../../types";
 import { getDefaultTokensForChain } from "../../types/networks";
 import { createLogger, formatAddress } from "../../utils";
 import { useBalance } from "../../wallet";
+import { getEveCoinType, isEveCoinType } from "../../wallet/eveToken";
 import { getKnownTokenDisplay } from "../../wallet/utils/balanceMetadata";
 import Button from "../Button";
 import Icon from "../Icon";
@@ -215,11 +216,15 @@ export const TokenSection: React.FC<
   }, [queryClient, isRefreshing, showToast]);
 
   const tenantId = getCurrentTenantId();
-  const tokensForChain = useMemo(
-    () =>
-      chain ? (tokens[chain] ?? getDefaultTokensForChain(chain, tenantId)) : [],
-    [chain, tokens, tenantId],
-  );
+  const currentEveCoinType = getEveCoinType(tenantId);
+  const tokensForChain = useMemo(() => {
+    if (!chain) return [];
+    const stored = tokens[chain] ?? getDefaultTokensForChain(chain, tenantId);
+    const mapped = stored.map((t) =>
+      isEveCoinType(t) ? currentEveCoinType : t,
+    );
+    return [...new Set(mapped)];
+  }, [chain, tokens, tenantId, currentEveCoinType]);
 
   const handleCopyAddress = async (address: string) => {
     try {
