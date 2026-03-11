@@ -41,6 +41,12 @@ async function fetchBalanceWithCheckpoint(
     variables: {},
   });
 
+  if (checkpointRes.errors?.length) {
+    log.error("LatestCheckpoint GraphQL query returned errors", {
+      errors: checkpointRes.errors,
+    });
+  }
+
   const raw = checkpointRes.data?.checkpoint?.sequenceNumber;
   const parsed =
     raw != null ? (typeof raw === "number" ? raw : Number(raw)) : undefined;
@@ -104,7 +110,7 @@ export function useBalance({
         );
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        if (message.includes("outside consistent range")) {
+        if (message.toLowerCase().includes("outside consistent range")) {
           data = await fetchBalanceWithCheckpoint(
             graphqlClient,
             address,
