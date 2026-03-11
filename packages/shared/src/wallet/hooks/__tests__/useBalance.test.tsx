@@ -2,7 +2,7 @@ import { SUI_DEVNET_CHAIN } from "@mysten/wallet-standard";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockQuery = vi.fn();
 
@@ -44,6 +44,10 @@ const createWrapper = (queryClient: QueryClient) => {
 };
 
 describe("useBalance hook", () => {
+  beforeEach(() => {
+    mockQuery.mockClear();
+  });
+
   it("returns a formatted SUI balance for the current user", async () => {
     mockQuery
       .mockResolvedValueOnce({
@@ -126,12 +130,8 @@ describe("useBalance hook", () => {
 
     mockQuery
       .mockResolvedValueOnce(checkpointData(100))
-      .mockRejectedValueOnce(
-        new Error("Request is outside consistent range"),
-      )
+      .mockRejectedValueOnce(new Error("Request is outside consistent range"))
       .mockResolvedValueOnce(checkpointData(101))
-      .mockResolvedValueOnce(successBalanceData)
-      .mockResolvedValueOnce(checkpointData(102))
       .mockResolvedValueOnce(successBalanceData);
     mockedFormatSUI.mockReturnValue("formatted-500");
     const user = createMockUser();
@@ -158,17 +158,18 @@ describe("useBalance hook", () => {
       expect(result.current.isSuccess).toBe(true);
     });
 
-    const callCount = mockQuery.mock.calls.length;
-    expect(callCount).toBeGreaterThanOrEqual(4);
+    expect(mockQuery).toHaveBeenCalledTimes(4);
     const balanceCalls = mockQuery.mock.calls.filter(
       (call) =>
         call[0]?.variables?.address !== undefined &&
         call[0]?.variables?.coinType !== undefined,
     );
-    expect(balanceCalls.length).toBeGreaterThanOrEqual(2);
+    expect(balanceCalls).toHaveLength(2);
+    const firstAtCheckpoint = balanceCalls[0][0].variables?.atCheckpoint;
     const retryAtCheckpoint = balanceCalls[1][0].variables?.atCheckpoint;
-    expect(retryAtCheckpoint).toBeDefined();
-    expect(typeof retryAtCheckpoint).toBe("number");
+    expect(firstAtCheckpoint).toBe(100);
+    expect(retryAtCheckpoint).toBe(101);
+    expect(retryAtCheckpoint).not.toBe(firstAtCheckpoint);
     expect(result.current.data?.formattedBalance).toBe("formatted-500");
 
     unmount();

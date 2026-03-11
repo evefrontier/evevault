@@ -1,5 +1,5 @@
 import type React from "react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ToastProps } from "../../types";
 import Icon from "../Icon";
 
@@ -14,15 +14,33 @@ export const Toast: React.FC<ToastProps> = ({
   title,
 }) => {
   const [isAnimating, setIsAnimating] = useState(false);
-  const autoDismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoDismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const scheduleExit = useCallback(() => {
+    if (exitTimerRef.current != null) {
+      clearTimeout(exitTimerRef.current);
+      exitTimerRef.current = null;
+    }
+    exitTimerRef.current = setTimeout(() => {
+      exitTimerRef.current = null;
+      onClose();
+    }, EXIT_DELAY_MS);
+  }, [onClose]);
 
   const handleClose = () => {
     if (autoDismissTimerRef.current != null) {
       clearTimeout(autoDismissTimerRef.current);
       autoDismissTimerRef.current = null;
     }
+    if (exitTimerRef.current != null) {
+      clearTimeout(exitTimerRef.current);
+      exitTimerRef.current = null;
+    }
     setIsAnimating(false);
-    setTimeout(onClose, EXIT_DELAY_MS);
+    scheduleExit();
   };
 
   useEffect(() => {
@@ -31,7 +49,7 @@ export const Toast: React.FC<ToastProps> = ({
       autoDismissTimerRef.current = setTimeout(() => {
         autoDismissTimerRef.current = null;
         setIsAnimating(false);
-        setTimeout(onClose, EXIT_DELAY_MS);
+        scheduleExit();
       }, duration);
 
       return () => {
@@ -39,9 +57,13 @@ export const Toast: React.FC<ToastProps> = ({
           clearTimeout(autoDismissTimerRef.current);
           autoDismissTimerRef.current = null;
         }
+        if (exitTimerRef.current != null) {
+          clearTimeout(exitTimerRef.current);
+          exitTimerRef.current = null;
+        }
       };
     }
-  }, [isVisible, duration, onClose]);
+  }, [isVisible, duration, scheduleExit]);
 
   if (!isVisible && !isAnimating) return null;
 

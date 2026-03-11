@@ -162,6 +162,6 @@ export function useBalance({
     enabled:
       !!user?.profile?.sui_address && !!chain && !!graphqlClient && !!coinType,
     staleTime: 1000 * 30, // 30 seconds
-    retry: 2,
+    retry: false,
   });
 }

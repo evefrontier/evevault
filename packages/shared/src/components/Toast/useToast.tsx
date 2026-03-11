@@ -6,13 +6,14 @@ import {
   useContext,
   useState,
 } from "react";
+import type { ToastVariant } from "../../types/components";
 import { Toast } from "./Toast";
 
 type ToastState = {
   message: string;
   isVisible: boolean;
   duration: number;
-  variant: "default" | "error";
+  variant: ToastVariant;
   title?: string;
 };
 
