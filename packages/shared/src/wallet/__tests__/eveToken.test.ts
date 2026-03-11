@@ -1,9 +1,9 @@
-import { describe, expect, it } from "vitest";
 import {
   EVE_PACKAGE_ID_BY_TENANT,
   getEveCoinType,
-  isEveCoinType,
-} from "../eveToken";
+} from "@evefrontier/dapp-kit";
+import { describe, expect, it } from "vitest";
+import { isEveCoinType } from "../eveToken";
 
 describe("eveToken", () => {
   describe("getEveCoinType", () => {
