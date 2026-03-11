@@ -104,4 +104,74 @@ describe("useBalance hook", () => {
     unmount();
     queryClient.clear();
   });
+
+  it("retries with fresh checkpoint when balance query returns outside consistent range", async () => {
+    const successBalanceData = {
+      data: {
+        address: { balance: { totalBalance: "500" } },
+        coinMetadata: {
+          decimals: 9,
+          symbol: "SUI",
+          name: "Sui",
+          description: "Sui Native Token",
+          iconUrl: null,
+        },
+      },
+      errors: undefined,
+    };
+    const checkpointData = (seq: number) => ({
+      data: { checkpoint: { sequenceNumber: seq } },
+      errors: undefined,
+    });
+
+    mockQuery
+      .mockResolvedValueOnce(checkpointData(100))
+      .mockRejectedValueOnce(
+        new Error("Request is outside consistent range"),
+      )
+      .mockResolvedValueOnce(checkpointData(101))
+      .mockResolvedValueOnce(successBalanceData)
+      .mockResolvedValueOnce(checkpointData(102))
+      .mockResolvedValueOnce(successBalanceData);
+    mockedFormatSUI.mockReturnValue("formatted-500");
+    const user = createMockUser();
+
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: {
+          retry: false,
+        },
+      },
+    });
+
+    const wrapper = createWrapper(queryClient);
+    const { result, unmount } = renderHook(
+      () =>
+        useBalance({
+          user,
+          chain: SUI_DEVNET_CHAIN,
+        }),
+      { wrapper },
+    );
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    const callCount = mockQuery.mock.calls.length;
+    expect(callCount).toBeGreaterThanOrEqual(4);
+    const balanceCalls = mockQuery.mock.calls.filter(
+      (call) =>
+        call[0]?.variables?.address !== undefined &&
+        call[0]?.variables?.coinType !== undefined,
+    );
+    expect(balanceCalls.length).toBeGreaterThanOrEqual(2);
+    const retryAtCheckpoint = balanceCalls[1][0].variables?.atCheckpoint;
+    expect(retryAtCheckpoint).toBeDefined();
+    expect(typeof retryAtCheckpoint).toBe("number");
+    expect(result.current.data?.formattedBalance).toBe("formatted-500");
+
+    unmount();
+    queryClient.clear();
+  });
 });
