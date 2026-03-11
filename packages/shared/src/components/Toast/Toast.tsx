@@ -1,7 +1,9 @@
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ToastProps } from "../../types";
 import Icon from "../Icon";
+
+const EXIT_DELAY_MS = 300;
 
 export const Toast: React.FC<ToastProps> = ({
   message,
@@ -12,16 +14,32 @@ export const Toast: React.FC<ToastProps> = ({
   title,
 }) => {
   const [isAnimating, setIsAnimating] = useState(false);
+  const autoDismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleClose = () => {
+    if (autoDismissTimerRef.current != null) {
+      clearTimeout(autoDismissTimerRef.current);
+      autoDismissTimerRef.current = null;
+    }
+    setIsAnimating(false);
+    setTimeout(onClose, EXIT_DELAY_MS);
+  };
 
   useEffect(() => {
     if (isVisible) {
       setIsAnimating(true);
-      const timer = setTimeout(() => {
+      autoDismissTimerRef.current = setTimeout(() => {
+        autoDismissTimerRef.current = null;
         setIsAnimating(false);
-        setTimeout(onClose, 300);
+        setTimeout(onClose, EXIT_DELAY_MS);
       }, duration);
 
-      return () => clearTimeout(timer);
+      return () => {
+        if (autoDismissTimerRef.current != null) {
+          clearTimeout(autoDismissTimerRef.current);
+          autoDismissTimerRef.current = null;
+        }
+      };
     }
   }, [isVisible, duration, onClose]);
 
@@ -56,7 +74,7 @@ export const Toast: React.FC<ToastProps> = ({
           </div>
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleClose}
             className="shrink-0 rounded p-0.5 opacity-90 hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-[var(--neutral-50)]"
             aria-label="Close"
           >
