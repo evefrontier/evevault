@@ -9,7 +9,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
-        <Layout showNav={false}>
+        <Layout variant="extension" showNav={false}>
           <SignTransaction />
         </Layout>
       </ToastProvider>
