@@ -9,8 +9,7 @@ import {
   useState,
 } from "react";
 import { useResponsive } from "../../hooks";
-import { getCurrentTenantId } from "../../stores/tenantStore";
-import { useTokenListStore } from "../../stores/tokenListStore";
+import { getCurrentTenantId, useTokenListStore } from "../../stores";
 import type { ExtendedTokenRowProps, TokenListProps } from "../../types";
 import { getDefaultTokensForChain } from "../../types/networks";
 import { createLogger, formatAddress } from "../../utils";
