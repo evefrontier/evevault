@@ -18,7 +18,7 @@ type ToastState = {
 
 interface ToastContextType {
   showToast: (message: string, duration?: number) => void;
-  showErrorToast: (title: string, message: string, duration?: number) => void;
+  showErrorToast: (message: string, title?: string, duration?: number) => void;
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
@@ -47,7 +47,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   }, []);
 
   const showErrorToast = useCallback(
-    (title: string, message: string, duration = 5000) => {
+    (message: string, title?: string, duration = 5000) => {
       setToast({
         message,
         isVisible: true,
