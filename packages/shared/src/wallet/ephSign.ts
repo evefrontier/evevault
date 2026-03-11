@@ -1,9 +1,7 @@
 import {
   type IntentScope,
-  messageWithIntent,
   type SignatureWithBytes,
 } from "@mysten/sui/cryptography";
-import { toBase64 } from "@mysten/sui/utils";
 import type { EphSignParams } from "../types";
 import { createLogger } from "../utils/logger";
 
@@ -38,25 +36,19 @@ export const ephSign = async (
         byteLength: messageBytes.length,
       });
     } else {
-      const messageBytesWithIntent = messageWithIntent(scope, messageBytes);
-
-      const messageSignature = await ephemeralKeyPair.sign(messageBytes);
-      log.debug("Signed message bytes with ephemeral key", {
+      // Use signPersonalMessage which correctly:
+      // 1. BCS-encodes the message bytes
+      // 2. Prepends the PersonalMessage intent bytes
+      // 3. Hashes with blake2b
+      // 4. Signs the hash and returns a serialized signature (flag + sig + pubkey)
+      ephSignature = await ephemeralKeyPair.signPersonalMessage(messageBytes);
+      log.debug("Signed personal message bytes with ephemeral key", {
         byteLength: messageBytes.length,
       });
-
-      if (!messageSignature) {
-        throw new Error("Message signature not found");
-      }
-
-      ephSignature = {
-        bytes: toBase64(messageBytesWithIntent),
-        signature: toBase64(messageSignature),
-      };
     }
   } catch (error) {
-    log.error("Error signing transaction", error);
-    throw new Error("Error signing transaction");
+    log.error("Error signing message", error);
+    throw new Error("Error signing message");
   }
 
   if (ephSignature === undefined) {
