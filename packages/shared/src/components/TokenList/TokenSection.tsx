@@ -8,8 +8,8 @@ import {
   useRef,
   useState,
 } from "react";
-import { useResponsive } from "../../hooks";
-import { useTenantStore, useTokenListStore } from "../../stores";
+import { useResponsive, useTenant } from "../../hooks";
+import { useTokenListStore } from "../../stores";
 import type { ExtendedTokenRowProps, TokenListProps } from "../../types";
 import { getDefaultTokensForChain } from "../../types/networks";
 import { createLogger, formatAddress } from "../../utils";
@@ -214,7 +214,7 @@ export const TokenSection: React.FC<
     }
   }, [queryClient, isRefreshing, showToast]);
 
-  const tenantId = useTenantStore((state) => state.tenantId);
+  const { tenantId } = useTenant();
   const currentEveCoinType = getEveCoinType(tenantId);
   const tokensForChain = useMemo(() => {
     if (!chain) return [];
