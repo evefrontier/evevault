@@ -9,6 +9,7 @@ import {
   formatDisplayAmount,
   formatShortDate,
   getSuiscanUrl,
+  SUI_COIN_TYPE,
 } from "../../utils";
 import { useTransactionHistory } from "../../wallet";
 import Button from "../Button";
@@ -31,15 +32,16 @@ const TransactionRow: React.FC<TransactionRowProps> = ({
   const shortCounterparty = formatAddress(counterparty, 6, 6);
   const shortDigest = formatAddress(digest, 8, 8);
 
-  const nonSuiChanges = balanceChanges.filter((bc) => bc.tokenSymbol !== "SUI");
   const summaryAmountsRaw =
-    nonSuiChanges.length > 0
-      ? nonSuiChanges
+    balanceChanges.length > 0
+      ? balanceChanges
           .map((bc) => `${formatDisplayAmount(bc.amount, 5)} ${bc.tokenSymbol}`)
           .join(", ")
-      : "Gas";
+      : "";
   const summaryAmounts =
-    direction === "sent" ? `−${summaryAmountsRaw}` : summaryAmountsRaw;
+    direction === "sent" && summaryAmountsRaw
+      ? `−${summaryAmountsRaw}`
+      : summaryAmountsRaw;
 
   // Container classes - expands when selected
   const containerClasses = [
@@ -101,15 +103,19 @@ const TransactionRow: React.FC<TransactionRowProps> = ({
       {isExpanded && (
         <div className="flex items-start justify-between w-full pt-2 gap-4">
           <div className="flex flex-col gap-1 min-w-0">
-            {balanceChanges.map((bc) => (
-              <div key={bc.coinType} className="flex flex-col gap-0.5">
+            {balanceChanges.map((bc, index) => (
+              <div
+                key={`${bc.coinType}-${index}`}
+                className="flex flex-col gap-0.5"
+              >
                 {bc.tokenName ? (
                   <Text variant="light" size="xsmall" color="neutral-50">
-                    {bc.tokenSymbol === "SUI" ? "Gas" : "Token"}: {bc.tokenName}
+                    {bc.coinType === SUI_COIN_TYPE ? "Gas" : "Token"}:{" "}
+                    {bc.tokenName}
                   </Text>
                 ) : null}
                 <Text variant="light" size="small" color="neutral-90">
-                  {direction === "sent"
+                  {bc.isDebit
                     ? `−${formatDisplayAmount(bc.amount, 5)} ${bc.tokenSymbol}`
                     : `${formatDisplayAmount(bc.amount, 5)} ${bc.tokenSymbol}`}
                 </Text>
