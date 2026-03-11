@@ -1,15 +1,48 @@
 import type { SuiGraphQLClient } from "@mysten/sui/graphql";
-import type { Transaction, TransactionDirection } from "../../types/components";
+import type {
+  Transaction,
+  TransactionBalanceChange,
+  TransactionDirection,
+} from "../../types/components";
 import { SUI_COIN_TYPE } from "../../utils";
-import type { GraphQLTransactionNode } from "../types/graphql";
-import {
-  extractSymbolFromCoinType,
-  formatTransactionAmount,
-} from "./formatTransaction";
+import { formatByDecimals } from "../../utils/format";
+import { createLogger } from "../../utils/logger";
+import type {
+  GraphQLBalanceChange,
+  GraphQLTransactionNode,
+} from "../types/graphql";
+import { fetchCoinMetadata } from "./coinMetadata";
+import { extractSymbolFromCoinType } from "./formatTransaction";
+
+const log = createLogger();
+
+function findCounterparty(
+  balanceChanges: GraphQLBalanceChange[],
+  userAddress: string,
+  direction: TransactionDirection,
+  coinType: string,
+): string {
+  const isReceived = direction === "received";
+  const oppositeSign = isReceived
+    ? (amount: bigint) => amount < 0n
+    : (amount: bigint) => amount > 0n;
+  const sameCoinType = (bc: GraphQLBalanceChange) =>
+    (bc.coinType?.repr ?? SUI_COIN_TYPE) === coinType;
+  const notUser = (bc: GraphQLBalanceChange) =>
+    bc.owner?.address?.toLowerCase() !== userAddress.toLowerCase();
+
+  const withOppositeSign = balanceChanges.filter((bc) => {
+    if (!bc.amount) return false;
+    return oppositeSign(BigInt(bc.amount)) && notUser(bc);
+  });
+  const sameCoin = withOppositeSign.find(sameCoinType);
+  const counterpartyChange = sameCoin ?? withOppositeSign[0];
+  return counterpartyChange?.owner?.address ?? "System";
+}
 
 /**
  * Parses a GraphQL transaction response into our Transaction format.
- * Uses GraphQL client for coin metadata lookups when formatting amounts.
+ * Returns one Transaction per digest with all user balance changes (e.g. EVE + SUI gas) in one row.
  */
 export async function parseGraphQLTransaction(
   txNode: GraphQLTransactionNode,
@@ -29,100 +62,126 @@ export async function parseGraphQLTransaction(
     return null;
   }
 
-  // Find the balance change relevant to the user
-  const userBalanceChange = balanceChanges.find((bc) => {
-    const ownerAddress = bc.owner?.address;
-    return ownerAddress?.toLowerCase() === userAddress.toLowerCase();
+  const ts = timestamp ? new Date(timestamp).getTime() : Date.now();
+
+  const userChanges = balanceChanges.filter((bc) => {
+    const owner = bc.owner?.address;
+    return (
+      owner?.toLowerCase() === userAddress.toLowerCase() && bc.amount != null
+    );
   });
 
-  if (!userBalanceChange || !userBalanceChange.amount) {
-    // If no balance change for user, try to find outgoing transaction
-    const outgoingChange = balanceChanges.find((bc) => {
-      if (!bc.amount) return false;
-      const amount = BigInt(bc.amount);
-      return amount < 0n;
-    });
+  if (userChanges.length > 0) {
+    const balanceChangeItems: TransactionBalanceChange[] = [];
 
-    if (!outgoingChange || !outgoingChange.amount) {
-      return null;
+    for (const userBalanceChange of userChanges) {
+      if (userBalanceChange.amount == null) continue;
+      const amount = BigInt(userBalanceChange.amount);
+      const coinType = userBalanceChange.coinType?.repr ?? SUI_COIN_TYPE;
+      const amountAbs = amount >= 0n ? amount : amount * -1n;
+      const isDebit = amount < 0n;
+
+      const metadata = await fetchCoinMetadata(graphqlClient, coinType);
+      const decimals = metadata?.decimals ?? 9;
+      if (!metadata) {
+        log.warn("Falling back to default decimals for coin type", {
+          coinType,
+          rawAmount: amountAbs.toString(),
+          defaultDecimals: decimals,
+        });
+      }
+
+      balanceChangeItems.push({
+        amount: formatByDecimals(amountAbs.toString(), decimals),
+        tokenSymbol: metadata?.symbol ?? extractSymbolFromCoinType(coinType),
+        tokenName: metadata?.name ?? undefined,
+        coinType,
+        isDebit,
+      });
     }
 
-    // User sent this transaction - find recipient
-    const recipientChange = balanceChanges.find((bc) => {
-      if (!bc.amount) return false;
-      const amount = BigInt(bc.amount);
-      if (amount <= 0n) return false;
-      const ownerAddress = bc.owner?.address;
-      return ownerAddress?.toLowerCase() !== userAddress.toLowerCase();
+    if (balanceChangeItems.length === 0) return null;
+
+    const nonSuiUserChanges = userChanges.filter((change) => {
+      const ct = change.coinType?.repr ?? SUI_COIN_TYPE;
+      return ct !== SUI_COIN_TYPE && change.amount != null;
     });
-
-    // If no recipient found, it's likely a gas-only or system-level transaction
-    const counterparty = recipientChange?.owner?.address || "System";
-
-    const amountAbs = BigInt(outgoingChange.amount) * -1n;
-    const coinType = outgoingChange.coinType?.repr || SUI_COIN_TYPE;
+    const primaryUserChange =
+      nonSuiUserChanges[0] ??
+      userChanges.find((change) => change.amount != null) ??
+      userChanges[0];
+    const primaryAmount =
+      primaryUserChange?.amount != null
+        ? BigInt(primaryUserChange.amount)
+        : 0n;
+    const direction: TransactionDirection =
+      primaryAmount >= 0n ? "received" : "sent";
+    const primaryCoinType =
+      primaryUserChange?.coinType?.repr ?? SUI_COIN_TYPE;
+    const primary =
+      balanceChangeItems.find((bc) => bc.coinType === primaryCoinType) ??
+      balanceChangeItems.find((bc) => bc.coinType !== SUI_COIN_TYPE) ??
+      balanceChangeItems[0];
+    const counterparty = findCounterparty(
+      balanceChanges,
+      userAddress,
+      direction,
+      primary.coinType,
+    );
 
     return {
       digest,
-      timestamp: timestamp ? new Date(timestamp).getTime() : Date.now(),
-      direction: "sent" as TransactionDirection,
+      timestamp: ts,
+      direction,
       counterparty,
-      amount: await formatTransactionAmount(
-        amountAbs.toString(),
-        coinType,
-        graphqlClient,
-      ),
-      tokenSymbol: extractSymbolFromCoinType(coinType),
-      coinType,
+      balanceChanges: balanceChangeItems,
     };
   }
 
-  const amount = BigInt(userBalanceChange.amount);
-  const direction: TransactionDirection = amount >= 0n ? "received" : "sent";
-  const coinType = userBalanceChange.coinType?.repr || SUI_COIN_TYPE;
+  const outgoingChange = balanceChanges.find((bc) => {
+    if (!bc.amount) return false;
+    return BigInt(bc.amount) < 0n;
+  });
 
-  // Find counterparty (sender if received, recipient if sent)
-  let counterparty: string;
-
-  if (direction === "received") {
-    // Find who sent it (negative balance change)
-    const senderChange = balanceChanges.find((bc) => {
-      if (!bc.amount) return false;
-      const bcAmount = BigInt(bc.amount);
-      if (bcAmount >= 0n) return false;
-      const ownerAddress = bc.owner?.address;
-      return ownerAddress?.toLowerCase() !== userAddress.toLowerCase();
-    });
-
-    // If no sender found, it's likely a mint/system-originated transfer
-    counterparty = senderChange?.owner?.address || "System";
-  } else {
-    // Find who received it (positive balance change)
-    const recipientChange = balanceChanges.find((bc) => {
-      if (!bc.amount) return false;
-      const bcAmount = BigInt(bc.amount);
-      if (bcAmount <= 0n) return false;
-      const ownerAddress = bc.owner?.address;
-      return ownerAddress?.toLowerCase() !== userAddress.toLowerCase();
-    });
-
-    // If no recipient found, it's likely a gas-only or system-level transaction
-    counterparty = recipientChange?.owner?.address || "System";
+  if (!outgoingChange || !outgoingChange.amount) {
+    return null;
   }
 
-  const amountAbs = amount >= 0n ? amount : amount * -1n;
+  const recipientChange = balanceChanges.find((bc) => {
+    if (!bc.amount) return false;
+    const amount = BigInt(bc.amount);
+    if (amount <= 0n) return false;
+    const ownerAddress = bc.owner?.address;
+    return ownerAddress?.toLowerCase() !== userAddress.toLowerCase();
+  });
+  const counterparty = recipientChange?.owner?.address ?? "System";
+
+  const amountAbs = BigInt(outgoingChange.amount) * -1n;
+  const coinType = outgoingChange.coinType?.repr ?? SUI_COIN_TYPE;
+
+  const metadata = await fetchCoinMetadata(graphqlClient, coinType);
+  const decimals = metadata?.decimals ?? 9;
+  if (!metadata) {
+    log.warn("Falling back to default decimals for coin type", {
+      coinType,
+      rawAmount: amountAbs.toString(),
+      defaultDecimals: decimals,
+    });
+  }
 
   return {
     digest,
-    timestamp: timestamp ? new Date(timestamp).getTime() : Date.now(),
-    direction,
+    timestamp: ts,
+    direction: "sent",
     counterparty,
-    amount: await formatTransactionAmount(
-      amountAbs.toString(),
-      coinType,
-      graphqlClient,
-    ),
-    tokenSymbol: extractSymbolFromCoinType(coinType),
-    coinType,
+    balanceChanges: [
+      {
+        amount: formatByDecimals(amountAbs.toString(), decimals),
+        tokenSymbol: metadata?.symbol ?? extractSymbolFromCoinType(coinType),
+        tokenName: metadata?.name ?? undefined,
+        coinType,
+        isDebit: true,
+      },
+    ],
   };
 }

@@ -89,19 +89,18 @@ export function useTransactionHistory({
         };
       }
 
-      // Parse transactions with metadata fetching (async)
-      const parsedTransactions = await Promise.all(
+      // Parse transactions (one row per digest, with all balance changes aggregated)
+      const parsed = await Promise.all(
         transactionsData.nodes.map((node: GraphQLTransactionNode) =>
           parseGraphQLTransaction(node, userAddress, graphqlClient),
         ),
       );
 
-      const transactions = parsedTransactions
+      const transactions = parsed
         .filter(
           (tx): tx is import("../../types/components").Transaction =>
             tx !== null,
         )
-        // Sort by timestamp descending (newest first)
         .sort((a, b) => b.timestamp - a.timestamp);
 
       log.debug("Transactions fetched successfully via GraphQL", {

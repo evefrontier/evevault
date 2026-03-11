@@ -163,5 +163,6 @@ export function useBalance({
       !!user?.profile?.sui_address && !!chain && !!graphqlClient && !!coinType,
     staleTime: 1000 * 30, // 30 seconds
     retry: false,
+    refetchOnMount: "always",
   });
 }

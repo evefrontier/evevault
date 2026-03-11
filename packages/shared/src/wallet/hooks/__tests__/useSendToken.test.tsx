@@ -2,6 +2,7 @@ import { SUI_DEVNET_CHAIN } from "@mysten/wallet-standard";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook } from "@testing-library/react";
 import type { ReactNode } from "react";
+import { act } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock dependencies before imports
@@ -61,18 +62,36 @@ vi.mock("../../zkSignAny", () => ({
   zkSignAny: vi.fn(),
 }));
 
+vi.mock("@mysten/sui/transactions", () => {
+  const mockCoin = {};
+  return {
+    Transaction: class MockTransaction {
+      setSender = vi.fn().mockReturnThis();
+      splitCoins = vi.fn().mockReturnValue([mockCoin]);
+      transferObjects = vi.fn().mockReturnThis();
+      get gas() {
+        return {};
+      }
+      build = vi.fn().mockResolvedValue(new Uint8Array(64));
+    },
+  };
+});
+
 // Import after mocks
 // Using workspace aliases in test files due to Vite resolution limitations with relative imports
-import { useAuth } from "@evevault/shared/auth";
+import { getUserForNetwork, useAuth } from "@evevault/shared/auth";
 import { useDevice } from "@evevault/shared/hooks";
 import { useNetworkStore } from "@evevault/shared/stores/networkStore";
 import { createSuiClient } from "@evevault/shared/sui";
 import { createMockUser } from "@evevault/shared/testing";
 import type { UseBalanceParams } from "../../types/hooks";
+import { zkSignAny } from "../../zkSignAny";
 import { useBalance } from "../useBalance";
 import { useSendToken } from "../useSendToken";
 
 const mockUseAuth = vi.mocked(useAuth);
+const mockGetUserForNetwork = vi.mocked(getUserForNetwork);
+const mockZkSignAny = vi.mocked(zkSignAny);
 const mockUseDevice = vi.mocked(useDevice);
 const mockUseNetworkStore = vi.mocked(useNetworkStore);
 const mockUseBalance = vi.mocked(useBalance);
@@ -91,6 +110,8 @@ describe("useSendToken", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+
+    mockGetUserForNetwork.mockResolvedValue(mockUser);
 
     // Default mock implementations
     mockUseAuth.mockReturnValue({
@@ -144,6 +165,7 @@ describe("useSendToken", () => {
         executeTransaction: vi.fn().mockResolvedValue({
           Transaction: { digest: "mock-digest" },
         }),
+        resolveTransactionPlugin: vi.fn(),
       },
       // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
     } as any);
@@ -612,6 +634,99 @@ describe("useSendToken", () => {
 
       expect(result.current.suiForGasWarning).toBeNull();
       queryClient.clear();
+    });
+  });
+
+  describe("post-transfer refresh", () => {
+    beforeEach(() => {
+      mockZkSignAny.mockResolvedValue({
+        bytes: "mock-bytes",
+        zkSignature: "mock-signature",
+      });
+    });
+
+    it("invalidates and refetches balance and transaction queries after successful send", async () => {
+      vi.useFakeTimers();
+      const queryClient = new QueryClient();
+      const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+      const refetchSpy = vi.spyOn(queryClient, "refetchQueries");
+
+      const { result, unmount } = renderHook(
+        () =>
+          useSendToken({
+            coinType: "0x2::sui::SUI",
+            recipientAddress: VALID_SUI_ADDRESS,
+            amount: "1",
+          }),
+        { wrapper: createWrapper(queryClient) },
+      );
+
+      await act(async () => {
+        await result.current.send();
+      });
+
+      expect(result.current.error).toBeNull();
+      expect(result.current.txDigest).toBe("mock-digest");
+
+      expect(invalidateSpy).toHaveBeenCalledWith({
+        queryKey: ["coin-balance"],
+      });
+      expect(invalidateSpy).toHaveBeenCalledWith({
+        queryKey: ["transactions"],
+      });
+      expect(invalidateSpy).toHaveBeenCalledTimes(2);
+
+      expect(refetchSpy).toHaveBeenCalledWith({
+        queryKey: ["coin-balance"],
+        type: "all",
+      });
+      expect(refetchSpy).toHaveBeenCalledWith({
+        queryKey: ["transactions"],
+        type: "all",
+      });
+      expect(refetchSpy.mock.calls.length).toBeGreaterThanOrEqual(2);
+
+      unmount();
+      vi.clearAllTimers();
+      invalidateSpy.mockRestore();
+      refetchSpy.mockRestore();
+      queryClient.clear();
+      vi.useRealTimers();
+    });
+
+    it("schedules delayed refetch after successful send", async () => {
+      vi.useFakeTimers();
+      const queryClient = new QueryClient();
+      const refetchSpy = vi.spyOn(queryClient, "refetchQueries");
+
+      const { result, unmount } = renderHook(
+        () =>
+          useSendToken({
+            coinType: "0x2::sui::SUI",
+            recipientAddress: VALID_SUI_ADDRESS,
+            amount: "1",
+          }),
+        { wrapper: createWrapper(queryClient) },
+      );
+
+      await act(async () => {
+        await result.current.send();
+      });
+
+      const callsAfterSend = refetchSpy.mock.calls.length;
+      expect(callsAfterSend).toBeGreaterThanOrEqual(2);
+
+      await act(async () => {
+        vi.advanceTimersByTime(2000);
+      });
+
+      expect(refetchSpy).toHaveBeenCalledTimes(callsAfterSend + 2);
+
+      unmount();
+      vi.clearAllTimers();
+      refetchSpy.mockRestore();
+      queryClient.clear();
+      vi.useRealTimers();
     });
   });
 });

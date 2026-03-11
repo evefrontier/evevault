@@ -1,6 +1,7 @@
 import type { SuiGrpcClient } from "@mysten/sui/grpc";
 import { Transaction } from "@mysten/sui/transactions";
 import { isValidSuiAddress } from "@mysten/sui/utils";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getUserForNetwork, useAuth } from "../../auth";
 import { useDevice } from "../../hooks";
@@ -179,6 +180,7 @@ export function useSendToken({
   const { user: globalUser } = useAuth();
   const { ephemeralPublicKey, getZkProof, maxEpoch, isLocked } = useDevice();
   const { chain } = useNetworkStore();
+  const queryClient = useQueryClient();
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -186,6 +188,9 @@ export function useSendToken({
   const [estimatedGasFee, setEstimatedGasFee] = useState<string | null>(null);
   const [estimatedGasFeeLoading, setEstimatedGasFeeLoading] = useState(false);
   const estimateRunIdRef = useRef(0);
+  const postTransferRefetchTimerRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
 
   const suiClient = useMemo(() => createSuiClient(chain), [chain]);
 
@@ -290,6 +295,16 @@ export function useSendToken({
     !balanceLoading &&
     !!globalUser?.profile?.sui_address &&
     !!chain;
+
+  // Clear delayed refetch timer on unmount
+  useEffect(() => {
+    return () => {
+      if (postTransferRefetchTimerRef.current != null) {
+        clearTimeout(postTransferRefetchTimerRef.current);
+        postTransferRefetchTimerRef.current = null;
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!formValidForEstimate || !suiClient) {
@@ -422,6 +437,40 @@ export function useSendToken({
       });
 
       setTxDigest(digest);
+
+      // Invalidate so token list refetches when user navigates back
+      queryClient.invalidateQueries({ queryKey: ["coin-balance"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+
+      // Refetch in background (type: "all" so inactive queries refresh too); don't block isLoading
+      void Promise.all([
+        queryClient.refetchQueries({
+          queryKey: ["coin-balance"],
+          type: "all",
+        }),
+        queryClient.refetchQueries({
+          queryKey: ["transactions"],
+          type: "all",
+        }),
+      ]);
+
+      // Delayed refetch: GraphQL indexer often lags; refetch after 2s so cache has correct balance
+      const BALANCE_REFETCH_DELAY_MS = 2000;
+      if (postTransferRefetchTimerRef.current != null) {
+        clearTimeout(postTransferRefetchTimerRef.current);
+        postTransferRefetchTimerRef.current = null;
+      }
+      postTransferRefetchTimerRef.current = setTimeout(() => {
+        postTransferRefetchTimerRef.current = null;
+        void queryClient.refetchQueries({
+          queryKey: ["coin-balance"],
+          type: "all",
+        });
+        void queryClient.refetchQueries({
+          queryKey: ["transactions"],
+          type: "all",
+        });
+      }, BALANCE_REFETCH_DELAY_MS);
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to send token";
@@ -441,6 +490,7 @@ export function useSendToken({
     maxEpoch,
     getZkProof,
     suiClient,
+    queryClient,
   ]);
 
   return {

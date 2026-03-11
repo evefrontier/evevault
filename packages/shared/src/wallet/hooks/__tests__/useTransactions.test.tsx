@@ -195,7 +195,8 @@ describe("useTransactionHistory hook (GraphQL)", () => {
     expect(tx?.digest).toBe("tx123");
     expect(tx?.direction).toBe("sent");
     expect(tx?.counterparty).toBe("0xrecipient456");
-    expect(tx?.tokenSymbol).toBe("SUI");
+    expect(tx?.balanceChanges).toHaveLength(1);
+    expect(tx?.balanceChanges[0]?.tokenSymbol).toBe("SUI");
 
     unmount();
   });
@@ -241,6 +242,61 @@ describe("useTransactionHistory hook (GraphQL)", () => {
     const tx = result.current.data?.pages[0].transactions[0];
     expect(tx?.direction).toBe("received");
     expect(tx?.counterparty).toBe("0xsender789");
+
+    unmount();
+  });
+
+  it("derives direction from primary (non-SUI) change when user has multiple balance changes (e.g. incoming token + gas)", async () => {
+    const eveCoinType =
+      "0x59d7bb2e0feffb90cb2446fb97c2ce7d4bd24d2fb98939d6cb6c3940110a0de0::EVE::EVE";
+    const mockResponse = createMockGraphQLResponse([
+      {
+        digest: "tx-multi",
+        timestamp: "2024-01-01T00:00:00.000Z",
+        balanceChanges: [
+          { amount: "-1000000000", coinType: eveCoinType, ownerAddress: "0xsender" },
+          {
+            amount: "1000000000",
+            coinType: eveCoinType,
+            ownerAddress: "0x123",
+          },
+          {
+            amount: "-5000000",
+            coinType: "0x2::sui::SUI",
+            ownerAddress: "0x123",
+          },
+        ],
+      },
+    ]);
+
+    mockGraphQLQuery.mockResolvedValue(mockResponse);
+
+    const user = createMockUser();
+    const wrapper = createWrapper(queryClient);
+
+    const { result, unmount } = renderHook(
+      () =>
+        useTransactionHistory({
+          user,
+          chain: SUI_DEVNET_CHAIN,
+        }),
+      { wrapper },
+    );
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true);
+    });
+
+    const tx = result.current.data?.pages[0].transactions[0];
+    expect(tx?.digest).toBe("tx-multi");
+    expect(tx?.direction).toBe("received");
+    expect(tx?.balanceChanges).toHaveLength(2);
+    const eveChange = tx?.balanceChanges?.find((bc) => bc.coinType === eveCoinType);
+    const suiChange = tx?.balanceChanges?.find(
+      (bc) => bc.coinType === "0x2::sui::SUI",
+    );
+    expect(eveChange?.isDebit).toBe(false);
+    expect(suiChange?.isDebit).toBe(true);
 
     unmount();
   });

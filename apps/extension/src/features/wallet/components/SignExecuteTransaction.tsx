@@ -11,6 +11,7 @@ import { buildTx, createLogger } from "@evevault/shared/utils";
 import { zkSignAny } from "@evevault/shared/wallet";
 import { Transaction, type TransactionData } from "@mysten/sui/transactions";
 import { toBase64 } from "@mysten/sui/utils";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useSignPopupAuth } from "../hooks";
 import { SignPopupAuthGate } from "./SignPopupAuthGate";
@@ -24,6 +25,7 @@ function SignAndExecuteTransaction() {
   const [error, setError] = useState<string | null>(null);
 
   const auth = useSignPopupAuth();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     // Retrieve the pending transaction from storage (same key as SignTransaction)
@@ -130,7 +132,10 @@ function SignAndExecuteTransaction() {
         },
       });
 
-      // Close the popup window
+      // Invalidate so next time the popup opens it refetches; don't await so close isn't delayed
+      queryClient.invalidateQueries({ queryKey: ["coin-balance"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+
       window.close();
     } catch (err) {
       log.error("Transaction signing failed", err);

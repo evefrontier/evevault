@@ -1,20 +1,31 @@
+import { useQueryClient } from "@tanstack/react-query";
 import type React from "react";
-import { type KeyboardEvent, useMemo, useState } from "react";
+import {
+  type KeyboardEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useResponsive } from "../../hooks";
 import { useTokenListStore } from "../../stores/tokenListStore";
-import type { TokenListProps, TokenRowProps } from "../../types";
+import type { ExtendedTokenRowProps, TokenListProps } from "../../types";
 import { getDefaultTokensForChain } from "../../types/networks";
-import { formatAddress } from "../../utils";
+import { createLogger, formatAddress } from "../../utils";
 import { useBalance } from "../../wallet";
 import { getKnownTokenDisplay } from "../../wallet/utils/balanceMetadata";
 import Button from "../Button";
 import Icon from "../Icon";
 import Text from "../Text";
 import { useToast } from "../Toast";
+import {
+  LoadingDots,
+  scrambleBalanceWithFixedFirst,
+  scrambleLetters,
+} from "./refreshScramble";
 
-interface ExtendedTokenRowProps extends TokenRowProps {
-  onTransfer?: () => void;
-}
+const SCRAMBLE_INTERVAL_MS = 200;
 
 const TokenRow: React.FC<ExtendedTokenRowProps> = ({
   coinType,
@@ -24,6 +35,8 @@ const TokenRow: React.FC<ExtendedTokenRowProps> = ({
   onSelect,
   onCopyAddress,
   onTransfer,
+  isRefreshing = false,
+  refreshTick = 0,
 }) => {
   const { data, isLoading } = useBalance({
     user,
@@ -40,6 +53,18 @@ const TokenRow: React.FC<ExtendedTokenRowProps> = ({
   const shortAddress = `${coinType.slice(0, 6)}•••${coinType.slice(-4)}`;
   const balance = isLoading ? "..." : (data?.formattedBalance ?? "0");
   const symbol = data?.metadata?.symbol || knownDisplay?.symbol || "";
+
+  // refreshTick is a prop that drives re-scramble each tick; linter doesn't see it as triggering re-render
+  // biome-ignore lint/correctness/useExhaustiveDependencies: refreshTick prop drives re-scramble each 200ms
+  const displayBalance = useMemo(
+    () => (isRefreshing ? scrambleBalanceWithFixedFirst(balance) : balance),
+    [isRefreshing, balance, refreshTick],
+  );
+  // biome-ignore lint/correctness/useExhaustiveDependencies: refreshTick prop drives re-scramble each 200ms
+  const displaySymbol = useMemo(
+    () => (isRefreshing ? scrambleLetters(symbol) : symbol),
+    [isRefreshing, symbol, refreshTick],
+  );
 
   // Container classes - expands when selected
   const containerClasses = [
@@ -98,7 +123,8 @@ const TokenRow: React.FC<ExtendedTokenRowProps> = ({
         </div>
         <div className="flex items-center gap-6 text-right">
           <Text variant="regular" size="medium">
-            {balance} {symbol}
+            {displayBalance}
+            {isRefreshing ? <LoadingDots /> : null} {displaySymbol}
           </Text>
         </div>
       </div>
@@ -119,13 +145,73 @@ const TokenRow: React.FC<ExtendedTokenRowProps> = ({
   );
 };
 
+const REFRESH_TIMEOUT_MS = 10000;
+
+const log = createLogger();
+
 export const TokenSection: React.FC<
   TokenListProps & { walletAddress?: string }
 > = ({ user, chain, onAddToken, onSendToken, walletAddress }) => {
+  const queryClient = useQueryClient();
   const { tokens, removeToken } = useTokenListStore();
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshTick, setRefreshTick] = useState(0);
+  const scrambleIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+    null,
+  );
   const { showToast } = useToast();
   const { isMobile } = useResponsive();
+
+  useEffect(() => {
+    return () => {
+      if (scrambleIntervalRef.current != null) {
+        clearInterval(scrambleIntervalRef.current);
+      }
+    };
+  }, []);
+
+  const handleRefreshBalances = useCallback(async () => {
+    if (isRefreshing) return;
+    if (scrambleIntervalRef.current != null) {
+      clearInterval(scrambleIntervalRef.current);
+      scrambleIntervalRef.current = null;
+    }
+    setIsRefreshing(true);
+    setRefreshTick(0);
+    scrambleIntervalRef.current = setInterval(() => {
+      setRefreshTick((t) => t + 1);
+    }, SCRAMBLE_INTERVAL_MS);
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    const timeoutPromise = new Promise<void>((resolve) => {
+      timeoutId = setTimeout(resolve, REFRESH_TIMEOUT_MS);
+    });
+    try {
+      await Promise.race([
+        Promise.all([
+          queryClient.refetchQueries({
+            queryKey: ["coin-balance"],
+            type: "all",
+          }),
+          queryClient.refetchQueries({
+            queryKey: ["transactions"],
+            type: "all",
+          }),
+        ]),
+        timeoutPromise,
+      ]);
+    } catch (err) {
+      log.error("Refresh balances failed", err);
+      showToast("Failed to refresh balances");
+    } finally {
+      if (timeoutId != null) clearTimeout(timeoutId);
+      if (scrambleIntervalRef.current != null) {
+        clearInterval(scrambleIntervalRef.current);
+        scrambleIntervalRef.current = null;
+      }
+      setIsRefreshing(false);
+    }
+  }, [queryClient, isRefreshing, showToast]);
 
   const tokensForChain = useMemo(
     () => (chain ? (tokens[chain] ?? getDefaultTokensForChain(chain)) : []),
@@ -208,14 +294,30 @@ export const TokenSection: React.FC<
               ADDRESS
             </Text>
           </div>
-          <Text
-            variant="label-semi"
-            size="small"
-            color="neutral-50"
-            className="text-right"
+          <button
+            type="button"
+            className="flex items-center justify-end gap-1 bg-transparent border-none cursor-pointer rounded opacity-90 hover:opacity-100 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed text-left min-w-0"
+            onClick={handleRefreshBalances}
+            disabled={isRefreshing}
+            title="Refresh balances"
+            aria-label="Refresh balances"
           >
-            BALANCE
-          </Text>
+            <Text
+              variant="label-semi"
+              size="small"
+              color="neutral-50"
+              className="text-right"
+            >
+              BALANCE
+            </Text>
+            <Icon
+              name="Refresh"
+              width={12}
+              height={12}
+              color="grey-neutral"
+              className={`flex-shrink-0 -mt-1 ${isRefreshing ? "animate-spin" : ""}`}
+            />
+          </button>
         </div>
 
         {/* Token List - Scrollable */}
@@ -241,6 +343,8 @@ export const TokenSection: React.FC<
                 onTransfer={
                   onSendToken ? () => handleTransfer(coinType) : undefined
                 }
+                isRefreshing={isRefreshing}
+                refreshTick={refreshTick}
               />
             ))
           )}

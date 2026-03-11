@@ -9,6 +9,7 @@ import {
   formatDisplayAmount,
   formatShortDate,
   getSuiscanUrl,
+  SUI_COIN_TYPE,
 } from "../../utils";
 import { useTransactionHistory } from "../../wallet";
 import Button from "../Button";
@@ -23,14 +24,24 @@ const TransactionRow: React.FC<TransactionRowProps> = ({
   isExpanded,
   onToggle,
 }) => {
-  const { digest, timestamp, counterparty, amount, tokenSymbol, direction } =
+  const { digest, timestamp, counterparty, direction, balanceChanges } =
     transaction;
 
   const suiscanUrl = getSuiscanUrl(chain, digest);
   const formattedDate = formatShortDate(timestamp);
-  const formattedAmount = formatDisplayAmount(amount, 5);
   const shortCounterparty = formatAddress(counterparty, 6, 6);
   const shortDigest = formatAddress(digest, 8, 8);
+
+  const summaryAmountsRaw =
+    balanceChanges.length > 0
+      ? balanceChanges
+          .map((bc) => `${formatDisplayAmount(bc.amount, 5)} ${bc.tokenSymbol}`)
+          .join(", ")
+      : "";
+  const summaryAmounts =
+    direction === "sent" && summaryAmountsRaw
+      ? `−${summaryAmountsRaw}`
+      : summaryAmountsRaw;
 
   // Container classes - expands when selected
   const containerClasses = [
@@ -53,9 +64,6 @@ const TransactionRow: React.FC<TransactionRowProps> = ({
     window.open(suiscanUrl, "_blank", "noopener,noreferrer");
   };
 
-  // Show direction indicator
-  const directionPrefix = direction === "sent" ? "→" : "←";
-
   return (
     <button
       type="button"
@@ -73,9 +81,12 @@ const TransactionRow: React.FC<TransactionRowProps> = ({
             </Text>
           </div>
           <div className="flex items-center gap-1 min-w-0">
-            <Text variant="light" size="xsmall" color="neutral-50">
-              {directionPrefix}
-            </Text>
+            <Icon
+              name={direction === "sent" ? "ArrowRight" : "ArrowLeft"}
+              size="small"
+              color="neutral-50"
+              aria-hidden
+            />
             <Text variant="light" size="small" color="neutral-90">
               {shortCounterparty}
             </Text>
@@ -83,29 +94,51 @@ const TransactionRow: React.FC<TransactionRowProps> = ({
         </div>
         <div className="flex items-center text-right shrink-0">
           <Text variant="regular" size="small">
-            {formattedAmount} {tokenSymbol}
+            {summaryAmounts}
           </Text>
         </div>
       </div>
 
-      {/* Expanded Details - Only visible when expanded */}
+      {/* Expanded Details - tokens left, transaction + button right */}
       {isExpanded && (
-        <div className="flex items-center justify-between w-full pt-2 gap-4">
-          <div className="flex flex-col gap-1">
-            <Text variant="light" size="xsmall" color="neutral-50">
-              Transaction:
-            </Text>
-            <Text variant="light" size="small" color="neutral-90">
-              {shortDigest}
-            </Text>
+        <div className="flex items-start justify-between w-full pt-2 gap-4">
+          <div className="flex flex-col gap-1 min-w-0">
+            {balanceChanges.map((bc, index) => (
+              <div
+                key={`${bc.coinType}-${index}`}
+                className="flex flex-col gap-0.5"
+              >
+                {bc.tokenName ? (
+                  <Text variant="light" size="xsmall" color="neutral-50">
+                    {bc.coinType === SUI_COIN_TYPE ? "Gas" : "Token"}:{" "}
+                    {bc.tokenName}
+                  </Text>
+                ) : null}
+                <Text variant="light" size="small" color="neutral-90">
+                  {bc.isDebit
+                    ? `−${formatDisplayAmount(bc.amount, 5)} ${bc.tokenSymbol}`
+                    : `${formatDisplayAmount(bc.amount, 5)} ${bc.tokenSymbol}`}
+                </Text>
+              </div>
+            ))}
           </div>
-          <Button
-            variant="secondary"
-            size="small"
-            onClick={handleViewOnSuiscan}
-          >
-            View on Suiscan
-          </Button>
+          <div className="flex flex-col gap-2 items-end shrink-0">
+            <div className="flex flex-col gap-0.5 items-end">
+              <Text variant="light" size="xsmall" color="neutral-50">
+                Transaction:
+              </Text>
+              <Text variant="light" size="small" color="neutral-90">
+                {shortDigest}
+              </Text>
+            </div>
+            <Button
+              variant="secondary"
+              size="small"
+              onClick={handleViewOnSuiscan}
+            >
+              View on Suiscan
+            </Button>
+          </div>
         </div>
       )}
     </button>
