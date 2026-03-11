@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { useResponsive } from "../../hooks";
+import { getCurrentTenantId } from "../../stores/tenantStore";
 import { useTokenListStore } from "../../stores/tokenListStore";
 import type { ExtendedTokenRowProps, TokenListProps } from "../../types";
 import { getDefaultTokensForChain } from "../../types/networks";
@@ -213,9 +214,11 @@ export const TokenSection: React.FC<
     }
   }, [queryClient, isRefreshing, showToast]);
 
+  const tenantId = getCurrentTenantId();
   const tokensForChain = useMemo(
-    () => (chain ? (tokens[chain] ?? getDefaultTokensForChain(chain)) : []),
-    [chain, tokens],
+    () =>
+      chain ? (tokens[chain] ?? getDefaultTokensForChain(chain, tenantId)) : [],
+    [chain, tokens, tenantId],
   );
 
   const handleCopyAddress = async (address: string) => {

@@ -7,6 +7,7 @@ export {
   WEB_CRYPTO_PLACEHOLDER_IV,
 } from "../types/wallet";
 export { ephSign } from "./ephSign";
+export { getEveCoinType, isEveCoinType } from "./eveToken";
 export { useBalance } from "./hooks/useBalance";
 export { useSendToken } from "./hooks/useSendToken";
 export { useTransactionHistory } from "./hooks/useTransactionHistory";
