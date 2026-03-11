@@ -79,6 +79,7 @@ export async function parseGraphQLTransaction(
       const amount = BigInt(userBalanceChange.amount);
       const coinType = userBalanceChange.coinType?.repr ?? SUI_COIN_TYPE;
       const amountAbs = amount >= 0n ? amount : amount * -1n;
+      const isDebit = amount < 0n;
 
       const metadata = await fetchCoinMetadata(graphqlClient, coinType);
       const decimals = metadata?.decimals ?? 9;
@@ -166,6 +167,7 @@ export async function parseGraphQLTransaction(
         tokenSymbol: metadata?.symbol ?? extractSymbolFromCoinType(coinType),
         tokenName: metadata?.name ?? undefined,
         coinType,
+        isDebit: true,
       },
     ],
   };

@@ -358,7 +358,7 @@ export type TransactionDirection = "sent" | "received";
 
 /** Single balance change within a transaction (e.g. EVE transfer or SUI gas) */
 export interface TransactionBalanceChange {
-  /** Formatted amount (human-readable) */
+  /** Formatted amount (human-readable, always non-negative; use isDebit for sign) */
   amount: string;
   /** Token symbol (e.g., "SUI", "EVE") */
   tokenSymbol: string;
@@ -366,6 +366,8 @@ export interface TransactionBalanceChange {
   tokenName?: string;
   /** Full coin type identifier */
   coinType: string;
+  /** True when this change is a debit (e.g. gas, sent amount); used for display sign */
+  isDebit?: boolean;
 }
 
 export interface Transaction {
