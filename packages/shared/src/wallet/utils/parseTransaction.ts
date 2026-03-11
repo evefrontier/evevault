@@ -96,17 +96,30 @@ export async function parseGraphQLTransaction(
         tokenSymbol: metadata?.symbol ?? extractSymbolFromCoinType(coinType),
         tokenName: metadata?.name ?? undefined,
         coinType,
+        isDebit,
       });
     }
 
     if (balanceChangeItems.length === 0) return null;
 
-    const firstChange = userChanges[0];
-    const firstAmount =
-      firstChange?.amount != null ? BigInt(firstChange.amount) : 0n;
+    const nonSuiUserChanges = userChanges.filter((change) => {
+      const ct = change.coinType?.repr ?? SUI_COIN_TYPE;
+      return ct !== SUI_COIN_TYPE && change.amount != null;
+    });
+    const primaryUserChange =
+      nonSuiUserChanges[0] ??
+      userChanges.find((change) => change.amount != null) ??
+      userChanges[0];
+    const primaryAmount =
+      primaryUserChange?.amount != null
+        ? BigInt(primaryUserChange.amount)
+        : 0n;
     const direction: TransactionDirection =
-      firstAmount >= 0n ? "received" : "sent";
+      primaryAmount >= 0n ? "received" : "sent";
+    const primaryCoinType =
+      primaryUserChange?.coinType?.repr ?? SUI_COIN_TYPE;
     const primary =
+      balanceChangeItems.find((bc) => bc.coinType === primaryCoinType) ??
       balanceChangeItems.find((bc) => bc.coinType !== SUI_COIN_TYPE) ??
       balanceChangeItems[0];
     const counterparty = findCounterparty(
