@@ -9,7 +9,7 @@ import {
   useState,
 } from "react";
 import { useResponsive } from "../../hooks";
-import { getCurrentTenantId, useTokenListStore } from "../../stores";
+import { useTenantStore, useTokenListStore } from "../../stores";
 import type { ExtendedTokenRowProps, TokenListProps } from "../../types";
 import { getDefaultTokensForChain } from "../../types/networks";
 import { createLogger, formatAddress } from "../../utils";
@@ -214,7 +214,7 @@ export const TokenSection: React.FC<
     }
   }, [queryClient, isRefreshing, showToast]);
 
-  const tenantId = getCurrentTenantId();
+  const tenantId = useTenantStore((state) => state.tenantId);
   const currentEveCoinType = getEveCoinType(tenantId);
   const tokensForChain = useMemo(() => {
     if (!chain) return [];
