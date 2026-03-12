@@ -1,4 +1,4 @@
-import type { SponsoredTransactionMetadata } from "@evefrontier/dapp-kit";
+import type { SponsoredTransactionMetadata } from "@evefrontier/dapp-kit/types";
 import type { JwtResponse } from "@evevault/shared/types/authTypes";
 import type {
   StandardEventsOnMethod,
