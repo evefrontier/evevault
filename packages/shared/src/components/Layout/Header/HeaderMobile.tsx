@@ -119,7 +119,7 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
     if (showDevActions && version) {
       items.push({
         label: `v${version}`,
-        icon: "Close" as IconName,
+        icon: "Info" as IconName,
         onClick: () => {},
         preventCloseOnClick: true,
       });

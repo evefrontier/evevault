@@ -6,6 +6,7 @@ import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import { loadEnv } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 import { defineConfig } from "wxt";
+import { appVersionPlugin } from "../../tools/vite-app-version-plugin";
 
 /**
  * Simple logger for this config file only.
@@ -81,20 +82,6 @@ export default defineConfig(() => {
         "   Or set CHROME_PATH environment variable to your Chrome executable path.",
       );
     }
-  }
-
-  /** Exposes extension package.json version as virtual:app-version (same source as manifest.version). */
-  function appVersionPlugin(appVersion: string) {
-    return {
-      name: "app-version",
-      resolveId(id: string) {
-        if (id === "virtual:app-version") return id;
-      },
-      load(id: string) {
-        if (id === "virtual:app-version")
-          return `export const APP_VERSION = ${JSON.stringify(appVersion)};`;
-      },
-    };
   }
 
   return {
