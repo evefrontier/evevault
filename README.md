@@ -1,8 +1,6 @@
 # EVE Vault Wallet
 
-EVE Vault Wallet is a Chrome MV3 extension built with WXT and React. It implements the Sui Wallet Standard to let dApps discover and connect to a user wallet. User authentication supports **EVE Frontier FusionAuth** via Chrome's `identity` API. After login, a [Sui zkLogin](https://docs.sui.io/concepts/cryptography/zklogin) address is derived and exposed to dApps via the wallet standard.
-
-> EVE Vault is only available as a Chrome browser extension at present, with the web version coming soon.
+EVE Vault Wallet is a Chrome MV3 extension and web app built with WXT and React. It implements the Sui Wallet Standard to let dApps discover and connect to a user wallet. User authentication supports **EVE Frontier FusionAuth** via Chrome's `identity` API. After login, a [Sui zkLogin](https://docs.sui.io/concepts/cryptography/zklogin) address is derived and exposed to dApps via the wallet standard.
 
 ## Features
 
@@ -10,7 +8,8 @@ EVE Vault Wallet is a Chrome MV3 extension built with WXT and React. It implemen
 - ✅ zkLogin address derivation via Enoki
 - ✅ Wallet Standard implementation for dApp discovery
 - ✅ Transaction signing with zkLogin
-- ✅ **Multi-network support** (Devnet, Testnet) with seamless switching
+- ✅ **Multi-network support** (Devnet, Testnet)
+- ✅ **Multi-tenant support** (Stillness, Utopia)
 - ✅ Reactive state management with Zustand
 - ✅ Chrome storage persistence
 
@@ -23,9 +22,10 @@ For detailed technical information, see the [Architecture Documentation](https:/
 ## Download
 
 **Latest extension (Chrome):**  
-[https://github.com/evefrontier/evevault/releases/latest/download/eve-vault-chrome.zip](https://github.com/evefrontier/evevault/releases/latest/download/eve-vault-chrome.zip)
+[https://github.com/evefrontier/evevault/releases](https://github.com/evefrontier/evevault/releases)
 
-This link always points to the most recent release. Use it in docs (e.g. GitBook) or share it for one-click download.
+**Web app:**
+[https://evevault.evefrontier.com/](https://evevault.evefrontier.com/)
 
 ## Requirements
 
@@ -44,7 +44,7 @@ bun install
 
 ### 2. Environment Configuration
 
-Create a `.env` file at app root, `./.env`:
+Create a `.env` file at app root:
 
 ```env
 # FusionAuth Configuration
@@ -52,6 +52,7 @@ VITE_TENANT_STILLNESS_CLIENT_SECRET=your-fusionauth-client-secret
 VITE_TENANT_UTOPIA_CLIENT_SECRET=your-fusionauth-client-secret
 VITE_TENANT_TESTEVENET_CLIENT_SECRET=your-fusionauth-client-secret
 VITE_TENANT_NEBULA_CLIENT_SECRET=your-fusionauth-client-secret
+VITE_FUSIONAUTH_REDIRECT_URI=
 
 # Enoki Configuration
 VITE_ENOKI_API_KEY=your-enoki-api-key
