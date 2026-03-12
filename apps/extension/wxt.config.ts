@@ -19,6 +19,7 @@ const logger = {
 };
 
 // See https://wxt.dev/api/config.html
+// @ts-expect-error - WXT UserConfig types may not include custom vite plugins
 export default defineConfig(() => {
   // Load env from root directory (monorepo root)
   // When running from apps/extension, __dirname is apps/extension, so go up 2 levels
@@ -82,6 +83,20 @@ export default defineConfig(() => {
     }
   }
 
+  /** Exposes extension package.json version as virtual:app-version (same source as manifest.version). */
+  function appVersionPlugin(appVersion: string) {
+    return {
+      name: "app-version",
+      resolveId(id: string) {
+        if (id === "virtual:app-version") return id;
+      },
+      load(id: string) {
+        if (id === "virtual:app-version")
+          return `export const APP_VERSION = ${JSON.stringify(appVersion)};`;
+      },
+    };
+  }
+
   return {
     modules: ["@wxt-dev/module-react"],
     manifestVersion: 3,
@@ -99,6 +114,7 @@ export default defineConfig(() => {
     }),
     vite: () => ({
       plugins: [
+        appVersionPlugin(version),
         tsconfigPaths({
           root: __dirname,
         }),

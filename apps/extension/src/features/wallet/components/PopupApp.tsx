@@ -38,6 +38,7 @@ import { useBalance } from "@evevault/shared/wallet";
 import type { SuiChain } from "@mysten/wallet-standard";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { APP_VERSION } from "../../../lib/appVersion";
 import { useAppInitialization, useLogin } from "../hooks";
 
 const log = createLogger();
@@ -212,6 +213,7 @@ function App() {
             ? () => window.open(faucetUrl, "_blank", "noopener,noreferrer")
             : undefined
         }
+        version={APP_VERSION}
       />
 
       {/* Token Section */}

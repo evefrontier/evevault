@@ -42,6 +42,7 @@ import { SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { APP_VERSION } from "../../../lib/appVersion";
 
 const log = createLogger();
 
@@ -258,6 +259,7 @@ export const WalletScreen = () => {
         }
         currentTenantId={devMode ? tenantId : undefined}
         onServerChange={(tenantId: TenantId) => switchTenantAndReload(tenantId)}
+        version={APP_VERSION}
       />
       {/* Token Section: pass defined chain (testnet fallback) so balance and token list use the same network and we avoid cross-network transfer/balance errors */}
       <TokenListSection
