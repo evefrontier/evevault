@@ -11,6 +11,7 @@ on:
 jobs:
   release-extension:
     runs-on: ubuntu-latest
+    environment: build
     permissions:
       contents: write
     steps:
@@ -26,6 +27,14 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Build extension
+        env:
+          VITE_TENANT_STILLNESS_CLIENT_SECRET: ${{ secrets.VITE_TENANT_STILLNESS_CLIENT_SECRET }}
+          VITE_TENANT_UTOPIA_CLIENT_SECRET: ${{ secrets.VITE_TENANT_UTOPIA_CLIENT_SECRET }}
+          VITE_TENANT_TESTEVENET_CLIENT_SECRET: ${{ secrets.VITE_TENANT_TESTEVENET_CLIENT_SECRET }}
+          VITE_TENANT_NEBULA_CLIENT_SECRET: ${{ secrets.VITE_TENANT_NEBULA_CLIENT_SECRET }}
+          VITE_FUSIONAUTH_REDIRECT_URI: ${{ secrets.VITE_FUSIONAUTH_REDIRECT_URI }}
+          EXTENSION_ID: ${{ secrets.EXTENSION_ID }}
+          VITE_ENOKI_API_KEY: ${{ secrets.VITE_ENOKI_API_KEY }}
         run: bun run build:ext
 
       - name: Zip extension
