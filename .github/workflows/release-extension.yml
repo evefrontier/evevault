@@ -6,9 +6,6 @@ name: Release extension
 on:
   release:
     types: [published]
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
 
 jobs:
@@ -37,6 +34,7 @@ jobs:
           VITE_TENANT_TESTEVENET_CLIENT_SECRET: ${{ secrets.VITE_TENANT_TESTEVENET_CLIENT_SECRET }}
           VITE_TENANT_NEBULA_CLIENT_SECRET: ${{ secrets.VITE_TENANT_NEBULA_CLIENT_SECRET }}
           VITE_FUSIONAUTH_REDIRECT_URI: ${{ secrets.VITE_FUSIONAUTH_REDIRECT_URI }}
+          VITE_FUSIONAUTH_API_KEY: ${{ secrets.VITE_FUSIONAUTH_API_KEY }}
           VITE_ENOKI_API_KEY: ${{ secrets.VITE_ENOKI_API_KEY }}
           EXTENSION_ID: ${{ secrets.EXTENSION_ID }}
         run: |
@@ -47,6 +45,7 @@ jobs:
             VITE_TENANT_TESTEVENET_CLIENT_SECRET \
             VITE_TENANT_NEBULA_CLIENT_SECRET \
             VITE_FUSIONAUTH_REDIRECT_URI \
+            VITE_FUSIONAUTH_API_KEY \
             VITE_ENOKI_API_KEY \
             EXTENSION_ID
           do
@@ -64,6 +63,7 @@ jobs:
           VITE_TENANT_TESTEVENET_CLIENT_SECRET: ${{ secrets.VITE_TENANT_TESTEVENET_CLIENT_SECRET }}
           VITE_TENANT_NEBULA_CLIENT_SECRET: ${{ secrets.VITE_TENANT_NEBULA_CLIENT_SECRET }}
           VITE_FUSIONAUTH_REDIRECT_URI: ${{ secrets.VITE_FUSIONAUTH_REDIRECT_URI }}
+          VITE_FUSIONAUTH_API_KEY: ${{ secrets.VITE_FUSIONAUTH_API_KEY }}
           EXTENSION_ID: ${{ secrets.EXTENSION_ID }}
           VITE_ENOKI_API_KEY: ${{ secrets.VITE_ENOKI_API_KEY }}
         run: bun run build:ext
