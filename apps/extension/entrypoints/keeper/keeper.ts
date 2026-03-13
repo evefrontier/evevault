@@ -95,11 +95,6 @@ chrome.runtime.onMessage.addListener(
               hashedSecretKey as HashedData,
               pin as string,
             );
-            console.log(
-              "[Keeper] Decryption successful - secretKey type:",
-              typeof secretKey,
-            );
-            console.log("[Keeper] secretKey length:", secretKey?.length);
           } catch (decryptError) {
             console.error("[Keeper] Decryption failed:", decryptError);
             sendResponse({
@@ -111,20 +106,12 @@ chrome.runtime.onMessage.addListener(
 
           // Step 2: Reconstruct keypair
           try {
-            console.log(
-              "[Keeper] Attempting to create keypair from secret key",
-            );
             ephemeralKey = Ed25519Keypair.fromSecretKey(secretKey);
-            console.log("[Keeper] Keypair created successfully");
             _vaultUnlocked = true;
             _vaultUnlockExpiry = Date.now() + 10 * 60 * 1000; // 10 minutes default
             sendResponse({ ok: true });
           } catch (keypairError) {
             console.error("[Keeper] Keypair creation failed:", keypairError);
-            console.error(
-              "[Keeper] Secret key value (first 50 chars):",
-              secretKey?.substring(0, 50),
-            );
             sendResponse({
               ok: false,
               error: `[Keeper] Failed to create keypair: ${keypairError instanceof Error ? keypairError.message : "Unknown error"}`,
@@ -175,13 +162,13 @@ chrome.runtime.onMessage.addListener(
       }
 
       // Check if unlock has expired
-      // if (_vaultUnlockExpiry && Date.now() > _vaultUnlockExpiry) {
-      //   ephemeralKey = null;
-      //   _vaultUnlocked = false;
-      //   _vaultUnlockExpiry = null;
-      //   sendResponse({ error: "[KEEPER_EPH_SIGN] LOCKED" });
-      //   return false;
-      // }
+      if (_vaultUnlockExpiry && Date.now() > _vaultUnlockExpiry) {
+        ephemeralKey = null;
+        _vaultUnlocked = false;
+        _vaultUnlockExpiry = null;
+        sendResponse({ error: "[KEEPER_EPH_SIGN] LOCKED" });
+        return false;
+      }
 
       // Handle async signing
       (async () => {

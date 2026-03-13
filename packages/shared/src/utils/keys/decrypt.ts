@@ -5,14 +5,44 @@ export async function decrypt(encryptedKey: HashedData, pin: string) {
   // Use global crypto (available in service workers) or window.crypto (available in browser)
   const cryptoApi = typeof crypto !== "undefined" ? crypto : window.crypto;
 
-  const keyMaterial = await sha256(pin);
-  const aesKey = await cryptoApi.subtle.importKey(
-    "raw",
-    keyMaterial,
-    { name: "AES-GCM" },
-    false,
-    ["decrypt"],
-  );
+  let aesKey: CryptoKey;
+
+  if (encryptedKey.salt && encryptedKey.salt.length > 0) {
+    // New format: derive key using PBKDF2 with the stored salt
+    const salt = Uint8Array.from(atob(encryptedKey.salt), (c) =>
+      c.charCodeAt(0),
+    );
+    const keyMaterial = await cryptoApi.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(pin),
+      { name: "PBKDF2" },
+      false,
+      ["deriveKey"],
+    );
+    aesKey = await cryptoApi.subtle.deriveKey(
+      {
+        name: "PBKDF2",
+        salt,
+        iterations: 100_000,
+        hash: "SHA-256",
+      },
+      keyMaterial,
+      { name: "AES-GCM", length: 256 },
+      false,
+      ["decrypt"],
+    );
+  } else {
+    // Legacy format: derive key using raw SHA-256 hash of PIN (no salt, no iterations)
+    // Kept for backward compatibility with existing stored keys
+    const keyMaterial = await sha256(pin);
+    aesKey = await cryptoApi.subtle.importKey(
+      "raw",
+      keyMaterial,
+      { name: "AES-GCM" },
+      false,
+      ["decrypt"],
+    );
+  }
 
   const iv = Uint8Array.from(atob(encryptedKey.iv), (c) => c.charCodeAt(0));
   const encryptedData = Uint8Array.from(atob(encryptedKey.data), (c) =>
