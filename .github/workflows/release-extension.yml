@@ -6,6 +6,9 @@ name: Release extension
 on:
   release:
     types: [published]
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
@@ -25,6 +28,34 @@ jobs:
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
+
+      - name: Check required secrets are present
+        shell: bash
+        env:
+          VITE_TENANT_STILLNESS_CLIENT_SECRET: ${{ secrets.VITE_TENANT_STILLNESS_CLIENT_SECRET }}
+          VITE_TENANT_UTOPIA_CLIENT_SECRET: ${{ secrets.VITE_TENANT_UTOPIA_CLIENT_SECRET }}
+          VITE_TENANT_TESTEVENET_CLIENT_SECRET: ${{ secrets.VITE_TENANT_TESTEVENET_CLIENT_SECRET }}
+          VITE_TENANT_NEBULA_CLIENT_SECRET: ${{ secrets.VITE_TENANT_NEBULA_CLIENT_SECRET }}
+          VITE_FUSIONAUTH_REDIRECT_URI: ${{ secrets.VITE_FUSIONAUTH_REDIRECT_URI }}
+          VITE_ENOKI_API_KEY: ${{ secrets.VITE_ENOKI_API_KEY }}
+          EXTENSION_ID: ${{ secrets.EXTENSION_ID }}
+        run: |
+          set -euo pipefail
+          for name in \
+            VITE_TENANT_STILLNESS_CLIENT_SECRET \
+            VITE_TENANT_UTOPIA_CLIENT_SECRET \
+            VITE_TENANT_TESTEVENET_CLIENT_SECRET \
+            VITE_TENANT_NEBULA_CLIENT_SECRET \
+            VITE_FUSIONAUTH_REDIRECT_URI \
+            VITE_ENOKI_API_KEY \
+            EXTENSION_ID
+          do
+            if [ -z "${!name}" ]; then
+              echo "::error::$name is missing"
+              exit 1
+            fi
+            echo "$name is set"
+          done
 
       - name: Build extension
         env:
