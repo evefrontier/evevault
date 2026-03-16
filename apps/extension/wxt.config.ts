@@ -6,6 +6,7 @@ import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import { loadEnv } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 import { defineConfig } from "wxt";
+import { appVersionPlugin } from "../../tools/vite-app-version-plugin";
 
 /**
  * Simple logger for this config file only.
@@ -19,6 +20,7 @@ const logger = {
 };
 
 // See https://wxt.dev/api/config.html
+// @ts-expect-error - WXT UserConfig types may not include custom vite plugins
 export default defineConfig(() => {
   // Load env from root directory (monorepo root)
   // When running from apps/extension, __dirname is apps/extension, so go up 2 levels
@@ -99,6 +101,7 @@ export default defineConfig(() => {
     }),
     vite: () => ({
       plugins: [
+        appVersionPlugin(version),
         tsconfigPaths({
           root: __dirname,
         }),

@@ -26,8 +26,6 @@ vi.mock("@evevault/shared/utils", () => ({
   isWeb: vi.fn(() => true),
   isBrowser: vi.fn(() => true),
   SUI_COIN_TYPE: "0x2::sui::SUI",
-  EVE_TESTNET_COIN_TYPE:
-    "0x59d7bb2e0feffb90cb2446fb97c2ce7d4bd24d2fb98939d6cb6c3940110a0de0::EVE::EVE",
   formatByDecimals: vi.fn((balance: string) => balance),
 }));
 

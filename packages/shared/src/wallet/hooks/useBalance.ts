@@ -3,6 +3,7 @@ import { formatSUI } from "@suiet/wallet-kit";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { createSuiGraphQLClient } from "../../sui/graphqlClient";
+<<<<<<< feat/balance-updates
 import {
   EVE_TESTNET_COIN_TYPE,
   formatByDecimals,
@@ -17,6 +18,12 @@ import type {
   BalanceAndMetadataResponse,
   LatestCheckpointResponse,
 } from "../types/graphql";
+=======
+import { formatByDecimals, SUI_COIN_TYPE } from "../../utils";
+import { isEveCoinType } from "../eveToken";
+import { BALANCE_AND_METADATA_QUERY } from "../queries/balance";
+import type { BalanceAndMetadataResponse } from "../types/graphql";
+>>>>>>> main
 import type {
   BalanceMetadata,
   CoinBalanceResult,
@@ -131,7 +138,7 @@ export function useBalance({
       const metadata: BalanceMetadata | null =
         coinType === SUI_COIN_TYPE
           ? DEFAULT_SUI_METADATA
-          : coinType === EVE_TESTNET_COIN_TYPE
+          : isEveCoinType(coinType)
             ? DEFAULT_EVE_TESTNET_METADATA
             : meta && meta.decimals != null && meta.symbol != null
               ? {

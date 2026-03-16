@@ -1,4 +1,5 @@
-import { EVE_TESTNET_COIN_TYPE, SUI_COIN_TYPE } from "../../utils";
+import { SUI_COIN_TYPE } from "../../utils";
+import { isEveCoinType } from "../eveToken";
 import type { BalanceMetadata } from "../types/hooks";
 
 export const DEFAULT_SUI_METADATA: BalanceMetadata = {
@@ -28,7 +29,7 @@ export function getKnownTokenDisplay(coinType: string): {
       symbol: DEFAULT_SUI_METADATA.symbol,
     };
   }
-  if (coinType === EVE_TESTNET_COIN_TYPE) {
+  if (isEveCoinType(coinType)) {
     return {
       name: DEFAULT_EVE_TESTNET_METADATA.name,
       symbol: DEFAULT_EVE_TESTNET_METADATA.symbol,

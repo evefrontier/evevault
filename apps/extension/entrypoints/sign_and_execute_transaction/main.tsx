@@ -1,12 +1,18 @@
-import { Layout } from "@evevault/shared/components";
+import { Layout, ToastProvider } from "@evevault/shared/components";
+import { queryClient } from "@evevault/shared/queryClient";
+import { QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import SignAndExecuteTransaction from "../../src/features/wallet/components/SignExecuteTransaction";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <Layout showNav={false}>
-      <SignAndExecuteTransaction />
-    </Layout>
+    <QueryClientProvider client={queryClient}>
+      <ToastProvider>
+        <Layout variant="extension" showNav={false}>
+          <SignAndExecuteTransaction />
+        </Layout>
+      </ToastProvider>
+    </QueryClientProvider>
   </React.StrictMode>,
 );

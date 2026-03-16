@@ -9,12 +9,12 @@ import { useNetworkStore } from "../../stores/networkStore";
 import { createSuiClient } from "../../sui";
 import {
   createLogger,
-  EVE_TESTNET_COIN_TYPE,
   formatMistToSui,
   GAS_FEE_WARNING_MESSAGE,
   SUI_COIN_TYPE,
   toSmallestUnit,
 } from "../../utils";
+import { isEveCoinType } from "../eveToken";
 import { zkSignAny } from "../zkSignAny";
 import { useBalance } from "./useBalance";
 
@@ -212,11 +212,10 @@ export function useSendToken({
   const currentBalance = balanceData?.formattedBalance ?? "0";
   const rawBalance = balanceData?.rawBalance ?? "0";
   const tokenSymbol =
-    balanceData?.metadata?.symbol ??
-    (coinType === EVE_TESTNET_COIN_TYPE ? "EVE" : "");
+    balanceData?.metadata?.symbol ?? (isEveCoinType(coinType) ? "EVE" : "");
   const tokenName =
     balanceData?.metadata?.name ??
-    (coinType === EVE_TESTNET_COIN_TYPE ? "EVE test token" : "Token");
+    (isEveCoinType(coinType) ? "EVE test token" : "Token");
   const decimals = balanceData?.metadata?.decimals ?? 9;
 
   // Validation checks
