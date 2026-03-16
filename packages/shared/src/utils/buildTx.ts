@@ -7,7 +7,7 @@ export const buildTx = async (
   user: User,
   suiClient: SuiGrpcClient,
 ): Promise<Uint8Array> => {
-  tx.setSender(user.profile?.sui_address as string);
+  tx.setSenderIfNotSet(user.profile?.sui_address as string);
   const txb = await tx.build({ client: suiClient });
   return txb;
 };
