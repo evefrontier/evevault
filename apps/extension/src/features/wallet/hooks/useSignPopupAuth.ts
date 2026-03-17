@@ -2,7 +2,7 @@ import { useAuth } from "@evevault/shared/auth";
 import { useToast } from "@evevault/shared/components";
 import { useDevice } from "@evevault/shared/hooks/useDevice";
 import { createLogger } from "@evevault/shared/utils";
-import { useCallback, useEffect } from "react";
+import { useEffect } from "react";
 
 const log = createLogger();
 
@@ -20,14 +20,14 @@ export function useSignPopupAuth() {
     auth.initialize();
   }, [auth.initialize]);
 
-  const login = useCallback(async () => {
+  const login = async () => {
     const user = await auth.login();
     if (!user) {
       log.error("Login failed in sign popup");
       showToast("Login failed. Please try again.");
     }
     return user;
-  }, [auth.login, showToast]);
+  };
 
   return {
     isLocked: device.isLocked,
