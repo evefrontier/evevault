@@ -203,6 +203,8 @@ export interface HeaderMobileProps {
   onTokenRefreshTestClick?: () => void;
   /** Callback when "Faucet test SUI" menu item is clicked (dev mode only) */
   onFaucetTestSuiClick?: () => void;
+  /** App version shown in dev dropdown (from each app's package.json at build time) */
+  version?: string;
   /** Current tenant id (for Server dropdown when in dev mode) */
   currentTenantId?: string;
   /** Callback when user selects a different Server (tenant) in dev mode */

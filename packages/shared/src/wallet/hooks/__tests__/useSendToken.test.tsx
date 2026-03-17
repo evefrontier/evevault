@@ -43,8 +43,6 @@ vi.mock("@evevault/shared/utils", () => ({
     return BigInt(combined === "" ? "0" : combined);
   }),
   SUI_COIN_TYPE: "0x2::sui::SUI",
-  EVE_TESTNET_COIN_TYPE:
-    "0x76cb2c6d2d361c9d0b2d1e0e8e8e8e8e8e8e8e8::evetest::EVETEST",
   GAS_FEE_WARNING_MESSAGE:
     "This transfer will incur a network fee (gas) paid in SUI.",
   formatMistToSui: vi.fn((mist: string | bigint) => {
@@ -84,6 +82,7 @@ import { useDevice } from "@evevault/shared/hooks";
 import { useNetworkStore } from "@evevault/shared/stores/networkStore";
 import { createSuiClient } from "@evevault/shared/sui";
 import { createMockUser } from "@evevault/shared/testing";
+import { getEveCoinType } from "../../eveToken";
 import type { UseBalanceParams } from "../../types/hooks";
 import { zkSignAny } from "../../zkSignAny";
 import { useBalance } from "../useBalance";
@@ -502,8 +501,7 @@ describe("useSendToken", () => {
 
   describe("SUI for gas warning", () => {
     const SUI_COIN_TYPE = "0x2::sui::SUI";
-    const EVE_COIN_TYPE =
-      "0x76cb2c6d2d361c9d0b2d1e0e8e8e8e8e8e8e8e8::evetest::EVETEST";
+    const EVE_COIN_TYPE = getEveCoinType("stillness");
 
     it("returns suiForGasWarning when sending non-SUI token and SUI balance is zero", () => {
       mockUseBalance.mockImplementation(

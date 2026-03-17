@@ -23,6 +23,7 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
   onSignSubmitTxClick,
   onTokenRefreshTestClick,
   onFaucetTestSuiClick,
+  version,
 }) => {
   const { copy } = useCopyToClipboard();
   const { lock } = useDevice();
@@ -114,6 +115,16 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
       onClick: logout,
     });
 
+    // 9. App version (dev only, display-only)
+    if (showDevActions && version) {
+      items.push({
+        label: `v${version}`,
+        icon: "Info" as IconName,
+        onClick: () => {},
+        preventCloseOnClick: true,
+      });
+    }
+
     return items;
   }, [
     onTransactionsClick,
@@ -126,6 +137,7 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
     lock,
     logout,
     onFaucetTestSuiClick,
+    version,
   ]);
 
   const displayText = email || formatAddress(address);
