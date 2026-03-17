@@ -1,4 +1,7 @@
+import { createLogger } from "@evevault/shared/utils";
 import { sendAuthError } from "./authHelpers";
+
+const log = createLogger();
 
 /** Delay in ms before retrying keeper unlock check (gives unlock time to complete) */
 export const KEEPER_RETRY_DELAY_MS = 100;
@@ -37,11 +40,19 @@ export function sendPendingAuthError(pending: PendingAuthAfterUnlock): void {
   } else if (pending.tabId !== undefined) {
     const ids = [pending.id, ...(pending.additionalIds ?? [])];
     for (const id of ids) {
-      chrome.tabs.sendMessage(pending.tabId, {
-        id,
-        type: "auth_error",
-        error: errorPayload,
-      });
+      chrome.tabs
+        .sendMessage(pending.tabId, {
+          id,
+          type: "auth_error",
+          error: errorPayload,
+        })
+        .catch((err) => {
+          log.error("Failed to send auth_error to tab", {
+            tabId: pending.tabId,
+            id,
+            err,
+          });
+        });
     }
   }
 }
@@ -56,6 +67,10 @@ export function addPendingDappId(tabId: number, id: string): boolean {
   if (pendingAuthAfterUnlock.tabId !== tabId) return false;
   if (!pendingAuthAfterUnlock.additionalIds) {
     pendingAuthAfterUnlock.additionalIds = [];
+  }
+  // Deduplicate: only add if not already present
+  if (pendingAuthAfterUnlock.additionalIds.includes(id)) {
+    return true; // Already tracked, still no new popup needed
   }
   pendingAuthAfterUnlock.additionalIds.push(id);
   return true;

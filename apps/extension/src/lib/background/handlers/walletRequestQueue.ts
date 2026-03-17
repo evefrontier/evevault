@@ -1,10 +1,20 @@
+import { createLogger } from "@evevault/shared/utils";
 import type {
   EveFrontierSponsoredTransactionMessage,
   WalletActionMessage,
 } from "../types";
 
+const log = createLogger();
+
 const tabsInProgress = new Set<number>();
 const queue = new Map<number, QueuedWalletRequest[]>();
+
+// Cleanup when tabs are closed to prevent memory leaks
+chrome.tabs.onRemoved.addListener((tabId) => {
+  clearTabInProgress(tabId);
+  queue.delete(tabId);
+  log.debug("Cleaned up queue state for closed tab", { tabId });
+});
 
 export type QueuedSignRequest = {
   kind: "sign";
@@ -56,19 +66,40 @@ export function processNextWalletRequest(tabId: number): void {
   clearTabInProgress(tabId);
   const next = dequeueNext(tabId);
   if (!next) return;
+
+  // Mark tab in-progress immediately to prevent race conditions
+  setTabInProgress(tabId);
+
   if (next.kind === "sign") {
-    import("./walletHandlers").then(({ handleApprovePopup }) => {
-      void handleApprovePopup(next.message, next.sender, next.sendResponse);
-    });
+    import("./walletHandlers")
+      .then(({ handleApprovePopup }) => {
+        void handleApprovePopup(next.message, next.sender, next.sendResponse);
+      })
+      .catch((err) => {
+        log.error("Failed to process queued sign request", { tabId, err });
+        // Clear in-progress flag on error to prevent stall
+        clearTabInProgress(tabId);
+        // Try to process next item after error
+        processNextWalletRequest(tabId);
+      });
   } else {
-    import("./sponsoredTransactionHandler").then(
-      ({ handleSponsoredTransaction }) => {
+    import("./sponsoredTransactionHandler")
+      .then(({ handleSponsoredTransaction }) => {
         void handleSponsoredTransaction(
           next.message,
           next.sender,
           next.sendResponse,
         );
-      },
-    );
+      })
+      .catch((err) => {
+        log.error("Failed to process queued sponsored transaction", {
+          tabId,
+          err,
+        });
+        // Clear in-progress flag on error to prevent stall
+        clearTabInProgress(tabId);
+        // Try to process next item after error
+        processNextWalletRequest(tabId);
+      });
   }
 }

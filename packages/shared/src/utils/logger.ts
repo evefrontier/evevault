@@ -62,13 +62,13 @@ const resolveEnvLogLevel = (): LogLevel => {
 
   const envMode = importMetaEnv?.MODE ?? processEnv?.NODE_ENV;
 
-  // if (envMode === "production") {
-  //   return "error";
-  // }
+  if (envMode === "production") {
+    return "error";
+  }
 
-  // if (envMode === "test") {
-  //   return "warn";
-  // }
+  if (envMode === "test") {
+    return "warn";
+  }
 
   return "debug";
 };
