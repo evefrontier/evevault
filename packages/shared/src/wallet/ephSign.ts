@@ -1,7 +1,4 @@
-import {
-  type IntentScope,
-  type SignatureWithBytes,
-} from "@mysten/sui/cryptography";
+import type { IntentScope, SignatureWithBytes } from "@mysten/sui/cryptography";
 import type { EphSignParams } from "../types";
 import { createLogger } from "../utils/logger";
 
@@ -36,11 +33,6 @@ export const ephSign = async (
         byteLength: messageBytes.length,
       });
     } else {
-      // Use signPersonalMessage which correctly:
-      // 1. BCS-encodes the message bytes
-      // 2. Prepends the PersonalMessage intent bytes
-      // 3. Hashes with blake2b
-      // 4. Signs the hash and returns a serialized signature (flag + sig + pubkey)
       ephSignature = await ephemeralKeyPair.signPersonalMessage(messageBytes);
       log.debug("Signed personal message bytes with ephemeral key", {
         byteLength: messageBytes.length,
