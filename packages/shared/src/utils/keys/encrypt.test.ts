@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { AES_IV_LENGTH, PBKDF2_SALT_LENGTH } from "./constants";
 import { decrypt } from "./decrypt";
 import { encrypt } from "./encrypt";
 
@@ -25,7 +26,7 @@ describe("encrypt", () => {
   it("generates a 12-byte iv", async () => {
     const result = await encrypt("test", "pin");
     const ivBytes = Uint8Array.from(atob(result.iv), (c) => c.charCodeAt(0));
-    expect(ivBytes.length).toBe(12);
+    expect(ivBytes.length).toBe(AES_IV_LENGTH);
   });
 
   it("generates a 16-byte salt", async () => {
@@ -33,7 +34,7 @@ describe("encrypt", () => {
     const saltBytes = Uint8Array.from(atob(result.salt), (c) =>
       c.charCodeAt(0),
     );
-    expect(saltBytes.length).toBe(16);
+    expect(saltBytes.length).toBe(PBKDF2_SALT_LENGTH);
   });
 
   it("produces different ciphertext for same input (random iv/salt)", async () => {
@@ -88,8 +89,7 @@ describe("decrypt legacy format (SHA-256, no salt - backward compatibility)", ()
     const pin = "legacypin";
     const plaintext = "old encrypted secret";
 
-    const cryptoApi =
-      typeof crypto !== "undefined" ? crypto : window.crypto;
+    const cryptoApi = typeof crypto !== "undefined" ? crypto : window.crypto;
 
     // Reproduce the old encrypt logic
     const encoder = new TextEncoder();
@@ -126,8 +126,7 @@ describe("decrypt legacy format (SHA-256, no salt - backward compatibility)", ()
     const pin = "correctpin";
     const plaintext = "legacy secret";
 
-    const cryptoApi =
-      typeof crypto !== "undefined" ? crypto : window.crypto;
+    const cryptoApi = typeof crypto !== "undefined" ? crypto : window.crypto;
     const encoder = new TextEncoder();
     const keyMaterial = await cryptoApi.subtle.digest(
       "SHA-256",

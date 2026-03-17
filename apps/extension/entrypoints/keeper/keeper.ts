@@ -32,6 +32,26 @@ let zkProofs: Record<SuiChain, ZkProofResponse | null> = {
 };
 
 /**
+ * Checks if the vault unlock has expired and locks if necessary.
+ * Returns true if the vault is locked (either was already locked or just locked due to expiry).
+ */
+function checkAndEnforceExpiry(): boolean {
+  if (!ephemeralKey) {
+    return true; // Already locked
+  }
+
+  if (_vaultUnlockExpiry && Date.now() > _vaultUnlockExpiry) {
+    // Expiry reached - lock the vault
+    ephemeralKey = null;
+    _vaultUnlocked = false;
+    _vaultUnlockExpiry = null;
+    return true; // Now locked
+  }
+
+  return false; // Still unlocked
+}
+
+/**
  * Message handler for keeper operations
  */
 chrome.runtime.onMessage.addListener(
@@ -131,17 +151,8 @@ chrome.runtime.onMessage.addListener(
     }
 
     if (message.type === KeeperMessageTypes.GET_PUBLIC_KEY) {
-      // Return the ephemeral key if available
-      if (!ephemeralKey) {
-        sendResponse({ error: "LOCKED" });
-        return false;
-      }
-
-      // Check if unlock has expired - fix variable name
-      if (_vaultUnlockExpiry && Date.now() > _vaultUnlockExpiry) {
-        ephemeralKey = null;
-        _vaultUnlocked = false;
-        _vaultUnlockExpiry = null;
+      // Check if vault is locked or expired
+      if (checkAndEnforceExpiry()) {
         sendResponse({ error: "LOCKED" });
         return false;
       }
@@ -155,17 +166,8 @@ chrome.runtime.onMessage.addListener(
     }
 
     if (message.type === KeeperMessageTypes.EPH_SIGN) {
-      // Sign bytes with the ephemeral key (async operation)
-      if (!ephemeralKey) {
-        sendResponse({ error: "[KEEPER_EPH_SIGN] LOCKED" });
-        return false;
-      }
-
-      // Check if unlock has expired
-      if (_vaultUnlockExpiry && Date.now() > _vaultUnlockExpiry) {
-        ephemeralKey = null;
-        _vaultUnlocked = false;
-        _vaultUnlockExpiry = null;
+      // Check if vault is locked or expired
+      if (checkAndEnforceExpiry()) {
         sendResponse({ error: "[KEEPER_EPH_SIGN] LOCKED" });
         return false;
       }

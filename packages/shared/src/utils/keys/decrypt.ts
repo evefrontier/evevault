@@ -1,4 +1,9 @@
 import type { HashedData } from "../../types/stores";
+import {
+  AES_KEY_LENGTH,
+  PBKDF2_HASH_ALGORITHM,
+  PBKDF2_ITERATIONS,
+} from "./constants";
 import { sha256 } from "./sha256";
 
 export async function decrypt(encryptedKey: HashedData, pin: string) {
@@ -23,11 +28,11 @@ export async function decrypt(encryptedKey: HashedData, pin: string) {
       {
         name: "PBKDF2",
         salt,
-        iterations: 100_000,
-        hash: "SHA-256",
+        iterations: PBKDF2_ITERATIONS,
+        hash: PBKDF2_HASH_ALGORITHM,
       },
       keyMaterial,
-      { name: "AES-GCM", length: 256 },
+      { name: "AES-GCM", length: AES_KEY_LENGTH },
       false,
       ["decrypt"],
     );
