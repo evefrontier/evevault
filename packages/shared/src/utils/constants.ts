@@ -26,7 +26,7 @@ export const TENANT_KEYS: Record<TenantId, TenantConfig> = {
     clientId: "00d3ce5b-4cab-4970-a9dc-e122fc1d30ce",
     clientSecret: import.meta.env.VITE_TENANT_UTOPIA_CLIENT_SECRET,
     serverUrl: "https://test.auth.evefrontier.com",
-    webOrigin: "https://test.evevault.evefrontier.com",
+    webOrigin: "https://uat.evevault.evefrontier.com",
   },
   testevenet: {
     clientId: "c8815001-f950-4147-905e-4833d904cd38",

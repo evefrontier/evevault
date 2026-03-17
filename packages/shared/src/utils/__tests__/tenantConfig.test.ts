@@ -17,7 +17,7 @@ vi.mock("../constants", () => ({
       clientId: "utopia-client",
       clientSecret: "secret",
       serverUrl: "https://test.auth.evefrontier.com",
-      webOrigin: "https://test.evevault.evefrontier.com",
+      webOrigin: "https://uat.evevault.evefrontier.com",
     },
     testevenet: {
       clientId: "testevenet-client",
@@ -40,6 +40,7 @@ import { isWeb } from "../environment";
 
 const STILLNESS_ORIGIN = "https://evevault.evefrontier.com";
 const TEST_ORIGIN = "https://test.evevault.evefrontier.com";
+const UAT_ORIGIN = "https://uat.evevault.evefrontier.com";
 const UNKNOWN_ORIGIN = "https://unknown.example.com";
 
 describe("getAvailableTenantIds", () => {
@@ -96,16 +97,25 @@ describe("getAvailableTenantIds", () => {
       expect(ids).toEqual(["stillness"]);
     });
 
-    it("returns tenants for test webOrigin when devMode false", () => {
+    it("returns tenants for uat webOrigin when devMode false", () => {
+      Object.defineProperty(window, "location", {
+        value: { origin: UAT_ORIGIN },
+        writable: true,
+      });
+      const ids = getAvailableTenantIds(false);
+      expect(ids).toEqual(["utopia"]);
+    });
+
+    it("returns tenants for test webOrigin when devMode true", () => {
       Object.defineProperty(window, "location", {
         value: { origin: TEST_ORIGIN },
         writable: true,
       });
-      const ids = getAvailableTenantIds(false);
-      expect(ids).toContain("utopia");
+      const ids = getAvailableTenantIds(true);
+      expect(ids).not.toContain("utopia");
       expect(ids).not.toContain("stillness");
-      expect(ids).not.toContain("testevenet");
-      expect(ids).not.toContain("nebula");
+      expect(ids).toContain("testevenet");
+      expect(ids).toContain("nebula");
     });
 
     it("returns all test-webOrigin tenants when devMode true and origin is test webOrigin", () => {
@@ -114,7 +124,7 @@ describe("getAvailableTenantIds", () => {
         writable: true,
       });
       const ids = getAvailableTenantIds(true);
-      expect(ids).toContain("utopia");
+      expect(ids).not.toContain("utopia");
       expect(ids).toContain("testevenet");
       expect(ids).toContain("nebula");
       expect(ids).not.toContain("stillness");
