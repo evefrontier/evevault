@@ -1,12 +1,24 @@
 import { useNetworkStore } from "@evevault/shared/stores";
-import type { JwtResponse } from "@evevault/shared/types";
-import { createLogger, NETWORK_STORAGE_KEY } from "@evevault/shared/utils";
+import type { AuthSuccessToken, JwtResponse } from "@evevault/shared/types";
+import {
+  createLogger,
+  type Logger,
+  NETWORK_STORAGE_KEY,
+} from "@evevault/shared/utils";
 import type { SuiChain } from "@mysten/wallet-standard";
 import { decodeJwt } from "jose";
 import type { IdTokenClaims } from "oidc-client-ts";
 import type { MessageWithId } from "../../types";
 
 const log = createLogger();
+
+export function buildAuthSuccessToken(jwt: JwtResponse): AuthSuccessToken {
+  return {
+    ...jwt,
+    email: extractEmailFromJwt(jwt),
+    userId: extractUserIdFromJwt(jwt),
+  };
+}
 
 export function ensureMessageId(message: MessageWithId): string {
   if (!message.id) {
@@ -53,15 +65,24 @@ export function extractAuthCode(responseUrl: string): string | null {
 }
 
 export function sendAuthSuccess(id: string, jwt: JwtResponse): void {
-  chrome.runtime.sendMessage({
-    id,
-    type: "auth_success",
-    token: {
-      ...jwt,
-      email: extractEmailFromJwt(jwt),
-      userId: extractUserIdFromJwt(jwt),
-    },
-  });
+  const token = buildAuthSuccessToken(jwt);
+  chrome.runtime.sendMessage({ id, type: "auth_success", token });
+}
+
+export function sendAuthSuccessToTab(
+  tabId: number,
+  ids: string[],
+  token: AuthSuccessToken,
+  logger?: Logger,
+): void {
+  const logErr = logger ?? log;
+  for (const id of ids) {
+    chrome.tabs
+      .sendMessage(tabId, { id, type: "auth_success", token })
+      .catch((err) => {
+        logErr.error("Failed to send auth_success to tab", { tabId, id, err });
+      });
+  }
 }
 
 export function sendAuthError(id: string, error: unknown): void {

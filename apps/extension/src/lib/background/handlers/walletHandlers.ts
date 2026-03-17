@@ -2,6 +2,11 @@ import { WalletStandardMessageTypes } from "@evevault/shared";
 import { createLogger } from "@evevault/shared/utils";
 import { openPopupWindow } from "../services/popupWindow";
 import type { WalletActionMessage } from "../types";
+import {
+  hasPendingForTab,
+  processNextWalletRequest,
+  setTabInProgress,
+} from "./walletRequestQueue";
 
 const log = createLogger();
 
@@ -17,11 +22,21 @@ async function handleApprovePopup(
 
     const senderTabId = sender.tab?.id;
 
+    if (senderTabId != null && hasPendingForTab(senderTabId)) {
+      const { enqueue } = await import("./walletRequestQueue");
+      enqueue(senderTabId, { kind: "sign", message, sender, sendResponse });
+      log.info("Sign request queued for tab", { senderTabId, action });
+      log.debug("Sign request queued for tab", { senderTabId, action });
+      return true;
+    }
+
     const windowId = await openPopupWindow(action);
 
     if (!windowId) {
       throw new Error("Failed to open approval popup");
     }
+
+    if (senderTabId != null) setTabInProgress(senderTabId);
 
     await chrome.storage.local.set({
       pendingAction: {
@@ -89,8 +104,8 @@ async function handleApprovePopup(
         }
 
         chrome.storage.local.remove(["pendingAction", "transactionResult"]);
-
         chrome.storage.onChanged.removeListener(storageListener);
+        if (senderTabId != null) processNextWalletRequest(senderTabId);
       } else if (result?.status === "error") {
         chrome.storage.onChanged.removeListener(storageListener);
 
@@ -112,6 +127,7 @@ async function handleApprovePopup(
         }
 
         chrome.storage.local.remove(["pendingAction", "transactionResult"]);
+        if (senderTabId != null) processNextWalletRequest(senderTabId);
       }
     };
 

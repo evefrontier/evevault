@@ -11,6 +11,8 @@ export interface PendingAuthAfterUnlock {
   type: "ext" | "dapp";
   tabId?: number;
   windowId?: number;
+  /** Extra connect request ids for same tab (all get auth_success when unlock completes). */
+  additionalIds?: string[];
   /** Tenant id for ext_login resume (popup context tenant when vault was locked). */
   tenantId?: string;
 }
@@ -33,12 +35,30 @@ export function sendPendingAuthError(pending: PendingAuthAfterUnlock): void {
   if (pending.type === "ext") {
     sendAuthError(pending.id, errorPayload);
   } else if (pending.tabId !== undefined) {
-    chrome.tabs.sendMessage(pending.tabId, {
-      id: pending.id,
-      type: "auth_error",
-      error: errorPayload,
-    });
+    const ids = [pending.id, ...(pending.additionalIds ?? [])];
+    for (const id of ids) {
+      chrome.tabs.sendMessage(pending.tabId, {
+        id,
+        type: "auth_error",
+        error: errorPayload,
+      });
+    }
   }
+}
+
+/**
+ * Adds a connect request id to the existing dapp pending for this tab.
+ * @returns true if the id was added (no new popup should be opened)
+ */
+export function addPendingDappId(tabId: number, id: string): boolean {
+  if (!pendingAuthAfterUnlock) return false;
+  if (pendingAuthAfterUnlock.type !== "dapp") return false;
+  if (pendingAuthAfterUnlock.tabId !== tabId) return false;
+  if (!pendingAuthAfterUnlock.additionalIds) {
+    pendingAuthAfterUnlock.additionalIds = [];
+  }
+  pendingAuthAfterUnlock.additionalIds.push(id);
+  return true;
 }
 
 export function setPendingAuthAfterUnlock(
@@ -49,7 +69,14 @@ export function setPendingAuthAfterUnlock(
   tenantId?: string,
 ): void {
   clearPendingAuth();
-  pendingAuthAfterUnlock = { id, type, tabId, windowId, tenantId };
+  pendingAuthAfterUnlock = {
+    id,
+    type,
+    tabId,
+    windowId,
+    tenantId,
+    additionalIds: undefined,
+  };
   pendingAuthTimeoutId = setTimeout(() => {
     pendingAuthTimeoutId = null;
     const pending = pendingAuthAfterUnlock;

@@ -8,6 +8,11 @@ import type {
   EveFrontierSponsoredTransactionMessage,
   SponsoredTxReturn,
 } from "../types";
+import {
+  hasPendingForTab,
+  processNextWalletRequest,
+  setTabInProgress,
+} from "./walletRequestQueue";
 
 const log = createLogger();
 const UTOPIA_TENANT = "utopia";
@@ -105,6 +110,20 @@ async function handleSponsoredTransaction(
     }
     const sponsoredTxReturn = raw as SponsoredTxReturn;
 
+    if (senderTabId != null && hasPendingForTab(senderTabId)) {
+      const { enqueue } = await import("./walletRequestQueue");
+      enqueue(senderTabId, {
+        kind: "sponsored",
+        message,
+        sender,
+        sendResponse: _sendResponse,
+      });
+      log.debug("Sponsored transaction request queued for tab", {
+        senderTabId,
+      });
+      return true;
+    }
+
     const actionType =
       WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION;
     const windowId = await openPopupWindow(actionType);
@@ -112,6 +131,8 @@ async function handleSponsoredTransaction(
     if (!windowId) {
       throw new Error("Failed to open sponsored transaction popup");
     }
+
+    if (senderTabId != null) setTabInProgress(senderTabId);
 
     await chrome.storage.local.set({
       pendingAction: {
@@ -134,6 +155,7 @@ async function handleSponsoredTransaction(
 
       chrome.storage.onChanged.removeListener(storageListener);
       chrome.storage.local.remove(["pendingAction", "transactionResult"]);
+      if (senderTabId != null) processNextWalletRequest(senderTabId);
 
       if (
         result.status === "signed" &&
@@ -188,6 +210,7 @@ async function handleSponsoredTransaction(
               error: errorMessage,
               id: message.id,
             });
+            processNextWalletRequest(senderTabId);
           }
         })();
       } else if (result.status === "error" && senderTabId != null) {
@@ -200,6 +223,7 @@ async function handleSponsoredTransaction(
           .catch((err) => {
             log.error("Failed to send error message to tab", err);
           });
+        processNextWalletRequest(senderTabId);
       }
     };
 
