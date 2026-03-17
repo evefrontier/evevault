@@ -11,22 +11,26 @@ vi.mock("../constants", () => ({
       clientId: "stillness-client",
       clientSecret: "secret",
       serverUrl: "https://auth.evefrontier.com",
+      webOrigin: "https://evevault.evefrontier.com",
     },
     utopia: {
       clientId: "utopia-client",
       clientSecret: "secret",
       serverUrl: "https://test.auth.evefrontier.com",
+      webOrigin: "https://test.evevault.evefrontier.com",
     },
     testevenet: {
       clientId: "testevenet-client",
       clientSecret: "secret",
       serverUrl: "https://test.auth.evefrontier.com",
+      webOrigin: "https://test.evevault.evefrontier.com",
       isDev: true,
     },
     nebula: {
       clientId: "nebula-client",
       clientSecret: "secret",
       serverUrl: "https://test.auth.evefrontier.com",
+      webOrigin: "https://test.evevault.evefrontier.com",
       isDev: true,
     },
   },
@@ -34,8 +38,8 @@ vi.mock("../constants", () => ({
 
 import { isWeb } from "../environment";
 
-const STILLNESS_ORIGIN = "https://auth.evefrontier.com";
-const TEST_ORIGIN = "https://test.auth.evefrontier.com";
+const STILLNESS_ORIGIN = "https://evevault.evefrontier.com";
+const TEST_ORIGIN = "https://test.evevault.evefrontier.com";
 const UNKNOWN_ORIGIN = "https://unknown.example.com";
 
 describe("getAvailableTenantIds", () => {
@@ -83,7 +87,7 @@ describe("getAvailableTenantIds", () => {
       process.env.NODE_ENV = "production";
     });
 
-    it("returns only tenants whose serverUrl matches window.location.origin", () => {
+    it("returns only tenants whose webOrigin matches window.location.origin", () => {
       Object.defineProperty(window, "location", {
         value: { origin: STILLNESS_ORIGIN },
         writable: true,
@@ -92,7 +96,7 @@ describe("getAvailableTenantIds", () => {
       expect(ids).toEqual(["stillness"]);
     });
 
-    it("returns tenants for test server origin when devMode false", () => {
+    it("returns tenants for test webOrigin when devMode false", () => {
       Object.defineProperty(window, "location", {
         value: { origin: TEST_ORIGIN },
         writable: true,
@@ -104,7 +108,7 @@ describe("getAvailableTenantIds", () => {
       expect(ids).not.toContain("nebula");
     });
 
-    it("returns all test-server tenants when devMode true and origin is test server", () => {
+    it("returns all test-webOrigin tenants when devMode true and origin is test webOrigin", () => {
       Object.defineProperty(window, "location", {
         value: { origin: TEST_ORIGIN },
         writable: true,
@@ -116,7 +120,7 @@ describe("getAvailableTenantIds", () => {
       expect(ids).not.toContain("stillness");
     });
 
-    it("returns empty array when origin matches no tenant serverUrl", () => {
+    it("returns empty array when origin matches no tenant webOrigin", () => {
       Object.defineProperty(window, "location", {
         value: { origin: UNKNOWN_ORIGIN },
         writable: true,
@@ -125,7 +129,7 @@ describe("getAvailableTenantIds", () => {
       expect(ids).toEqual([]);
     });
 
-    it("normalizes trailing slash when comparing origin to serverUrl", () => {
+    it("normalizes trailing slash when comparing origin to webOrigin", () => {
       Object.defineProperty(window, "location", {
         value: { origin: `${STILLNESS_ORIGIN}/` },
         writable: true,

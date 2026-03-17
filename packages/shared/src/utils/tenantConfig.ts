@@ -70,7 +70,7 @@ export function getAvailableTenantIds(devMode = false): TenantId[] {
   if (isWebProduction() && typeof window !== "undefined") {
     const origin = normalizeOrigin(window.location.origin);
     return ids.filter(
-      (id) => normalizeOrigin(TENANT_KEYS[id].serverUrl) === origin,
+      (id) => normalizeOrigin(TENANT_KEYS[id].webOrigin) === origin,
     );
   }
 
