@@ -1,5 +1,6 @@
 export { getUserManager, redirectToFusionAuthLogout } from "./authConfig";
 export { exchangeCodeForToken } from "./exchangeCode";
+export { getApiContext } from "./getApiContext";
 export {
   clearZkLoginAddressCache,
   getZkLoginAddress,

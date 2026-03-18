@@ -1,11 +1,5 @@
-import { decodeJwt } from "jose";
-import type { IdTokenClaims } from "oidc-client-ts";
-import { getCurrentTenantId } from "../stores/tenantStore";
 import type { JwtResponse } from "../types/authTypes";
-import { getTenantConfig } from "../utils/tenantConfig";
-
-// TODO: This will change to use a Quasar Go API vend endpoint
-// In order to exposing the API key to the extension
+import { getApiContext } from "./getApiContext";
 
 export const vendJwt = async (
   token: JwtResponse["id_token"],
@@ -15,19 +9,8 @@ export const vendJwt = async (
     maxEpoch: string;
   },
 ): Promise<JwtResponse["id_token"]> => {
-  const tenant = getCurrentTenantId();
-
-  const apiKey = import.meta.env.VITE_FUSIONAUTH_API_KEY;
-  const fusionAuthUrl = getTenantConfig(tenant).serverUrl;
-  const vendUrl = `${fusionAuthUrl}/api/jwt/vend`;
-
-  if (!apiKey) {
-    throw new Error(
-      "FusionAuth API key is required. Set VITE_FUSIONAUTH_API_KEY environment variable.",
-    );
-  }
-
-  const existingClaims = decodeJwt<IdTokenClaims>(token);
+  const { apiBaseUrl, tenant, decoded: existingClaims } = getApiContext(token);
+  const vendUrl = `${apiBaseUrl}/api/jwt/vend`;
 
   const requestBody: Record<string, unknown> = {
     claims: {
@@ -39,8 +22,9 @@ export const vendJwt = async (
   const response = await fetch(vendUrl, {
     method: "POST",
     headers: {
+      "X-Tenant": tenant,
       "Content-Type": "application/json",
-      Authorization: apiKey,
+      Authorization: `Bearer ${token}`,
       Accept: "application/json",
     },
     body: JSON.stringify(requestBody),
