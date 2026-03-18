@@ -21,11 +21,7 @@ import {
   performFullCleanup,
 } from "../../utils";
 import { AUTH_STORAGE_KEY } from "../../utils/storageKeys";
-import {
-  DEFAULT_TENANT_ID,
-  getTenantConfig,
-  isAvailableTenantId,
-} from "../../utils/tenantConfig";
+import { DEFAULT_TENANT_ID, getTenantConfig } from "../../utils/tenantConfig";
 import { getUserManager, redirectToFusionAuthLogout } from "../authConfig";
 import {
   clearZkLoginAddressCache,
@@ -39,7 +35,6 @@ import {
 } from "../storageService";
 import type { AuthState } from "../types";
 import { resolveExpiresAt } from "../utils/authStoreUtils";
-import { vendJwt } from "../vendToken";
 
 // biome-ignore lint/suspicious/noExplicitAny: chrome is a global object
 declare const chrome: any;
@@ -384,93 +379,109 @@ export const useAuthStore = create<AuthState>()(
         refreshJwt: async (network: SuiChain) => {
           // 1. Get existing JWT using cross-platform storage service
           const existingJwt = await getJwtForNetwork(network);
+          const tenant = getCurrentTenantId();
+          const { clientId } = getTenantConfig(tenant);
+          const refreshToken = existingJwt?.refresh_token;
 
-          // If no existing JWT for this chain, try to get any available JWT
-          let targetJwt = existingJwt;
-          if (!targetJwt?.id_token) {
-            log.info(
-              `No idToken found for network ${network}, checking other networks`,
-            );
-            const allNetworkJwts = await getAllStoredJwts();
-            if (allNetworkJwts) {
-              const firstNetwork = Object.keys(allNetworkJwts)[0] as SuiChain;
-              targetJwt = allNetworkJwts[firstNetwork] ?? null;
-            }
-          }
+          await fetch(
+            `${getTenantConfig(getCurrentTenantId()).serverUrl}/api/jwt/issue?applicationId=${clientId}&refreshToken=${refreshToken}`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${existingJwt?.access_token}`,
+              },
+            },
+          )
+            .then((res) => res.json())
+            .then((data) => console.log(data))
+            .catch((err) => console.error(err));
 
-          if (!targetJwt) {
-            throw new Error(`No JWT or fallback found in storage`);
-          }
+          // let targetJwt = existingJwt;
+          // if (!targetJwt?.id_token) {
+          //   log.info(
+          //     `No idToken found for network ${network}, checking other networks`,
+          //   );
+          //   const allNetworkJwts = await getAllStoredJwts();
+          //   if (allNetworkJwts) {
+          //     const firstNetwork = Object.keys(allNetworkJwts)[0] as SuiChain;
+          //     targetJwt = allNetworkJwts[firstNetwork] ?? null;
+          //   }
+          // }
 
-          // 2. Refresh device parameters (nonce, maxEpoch)
-          await useDeviceStore.getState().initializeForChain(network);
+          // if (!targetJwt) {
+          //   throw new Error(`No JWT or fallback found in storage`);
+          // }
 
-          // 3. Get updated device parameters (reads from store first, falls back to storage if needed)
-          const { jwtRandomness, nonce, maxEpoch } =
-            await getDeviceData(network);
+          // // 2. Refresh device parameters (nonce, maxEpoch)
+          // await useDeviceStore.getState().initializeForChain(network);
 
-          if (!nonce || !jwtRandomness || !maxEpoch) {
-            throw new Error(
-              `Device data not initialized for network ${network}. Missing: ${
-                !nonce ? "nonce" : ""
-              } ${!jwtRandomness ? "jwtRandomness" : ""} ${
-                !maxEpoch ? "maxEpoch" : ""
-              }`,
-            );
-          }
+          // // 3. Get updated device parameters (reads from store first, falls back to storage if needed)
+          // const { jwtRandomness, nonce, maxEpoch } =
+          //   await getDeviceData(network);
 
-          // 4. Vend new JWT with updated parameters
-          const vendResult = await vendJwt(targetJwt.id_token, {
-            nonce,
-            jwtRandomness,
-            maxEpoch: maxEpoch.toString(),
-          });
+          // if (!nonce || !jwtRandomness || !maxEpoch) {
+          //   throw new Error(
+          //     `Device data not initialized for network ${network}. Missing: ${
+          //       !nonce ? "nonce" : ""
+          //     } ${!jwtRandomness ? "jwtRandomness" : ""} ${
+          //       !maxEpoch ? "maxEpoch" : ""
+          //     }`,
+          //   );
+          // }
 
-          // 5. Validate nonce in returned JWT
-          const newIdToken = decodeJwt<IdTokenClaims>(vendResult as string);
-          const jwtNonce = newIdToken.nonce;
+          // // 4. Refresh JWT with updated parameters
+          // // const vendResult = await vendJwt(targetJwt.id_token, {
+          // //   nonce,
+          // //   jwtRandomness,
+          // //   maxEpoch: maxEpoch.toString(),
+          // // });
 
-          log.debug("Nonce validation", {
-            nonceSent: nonce,
-            nonceInJwt: jwtNonce,
-            noncesMatch: jwtNonce === nonce,
-          });
+          // // 5. Validate nonce in returned JWT
+          // const newIdToken = decodeJwt<IdTokenClaims>(vendResult as string);
+          // const jwtNonce = newIdToken.nonce;
 
-          if (jwtNonce !== nonce) {
-            throw new Error(
-              `Nonce mismatch: Expected ${nonce}, but JWT contains ${jwtNonce}. `,
-            );
-          }
+          // log.debug("Nonce validation", {
+          //   nonceSent: nonce,
+          //   nonceInJwt: jwtNonce,
+          //   noncesMatch: jwtNonce === nonce,
+          // });
 
-          // 6. Construct new JWT response
-          const newJwt: JwtResponse = {
-            id_token: vendResult,
-            access_token: vendResult,
-            token_type: "Bearer",
-            expires_in: newIdToken.exp
-              ? newIdToken.exp - Math.floor(Date.now() / 1000)
-              : 3600,
-            scope: "openid email profile offline_access",
-          };
+          // if (jwtNonce !== nonce) {
+          //   throw new Error(
+          //     `Nonce mismatch: Expected ${nonce}, but JWT contains ${jwtNonce}. `,
+          //   );
+          // }
 
-          // 7. Store the new JWT, replacing the previous one
-          await storeJwt(newJwt, network);
+          // // 6. Construct new JWT response
+          // const newJwt: JwtResponse = {
+          //   id_token: vendResult,
+          //   access_token: vendResult,
+          //   token_type: "Bearer",
+          //   expires_in: newIdToken.exp
+          //     ? newIdToken.exp - Math.floor(Date.now() / 1000)
+          //     : 3600,
+          //   scope: "openid email profile offline_access",
+          // };
 
-          // 8. Update existing user with new JWT (preserve profile, address, salt, etc.)
-          const currentUser = get().user;
-          if (currentUser) {
-            const updatedUser = new User({
-              ...currentUser,
-              id_token: newJwt.id_token,
-              access_token: newJwt.access_token,
-              expires_at: Math.floor(Date.now() / 1000) + newJwt.expires_in,
-            });
+          // // 7. Store the new JWT, replacing the previous one
+          // await storeJwt(newJwt, network);
 
-            await getUserManagerInstance().storeUser(updatedUser);
-            get().setUser(updatedUser);
-          } else {
-            log.warn("No existing user found to update");
-          }
+          // // 8. Update existing user with new JWT (preserve profile, address, salt, etc.)
+          // const currentUser = get().user;
+          // if (currentUser) {
+          //   const updatedUser = new User({
+          //     ...currentUser,
+          //     id_token: newJwt.id_token,
+          //     access_token: newJwt.access_token,
+          //     expires_at: Math.floor(Date.now() / 1000) + newJwt.expires_in,
+          //   });
+
+          //   await getUserManagerInstance().storeUser(updatedUser);
+          //   get().setUser(updatedUser);
+          // } else {
+          //   log.warn("No existing user found to update");
+          // }
         },
 
         logout: async () => {

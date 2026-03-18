@@ -20,4 +20,3 @@ export * from "./stores/authStore";
 export { handleTestTokenRefresh } from "./testTokenRefresh";
 export * from "./types";
 export * from "./utils/authStoreUtils";
-export { vendJwt } from "./vendToken";
