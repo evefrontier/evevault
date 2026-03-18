@@ -17,6 +17,5 @@ export {
   storeJwt,
 } from "./storageService";
 export * from "./stores/authStore";
-export { handleTestTokenRefresh } from "./testTokenRefresh";
 export * from "./types";
 export * from "./utils/authStoreUtils";

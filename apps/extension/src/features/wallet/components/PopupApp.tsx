@@ -5,11 +5,7 @@ import {
   switchTenantAndReload,
   type TenantId,
 } from "@evevault/shared";
-import {
-  handleTestTokenRefresh,
-  redirectToFusionAuthLogout,
-  useAuth,
-} from "@evevault/shared/auth";
+import { redirectToFusionAuthLogout, useAuth } from "@evevault/shared/auth";
 import {
   Button,
   HeaderMobile,
@@ -50,7 +46,12 @@ function App() {
   const [previousNetworkBeforeSwitch, setPreviousNetworkBeforeSwitch] =
     useState<SuiChain | null>(null);
 
-  const { user, loading: authLoading, error: authError } = useAuth();
+  const {
+    user,
+    loading: authLoading,
+    error: authError,
+    refreshJwt,
+  } = useAuth();
   const { isLocked, isPinSet, error: deviceError, unlock } = useDevice();
   const { chain } = useNetworkStore();
   const faucetUrl = getFaucetUrlForChain(chain);
@@ -103,7 +104,7 @@ function App() {
       window.alert(message);
       return;
     }
-    await handleTestTokenRefresh(user, nonce);
+    await refreshJwt(chain as SuiChain);
   }, [user, nonce]);
 
   // Show loading state while initializing

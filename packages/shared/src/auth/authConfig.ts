@@ -9,7 +9,6 @@ import type { TenantId } from "../types";
 import { isExtension } from "../utils/environment";
 import { createLogger } from "../utils/logger";
 import { getTenantConfig } from "../utils/tenantConfig";
-import { patchUserNonce } from "./patchNonce";
 import type { GlobalWithLocalStorage, StorageLike } from "./types";
 
 const ensureLocalStorage = () => {
@@ -118,30 +117,7 @@ function addUserManagerEventHandlers(
   });
 
   userManager.events.addAccessTokenExpiring(async () => {
-    log.info("Access token expiring, patching user nonce before refresh", {
-      tenantId,
-    });
-
-    const currentUser = await userManager.getUser();
-    if (!currentUser) {
-      log.warn("User parameter is undefined", { tenantId });
-    }
-
-    const { useDeviceStore } = await import("../stores/deviceStore");
-    const { useNetworkStore } = await import("../stores/networkStore");
-    const deviceStore = useDeviceStore.getState();
-    const networkStore = useNetworkStore.getState();
-    const currentChain = networkStore.chain;
-    const nonce = deviceStore.getNonce(currentChain);
-
-    if (!nonce) {
-      log.error("No nonce available for patching before token refresh", {
-        tenantId,
-      });
-      return;
-    }
-
-    await patchUserNonce(currentUser as User, nonce);
+    // TODO: When access token is expiring, refresh it with the refreshJwt function
   });
 
   userManager.events.addAccessTokenExpired(() => {
