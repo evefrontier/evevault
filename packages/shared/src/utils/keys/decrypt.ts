@@ -4,50 +4,31 @@ import {
   PBKDF2_HASH_ALGORITHM,
   PBKDF2_ITERATIONS,
 } from "./constants";
-import { sha256 } from "./sha256";
 
 export async function decrypt(encryptedKey: HashedData, pin: string) {
   // Use global crypto (available in service workers) or window.crypto (available in browser)
   const cryptoApi = typeof crypto !== "undefined" ? crypto : window.crypto;
 
-  let aesKey: CryptoKey;
-
-  if (encryptedKey.salt && encryptedKey.salt.length > 0) {
-    // New format: derive key using PBKDF2 with the stored salt
-    const salt = Uint8Array.from(atob(encryptedKey.salt), (c) =>
-      c.charCodeAt(0),
-    );
-    const keyMaterial = await cryptoApi.subtle.importKey(
-      "raw",
-      new TextEncoder().encode(pin),
-      { name: "PBKDF2" },
-      false,
-      ["deriveKey"],
-    );
-    aesKey = await cryptoApi.subtle.deriveKey(
-      {
-        name: "PBKDF2",
-        salt,
-        iterations: PBKDF2_ITERATIONS,
-        hash: PBKDF2_HASH_ALGORITHM,
-      },
-      keyMaterial,
-      { name: "AES-GCM", length: AES_KEY_LENGTH },
-      false,
-      ["decrypt"],
-    );
-  } else {
-    // Legacy format: derive key using raw SHA-256 hash of PIN (no salt, no iterations)
-    // Kept for backward compatibility with existing stored keys
-    const keyMaterial = await sha256(pin);
-    aesKey = await cryptoApi.subtle.importKey(
-      "raw",
-      keyMaterial,
-      { name: "AES-GCM" },
-      false,
-      ["decrypt"],
-    );
-  }
+  const salt = Uint8Array.from(atob(encryptedKey.salt), (c) => c.charCodeAt(0));
+  const keyMaterial = await cryptoApi.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(pin),
+    { name: "PBKDF2" },
+    false,
+    ["deriveKey"],
+  );
+  const aesKey = await cryptoApi.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt,
+      iterations: PBKDF2_ITERATIONS,
+      hash: PBKDF2_HASH_ALGORITHM,
+    },
+    keyMaterial,
+    { name: "AES-GCM", length: AES_KEY_LENGTH },
+    false,
+    ["decrypt"],
+  );
 
   const iv = Uint8Array.from(atob(encryptedKey.iv), (c) => c.charCodeAt(0));
   const encryptedData = Uint8Array.from(atob(encryptedKey.data), (c) =>
