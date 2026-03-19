@@ -6,7 +6,7 @@ import {
 } from "@evevault/shared/components";
 import Json from "@evevault/shared/components/Json";
 import { createSuiClient } from "@evevault/shared/sui";
-import type { PendingTransaction } from "@evevault/shared/types";
+import type { ParsedTransactionWithDisplay } from "@evevault/shared/types";
 import {
   buildTx,
   createLogger,
@@ -22,7 +22,7 @@ const log = createLogger();
 
 function SignTransaction() {
   const [pendingTransaction, setPendingTransaction] =
-    useState<PendingTransaction | null>(null);
+    useState<ParsedTransactionWithDisplay | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

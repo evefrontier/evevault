@@ -22,7 +22,10 @@ vi.mock("@mysten/sui/utils", () => ({
 
 describe("parseTransactionBytes", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    mockToJSON.mockReset();
+    mockFrom.mockReset();
+
+    // Default implementation
     mockToJSON.mockResolvedValue({ kind: "ProgrammableTransaction", data: {} });
     mockFrom.mockImplementation((bytes: Uint8Array) => ({
       toJSON: () => mockToJSON(bytes),
@@ -50,12 +53,13 @@ describe("parseTransactionBytes", () => {
   });
 
   describe("object input", () => {
-    it("normalizes to JSON string and returns it as displayValue", async () => {
+    it("normalizes to JSON string and returns it as displayValue and transactionForSigning", async () => {
       const input = { kind: "ProgrammableTransaction", data: {} };
       const result = await parseTransactionBytes(input);
 
       expect(result).toEqual({
         displayValue: JSON.stringify(input, null, 2),
+        transactionForSigning: JSON.stringify(input),
       });
       expect(mockFrom).not.toHaveBeenCalled();
     });
@@ -109,10 +113,56 @@ describe("parseTransactionBytes", () => {
       expect(result).toEqual({ displayValue: input });
       expect(result.transactionForSigning).toBeUndefined();
     });
+
+    it("allows whitespace around commas", async () => {
+      const expectedBytes = new Uint8Array([0, 1, 2, 3]);
+
+      // Set up fresh mock for this test
+      mockToJSON.mockResolvedValueOnce({ withSpaces: true });
+      mockFrom.mockImplementationOnce((bytes: Uint8Array) => ({
+        toJSON: () => mockToJSON(bytes),
+      }));
+
+      const result = await parseTransactionBytes("0, 1 , 2,  3");
+
+      expect(mockFrom).toHaveBeenCalledWith(expectedBytes);
+      expect(result.displayValue).toBe(
+        JSON.stringify({ withSpaces: true }, null, 2),
+      );
+      expect(result.transactionForSigning).toBeDefined();
+    });
+
+    it("rejects byte values greater than 255", async () => {
+      const input = "0,1,256,3";
+      const result = await parseTransactionBytes(input);
+
+      // Should fall back to returning original string as displayValue
+      expect(result.displayValue).toBe(input);
+      expect(result.transactionForSigning).toBeUndefined();
+      expect(mockFrom).not.toHaveBeenCalled();
+    });
+
+    it("rejects negative byte values", async () => {
+      const input = "0,1,-1,3";
+      const result = await parseTransactionBytes(input);
+
+      expect(result.displayValue).toBe(input);
+      expect(result.transactionForSigning).toBeUndefined();
+      expect(mockFrom).not.toHaveBeenCalled();
+    });
+
+    it("rejects non-integer byte values", async () => {
+      const input = "0,1,2.5,3";
+      const result = await parseTransactionBytes(input);
+
+      expect(result.displayValue).toBe(input);
+      expect(result.transactionForSigning).toBeUndefined();
+      expect(mockFrom).not.toHaveBeenCalled();
+    });
   });
 
   describe("base64 input", () => {
-    it("decodes base64 and returns displayValue from Transaction.toJSON(), no transactionForSigning", async () => {
+    it("decodes base64 and returns displayValue from Transaction.toJSON() and normalized base64 for signing", async () => {
       const bytes = new Uint8Array([0, 1, 2]);
       const base64Input = Buffer.from(bytes).toString("base64");
 
@@ -131,7 +181,7 @@ describe("parseTransactionBytes", () => {
           2,
         ),
       );
-      expect(result.transactionForSigning).toBeUndefined();
+      expect(result.transactionForSigning).toBe(base64Input);
     });
 
     it("on invalid base64 (non-base64 chars) returns original string as displayValue", async () => {
@@ -154,6 +204,23 @@ describe("parseTransactionBytes", () => {
 
       expect(result).toEqual({ displayValue: base64Input });
     });
+
+    it("normalizes base64 with leading/trailing whitespace", async () => {
+      const bytes = new Uint8Array([0, 1, 2]);
+      const base64String = Buffer.from(bytes).toString("base64");
+      const inputWithWhitespace = `  ${base64String}  `;
+
+      mockToJSON.mockResolvedValueOnce({ normalized: true });
+
+      const result = await parseTransactionBytes(inputWithWhitespace);
+
+      // Should trim the whitespace and use the trimmed version for signing
+      expect(mockFrom).toHaveBeenCalledWith(bytes);
+      expect(result.transactionForSigning).toBe(base64String);
+      expect(result.displayValue).toBe(
+        JSON.stringify({ normalized: true }, null, 2),
+      );
+    });
   });
 
   describe("result shape", () => {
@@ -172,18 +239,27 @@ describe("parseTransactionBytes", () => {
       }
     });
 
-    it("transactionForSigning is only set for comma-separated bytes path", async () => {
+    it("transactionForSigning is set for all valid transaction formats", async () => {
+      // Comma-separated bytes returns base64
       const withComma = await parseTransactionBytes("0,1,2");
       expect(withComma).toHaveProperty("transactionForSigning");
       expect(typeof withComma.transactionForSigning).toBe("string");
 
-      const withJson = await parseTransactionBytes("{}");
-      expect(withJson.transactionForSigning).toBeUndefined();
+      // Object returns JSON string
+      const withObject = await parseTransactionBytes({ kind: "test" });
+      expect(withObject).toHaveProperty("transactionForSigning");
+      expect(typeof withObject.transactionForSigning).toBe("string");
 
+      // Base64 returns normalized (trimmed) base64
       const withBase64 = await parseTransactionBytes(
         Buffer.from([0, 1, 2]).toString("base64"),
       );
-      expect(withBase64.transactionForSigning).toBeUndefined();
+      expect(withBase64).toHaveProperty("transactionForSigning");
+      expect(typeof withBase64.transactionForSigning).toBe("string");
+
+      // Plain JSON string has no transactionForSigning
+      const withJson = await parseTransactionBytes("{}");
+      expect(withJson.transactionForSigning).toBeUndefined();
     });
   });
 });

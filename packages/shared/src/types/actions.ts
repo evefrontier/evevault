@@ -10,6 +10,9 @@ export interface PendingTransaction extends VaultMessage {
   transaction: string;
   chain: SuiChain;
   account: { address: string };
+}
+
+export interface ParsedTransactionWithDisplay extends PendingTransaction {
   displayValue: string;
 }
 
