@@ -7,9 +7,13 @@ import {
 import Json from "@evevault/shared/components/Json";
 import { createSuiClient } from "@evevault/shared/sui";
 import type { PendingTransaction } from "@evevault/shared/types";
-import { buildTx, createLogger } from "@evevault/shared/utils";
+import {
+  buildTx,
+  createLogger,
+  parseTransactionBytes,
+} from "@evevault/shared/utils";
 import { zkSignAny } from "@evevault/shared/wallet";
-import { Transaction, type TransactionData } from "@mysten/sui/transactions";
+import { Transaction } from "@mysten/sui/transactions";
 import { toBase64 } from "@mysten/sui/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -28,8 +32,8 @@ function SignAndExecuteTransaction() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    // Retrieve the pending transaction from storage (same key as SignTransaction)
-    chrome.storage.local.get("pendingAction").then((data) => {
+    // Retrieve the pending transaction from storage
+    chrome.storage.local.get("pendingAction").then(async (data) => {
       const pending = data.pendingAction;
       if (pending) {
         // When pending.transaction is present,
@@ -39,7 +43,16 @@ function SignAndExecuteTransaction() {
           return;
         }
 
-        setPendingTransaction(pending as PendingTransaction);
+        const parsedTx = await parseTransactionBytes(pending.transaction);
+
+        setPendingTransaction({
+          ...pending,
+          transaction:
+            parsedTx.transactionForSigning != null
+              ? parsedTx.transactionForSigning
+              : pending.transaction,
+          displayValue: parsedTx.displayValue,
+        });
       } else {
         setError("No pending transaction found");
       }
@@ -203,11 +216,7 @@ function SignAndExecuteTransaction() {
             <div className="flex flex-col items-center justify-center gap-4">
               <Heading level={2}>Sign and Execute Transaction</Heading>
               <Json
-                value={JSON.stringify(
-                  JSON.parse(
-                    pendingTransaction.transaction as string,
-                  ) as TransactionData,
-                )}
+                value={pendingTransaction.displayValue}
                 className={"max-h-24"}
               />
             </div>
