@@ -10,16 +10,41 @@ import type { ToastVariant } from "../../types/components";
 import { Toast } from "./Toast";
 
 type ToastState = {
-  message: string;
+  title: string;
+  message?: string;
   isVisible: boolean;
   duration: number;
   variant: ToastVariant;
-  title?: string;
 };
 
+function parseToastArgs(
+  title: string,
+  defaultDuration: number,
+  messageOrDuration?: string | number,
+  duration?: number,
+): Pick<ToastState, "title" | "message" | "duration"> {
+  if (typeof messageOrDuration === "number") {
+    return { title, message: undefined, duration: messageOrDuration };
+  }
+  if (messageOrDuration !== undefined) {
+    return {
+      title,
+      message: messageOrDuration,
+      duration: duration ?? defaultDuration,
+    };
+  }
+  return { title, message: undefined, duration: duration ?? defaultDuration };
+}
+
 interface ToastContextType {
-  showToast: (message: string, duration?: number) => void;
-  showErrorToast: (message: string, title?: string, duration?: number) => void;
+  showToast: {
+    (title: string, duration?: number): void;
+    (title: string, message: string, duration?: number): void;
+  };
+  showErrorToast: {
+    (title: string, duration?: number): void;
+    (title: string, message: string, duration?: number): void;
+  };
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
@@ -29,7 +54,8 @@ interface ToastProviderProps {
 }
 
 const initialToastState: ToastState = {
-  message: "",
+  title: "",
+  message: undefined,
   isVisible: false,
   duration: 3000,
   variant: "default",
@@ -38,23 +64,23 @@ const initialToastState: ToastState = {
 export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   const [toast, setToast] = useState<ToastState>(initialToastState);
 
-  const showToast = useCallback((message: string, duration = 3000) => {
-    setToast({
-      message,
-      isVisible: true,
-      duration,
-      variant: "default",
-    });
-  }, []);
+  const showToast = useCallback(
+    (title: string, messageOrDuration?: string | number, duration?: number) => {
+      setToast({
+        ...parseToastArgs(title, 3000, messageOrDuration, duration),
+        isVisible: true,
+        variant: "default",
+      });
+    },
+    [],
+  );
 
   const showErrorToast = useCallback(
-    (message: string, title?: string, duration = 5000) => {
+    (title: string, messageOrDuration?: string | number, duration?: number) => {
       setToast({
-        message,
+        ...parseToastArgs(title, 5000, messageOrDuration, duration),
         isVisible: true,
-        duration,
         variant: "error",
-        title,
       });
     },
     [],
@@ -68,12 +94,12 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
     <ToastContext.Provider value={{ showToast, showErrorToast }}>
       {children}
       <Toast
+        title={toast.title}
         message={toast.message}
         isVisible={toast.isVisible}
         onClose={hideToast}
         duration={toast.duration}
         variant={toast.variant}
-        title={toast.title}
       />
     </ToastContext.Provider>
   );

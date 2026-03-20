@@ -123,6 +123,12 @@
   --alert: #0c27d8;
   --success: #5ee39c;
   --error: #942922;
+
+  /* Toast (Web Brand DS — Figma toast component) */
+  --neutral-80: rgba(255, 255, 214, 0.8);
+  --toast-backdrop: rgba(11, 11, 11, 0.3);
+  --martian-red: #ff4700;
+  --toast-error-accent: #c20046;
 }
 
 /* ========================

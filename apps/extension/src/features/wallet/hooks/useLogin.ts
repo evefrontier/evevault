@@ -38,7 +38,8 @@ export function useLogin() {
           useNetworkStore.getState().forceSetChain(previousNetwork);
           await initializeAuth();
           showToast(
-            `Login failed. Reverted to ${previousNetworkLabel} where you are still logged in.`,
+            "Login failed",
+            `Reverted to ${previousNetworkLabel} where you are still logged in.`,
           );
           return true;
         }
@@ -66,7 +67,8 @@ export function useLogin() {
         useNetworkStore.getState().forceSetChain(networkWithJwt);
         await initializeAuth();
         showToast(
-          `Login failed. Reverted to ${networkLabel} where you are still logged in.`,
+          "Login failed",
+          `Reverted to ${networkLabel} where you are still logged in.`,
         );
         return true;
       }

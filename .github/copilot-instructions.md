@@ -183,7 +183,10 @@ try {
 } catch (error) {
   log.error("Operation failed:", error);
   set({ error: error instanceof Error ? error.message : "Unknown error" });
-  showToast("Operation failed. Please try again.");
+  showToast(
+    "Operation failed",
+    error instanceof Error ? error.message : "Unknown error",
+  );
 }
 ```
 
