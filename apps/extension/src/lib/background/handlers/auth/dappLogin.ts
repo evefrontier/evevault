@@ -29,9 +29,11 @@ import {
 } from "./keeperHelpers";
 import {
   addPendingDappId,
+  clearPendingAuth,
   getPending,
   KEEPER_RETRY_DELAY_MS,
   setPendingAuthAfterUnlock,
+  setPendingAuthWindowId,
 } from "./pendingAuth";
 
 const log = createLogger();
@@ -94,13 +96,23 @@ export async function handleDappLogin(
       }
 
       useDeviceStore.setState({ isLocked: true });
+      if (hasDeviceData) {
+        // Set pending before opening popup so concurrent auto-connect/connect
+        // requests can dedupe against this in-flight unlock flow.
+        setPendingAuthAfterUnlock(id, "dapp", tabId);
+      }
+
       const windowId = await openPopupWindow("popup");
       if (windowId === undefined) {
         log.warn("Failed to open vault popup window");
+        if (hasDeviceData) {
+          clearPendingAuth();
+        }
+      } else if (hasDeviceData) {
+        setPendingAuthWindowId(windowId);
       }
 
       if (hasDeviceData) {
-        setPendingAuthAfterUnlock(id, "dapp", tabId, windowId);
         return;
       }
 

@@ -102,6 +102,15 @@ export function setPendingAuthAfterUnlock(
   }, PENDING_AUTH_TIMEOUT_MS);
 }
 
+/**
+ * Updates the popup window id for the current pending auth entry.
+ * Used when pending state is created before opening the popup to avoid races.
+ */
+export function setPendingAuthWindowId(windowId: number): void {
+  if (!pendingAuthAfterUnlock) return;
+  pendingAuthAfterUnlock.windowId = windowId;
+}
+
 /** Returns the current pending auth without clearing (e.g. for window-close check). */
 export function getPending(): PendingAuthAfterUnlock | null {
   return pendingAuthAfterUnlock;
