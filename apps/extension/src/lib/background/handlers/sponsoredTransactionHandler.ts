@@ -8,11 +8,6 @@ import type {
   EveFrontierSponsoredTransactionMessage,
   SponsoredTxReturn,
 } from "../types";
-import {
-  hasPendingForTab,
-  processNextWalletRequest,
-  setTabInProgress,
-} from "./walletRequestQueue";
 
 const log = createLogger();
 const UTOPIA_TENANT = "utopia";
@@ -110,33 +105,11 @@ async function handleSponsoredTransaction(
     }
     const sponsoredTxReturn = raw as SponsoredTxReturn;
 
-    if (senderTabId != null && hasPendingForTab(senderTabId)) {
-      const { enqueue } = await import("./walletRequestQueue");
-      enqueue(senderTabId, {
-        kind: "sponsored",
-        message,
-        sender,
-        sendResponse: _sendResponse,
-      });
-      log.debug("Sponsored transaction request queued for tab", {
-        senderTabId,
-      });
-      return true;
-    }
-
-    // Mark tab in-progress BEFORE awaiting to prevent race condition
-    if (senderTabId != null) setTabInProgress(senderTabId);
-
     const actionType =
       WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION;
     const windowId = await openPopupWindow(actionType);
 
     if (!windowId) {
-      // Clear in-progress flag if popup creation failed
-      if (senderTabId != null) {
-        const { clearTabInProgress } = await import("./walletRequestQueue");
-        clearTabInProgress(senderTabId);
-      }
       throw new Error("Failed to open sponsored transaction popup");
     }
 
@@ -206,8 +179,6 @@ async function handleSponsoredTransaction(
               effects,
               id: message.id,
             });
-            // Process next after successful send
-            processNextWalletRequest(senderTabId);
           } catch (err) {
             log.error("Sponsored execute failed", err);
             const errorMessage =
@@ -217,8 +188,6 @@ async function handleSponsoredTransaction(
               error: errorMessage,
               id: message.id,
             });
-            // Process next after error send
-            processNextWalletRequest(senderTabId);
           }
         })();
       } else if (result.status === "error" && senderTabId != null) {
@@ -230,14 +199,7 @@ async function handleSponsoredTransaction(
           })
           .catch((err) => {
             log.error("Failed to send error message to tab", err);
-          })
-          .finally(() => {
-            // Process next after send (success or failure)
-            processNextWalletRequest(senderTabId);
           });
-      } else {
-        // No message to send, just process next
-        if (senderTabId != null) processNextWalletRequest(senderTabId);
       }
     };
 
@@ -249,8 +211,6 @@ async function handleSponsoredTransaction(
         chrome.storage.onChanged.removeListener(storageListener);
         chrome.storage.local.remove(["pendingAction", "transactionResult"]);
         log.warn("Sponsored transaction approval timed out", { senderTabId });
-        // Clear in-progress and process next to prevent queue stall
-        if (senderTabId != null) processNextWalletRequest(senderTabId);
       },
       10 * 60 * 1000,
     );
