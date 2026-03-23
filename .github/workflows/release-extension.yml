@@ -1,6 +1,4 @@
-# Build extension and attach zip to release with a fixed name so
-# https://github.com/evefrontier/evevault/releases/latest/download/eve-vault-chrome.zip
-# always points to the latest build (e.g. for GitBook or docs).
+# Build extension → eve-vault-chrome.zip on release or manual run. Docs: docs/RELEASE_EXTENSION.md
 name: Release extension
 
 on:

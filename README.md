@@ -24,7 +24,10 @@ For detailed technical information, see the [Architecture Documentation](https:/
 **Latest extension (Chrome):**  
 [https://github.com/evefrontier/evevault/releases](https://github.com/evefrontier/evevault/releases)
 
-**Web app:**
+**Latest extension ZIP** (CI, stable filename):  
+[releases/latest/download/eve-vault-chrome.zip](https://github.com/evefrontier/evevault/releases/latest/download/eve-vault-chrome.zip) — see [docs/RELEASE_EXTENSION.md](./docs/RELEASE_EXTENSION.md).
+
+**Web app:**  
 [https://evevault.evefrontier.com/](https://evevault.evefrontier.com/)
 
 ## Requirements
@@ -172,6 +175,7 @@ For detailed structure and architecture, see [Monorepo Documentation](./docs/MON
 
 ## Documentation
 
+- **[Release extension (CI)](./docs/RELEASE_EXTENSION.md)** - GitHub Actions build ZIP
 - **[Monorepo Guide](./docs/MONOREPO_README.md)** - Structure, getting started, commands
 - **[Architecture](https://github.com/evefrontier/architecture-decision-log/blob/main/adr/0008-zklogin-implementation-auth-flow.md)** - ZKLogin and auth flow
 - **[Bun + Turborepo Setup](./docs/BUN_TURBO_SETUP.md)** - Tooling deep-dive

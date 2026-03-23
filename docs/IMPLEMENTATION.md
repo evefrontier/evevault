@@ -346,6 +346,7 @@ Builds Sui transactions with proper sender address.
 
 ## Related Documentation
 
+- [Release extension (CI)](./RELEASE_EXTENSION.md)
 - [Development Guide](./DEVELOPMENT.md) - Development workflow and debugging
 - [Troubleshooting](./TROUBLESHOOTING.md) - Common issues and solutions
 - [Monorepo README](./MONOREPO_README.md) - Project structure
