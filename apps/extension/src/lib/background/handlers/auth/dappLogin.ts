@@ -107,9 +107,19 @@ export async function handleDappLogin(
         log.warn("Failed to open vault popup window");
         if (hasDeviceData) {
           clearPendingAuth();
+          if (typeof tabId === "number") {
+            chrome.tabs.sendMessage(tabId, {
+              id,
+              type: "auth_error",
+              error: {
+                message: "Failed to open vault window. Please try again.",
+              },
+            });
+          }
+          return;
         }
       } else if (hasDeviceData) {
-        setPendingAuthWindowId(windowId);
+        setPendingAuthWindowId(id, windowId);
       }
 
       if (hasDeviceData) {

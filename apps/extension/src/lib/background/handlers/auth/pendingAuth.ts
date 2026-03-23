@@ -105,10 +105,35 @@ export function setPendingAuthAfterUnlock(
 /**
  * Updates the popup window id for the current pending auth entry.
  * Used when pending state is created before opening the popup to avoid races.
+ * The `id` must match the current pending entry to guard against concurrent flows.
  */
-export function setPendingAuthWindowId(windowId: number): void {
-  if (!pendingAuthAfterUnlock) return;
-  pendingAuthAfterUnlock.windowId = windowId;
+export function setPendingAuthWindowId(id: string, windowId: number): void {
+  const pending = pendingAuthAfterUnlock;
+  if (!pending) return;
+
+  // Guard against races: only update if the pending entry still matches the caller's id.
+  if (pending.id !== id) {
+    log.warn(
+      "Ignoring windowId update for stale/mismatched pending auth entry",
+      {
+        expectedId: id,
+        pendingId: pending.id,
+      },
+    );
+    return;
+  }
+
+  // If a different windowId is already set, treat this as a race and ignore.
+  if (pending.windowId !== undefined && pending.windowId !== windowId) {
+    log.warn("Ignoring conflicting windowId update for pending auth entry", {
+      pendingId: pending.id,
+      existingWindowId: pending.windowId,
+      newWindowId: windowId,
+    });
+    return;
+  }
+
+  pending.windowId = windowId;
 }
 
 /** Returns the current pending auth without clearing (e.g. for window-close check). */
