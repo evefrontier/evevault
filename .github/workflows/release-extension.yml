@@ -10,6 +10,7 @@ on:
 
 jobs:
   release-extension:
+    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     environment: build
     permissions:
