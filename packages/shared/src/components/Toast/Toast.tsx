@@ -1,42 +1,110 @@
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ToastProps } from "../../types";
+import Icon from "../Icon";
+import "./Toast.css";
+
+const EXIT_DELAY_MS = 300;
 
 export const Toast: React.FC<ToastProps> = ({
+  title,
   message,
   isVisible,
   onClose,
   duration = 3000,
+  variant = "default",
 }) => {
   const [isAnimating, setIsAnimating] = useState(false);
+  const autoDismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const scheduleExit = useCallback(() => {
+    if (exitTimerRef.current != null) {
+      clearTimeout(exitTimerRef.current);
+      exitTimerRef.current = null;
+    }
+    exitTimerRef.current = setTimeout(() => {
+      exitTimerRef.current = null;
+      onClose();
+    }, EXIT_DELAY_MS);
+  }, [onClose]);
+
+  const handleClose = () => {
+    if (autoDismissTimerRef.current != null) {
+      clearTimeout(autoDismissTimerRef.current);
+      autoDismissTimerRef.current = null;
+    }
+    if (exitTimerRef.current != null) {
+      clearTimeout(exitTimerRef.current);
+      exitTimerRef.current = null;
+    }
+    setIsAnimating(false);
+    scheduleExit();
+  };
 
   useEffect(() => {
     if (isVisible) {
       setIsAnimating(true);
-      const timer = setTimeout(() => {
+      autoDismissTimerRef.current = setTimeout(() => {
+        autoDismissTimerRef.current = null;
         setIsAnimating(false);
-        setTimeout(onClose, 300);
+        scheduleExit();
       }, duration);
 
-      return () => clearTimeout(timer);
+      return () => {
+        if (autoDismissTimerRef.current != null) {
+          clearTimeout(autoDismissTimerRef.current);
+          autoDismissTimerRef.current = null;
+        }
+        if (exitTimerRef.current != null) {
+          clearTimeout(exitTimerRef.current);
+          exitTimerRef.current = null;
+        }
+      };
     }
-  }, [isVisible, duration, onClose]);
+  }, [isVisible, duration, scheduleExit]);
 
   if (!isVisible && !isAnimating) return null;
 
-  const visibilityClass = isAnimating
-    ? "opacity-100 translate-y-0"
-    : "opacity-0 -translate-y-5";
+  const hostVisibility = isAnimating
+    ? "toast-host--visible"
+    : "toast-host--hidden";
+  const isError = variant === "error";
+  const shellMod = isError ? "toast-shell--error" : "toast-shell--default";
+  const showMessage = Boolean(message?.trim());
 
   return (
     <div
-      className={`fixed top-6 left-1/2 -translate-x-1/2 z-[9999] flex flex-col items-start p-0 transition-all duration-300 ease-in-out ${visibilityClass}`}
+      className={`toast-host ${hostVisibility}`}
+      data-name="Toast"
+      role={isError ? "alert" : "status"}
+      aria-live={isError ? "assertive" : "polite"}
     >
-      <div className="flex flex-col items-start p-1 border border-[rgba(255,255,214,0.5)]">
-        <div className="flex items-center justify-center px-4 py-2 gap-4 bg-[#ffffd6] border border-[rgba(255,255,214,0.3)] max-w-[calc(100vw-32px)]">
-          <span className="font-['Bai_Jamjuree'] font-semibold text-base leading-[140%] text-[#130904] break-words">
-            {message}
-          </span>
+      <div className={`toast-shell ${shellMod}`}>
+        <div className="toast-shell__accent" data-name="Line" aria-hidden />
+        <div className="toast-shell__panel">
+          <div className="toast-shell__body">
+            <p className="toast-shell__title">{title}</p>
+            {showMessage ? (
+              <p className="toast-shell__message">{message}</p>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            onClick={handleClose}
+            className="toast-shell__close"
+            aria-label="Close"
+          >
+            <Icon
+              name="Close"
+              width={16}
+              height={16}
+              color="neutral"
+              aria-hidden
+            />
+          </button>
         </div>
       </div>
     </div>

@@ -886,7 +886,7 @@ export function useAsyncOperation() {
       const message = err instanceof Error ? err.message : "Unknown error";
       log.error("Operation failed", err);
       setError(message);
-      showToast(message);
+      showToast("Something went wrong", message);
     }
   };
 

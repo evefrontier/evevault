@@ -59,7 +59,7 @@ export default function LockScreen({
         error instanceof Error && error.message
           ? error.message
           : "Something went wrong while resetting the vault. Please try again.";
-      showToast(message);
+      showToast("Couldn't reset vault", message);
     } finally {
       setIsResetting(false);
     }
