@@ -89,7 +89,6 @@ async function handleApprovePopup(
         }
 
         chrome.storage.local.remove(["pendingAction", "transactionResult"]);
-
         chrome.storage.onChanged.removeListener(storageListener);
       } else if (result?.status === "error") {
         chrome.storage.onChanged.removeListener(storageListener);
@@ -117,13 +116,26 @@ async function handleApprovePopup(
 
     chrome.storage.onChanged.addListener(storageListener);
 
-    // Clean up after timeout
-    setTimeout(
+    // Clean up after timeout (10 minutes)
+    const timeoutId = setTimeout(
       () => {
         chrome.storage.onChanged.removeListener(storageListener);
+        chrome.storage.local.remove(["pendingAction", "transactionResult"]);
+        log.warn("Transaction approval timed out", { action, senderTabId });
       },
       10 * 60 * 1000,
     );
+
+    // Store timeout ID so it can be cleared if transaction completes
+    const originalListener = storageListener;
+    const wrappedListener = (changes: {
+      [key: string]: chrome.storage.StorageChange;
+    }) => {
+      clearTimeout(timeoutId);
+      originalListener(changes);
+    };
+    chrome.storage.onChanged.removeListener(storageListener);
+    chrome.storage.onChanged.addListener(wrappedListener);
 
     return true; // Keep message channel open for async response
   } catch (error) {

@@ -318,11 +318,15 @@ export interface NavigationBarProps {
   activePath?: string;
 }
 
+export type ToastVariant = "default" | "error";
+
 export interface ToastProps {
-  message: string;
+  title: string;
+  message?: string;
   isVisible: boolean;
   onClose: () => void;
   duration?: number;
+  variant?: ToastVariant;
 }
 
 export interface TokenRowProps {

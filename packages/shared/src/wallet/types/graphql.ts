@@ -58,6 +58,16 @@ export interface TransactionPage {
 }
 
 /**
+ * GraphQL response for LatestCheckpoint query (checkpoint with no args = latest).
+ * sequenceNumber may be number or string (JSON serialization of UInt53).
+ */
+export interface LatestCheckpointResponse {
+  checkpoint: {
+    sequenceNumber: number | string;
+  } | null;
+}
+
+/**
  * GraphQL response for the balance + coin metadata query (address.balance + coinMetadata)
  */
 export interface BalanceAndMetadataResponse {

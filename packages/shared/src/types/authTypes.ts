@@ -11,3 +11,10 @@ export interface JwtResponse extends Partial<User> {
   token_type: string;
   userId?: string;
 }
+
+export interface AuthSuccessToken {
+  id_token?: string;
+  access_token?: string;
+  email?: string;
+  userId?: string;
+}

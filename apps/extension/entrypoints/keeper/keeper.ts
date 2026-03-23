@@ -32,6 +32,26 @@ let zkProofs: Record<SuiChain, ZkProofResponse | null> = {
 };
 
 /**
+ * Checks if the vault unlock has expired and locks if necessary.
+ * Returns true if the vault is locked (either was already locked or just locked due to expiry).
+ */
+function checkAndEnforceExpiry(): boolean {
+  if (!ephemeralKey) {
+    return true; // Already locked
+  }
+
+  if (_vaultUnlockExpiry && Date.now() > _vaultUnlockExpiry) {
+    // Expiry reached - lock the vault
+    ephemeralKey = null;
+    _vaultUnlocked = false;
+    _vaultUnlockExpiry = null;
+    return true; // Now locked
+  }
+
+  return false; // Still unlocked
+}
+
+/**
  * Message handler for keeper operations
  */
 chrome.runtime.onMessage.addListener(
@@ -95,11 +115,6 @@ chrome.runtime.onMessage.addListener(
               hashedSecretKey as HashedData,
               pin as string,
             );
-            console.log(
-              "[Keeper] Decryption successful - secretKey type:",
-              typeof secretKey,
-            );
-            console.log("[Keeper] secretKey length:", secretKey?.length);
           } catch (decryptError) {
             console.error("[Keeper] Decryption failed:", decryptError);
             sendResponse({
@@ -111,20 +126,12 @@ chrome.runtime.onMessage.addListener(
 
           // Step 2: Reconstruct keypair
           try {
-            console.log(
-              "[Keeper] Attempting to create keypair from secret key",
-            );
             ephemeralKey = Ed25519Keypair.fromSecretKey(secretKey);
-            console.log("[Keeper] Keypair created successfully");
             _vaultUnlocked = true;
             _vaultUnlockExpiry = Date.now() + 10 * 60 * 1000; // 10 minutes default
             sendResponse({ ok: true });
           } catch (keypairError) {
             console.error("[Keeper] Keypair creation failed:", keypairError);
-            console.error(
-              "[Keeper] Secret key value (first 50 chars):",
-              secretKey?.substring(0, 50),
-            );
             sendResponse({
               ok: false,
               error: `[Keeper] Failed to create keypair: ${keypairError instanceof Error ? keypairError.message : "Unknown error"}`,
@@ -144,17 +151,8 @@ chrome.runtime.onMessage.addListener(
     }
 
     if (message.type === KeeperMessageTypes.GET_PUBLIC_KEY) {
-      // Return the ephemeral key if available
-      if (!ephemeralKey) {
-        sendResponse({ error: "LOCKED" });
-        return false;
-      }
-
-      // Check if unlock has expired - fix variable name
-      if (_vaultUnlockExpiry && Date.now() > _vaultUnlockExpiry) {
-        ephemeralKey = null;
-        _vaultUnlocked = false;
-        _vaultUnlockExpiry = null;
+      // Check if vault is locked or expired
+      if (checkAndEnforceExpiry()) {
         sendResponse({ error: "LOCKED" });
         return false;
       }
@@ -168,20 +166,11 @@ chrome.runtime.onMessage.addListener(
     }
 
     if (message.type === KeeperMessageTypes.EPH_SIGN) {
-      // Sign bytes with the ephemeral key (async operation)
-      if (!ephemeralKey) {
+      // Check if vault is locked or expired
+      if (checkAndEnforceExpiry()) {
         sendResponse({ error: "[KEEPER_EPH_SIGN] LOCKED" });
         return false;
       }
-
-      // Check if unlock has expired
-      // if (_vaultUnlockExpiry && Date.now() > _vaultUnlockExpiry) {
-      //   ephemeralKey = null;
-      //   _vaultUnlocked = false;
-      //   _vaultUnlockExpiry = null;
-      //   sendResponse({ error: "[KEEPER_EPH_SIGN] LOCKED" });
-      //   return false;
-      // }
 
       // Handle async signing
       (async () => {

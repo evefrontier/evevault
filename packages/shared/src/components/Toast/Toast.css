@@ -1,0 +1,123 @@
+/* Shared shell: default + error toasts (Web Brand DS) */
+
+.toast-host {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  z-index: 9999;
+  display: flex;
+  width: 100%;
+  max-width: min(600px, calc(100vw - 32px));
+  translate: -50% 0;
+  transition:
+    opacity 300ms ease-in-out,
+    translate 300ms ease-in-out;
+}
+
+.toast-host--visible {
+  opacity: 1;
+  translate: -50% 0;
+}
+
+.toast-host--hidden {
+  opacity: 0;
+  translate: -50% -20px;
+}
+
+.toast-shell {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  background: var(--toast-backdrop);
+}
+
+.toast-shell__accent {
+  flex-shrink: 0;
+  width: 2px;
+  align-self: stretch;
+}
+
+.toast-shell--default .toast-shell__accent {
+  background: var(--martian-red);
+}
+
+.toast-shell--error .toast-shell__accent {
+  background: var(--toast-error-accent);
+}
+
+.toast-shell__panel {
+  display: flex;
+  flex: 1;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px 24px;
+  border: 1px solid var(--neutral-50);
+  border-left: none;
+  background: var(--matter-01);
+}
+
+.toast-shell__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.toast-shell__title {
+  margin: 0;
+  font-family: var(--font-headline);
+  font-size: 16px;
+  font-weight: 400;
+  font-style: normal;
+  line-height: 1.1;
+  text-transform: uppercase;
+  color: var(--neutral-90);
+  white-space: nowrap;
+}
+
+.toast-shell--error .toast-shell__title {
+  color: var(--toast-error-accent);
+}
+
+.toast-shell__message {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 300;
+  font-style: normal;
+  line-height: 1.5;
+  letter-spacing: -0.02em;
+  color: var(--neutral-80);
+  overflow-wrap: break-word;
+}
+
+.toast-shell__close {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 2px;
+  border: none;
+  border-radius: 2px;
+  background: transparent;
+  cursor: pointer;
+  line-height: 0;
+  opacity: 0.9;
+  color: var(--neutral-90);
+}
+
+.toast-shell__close:hover {
+  opacity: 1;
+}
+
+.toast-shell__close:focus {
+  outline: none;
+}
+
+.toast-shell__close:focus-visible {
+  outline: 2px solid var(--neutral-50);
+  outline-offset: 2px;
+}
