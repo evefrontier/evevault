@@ -1,9 +1,27 @@
 import type { TenantConfig, TenantId } from "../types";
-import { TENANT_KEYS } from ".";
+import { TENANT_KEYS } from "./constants";
+import { isWeb } from "./environment";
 
 export const DEFAULT_TENANT_ID = "stillness" as const;
 
 const KNOWN_TENANT_IDS: TenantId[] = Object.keys(TENANT_KEYS) as TenantId[];
+
+function normalizeOrigin(url: string): string {
+  return url.replace(/\/$/, "");
+}
+
+function isWebProduction(): boolean {
+  if (!isWeb()) return false;
+  const nodeEnv =
+    typeof globalThis !== "undefined" &&
+    (globalThis as { process?: { env?: { NODE_ENV?: string } } }).process?.env
+      ?.NODE_ENV;
+  const importMetaMode =
+    typeof import.meta !== "undefined" &&
+    (import.meta as { env?: { MODE?: string } }).env?.MODE;
+  const mode = nodeEnv ?? importMetaMode;
+  return mode === "production";
+}
 
 function getDefaultConfig(): TenantConfig {
   return TENANT_KEYS[DEFAULT_TENANT_ID];
@@ -34,6 +52,9 @@ export function getDefaultTenantId(): TenantId {
  * Returns tenant ids that have config: always the default tenant, plus others that have
  * client secret set. When isDev is false (production), tenants marked isDev: true are
  * excluded; when isDev is true, all tenants with client secret are included.
+ *
+ * When deployed to web production, this will also check to ensure that the URL matches the server URL for the tenant.
+ * If the URL does not match the server URL for the tenant, the tenant is not included.
  */
 export function getAvailableTenantIds(devMode = false): TenantId[] {
   const ids: TenantId[] = [DEFAULT_TENANT_ID];
@@ -44,6 +65,13 @@ export function getAvailableTenantIds(devMode = false): TenantId[] {
     if (!clientSecret?.trim()) continue;
     if (!devMode && TENANT_KEYS[id].isDev) continue;
     ids.push(id);
+  }
+
+  if (isWebProduction() && typeof window !== "undefined") {
+    const origin = normalizeOrigin(window.location.origin);
+    return ids.filter(
+      (id) => normalizeOrigin(TENANT_KEYS[id].webOrigin) === origin,
+    );
   }
 
   return ids;

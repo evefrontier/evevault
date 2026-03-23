@@ -13,7 +13,7 @@ export interface StorageAdapter {
   removeItem: (key: string) => Promise<void>;
 }
 
-export type HashedData = { iv: string; data: string };
+export type HashedData = { iv: string; data: string; salt: string };
 
 export type StoredSecretKey = HashedData | null;
 

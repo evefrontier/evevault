@@ -12,10 +12,12 @@ import type { StoredSecretKey } from "./stores";
 // and managed by WebCryptoSigner (non-extractable)
 export const WEB_CRYPTO_PLACEHOLDER_IV = "web-crypto-signer";
 export const WEB_CRYPTO_PLACEHOLDER_DATA = "non-extractable-key";
+export const WEB_CRYPTO_PLACEHOLDER_SALT = "web-crypto-salt";
 
 export const createWebCryptoPlaceholder = (): StoredSecretKey => ({
   iv: WEB_CRYPTO_PLACEHOLDER_IV,
   data: WEB_CRYPTO_PLACEHOLDER_DATA,
+  salt: WEB_CRYPTO_PLACEHOLDER_SALT,
 });
 
 export type PartialZkLoginSignature = Omit<

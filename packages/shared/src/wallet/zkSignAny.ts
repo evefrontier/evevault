@@ -107,10 +107,6 @@ export const zkSignAny = async (
 
   log.info("Combining proof and signature to create zkLogin signature");
 
-  // Important: The zklogin signature cannot be validated with the TS SDK
-  // It can only be validated by calling the Sui GraphQL API
-  // Expect validations to fail with the TS SDK from the dapp
-
   const zkSignature = getZkLoginSignature({
     inputs: {
       ...partialZkLoginSignature,

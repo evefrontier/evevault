@@ -39,7 +39,11 @@ export function checkPendingAuthAfterUnlock(): void {
     });
   } else if (pending.tabId !== undefined) {
     handleDappLogin(
-      { action: "dapp_login", id: pending.id } as MessageWithId,
+      {
+        action: "dapp_login",
+        id: pending.id,
+        additionalIds: pending.additionalIds,
+      } as MessageWithId,
       { tab: { id: pending.tabId } } as chrome.runtime.MessageSender,
       () => {},
       pending.tabId,

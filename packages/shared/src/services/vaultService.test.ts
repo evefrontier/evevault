@@ -37,7 +37,7 @@ vi.mock("./keeperService", () => ({
     ),
     createEphemeralKeyPair: vi.fn(() =>
       Promise.resolve({
-        hashedSecretKey: { iv: "test", data: "test" },
+        hashedSecretKey: { iv: "test", data: "test", salt: "test" },
         publicKey: { toRawBytes: () => new Uint8Array(32) },
       }),
     ),
@@ -179,7 +179,7 @@ describe("ephKeyService routing", () => {
     });
 
     it("routes unlockVault to keeperService", async () => {
-      const hashedKey = { iv: "test", data: "encrypted" };
+      const hashedKey = { iv: "test", data: "encrypted", salt: "testsalt" };
       await ephKeyService.unlockVault(hashedKey, "123456");
 
       expect(keeperEphKeyService.unlockVault).toHaveBeenCalledWith(

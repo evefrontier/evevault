@@ -11,6 +11,7 @@ export interface TenantConfig {
   clientId: string;
   clientSecret: string;
   serverUrl: string;
+  webOrigin: string;
   isDev?: boolean;
 }
 
