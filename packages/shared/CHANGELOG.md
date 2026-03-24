@@ -1,5 +1,11 @@
 # @evevault/shared
 
+## 0.0.7
+
+### Patch Changes
+
+- double pin popup fixes, handling of bytestring txns, use dual-jwt auth flow
+
 ## 0.0.6
 
 ### Patch Changes
