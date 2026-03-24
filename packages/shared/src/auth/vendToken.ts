@@ -5,18 +5,13 @@ export const vendJwt = async (
   token: JwtResponse["id_token"],
   deviceParams: {
     nonce: string;
-    jwtRandomness: string;
-    maxEpoch: string;
   },
 ): Promise<JwtResponse["id_token"]> => {
-  const { apiBaseUrl, tenant, decoded: existingClaims } = getApiContext(token);
-  const vendUrl = `${apiBaseUrl}/api/jwt/vend`;
+  const { apiBaseUrl, tenant } = getApiContext(token);
+  const vendUrl = `${apiBaseUrl}/auth/zklogin/vend-jwt`;
 
   const requestBody: Record<string, unknown> = {
-    claims: {
-      ...existingClaims,
-      nonce: deviceParams.nonce,
-    },
+    nonce: deviceParams.nonce,
   };
 
   const response = await fetch(vendUrl, {
