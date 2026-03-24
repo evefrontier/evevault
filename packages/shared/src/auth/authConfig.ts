@@ -119,10 +119,17 @@ function addUserManagerEventHandlers(
     void Promise.all([
       import("../stores/networkStore"),
       import("./stores/authStore"),
-    ]).then(([networkStore, authStore]) => {
-      const chain = networkStore.useNetworkStore.getState().chain;
-      return authStore.useAuthStore.getState().refreshJwt(chain);
-    });
+    ])
+      .then(([networkStore, authStore]) => {
+        const chain = networkStore.useNetworkStore.getState().chain;
+        return authStore.useAuthStore.getState().refreshJwt(chain);
+      })
+      .catch((error) => {
+        log.error("OIDC access token expiring handler failed", {
+          tenantId,
+          error,
+        });
+      });
   });
 
   userManager.events.addAccessTokenExpired(() => {

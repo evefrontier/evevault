@@ -376,65 +376,73 @@ export const useAuthStore = create<AuthState>()(
         },
 
         refreshJwt: async (network: SuiChain) => {
-          const now = Math.floor(Date.now() / 1000);
-          const existingJwt = await getJwtForNetwork(network);
-          const expiresAt = existingJwt ? resolveExpiresAt(existingJwt) : 0;
-          const isValid = !!(existingJwt?.id_token && now < expiresAt);
+          try {
+            const now = Math.floor(Date.now() / 1000);
+            const existingJwt = await getJwtForNetwork(network);
+            const expiresAt = existingJwt ? resolveExpiresAt(existingJwt) : 0;
+            const isValid = !!(existingJwt?.id_token && now < expiresAt);
 
-          if (isValid && existingJwt?.id_token) {
-            log.debug("Primary OAuth JWT still valid, no refresh needed", {
-              network,
-            });
-            return;
-          }
+            if (isValid && existingJwt?.id_token) {
+              log.debug("Primary OAuth JWT still valid, no refresh needed", {
+                network,
+              });
+              return;
+            }
 
-          const tenant = getCurrentTenantId();
-          const config = getTenantConfig(tenant);
-          const { serverUrl, clientId, clientSecret } = config;
-          const refreshToken = existingJwt?.refresh_token;
+            const tenant = getCurrentTenantId();
+            const config = getTenantConfig(tenant);
+            const { serverUrl, clientId, clientSecret } = config;
+            const refreshToken = existingJwt?.refresh_token;
 
-          if (!refreshToken?.trim()) {
-            log.error("Token refresh failed: no refresh token");
-            await get().logout();
-            return;
-          }
+            if (!refreshToken?.trim()) {
+              log.error("Token refresh failed: no refresh token");
+              await get().logout();
+              return;
+            }
 
-          const response = await fetch(
-            `${serverUrl.replace(/\/$/, "")}/oauth2/token`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/x-www-form-urlencoded",
-                Accept: "application/json",
+            const response = await fetch(
+              `${serverUrl.replace(/\/$/, "")}/oauth2/token`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/x-www-form-urlencoded",
+                  Accept: "application/json",
+                },
+                body: new URLSearchParams({
+                  grant_type: "refresh_token",
+                  refresh_token: refreshToken,
+                  client_id: clientId,
+                  client_secret: clientSecret,
+                }),
               },
-              body: new URLSearchParams({
-                grant_type: "refresh_token",
-                refresh_token: refreshToken,
-                client_id: clientId,
-                client_secret: clientSecret,
-              }),
-            },
-          );
+            );
 
-          if (!response.ok) {
-            log.error("Token refresh failed: OAuth2 error", {
-              status: response.status,
+            if (!response.ok) {
+              log.error("Token refresh failed: OAuth2 error", {
+                status: response.status,
+                network,
+              });
+              await get().logout();
+              return;
+            }
+
+            const data = (await response.json()) as JwtResponse;
+            if (!data?.id_token) {
+              log.error("Token refresh failed: no id_token in response");
+              await get().logout();
+              return;
+            }
+
+            await storeJwt(data, network);
+            await clearZkLoginJwtForNetwork(network);
+            log.debug("Primary OAuth JWT refreshed and stored", { network });
+          } catch (error) {
+            log.error("Token refresh failed: unexpected error", {
               network,
+              error,
             });
             await get().logout();
-            return;
           }
-
-          const data = (await response.json()) as JwtResponse;
-          if (!data?.id_token) {
-            log.error("Token refresh failed: no id_token in response");
-            await get().logout();
-            return;
-          }
-
-          await storeJwt(data, network);
-          await clearZkLoginJwtForNetwork(network);
-          log.debug("Primary OAuth JWT refreshed and stored", { network });
         },
 
         logout: async () => {

@@ -32,5 +32,9 @@ export const vendJwt = async (
 
   const result = await response.json();
 
+  if (!result.token || typeof result.token !== "string") {
+    throw new Error("JWT vend failed: no token in response");
+  }
+
   return result.token as JwtResponse["id_token"];
 };

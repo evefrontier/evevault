@@ -55,10 +55,15 @@ export function createProofActions(set: SetDeviceState, get: GetDeviceState) {
         const network = chain.replace("sui:", "") as string;
 
         let nonce = get().getNonce(chain);
-        if (nonce == null || nonce === "") {
-          log.info("No device nonce; initializing chain before ZK proof", {
-            chain,
-          });
+        const maxEpochTimestampMs = get().getMaxEpochTimestampMs(chain);
+        const isEpochExpired =
+          maxEpochTimestampMs == null || Date.now() >= maxEpochTimestampMs;
+
+        if (nonce == null || nonce === "" || isEpochExpired) {
+          log.info(
+            "Device nonce missing or epoch expired; initializing chain before ZK proof",
+            { chain },
+          );
           await get().initializeForChain(chain);
           nonce = get().getNonce(chain);
           if (nonce == null || nonce === "") {
