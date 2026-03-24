@@ -6,10 +6,14 @@ import {
 } from "@evevault/shared/components";
 import Json from "@evevault/shared/components/Json";
 import { createSuiClient } from "@evevault/shared/sui";
-import type { PendingTransaction } from "@evevault/shared/types";
-import { buildTx, createLogger } from "@evevault/shared/utils";
+import type { ParsedTransactionWithDisplay } from "@evevault/shared/types";
+import {
+  buildTx,
+  createLogger,
+  parseTransactionBytes,
+} from "@evevault/shared/utils";
 import { zkSignAny } from "@evevault/shared/wallet";
-import { Transaction, type TransactionData } from "@mysten/sui/transactions";
+import { Transaction } from "@mysten/sui/transactions";
 import { useEffect, useState } from "react";
 import { useSignPopupAuth } from "../hooks";
 import { SignPopupAuthGate } from "./SignPopupAuthGate";
@@ -18,7 +22,7 @@ const log = createLogger();
 
 function SignTransaction() {
   const [pendingTransaction, setPendingTransaction] =
-    useState<PendingTransaction | null>(null);
+    useState<ParsedTransactionWithDisplay | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,7 +30,7 @@ function SignTransaction() {
 
   useEffect(() => {
     // Retrieve the pending transaction from storage
-    chrome.storage.local.get("pendingAction").then((data) => {
+    chrome.storage.local.get("pendingAction").then(async (data) => {
       const pending = data.pendingAction;
       if (pending) {
         // When pending.transaction is present,
@@ -36,7 +40,16 @@ function SignTransaction() {
           return;
         }
 
-        setPendingTransaction(pending as PendingTransaction);
+        const parsedTx = await parseTransactionBytes(pending.transaction);
+
+        setPendingTransaction({
+          ...pending,
+          transaction:
+            parsedTx.transactionForSigning != null
+              ? parsedTx.transactionForSigning
+              : pending.transaction,
+          displayValue: parsedTx.displayValue,
+        });
       } else {
         setError("No pending transaction found");
       }
@@ -164,11 +177,7 @@ function SignTransaction() {
             <div className="flex flex-col items-center justify-center gap-4">
               <Heading level={2}>Sign Transaction</Heading>
               <Json
-                value={JSON.stringify(
-                  JSON.parse(
-                    pendingTransaction.transaction as string,
-                  ) as TransactionData,
-                )}
+                value={pendingTransaction.displayValue}
                 className={"max-h-24"}
               />
             </div>

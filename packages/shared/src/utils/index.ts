@@ -9,6 +9,7 @@ export * from "./format";
 export * from "./getters";
 export * from "./keys";
 export * from "./logger";
+export * from "./parseTxBytes";
 export * from "./routes";
 export * from "./storageKeys";
 export * from "./suiscan";

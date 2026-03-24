@@ -12,6 +12,10 @@ export interface PendingTransaction extends VaultMessage {
   account: { address: string };
 }
 
+export interface ParsedTransactionWithDisplay extends PendingTransaction {
+  displayValue: string;
+}
+
 export interface PendingPersonalMessage extends VaultMessage {
   /** Raw bytes of the message as sent by the dapp (Uint8Array serialized through chrome storage) */
   message: Uint8Array | Record<string, number> | number[];
