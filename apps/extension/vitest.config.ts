@@ -13,6 +13,16 @@ export default defineConfig({
     globals: true,
     environment: "jsdom",
     setupFiles: ["../../vitest.setup.ts"],
-    passWithNoTests: true, // TODO(test): remove once extension suites exist
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "json-summary", "json"],
+      reportOnFailure: true,
+      exclude: [
+        "**/node_modules/**",
+        "**/dist/**",
+        "**/.wxt/**",
+        "**/.output/**",
+      ],
+    },
   },
 });

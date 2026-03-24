@@ -86,7 +86,8 @@
     "lint": "biome check src",
     "test": "vitest run --config ./vitest.config.mts",
     "test:ui": "vitest --ui --config ./vitest.config.mts",
-    "test:run": "vitest run --config ./vitest.config.mts"
+    "test:run": "vitest run --config ./vitest.config.mts",
+    "test:coverage": "vitest run --config ./vitest.config.mts --coverage"
   },
   "dependencies": {
     "@mysten/signers": "^0.6.2",

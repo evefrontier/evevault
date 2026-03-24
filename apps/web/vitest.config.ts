@@ -10,7 +10,13 @@ export default mergeConfig(
       globals: true,
       environment: "jsdom",
       setupFiles: ["../../vitest.setup.ts"],
-      passWithNoTests: true, // TODO(test): drop when web has dedicated suites
+      passWithNoTests: true,
+      coverage: {
+        provider: "v8",
+        reporter: ["text", "json-summary", "json"],
+        reportOnFailure: true,
+        exclude: ["**/node_modules/**", "**/dist/**", "**/.output/**"],
+      },
     },
   }),
 );

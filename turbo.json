@@ -33,6 +33,11 @@
       "dependsOn": ["^test:run"],
       "outputs": []
     },
+    "test:coverage": {
+      "dependsOn": ["^test:coverage"],
+      "outputs": [],
+      "cache": false
+    },
     "test:ui": {
       "dependsOn": ["^test:ui"],
       "outputs": [],

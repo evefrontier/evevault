@@ -4,6 +4,7 @@ export const DEVICE_STORAGE_KEY = "evevault:device";
 export const NETWORK_STORAGE_KEY = "evevault:network";
 export const TOKENLIST_STORAGE_KEY = "evevault:tokenlist";
 export const JWT_STORAGE_KEY = "evevault:jwt";
+export const ZKLOGIN_JWT_STORAGE_KEY = "evevault:jwt-zklogin";
 export const DEV_MODE_STORAGE_KEY = "evevault:dev-mode";
 export const TENANT_STORAGE_KEY = "evevault:tenant";
 
@@ -14,6 +15,7 @@ export const EVEVAULT_STORAGE_KEYS = [
   NETWORK_STORAGE_KEY,
   TOKENLIST_STORAGE_KEY,
   JWT_STORAGE_KEY,
+  ZKLOGIN_JWT_STORAGE_KEY,
   DEV_MODE_STORAGE_KEY,
   TENANT_STORAGE_KEY,
 ] as const;
