@@ -82,4 +82,3 @@ describe("decrypt with PBKDF2 (new format with salt)", () => {
     expect(decrypted).toBe("");
   });
 });
-
