@@ -1,6 +1,8 @@
 import type { IntentScope } from "@mysten/sui/cryptography";
 import { genAddressSeed, getZkLoginSignature } from "@mysten/sui/zklogin";
 import { ephKeyService } from "../services/vaultService";
+import { useDeviceStore } from "../stores/deviceStore";
+import { useNetworkStore } from "../stores/networkStore";
 import { VaultMessageTypes } from "../types/messages";
 import type { PartialZkLoginSignature, ZkSignAnyParams } from "../types/wallet";
 import { isWeb } from "../utils/environment";
@@ -18,18 +20,15 @@ export const zkSignAny = async (
   msgBytes: Uint8Array,
   params: ZkSignAnyParams,
 ): Promise<{ zkSignature: string; bytes: string }> => {
-  const { user, ephemeralPublicKey, maxEpoch, getZkProof } = params;
+  const { user, getZkProof } = params;
 
   if (user === null) {
     throw new Error("User not found");
   }
 
+  const ephemeralPublicKey = useDeviceStore.getState().ephemeralPublicKey;
   if (!ephemeralPublicKey) {
     throw new Error("Ephemeral key pair not found");
-  }
-
-  if (maxEpoch === null) {
-    throw new Error("Max epoch is not set");
   }
 
   log.info("Getting ZK proof");
@@ -40,6 +39,12 @@ export const zkSignAny = async (
         ? zkProof.error
         : (zkProof?.error?.message ?? "Failed to get ZK proof");
     throw new Error(errorMsg);
+  }
+
+  const chain = useNetworkStore.getState().chain;
+  const maxEpoch = useDeviceStore.getState().getMaxEpoch(chain);
+  if (maxEpoch == null || maxEpoch === "") {
+    throw new Error("Max epoch is not set");
   }
 
   log.info("Requesting ephemeral signature");

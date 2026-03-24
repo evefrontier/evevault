@@ -93,14 +93,6 @@ function App() {
 
   const handleTokenRefreshTest = useCallback(async () => {
     if (!user) return;
-    if (!nonce) {
-      const message =
-        "Cannot refresh token because the device nonce is not available. Please unlock your wallet or try again.";
-      log.error(message);
-      // Show explicit feedback to the user instead of proceeding with an invalid nonce
-      window.alert(message);
-      return;
-    }
     await refreshJwt(chain as SuiChain);
   }, [user, nonce]);
 

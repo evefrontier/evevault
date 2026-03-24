@@ -132,8 +132,6 @@ export const WalletScreen = () => {
     const txb = await tx.build({ client: suiClient });
     const { bytes, zkSignature } = await zkSignAny("TransactionData", txb, {
       user,
-      ephemeralPublicKey,
-      maxEpoch,
       getZkProof,
     });
     log.debug("zkSignature ready", { length: zkSignature.length });

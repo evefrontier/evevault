@@ -104,8 +104,6 @@ function SignPersonalMessage() {
         messageBytes,
         {
           user: auth.user,
-          ephemeralPublicKey: auth.ephemeralPublicKey,
-          maxEpoch: auth.maxEpoch,
           getZkProof: auth.getZkProof,
         },
       );
