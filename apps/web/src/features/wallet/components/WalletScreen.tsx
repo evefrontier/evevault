@@ -14,11 +14,7 @@ import {
   TokenListSection,
 } from "@evevault/shared/components";
 import Icon from "@evevault/shared/components/Icon";
-import {
-  useDevice,
-  useEpochExpiration,
-  useTenant,
-} from "@evevault/shared/hooks";
+import { useDevice, useTenant } from "@evevault/shared/hooks";
 import {
   getAvailableTenantIds,
   getCurrentTenantId,
@@ -112,9 +108,6 @@ export const WalletScreen = () => {
 
     initializeStores();
   }, [initializeAuth]);
-
-  // Monitor epoch expiration and auto-logout when maxEpochTimestampMs is reached
-  useEpochExpiration();
 
   const handleDevModeToggle = useCallback(() => {
     setDevMode(!devMode);

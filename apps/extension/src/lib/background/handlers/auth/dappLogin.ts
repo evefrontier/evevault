@@ -211,29 +211,8 @@ export async function handleDappLogin(
     }
   }
 
-  const maxEpochTimestampMs = deviceStore.getMaxEpochTimestampMs(chain);
-
-  if (!maxEpochTimestampMs || Date.now() >= maxEpochTimestampMs) {
-    log.info("Device data expired or missing, regenerating before dapp login", {
-      chain,
-      maxEpochTimestampMs,
-    });
-    await deviceStore.initializeForChain(chain);
-  }
-
-  const { jwtRandomness, nonce, maxEpoch } = await getDeviceData(chain);
-
-  if (!nonce || !jwtRandomness || !maxEpoch) {
-    throw new Error(
-      "Device data not initialized. OAuth params may be missing.",
-    );
-  }
-
   const authUrl = await getAuthUrl({
     tenantId: tenant,
-    nonce,
-    jwtRandomness,
-    maxEpoch,
   });
 
   authUrl.searchParams.set("response_type", "code");

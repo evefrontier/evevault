@@ -18,7 +18,6 @@ import {
 import Icon from "@evevault/shared/components/Icon";
 import {
   useDevice,
-  useEpochExpiration,
   useTenant,
   useTestTransaction,
 } from "@evevault/shared/hooks";
@@ -64,8 +63,6 @@ function App() {
     user: user || null,
     chain: chain || null,
   });
-
-  useEpochExpiration();
 
   // Clear previous network tracking when user successfully logs in
   useEffect(() => {

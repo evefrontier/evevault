@@ -1,11 +1,6 @@
 import { getTenantConfig, type TenantId } from "@evevault/shared";
 
-function getAuthUrl(params: {
-  tenantId: TenantId;
-  nonce: string;
-  jwtRandomness: string;
-  maxEpoch: string;
-}) {
+function getAuthUrl(params: { tenantId: TenantId }) {
   const tenantConfig = getTenantConfig(params.tenantId);
 
   const clientId = tenantConfig.clientId;
@@ -19,7 +14,6 @@ function getAuthUrl(params: {
   url.searchParams.set("client_id", clientId);
   url.searchParams.set("redirect_uri", redirectUri);
   url.searchParams.set("scope", "openid profile email offline_access");
-  url.searchParams.set("nonce", params.nonce);
 
   return url;
 }
