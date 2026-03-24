@@ -5,7 +5,6 @@ import {
   getZkLoginJwtForNetwork,
   storeZkLoginJwtForNetwork,
 } from "../../auth/storageService";
-import { resolveExpiresAt } from "../../auth/utils/authStoreUtils";
 import { vendJwt } from "../../auth/vendToken";
 import type { JwtResponse } from "../../types/authTypes";
 import { createLogger } from "../../utils/logger";
@@ -30,7 +29,7 @@ export async function resolveVendedIdTokenForZkProof(
 
   if (stored?.id_token) {
     try {
-      const expAt = resolveExpiresAt(stored);
+      const expAt = stored.expires_at;
       const isJwtValid = now < expAt;
       const decoded = decodeJwt(stored.id_token);
       const jwtNonce = decoded.nonce as string | undefined;

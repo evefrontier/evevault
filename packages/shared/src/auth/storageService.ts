@@ -15,7 +15,7 @@ const log = createLogger();
 
 type JwtStorageEntry = {
   primary?: JwtResponse;
-  zkLogin?: JwtResponse;
+  zkLogin?: { id_token: string; expires_at: number };
 };
 type JwtCompositeMap = Record<SuiChain, JwtStorageEntry>;
 type JwtStorageMap = Record<SuiChain, JwtResponse>;
@@ -76,31 +76,14 @@ export async function getStoredChain(): Promise<SuiChain> {
   }
 }
 
-/**
- * Get all stored JWTs (for all networks)
- */
-function isJwtResponse(value: unknown): value is JwtResponse {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "id_token" in value &&
-    "access_token" in value &&
-    "token_type" in value &&
-    "expires_in" in value &&
-    typeof (value as JwtResponse).id_token === "string"
-  );
-}
-
 function normalizeJwtEntry(value: unknown): JwtStorageEntry {
-  // Back-compat: old shape stored JwtResponse directly per network.
-  if (isJwtResponse(value)) {
-    return { primary: value };
-  }
   if (typeof value === "object" && value !== null) {
     const candidate = value as { primary?: unknown; zkLogin?: unknown };
     return {
-      primary: isJwtResponse(candidate.primary) ? candidate.primary : undefined,
-      zkLogin: isJwtResponse(candidate.zkLogin) ? candidate.zkLogin : undefined,
+      primary: candidate.primary as JwtResponse | undefined,
+      zkLogin: candidate.zkLogin as
+        | { id_token: string; expires_at: number }
+        | undefined,
     };
   }
   return {};
@@ -176,7 +159,7 @@ export async function storeZkLoginJwtForNetwork(
 
 export async function getZkLoginJwtForNetwork(
   chain?: SuiChain,
-): Promise<JwtResponse | null> {
+): Promise<{ id_token: string; expires_at: number } | null> {
   const network = chain || useNetworkStore.getState().chain;
   const all = await getAllJwtEntries();
   return all?.[network]?.zkLogin ?? null;

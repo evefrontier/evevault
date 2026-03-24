@@ -6,6 +6,7 @@ import { useDeviceStore } from "../deviceStore";
 vi.mock("../../services/vaultService", () => ({
   ephKeyService: {
     lock: vi.fn(),
+    isUnlocked: vi.fn(),
   },
   zkProofService: {},
 }));
@@ -19,7 +20,6 @@ describe("deviceStore.lock()", () => {
       ephemeralPublicKey: null,
       ephemeralPublicKeyBytes: null,
       ephemeralKeyPairSecretKey: null,
-      jwtRandomness: null,
       networkData: {},
       loading: false,
       error: null,
