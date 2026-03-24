@@ -235,12 +235,40 @@ export async function storeJwt(
 }
 
 /**
- * Get the JWT for a specific network
+ * Primary OAuth JWT for a network.
+ * On web, when `chain` is the active network, reads from `useAuthStore`’s OIDC `User`
+ * (UserManager session) first; otherwise uses `evevault:jwt` (extension and other networks).
  */
 export async function getJwtForNetwork(
   chain?: SuiChain,
 ): Promise<JwtResponse | null> {
   const network = chain || useNetworkStore.getState().chain;
+
+  if (isWeb()) {
+    const currentChain = useNetworkStore.getState().chain;
+    if (network === currentChain) {
+      const { useAuthStore } = await import("./stores/authStore");
+      const { userToJwtResponse } = await import("./userToJwtResponse");
+      const jwtFromUser = userToJwtResponse(useAuthStore.getState().user);
+      if (jwtFromUser) {
+        const expiresAt = resolveExpiresAt(jwtFromUser);
+        const now = Math.floor(Date.now() / 1000);
+        const isExpired = now >= expiresAt;
+        log.debug("Retrieved primary JWT from OIDC user (web)", {
+          network,
+          hasJwt: !!jwtFromUser.id_token,
+          isExpired,
+          expiresAt,
+          now,
+        });
+        if (isExpired) {
+          log.info("JWT expired for network", { network, expiresAt, now });
+        }
+        return jwtFromUser;
+      }
+    }
+  }
+
   const allJwts = await getAllJwtEntries();
   const jwt = allJwts?.[network]?.primary ?? null;
 

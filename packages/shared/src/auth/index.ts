@@ -22,4 +22,5 @@ export {
 } from "./storageService";
 export * from "./stores/authStore";
 export * from "./types";
+export { userToJwtResponse } from "./userToJwtResponse";
 export * from "./utils/authStoreUtils";

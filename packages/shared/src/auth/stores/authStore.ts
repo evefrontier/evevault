@@ -433,9 +433,31 @@ export const useAuthStore = create<AuthState>()(
               return;
             }
 
-            await storeJwt(data, network);
+            if (isWeb()) {
+              const prev = get().user;
+              const decoded = decodeJwt(data.id_token) as IdTokenClaims;
+              const newUser = new User({
+                id_token: data.id_token,
+                access_token: data.access_token,
+                token_type: data.token_type ?? "Bearer",
+                scope:
+                  data.scope ??
+                  (typeof prev?.scope === "string" ? prev.scope : undefined) ??
+                  "openid email profile offline_access",
+                refresh_token: data.refresh_token ?? prev?.refresh_token,
+                profile: {
+                  ...(prev?.profile ?? {}),
+                  ...decoded,
+                } as User["profile"],
+                expires_at: resolveExpiresAt(data),
+              });
+              await getUserManagerInstance().storeUser(newUser);
+              set({ user: newUser });
+            } else {
+              await storeJwt(data, network);
+            }
             await clearZkLoginJwtForNetwork(network);
-            log.debug("Primary OAuth JWT refreshed and stored", { network });
+            log.debug("Primary OAuth JWT refreshed", { network });
           } catch (error) {
             log.error("Token refresh failed: unexpected error", {
               network,
