@@ -13,6 +13,11 @@ import { resolveExpiresAt } from "./utils/authStoreUtils";
 
 const log = createLogger();
 
+type JwtStorageEntry = {
+  primary?: JwtResponse;
+  zkLogin?: JwtResponse;
+};
+type JwtCompositeMap = Record<SuiChain, JwtStorageEntry>;
 type JwtStorageMap = Record<SuiChain, JwtResponse>;
 
 /**
@@ -74,23 +79,138 @@ export async function getStoredChain(): Promise<SuiChain> {
 /**
  * Get all stored JWTs (for all networks)
  */
-async function getAllJwts(): Promise<Partial<JwtStorageMap> | null> {
+function isJwtResponse(value: unknown): value is JwtResponse {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "id_token" in value &&
+    "access_token" in value &&
+    "token_type" in value &&
+    "expires_in" in value &&
+    typeof (value as JwtResponse).id_token === "string"
+  );
+}
+
+function normalizeJwtEntry(value: unknown): JwtStorageEntry {
+  // Back-compat: old shape stored JwtResponse directly per network.
+  if (isJwtResponse(value)) {
+    return { primary: value };
+  }
+  if (typeof value === "object" && value !== null) {
+    const candidate = value as { primary?: unknown; zkLogin?: unknown };
+    return {
+      primary: isJwtResponse(candidate.primary) ? candidate.primary : undefined,
+      zkLogin: isJwtResponse(candidate.zkLogin) ? candidate.zkLogin : undefined,
+    };
+  }
+  return {};
+}
+
+async function getAllJwtEntries(): Promise<Partial<JwtCompositeMap> | null> {
   if (isExtension()) {
     const result = await chrome.storage.local.get([JWT_STORAGE_KEY]);
-    return result[JWT_STORAGE_KEY] ?? null;
+    const raw = result[JWT_STORAGE_KEY];
+    if (raw == null || typeof raw !== "object") return null;
+    const entries: Partial<JwtCompositeMap> = {};
+    for (const [network, value] of Object.entries(raw)) {
+      entries[network as SuiChain] = normalizeJwtEntry(value);
+    }
+    return entries;
   }
 
   if (isWeb()) {
     const stored = window.localStorage.getItem(JWT_STORAGE_KEY);
     if (!stored) return null;
     try {
-      return JSON.parse(stored) as Partial<JwtStorageMap>;
+      const raw = JSON.parse(stored) as unknown;
+      if (raw == null || typeof raw !== "object") return null;
+      const entries: Partial<JwtCompositeMap> = {};
+      for (const [network, value] of Object.entries(raw)) {
+        entries[network as SuiChain] = normalizeJwtEntry(value);
+      }
+      return entries;
     } catch {
       return null;
     }
   }
 
   return null;
+}
+
+/**
+ * Store vended zkLogin JWT for a network (separate from primary OAuth JWT).
+ */
+export async function storeZkLoginJwtForNetwork(
+  jwt: { id_token: string; expires_at: number },
+  chain?: SuiChain,
+): Promise<void> {
+  const network = chain || useNetworkStore.getState().chain;
+  const existing = await getAllJwtEntries();
+  const expiresAt = jwt.expires_at;
+
+  log.info("Storing zkLogin JWT for network", {
+    network,
+    hasJwt: !!jwt.id_token,
+    expiresAt,
+    expiresIn: expiresAt - Math.floor(Date.now() / 1000),
+  });
+
+  const current = existing?.[network] ?? { zkLogin: undefined };
+  const updated: Partial<JwtCompositeMap> = {
+    ...(existing || {}),
+    [network]: {
+      ...current,
+      zkLogin: jwt,
+    },
+  };
+
+  if (isExtension()) {
+    await chrome.storage.local.set({ [JWT_STORAGE_KEY]: updated });
+    return;
+  }
+
+  if (isWeb()) {
+    window.localStorage.setItem(JWT_STORAGE_KEY, JSON.stringify(updated));
+  }
+}
+
+export async function getZkLoginJwtForNetwork(
+  chain?: SuiChain,
+): Promise<JwtResponse | null> {
+  const network = chain || useNetworkStore.getState().chain;
+  const all = await getAllJwtEntries();
+  return all?.[network]?.zkLogin ?? null;
+}
+
+export async function clearZkLoginJwtForNetwork(
+  chain: SuiChain,
+): Promise<void> {
+  const all = (await getAllJwtEntries()) ?? {};
+  const entry = all[chain];
+  if (!entry) return;
+  const nextEntry: JwtStorageEntry = {
+    ...entry,
+    zkLogin: undefined,
+  };
+  const hasPrimary = nextEntry.primary != null;
+  if (hasPrimary) {
+    all[chain] = { primary: nextEntry.primary };
+  } else {
+    delete all[chain];
+  }
+
+  if (Object.keys(all).length === 0) {
+    await clearAllJwts();
+    return;
+  }
+
+  if (isExtension()) {
+    await chrome.storage.local.set({ [JWT_STORAGE_KEY]: all });
+    return;
+  }
+  if (isWeb()) {
+    window.localStorage.setItem(JWT_STORAGE_KEY, JSON.stringify(all));
+  }
 }
 
 /**
@@ -101,7 +221,7 @@ export async function storeJwt(
   chain?: SuiChain,
 ): Promise<void> {
   const network = chain || useNetworkStore.getState().chain;
-  const existingJwts = await getAllJwts();
+  const existingJwts = await getAllJwtEntries();
   const expiresAt = resolveExpiresAt(jwt);
 
   log.info("Storing JWT for network", {
@@ -111,9 +231,13 @@ export async function storeJwt(
     expiresIn: expiresAt - Math.floor(Date.now() / 1000),
   });
 
-  const updatedJwts: Partial<JwtStorageMap> = {
+  const current = existingJwts?.[network] ?? {};
+  const updatedJwts: Partial<JwtCompositeMap> = {
     ...(existingJwts || {}),
-    [network]: jwt,
+    [network]: {
+      ...current,
+      primary: jwt,
+    },
   };
 
   if (isExtension()) {
@@ -134,8 +258,8 @@ export async function getJwtForNetwork(
   chain?: SuiChain,
 ): Promise<JwtResponse | null> {
   const network = chain || useNetworkStore.getState().chain;
-  const allJwts = await getAllJwts();
-  const jwt = allJwts?.[network] ?? null;
+  const allJwts = await getAllJwtEntries();
+  const jwt = allJwts?.[network]?.primary ?? null;
 
   if (jwt) {
     const expiresAt = resolveExpiresAt(jwt);
@@ -164,7 +288,15 @@ export async function getJwtForNetwork(
  * Get all stored JWTs (for backwards compatibility and multi-network checks)
  */
 export async function getAllStoredJwts(): Promise<Partial<JwtStorageMap> | null> {
-  return getAllJwts();
+  const all = await getAllJwtEntries();
+  if (!all) return null;
+  const primaryOnly: Partial<JwtStorageMap> = {};
+  for (const [network, entry] of Object.entries(all)) {
+    if (entry?.primary) {
+      primaryOnly[network as SuiChain] = entry.primary;
+    }
+  }
+  return primaryOnly;
 }
 
 /**
@@ -206,23 +338,20 @@ export async function clearAllJwts(): Promise<void> {
  * Clear JWT for a specific network only
  */
 export async function clearJwtForNetwork(chain: SuiChain): Promise<void> {
-  const allJwts = await getAllJwts();
-  if (!allJwts) return;
+  const allJwts = (await getAllJwtEntries()) ?? {};
+  const { [chain]: _removed, ...remaining } = allJwts;
 
-  const { [chain]: _removedJwt, ...remainingJwts } = allJwts;
-
-  if (Object.keys(remainingJwts).length === 0) {
+  if (Object.keys(remaining).length === 0) {
     await clearAllJwts();
     return;
   }
 
   if (isExtension()) {
-    await chrome.storage.local.set({ [JWT_STORAGE_KEY]: remainingJwts });
+    await chrome.storage.local.set({ [JWT_STORAGE_KEY]: remaining });
     return;
   }
 
   if (isWeb()) {
-    window.localStorage.setItem(JWT_STORAGE_KEY, JSON.stringify(remainingJwts));
-    return;
+    window.localStorage.setItem(JWT_STORAGE_KEY, JSON.stringify(remaining));
   }
 }

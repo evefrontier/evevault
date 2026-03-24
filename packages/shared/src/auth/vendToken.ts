@@ -32,5 +32,5 @@ export const vendJwt = async (
 
   const result = await response.json();
 
-  return result.token;
+  return result.token as JwtResponse["id_token"];
 };

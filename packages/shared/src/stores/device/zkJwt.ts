@@ -58,14 +58,16 @@ export async function resolveVendedIdTokenForZkProof(
     nonce: deviceNonce,
   });
   const decodedNew = decodeJwt<IdTokenClaims>(newIdToken);
-  const exp = decodedNew.exp ?? now + 3600;
-  const newJwt: JwtResponse = {
+  const epochExpirySeconds =
+    maxEpochTimestampMs != null ? Math.floor(maxEpochTimestampMs / 1000) : null;
+  const jwtExpirySeconds = decodedNew.exp ?? null;
+  const expiresAt =
+    epochExpirySeconds != null && jwtExpirySeconds != null
+      ? Math.min(epochExpirySeconds, jwtExpirySeconds)
+      : (epochExpirySeconds ?? jwtExpirySeconds ?? now + 3600);
+  const newJwt = {
     id_token: newIdToken,
-    access_token: newIdToken,
-    token_type: "Bearer",
-    expires_in: exp - now,
-    scope: primaryJwt.scope ?? "openid email profile offline_access",
-    refresh_token: primaryJwt.refresh_token,
+    expires_at: expiresAt,
   };
   await storeZkLoginJwtForNetwork(newJwt, chain);
   return newIdToken;
