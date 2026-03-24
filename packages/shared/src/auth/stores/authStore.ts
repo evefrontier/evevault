@@ -454,7 +454,14 @@ export const useAuthStore = create<AuthState>()(
               await getUserManagerInstance().storeUser(newUser);
               set({ user: newUser });
             } else {
-              await storeJwt(data, network);
+              await storeJwt(
+                {
+                  ...data,
+                  refresh_token:
+                    data.refresh_token ?? existingJwt?.refresh_token,
+                },
+                network,
+              );
             }
             await clearZkLoginJwtForNetwork(network);
             log.debug("Primary OAuth JWT refreshed", { network });
