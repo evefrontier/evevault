@@ -10,11 +10,19 @@ import {
   type SuiChain,
 } from "@mysten/wallet-standard";
 import { decodeJwt } from "jose";
+import type { IdTokenClaims } from "oidc-client-ts";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { chromeStorageAdapter, localStorageAdapter } from "../adapters";
 import { useAuthStore } from "../auth";
-import { hasJwtForNetwork } from "../auth/storageService";
+import {
+  getJwtForNetwork,
+  getZkLoginJwtForNetwork,
+  hasJwtForNetwork,
+  storeZkLoginJwtForNetwork,
+} from "../auth/storageService";
+import { resolveExpiresAt } from "../auth/utils/authStoreUtils";
+import { vendJwt } from "../auth/vendToken";
 import { ephKeyService, zkProofService } from "../services/vaultService";
 import { getCurrentEpochFromGraphQL } from "../sui/graphqlEpoch";
 import {
@@ -28,13 +36,77 @@ import {
   type StoredSecretKey,
   type ZkProofResponse,
 } from "../types";
+import type { JwtResponse } from "../types/authTypes";
+import { createWebCryptoPlaceholder } from "../types/wallet";
 import { createLogger, encrypt } from "../utils";
 import { isWeb } from "../utils/environment";
 import { DEVICE_STORAGE_KEY } from "../utils/storageKeys";
-import { createWebCryptoPlaceholder, fetchZkProof } from "../wallet";
+import { fetchZkProof } from "../wallet/zkProof";
 import { useNetworkStore } from "./networkStore";
 
 const log = createLogger();
+
+/**
+ * Returns a vended zkLogin JWT matching current device nonce, reusing stored token when valid
+ * and max epoch has not expired.
+ * Callers must ensure device nonce exists (e.g. {@link DeviceState.initializeForChain} via zkSignAny).
+ */
+async function resolveVendedIdTokenForZkProof(
+  chain: SuiChain,
+  primaryJwt: JwtResponse,
+  deviceNonce: string,
+): Promise<string> {
+  const now = Math.floor(Date.now() / 1000);
+  const stored = await getZkLoginJwtForNetwork(chain);
+  const maxEpochTimestampMs = useDeviceStore
+    .getState()
+    .getMaxEpochTimestampMs(chain);
+  const isEpochValid =
+    maxEpochTimestampMs != null && Date.now() < maxEpochTimestampMs;
+
+  if (stored?.id_token) {
+    try {
+      const expAt = resolveExpiresAt(stored);
+      const isJwtValid = now < expAt;
+      const decoded = decodeJwt(stored.id_token);
+      const jwtNonce = decoded.nonce as string | undefined;
+      const nonceMatches = jwtNonce === deviceNonce;
+
+      if (isJwtValid && nonceMatches && isEpochValid) {
+        return stored.id_token as string;
+      }
+
+      const reasons: string[] = [];
+      if (!isJwtValid) reasons.push("jwt_expired");
+      if (!nonceMatches) reasons.push("nonce_mismatch");
+      if (!isEpochValid) reasons.push("epoch_expired_or_missing");
+      log.info("Re-vending zkLogin JWT due to stale reuse candidate", {
+        chain,
+        reasons,
+        maxEpochTimestampMs,
+      });
+    } catch {
+      // Re-vend below
+      log.info("Re-vending zkLogin JWT due to decode failure", { chain });
+    }
+  }
+
+  const newIdToken = await vendJwt(primaryJwt.id_token as string, {
+    nonce: deviceNonce,
+  });
+  const decodedNew = decodeJwt<IdTokenClaims>(newIdToken);
+  const exp = decodedNew.exp ?? now + 3600;
+  const newJwt: JwtResponse = {
+    id_token: newIdToken,
+    access_token: newIdToken,
+    token_type: "Bearer",
+    expires_in: exp - now,
+    scope: primaryJwt.scope ?? "openid email profile offline_access",
+    refresh_token: primaryJwt.refresh_token,
+  };
+  await storeZkLoginJwtForNetwork(newJwt, chain);
+  return newIdToken;
+}
 
 /** Callback invoked when lock() completes (e.g. extension uses it to broadcast disconnect). */
 let onLockCallback: (() => void) | null = null;
@@ -505,7 +577,6 @@ export const useDeviceStore = create<DeviceState>()(
 
       getZkProof: async () => {
         const currentChain = useNetworkStore.getState().chain;
-        const maxEpoch = get().getMaxEpoch(currentChain);
         const maxEpochExpiry = get().getMaxEpochTimestampMs(currentChain);
 
         // First, check if we have a zkProof in keeper
@@ -547,7 +618,20 @@ export const useDeviceStore = create<DeviceState>()(
           const chain = useNetworkStore.getState().chain;
           const network = chain.replace("sui:", "") as string;
 
-          // Verify that we have a JWT for the current network
+          let nonce = get().getNonce(chain);
+          if (nonce == null || nonce === "") {
+            log.info("No device nonce; initializing chain before ZK proof", {
+              chain,
+            });
+            await get().initializeForChain(chain);
+            nonce = get().getNonce(chain);
+            if (nonce == null || nonce === "") {
+              throw new Error(
+                `Device nonce missing for ${network} after initialization.`,
+              );
+            }
+          }
+
           const hasJwt = await hasJwtForNetwork(chain);
           if (!hasJwt) {
             throw new Error(
@@ -555,34 +639,21 @@ export const useDeviceStore = create<DeviceState>()(
             );
           }
 
-          // Verify that the nonce in the JWT matches the nonce for the current network
-          const decodedJwt = decodeJwt(user.id_token);
-          const jwtNonce = decodedJwt.nonce as string | undefined;
-          const deviceNonce = get().getNonce(chain);
-
-          if (jwtNonce && deviceNonce && jwtNonce !== deviceNonce) {
-            log.error(
-              "JWT nonce doesn't match device nonce for current network",
-              {
-                chain,
-                jwtNonce,
-                deviceNonce,
-              },
-            );
-            // Nonce mismatch means device data was regenerated after OAuth
-            // The nonce is derived from ephemeral key + maxEpoch + jwtRandomness
-            // If these don't match what was used during OAuth, the JWT is invalid
-            // We cannot generate a valid zkProof with mismatched parameters
-            // User must re-login to regenerate device data that matches the new JWT
+          const primaryJwt = await getJwtForNetwork(chain);
+          if (!primaryJwt?.id_token) {
             throw new Error(
-              `JWT nonce mismatch for ${network}. Device data was regenerated after login. Please sign in again to sync device data with your JWT.`,
+              `No primary OAuth JWT for ${network}. Please sign in again.`,
             );
           }
 
-          log.debug("User ID token:", user.id_token);
+          const vendedIdToken = await resolveVendedIdTokenForZkProof(
+            chain,
+            primaryJwt,
+            nonce,
+          );
+
           log.debug("Generating ZK proof for network", { chain, network });
 
-          // Get jwtRandomness for the current network (per-network, not global)
           const networkJwtRandomness = get().getJwtRandomness(chain);
           if (!networkJwtRandomness) {
             throw new Error(
@@ -590,6 +661,7 @@ export const useDeviceStore = create<DeviceState>()(
             );
           }
 
+          const maxEpoch = get().getMaxEpoch(chain);
           if (!maxEpoch) {
             throw new Error("Max epoch not found for current network");
           }
@@ -598,7 +670,7 @@ export const useDeviceStore = create<DeviceState>()(
             jwtRandomness: networkJwtRandomness,
             maxEpoch,
             ephemeralPublicKey,
-            idToken: user.id_token,
+            idToken: vendedIdToken,
             enokiApiKey: import.meta.env.VITE_ENOKI_API_KEY,
             network,
           });

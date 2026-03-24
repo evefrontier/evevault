@@ -10,12 +10,15 @@ export { resetVaultOnDevice } from "./resetVaultOnDevice";
 export {
   clearAllJwts,
   clearJwtForNetwork,
+  clearZkLoginJwtForNetwork,
   getAllStoredJwts,
   getJwtForNetwork,
   getStoredChain,
   getStoredWalletAddress,
+  getZkLoginJwtForNetwork,
   hasJwtForNetwork,
   storeJwt,
+  storeZkLoginJwtForNetwork,
 } from "./storageService";
 export * from "./stores/authStore";
 export * from "./types";
