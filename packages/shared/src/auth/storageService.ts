@@ -9,10 +9,7 @@ import {
   JWT_STORAGE_KEY,
   NETWORK_STORAGE_KEY,
 } from "../utils/storageKeys";
-import {
-  resolveExpiresAt,
-  resolveExpiresAtFromOAuthResponse,
-} from "./utils/authStoreUtils";
+import { resolveExpiresAt } from "./utils/authStoreUtils";
 
 const log = createLogger();
 
@@ -209,26 +206,20 @@ export async function storeJwt(
   const network = chain || useNetworkStore.getState().chain;
   const existingJwts = await getAllJwtEntries();
   const current = existingJwts?.[network] ?? {};
-  const absExpiresAt = resolveExpiresAtFromOAuthResponse(jwt);
-  const primary: OAuthTokenResponse = {
-    ...jwt,
-    expires_at: absExpiresAt,
-  };
-  const expiresAt = absExpiresAt;
 
   log.info("Storing JWT for network", {
     network,
-    hasJwt: !!primary.id_token,
-    hasRefreshToken: !!primary.refresh_token,
-    expiresAt,
-    expiresIn: expiresAt - Math.floor(Date.now() / 1000),
+    hasJwt: !!jwt.id_token,
+    hasRefreshToken: !!jwt.refresh_token,
+    expiresAt: jwt.expires_at,
+    expiresIn: jwt.expires_in,
   });
 
   const updatedJwts: Partial<JwtCompositeMap> = {
     ...(existingJwts || {}),
     [network]: {
       ...current,
-      primary,
+      primary: jwt,
     },
   };
 

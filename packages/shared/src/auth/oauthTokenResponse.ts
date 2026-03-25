@@ -2,7 +2,7 @@ import type { OAuthTokenResponse } from "../types/authTypes";
 
 /**
  * Minimal parser for FusionAuth `/oauth2/token` JSON (snake_case body).
- * Requires non-empty `access_token`, `id_token`, and `refresh_token`, `refresh_token_id`, and `userId`.
+ * Requires non-empty `access_token`, `id_token`, and `refresh_token`, `refresh_token_id`, `expires_at` and `userId`.
  */
 export function parseOAuthTokenResponse(raw: unknown): OAuthTokenResponse {
   if (!raw || typeof raw !== "object") {
@@ -23,6 +23,11 @@ export function parseOAuthTokenResponse(raw: unknown): OAuthTokenResponse {
   const refresh_token = requireNonEmptyString("refresh_token");
   const refresh_token_id = requireNonEmptyString("refresh_token_id");
   const userId = requireNonEmptyString("userId");
+
+  const expires_at =
+    typeof o.expires_at === "number" && Number.isFinite(o.expires_at)
+      ? o.expires_at
+      : Math.floor(Date.now() / 1000);
 
   const expires_in =
     typeof o.expires_in === "number" && Number.isFinite(o.expires_in)
@@ -47,6 +52,7 @@ export function parseOAuthTokenResponse(raw: unknown): OAuthTokenResponse {
     scope,
     expires_in,
     refresh_token_id,
+    expires_at,
     userId,
   };
 
@@ -55,9 +61,6 @@ export function parseOAuthTokenResponse(raw: unknown): OAuthTokenResponse {
   }
   if (typeof o.userId === "string" && o.userId.trim()) {
     out.userId = o.userId.trim();
-  }
-  if (typeof o.expires_at === "number" && Number.isFinite(o.expires_at)) {
-    out.expires_at = o.expires_at;
   }
 
   return out;

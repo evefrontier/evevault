@@ -23,42 +23,6 @@ export const isErrorWithMessage = (
 const nowSeconds = () => Math.floor(Date.now() / 1000);
 
 /**
- * Derive session expiry from a **fresh** OAuth token response (login or refresh).
- * `expires_in` is defined relative to issuance time ≈ now.
- */
-export function resolveExpiresAtFromOAuthResponse(
-  jwt: OAuthTokenResponse,
-): number {
-  if (typeof jwt.expires_at === "number") {
-    return jwt.expires_at;
-  }
-  if (typeof jwt.expires_in === "number") {
-    return nowSeconds() + jwt.expires_in;
-  }
-  if (jwt.access_token) {
-    try {
-      const decoded = decodeJwt(jwt.access_token);
-      if (typeof decoded.exp === "number") {
-        return decoded.exp;
-      }
-    } catch {
-      /* opaque access token */
-    }
-  }
-  if (jwt.id_token) {
-    try {
-      const decoded = decodeJwt(jwt.id_token);
-      if (typeof decoded.exp === "number") {
-        return decoded.exp;
-      }
-    } catch {
-      /* ignore */
-    }
-  }
-  return nowSeconds();
-}
-
-/**
  * Expiry for a **persisted** primary JWT. Prefer absolute `expires_at` (set at store time).
  */
 export const resolveExpiresAt = (jwt: JwtResponse): number => {
@@ -111,11 +75,7 @@ export async function getUserForNetwork(chain: SuiChain): Promise<User | null> {
   if (suiFromClaims) {
     const suiAddress = suiClaim.trim();
     return new User({
-      id_token: storedJwt.id_token,
-      access_token: storedJwt.access_token ?? "",
-      token_type: storedJwt.token_type ?? "Bearer",
-      scope: storedJwt.scope ?? "",
-      refresh_token: storedJwt.refresh_token,
+      ...storedJwt,
       profile: {
         ...decodedJwt,
         sui_address: suiAddress,
@@ -123,10 +83,6 @@ export async function getUserForNetwork(chain: SuiChain): Promise<User | null> {
           ? { salt: decodedJwt.salt.trim() }
           : {}),
       } as User["profile"],
-      expires_at:
-        decodedJwt.exp ??
-        storedJwt.expires_at ??
-        Math.floor(Date.now() / 1000) + (storedJwt.expires_in ?? 3600),
     });
   }
 
