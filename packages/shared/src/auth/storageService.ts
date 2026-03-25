@@ -222,7 +222,6 @@ export async function storeJwt(
     hasRefreshToken: !!primary.refresh_token,
     expiresAt,
     expiresIn: expiresAt - Math.floor(Date.now() / 1000),
-    primary,
   });
 
   const updatedJwts: Partial<JwtCompositeMap> = {

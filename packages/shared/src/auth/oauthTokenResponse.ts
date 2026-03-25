@@ -2,7 +2,7 @@ import type { OAuthTokenResponse } from "../types/authTypes";
 
 /**
  * Minimal parser for FusionAuth `/oauth2/token` JSON (snake_case body).
- * Requires non-empty `access_token`, `id_token`, and `refresh_token`.
+ * Requires non-empty `access_token`, `id_token`, and `refresh_token`, `refresh_token_id`, and `userId`.
  */
 export function parseOAuthTokenResponse(raw: unknown): OAuthTokenResponse {
   if (!raw || typeof raw !== "object") {

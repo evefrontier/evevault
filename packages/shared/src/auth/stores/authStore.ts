@@ -142,17 +142,41 @@ export const useAuthStore = create<AuthState>()(
                     return;
                   }
 
-                  log.info("Extension init: JWT expired, attempting refresh", {
-                    network,
-                    expiresAt,
-                    now,
-                  });
-                  user = await getUserManagerInstance().getUser();
+                  log.info(
+                    "[Extension init] JWT expired, attempting silent renew",
+                    {
+                      network,
+                      expiresAt,
+                      now,
+                    },
+                  );
 
-                  if (!user?.id_token) {
+                  const userManager = getUserManagerInstance();
+                  let refreshedUser: User | null = null;
+                  try {
+                    refreshedUser = await userManager.signinSilent();
+                  } catch (silentErr) {
+                    log.error("[Extension init] OIDC silent renew failed", {
+                      network,
+                      error:
+                        silentErr instanceof Error
+                          ? silentErr.message
+                          : String(silentErr),
+                    });
                     set({ user: null, loading: false });
                     return;
                   }
+
+                  if (!refreshedUser?.id_token) {
+                    log.info(
+                      "[Extension init] silent renew returned no user session",
+                      { network },
+                    );
+                    set({ user: null, loading: false });
+                    return;
+                  }
+
+                  user = refreshedUser;
 
                   const after = userToJwtResponse(user);
                   if (after) {
@@ -160,7 +184,7 @@ export const useAuthStore = create<AuthState>()(
                     const nowAfter = Math.floor(Date.now() / 1000);
                     if (nowAfter >= expAfter) {
                       log.info(
-                        "Extension init: JWT still expired after refresh",
+                        "[Extension init] JWT still expired after silent renew",
                         {
                           network,
                         },
