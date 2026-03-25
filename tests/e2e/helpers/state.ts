@@ -11,8 +11,6 @@ const createEmptyNetworkEntry = () => ({
 });
 
 export async function seedPersistedAppState(page: Page) {
-  const nowSeconds = Math.floor(Date.now() / 1000);
-
   const authState = {
     version: 0,
     state: {
@@ -28,7 +26,7 @@ export async function seedPersistedAppState(page: Page) {
           sui_address: TEST_USER_ADDRESS,
           salt: "0x1",
         },
-        expires_at: nowSeconds + 3600,
+        expires_at: Math.floor(Date.now() / 1000) + 3600,
       },
       loading: false,
       error: null,

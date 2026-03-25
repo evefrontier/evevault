@@ -135,7 +135,6 @@ export async function storeZkLoginJwtForNetwork(
     network,
     hasJwt: !!jwt.id_token,
     expiresAt,
-    expiresIn: expiresAt - Math.floor(Date.now() / 1000),
   });
 
   const current = existing?.[network] ?? { zkLogin: undefined };
@@ -244,6 +243,8 @@ export async function getJwtForNetwork(
 ): Promise<JwtResponse | null> {
   const network = chain || useNetworkStore.getState().chain;
 
+  const now = Math.floor(Date.now() / 1000);
+
   if (isWeb()) {
     const currentChain = useNetworkStore.getState().chain;
     if (network === currentChain) {
@@ -252,7 +253,6 @@ export async function getJwtForNetwork(
       const jwtFromUser = userToJwtResponse(useAuthStore.getState().user);
       if (jwtFromUser) {
         const expiresAt = resolveExpiresAt(jwtFromUser);
-        const now = Math.floor(Date.now() / 1000);
         const isExpired = now >= expiresAt;
         log.debug("Retrieved primary JWT from OIDC user (web)", {
           network,
@@ -278,7 +278,6 @@ export async function getJwtForNetwork(
 
   if (jwt) {
     const expiresAt = resolveExpiresAt(jwt);
-    const now = Math.floor(Date.now() / 1000);
     const isExpired = now >= expiresAt;
 
     log.debug("Retrieved JWT for network", {

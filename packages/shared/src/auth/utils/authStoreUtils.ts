@@ -20,8 +20,6 @@ export const isErrorWithMessage = (
   );
 };
 
-const nowSeconds = () => Math.floor(Date.now() / 1000);
-
 /**
  * Expiry for a **persisted** primary JWT. Prefer absolute `expires_at` (set at store time).
  */
@@ -49,7 +47,7 @@ export const resolveExpiresAt = (jwt: JwtResponse): number => {
       /* ignore */
     }
   }
-  return nowSeconds();
+  return Math.floor(Date.now() / 1000);
 };
 
 /**
