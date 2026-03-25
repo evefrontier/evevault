@@ -18,7 +18,7 @@ const log = createLogger();
 
 type JwtStorageEntry = {
   primary?: OAuthTokenResponse;
-  zkLogin?: { id_token: string; expires_at: number };
+  zkLogin?: { id_token: JwtResponse["id_token"]; expires_at: number };
 };
 type JwtCompositeMap = Record<SuiChain, JwtStorageEntry>;
 type JwtStorageMap = Record<SuiChain, JwtResponse>;
@@ -83,7 +83,7 @@ function normalizeJwtEntry(value: unknown): JwtStorageEntry {
   if (typeof value === "object" && value !== null) {
     const candidate = value as { primary?: unknown; zkLogin?: unknown };
     return {
-      primary: candidate.primary as JwtResponse | undefined,
+      primary: candidate.primary as OAuthTokenResponse | undefined,
       zkLogin: candidate.zkLogin as
         | { id_token: string; expires_at: number }
         | undefined,

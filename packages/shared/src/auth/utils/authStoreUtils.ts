@@ -1,7 +1,7 @@
 import type { SuiChain } from "@mysten/wallet-standard";
 import { decodeJwt } from "jose";
 import { type IdTokenClaims, User } from "oidc-client-ts";
-import type { JwtResponse } from "../../types/authTypes";
+import type { JwtResponse, OAuthTokenResponse } from "../../types/authTypes";
 import { createLogger } from "../../utils/logger";
 import { getZkLoginAddress } from "../getZkLoginAddress";
 import { getJwtForNetwork } from "../storageService";
@@ -26,7 +26,9 @@ const nowSeconds = () => Math.floor(Date.now() / 1000);
  * Derive session expiry from a **fresh** OAuth token response (login or refresh).
  * `expires_in` is defined relative to issuance time ≈ now.
  */
-export function resolveExpiresAtFromOAuthResponse(jwt: JwtResponse): number {
+export function resolveExpiresAtFromOAuthResponse(
+  jwt: OAuthTokenResponse,
+): number {
   if (typeof jwt.expires_at === "number") {
     return jwt.expires_at;
   }

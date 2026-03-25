@@ -1,13 +1,15 @@
 import type { User } from "oidc-client-ts";
-import type { JwtResponse } from "../types";
+import type { OAuthTokenResponse } from "../types";
 
 const DEFAULT_SCOPE = "openid email profile offline_access";
 
 /**
- * Maps the OIDC UserManager session to our JwtResponse shape.
+ * Maps the OIDC UserManager session to our OAuthTokenResponse shape.
  * Used as the web primary-token source of truth (in-memory + UserManager storage).
  */
-export function userToJwtResponse(user: User | null): JwtResponse | null {
+export function userToJwtResponse(
+  user: User | null,
+): OAuthTokenResponse | null {
   if (!user?.id_token) {
     return null;
   }
@@ -19,7 +21,7 @@ export function userToJwtResponse(user: User | null): JwtResponse | null {
     access_token: user.access_token ?? "",
     token_type: user.token_type ?? "Bearer",
     scope: user.scope ?? DEFAULT_SCOPE,
-    refresh_token: user.refresh_token,
+    refresh_token: user.refresh_token ?? "",
     expires_in,
     expires_at: expiresAt,
   };

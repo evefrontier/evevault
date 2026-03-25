@@ -1,6 +1,5 @@
-import type { SuiChain } from "@mysten/wallet-standard";
 import type { User } from "oidc-client-ts";
-import type { JwtResponse } from "../types/authTypes";
+import type { OAuthTokenResponse } from "../types/authTypes";
 
 export interface StorageLike {
   getItem: (key: string) => string | null;
@@ -35,7 +34,7 @@ export interface AuthState {
   loading: boolean;
   error: string | null;
   login: () => Promise<User | undefined>;
-  extensionLogin: () => Promise<JwtResponse>;
+  extensionLogin: () => Promise<OAuthTokenResponse>;
   logout: () => Promise<void>;
   setUser: (user: User | null) => void;
   initialize: () => Promise<void>;

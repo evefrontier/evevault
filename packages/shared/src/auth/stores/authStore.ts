@@ -22,6 +22,7 @@ import { AUTH_STORAGE_KEY } from "../../utils/storageKeys";
 import { DEFAULT_TENANT_ID, getTenantConfig } from "../../utils/tenantConfig";
 import { getUserManager, redirectToFusionAuthLogout } from "../authConfig";
 import { clearZkLoginAddressCache } from "../getZkLoginAddress";
+import { parseOAuthTokenResponse } from "../oauthTokenResponse";
 import { clearAllJwts, getJwtForNetwork } from "../storageService";
 import type { AuthState } from "../types";
 import {
@@ -355,7 +356,7 @@ export const useAuthStore = create<AuthState>()(
                     reject(new Error("No token received from auth"));
                     return;
                   }
-                  resolve(message.token);
+                  resolve(parseOAuthTokenResponse(message.token));
                 } else if (message.type === "auth_error") {
                   chrome.runtime?.onMessage?.removeListener(
                     authSuccessListener,
