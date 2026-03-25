@@ -45,17 +45,11 @@ function App() {
   const [previousNetworkBeforeSwitch, setPreviousNetworkBeforeSwitch] =
     useState<SuiChain | null>(null);
 
-  const {
-    user,
-    loading: authLoading,
-    error: authError,
-    refreshJwt,
-  } = useAuth();
+  const { user, loading: authLoading, error: authError } = useAuth();
   const { isLocked, isPinSet, error: deviceError, unlock } = useDevice();
   const { chain } = useNetworkStore();
   const faucetUrl = getFaucetUrlForChain(chain);
   const { handleLogin } = useLogin();
-  const { nonce } = useDevice();
   const { handleTestTransaction, txDigest } = useTestTransaction();
 
   // Use TanStack Query for balance fetching
@@ -90,11 +84,6 @@ function App() {
       setPreviousNetworkBeforeSwitch(null);
     }
   };
-
-  const handleTokenRefreshTest = useCallback(async () => {
-    if (!user) return;
-    await refreshJwt(chain as SuiChain);
-  }, [user, nonce]);
 
   // Show loading state while initializing
   if (isInitializing) {
@@ -197,7 +186,6 @@ function App() {
         showDevActions={devMode}
         onDevModeToggle={handleDevModeToggle}
         onSignSubmitTxClick={devMode ? handleTestTransaction : undefined}
-        onTokenRefreshTestClick={devMode ? handleTokenRefreshTest : undefined}
         onFaucetTestSuiClick={
           devMode && faucetUrl
             ? () => window.open(faucetUrl, "_blank", "noopener,noreferrer")

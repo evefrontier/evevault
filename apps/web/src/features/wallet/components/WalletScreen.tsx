@@ -52,7 +52,6 @@ export const WalletScreen = () => {
     initialize: initializeAuth,
     error: authError,
     loading: authLoading,
-    refreshJwt,
   } = useAuth();
   const {
     isLocked,
@@ -154,11 +153,6 @@ export const WalletScreen = () => {
     ]);
   }, [user, maxEpoch, ephemeralPublicKey, getZkProof, suiClient, queryClient]);
 
-  const handleTokenRefreshTest = useCallback(async () => {
-    if (!user) return;
-    await refreshJwt(chain as SuiChain);
-  }, [user, chain, refreshJwt]);
-
   // Show loading state while initializing
   if (isInitializing || authLoading || deviceLoading) {
     return (
@@ -231,7 +225,6 @@ export const WalletScreen = () => {
         showDevActions={devMode}
         onDevModeToggle={handleDevModeToggle}
         onSignSubmitTxClick={devMode ? handleSignAndSubmitTx : undefined}
-        onTokenRefreshTestClick={devMode ? handleTokenRefreshTest : undefined}
         onFaucetTestSuiClick={
           devMode && faucetUrl
             ? () => window.open(faucetUrl, "_blank", "noopener,noreferrer")

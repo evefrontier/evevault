@@ -9,7 +9,6 @@ export const useAuth = () => {
     setUser,
     loading,
     error,
-    refreshJwt,
     initialize,
   } = useAuthStore();
 
@@ -22,7 +21,6 @@ export const useAuth = () => {
     extensionLogin,
     logout,
     setUser,
-    refreshJwt,
     isAuthenticated: !!user,
     initialize,
   };

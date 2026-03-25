@@ -193,14 +193,12 @@ export interface HeaderMobileProps {
   identicon?: number;
   /** Callback when "Transaction History" menu item is clicked */
   onTransactionsClick?: () => void;
-  /** When true, show "Sign and submit test" and "Token refresh test" (when callbacks provided) */
+  /** When true, show "Sign and submit test" (when callbacks provided) */
   showDevActions?: boolean;
   /** Callback when "Dev mode" toggle menu item is clicked (may be async). */
   onDevModeToggle?: () => void | Promise<void>;
   /** Callback when "Sign and submit test" menu item is clicked */
   onSignSubmitTxClick?: () => void;
-  /** Callback when "Token refresh test" menu item is clicked */
-  onTokenRefreshTestClick?: () => void;
   /** Callback when "Faucet test SUI" menu item is clicked (dev mode only) */
   onFaucetTestSuiClick?: () => void;
   /** App version shown in dev dropdown (from each app's package.json at build time) */
