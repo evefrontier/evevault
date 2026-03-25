@@ -1,4 +1,3 @@
-import type { SuiChain } from "@mysten/wallet-standard";
 import { decodeJwt } from "jose";
 import { type IdTokenClaims, User } from "oidc-client-ts";
 import { create } from "zustand";
@@ -11,7 +10,7 @@ import {
   OAuthTenantSessionKey,
   setCurrentTenantId,
 } from "../../stores/tenantStore";
-import type { AuthMessage, OAuthTokenResponse, TenantId } from "../../types";
+import type { AuthMessage, TenantId } from "../../types";
 import {
   createLogger,
   isBrowser,
@@ -22,23 +21,15 @@ import {
 import { AUTH_STORAGE_KEY } from "../../utils/storageKeys";
 import { DEFAULT_TENANT_ID, getTenantConfig } from "../../utils/tenantConfig";
 import { getUserManager, redirectToFusionAuthLogout } from "../authConfig";
+import { clearZkLoginAddressCache } from "../getZkLoginAddress";
+import { clearAllJwts, getJwtForNetwork } from "../storageService";
+import type { AuthState } from "../types";
 import {
-  clearZkLoginAddressCache,
-  getZkLoginAddress,
-} from "../getZkLoginAddress";
-import { parseOAuthTokenResponse } from "../oauthTokenResponse";
-import {
-  clearAllJwts,
-  clearZkLoginJwtForNetwork,
-  getJwtForNetwork,
-  storeJwt,
-} from "../storageService";
-import type { AuthState, RefreshJwtOptions } from "../types";
+  enrichUserWithZkLoginIfNeeded,
+  syncPrimaryJwtFromUser,
+} from "../userJwtSync";
 import { userToJwtResponse } from "../userToJwtResponse";
-import {
-  resolveExpiresAt,
-  resolveExpiresAtFromOAuthResponse,
-} from "../utils/authStoreUtils";
+import { resolveExpiresAt } from "../utils/authStoreUtils";
 
 // biome-ignore lint/suspicious/noExplicitAny: chrome is a global object
 declare const chrome: any;
@@ -59,61 +50,6 @@ export const useAuthStore = create<AuthState>()(
     (set, get) => {
       // Lazy getter for userManager to avoid initialization order issues
       const getUserManagerInstance = () => getUserManager(getCurrentTenantId());
-
-      async function enrichUserWithZkLoginIfNeeded(user: User): Promise<User> {
-        const idToken = user.id_token;
-        if (!idToken) {
-          return user;
-        }
-
-        const sui = user.profile?.sui_address;
-        if (typeof sui === "string" && sui.trim()) {
-          return user;
-        }
-
-        const zkLoginResponse = await getZkLoginAddress({
-          jwt: idToken,
-          enokiApiKey: getEnokiApiKey(),
-        });
-
-        if (zkLoginResponse.error) {
-          throw new Error(zkLoginResponse.error.message);
-        }
-
-        if (!zkLoginResponse.data) {
-          throw new Error("No zkLogin address data received");
-        }
-
-        const { salt, address } = zkLoginResponse.data;
-        const decodedJwt = decodeJwt(idToken) as IdTokenClaims;
-
-        return new User({
-          ...user,
-          profile: {
-            ...(typeof user.profile === "object" && user.profile !== null
-              ? user.profile
-              : {}),
-            ...decodedJwt,
-            sui_address: address,
-            salt,
-          } as User["profile"],
-        });
-      }
-
-      async function syncPrimaryJwtFromUser(
-        user: User,
-        chain: SuiChain,
-      ): Promise<void> {
-        const jwt = userToJwtResponse(user);
-        if (!jwt?.refresh_token?.trim()) {
-          log.warn(
-            "syncPrimaryJwtFromUser: no refresh token, skipping evevault:jwt mirror",
-            { chain },
-          );
-          return;
-        }
-        await storeJwt(jwt as OAuthTokenResponse, chain);
-      }
 
       return {
         user: null,
@@ -236,7 +172,7 @@ export const useAuthStore = create<AuthState>()(
                 }
               }
 
-              user = await enrichUserWithZkLoginIfNeeded(user);
+              user = await enrichUserWithZkLoginIfNeeded(user, getEnokiApiKey);
               await getUserManagerInstance().storeUser(user);
               await syncPrimaryJwtFromUser(user, network);
               set({ user, loading: false });
@@ -294,7 +230,10 @@ export const useAuthStore = create<AuthState>()(
                     Math.floor(Date.now() / 1000) + jwtResponse.expires_in,
                 });
 
-                user = await enrichUserWithZkLoginIfNeeded(user);
+                user = await enrichUserWithZkLoginIfNeeded(
+                  user,
+                  getEnokiApiKey,
+                );
                 await getUserManagerInstance().storeUser(user);
                 await syncPrimaryJwtFromUser(user, network);
                 set({ user, loading: false });
