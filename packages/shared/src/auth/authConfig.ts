@@ -80,7 +80,6 @@ function buildUserManagerSettings(tenantId: TenantId): UserManagerSettings {
     post_logout_redirect_uri: getOrigin(),
     response_type: "code",
     automaticSilentRenew: true,
-    accessTokenExpiringNotificationTimeInSeconds: 3,
     scope: "openid email profile offline_access",
     stateStore: new WebStorageStateStore({
       store: localStorage,
@@ -115,29 +114,8 @@ function addUserManagerEventHandlers(
     log.error("OIDC silent renew error", { tenantId, error });
   });
 
-  userManager.events.addAccessTokenExpiring(() => {
-    log.debug("OIDC access token expiring — refreshing JWT", { tenantId });
-    void Promise.all([
-      import("../stores/networkStore"),
-      import("./stores/authStore"),
-    ])
-      .then(([networkStore, authStore]) => {
-        const chain = networkStore.useNetworkStore.getState().chain;
-        return authStore.useAuthStore.getState().refreshJwt(chain);
-      })
-      .catch((error) => {
-        log.error("OIDC access token expiring handler failed", {
-          tenantId,
-          error,
-        });
-      });
-  });
-
   userManager.events.addAccessTokenExpired(() => {
-    log.warn(
-      "Access token has already expired - addAccessTokenExpiring may have missed it. Please refresh the page.",
-      { tenantId },
-    );
+    log.warn("Access token has already expired.", { tenantId });
   });
 }
 

@@ -33,7 +33,8 @@ import {
   getJwtForNetwork,
   storeJwt,
 } from "../storageService";
-import type { AuthState } from "../types";
+import type { AuthState, RefreshJwtOptions } from "../types";
+import { userToJwtResponse } from "../userToJwtResponse";
 import {
   resolveExpiresAt,
   resolveExpiresAtFromOAuthResponse,
@@ -58,6 +59,61 @@ export const useAuthStore = create<AuthState>()(
     (set, get) => {
       // Lazy getter for userManager to avoid initialization order issues
       const getUserManagerInstance = () => getUserManager(getCurrentTenantId());
+
+      async function enrichUserWithZkLoginIfNeeded(user: User): Promise<User> {
+        const idToken = user.id_token;
+        if (!idToken) {
+          return user;
+        }
+
+        const sui = user.profile?.sui_address;
+        if (typeof sui === "string" && sui.trim()) {
+          return user;
+        }
+
+        const zkLoginResponse = await getZkLoginAddress({
+          jwt: idToken,
+          enokiApiKey: getEnokiApiKey(),
+        });
+
+        if (zkLoginResponse.error) {
+          throw new Error(zkLoginResponse.error.message);
+        }
+
+        if (!zkLoginResponse.data) {
+          throw new Error("No zkLogin address data received");
+        }
+
+        const { salt, address } = zkLoginResponse.data;
+        const decodedJwt = decodeJwt(idToken) as IdTokenClaims;
+
+        return new User({
+          ...user,
+          profile: {
+            ...(typeof user.profile === "object" && user.profile !== null
+              ? user.profile
+              : {}),
+            ...decodedJwt,
+            sui_address: address,
+            salt,
+          } as User["profile"],
+        });
+      }
+
+      async function syncPrimaryJwtFromUser(
+        user: User,
+        chain: SuiChain,
+      ): Promise<void> {
+        const jwt = userToJwtResponse(user);
+        if (!jwt?.refresh_token?.trim()) {
+          log.warn(
+            "syncPrimaryJwtFromUser: no refresh token, skipping evevault:jwt mirror",
+            { chain },
+          );
+          return;
+        }
+        await storeJwt(jwt as OAuthTokenResponse, chain);
+      }
 
       return {
         user: null,
@@ -121,80 +177,72 @@ export const useAuthStore = create<AuthState>()(
 
           try {
             if (isExtension() && typeof chrome !== "undefined") {
-              // Use getJwtForNetwork instead of reading chrome.storage directly
-              // This ensures we use the same logic as hasJwtForNetwork and avoid race conditions
-              const storedJwt = await getJwtForNetwork(network);
-              const idToken = storedJwt?.id_token;
+              let user = await getUserManagerInstance().getUser();
 
-              if (storedJwt && idToken) {
-                // Check if JWT is expired
-                const expiresAt = resolveExpiresAt(storedJwt);
+              if (!user?.id_token) {
+                log.info("Extension init: no OIDC user in UserManager", {
+                  network,
+                });
+                set({ user: null, loading: false });
+                return;
+              }
+
+              const jwtSnapshot = userToJwtResponse(user);
+              if (jwtSnapshot) {
+                const expiresAt = resolveExpiresAt(jwtSnapshot);
                 const now = Math.floor(Date.now() / 1000);
+
                 if (now >= expiresAt) {
-                  log.info("JWT expired for current network, clearing user", {
+                  if (!user.refresh_token?.trim()) {
+                    log.info(
+                      "Extension init: JWT expired, no refresh token; clearing user",
+                      {
+                        network,
+                        expiresAt,
+                        now,
+                      },
+                    );
+                    set({ user: null, loading: false });
+                    return;
+                  }
+
+                  log.info("Extension init: JWT expired, attempting refresh", {
                     network,
                     expiresAt,
                     now,
                   });
-                  set({ user: null, loading: false });
-                  return;
-                }
+                  user = await getUserManagerInstance().getUser();
 
-                log.info("Found JWT in chrome.storage, loading user");
-                const currentUser = await getUserManagerInstance().getUser();
-                if (!currentUser) {
-                  log.info("Loading user from chrome storage JWT");
-                  const decodedJwt = decodeJwt(idToken);
-
-                  const zkLoginResponse = await getZkLoginAddress({
-                    jwt: idToken,
-                    enokiApiKey: getEnokiApiKey(),
-                  });
-
-                  if (zkLoginResponse.error) {
-                    throw new Error(zkLoginResponse.error.message);
+                  if (!user?.id_token) {
+                    set({ user: null, loading: false });
+                    return;
                   }
 
-                  if (!zkLoginResponse.data) {
-                    throw new Error("No zkLogin address data received");
+                  const after = userToJwtResponse(user);
+                  if (after) {
+                    const expAfter = resolveExpiresAt(after);
+                    const nowAfter = Math.floor(Date.now() / 1000);
+                    if (nowAfter >= expAfter) {
+                      log.info(
+                        "Extension init: JWT still expired after refresh",
+                        {
+                          network,
+                        },
+                      );
+                      set({ user: null, loading: false });
+                      return;
+                    }
                   }
-
-                  const { salt, address } = zkLoginResponse.data;
-
-                  const newUser = new User({
-                    id_token: storedJwt.id_token,
-                    access_token: storedJwt.access_token,
-                    token_type: storedJwt.token_type,
-                    scope: storedJwt.scope,
-                    refresh_token: storedJwt.refresh_token,
-                    profile: {
-                      ...(decodedJwt as IdTokenClaims),
-                      sui_address: address,
-                      salt,
-                    },
-                    expires_at:
-                      decodedJwt.exp ??
-                      Math.floor(Date.now() / 1000) +
-                        (storedJwt.expires_at ?? storedJwt.expires_in ?? 3600),
-                  });
-                  await getUserManagerInstance().storeUser(newUser);
-                  set({ user: newUser, loading: false });
-                  return; // Exit early after setting user
                 }
-
-                // Fallback for non-extension context
-                const user = await getUserManagerInstance().getUser();
-                set({ user, loading: false });
-                return;
               }
 
-              // No JWT found for this network
-              // Set user to null - user needs to sign in again for this network
-              log.info("No JWT found for current network, clearing user", {
-                network,
-              });
-              set({ user: null, loading: false });
+              user = await enrichUserWithZkLoginIfNeeded(user);
+              await getUserManagerInstance().storeUser(user);
+              await syncPrimaryJwtFromUser(user, network);
+              set({ user, loading: false });
+              return;
             }
+
             return set({ loading: false });
           } catch (error) {
             log.error("Error initializing auth", error);
@@ -233,22 +281,7 @@ export const useAuthStore = create<AuthState>()(
                     deviceNonce && jwtNonce ? deviceNonce === jwtNonce : "N/A",
                 });
 
-                const zkLoginResponse = await getZkLoginAddress({
-                  jwt: jwtResponse.id_token,
-                  enokiApiKey: getEnokiApiKey(),
-                });
-
-                if (zkLoginResponse.error) {
-                  throw new Error(zkLoginResponse.error.message);
-                }
-
-                if (!zkLoginResponse.data) {
-                  throw new Error("No zkLogin address data received");
-                }
-
-                const { salt, address } = zkLoginResponse.data;
-
-                const user = new User({
+                let user = new User({
                   id_token: jwtResponse.id_token,
                   access_token: jwtResponse.access_token,
                   token_type: jwtResponse.token_type,
@@ -256,14 +289,14 @@ export const useAuthStore = create<AuthState>()(
                   refresh_token: jwtResponse.refresh_token,
                   profile: {
                     ...(decodedJwt as IdTokenClaims),
-                    sui_address: address,
-                    salt,
-                  },
+                  } as User["profile"],
                   expires_at:
                     Math.floor(Date.now() / 1000) + jwtResponse.expires_in,
                 });
 
+                user = await enrichUserWithZkLoginIfNeeded(user);
                 await getUserManagerInstance().storeUser(user);
+                await syncPrimaryJwtFromUser(user, network);
                 set({ user, loading: false });
 
                 return user as User;
@@ -379,7 +412,8 @@ export const useAuthStore = create<AuthState>()(
           });
         },
 
-        refreshJwt: async (network: SuiChain) => {
+        refreshJwt: async (network: SuiChain, options?: RefreshJwtOptions) => {
+          const logoutOnFailure = options?.logoutOnFailure !== false;
           try {
             const now = Math.floor(Date.now() / 1000);
             const existingJwt = await getJwtForNetwork(network);
@@ -396,11 +430,17 @@ export const useAuthStore = create<AuthState>()(
             const tenant = getCurrentTenantId();
             const config = getTenantConfig(tenant);
             const { serverUrl, clientId, clientSecret } = config;
-            const refreshToken = existingJwt?.refresh_token;
+
+            let refreshToken = existingJwt?.refresh_token;
+            if (isExtension()) {
+              const um = await getUserManagerInstance().getUser();
+              if (um?.refresh_token?.trim()) {
+                refreshToken = um.refresh_token;
+              }
+            }
 
             if (!refreshToken?.trim()) {
               log.error("Token refresh failed: no refresh token");
-              await get().logout();
               return;
             }
 
@@ -426,7 +466,6 @@ export const useAuthStore = create<AuthState>()(
                 status: response.status,
                 network,
               });
-              await get().logout();
               return;
             }
 
@@ -438,14 +477,13 @@ export const useAuthStore = create<AuthState>()(
                 network,
                 parseError,
               });
-              await get().logout();
               return;
             }
 
             if (isWeb()) {
               const prev = get().user;
               const decoded = decodeJwt(data.id_token) as IdTokenClaims;
-              const newUser = new User({
+              let newUser = new User({
                 id_token: data.id_token,
                 access_token: data.access_token,
                 token_type: data.token_type ?? "Bearer",
@@ -460,10 +498,28 @@ export const useAuthStore = create<AuthState>()(
                 } as User["profile"],
                 expires_at: resolveExpiresAtFromOAuthResponse(data),
               });
+              newUser = await enrichUserWithZkLoginIfNeeded(newUser);
               await getUserManagerInstance().storeUser(newUser);
               set({ user: newUser });
             } else {
-              await storeJwt(data, network);
+              const prev = await getUserManagerInstance().getUser();
+              const decoded = decodeJwt(data.id_token) as IdTokenClaims;
+              let newUser = new User({
+                id_token: data.id_token,
+                access_token: data.access_token,
+                token_type: data.token_type ?? "Bearer",
+                scope: data.scope ?? "openid email profile offline_access",
+                refresh_token: data.refresh_token,
+                profile: {
+                  ...(prev?.profile ?? {}),
+                  ...decoded,
+                } as User["profile"],
+                expires_at: resolveExpiresAtFromOAuthResponse(data),
+              });
+              newUser = await enrichUserWithZkLoginIfNeeded(newUser);
+              await getUserManagerInstance().storeUser(newUser);
+              set({ user: newUser });
+              await syncPrimaryJwtFromUser(newUser, network);
             }
             await clearZkLoginJwtForNetwork(network);
             log.debug("Primary OAuth JWT refreshed", { network });
@@ -472,7 +528,9 @@ export const useAuthStore = create<AuthState>()(
               network,
               error,
             });
-            await get().logout();
+            if (logoutOnFailure) {
+              await get().logout();
+            }
           }
         },
 

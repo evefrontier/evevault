@@ -1,6 +1,6 @@
 import type { SuiChain } from "@mysten/wallet-standard";
 import { decodeJwt } from "jose";
-import { User } from "oidc-client-ts";
+import { type IdTokenClaims, User } from "oidc-client-ts";
 import type { JwtResponse } from "../../types/authTypes";
 import { createLogger } from "../../utils/logger";
 import { getZkLoginAddress } from "../getZkLoginAddress";
@@ -97,7 +97,37 @@ export async function getUserForNetwork(chain: SuiChain): Promise<User | null> {
     return null;
   }
 
-  const decodedJwt = decodeJwt(storedJwt.id_token);
+  const decodedJwt = decodeJwt(storedJwt.id_token) as IdTokenClaims & {
+    sui_address?: string;
+    salt?: string;
+  };
+
+  const suiClaim = decodedJwt.sui_address;
+  const suiFromClaims =
+    typeof suiClaim === "string" && suiClaim.trim().length > 0;
+
+  if (suiFromClaims) {
+    const suiAddress = suiClaim.trim();
+    return new User({
+      id_token: storedJwt.id_token,
+      access_token: storedJwt.access_token ?? "",
+      token_type: storedJwt.token_type ?? "Bearer",
+      scope: storedJwt.scope ?? "",
+      refresh_token: storedJwt.refresh_token,
+      profile: {
+        ...decodedJwt,
+        sui_address: suiAddress,
+        ...(typeof decodedJwt.salt === "string" && decodedJwt.salt.trim()
+          ? { salt: decodedJwt.salt.trim() }
+          : {}),
+      } as User["profile"],
+      expires_at:
+        decodedJwt.exp ??
+        storedJwt.expires_at ??
+        Math.floor(Date.now() / 1000) + (storedJwt.expires_in ?? 3600),
+    });
+  }
+
   const zkLoginResponse = await getZkLoginAddress({
     jwt: storedJwt.id_token,
     enokiApiKey: getEnokiApiKey(),
@@ -118,6 +148,7 @@ export async function getUserForNetwork(chain: SuiChain): Promise<User | null> {
     access_token: storedJwt.access_token ?? "",
     token_type: storedJwt.token_type ?? "Bearer",
     scope: storedJwt.scope ?? "",
+    refresh_token: storedJwt.refresh_token,
     profile: {
       ...decodedJwt,
       sui_address: address,
