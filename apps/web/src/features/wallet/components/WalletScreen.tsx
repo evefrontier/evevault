@@ -4,11 +4,7 @@ import {
   NetworkSelector,
   type TenantId,
 } from "@evevault/shared";
-import {
-  handleTestTokenRefresh,
-  switchTenantAndReload,
-  useAuth,
-} from "@evevault/shared/auth";
+import { switchTenantAndReload, useAuth } from "@evevault/shared/auth";
 import {
   Background,
   Button,
@@ -18,11 +14,7 @@ import {
   TokenListSection,
 } from "@evevault/shared/components";
 import Icon from "@evevault/shared/components/Icon";
-import {
-  useDevice,
-  useEpochExpiration,
-  useTenant,
-} from "@evevault/shared/hooks";
+import { useDevice, useTenant } from "@evevault/shared/hooks";
 import {
   getAvailableTenantIds,
   getCurrentTenantId,
@@ -38,7 +30,7 @@ import {
 } from "@evevault/shared/utils";
 import { zkSignAny } from "@evevault/shared/wallet";
 import { Transaction } from "@mysten/sui/transactions";
-import { SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
+import { SUI_TESTNET_CHAIN, type SuiChain } from "@mysten/wallet-standard";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
@@ -60,6 +52,7 @@ export const WalletScreen = () => {
     initialize: initializeAuth,
     error: authError,
     loading: authLoading,
+    refreshJwt,
   } = useAuth();
   const {
     isLocked,
@@ -116,9 +109,6 @@ export const WalletScreen = () => {
     initializeStores();
   }, [initializeAuth]);
 
-  // Monitor epoch expiration and auto-logout when maxEpochTimestampMs is reached
-  useEpochExpiration();
-
   const handleDevModeToggle = useCallback(() => {
     setDevMode(!devMode);
   }, [devMode, setDevMode]);
@@ -142,8 +132,6 @@ export const WalletScreen = () => {
     const txb = await tx.build({ client: suiClient });
     const { bytes, zkSignature } = await zkSignAny("TransactionData", txb, {
       user,
-      ephemeralPublicKey,
-      maxEpoch,
       getZkProof,
     });
     log.debug("zkSignature ready", { length: zkSignature.length });
@@ -169,15 +157,8 @@ export const WalletScreen = () => {
 
   const handleTokenRefreshTest = useCallback(async () => {
     if (!user) return;
-    if (!nonce) {
-      log.error("[Wallet Screen] Cannot refresh token: nonce is missing");
-      window.alert(
-        "Cannot refresh authentication token because the device nonce is missing. Please log in again.",
-      );
-      return;
-    }
-    await handleTestTokenRefresh(user, nonce);
-  }, [user, nonce]);
+    await refreshJwt(chain as SuiChain);
+  }, [user, chain, refreshJwt]);
 
   // Show loading state while initializing
   if (isInitializing || authLoading || deviceLoading) {

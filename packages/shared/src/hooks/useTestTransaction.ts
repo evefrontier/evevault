@@ -28,12 +28,9 @@ export function useTestTransaction() {
       // which may be from a different network
       const user = await getUserForNetwork(chain);
 
-      if (!user || !maxEpoch) {
-        log.error("User or max epoch not found", { user, maxEpoch });
-        throw new Error("User or max epoch not found");
-      }
-      if (!ephemeralPublicKey) {
-        throw new Error("Ephemeral public key not found");
+      if (!user) {
+        log.error("User not found", { user });
+        throw new Error("User not found");
       }
 
       const tx = new Transaction();
@@ -42,8 +39,6 @@ export function useTestTransaction() {
 
       const { bytes, zkSignature } = await zkSignAny("TransactionData", txb, {
         user,
-        ephemeralPublicKey,
-        maxEpoch,
         getZkProof,
       });
       log.debug("zkSignature ready", { length: zkSignature.length });
@@ -72,7 +67,7 @@ export function useTestTransaction() {
       log.error("Error submitting transaction", error);
       showToast("Error submitting transaction");
     }
-  }, [chain, maxEpoch, ephemeralPublicKey, suiClient, getZkProof, showToast]);
+  }, [chain, suiClient, getZkProof, showToast]);
 
   return { handleTestTransaction, txDigest, isAuthenticated: !!globalUser };
 }

@@ -5,11 +5,7 @@ import {
   switchTenantAndReload,
   type TenantId,
 } from "@evevault/shared";
-import {
-  handleTestTokenRefresh,
-  redirectToFusionAuthLogout,
-  useAuth,
-} from "@evevault/shared/auth";
+import { redirectToFusionAuthLogout, useAuth } from "@evevault/shared/auth";
 import {
   Button,
   HeaderMobile,
@@ -22,7 +18,6 @@ import {
 import Icon from "@evevault/shared/components/Icon";
 import {
   useDevice,
-  useEpochExpiration,
   useTenant,
   useTestTransaction,
 } from "@evevault/shared/hooks";
@@ -50,7 +45,12 @@ function App() {
   const [previousNetworkBeforeSwitch, setPreviousNetworkBeforeSwitch] =
     useState<SuiChain | null>(null);
 
-  const { user, loading: authLoading, error: authError } = useAuth();
+  const {
+    user,
+    loading: authLoading,
+    error: authError,
+    refreshJwt,
+  } = useAuth();
   const { isLocked, isPinSet, error: deviceError, unlock } = useDevice();
   const { chain } = useNetworkStore();
   const faucetUrl = getFaucetUrlForChain(chain);
@@ -63,8 +63,6 @@ function App() {
     user: user || null,
     chain: chain || null,
   });
-
-  useEpochExpiration();
 
   // Clear previous network tracking when user successfully logs in
   useEffect(() => {
@@ -95,15 +93,7 @@ function App() {
 
   const handleTokenRefreshTest = useCallback(async () => {
     if (!user) return;
-    if (!nonce) {
-      const message =
-        "Cannot refresh token because the device nonce is not available. Please unlock your wallet or try again.";
-      log.error(message);
-      // Show explicit feedback to the user instead of proceeding with an invalid nonce
-      window.alert(message);
-      return;
-    }
-    await handleTestTokenRefresh(user, nonce);
+    await refreshJwt(chain as SuiChain);
   }, [user, nonce]);
 
   // Show loading state while initializing

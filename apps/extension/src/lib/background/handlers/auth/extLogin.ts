@@ -1,4 +1,4 @@
-import { getDeviceData, storeJwt, type TenantId } from "@evevault/shared";
+import { storeJwt, type TenantId } from "@evevault/shared";
 import { exchangeCodeForToken } from "@evevault/shared/auth";
 import {
   getCurrentTenantId,
@@ -7,7 +7,6 @@ import {
 } from "@evevault/shared/stores";
 import { createLogger } from "@evevault/shared/utils";
 import { Ed25519PublicKey } from "@mysten/sui/keypairs/ed25519";
-import { decodeJwt } from "jose";
 import { getAuthUrl } from "../../services/oauthService";
 import { openPopupWindow } from "../../services/popupWindow";
 import type { MessageWithId } from "../../types";
@@ -128,154 +127,8 @@ export async function handleExtLogin(
 
   const currentChain = await getCurrentChainFromStorage();
 
-  const existingNonce = deviceStore.getNonce(currentChain);
-  const existingMaxEpoch = deviceStore.getMaxEpoch(currentChain);
-  const maxEpochTimestampMs = deviceStore.getMaxEpochTimestampMs(currentChain);
-  const existingJwtRandomness = deviceStore.getJwtRandomness?.(currentChain);
-  const hasJwtRandomness = !!existingJwtRandomness;
-
-  const { getJwtForNetwork } = await import("@evevault/shared/auth");
-  const existingJwt = await getJwtForNetwork(currentChain);
-  const hasExistingJwt = !!existingJwt?.id_token;
-
-  let jwtNonceMatches = false;
-  if (hasExistingJwt && existingNonce) {
-    try {
-      const decodedJwt = decodeJwt(existingJwt.id_token);
-      const jwtNonce = decodedJwt.nonce as string | undefined;
-      jwtNonceMatches = jwtNonce === existingNonce;
-      log.debug("Checking JWT nonce against device data", {
-        chain: currentChain,
-        jwtNonce,
-        deviceNonce: existingNonce,
-        matches: jwtNonceMatches,
-      });
-    } catch (error) {
-      log.warn("Failed to decode existing JWT for nonce check", error);
-    }
-  }
-
-  const isExpired = maxEpochTimestampMs
-    ? Date.now() >= maxEpochTimestampMs
-    : false;
-  const needsRegeneration =
-    (!existingNonce ||
-      !existingMaxEpoch ||
-      !hasJwtRandomness ||
-      !maxEpochTimestampMs ||
-      isExpired) &&
-    !(hasExistingJwt && jwtNonceMatches);
-
-  if (needsRegeneration) {
-    log.info("Device data expired or missing, regenerating before login", {
-      chain: currentChain,
-      hasNonce: !!existingNonce,
-      hasMaxEpoch: !!existingMaxEpoch,
-      hasJwtRandomness,
-      maxEpochTimestampMs,
-      isExpired,
-      hasExistingJwt,
-      jwtNonceMatches,
-    });
-    try {
-      await deviceStore.initializeForChain(currentChain);
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
-
-      const withNetworkMeta = error as {
-        code?: unknown;
-        status?: unknown;
-        cause?: unknown;
-      };
-
-      const status =
-        typeof withNetworkMeta.status === "number"
-          ? withNetworkMeta.status
-          : undefined;
-      const errorCode =
-        typeof withNetworkMeta.code === "string"
-          ? withNetworkMeta.code
-          : undefined;
-
-      const causeMessage =
-        withNetworkMeta.cause instanceof Error
-          ? withNetworkMeta.cause.message
-          : undefined;
-
-      const isFetchTypeError = error instanceof TypeError;
-      const isStatusNetworkError =
-        typeof status === "number" &&
-        (status === 0 || (status >= 500 && status < 600));
-      const isCodeNetworkError =
-        errorCode === "ECONNREFUSED" ||
-        errorCode === "ETIMEDOUT" ||
-        errorCode === "ECONNRESET";
-
-      const isMessageNetworkError =
-        errorMessage.includes("503") ||
-        errorMessage.includes("Failed to fetch") ||
-        errorMessage.includes("no healthy upstream") ||
-        errorMessage.includes("ECONNREFUSED") ||
-        errorMessage.includes("ETIMEDOUT") ||
-        (typeof causeMessage === "string" &&
-          (causeMessage.includes("Failed to fetch") ||
-            causeMessage.includes("ECONNREFUSED") ||
-            causeMessage.includes("ETIMEDOUT")));
-
-      const isNetworkError =
-        isFetchTypeError ||
-        isStatusNetworkError ||
-        isCodeNetworkError ||
-        isMessageNetworkError;
-
-      if (isNetworkError) {
-        log.error("Network unavailable during device initialization", {
-          chain: currentChain,
-          error: errorMessage,
-        });
-        return sendAuthError(id, {
-          message: `The ${currentChain.replace("sui:", "")} network is currently unavailable. Please try a different network or try again later.`,
-        });
-      }
-
-      log.error("Device initialization failed", { error: errorMessage });
-      return sendAuthError(id, {
-        message: `Failed to initialize device: ${errorMessage}`,
-      });
-    }
-  } else if (hasExistingJwt && jwtNonceMatches && isExpired) {
-    log.warn(
-      "Device data expired but JWT nonce matches - cannot regenerate without causing mismatch. User needs to re-login.",
-      {
-        chain: currentChain,
-        maxEpochTimestampMs,
-        isExpired,
-      },
-    );
-    const { clearJwtForNetwork } = await import("@evevault/shared/auth");
-    await clearJwtForNetwork(currentChain);
-    return sendAuthError(id, {
-      message:
-        "Device data expired. Please sign in again to refresh your session.",
-    });
-  } else {
-    log.info("Using existing device data for login", {
-      chain: currentChain,
-      nonce: existingNonce,
-      maxEpoch: existingMaxEpoch,
-      hasExistingJwt,
-      jwtNonceMatches,
-    });
-  }
-
-  const { jwtRandomness, nonce, maxEpoch } = await getDeviceData(currentChain);
-
   const authUrl = getAuthUrl({
     tenantId: tenantId,
-    jwtRandomness,
-    nonce,
-    maxEpoch,
   });
 
   chrome.identity.launchWebAuthFlow(

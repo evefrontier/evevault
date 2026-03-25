@@ -25,10 +25,7 @@ import {
   handleLock,
   handleUnlockVault,
 } from "./vaultHandlers";
-import {
-  handleApprovePopup,
-  handleReportTransactionEffects,
-} from "./walletHandlers";
+import { handleApprovePopup } from "./walletHandlers";
 
 const log = createLogger();
 
@@ -87,11 +84,6 @@ export function handleMessage(
       sender,
       sendResponse,
     );
-  }
-
-  if (action === "report_transaction_effects") {
-    handleReportTransactionEffects(message, sender, sendResponse);
-    return true;
   }
 
   // Vault handlers

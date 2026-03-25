@@ -13,7 +13,8 @@ export default defineConfig({
     setupFiles: ["./vitest.setup.ts"],
     coverage: {
       provider: "v8",
-      reporter: ["text", "json", "html"],
+      reporter: ["text", "html", "json-summary", "json"],
+      reportOnFailure: true,
       exclude: [
         "node_modules/",
         "dist/",

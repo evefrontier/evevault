@@ -27,8 +27,6 @@ export type PartialZkLoginSignature = Omit<
 
 export interface ZkSignAnyParams {
   user: User;
-  ephemeralPublicKey: PublicKey;
-  maxEpoch: string;
   getZkProof: () => Promise<ZkProofResponse | { error: string }>;
 }
 

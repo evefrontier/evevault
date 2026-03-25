@@ -1,6 +1,6 @@
 {
   "name": "@evevault/web",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,6 +11,7 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
+    "test:coverage": "vitest run --config vitest.config.ts --coverage",
     "generate-pwa-icons": "bun run scripts/generate-pwa-icons.ts"
   },
   "dependencies": {

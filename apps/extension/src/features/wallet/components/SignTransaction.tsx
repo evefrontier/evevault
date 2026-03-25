@@ -91,11 +91,8 @@ function SignTransaction() {
         throw new Error("Max epoch is not set");
       }
 
-      // Sign the transaction using your zkSignAny function
       const { zkSignature, bytes } = await zkSignAny("TransactionData", txb, {
         user: auth.user,
-        ephemeralPublicKey: auth.ephemeralPublicKey,
-        maxEpoch: auth.maxEpoch,
         getZkProof: auth.getZkProof,
       });
 

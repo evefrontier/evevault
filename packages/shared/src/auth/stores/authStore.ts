@@ -14,18 +14,13 @@ import {
 import type { AuthMessage, JwtResponse, TenantId } from "../../types";
 import {
   createLogger,
-  getDeviceData,
   isBrowser,
   isExtension,
   isWeb,
   performFullCleanup,
 } from "../../utils";
 import { AUTH_STORAGE_KEY } from "../../utils/storageKeys";
-import {
-  DEFAULT_TENANT_ID,
-  getTenantConfig,
-  isAvailableTenantId,
-} from "../../utils/tenantConfig";
+import { DEFAULT_TENANT_ID, getTenantConfig } from "../../utils/tenantConfig";
 import { getUserManager, redirectToFusionAuthLogout } from "../authConfig";
 import {
   clearZkLoginAddressCache,
@@ -33,13 +28,12 @@ import {
 } from "../getZkLoginAddress";
 import {
   clearAllJwts,
-  getAllStoredJwts,
+  clearZkLoginJwtForNetwork,
   getJwtForNetwork,
   storeJwt,
 } from "../storageService";
 import type { AuthState } from "../types";
 import { resolveExpiresAt } from "../utils/authStoreUtils";
-import { vendJwt } from "../vendToken";
 
 // biome-ignore lint/suspicious/noExplicitAny: chrome is a global object
 declare const chrome: any;
@@ -382,94 +376,101 @@ export const useAuthStore = create<AuthState>()(
         },
 
         refreshJwt: async (network: SuiChain) => {
-          // 1. Get existing JWT using cross-platform storage service
-          const existingJwt = await getJwtForNetwork(network);
+          try {
+            const now = Math.floor(Date.now() / 1000);
+            const existingJwt = await getJwtForNetwork(network);
+            const expiresAt = existingJwt ? resolveExpiresAt(existingJwt) : 0;
+            const isValid = !!(existingJwt?.id_token && now < expiresAt);
 
-          // If no existing JWT for this chain, try to get any available JWT
-          let targetJwt = existingJwt;
-          if (!targetJwt?.id_token) {
-            log.info(
-              `No idToken found for network ${network}, checking other networks`,
-            );
-            const allNetworkJwts = await getAllStoredJwts();
-            if (allNetworkJwts) {
-              const firstNetwork = Object.keys(allNetworkJwts)[0] as SuiChain;
-              targetJwt = allNetworkJwts[firstNetwork] ?? null;
+            if (isValid && existingJwt?.id_token) {
+              log.debug("Primary OAuth JWT still valid, no refresh needed", {
+                network,
+              });
+              return;
             }
-          }
 
-          if (!targetJwt) {
-            throw new Error(`No JWT or fallback found in storage`);
-          }
+            const tenant = getCurrentTenantId();
+            const config = getTenantConfig(tenant);
+            const { serverUrl, clientId, clientSecret } = config;
+            const refreshToken = existingJwt?.refresh_token;
 
-          // 2. Refresh device parameters (nonce, maxEpoch)
-          await useDeviceStore.getState().initializeForChain(network);
+            if (!refreshToken?.trim()) {
+              log.error("Token refresh failed: no refresh token");
+              await get().logout();
+              return;
+            }
 
-          // 3. Get updated device parameters (reads from store first, falls back to storage if needed)
-          const { jwtRandomness, nonce, maxEpoch } =
-            await getDeviceData(network);
-
-          if (!nonce || !jwtRandomness || !maxEpoch) {
-            throw new Error(
-              `Device data not initialized for network ${network}. Missing: ${
-                !nonce ? "nonce" : ""
-              } ${!jwtRandomness ? "jwtRandomness" : ""} ${
-                !maxEpoch ? "maxEpoch" : ""
-              }`,
+            const response = await fetch(
+              `${serverUrl.replace(/\/$/, "")}/oauth2/token`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/x-www-form-urlencoded",
+                  Accept: "application/json",
+                },
+                body: new URLSearchParams({
+                  grant_type: "refresh_token",
+                  refresh_token: refreshToken,
+                  client_id: clientId,
+                  client_secret: clientSecret,
+                }),
+              },
             );
-          }
 
-          // 4. Vend new JWT with updated parameters
-          const vendResult = await vendJwt(targetJwt.id_token, {
-            nonce,
-            jwtRandomness,
-            maxEpoch: maxEpoch.toString(),
-          });
+            if (!response.ok) {
+              log.error("Token refresh failed: OAuth2 error", {
+                status: response.status,
+                network,
+              });
+              await get().logout();
+              return;
+            }
 
-          // 5. Validate nonce in returned JWT
-          const newIdToken = decodeJwt<IdTokenClaims>(vendResult as string);
-          const jwtNonce = newIdToken.nonce;
+            const data = (await response.json()) as JwtResponse;
+            if (!data?.id_token) {
+              log.error("Token refresh failed: no id_token in response");
+              await get().logout();
+              return;
+            }
 
-          log.debug("Nonce validation", {
-            nonceSent: nonce,
-            nonceInJwt: jwtNonce,
-            noncesMatch: jwtNonce === nonce,
-          });
-
-          if (jwtNonce !== nonce) {
-            throw new Error(
-              `Nonce mismatch: Expected ${nonce}, but JWT contains ${jwtNonce}. `,
-            );
-          }
-
-          // 6. Construct new JWT response
-          const newJwt: JwtResponse = {
-            id_token: vendResult,
-            access_token: vendResult,
-            token_type: "Bearer",
-            expires_in: newIdToken.exp
-              ? newIdToken.exp - Math.floor(Date.now() / 1000)
-              : 3600,
-            scope: "openid email profile offline_access",
-          };
-
-          // 7. Store the new JWT, replacing the previous one
-          await storeJwt(newJwt, network);
-
-          // 8. Update existing user with new JWT (preserve profile, address, salt, etc.)
-          const currentUser = get().user;
-          if (currentUser) {
-            const updatedUser = new User({
-              ...currentUser,
-              id_token: newJwt.id_token,
-              access_token: newJwt.access_token,
-              expires_at: Math.floor(Date.now() / 1000) + newJwt.expires_in,
+            if (isWeb()) {
+              const prev = get().user;
+              const decoded = decodeJwt(data.id_token) as IdTokenClaims;
+              const newUser = new User({
+                id_token: data.id_token,
+                access_token: data.access_token,
+                token_type: data.token_type ?? "Bearer",
+                scope:
+                  data.scope ??
+                  (typeof prev?.scope === "string" ? prev.scope : undefined) ??
+                  "openid email profile offline_access",
+                refresh_token: data.refresh_token ?? prev?.refresh_token,
+                profile: {
+                  ...(prev?.profile ?? {}),
+                  ...decoded,
+                } as User["profile"],
+                expires_at: resolveExpiresAt(data),
+              });
+              await getUserManagerInstance().storeUser(newUser);
+              set({ user: newUser });
+            } else {
+              await storeJwt(
+                {
+                  ...data,
+                  refresh_token:
+                    data.refresh_token ?? existingJwt?.refresh_token,
+                },
+                network,
+              );
+            }
+            await clearZkLoginJwtForNetwork(network);
+            log.debug("Primary OAuth JWT refreshed", { network });
+          } catch (error) {
+            log.error("Token refresh failed: unexpected error", {
+              network,
+              error,
             });
-
-            await getUserManagerInstance().storeUser(updatedUser);
-            get().setUser(updatedUser);
-          } else {
-            log.warn("No existing user found to update");
+            await get().logout();
           }
         },
 

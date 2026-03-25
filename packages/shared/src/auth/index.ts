@@ -1,5 +1,6 @@
 export { getUserManager, redirectToFusionAuthLogout } from "./authConfig";
 export { exchangeCodeForToken } from "./exchangeCode";
+export { getApiContext } from "./getApiContext";
 export {
   clearZkLoginAddressCache,
   getZkLoginAddress,
@@ -9,15 +10,17 @@ export { resetVaultOnDevice } from "./resetVaultOnDevice";
 export {
   clearAllJwts,
   clearJwtForNetwork,
+  clearZkLoginJwtForNetwork,
   getAllStoredJwts,
   getJwtForNetwork,
   getStoredChain,
   getStoredWalletAddress,
+  getZkLoginJwtForNetwork,
   hasJwtForNetwork,
   storeJwt,
+  storeZkLoginJwtForNetwork,
 } from "./storageService";
 export * from "./stores/authStore";
-export { handleTestTokenRefresh } from "./testTokenRefresh";
 export * from "./types";
+export { userToJwtResponse } from "./userToJwtResponse";
 export * from "./utils/authStoreUtils";
-export { vendJwt } from "./vendToken";

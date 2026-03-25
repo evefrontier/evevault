@@ -148,18 +148,4 @@ async function handleApprovePopup(
   }
 }
 
-async function handleReportTransactionEffects(
-  message: Record<string, unknown>,
-  _sender: chrome.runtime.MessageSender,
-  _sendResponse: (response?: unknown) => void,
-): Promise<void> {
-  log.debug("Report transaction effects request", message);
-
-  // TODO: Implement transaction effects reporting
-  chrome.runtime.sendMessage({
-    type: "report_transaction_effects_error",
-    error: "Transaction effects reporting not yet implemented",
-  });
-}
-
-export { handleApprovePopup, handleReportTransactionEffects };
+export { handleApprovePopup };

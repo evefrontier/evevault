@@ -404,8 +404,6 @@ export function useSendToken({
         txBytes,
         {
           user,
-          ephemeralPublicKey,
-          maxEpoch,
           getZkProof,
         },
       );

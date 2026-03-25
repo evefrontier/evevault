@@ -1,5 +1,4 @@
 import {
-  type User,
   UserManager,
   type UserManagerSettings,
   WebStorageStateStore,
@@ -9,7 +8,6 @@ import type { TenantId } from "../types";
 import { isExtension } from "../utils/environment";
 import { createLogger } from "../utils/logger";
 import { getTenantConfig } from "../utils/tenantConfig";
-import { patchUserNonce } from "./patchNonce";
 import type { GlobalWithLocalStorage, StorageLike } from "./types";
 
 const ensureLocalStorage = () => {
@@ -117,36 +115,26 @@ function addUserManagerEventHandlers(
     log.error("OIDC silent renew error", { tenantId, error });
   });
 
-  userManager.events.addAccessTokenExpiring(async () => {
-    log.info("Access token expiring, patching user nonce before refresh", {
-      tenantId,
-    });
-
-    const currentUser = await userManager.getUser();
-    if (!currentUser) {
-      log.warn("User parameter is undefined", { tenantId });
-    }
-
-    const { useDeviceStore } = await import("../stores/deviceStore");
-    const { useNetworkStore } = await import("../stores/networkStore");
-    const deviceStore = useDeviceStore.getState();
-    const networkStore = useNetworkStore.getState();
-    const currentChain = networkStore.chain;
-    const nonce = deviceStore.getNonce(currentChain);
-
-    if (!nonce) {
-      log.error("No nonce available for patching before token refresh", {
-        tenantId,
+  userManager.events.addAccessTokenExpiring(() => {
+    void Promise.all([
+      import("../stores/networkStore"),
+      import("./stores/authStore"),
+    ])
+      .then(([networkStore, authStore]) => {
+        const chain = networkStore.useNetworkStore.getState().chain;
+        return authStore.useAuthStore.getState().refreshJwt(chain);
+      })
+      .catch((error) => {
+        log.error("OIDC access token expiring handler failed", {
+          tenantId,
+          error,
+        });
       });
-      return;
-    }
-
-    await patchUserNonce(currentUser as User, nonce);
   });
 
   userManager.events.addAccessTokenExpired(() => {
     log.warn(
-      "Access token has already expired - addAccessTokenExpiring may have missed it",
+      "Access token has already expired - addAccessTokenExpiring may have missed it. Please refresh the page.",
       { tenantId },
     );
   });

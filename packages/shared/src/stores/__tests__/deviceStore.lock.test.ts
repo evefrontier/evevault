@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as vaultService from "../../services/vaultService";
-import { useDeviceStore } from "../deviceStore";
+import { registerOnLock, useDeviceStore } from "../deviceStore";
 
 // Mock the vault service (unified service that routes to keeper/web)
 vi.mock("../../services/vaultService", () => ({
   ephKeyService: {
     lock: vi.fn(),
+    isUnlocked: vi.fn(),
   },
   zkProofService: {},
 }));
@@ -13,13 +14,13 @@ vi.mock("../../services/vaultService", () => ({
 describe("deviceStore.lock()", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    registerOnLock(null);
     // Reset store state before each test
     useDeviceStore.setState({
       isLocked: false,
       ephemeralPublicKey: null,
       ephemeralPublicKeyBytes: null,
       ephemeralKeyPairSecretKey: null,
-      jwtRandomness: null,
       networkData: {},
       loading: false,
       error: null,
@@ -49,6 +50,18 @@ describe("deviceStore.lock()", () => {
 
     expect(mockLock).toHaveBeenCalledTimes(1);
     expect(useDeviceStore.getState().isLocked).toBe(true);
+  });
+
+  it("runs registerOnLock callback after successful lock", async () => {
+    const onLock = vi.fn();
+    registerOnLock(onLock);
+    const mockLock = vi.mocked(vaultService.ephKeyService.lock);
+    mockLock.mockResolvedValueOnce(undefined);
+
+    await useDeviceStore.getState().lock();
+
+    expect(onLock).toHaveBeenCalledTimes(1);
+    registerOnLock(null);
   });
 
   it("handles error when ephKeyService.lock() fails", async () => {

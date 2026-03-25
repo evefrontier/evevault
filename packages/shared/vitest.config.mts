@@ -38,5 +38,15 @@ export default defineConfig({
         inline: [/@evevault\/shared/],
       },
     },
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "json-summary", "json"],
+      reportOnFailure: true,
+      exclude: [
+        "**/node_modules/**",
+        "**/dist/**",
+        "**/*.config.{ts,js,mjs,cjs}",
+      ],
+    },
   },
 });
