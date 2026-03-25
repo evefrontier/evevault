@@ -60,7 +60,6 @@ export const WalletScreen = () => {
     maxEpoch,
     ephemeralPublicKey,
     getZkProof,
-    nonce,
     error: deviceError,
     loading: deviceLoading,
     unlock,

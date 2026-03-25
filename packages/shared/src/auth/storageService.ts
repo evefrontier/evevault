@@ -17,7 +17,7 @@ import {
 const log = createLogger();
 
 type JwtStorageEntry = {
-  primary?: JwtResponse;
+  primary?: OAuthTokenResponse;
   zkLogin?: { id_token: string; expires_at: number };
 };
 type JwtCompositeMap = Record<SuiChain, JwtStorageEntry>;
@@ -272,7 +272,11 @@ export async function getJwtForNetwork(
           now,
         });
         if (isExpired) {
-          log.info("JWT expired for network", { network, expiresAt, now });
+          log.info("[getJwtForNetwork isWeb()] JWT expired for network", {
+            network,
+            expiresAt,
+            now,
+          });
         }
         return jwtFromUser;
       }
@@ -296,7 +300,11 @@ export async function getJwtForNetwork(
     });
 
     if (isExpired) {
-      log.info("JWT expired for network", { network, expiresAt, now });
+      log.info("[getJwtForNetwork] JWT expired for network", {
+        network,
+        expiresAt,
+        now,
+      });
     }
   } else {
     log.debug("No JWT found for network", { network });
@@ -333,7 +341,11 @@ export async function hasJwtForNetwork(chain: SuiChain): Promise<boolean> {
   const expiresAt = resolveExpiresAt(jwt);
   const now = Math.floor(Date.now() / 1000);
   if (now >= expiresAt) {
-    log.info("JWT expired for network", { chain, expiresAt, now });
+    log.info("[hasJwtForNetwork] JWT expired for network", {
+      chain,
+      expiresAt,
+      now,
+    });
     return false;
   }
 
