@@ -4,7 +4,8 @@ import { parseOAuthTokenResponse } from "../oauthTokenResponse";
 describe("parseOAuthTokenResponse", () => {
   const base = {
     access_token: "at",
-    id_token: "it",
+    id_token:
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.8VKCTiBegJPuPIZlp0wbV0Sbdn5BS6TE5DCx6oYNc5o",
     token_type: "Bearer",
     scope: "openid profile email offline_access",
     expires_in: 30,
@@ -17,7 +18,8 @@ describe("parseOAuthTokenResponse", () => {
     const out = parseOAuthTokenResponse(base);
     expect(out).toMatchObject({
       access_token: "at",
-      id_token: "it",
+      id_token:
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.8VKCTiBegJPuPIZlp0wbV0Sbdn5BS6TE5DCx6oYNc5o",
       refresh_token: "rt-1",
       token_type: "Bearer",
       scope: "openid profile email offline_access",
@@ -31,11 +33,14 @@ describe("parseOAuthTokenResponse", () => {
     const out = parseOAuthTokenResponse({
       ...base,
       access_token: "  a  ",
-      id_token: "  i  ",
+      id_token:
+        "  eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.8VKCTiBegJPuPIZlp0wbV0Sbdn5BS6TE5DCx6oYNc5o  ",
       refresh_token: "  r  ",
     });
     expect(out.access_token).toBe("a");
-    expect(out.id_token).toBe("i");
+    expect(out.id_token).toBe(
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.8VKCTiBegJPuPIZlp0wbV0Sbdn5BS6TE5DCx6oYNc5o",
+    );
     expect(out.refresh_token).toBe("r");
   });
 

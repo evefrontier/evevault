@@ -102,19 +102,11 @@ export async function getUserForNetwork(chain: SuiChain): Promise<User | null> {
   const { address, salt } = zkLoginResponse.data;
 
   return new User({
-    id_token: storedJwt.id_token,
-    access_token: storedJwt.access_token ?? "",
-    token_type: storedJwt.token_type ?? "Bearer",
-    scope: storedJwt.scope ?? "",
-    refresh_token: storedJwt.refresh_token,
+    ...storedJwt,
     profile: {
       ...decodedJwt,
       sui_address: address,
       salt,
     } as User["profile"],
-    expires_at:
-      decodedJwt.exp ??
-      storedJwt.expires_at ??
-      Math.floor(Date.now() / 1000) + (storedJwt.expires_in ?? 3600),
   });
 }

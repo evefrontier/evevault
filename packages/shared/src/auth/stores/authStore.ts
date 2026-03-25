@@ -251,8 +251,7 @@ export const useAuthStore = create<AuthState>()(
                   profile: {
                     ...(decodedJwt as IdTokenClaims),
                   } as User["profile"],
-                  expires_at:
-                    Math.floor(Date.now() / 1000) + jwtResponse.expires_in,
+                  expires_at: decodedJwt.iat + jwtResponse.expires_in,
                 });
 
                 user = await enrichUserWithZkLoginIfNeeded(

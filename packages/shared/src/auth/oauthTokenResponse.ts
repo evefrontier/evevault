@@ -1,3 +1,5 @@
+import { decodeJwt } from "jose";
+import type { IdTokenClaims } from "oidc-client-ts";
 import type { OAuthTokenResponse } from "../types/authTypes";
 
 /**
@@ -24,15 +26,17 @@ export function parseOAuthTokenResponse(raw: unknown): OAuthTokenResponse {
   const refresh_token_id = requireNonEmptyString("refresh_token_id");
   const userId = requireNonEmptyString("userId");
 
-  const expires_at =
-    typeof o.expires_at === "number" && Number.isFinite(o.expires_at)
-      ? o.expires_at
-      : Math.floor(Date.now() / 1000);
+  const decodedJwt = decodeJwt<IdTokenClaims>(id_token as string);
 
   const expires_in =
     typeof o.expires_in === "number" && Number.isFinite(o.expires_in)
       ? o.expires_in
-      : 3600;
+      : 0;
+
+  const expires_at =
+    typeof o.expires_at === "number" && Number.isFinite(o.expires_at)
+      ? o.expires_at
+      : (decodedJwt.exp ?? decodedJwt.iat + expires_in);
 
   const token_type =
     typeof o.token_type === "string" && o.token_type.trim()
