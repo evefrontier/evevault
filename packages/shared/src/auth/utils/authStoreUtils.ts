@@ -20,14 +20,70 @@ export const isErrorWithMessage = (
   );
 };
 
-export const resolveExpiresAt = (jwt: JwtResponse): number => {
+const nowSeconds = () => Math.floor(Date.now() / 1000);
+
+/**
+ * Derive session expiry from a **fresh** OAuth token response (login or refresh).
+ * `expires_in` is defined relative to issuance time ≈ now.
+ */
+export function resolveExpiresAtFromOAuthResponse(jwt: JwtResponse): number {
   if (typeof jwt.expires_at === "number") {
     return jwt.expires_at;
   }
   if (typeof jwt.expires_in === "number") {
-    return Math.floor(Date.now() / 1000) + jwt.expires_in;
+    return nowSeconds() + jwt.expires_in;
   }
-  return Math.floor(Date.now() / 1000);
+  if (jwt.access_token) {
+    try {
+      const decoded = decodeJwt(jwt.access_token);
+      if (typeof decoded.exp === "number") {
+        return decoded.exp;
+      }
+    } catch {
+      /* opaque access token */
+    }
+  }
+  if (jwt.id_token) {
+    try {
+      const decoded = decodeJwt(jwt.id_token);
+      if (typeof decoded.exp === "number") {
+        return decoded.exp;
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+  return nowSeconds();
+}
+
+/**
+ * Expiry for a **persisted** primary JWT. Prefer absolute `expires_at` (set at store time).
+ */
+export const resolveExpiresAt = (jwt: JwtResponse): number => {
+  if (typeof jwt.expires_at === "number") {
+    return jwt.expires_at;
+  }
+  if (jwt.access_token) {
+    try {
+      const decoded = decodeJwt(jwt.access_token);
+      if (typeof decoded.exp === "number") {
+        return decoded.exp;
+      }
+    } catch {
+      /* opaque access token */
+    }
+  }
+  if (jwt.id_token) {
+    try {
+      const decoded = decodeJwt(jwt.id_token);
+      if (typeof decoded.exp === "number") {
+        return decoded.exp;
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+  return nowSeconds();
 };
 
 /**

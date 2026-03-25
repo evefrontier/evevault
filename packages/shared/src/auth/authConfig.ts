@@ -116,6 +116,7 @@ function addUserManagerEventHandlers(
   });
 
   userManager.events.addAccessTokenExpiring(() => {
+    log.debug("OIDC access token expiring — refreshing JWT", { tenantId });
     void Promise.all([
       import("../stores/networkStore"),
       import("./stores/authStore"),

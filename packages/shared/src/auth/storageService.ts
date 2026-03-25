@@ -1,7 +1,7 @@
 import type { SuiChain } from "@mysten/wallet-standard";
 import { SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
 import { useNetworkStore } from "../stores/networkStore";
-import type { JwtResponse } from "../types";
+import type { JwtResponse, OAuthTokenResponse } from "../types";
 import { isExtension, isWeb } from "../utils/environment";
 import { createLogger } from "../utils/logger";
 import {
@@ -9,7 +9,10 @@ import {
   JWT_STORAGE_KEY,
   NETWORK_STORAGE_KEY,
 } from "../utils/storageKeys";
-import { resolveExpiresAt } from "./utils/authStoreUtils";
+import {
+  resolveExpiresAt,
+  resolveExpiresAtFromOAuthResponse,
+} from "./utils/authStoreUtils";
 
 const log = createLogger();
 
@@ -197,29 +200,36 @@ export async function clearZkLoginJwtForNetwork(
 }
 
 /**
- * Store a JWT for a specific network
+ * Store primary (OAuth) JWT for a specific network
  */
 export async function storeJwt(
-  jwt: JwtResponse,
+  jwt: OAuthTokenResponse,
   chain?: SuiChain,
 ): Promise<void> {
   const network = chain || useNetworkStore.getState().chain;
   const existingJwts = await getAllJwtEntries();
-  const expiresAt = resolveExpiresAt(jwt);
+  const current = existingJwts?.[network] ?? {};
+  const absExpiresAt = resolveExpiresAtFromOAuthResponse(jwt);
+  const primary: OAuthTokenResponse = {
+    ...jwt,
+    expires_at: absExpiresAt,
+  };
+  const expiresAt = absExpiresAt;
 
   log.info("Storing JWT for network", {
     network,
-    hasJwt: !!jwt.id_token,
+    hasJwt: !!primary.id_token,
+    hasRefreshToken: !!primary.refresh_token,
     expiresAt,
     expiresIn: expiresAt - Math.floor(Date.now() / 1000),
+    primary,
   });
 
-  const current = existingJwts?.[network] ?? {};
   const updatedJwts: Partial<JwtCompositeMap> = {
     ...(existingJwts || {}),
     [network]: {
       ...current,
-      primary: jwt,
+      primary,
     },
   };
 

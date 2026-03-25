@@ -6,11 +6,13 @@ export interface JwtResponse extends Partial<User> {
   id_token: string;
   expires_in: number;
   scope: string;
+  token_type: string;
   refresh_token?: string;
   refresh_token_id?: string;
-  token_type: string;
   userId?: string;
 }
+
+export type OAuthTokenResponse = JwtResponse & { refresh_token: string };
 
 export interface AuthSuccessToken {
   id_token?: string;

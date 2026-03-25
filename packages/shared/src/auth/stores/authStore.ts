@@ -11,7 +11,7 @@ import {
   OAuthTenantSessionKey,
   setCurrentTenantId,
 } from "../../stores/tenantStore";
-import type { AuthMessage, JwtResponse, TenantId } from "../../types";
+import type { AuthMessage, OAuthTokenResponse, TenantId } from "../../types";
 import {
   createLogger,
   isBrowser,
@@ -26,6 +26,7 @@ import {
   clearZkLoginAddressCache,
   getZkLoginAddress,
 } from "../getZkLoginAddress";
+import { parseOAuthTokenResponse } from "../oauthTokenResponse";
 import {
   clearAllJwts,
   clearZkLoginJwtForNetwork,
@@ -33,7 +34,10 @@ import {
   storeJwt,
 } from "../storageService";
 import type { AuthState } from "../types";
-import { resolveExpiresAt } from "../utils/authStoreUtils";
+import {
+  resolveExpiresAt,
+  resolveExpiresAtFromOAuthResponse,
+} from "../utils/authStoreUtils";
 
 // biome-ignore lint/suspicious/noExplicitAny: chrome is a global object
 declare const chrome: any;
@@ -426,9 +430,14 @@ export const useAuthStore = create<AuthState>()(
               return;
             }
 
-            const data = (await response.json()) as JwtResponse;
-            if (!data?.id_token) {
-              log.error("Token refresh failed: no id_token in response");
+            let data: OAuthTokenResponse;
+            try {
+              data = parseOAuthTokenResponse(await response.json());
+            } catch (parseError) {
+              log.error("Token refresh failed: invalid token response", {
+                network,
+                parseError,
+              });
               await get().logout();
               return;
             }
@@ -449,19 +458,12 @@ export const useAuthStore = create<AuthState>()(
                   ...(prev?.profile ?? {}),
                   ...decoded,
                 } as User["profile"],
-                expires_at: resolveExpiresAt(data),
+                expires_at: resolveExpiresAtFromOAuthResponse(data),
               });
               await getUserManagerInstance().storeUser(newUser);
               set({ user: newUser });
             } else {
-              await storeJwt(
-                {
-                  ...data,
-                  refresh_token:
-                    data.refresh_token ?? existingJwt?.refresh_token,
-                },
-                network,
-              );
+              await storeJwt(data, network);
             }
             await clearZkLoginJwtForNetwork(network);
             log.debug("Primary OAuth JWT refreshed", { network });
