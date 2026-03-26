@@ -42,21 +42,18 @@ export function SignPopupAuthGate({
         <img src="/images/logo.png" alt="EVE Vault" className="h-20" />
         <Heading level={2}>{title}</Heading>
         <Text variant="light">You need to log in before signing.</Text>
-        <Button
-          onClick={() => login()}
-          disabled={loading}
-          variant="primary"
-          size="fill"
-        >
-          {loading ? "Logging in..." : "Log In to Sign"}
-        </Button>
-        <Button
-          onClick={onCancel}
-          disabled={cancelDisabled}
-          variant="secondary"
-        >
-          Cancel
-        </Button>
+        <div style={{ display: "flex", gap: "10px" }}>
+          <Button onClick={() => login()} disabled={loading} variant="primary">
+            {loading ? "Logging in..." : "Log In"}
+          </Button>
+          <Button
+            onClick={onCancel}
+            disabled={cancelDisabled}
+            variant="secondary"
+          >
+            Cancel
+          </Button>
+        </div>
       </div>
     );
   }
