@@ -33,7 +33,7 @@
     },
     "apps/extension": {
       "name": "@evevault/extension",
-      "version": "0.0.6",
+      "version": "0.0.7",
       "dependencies": {
         "@evevault/shared": "workspace:*",
         "@mysten/wallet-standard": "^0.16.3",
@@ -57,7 +57,7 @@
     },
     "apps/web": {
       "name": "@evevault/web",
-      "version": "0.0.6",
+      "version": "0.0.7",
       "dependencies": {
         "@evevault/shared": "workspace:*",
         "@suiet/wallet-kit": "^0.5.1",
@@ -84,7 +84,7 @@
     },
     "packages/shared": {
       "name": "@evevault/shared",
-      "version": "0.0.6",
+      "version": "0.0.7",
       "dependencies": {
         "@mysten/signers": "^0.6.2",
         "idb-keyval": "^6.2.2",
