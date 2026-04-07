@@ -1,6 +1,7 @@
 import { WalletStandardMessageTypes } from "@evevault/shared";
 import { getZkLoginAddress } from "@evevault/shared/auth";
 import { createLogger } from "@evevault/shared/utils";
+import { fromBase64 } from "@mysten/sui/utils";
 import type {
   IdentifierRecord,
   SignedTransaction,
@@ -237,10 +238,10 @@ export class EveVaultWallet implements Wallet {
                 throw new Error("No data returned from zkLogin address lookup");
               }
 
-              const { address } = zkLoginResponse.data;
+              const { address, publicKey } = zkLoginResponse.data;
               const newAccount = new ReadonlyWalletAccount({
                 address,
-                publicKey: new Uint8Array(),
+                publicKey: fromBase64(publicKey),
                 chains: [SUI_TESTNET_CHAIN, SUI_DEVNET_CHAIN],
                 features: [
                   StandardConnect,
