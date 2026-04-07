@@ -216,7 +216,7 @@ The extension supports multi-network operation with per-network data isolation:
 
 **Location**: `packages/shared/src/auth/tenantConfig.ts`, `packages/shared/src/auth/tenantStore.ts`, `packages/shared/src/auth/stores/authStore.ts`
 
-The app supports switching the **auth/test server** (tenant) so login and token exchange use a different FusionAuth instance (e.g. Utopia, Tauceti, Tesseract, Tetra, TIaki). This is separate from Sui network switching.
+The app supports switching the **auth/test server** (tenant) so login and token exchange use a different FusionAuth instance (e.g. Utopia, Tauceti, Tesseract, Tetra, Tiaki). This is separate from Sui network switching.
 
 - **Tenant config**: `getTenantConfig(tenantId)` returns `clientId`, `clientSecret`, `serverUrl` per tenant. `clientId` and `serverUrl` are defined in a static `TENANT_KEYS` map in code for each known tenant; only the `clientSecret` is read from environment variables (default tenant uses `VITE_FUSIONAUTH_CLIENT_SECRET`, other tenants use `VITE_TENANT_<ID>_CLIENT_SECRET`).
 - **Tenant store**: `useTenantStore` persists current `tenantId`; `getCurrentTenantId()` is used by auth config, token exchange, and OIDC. On web, `applyTenantFromUrl()` syncs from `?tenant=<id>`.
