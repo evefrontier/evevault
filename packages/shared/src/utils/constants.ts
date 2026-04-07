@@ -43,14 +43,14 @@ export const TENANT_KEYS: Record<TenantId, TenantConfig> = {
     isDev: true,
   },
   tetra: {
-    clientId: "	b62e25b0-d372-4563-a899-8e2f57c343cb",
+    clientId: "b62e25b0-d372-4563-a899-8e2f57c343cb",
     clientSecret: import.meta.env.VITE_TENANT_TETRA_CLIENT_SECRET,
     serverUrl: "https://test.auth.evefrontier.com",
     webOrigin: "https://test.evevault.evefrontier.com",
     isDev: true,
   },
   tiaki: {
-    clientId: "	7b70cc89-4383-4cb7-8ba5-73154b06d7e1",
+    clientId: "7b70cc89-4383-4cb7-8ba5-73154b06d7e1",
     clientSecret: import.meta.env.VITE_TENANT_TIAKI_CLIENT_SECRET,
     serverUrl: "https://test.auth.evefrontier.com",
     webOrigin: "https://test.evevault.evefrontier.com",
