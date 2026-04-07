@@ -8,7 +8,14 @@ import { isEveCoinType } from "../eveToken";
 describe("eveToken", () => {
   describe("getEveCoinType", () => {
     it("returns coin type in format packageId::EVE::EVE for each tenant", () => {
-      const tenants = ["nebula", "testevenet", "utopia", "stillness"] as const;
+      const tenants = [
+        "tauceti",
+        "tesseract",
+        "tetra",
+        "tiaki",
+        "utopia",
+        "stillness",
+      ] as const;
       for (const tenantId of tenants) {
         const coinType = getEveCoinType(tenantId);
         expect(coinType).toMatch(/^0x[a-f0-9]+::EVE::EVE$/);
@@ -18,15 +25,17 @@ describe("eveToken", () => {
       }
     });
 
-    it("returns same coin type for nebula and testevenet (test tier)", () => {
-      expect(getEveCoinType("nebula")).toBe(getEveCoinType("testevenet"));
+    it("returns same coin type for tauceti and tesseract (test tier)", () => {
+      expect(getEveCoinType("tauceti")).toBe(getEveCoinType("tesseract"));
     });
   });
 
   describe("isEveCoinType", () => {
     it("returns true for each tenant EVE coin type", () => {
-      expect(isEveCoinType(getEveCoinType("nebula"))).toBe(true);
-      expect(isEveCoinType(getEveCoinType("testevenet"))).toBe(true);
+      expect(isEveCoinType(getEveCoinType("tauceti"))).toBe(true);
+      expect(isEveCoinType(getEveCoinType("tesseract"))).toBe(true);
+      expect(isEveCoinType(getEveCoinType("tetra"))).toBe(true);
+      expect(isEveCoinType(getEveCoinType("tiaki"))).toBe(true);
       expect(isEveCoinType(getEveCoinType("utopia"))).toBe(true);
       expect(isEveCoinType(getEveCoinType("stillness"))).toBe(true);
     });

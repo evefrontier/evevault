@@ -19,15 +19,29 @@ vi.mock("../constants", () => ({
       serverUrl: "https://test.auth.evefrontier.com",
       webOrigin: "https://uat.evevault.evefrontier.com",
     },
-    testevenet: {
-      clientId: "testevenet-client",
+    tauceti: {
+      clientId: "tauceti-client",
       clientSecret: "secret",
       serverUrl: "https://test.auth.evefrontier.com",
       webOrigin: "https://test.evevault.evefrontier.com",
       isDev: true,
     },
-    nebula: {
-      clientId: "nebula-client",
+    tesseract: {
+      clientId: "tesseract-client",
+      clientSecret: "secret",
+      serverUrl: "https://test.auth.evefrontier.com",
+      webOrigin: "https://test.evevault.evefrontier.com",
+      isDev: true,
+    },
+    tetra: {
+      clientId: "tetra-client",
+      clientSecret: "secret",
+      serverUrl: "https://test.auth.evefrontier.com",
+      webOrigin: "https://test.evevault.evefrontier.com",
+      isDev: true,
+    },
+    tiaki: {
+      clientId: "tiaki-client",
       clientSecret: "secret",
       serverUrl: "https://test.auth.evefrontier.com",
       webOrigin: "https://test.evevault.evefrontier.com",
@@ -77,8 +91,10 @@ describe("getAvailableTenantIds", () => {
       const ids = getAvailableTenantIds(false);
       expect(ids).toContain("stillness");
       expect(ids).toContain("utopia");
-      expect(ids).not.toContain("testevenet");
-      expect(ids).not.toContain("nebula");
+      expect(ids).not.toContain("tesseract");
+      expect(ids).not.toContain("tiaki");
+      expect(ids).not.toContain("tetra");
+      expect(ids).not.toContain("tauceti");
     });
   });
 
@@ -114,8 +130,10 @@ describe("getAvailableTenantIds", () => {
       const ids = getAvailableTenantIds(true);
       expect(ids).not.toContain("utopia");
       expect(ids).not.toContain("stillness");
-      expect(ids).toContain("testevenet");
-      expect(ids).toContain("nebula");
+      expect(ids).toContain("tesseract");
+      expect(ids).toContain("tiaki");
+      expect(ids).toContain("tetra");
+      expect(ids).toContain("tauceti");
     });
 
     it("returns all test-webOrigin tenants when devMode true and origin is test webOrigin", () => {
@@ -125,8 +143,10 @@ describe("getAvailableTenantIds", () => {
       });
       const ids = getAvailableTenantIds(true);
       expect(ids).not.toContain("utopia");
-      expect(ids).toContain("testevenet");
-      expect(ids).toContain("nebula");
+      expect(ids).toContain("tesseract");
+      expect(ids).toContain("tiaki");
+      expect(ids).toContain("tetra");
+      expect(ids).toContain("tauceti");
       expect(ids).not.toContain("stillness");
     });
 
