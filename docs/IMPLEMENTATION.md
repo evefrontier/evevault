@@ -216,7 +216,7 @@ The extension supports multi-network operation with per-network data isolation:
 
 **Location**: `packages/shared/src/auth/tenantConfig.ts`, `packages/shared/src/auth/tenantStore.ts`, `packages/shared/src/auth/stores/authStore.ts`
 
-The app supports switching the **auth/test server** (tenant) so login and token exchange use a different FusionAuth instance (e.g. Utopia, Testevenet, Nebula). This is separate from Sui network switching.
+The app supports switching the **auth/test server** (tenant) so login and token exchange use a different FusionAuth instance (e.g. Utopia, Tauceti, Tesseract, Tetra, Tiaki). This is separate from Sui network switching.
 
 - **Tenant config**: `getTenantConfig(tenantId)` returns `clientId`, `clientSecret`, `serverUrl` per tenant. `clientId` and `serverUrl` are defined in a static `TENANT_KEYS` map in code for each known tenant; only the `clientSecret` is read from environment variables (default tenant uses `VITE_FUSIONAUTH_CLIENT_SECRET`, other tenants use `VITE_TENANT_<ID>_CLIENT_SECRET`).
 - **Tenant store**: `useTenantStore` persists current `tenantId`; `getCurrentTenantId()` is used by auth config, token exchange, and OIDC. On web, `applyTenantFromUrl()` syncs from `?tenant=<id>`.
@@ -224,7 +224,7 @@ The app supports switching the **auth/test server** (tenant) so login and token 
 - **Cleanup**: `runTenantSwitchCleanup(tenantId)` removes user from UserManager, performs full cleanup, clears JWTs and device state so the next login uses the new tenant.
 
 **Key components:**
-- `tenantConfig.ts` – Tenant IDs (default, utopia, testevenet, nebula), env-based config, `getTenantLabel()` for UI (e.g. "Utopia", "Testevenet", "Nebula")
+- `tenantConfig.ts` – Tenant IDs (default, utopia, tauceti, tesseract, tetra, tiaki), env-based config, `getTenantLabel()` for UI (e.g. "Utopia", "Tauceti", "Tesseract", "Tetra", "Tiaki")
 - `tenantStore.ts` – Current tenant state and `getCurrentTenantId()` / `setCurrentTenantId()` / `applyTenantFromUrl()`
 - `authStore` – `switchTenantAndReload()`, `runTenantSwitchCleanup()`; `getUserManager(tenantId)` and token exchange take `tenantId`
 

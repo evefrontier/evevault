@@ -10,7 +10,7 @@ import { vendJwt } from "../vendToken";
 
 describe("vendJwt", () => {
   const idToken = "primary.id.jwt";
-  const apiBase = "https://api.test.tech.evefrontier.com";
+  const apiBase = "https://api.test.pub.evefrontier.com";
   const tenant = "frontier-tenant";
 
   beforeEach(() => {

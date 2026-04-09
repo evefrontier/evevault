@@ -27,7 +27,15 @@ function findTwoTenantsWithSameEvePackage(): [TenantId, TenantId] | null {
 describe("eveToken", () => {
   describe("getEveCoinType", () => {
     it("returns coin type in format packageId::EVE::EVE for each tenant", () => {
-      for (const tenantId of TENANT_IDS) {
+      const tenants = [
+        "tauceti",
+        "tesseract",
+        "tetra",
+        "tiaki",
+        "utopia",
+        "stillness",
+      ] as const;
+      for (const tenantId of tenants) {
         const coinType = getEveCoinType(tenantId);
         expect(coinType).toMatch(/^0x[a-f0-9]+::EVE::EVE$/);
         expect(coinType).toBe(
@@ -36,24 +44,19 @@ describe("eveToken", () => {
       }
     });
 
-    it("returns same coin type for tenants that share an EVE package", () => {
-      const pair = findTwoTenantsWithSameEvePackage();
-      expect(
-        pair,
-        "dapp-kit should expose at least two tenants per test env",
-      ).not.toBeNull();
-      if (pair) {
-        const [a, b] = pair;
-        expect(getEveCoinType(a)).toBe(getEveCoinType(b));
-      }
+    it("returns same coin type for tauceti and tesseract (test tier)", () => {
+      expect(getEveCoinType("tauceti")).toBe(getEveCoinType("tesseract"));
     });
   });
 
   describe("isEveCoinType", () => {
     it("returns true for each tenant EVE coin type", () => {
-      for (const tenantId of TENANT_IDS) {
-        expect(isEveCoinType(getEveCoinType(tenantId))).toBe(true);
-      }
+      expect(isEveCoinType(getEveCoinType("tauceti"))).toBe(true);
+      expect(isEveCoinType(getEveCoinType("tesseract"))).toBe(true);
+      expect(isEveCoinType(getEveCoinType("tetra"))).toBe(true);
+      expect(isEveCoinType(getEveCoinType("tiaki"))).toBe(true);
+      expect(isEveCoinType(getEveCoinType("utopia"))).toBe(true);
+      expect(isEveCoinType(getEveCoinType("stillness"))).toBe(true);
     });
 
     it("returns true for the legacy EVE coin type", () => {

@@ -92,8 +92,10 @@ export function isAvailableTenantId(
 const TENANT_LABELS: Record<TenantId, string> = {
   stillness: "Stillness",
   utopia: "Utopia",
-  testevenet: "Testevenet",
-  nebula: "Nebula",
+  tauceti: "Tauceti",
+  tesseract: "Tesseract",
+  tetra: "Tetra",
+  tiaki: "Tiaki",
 };
 
 /**
