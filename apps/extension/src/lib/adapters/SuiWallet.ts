@@ -1,6 +1,7 @@
 import { WalletStandardMessageTypes } from "@evevault/shared";
 import { getZkLoginAddress } from "@evevault/shared/auth";
 import { createLogger } from "@evevault/shared/utils";
+import { fromBase64 } from "@mysten/sui/utils";
 import type {
   IdentifierRecord,
   SignedTransaction,
@@ -216,49 +217,79 @@ export class EveVaultWallet implements Wallet {
         if (m.__from !== "Eve Vault" || m.id !== id) return;
         if (m.type === "auth_success") {
           if (trySettle(state, onMsg, timeoutId)) {
-            const result = m.token;
+            try {
+              const result = m.token;
 
-            sessionStorage.setItem(
-              "evevault_jwt",
-              JSON.stringify(result.access_token),
-            );
+              sessionStorage.setItem(
+                "evevault_jwt",
+                JSON.stringify(result.access_token),
+              );
 
-            if (result) {
-              const zkLoginResponse = await getZkLoginAddress({
-                jwt: result.access_token,
-                enokiApiKey: import.meta.env.VITE_ENOKI_API_KEY,
-              });
+              if (result) {
+                const zkLoginResponse = await getZkLoginAddress({
+                  jwt: result.access_token,
+                  enokiApiKey: import.meta.env.VITE_ENOKI_API_KEY,
+                });
 
-              if (zkLoginResponse.error) {
-                throw new Error(zkLoginResponse.error.message);
+                if (zkLoginResponse.error) {
+                  reject(new Error(zkLoginResponse.error.message));
+                  return;
+                }
+
+                if (!zkLoginResponse.data) {
+                  reject(
+                    new Error("No data returned from zkLogin address lookup"),
+                  );
+                  return;
+                }
+
+                const { address, publicKey: publicKeyB64 } =
+                  zkLoginResponse.data;
+                const trimmedPublicKey = publicKeyB64.trim();
+                if (!trimmedPublicKey) {
+                  reject(
+                    new Error(
+                      "No public key returned from zkLogin address lookup",
+                    ),
+                  );
+                  return;
+                }
+
+                let publicKeyBytes: Uint8Array;
+                try {
+                  publicKeyBytes = fromBase64(trimmedPublicKey);
+                } catch {
+                  reject(
+                    new Error(
+                      "Invalid base64 public key returned from zkLogin address lookup",
+                    ),
+                  );
+                  return;
+                }
+
+                const newAccount = new ReadonlyWalletAccount({
+                  address,
+                  publicKey: publicKeyBytes,
+                  chains: [SUI_TESTNET_CHAIN, SUI_DEVNET_CHAIN],
+                  features: [
+                    StandardConnect,
+                    StandardDisconnect,
+                    SuiSignPersonalMessage,
+                    SuiSignTransaction,
+                    SuiSignAndExecuteTransaction,
+                    EVEFRONTIER_SPONSORED_TRANSACTION,
+                  ],
+                });
+
+                this.#accounts = [newAccount];
+
+                this.#emitChangeEvent({ accounts: this.#accounts });
               }
 
-              if (!zkLoginResponse.data) {
-                throw new Error("No data returned from zkLogin address lookup");
-              }
-
-              const { address } = zkLoginResponse.data;
-              const newAccount = new ReadonlyWalletAccount({
-                address,
-                publicKey: new Uint8Array(),
-                chains: [SUI_TESTNET_CHAIN, SUI_DEVNET_CHAIN],
-                features: [
-                  StandardConnect,
-                  StandardDisconnect,
-                  SuiSignPersonalMessage,
-                  SuiSignTransaction,
-                  SuiSignAndExecuteTransaction,
-                  EVEFRONTIER_SPONSORED_TRANSACTION,
-                ],
-              });
-
-              this.#accounts = [newAccount];
-
-              // Emit accounts change event - per spec, accounts array contains all current accounts
-              this.#emitChangeEvent({ accounts: this.#accounts });
+              resolve({ accounts: this.#accounts });
+            } catch (err) {
+              reject(err instanceof Error ? err : new Error(String(err)));
             }
-
-            resolve({ accounts: this.#accounts });
           }
         } else {
           if (trySettle(state, onMsg, timeoutId)) {

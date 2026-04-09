@@ -1,9 +1,28 @@
 import {
   EVE_PACKAGE_ID_BY_TENANT,
   getEveCoinType,
+  type TenantId,
 } from "@evefrontier/dapp-kit";
 import { describe, expect, it } from "vitest";
 import { isEveCoinType } from "../eveToken";
+
+const TENANT_IDS = Object.keys(EVE_PACKAGE_ID_BY_TENANT) as TenantId[];
+
+function findTwoTenantsWithSameEvePackage(): [TenantId, TenantId] | null {
+  const byPkg = new Map<string, TenantId[]>();
+  for (const tenantId of TENANT_IDS) {
+    const pkg = EVE_PACKAGE_ID_BY_TENANT[tenantId];
+    const list = byPkg.get(pkg) ?? [];
+    list.push(tenantId);
+    byPkg.set(pkg, list);
+  }
+  for (const ids of byPkg.values()) {
+    if (ids.length >= 2) {
+      return [ids[0], ids[1]];
+    }
+  }
+  return null;
+}
 
 describe("eveToken", () => {
   describe("getEveCoinType", () => {
