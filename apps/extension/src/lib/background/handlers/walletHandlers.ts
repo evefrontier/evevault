@@ -35,7 +35,17 @@ async function handleApprovePopup(
     const isSignAndExecute =
       action === WalletStandardMessageTypes.SIGN_AND_EXECUTE_TRANSACTION;
 
-    const storageListener = (changes: {
+    let timeoutId: ReturnType<typeof setTimeout>;
+    let registeredListener: (changes: {
+      [key: string]: chrome.storage.StorageChange;
+    }) => void;
+
+    const detachApprovalListener = () => {
+      clearTimeout(timeoutId);
+      chrome.storage.onChanged.removeListener(registeredListener);
+    };
+
+    const coreListener = (changes: {
       [key: string]: chrome.storage.StorageChange;
     }) => {
       const result = changes.transactionResult?.newValue;
@@ -89,9 +99,9 @@ async function handleApprovePopup(
         }
 
         chrome.storage.local.remove(["pendingAction", "transactionResult"]);
-        chrome.storage.onChanged.removeListener(storageListener);
+        detachApprovalListener();
       } else if (result?.status === "error") {
-        chrome.storage.onChanged.removeListener(storageListener);
+        detachApprovalListener();
 
         if (isSignAndExecute && senderTabId) {
           chrome.tabs
@@ -134,28 +144,23 @@ async function handleApprovePopup(
       }
     };
 
-    chrome.storage.onChanged.addListener(storageListener);
+    registeredListener = (changes: {
+      [key: string]: chrome.storage.StorageChange;
+    }) => {
+      clearTimeout(timeoutId);
+      coreListener(changes);
+    };
 
-    // Clean up after timeout (10 minutes)
-    const timeoutId = setTimeout(
+    timeoutId = setTimeout(
       () => {
-        chrome.storage.onChanged.removeListener(storageListener);
+        detachApprovalListener();
         chrome.storage.local.remove(["pendingAction", "transactionResult"]);
         log.warn("Transaction approval timed out", { action, senderTabId });
       },
       10 * 60 * 1000,
     );
 
-    // Store timeout ID so it can be cleared if transaction completes
-    const originalListener = storageListener;
-    const wrappedListener = (changes: {
-      [key: string]: chrome.storage.StorageChange;
-    }) => {
-      clearTimeout(timeoutId);
-      originalListener(changes);
-    };
-    chrome.storage.onChanged.removeListener(storageListener);
-    chrome.storage.onChanged.addListener(wrappedListener);
+    chrome.storage.onChanged.addListener(registeredListener);
 
     return true; // Keep message channel open for async response
   } catch (error) {

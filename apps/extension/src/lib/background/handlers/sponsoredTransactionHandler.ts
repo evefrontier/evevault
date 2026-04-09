@@ -123,13 +123,23 @@ async function handleSponsoredTransaction(
       },
     });
 
-    const storageListener = (changes: {
+    let timeoutId: ReturnType<typeof setTimeout>;
+    let registeredListener: (changes: {
+      [key: string]: chrome.storage.StorageChange;
+    }) => void;
+
+    const detachSponsoredListener = () => {
+      clearTimeout(timeoutId);
+      chrome.storage.onChanged.removeListener(registeredListener);
+    };
+
+    const coreListener = (changes: {
       [key: string]: chrome.storage.StorageChange;
     }) => {
       const result = changes.transactionResult?.newValue;
       if (!result || result.windowId !== windowId) return;
 
-      chrome.storage.onChanged.removeListener(storageListener);
+      detachSponsoredListener();
       chrome.storage.local.remove(["pendingAction", "transactionResult"]);
 
       if (
@@ -200,28 +210,23 @@ async function handleSponsoredTransaction(
       }
     };
 
-    chrome.storage.onChanged.addListener(storageListener);
+    registeredListener = (changes: {
+      [key: string]: chrome.storage.StorageChange;
+    }) => {
+      clearTimeout(timeoutId);
+      coreListener(changes);
+    };
 
-    // Clean up after timeout (10 minutes)
-    const timeoutId = setTimeout(
+    timeoutId = setTimeout(
       () => {
-        chrome.storage.onChanged.removeListener(storageListener);
+        detachSponsoredListener();
         chrome.storage.local.remove(["pendingAction", "transactionResult"]);
         log.warn("Sponsored transaction approval timed out", { senderTabId });
       },
       10 * 60 * 1000,
     );
 
-    // Store timeout ID so it can be cleared if transaction completes
-    const originalListener = storageListener;
-    const wrappedListener = (changes: {
-      [key: string]: chrome.storage.StorageChange;
-    }) => {
-      clearTimeout(timeoutId);
-      originalListener(changes);
-    };
-    chrome.storage.onChanged.removeListener(storageListener);
-    chrome.storage.onChanged.addListener(wrappedListener);
+    chrome.storage.onChanged.addListener(registeredListener);
 
     return true;
   } catch (error) {
