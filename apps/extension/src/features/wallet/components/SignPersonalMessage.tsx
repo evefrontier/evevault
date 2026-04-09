@@ -152,15 +152,15 @@ function SignPersonalMessage() {
         transactionResult: {
           windowId: pendingMessage.windowId,
           status: "error",
-          error: "Transaction rejected by user",
+          error: "Message signing rejected by user",
         },
       });
 
       // Close the popup window
       window.close();
     } catch (err) {
-      log.error("Failed to reject transaction", err);
-      setError("Failed to reject transaction");
+      log.error("Failed to reject message signing", err);
+      setError("Failed to reject message signing");
     }
   };
 

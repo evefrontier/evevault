@@ -103,11 +103,31 @@ async function handleApprovePopup(
             .catch((err) => {
               log.error("Failed to send sign_and_execute error", err);
             });
-        } else {
-          sendResponse({
-            type: "sign_transaction_error",
-            error: result.error,
-          });
+        } else if (typeof senderTabId === "number") {
+          let errorType: string;
+
+          switch (action) {
+            case WalletStandardMessageTypes.SIGN_TRANSACTION:
+              errorType = "sign_transaction_error";
+              break;
+            case WalletStandardMessageTypes.SIGN_PERSONAL_MESSAGE:
+              errorType = "sign_personal_message_error";
+              break;
+            default:
+              log.warn("Unknown action", { action });
+              errorType = "sign_error";
+              break;
+          }
+
+          chrome.tabs
+            .sendMessage(senderTabId, {
+              type: errorType,
+              error: result.error,
+              id: message.id,
+            })
+            .catch((err) => {
+              log.error(`Failed to send ${errorType} error`, err);
+            });
         }
 
         chrome.storage.local.remove(["pendingAction", "transactionResult"]);
