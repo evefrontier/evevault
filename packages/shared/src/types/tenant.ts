@@ -4,8 +4,10 @@ export type TenantId =
   | typeof DEFAULT_TENANT_ID
   | "utopia"
   | "stillness"
-  | "testevenet"
-  | "nebula";
+  | "tauceti"
+  | "tesseract"
+  | "tetra"
+  | "tiaki";
 
 export interface TenantConfig {
   clientId: string;

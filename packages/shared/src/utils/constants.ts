@@ -28,16 +28,30 @@ export const TENANT_KEYS: Record<TenantId, TenantConfig> = {
     serverUrl: "https://test.auth.evefrontier.com",
     webOrigin: "https://uat.evevault.evefrontier.com",
   },
-  testevenet: {
-    clientId: "c8815001-f950-4147-905e-4833d904cd38",
-    clientSecret: import.meta.env.VITE_TENANT_TESTEVENET_CLIENT_SECRET,
+  tauceti: {
+    clientId: "139af6db-7e5c-46c2-a0d2-6dff25d1b1b1",
+    clientSecret: import.meta.env.VITE_TENANT_TAUCETI_CLIENT_SECRET,
     serverUrl: "https://test.auth.evefrontier.com",
     webOrigin: "https://test.evevault.evefrontier.com",
     isDev: true,
   },
-  nebula: {
-    clientId: "c9671652-d906-4850-bd3c-b5e8351e62b4",
-    clientSecret: import.meta.env.VITE_TENANT_NEBULA_CLIENT_SECRET,
+  tesseract: {
+    clientId: "c5f061eb-850a-46f9-bf6f-ce4c3d3f11b3",
+    clientSecret: import.meta.env.VITE_TENANT_TESSERACT_CLIENT_SECRET,
+    serverUrl: "https://test.auth.evefrontier.com",
+    webOrigin: "https://test.evevault.evefrontier.com",
+    isDev: true,
+  },
+  tetra: {
+    clientId: "b62e25b0-d372-4563-a899-8e2f57c343cb",
+    clientSecret: import.meta.env.VITE_TENANT_TETRA_CLIENT_SECRET,
+    serverUrl: "https://test.auth.evefrontier.com",
+    webOrigin: "https://test.evevault.evefrontier.com",
+    isDev: true,
+  },
+  tiaki: {
+    clientId: "7b70cc89-4383-4cb7-8ba5-73154b06d7e1",
+    clientSecret: import.meta.env.VITE_TENANT_TIAKI_CLIENT_SECRET,
     serverUrl: "https://test.auth.evefrontier.com",
     webOrigin: "https://test.evevault.evefrontier.com",
     isDev: true,
