@@ -47,6 +47,9 @@ export const resolveExpiresAt = (jwt: JwtResponse): number => {
       /* ignore */
     }
   }
+  if (typeof jwt.expires_in === "number") {
+    return Math.floor(Date.now() / 1000) + jwt.expires_in;
+  }
   return Math.floor(Date.now() / 1000);
 };
 
