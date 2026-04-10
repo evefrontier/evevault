@@ -213,6 +213,7 @@ export async function handleDappLogin(
 
   const authUrl = await getAuthUrl({
     tenantId: tenant,
+    nonce: deviceStore.networkData[chain]?.nonce ?? "evevault-bootstrap-nonce",
   });
 
   authUrl.searchParams.set("response_type", "code");

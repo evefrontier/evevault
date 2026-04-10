@@ -129,6 +129,9 @@ export async function handleExtLogin(
 
   const authUrl = getAuthUrl({
     tenantId: tenantId,
+    nonce:
+      deviceStore.networkData[currentChain]?.nonce ??
+      "evevault-bootstrap-nonce",
   });
 
   chrome.identity.launchWebAuthFlow(
