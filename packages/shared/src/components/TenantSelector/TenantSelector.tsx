@@ -5,8 +5,8 @@ import { Dropdown } from "../Dropdown";
 import Icon from "../Icon";
 import Text from "../Text";
 import "./TenantSelector.css";
+import type { TenantId } from "@evefrontier/dapp-kit/utils";
 import type {
-  TenantId,
   TenantSelectorInteractiveProps,
   TenantSelectorProps,
   TenantSelectorPropsBase,

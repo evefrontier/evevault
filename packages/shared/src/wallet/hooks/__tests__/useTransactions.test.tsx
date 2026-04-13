@@ -254,7 +254,11 @@ describe("useTransactionHistory hook (GraphQL)", () => {
         digest: "tx-multi",
         timestamp: "2024-01-01T00:00:00.000Z",
         balanceChanges: [
-          { amount: "-1000000000", coinType: eveCoinType, ownerAddress: "0xsender" },
+          {
+            amount: "-1000000000",
+            coinType: eveCoinType,
+            ownerAddress: "0xsender",
+          },
           {
             amount: "1000000000",
             coinType: eveCoinType,
@@ -291,7 +295,9 @@ describe("useTransactionHistory hook (GraphQL)", () => {
     expect(tx?.digest).toBe("tx-multi");
     expect(tx?.direction).toBe("received");
     expect(tx?.balanceChanges).toHaveLength(2);
-    const eveChange = tx?.balanceChanges?.find((bc) => bc.coinType === eveCoinType);
+    const eveChange = tx?.balanceChanges?.find(
+      (bc) => bc.coinType === eveCoinType,
+    );
     const suiChange = tx?.balanceChanges?.find(
       (bc) => bc.coinType === "0x2::sui::SUI",
     );

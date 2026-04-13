@@ -1,10 +1,10 @@
+import type { TenantId } from "@evefrontier/dapp-kit/utils";
 import {
   UserManager,
   type UserManagerSettings,
   WebStorageStateStore,
 } from "oidc-client-ts";
 import { getCurrentTenantId } from "../stores/tenantStore";
-import type { TenantId } from "../types";
 import { isExtension } from "../utils/environment";
 import { createLogger } from "../utils/logger";
 import { getTenantConfig } from "../utils/tenantConfig";

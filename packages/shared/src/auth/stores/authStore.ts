@@ -1,3 +1,4 @@
+import type { TenantId } from "@evefrontier/dapp-kit/utils";
 import { decodeJwt } from "jose";
 import { type IdTokenClaims, User } from "oidc-client-ts";
 import { create } from "zustand";
@@ -10,7 +11,7 @@ import {
   OAuthTenantSessionKey,
   setCurrentTenantId,
 } from "../../stores/tenantStore";
-import type { AuthMessage, TenantId } from "../../types";
+import type { AuthMessage } from "../../types";
 import {
   createLogger,
   isBrowser,

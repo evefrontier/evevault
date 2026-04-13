@@ -1,3 +1,4 @@
+import type { TenantId } from "@evefrontier/dapp-kit/utils";
 import type { SuiChain } from "@mysten/wallet-standard";
 import type { User } from "oidc-client-ts";
 import type {
@@ -9,7 +10,6 @@ import type {
   SVGProps,
 } from "react";
 import type { ThemeToken } from "../theme/colorTheme";
-import type { TenantId } from "./tenant";
 
 export interface SwitchProps {
   isChecked: boolean;

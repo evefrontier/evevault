@@ -1,4 +1,4 @@
-import { getDeviceData, storeJwt } from "@evevault/shared";
+import { storeJwt } from "@evevault/shared";
 import {
   exchangeCodeForToken,
   getJwtForNetwork,

@@ -111,13 +111,10 @@ export async function parseGraphQLTransaction(
       userChanges.find((change) => change.amount != null) ??
       userChanges[0];
     const primaryAmount =
-      primaryUserChange?.amount != null
-        ? BigInt(primaryUserChange.amount)
-        : 0n;
+      primaryUserChange?.amount != null ? BigInt(primaryUserChange.amount) : 0n;
     const direction: TransactionDirection =
       primaryAmount >= 0n ? "received" : "sent";
-    const primaryCoinType =
-      primaryUserChange?.coinType?.repr ?? SUI_COIN_TYPE;
+    const primaryCoinType = primaryUserChange?.coinType?.repr ?? SUI_COIN_TYPE;
     const primary =
       balanceChangeItems.find((bc) => bc.coinType === primaryCoinType) ??
       balanceChangeItems.find((bc) => bc.coinType !== SUI_COIN_TYPE) ??

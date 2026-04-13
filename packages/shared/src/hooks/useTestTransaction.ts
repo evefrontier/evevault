@@ -15,7 +15,7 @@ const log = createLogger();
  */
 export function useTestTransaction() {
   const { user: globalUser } = useAuth();
-  const { ephemeralPublicKey, getZkProof, maxEpoch } = useDevice();
+  const { getZkProof } = useDevice();
   const { chain } = useNetworkStore();
   const { showToast } = useToast();
   const [txDigest, setTxDigest] = useState<string | null>(null);

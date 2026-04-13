@@ -16,7 +16,6 @@ import {
 import Icon from "@evevault/shared/components/Icon";
 import { useDevice, useTenant } from "@evevault/shared/hooks";
 import {
-  getAvailableTenantIds,
   getCurrentTenantId,
   getTenantLabel,
   useDeviceStore,
@@ -30,10 +29,10 @@ import {
 } from "@evevault/shared/utils";
 import { zkSignAny } from "@evevault/shared/wallet";
 import { Transaction } from "@mysten/sui/transactions";
-import { SUI_TESTNET_CHAIN, type SuiChain } from "@mysten/wallet-standard";
+import { SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { APP_VERSION } from "../../../lib/appVersion";
 
 const log = createLogger();
@@ -65,10 +64,6 @@ export const WalletScreen = () => {
   } = useDevice();
   const { chain } = useNetworkStore();
   const faucetUrl = getFaucetUrlForChain(chain);
-  const availableTenantIds = useMemo(
-    () => getAvailableTenantIds(devMode),
-    [devMode],
-  );
   const tenantId = getCurrentTenantId();
 
   // Create suiClient with useMemo to recreate when chain changes

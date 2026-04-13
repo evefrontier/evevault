@@ -1,7 +1,8 @@
+import type { TenantId } from "@evefrontier/dapp-kit/utils";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { chromeStorageAdapter, localStorageAdapter } from "../adapters";
-import type { TenantId, TenantState } from "../types";
+import type { TenantState } from "../types";
 import { isWeb } from "../utils/environment";
 import {
   getAvailableTenantIds,

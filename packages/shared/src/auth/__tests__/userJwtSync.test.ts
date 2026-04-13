@@ -10,13 +10,9 @@ vi.mock("../getZkLoginAddress", () => ({
   getZkLoginAddress: (...args: unknown[]) => mockGetZkLoginAddress(...args),
 }));
 
-vi.mock("../storageService", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("../storageService")>();
-  return {
-    ...actual,
-    storeJwt: (...args: unknown[]) => mockStoreJwt(...args),
-  };
-});
+vi.mock("../storageService", () => ({
+  storeJwt: (...args: unknown[]) => mockStoreJwt(...args),
+}));
 
 vi.mock("../../utils/logger", () => ({
   createLogger: () => ({

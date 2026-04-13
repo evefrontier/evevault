@@ -21,6 +21,7 @@
     "clean:cache": "node scripts/clean-cache.js",
     "clean:all": "./scripts/clean-all.sh",
     "lint": "turbo run lint",
+    "lint:fix": "turbo run lint:fix",
     "test": "turbo run test",
     "test:ui": "turbo run test:ui",
     "test:run": "turbo run test:run",

@@ -1,8 +1,9 @@
-import type { TenantConfig, TenantId } from "../types";
+import { TenantId } from "@evefrontier/dapp-kit/utils";
+import type { TenantConfig } from "../types";
 import { TENANT_KEYS } from "./constants";
 import { isWeb } from "./environment";
 
-export const DEFAULT_TENANT_ID = "stillness" as const;
+export const DEFAULT_TENANT_ID = TenantId.STILLNESS;
 
 const KNOWN_TENANT_IDS: TenantId[] = Object.keys(TENANT_KEYS) as TenantId[];
 
