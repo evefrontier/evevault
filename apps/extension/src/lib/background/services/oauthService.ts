@@ -1,6 +1,6 @@
 import { getTenantConfig, type TenantId } from "@evevault/shared";
 
-function getAuthUrl(params: { tenantId: TenantId }) {
+function getAuthUrl(params: { tenantId: TenantId; nonce: string }) {
   const tenantConfig = getTenantConfig(params.tenantId);
 
   const clientId = tenantConfig.clientId;
@@ -14,6 +14,10 @@ function getAuthUrl(params: { tenantId: TenantId }) {
   url.searchParams.set("client_id", clientId);
   url.searchParams.set("redirect_uri", redirectUri);
   url.searchParams.set("scope", "openid profile email offline_access");
+  // Always include the caller-provided nonce (zkLogin-derived from `initializeForChain`).
+  if (params.nonce) {
+    url.searchParams.set("nonce", params.nonce);
+  }
 
   return url;
 }
