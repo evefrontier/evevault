@@ -1,8 +1,8 @@
-import type { JwtResponse } from "../types/authTypes";
+import type { JwtResponse, OAuthTokenResponse } from "../types/authTypes";
 import { getApiContext } from "./getApiContext";
 
 export const vendJwt = async (
-  token: JwtResponse["id_token"],
+  token: OAuthTokenResponse["id_token"],
   deviceParams: {
     nonce: string;
   },

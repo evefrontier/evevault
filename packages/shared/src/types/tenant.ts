@@ -1,13 +1,4 @@
-import type { DEFAULT_TENANT_ID } from "../utils";
-
-export type TenantId =
-  | typeof DEFAULT_TENANT_ID
-  | "utopia"
-  | "stillness"
-  | "tauceti"
-  | "tesseract"
-  | "tetra"
-  | "tiaki";
+import type { TenantId } from "@evefrontier/dapp-kit";
 
 export interface TenantConfig {
   clientId: string;

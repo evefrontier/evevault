@@ -1,3 +1,4 @@
+import { TenantId } from "@evefrontier/dapp-kit/utils";
 import {
   SUI_DEVNET_CHAIN,
   SUI_TESTNET_CHAIN,
@@ -5,7 +6,6 @@ import {
 } from "@mysten/wallet-standard";
 import { SUI_COIN_TYPE } from "../utils/constants";
 import { getEveCoinType } from "../wallet/eveToken";
-import type { TenantId } from "./tenant";
 
 export interface NetworkOption {
   chain: SuiChain;
@@ -40,7 +40,7 @@ export function getNetworkOption(chain: SuiChain): NetworkOption | undefined {
 /** Default token coin types per chain (e.g. SUI + chain-specific tokens like EVE on testnet). Testnet uses stillness tenant's EVE package for static default. */
 export const DEFAULT_TOKENS_BY_CHAIN: Record<string, string[]> = {
   [SUI_DEVNET_CHAIN]: [SUI_COIN_TYPE],
-  [SUI_TESTNET_CHAIN]: [SUI_COIN_TYPE, getEveCoinType("stillness")],
+  [SUI_TESTNET_CHAIN]: [SUI_COIN_TYPE, getEveCoinType(TenantId.STILLNESS)],
 };
 
 /**

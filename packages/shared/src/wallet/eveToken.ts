@@ -1,8 +1,8 @@
+import type { TenantId } from "@evefrontier/dapp-kit/utils";
 import {
   EVE_PACKAGE_ID_BY_TENANT,
   getEveCoinType,
 } from "@evefrontier/dapp-kit/utils";
-import type { TenantId } from "../types/tenant";
 
 export { getEveCoinType };
 

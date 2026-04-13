@@ -84,6 +84,7 @@
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
     "lint": "biome check src",
+    "lint:fix": "biome check src --write",
     "test": "vitest run --config ./vitest.config.mts",
     "test:ui": "vitest --ui --config ./vitest.config.mts",
     "test:run": "vitest run --config ./vitest.config.mts",

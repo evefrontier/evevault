@@ -21,7 +21,6 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
   showDevActions = false,
   onDevModeToggle,
   onSignSubmitTxClick,
-  onTokenRefreshTestClick,
   onFaucetTestSuiClick,
   version,
 }) => {
@@ -67,16 +66,7 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
       });
     }
 
-    // 3. Token refresh test (only when dev mode on)
-    if (showDevActions && onTokenRefreshTestClick) {
-      items.push({
-        label: "Token refresh test",
-        icon: "Refresh" as IconName,
-        onClick: onTokenRefreshTestClick,
-      });
-    }
-
-    // 3b. Faucet test SUI (only when dev mode on)
+    // 3. Faucet test SUI (only when dev mode on)
     if (showDevActions && onFaucetTestSuiClick) {
       items.push({
         label: "Faucet test SUI",
@@ -85,14 +75,14 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
       });
     }
 
-    // 5. Copy Address (always)
+    // 4. Copy Address (always)
     items.push({
       label: "Copy Address",
       icon: "Copy" as IconName,
       onClick: () => copy(address),
     });
 
-    // 6. Transaction History (optional)
+    // 5. Transaction History (optional)
     if (onTransactionsClick) {
       items.push({
         label: "Transaction History",
@@ -101,21 +91,21 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
       });
     }
 
-    // 7. Lock Wallet (always)
+    // 6. Lock Wallet (always)
     items.push({
       label: "Lock Wallet",
       icon: "HideEye" as IconName,
       onClick: lock,
     });
 
-    // 8. Logout (always)
+    // 7. Logout (always)
     items.push({
       label: "Logout",
       icon: "Close" as IconName,
       onClick: logout,
     });
 
-    // 9. App version (dev only, display-only)
+    // 8. App version (dev only, display-only)
     if (showDevActions && version) {
       items.push({
         label: `v${version}`,
@@ -131,7 +121,6 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
     showDevActions,
     onDevModeToggle,
     onSignSubmitTxClick,
-    onTokenRefreshTestClick,
     copy,
     address,
     lock,

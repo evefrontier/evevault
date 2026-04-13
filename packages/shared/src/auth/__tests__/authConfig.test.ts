@@ -1,35 +1,45 @@
-import { SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const refreshJwtMock = vi.fn();
-const addAccessTokenExpiringMock = vi.fn();
+const { oidcMocks, logMocks } = vi.hoisted(() => {
+  const userManagerConstructor = vi.fn();
+  const addSilentRenewError = vi.fn();
+  const logError = vi.fn();
+
+  return {
+    oidcMocks: { userManagerConstructor, addSilentRenewError },
+    logMocks: { logError },
+  };
+});
+
+vi.mock("../../utils/logger", () => ({
+  createLogger: () => ({
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: logMocks.logError,
+  }),
+}));
 
 vi.mock("oidc-client-ts", () => {
   class UserManager {
+    constructor(settings: unknown) {
+      oidcMocks.userManagerConstructor(settings);
+    }
     events = {
       addUserLoaded: vi.fn(),
       addUserUnloaded: vi.fn(),
-      addSilentRenewError: vi.fn(),
-      addAccessTokenExpiring: addAccessTokenExpiringMock,
+      addSilentRenewError: oidcMocks.addSilentRenewError,
       addAccessTokenExpired: vi.fn(),
     };
   }
 
-  class WebStorageStateStore {
-    constructor(_args: unknown) {}
-  }
+  class WebStorageStateStore {}
 
   return {
     UserManager,
     WebStorageStateStore,
   };
 });
-
-vi.mock("../../stores/networkStore", () => ({
-  useNetworkStore: {
-    getState: () => ({ chain: SUI_TESTNET_CHAIN }),
-  },
-}));
 
 vi.mock("../../utils/tenantConfig", () => ({
   getTenantConfig: () => ({
@@ -43,41 +53,43 @@ vi.mock("../../utils/environment", () => ({
   isExtension: () => false,
 }));
 
-const authStoreMock = {
-  useAuthStore: {
-    getState: () => ({
-      refreshJwt: refreshJwtMock,
-      setUser: vi.fn(),
-    }),
-  },
-};
-
-vi.mock("../stores/authStore", () => authStoreMock);
-
-describe("authConfig access token renewal", () => {
+describe("authConfig UserManager", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
   });
 
-  it("renews token on access token expiring event", async () => {
+  it("passes automaticSilentRenew to UserManager", async () => {
     const { getUserManager } = await import("../authConfig");
     getUserManager("stillness");
 
-    expect(addAccessTokenExpiringMock).toHaveBeenCalledTimes(1);
+    expect(oidcMocks.userManagerConstructor).toHaveBeenCalledTimes(1);
+    const settings = oidcMocks.userManagerConstructor.mock.calls[0]?.[0] as {
+      automaticSilentRenew?: boolean;
+    };
 
-    const handler = addAccessTokenExpiringMock.mock.calls[0]?.[0] as
-      | (() => void)
+    expect(settings.automaticSilentRenew).toBe(true);
+  });
+
+  it("logs when silent renew handler is invoked with an error", async () => {
+    const { getUserManager } = await import("../authConfig");
+    getUserManager("stillness");
+
+    expect(oidcMocks.addSilentRenewError).toHaveBeenCalledTimes(1);
+    const handler = oidcMocks.addSilentRenewError.mock.calls[0]?.[0] as
+      | ((error: unknown) => void)
       | undefined;
     expect(handler).toBeTypeOf("function");
 
-    handler?.();
-    await import("../stores/authStore");
-    for (let i = 0; i < 20 && refreshJwtMock.mock.calls.length === 0; i += 1) {
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    }
+    const fakeError = new Error("silent renew failed");
+    handler?.(fakeError);
 
-    expect(refreshJwtMock).toHaveBeenCalledTimes(1);
-    expect(refreshJwtMock).toHaveBeenCalledWith(SUI_TESTNET_CHAIN);
+    expect(logMocks.logError).toHaveBeenCalledWith(
+      "OIDC silent renew error",
+      expect.objectContaining({
+        tenantId: "stillness",
+        error: fakeError,
+      }),
+    );
   });
 });

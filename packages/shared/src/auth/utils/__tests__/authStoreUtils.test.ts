@@ -1,3 +1,4 @@
+import { UnsecuredJWT } from "jose";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { JwtResponse } from "../../../types/authTypes";
 
@@ -49,6 +50,11 @@ describe("resolveExpiresAt", () => {
     vi.useRealTimers();
   });
 
+  // JWT with iat=1748779000 but no exp
+  const tokenWithIat = new UnsecuredJWT({ sub: "u1" })
+    .setIssuedAt(1748779000)
+    .encode();
+
   it("uses expires_at when present", () => {
     expect(
       resolveExpiresAt({
@@ -62,27 +68,27 @@ describe("resolveExpiresAt", () => {
     ).toBe(1_900_000_000);
   });
 
-  it("uses expires_in relative to now when expires_at absent", () => {
+  it("uses iat + expires_in when expires_at absent", () => {
     expect(
       resolveExpiresAt({
         access_token: "a",
-        id_token: "i",
+        id_token: tokenWithIat,
         expires_in: 120,
         scope: "s",
         token_type: "Bearer",
       }),
-    ).toBe(Math.floor(Date.now() / 1000) + 120);
+    ).toBe(1748779000 + 120);
   });
 
-  it("falls back to now when expires_at and expires_in are not usable numbers", () => {
+  it("falls back to iat when expires_at and expires_in are not usable numbers", () => {
     expect(
       resolveExpiresAt({
-        access_token: "a",
-        id_token: "i",
+        access_token: tokenWithIat,
+        id_token: tokenWithIat,
         scope: "s",
         token_type: "Bearer",
       } as JwtResponse),
-    ).toBe(Math.floor(Date.now() / 1000));
+    ).toBe(1748779000);
   });
 });
 

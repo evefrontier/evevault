@@ -157,10 +157,10 @@ chrome.runtime.onMessage.addListener(
         return false;
       }
 
-      const publicKey = ephemeralKey.getPublicKey();
+      const publicKey = ephemeralKey?.getPublicKey();
       sendResponse({
         ok: true,
-        publicKeyBytes: Array.from(publicKey.toRawBytes()),
+        publicKeyBytes: Array.from(publicKey?.toRawBytes() ?? []),
       });
       return false;
     }

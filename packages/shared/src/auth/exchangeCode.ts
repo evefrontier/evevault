@@ -1,11 +1,13 @@
-import type { JwtResponse, TenantId } from "../types";
+import type { TenantId } from "@evefrontier/dapp-kit/utils";
+import type { OAuthTokenResponse } from "../types";
 import { getTenantConfig } from "../utils/tenantConfig";
+import { parseOAuthTokenResponse } from "./oauthTokenResponse";
 
 export async function exchangeCodeForToken(
   code: string,
   redirectUri: string,
   tenantId: TenantId,
-): Promise<JwtResponse> {
+): Promise<OAuthTokenResponse> {
   const { clientId, clientSecret, serverUrl } = getTenantConfig(tenantId);
   const tokenUrl = `${serverUrl.replace(/\/$/, "")}/oauth2/token`;
 
@@ -31,7 +33,5 @@ export async function exchangeCodeForToken(
     throw new Error(`Token exchange failed: ${errorText}`);
   }
 
-  const data: JwtResponse = await response.json();
-
-  return data;
+  return parseOAuthTokenResponse(await response.json());
 }

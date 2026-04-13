@@ -1,7 +1,7 @@
 import type { SuiChain } from "@mysten/wallet-standard";
 import { SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
 import { useNetworkStore } from "../stores/networkStore";
-import type { JwtResponse } from "../types";
+import type { JwtResponse, OAuthTokenResponse } from "../types";
 import { isExtension, isWeb } from "../utils/environment";
 import { createLogger } from "../utils/logger";
 import {
@@ -14,8 +14,8 @@ import { resolveExpiresAt } from "./utils/authStoreUtils";
 const log = createLogger();
 
 type JwtStorageEntry = {
-  primary?: JwtResponse;
-  zkLogin?: { id_token: string; expires_at: number };
+  primary?: OAuthTokenResponse;
+  zkLogin?: { id_token: JwtResponse["id_token"]; expires_at: number };
 };
 type JwtCompositeMap = Record<SuiChain, JwtStorageEntry>;
 type JwtStorageMap = Record<SuiChain, JwtResponse>;
@@ -80,7 +80,7 @@ function normalizeJwtEntry(value: unknown): JwtStorageEntry {
   if (typeof value === "object" && value !== null) {
     const candidate = value as { primary?: unknown; zkLogin?: unknown };
     return {
-      primary: candidate.primary as JwtResponse | undefined,
+      primary: candidate.primary as OAuthTokenResponse | undefined,
       zkLogin: candidate.zkLogin as
         | { id_token: string; expires_at: number }
         | undefined,
@@ -135,7 +135,6 @@ export async function storeZkLoginJwtForNetwork(
     network,
     hasJwt: !!jwt.id_token,
     expiresAt,
-    expiresIn: expiresAt - Math.floor(Date.now() / 1000),
   });
 
   const current = existing?.[network] ?? { zkLogin: undefined };
@@ -197,24 +196,24 @@ export async function clearZkLoginJwtForNetwork(
 }
 
 /**
- * Store a JWT for a specific network
+ * Store primary (OAuth) JWT for a specific network
  */
 export async function storeJwt(
-  jwt: JwtResponse,
+  jwt: OAuthTokenResponse,
   chain?: SuiChain,
 ): Promise<void> {
   const network = chain || useNetworkStore.getState().chain;
   const existingJwts = await getAllJwtEntries();
-  const expiresAt = resolveExpiresAt(jwt);
+  const current = existingJwts?.[network] ?? {};
 
   log.info("Storing JWT for network", {
     network,
     hasJwt: !!jwt.id_token,
-    expiresAt,
-    expiresIn: expiresAt - Math.floor(Date.now() / 1000),
+    hasRefreshToken: !!jwt.refresh_token,
+    expiresAt: jwt.expires_at,
+    expiresIn: jwt.expires_in,
   });
 
-  const current = existingJwts?.[network] ?? {};
   const updatedJwts: Partial<JwtCompositeMap> = {
     ...(existingJwts || {}),
     [network]: {
@@ -244,6 +243,8 @@ export async function getJwtForNetwork(
 ): Promise<JwtResponse | null> {
   const network = chain || useNetworkStore.getState().chain;
 
+  const now = Math.floor(Date.now() / 1000);
+
   if (isWeb()) {
     const currentChain = useNetworkStore.getState().chain;
     if (network === currentChain) {
@@ -252,7 +253,6 @@ export async function getJwtForNetwork(
       const jwtFromUser = userToJwtResponse(useAuthStore.getState().user);
       if (jwtFromUser) {
         const expiresAt = resolveExpiresAt(jwtFromUser);
-        const now = Math.floor(Date.now() / 1000);
         const isExpired = now >= expiresAt;
         log.debug("Retrieved primary JWT from OIDC user (web)", {
           network,
@@ -262,7 +262,11 @@ export async function getJwtForNetwork(
           now,
         });
         if (isExpired) {
-          log.info("JWT expired for network", { network, expiresAt, now });
+          log.info("[getJwtForNetwork isWeb()] JWT expired for network", {
+            network,
+            expiresAt,
+            now,
+          });
         }
         return jwtFromUser;
       }
@@ -274,7 +278,6 @@ export async function getJwtForNetwork(
 
   if (jwt) {
     const expiresAt = resolveExpiresAt(jwt);
-    const now = Math.floor(Date.now() / 1000);
     const isExpired = now >= expiresAt;
 
     log.debug("Retrieved JWT for network", {
@@ -286,7 +289,11 @@ export async function getJwtForNetwork(
     });
 
     if (isExpired) {
-      log.info("JWT expired for network", { network, expiresAt, now });
+      log.info("[getJwtForNetwork] JWT expired for network", {
+        network,
+        expiresAt,
+        now,
+      });
     }
   } else {
     log.debug("No JWT found for network", { network });
@@ -323,7 +330,11 @@ export async function hasJwtForNetwork(chain: SuiChain): Promise<boolean> {
   const expiresAt = resolveExpiresAt(jwt);
   const now = Math.floor(Date.now() / 1000);
   if (now >= expiresAt) {
-    log.info("JWT expired for network", { chain, expiresAt, now });
+    log.info("[hasJwtForNetwork] JWT expired for network", {
+      chain,
+      expiresAt,
+      now,
+    });
     return false;
   }
 

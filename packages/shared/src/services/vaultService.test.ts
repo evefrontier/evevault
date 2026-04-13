@@ -273,7 +273,7 @@ describe("zkProofService routing", () => {
       const mockProof = { data: { test: true }, error: undefined };
       await zkProofService.setZkProof(
         SUI_DEVNET_CHAIN,
-        mockProof as Parameters<typeof zkProofService.setZkProof>[1],
+        mockProof as unknown as Parameters<typeof zkProofService.setZkProof>[1],
       );
 
       expect(webVaultService.setZkProof).toHaveBeenCalledWith(
@@ -308,7 +308,7 @@ describe("zkProofService routing", () => {
       const mockProof = { data: { test: true }, error: undefined };
       await zkProofService.setZkProof(
         SUI_DEVNET_CHAIN,
-        mockProof as Parameters<typeof zkProofService.setZkProof>[1],
+        mockProof as unknown as Parameters<typeof zkProofService.setZkProof>[1],
       );
 
       expect(keeperZkProofService.setZkProof).toHaveBeenCalledWith(

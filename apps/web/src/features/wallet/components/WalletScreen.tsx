@@ -1,9 +1,5 @@
-import {
-  HeaderMobile,
-  LockScreen,
-  NetworkSelector,
-  type TenantId,
-} from "@evevault/shared";
+import type { TenantId } from "@evefrontier/dapp-kit/utils";
+import { HeaderMobile, LockScreen, NetworkSelector } from "@evevault/shared";
 import { switchTenantAndReload, useAuth } from "@evevault/shared/auth";
 import {
   Background,
@@ -16,7 +12,6 @@ import {
 import Icon from "@evevault/shared/components/Icon";
 import { useDevice, useTenant } from "@evevault/shared/hooks";
 import {
-  getAvailableTenantIds,
   getCurrentTenantId,
   getTenantLabel,
   useDeviceStore,
@@ -30,10 +25,10 @@ import {
 } from "@evevault/shared/utils";
 import { zkSignAny } from "@evevault/shared/wallet";
 import { Transaction } from "@mysten/sui/transactions";
-import { SUI_TESTNET_CHAIN, type SuiChain } from "@mysten/wallet-standard";
+import { SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { APP_VERSION } from "../../../lib/appVersion";
 
 const log = createLogger();
@@ -52,7 +47,6 @@ export const WalletScreen = () => {
     initialize: initializeAuth,
     error: authError,
     loading: authLoading,
-    refreshJwt,
   } = useAuth();
   const {
     isLocked,
@@ -60,17 +54,12 @@ export const WalletScreen = () => {
     maxEpoch,
     ephemeralPublicKey,
     getZkProof,
-    nonce,
     error: deviceError,
     loading: deviceLoading,
     unlock,
   } = useDevice();
   const { chain } = useNetworkStore();
   const faucetUrl = getFaucetUrlForChain(chain);
-  const availableTenantIds = useMemo(
-    () => getAvailableTenantIds(devMode),
-    [devMode],
-  );
   const tenantId = getCurrentTenantId();
 
   // Create suiClient with useMemo to recreate when chain changes
@@ -155,11 +144,6 @@ export const WalletScreen = () => {
     ]);
   }, [user, maxEpoch, ephemeralPublicKey, getZkProof, suiClient, queryClient]);
 
-  const handleTokenRefreshTest = useCallback(async () => {
-    if (!user) return;
-    await refreshJwt(chain as SuiChain);
-  }, [user, chain, refreshJwt]);
-
   // Show loading state while initializing
   if (isInitializing || authLoading || deviceLoading) {
     return (
@@ -232,7 +216,6 @@ export const WalletScreen = () => {
         showDevActions={devMode}
         onDevModeToggle={handleDevModeToggle}
         onSignSubmitTxClick={devMode ? handleSignAndSubmitTx : undefined}
-        onTokenRefreshTestClick={devMode ? handleTokenRefreshTest : undefined}
         onFaucetTestSuiClick={
           devMode && faucetUrl
             ? () => window.open(faucetUrl, "_blank", "noopener,noreferrer")
