@@ -118,11 +118,33 @@ export const useAuthStore = create<AuthState>()(
               let user = await getUserManagerInstance().getUser();
 
               if (!user?.id_token) {
-                log.info("Extension init: no OIDC user in UserManager", {
-                  network,
+                // The background dapp-login path stores a JWT via storeJwt() but does
+                // not create an OIDC UserManager session. Reconstruct the User from the
+                // stored JWT so the popup does not appear logged-out after a dapp login.
+                const storedJwt = await getJwtForNetwork(network);
+                if (!storedJwt?.id_token) {
+                  log.info(
+                    "Extension init: no OIDC user or stored JWT, clearing auth",
+                    { network },
+                  );
+                  set({ user: null, loading: false });
+                  return;
+                }
+
+                log.info(
+                  "Extension init: no OIDC user in UserManager, rebuilding from stored JWT",
+                  { network },
+                );
+                const decodedJwt = decodeJwt<IdTokenClaims>(storedJwt.id_token);
+                user = new User({
+                  id_token: storedJwt.id_token,
+                  access_token: storedJwt.access_token,
+                  token_type: storedJwt.token_type ?? "Bearer",
+                  scope: storedJwt.scope ?? "",
+                  refresh_token: storedJwt.refresh_token,
+                  profile: { ...decodedJwt } as User["profile"],
+                  expires_at: storedJwt.expires_at,
                 });
-                set({ user: null, loading: false });
-                return;
               }
 
               const jwtSnapshot = userToJwtResponse(user);
