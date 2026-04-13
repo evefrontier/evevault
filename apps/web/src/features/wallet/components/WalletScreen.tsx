@@ -1,9 +1,5 @@
-import {
-  HeaderMobile,
-  LockScreen,
-  NetworkSelector,
-  type TenantId,
-} from "@evevault/shared";
+import type { TenantId } from "@evefrontier/dapp-kit/utils";
+import { HeaderMobile, LockScreen, NetworkSelector } from "@evevault/shared";
 import { switchTenantAndReload, useAuth } from "@evevault/shared/auth";
 import {
   Background,
