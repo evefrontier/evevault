@@ -1,3 +1,4 @@
+import { UnsecuredJWT } from "jose";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { JwtResponse } from "../../../types/authTypes";
 
@@ -50,14 +51,14 @@ describe("resolveExpiresAt", () => {
   });
 
   // JWT with iat=1748779000 but no exp
-  const tokenWithIat =
-    "eyJhbGciOiJub25lIn0.eyJpYXQiOjE3NDg3NzkwMDAsInN1YiI6InUxIn0.";
+  const tokenWithIat = new UnsecuredJWT({ sub: "u1" })
+    .setIssuedAt(1748779000)
+    .encode();
 
   it("uses expires_at when present", () => {
     expect(
       resolveExpiresAt({
-        access_token:
-          "eyJhbGciOiJub25lIn0.eyJleHAiOjE3NzYwNzgwMzQsImlhdCI6MTc3NjA3NDQzNCwiYXV0aGVudGljYXRpb25UeXBlIjoiUElORyIsImFwcGxpY2F0aW9uSWQiOiI3YjcwY2M4OS00MzgzLTRjYjctOGJhNS03MzE1NGIwNmQ3ZTEiLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIG9mZmxpbmVfYWNjZXNzIiwiYXV0aF90aW1lIjoxNzc2MDc0NDM0LCJ0aWVyIjoidGVzdCIsInRlbmFudCI6InRpYWtpIn0.",
+        access_token: "a",
         id_token: "i",
         expires_in: 3600,
         scope: "s",
