@@ -116,7 +116,10 @@ export async function handleExtLogin(
         message: "Failed to sync vault state. Please try unlocking again.",
       });
     }
-  } else if (!deviceStore.ephemeralPublicKey) {
+  }
+
+  const deviceWithPublicKey = useDeviceStore.getState();
+  if (!deviceWithPublicKey.ephemeralPublicKey) {
     log.error("Keeper is unlocked but no public key bytes available", {
       chain: initialChain,
     });
@@ -127,11 +130,30 @@ export async function handleExtLogin(
 
   const currentChain = await getCurrentChainFromStorage();
 
+  let nonce = useDeviceStore.getState().networkData[currentChain]?.nonce;
+  if (!nonce) {
+    try {
+      await useDeviceStore.getState().initializeForChain(currentChain);
+    } catch (error) {
+      log.error("Failed to initialize device data for chain", {
+        currentChain,
+        error,
+      });
+      return sendAuthError(id, {
+        message: "Could not prepare sign-in. Please try again.",
+      });
+    }
+    nonce = useDeviceStore.getState().networkData[currentChain]?.nonce;
+  }
+  if (!nonce) {
+    return sendAuthError(id, {
+      message: "Could not prepare sign-in. Please try again.",
+    });
+  }
+
   const authUrl = getAuthUrl({
     tenantId: tenantId,
-    nonce:
-      deviceStore.networkData[currentChain]?.nonce ??
-      "evevault-bootstrap-nonce",
+    nonce,
   });
 
   chrome.identity.launchWebAuthFlow(

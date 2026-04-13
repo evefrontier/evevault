@@ -1,4 +1,4 @@
-import { getDeviceData, storeJwt } from "@evevault/shared";
+import { storeJwt } from "@evevault/shared";
 import {
   exchangeCodeForToken,
   getJwtForNetwork,
@@ -172,7 +172,10 @@ export async function handleDappLogin(
       }
       return;
     }
-  } else if (!deviceStore.ephemeralPublicKey) {
+  }
+
+  const deviceWithPublicKey = useDeviceStore.getState();
+  if (!deviceWithPublicKey.ephemeralPublicKey) {
     log.error("Keeper is unlocked but no public key bytes available", {
       chain,
     });
@@ -211,9 +214,37 @@ export async function handleDappLogin(
     }
   }
 
-  const authUrl = await getAuthUrl({
+  let nonce = useDeviceStore.getState().networkData[chain]?.nonce;
+  if (!nonce) {
+    try {
+      await useDeviceStore.getState().initializeForChain(chain);
+    } catch (error) {
+      log.error("Failed to initialize device data for chain", { chain, error });
+      if (typeof tabId === "number") {
+        chrome.tabs.sendMessage(tabId, {
+          id,
+          type: "auth_error",
+          error: { message: "Could not prepare sign-in. Please try again." },
+        });
+      }
+      return;
+    }
+    nonce = useDeviceStore.getState().networkData[chain]?.nonce;
+  }
+  if (!nonce) {
+    if (typeof tabId === "number") {
+      chrome.tabs.sendMessage(tabId, {
+        id,
+        type: "auth_error",
+        error: { message: "Could not prepare sign-in. Please try again." },
+      });
+    }
+    return;
+  }
+
+  const authUrl = getAuthUrl({
     tenantId: tenant,
-    nonce: deviceStore.networkData[chain]?.nonce ?? "evevault-bootstrap-nonce",
+    nonce,
   });
 
   authUrl.searchParams.set("response_type", "code");

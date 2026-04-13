@@ -30,7 +30,7 @@ describe("getAuthUrl", () => {
   it("includes nonce when provided", () => {
     const authUrl = getAuthUrl({
       tenantId: "stillness",
-      nonce: "evevault-bootstrap-nonce",
+      nonce: "test-nonce",
     });
 
     expect(authUrl.origin).toBe("https://auth.example.com");
@@ -42,6 +42,6 @@ describe("getAuthUrl", () => {
     expect(authUrl.searchParams.get("scope")).toBe(
       "openid profile email offline_access",
     );
-    expect(authUrl.searchParams.get("nonce")).toBe("evevault-bootstrap-nonce");
+    expect(authUrl.searchParams.get("nonce")).toBe("test-nonce");
   });
 });
