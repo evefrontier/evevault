@@ -49,10 +49,15 @@ describe("resolveExpiresAt", () => {
     vi.useRealTimers();
   });
 
+  // JWT with iat=1748779000 but no exp
+  const tokenWithIat =
+    "eyJhbGciOiJub25lIn0.eyJpYXQiOjE3NDg3NzkwMDAsInN1YiI6InUxIn0.";
+
   it("uses expires_at when present", () => {
     expect(
       resolveExpiresAt({
-        access_token: "a",
+        access_token:
+          "eyJhbGciOiJub25lIn0.eyJleHAiOjE3NzYwNzgwMzQsImlhdCI6MTc3NjA3NDQzNCwiYXV0aGVudGljYXRpb25UeXBlIjoiUElORyIsImFwcGxpY2F0aW9uSWQiOiI3YjcwY2M4OS00MzgzLTRjYjctOGJhNS03MzE1NGIwNmQ3ZTEiLCJzY29wZSI6Im9wZW5pZCBwcm9maWxlIGVtYWlsIG9mZmxpbmVfYWNjZXNzIiwiYXV0aF90aW1lIjoxNzc2MDc0NDM0LCJ0aWVyIjoidGVzdCIsInRlbmFudCI6InRpYWtpIn0.",
         id_token: "i",
         expires_in: 3600,
         scope: "s",
@@ -62,27 +67,27 @@ describe("resolveExpiresAt", () => {
     ).toBe(1_900_000_000);
   });
 
-  it("uses expires_in relative to now when expires_at absent", () => {
+  it("uses iat + expires_in when expires_at absent", () => {
     expect(
       resolveExpiresAt({
         access_token: "a",
-        id_token: "i",
+        id_token: tokenWithIat,
         expires_in: 120,
         scope: "s",
         token_type: "Bearer",
       }),
-    ).toBe(Math.floor(Date.now() / 1000) + 120);
+    ).toBe(1748779000 + 120);
   });
 
-  it("falls back to now when expires_at and expires_in are not usable numbers", () => {
+  it("falls back to iat when expires_at and expires_in are not usable numbers", () => {
     expect(
       resolveExpiresAt({
-        access_token: "a",
-        id_token: "i",
+        access_token: tokenWithIat,
+        id_token: tokenWithIat,
         scope: "s",
         token_type: "Bearer",
       } as JwtResponse),
-    ).toBe(Math.floor(Date.now() / 1000));
+    ).toBe(1748779000);
   });
 });
 
