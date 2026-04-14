@@ -91,15 +91,13 @@
     "test:coverage": "vitest run --config ./vitest.config.mts --coverage"
   },
   "dependencies": {
-    "@mysten/signers": "^0.6.2",
-    "idb-keyval": "^6.2.2"
+    "@mysten/signers": "^0.6.2"
   },
   "peerDependencies": {
     "@mysten/sui": "^2.14.1",
     "@mysten/wallet-standard": "^0.16.3",
     "@tanstack/react-query": "^5.90.16",
     "@tanstack/react-router": "^1.95.0",
-    "@suiet/wallet-kit": "^0.5.1",
     "@types/react": "^19.1.2",
     "oidc-client-ts": "^3.1.0",
     "react": "^19.2.4",

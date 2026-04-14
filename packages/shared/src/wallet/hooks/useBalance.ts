@@ -1,9 +1,8 @@
 import { SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
-import { formatSUI } from "@suiet/wallet-kit";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { createSuiGraphQLClient } from "../../sui/graphqlClient";
-import { formatByDecimals, SUI_COIN_TYPE } from "../../utils";
+import { formatByDecimals, formatMistToSui, SUI_COIN_TYPE } from "../../utils";
 import { createLogger } from "../../utils/logger";
 import { isEveCoinType } from "../eveToken";
 import {
@@ -142,7 +141,7 @@ export function useBalance({
 
       let formattedBalance: string;
       if (coinType === SUI_COIN_TYPE) {
-        formattedBalance = formatSUI(totalBalance);
+        formattedBalance = formatMistToSui(totalBalance);
       } else if (metadata?.decimals !== undefined) {
         formattedBalance = formatByDecimals(totalBalance, metadata.decimals);
       } else {
