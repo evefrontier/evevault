@@ -304,42 +304,19 @@ export const useAuthStore = create<AuthState>()(
             // Web login flow
             const deviceStore = useDeviceStore.getState();
 
-            // Check if device data exists for current network, initialize if missing
+            // Ensure device data is present and valid for current network — needed
+            // for the vendJwt call after OAuth returns. Nonce is no longer passed
+            // in the OAuth redirect, so it can be freely regenerated if missing or expired.
             const networkData = deviceStore.networkData[network];
-            if (!networkData?.nonce || !networkData?.maxEpoch) {
+            const isExpired =
+              networkData?.maxEpochTimestampMs != null &&
+              Date.now() >= networkData.maxEpochTimestampMs;
+            if (!networkData?.nonce || !networkData?.maxEpoch || isExpired) {
               log.info("Initializing device data for network before login", {
                 network,
               });
               await deviceStore.initializeForChain(network);
             }
-
-            // Get device params for OAuth
-            const getDeviceParams = () => {
-              const currentDeviceStore = useDeviceStore.getState();
-              // Get per-network jwtRandomness (preferred) or fallback to global (for backwards compatibility)
-              const jwtRandomness =
-                currentDeviceStore.getJwtRandomness(network);
-              const currentNetworkData =
-                currentDeviceStore.networkData[network];
-
-              if (!currentNetworkData) {
-                throw new Error("Network data not found after initialization");
-              }
-
-              const { nonce, maxEpoch } = currentNetworkData;
-
-              if (!nonce || !jwtRandomness || !maxEpoch) {
-                throw new Error(
-                  "Device data not initialized. OAuth params may be missing.",
-                );
-              }
-
-              return {
-                nonce,
-                jwtRandomness,
-                maxEpoch: String(maxEpoch),
-              };
-            };
 
             if (typeof sessionStorage !== "undefined") {
               sessionStorage.setItem(
@@ -347,13 +324,7 @@ export const useAuthStore = create<AuthState>()(
                 getCurrentTenantId(),
               );
             }
-            getUserManagerInstance().signinRedirect({
-              nonce: getDeviceParams().nonce,
-              extraQueryParams: {
-                jwtRandomness: getDeviceParams().jwtRandomness,
-                maxEpoch: getDeviceParams().maxEpoch,
-              },
-            });
+            getUserManagerInstance().signinRedirect();
             set({ loading: false });
           }
         },

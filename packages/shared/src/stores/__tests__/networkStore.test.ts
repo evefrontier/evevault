@@ -30,11 +30,8 @@ vi.mock("../../utils/logger", () => ({
 vi.mock("../deviceStore", () => ({
   useDeviceStore: {
     getState: () => ({
-      getNonce: vi.fn(),
-      getMaxEpoch: vi.fn(),
-      getJwtRandomness: vi.fn(),
-      getMaxEpochTimestampMs: vi.fn(),
-      initializeForChain: vi.fn(),
+      networkData: {} as Record<string, unknown>,
+      initializeForChain: vi.fn().mockResolvedValue(undefined),
       ephemeralPublicKey: null,
       isLocked: false,
     }),
@@ -157,20 +154,9 @@ describe("networkStore", () => {
       expect(deviceStore.initializeForChain).not.toHaveBeenCalled();
     });
 
-    it("performs seamless switch when JWT and valid device data exist", async () => {
+    it("performs seamless switch when JWT exists", async () => {
       useNetworkStore.setState({ chain: SUI_DEVNET_CHAIN });
       vi.mocked(hasJwtForNetwork).mockResolvedValue(true);
-
-      // Mock valid device data
-      const deviceStore = useDeviceStore.getState();
-      vi.mocked(deviceStore.getNonce).mockReturnValue("valid-nonce");
-      vi.mocked(deviceStore.getMaxEpoch).mockReturnValue("100");
-      vi.mocked(deviceStore.getJwtRandomness).mockReturnValue(
-        "valid-randomness",
-      );
-      vi.mocked(deviceStore.getMaxEpochTimestampMs).mockReturnValue(
-        Date.now() + 3600000,
-      ); // 1 hour
 
       const result = await useNetworkStore
         .getState()
@@ -181,53 +167,29 @@ describe("networkStore", () => {
       expect(useNetworkStore.getState().chain).toBe(SUI_TESTNET_CHAIN);
     });
 
-    it("allows switch when JWT exists but device data is missing (re-login will be required)", async () => {
+    it("allows switch and regenerates device data when JWT exists but device data is missing", async () => {
       useNetworkStore.setState({ chain: SUI_DEVNET_CHAIN });
       vi.mocked(hasJwtForNetwork).mockResolvedValue(true);
-
-      // Mock missing device data
-      const deviceStore = useDeviceStore.getState();
-      vi.mocked(deviceStore.getNonce).mockReturnValue(null);
-      vi.mocked(deviceStore.getMaxEpoch).mockReturnValue(null);
 
       const result = await useNetworkStore
         .getState()
         .setChain(SUI_TESTNET_CHAIN);
 
-      // Switch is allowed, but user will need to re-login when using features
       expect(result.success).toBe(true);
       expect(result.requiresReauth).toBe(false);
       expect(useNetworkStore.getState().chain).toBe(SUI_TESTNET_CHAIN);
-
-      // Should NOT regenerate device data (would cause nonce mismatch)
-      expect(deviceStore.initializeForChain).not.toHaveBeenCalled();
     });
 
-    it("allows switch when JWT exists but device data is expired", async () => {
+    it("allows switch and regenerates device data when JWT exists but device data is expired", async () => {
       useNetworkStore.setState({ chain: SUI_DEVNET_CHAIN });
       vi.mocked(hasJwtForNetwork).mockResolvedValue(true);
-
-      // Mock expired device data
-      const deviceStore = useDeviceStore.getState();
-      vi.mocked(deviceStore.getNonce).mockReturnValue("expired-nonce");
-      vi.mocked(deviceStore.getMaxEpoch).mockReturnValue("100");
-      vi.mocked(deviceStore.getJwtRandomness).mockReturnValue(
-        "valid-randomness",
-      );
-      vi.mocked(deviceStore.getMaxEpochTimestampMs).mockReturnValue(
-        Date.now() - 3600000,
-      ); // 1 hour ago
 
       const result = await useNetworkStore
         .getState()
         .setChain(SUI_TESTNET_CHAIN);
 
-      // Switch is allowed, but user will need to re-login for transactions
       expect(result.success).toBe(true);
       expect(result.requiresReauth).toBe(false);
-
-      // Should NOT regenerate device data (would cause nonce mismatch with existing JWT)
-      expect(deviceStore.initializeForChain).not.toHaveBeenCalled();
     });
   });
 });

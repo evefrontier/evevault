@@ -197,17 +197,18 @@ The extension supports multi-network operation with per-network data isolation:
 - **Seamless switching**: If user is already logged in on target network, switching is instant
 
 **Key Components:**
+
 - `useNetworkStore` - Network state management (`packages/shared/src/stores/networkStore.ts`)
 - `NetworkSelector` - Network selector UI (`packages/shared/src/components/NetworkSelector/`)
 - `AVAILABLE_NETWORKS` - Shared network constants (`packages/shared/src/types/networks.ts`)
 
 **Network Switching Flow:**
+
 1. User clicks network selector → `checkNetworkSwitch()` checks if JWT exists for target network
 2. If JWT exists → `setChain()` performs seamless switch (updates device data if needed)
-3. If no JWT → shows "Sign In Required" dialog → user confirms → switches network → prompts login
-4. If login fails → automatically reverts to previous network (or any network with valid JWT)
 
 **Per-Network Data Isolation:**
+
 - JWTs: `evevault:jwt[sui:devnet]` vs `evevault:jwt[sui:testnet]`
 - Device data: `deviceStore.networkData[sui:devnet]` vs `deviceStore.networkData[sui:testnet]`
 - Network state: `evevault:network` stores current `chain`
@@ -224,11 +225,13 @@ The app supports switching the **auth/test server** (tenant) so login and token 
 - **Cleanup**: `runTenantSwitchCleanup(tenantId)` removes user from UserManager, performs full cleanup, clears JWTs and device state so the next login uses the new tenant.
 
 **Key components:**
+
 - `tenantConfig.ts` – Tenant IDs (default, utopia, tauceti, tesseract, tetra, tiaki), env-based config, `getTenantLabel()` for UI (e.g. "Utopia", "Tauceti", "Tesseract", "Tetra", "Tiaki")
 - `tenantStore.ts` – Current tenant state and `getCurrentTenantId()` / `setCurrentTenantId()` / `applyTenantFromUrl()`
 - `authStore` – `switchTenantAndReload()`, `runTenantSwitchCleanup()`; `getUserManager(tenantId)` and token exchange take `tenantId`
 
 **Flow (e.g. dev dropdown):**
+
 1. User selects another server (tenant) in the dev dropdown.
 2. App calls `switchTenantAndReload(newTenantId)`.
 3. Cleanup runs for the current tenant; store switches to the new tenant; page reloads with `?tenant=newTenantId` on web.

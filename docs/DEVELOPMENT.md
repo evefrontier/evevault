@@ -127,11 +127,12 @@ The extension supports seamless network switching between Sui devnet and testnet
 - **Seamless switching**: If you're already logged in on a network, switching is instant
 
 **Network switching flow:**
+
 1. User clicks network selector → checks if JWT exists for target network
 2. If JWT exists → seamless switch (updates device data if needed)
-3. If no JWT → shows "Sign In Required" dialog → user confirms → switches network → prompts login
 
 **Testing network switching:**
+
 - Test seamless switch (already logged in on both networks)
 - Test switch requiring re-auth (only logged in on one network)
 - Test login rollback on failure

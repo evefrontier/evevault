@@ -1,7 +1,5 @@
 import { generateNonce, generateRandomness } from "@mysten/sui/zklogin";
 import type { SuiChain } from "@mysten/wallet-standard";
-import { decodeJwt } from "jose";
-import { hasJwtForNetwork } from "../../../auth/storageService";
 import { ephKeyService } from "../../../services/vaultService";
 import { getCurrentEpochFromGraphQL } from "../../../sui/graphqlEpoch";
 import type {
@@ -69,38 +67,13 @@ export function createInitActions(set: SetDeviceState, get: GetDeviceState) {
                 ephemeralKeyPairSecretKey: createWebCryptoPlaceholder(),
               });
 
-              if (!nonce || !maxEpoch || !maxEpochTimestampMs) {
-                const hasJwt = await hasJwtForNetwork(currentChain);
-                if (hasJwt) {
-                  const { getJwtForNetwork } = await import(
-                    "../../../auth/storageService"
-                  );
-                  const jwt = await getJwtForNetwork(currentChain);
-                  if (jwt?.id_token) {
-                    try {
-                      const decodedJwt = decodeJwt(jwt.id_token);
-                      const jwtNonce = decodedJwt.nonce as string | undefined;
-                      if (jwtNonce) {
-                        log.warn(
-                          "Device data missing but JWT exists - cannot regenerate without causing nonce mismatch",
-                          {
-                            chain: currentChain,
-                            jwtNonce,
-                          },
-                        );
-                        set({ loading: false, isLocked: false });
-                        return;
-                      }
-                    } catch (error) {
-                      log.warn("Failed to decode JWT for nonce check", error);
-                    }
-                  }
-                }
+              const isExpired =
+                maxEpochTimestampMs != null &&
+                Date.now() >= maxEpochTimestampMs;
+              if (!nonce || !maxEpoch || !maxEpochTimestampMs || isExpired) {
                 await get().initializeForChain(currentChain);
-                set({ loading: false, isLocked: false });
-              } else {
-                set({ loading: false, isLocked: false });
               }
+              set({ loading: false, isLocked: false });
               return;
             }
           }
@@ -131,7 +104,8 @@ export function createInitActions(set: SetDeviceState, get: GetDeviceState) {
           maxEpoch !== null &&
           nonce !== null &&
           maxEpochTimestampMs !== null &&
-          storedSecretKey
+          storedSecretKey &&
+          Date.now() < maxEpochTimestampMs
         ) {
           log.debug("Device store already initialized, skipping re-init");
           set({ loading: false });
@@ -240,36 +214,20 @@ export function createInitActions(set: SetDeviceState, get: GetDeviceState) {
           );
         }
 
-        const hasJwt = await hasJwtForNetwork(currentChain);
-        if (hasJwt) {
-          const currentDeviceData = get().networkData[currentChain];
-          if (currentDeviceData?.nonce && currentDeviceData?.maxEpoch) {
-            log.info("Device data exists for chain, skipping initialization", {
-              chain: currentChain,
-            });
-            set({
-              loading: false,
-              isLocked: false,
-            });
-            return;
-          }
-          log.warn(
-            "Device data missing but JWT exists - cannot regenerate without causing nonce mismatch",
-            {
-              chain: currentChain,
-            },
-          );
-          set({
-            loading: false,
-            isLocked: false,
+        const currentDeviceData = get().networkData[currentChain];
+        const isExpired =
+          currentDeviceData?.maxEpochTimestampMs != null &&
+          Date.now() >= currentDeviceData.maxEpochTimestampMs;
+        if (
+          !currentDeviceData?.nonce ||
+          !currentDeviceData?.maxEpoch ||
+          isExpired
+        ) {
+          log.info("Initializing device store for chain", {
+            chain: currentChain,
           });
-          return;
+          await get().initializeForChain(currentChain);
         }
-
-        log.info("Initializing device store for chain", {
-          chain: currentChain,
-        });
-        await get().initializeForChain(currentChain);
         set({
           loading: false,
           isLocked: false,
