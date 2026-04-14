@@ -13,12 +13,14 @@ import { resolveExpiresAt } from "./utils/authStoreUtils";
 
 const log = createLogger();
 
-type JwtStorageEntry = {
+/**
+ * Flat storage shape. Primary OAuth JWT is network-agnostic (no nonce in redirect);
+ * zkLogin JWTs remain per-chain because they are vended with a chain-specific nonce.
+ */
+type JwtStorage = {
   primary?: OAuthTokenResponse;
-  zkLogin?: { id_token: JwtResponse["id_token"]; expires_at: number };
+  zkLogin?: Partial<Record<SuiChain, { id_token: string; expires_at: number }>>;
 };
-type JwtCompositeMap = Record<SuiChain, JwtStorageEntry>;
-type JwtStorageMap = Record<SuiChain, JwtResponse>;
 
 /**
  * Read the connected wallet address (sui_address) from persisted auth state.
@@ -76,29 +78,13 @@ export async function getStoredChain(): Promise<SuiChain> {
   }
 }
 
-function normalizeJwtEntry(value: unknown): JwtStorageEntry {
-  if (typeof value === "object" && value !== null) {
-    const candidate = value as { primary?: unknown; zkLogin?: unknown };
-    return {
-      primary: candidate.primary as OAuthTokenResponse | undefined,
-      zkLogin: candidate.zkLogin as
-        | { id_token: string; expires_at: number }
-        | undefined,
-    };
-  }
-  return {};
-}
-
-async function getAllJwtEntries(): Promise<Partial<JwtCompositeMap> | null> {
+async function readJwtStorage(): Promise<JwtStorage | null> {
   if (isExtension()) {
     const result = await chrome.storage.local.get([JWT_STORAGE_KEY]);
     const raw = result[JWT_STORAGE_KEY];
     if (raw == null || typeof raw !== "object") return null;
-    const entries: Partial<JwtCompositeMap> = {};
-    for (const [network, value] of Object.entries(raw)) {
-      entries[network as SuiChain] = normalizeJwtEntry(value);
-    }
-    return entries;
+    const obj = raw as Record<string, unknown>;
+    return obj as JwtStorage;
   }
 
   if (isWeb()) {
@@ -107,17 +93,25 @@ async function getAllJwtEntries(): Promise<Partial<JwtCompositeMap> | null> {
     try {
       const raw = JSON.parse(stored) as unknown;
       if (raw == null || typeof raw !== "object") return null;
-      const entries: Partial<JwtCompositeMap> = {};
-      for (const [network, value] of Object.entries(raw)) {
-        entries[network as SuiChain] = normalizeJwtEntry(value);
-      }
-      return entries;
+      const obj = raw as Record<string, unknown>;
+      return obj as JwtStorage;
     } catch {
       return null;
     }
   }
 
   return null;
+}
+
+async function writeJwtStorage(storage: JwtStorage): Promise<void> {
+  if (isExtension()) {
+    await chrome.storage.local.set({ [JWT_STORAGE_KEY]: storage });
+    return;
+  }
+
+  if (isWeb()) {
+    window.localStorage.setItem(JWT_STORAGE_KEY, JSON.stringify(storage));
+  }
 }
 
 /**
@@ -127,8 +121,8 @@ export async function storeZkLoginJwtForNetwork(
   jwt: { id_token: string; expires_at: number },
   chain?: SuiChain,
 ): Promise<void> {
-  const network = chain || useNetworkStore.getState().chain;
-  const existing = await getAllJwtEntries();
+  const network = chain ?? useNetworkStore.getState().chain;
+  const existing = (await readJwtStorage()) ?? {};
   const expiresAt = jwt.expires_at;
 
   log.info("Storing zkLogin JWT for network", {
@@ -137,117 +131,83 @@ export async function storeZkLoginJwtForNetwork(
     expiresAt,
   });
 
-  const current = existing?.[network] ?? { zkLogin: undefined };
-  const updated: Partial<JwtCompositeMap> = {
-    ...(existing || {}),
-    [network]: {
-      ...current,
-      zkLogin: jwt,
+  const updated: JwtStorage = {
+    ...existing,
+    zkLogin: {
+      ...(existing.zkLogin ?? {}),
+      [network]: jwt,
     },
   };
 
-  if (isExtension()) {
-    await chrome.storage.local.set({ [JWT_STORAGE_KEY]: updated });
-    return;
-  }
-
-  if (isWeb()) {
-    window.localStorage.setItem(JWT_STORAGE_KEY, JSON.stringify(updated));
-  }
+  await writeJwtStorage(updated);
 }
 
 export async function getZkLoginJwtForNetwork(
   chain?: SuiChain,
 ): Promise<{ id_token: string; expires_at: number } | null> {
-  const network = chain || useNetworkStore.getState().chain;
-  const all = await getAllJwtEntries();
-  return all?.[network]?.zkLogin ?? null;
+  const network = chain ?? useNetworkStore.getState().chain;
+  const storage = await readJwtStorage();
+  return storage?.zkLogin?.[network] ?? null;
 }
 
 export async function clearZkLoginJwtForNetwork(
   chain: SuiChain,
 ): Promise<void> {
-  const all = (await getAllJwtEntries()) ?? {};
-  const entry = all[chain];
-  if (!entry) return;
-  const nextEntry: JwtStorageEntry = {
-    ...entry,
-    zkLogin: undefined,
-  };
-  const hasPrimary = nextEntry.primary != null;
-  if (hasPrimary) {
-    all[chain] = { primary: nextEntry.primary };
-  } else {
-    delete all[chain];
-  }
+  const storage = await readJwtStorage();
+  if (!storage) return;
 
-  if (Object.keys(all).length === 0) {
+  const { [chain]: _removed, ...remainingZkLogin } = storage.zkLogin ?? {};
+  const updated: JwtStorage = {
+    ...storage,
+    zkLogin:
+      Object.keys(remainingZkLogin).length > 0 ? remainingZkLogin : undefined,
+  };
+
+  if (!updated.primary && !updated.zkLogin) {
     await clearAllJwts();
     return;
   }
 
-  if (isExtension()) {
-    await chrome.storage.local.set({ [JWT_STORAGE_KEY]: all });
-    return;
-  }
-  if (isWeb()) {
-    window.localStorage.setItem(JWT_STORAGE_KEY, JSON.stringify(all));
-  }
+  await writeJwtStorage(updated);
 }
 
 /**
- * Store primary (OAuth) JWT for a specific network
+ * Store primary (OAuth) JWT. The JWT is now network-agnostic (nonce is handled
+ * server-side by vendJwt), so it is stored once regardless of chain.
+ * The `chain` parameter is kept for call-site compatibility but is unused.
  */
-export async function storeJwt(
-  jwt: OAuthTokenResponse,
-  chain?: SuiChain,
-): Promise<void> {
-  const network = chain || useNetworkStore.getState().chain;
-  const existingJwts = await getAllJwtEntries();
-  const current = existingJwts?.[network] ?? {};
+export async function storeJwt(jwt: OAuthTokenResponse): Promise<void> {
+  const existing = (await readJwtStorage()) ?? {};
 
-  log.info("Storing JWT for network", {
-    network,
+  log.info("Storing primary JWT", {
     hasJwt: !!jwt.id_token,
     hasRefreshToken: !!jwt.refresh_token,
     expiresAt: jwt.expires_at,
     expiresIn: jwt.expires_in,
   });
 
-  const updatedJwts: Partial<JwtCompositeMap> = {
-    ...(existingJwts || {}),
-    [network]: {
-      ...current,
-      primary: jwt,
-    },
+  const updated: JwtStorage = {
+    ...existing,
+    primary: jwt,
   };
 
-  if (isExtension()) {
-    await chrome.storage.local.set({ [JWT_STORAGE_KEY]: updatedJwts });
-    return;
-  }
-
-  if (isWeb()) {
-    window.localStorage.setItem(JWT_STORAGE_KEY, JSON.stringify(updatedJwts));
-    return;
-  }
+  await writeJwtStorage(updated);
 }
 
 /**
- * Primary OAuth JWT for a network.
- * On web, when `chain` is the active network, reads from `useAuthStore`’s OIDC `User`
- * (UserManager session) first; otherwise uses `evevault:jwt` (extension and other networks).
+ * Primary OAuth JWT. The JWT is now network-agnostic; the `chain` parameter is
+ * ignored for storage lookup but retained for call-site compatibility.
+ * On web, prefers the live OIDC UserManager session (same as before).
  */
 export async function getJwtForNetwork(
   chain?: SuiChain,
 ): Promise<JwtResponse | null> {
-  const network = chain || useNetworkStore.getState().chain;
-
   const now = Math.floor(Date.now() / 1000);
 
   if (isWeb()) {
     const currentChain = useNetworkStore.getState().chain;
-    if (network === currentChain) {
+    // Only use OIDC user when asking about the active chain
+    if (!chain || chain === currentChain) {
       const { useAuthStore } = await import("./stores/authStore");
       const { userToJwtResponse } = await import("./userToJwtResponse");
       const jwtFromUser = userToJwtResponse(useAuthStore.getState().user);
@@ -255,15 +215,13 @@ export async function getJwtForNetwork(
         const expiresAt = resolveExpiresAt(jwtFromUser);
         const isExpired = now >= expiresAt;
         log.debug("Retrieved primary JWT from OIDC user (web)", {
-          network,
           hasJwt: !!jwtFromUser.id_token,
           isExpired,
           expiresAt,
           now,
         });
         if (isExpired) {
-          log.info("[getJwtForNetwork isWeb()] JWT expired for network", {
-            network,
+          log.info("[getJwtForNetwork isWeb()] JWT expired", {
             expiresAt,
             now,
           });
@@ -273,15 +231,14 @@ export async function getJwtForNetwork(
     }
   }
 
-  const allJwts = await getAllJwtEntries();
-  const jwt = allJwts?.[network]?.primary ?? null;
+  const storage = await readJwtStorage();
+  const jwt = storage?.primary ?? null;
 
   if (jwt) {
     const expiresAt = resolveExpiresAt(jwt);
     const isExpired = now >= expiresAt;
 
-    log.debug("Retrieved JWT for network", {
-      network,
+    log.debug("Retrieved primary JWT from storage", {
       hasJwt: !!jwt.id_token,
       isExpired,
       expiresAt,
@@ -289,52 +246,41 @@ export async function getJwtForNetwork(
     });
 
     if (isExpired) {
-      log.info("[getJwtForNetwork] JWT expired for network", {
-        network,
-        expiresAt,
-        now,
-      });
+      log.info("[getJwtForNetwork] JWT expired", { expiresAt, now });
     }
   } else {
-    log.debug("No JWT found for network", { network });
+    log.debug("No primary JWT found in storage");
   }
 
   return jwt;
 }
 
 /**
- * Get all stored JWTs (for backwards compatibility and multi-network checks)
+ * Get all stored JWTs. Returns the single primary entry keyed by the current
+ * chain for backwards compatibility with callers expecting a chain-keyed map.
  */
-export async function getAllStoredJwts(): Promise<Partial<JwtStorageMap> | null> {
-  const all = await getAllJwtEntries();
-  if (!all) return null;
-  const primaryOnly: Partial<JwtStorageMap> = {};
-  for (const [network, entry] of Object.entries(all)) {
-    if (entry?.primary) {
-      primaryOnly[network as SuiChain] = entry.primary;
-    }
-  }
-  return primaryOnly;
+export async function getAllStoredJwts(): Promise<Partial<
+  Record<SuiChain, JwtResponse>
+> | null> {
+  const storage = await readJwtStorage();
+  if (!storage?.primary) return null;
+  const chain = useNetworkStore.getState().chain;
+  return { [chain]: storage.primary };
 }
 
 /**
- * Check if a JWT exists for a specific network and is not expired
+ * Check if a valid (non-expired) primary JWT exists.
  */
-export async function hasJwtForNetwork(chain: SuiChain): Promise<boolean> {
-  const jwt = await getJwtForNetwork(chain);
-  if (!jwt || !jwt.id_token) {
+export async function hasJwt(): Promise<boolean> {
+  const jwt = await getJwtForNetwork();
+  if (!jwt?.id_token) {
     return false;
   }
 
-  // Check if JWT is expired
   const expiresAt = resolveExpiresAt(jwt);
   const now = Math.floor(Date.now() / 1000);
   if (now >= expiresAt) {
-    log.info("[hasJwtForNetwork] JWT expired for network", {
-      chain,
-      expiresAt,
-      now,
-    });
+    log.info("[hasJwt] JWT expired", { expiresAt, now });
     return false;
   }
 
@@ -342,7 +288,7 @@ export async function hasJwtForNetwork(chain: SuiChain): Promise<boolean> {
 }
 
 /**
- * Clear all stored JWTs
+ * Clear all stored JWTs (primary + all zkLogin entries).
  */
 export async function clearAllJwts(): Promise<void> {
   if (isExtension()) {
@@ -357,23 +303,10 @@ export async function clearAllJwts(): Promise<void> {
 }
 
 /**
- * Clear JWT for a specific network only
+ * Clear JWT data associated with a specific network.
+ * Since the primary JWT is now network-agnostic, this only clears the zkLogin
+ * entry for the given chain. Use `clearAllJwts` to remove the primary JWT.
  */
 export async function clearJwtForNetwork(chain: SuiChain): Promise<void> {
-  const allJwts = (await getAllJwtEntries()) ?? {};
-  const { [chain]: _removed, ...remaining } = allJwts;
-
-  if (Object.keys(remaining).length === 0) {
-    await clearAllJwts();
-    return;
-  }
-
-  if (isExtension()) {
-    await chrome.storage.local.set({ [JWT_STORAGE_KEY]: remaining });
-    return;
-  }
-
-  if (isWeb()) {
-    window.localStorage.setItem(JWT_STORAGE_KEY, JSON.stringify(remaining));
-  }
+  await clearZkLoginJwtForNetwork(chain);
 }

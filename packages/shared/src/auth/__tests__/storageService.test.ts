@@ -46,7 +46,7 @@ import {
   getJwtForNetwork,
   getStoredChain,
   getStoredWalletAddress,
-  hasJwtForNetwork,
+  hasJwt,
   storeJwt,
   storeZkLoginJwtForNetwork,
 } from "../storageService";
@@ -81,24 +81,27 @@ describe("storageService (web)", () => {
     vi.clearAllMocks();
   });
 
-  it("storeJwt writes composite map to localStorage", async () => {
+  it("storeJwt writes flat primary to localStorage", async () => {
     await storeJwt(baseJwt());
     const raw = localStorage.getItem(JWT_STORAGE_KEY);
     expect(raw).toBeTruthy();
     const parsed = JSON.parse(raw as string) as Record<string, unknown>;
-    expect(parsed[SUI_TESTNET_CHAIN]).toMatchObject({
-      primary: expect.objectContaining({ access_token: "at" }),
-    });
+    expect(parsed.primary).toMatchObject({ access_token: "at" });
   });
 
-  it("getAllStoredJwts returns only primary entries", async () => {
-    const map = {
-      [SUI_TESTNET_CHAIN]: {
-        primary: baseJwt(),
-        zkLogin: { id_token: "zk", expires_at: futureExp() },
-      },
+  it("storeJwt ignores chain param (primary is network-agnostic)", async () => {
+    await storeJwt({ ...baseJwt(), access_token: "a1" }, SUI_TESTNET_CHAIN);
+    await storeJwt({ ...baseJwt(), access_token: "a2" }, SUI_DEVNET_CHAIN);
+    const raw = localStorage.getItem(JWT_STORAGE_KEY);
+    const parsed = JSON.parse(raw as string) as {
+      primary?: { access_token: string };
     };
-    localStorage.setItem(JWT_STORAGE_KEY, JSON.stringify(map));
+    // Second write overwrites the single primary entry
+    expect(parsed.primary?.access_token).toBe("a2");
+  });
+
+  it("getAllStoredJwts returns primary keyed by current chain", async () => {
+    await storeJwt(baseJwt());
     const all = await getAllStoredJwts();
     expect(all?.[SUI_TESTNET_CHAIN]).toMatchObject({ access_token: "at" });
     expect(Object.keys(all ?? {}).length).toBe(1);
@@ -112,11 +115,8 @@ describe("storageService (web)", () => {
     expect(userToJwtResponse).toHaveBeenCalled();
   });
 
-  it("getJwtForNetwork falls back to storage when web chain differs", async () => {
-    vi.mocked(useNetworkStore.getState).mockReturnValue({
-      chain: SUI_TESTNET_CHAIN,
-    } as never);
-    await storeJwt(baseJwt(), SUI_DEVNET_CHAIN);
+  it("getJwtForNetwork reads from storage for any chain (primary is shared)", async () => {
+    await storeJwt(baseJwt());
     const out = await getJwtForNetwork(SUI_DEVNET_CHAIN);
     expect(out?.access_token).toBe("at");
   });
@@ -126,19 +126,22 @@ describe("storageService (web)", () => {
     await expect(getAllStoredJwts()).resolves.toBeNull();
   });
 
-  it("clearJwtForNetwork removes one network and keeps others", async () => {
-    await storeJwt({ ...baseJwt(), access_token: "a1" }, SUI_TESTNET_CHAIN);
-    await storeJwt({ ...baseJwt(), access_token: "a2" }, SUI_DEVNET_CHAIN);
+  it("clearJwtForNetwork only clears zkLogin for that chain, not primary", async () => {
+    await storeJwt(baseJwt());
+    await storeZkLoginJwtForNetwork(
+      { id_token: "zk", expires_at: futureExp() },
+      SUI_DEVNET_CHAIN,
+    );
     await clearJwtForNetwork(SUI_DEVNET_CHAIN);
     const all = await getAllStoredJwts();
-    expect(all?.[SUI_DEVNET_CHAIN]).toBeUndefined();
-    expect(all?.[SUI_TESTNET_CHAIN]?.access_token).toBe("a1");
-  });
-
-  it("clearJwtForNetwork clears all when last network removed", async () => {
-    await storeJwt(baseJwt(), SUI_TESTNET_CHAIN);
-    await clearJwtForNetwork(SUI_TESTNET_CHAIN);
-    expect(localStorage.getItem(JWT_STORAGE_KEY)).toBeNull();
+    // Primary should still exist
+    expect(all?.[SUI_TESTNET_CHAIN]?.access_token).toBe("at");
+    // zkLogin for devnet should be gone
+    const raw = localStorage.getItem(JWT_STORAGE_KEY);
+    const parsed = JSON.parse(raw as string) as {
+      zkLogin?: Record<string, unknown>;
+    };
+    expect(parsed.zkLogin?.[SUI_DEVNET_CHAIN]).toBeUndefined();
   });
 
   it("clearAllJwts removes JWT key", async () => {
@@ -147,17 +150,17 @@ describe("storageService (web)", () => {
     expect(localStorage.getItem(JWT_STORAGE_KEY)).toBeNull();
   });
 
-  it("hasJwtForNetwork returns false when expired", async () => {
+  it("hasJwt returns false when expired", async () => {
     await storeJwt({
       ...baseJwt(),
       expires_at: Math.floor(Date.now() / 1000) - 10,
     });
-    await expect(hasJwtForNetwork(SUI_TESTNET_CHAIN)).resolves.toBe(false);
+    await expect(hasJwt(SUI_TESTNET_CHAIN)).resolves.toBe(false);
   });
 
-  it("hasJwtForNetwork returns true when valid", async () => {
+  it("hasJwt returns true when valid", async () => {
     await storeJwt(baseJwt());
-    await expect(hasJwtForNetwork(SUI_TESTNET_CHAIN)).resolves.toBe(true);
+    await expect(hasJwt(SUI_TESTNET_CHAIN)).resolves.toBe(true);
   });
 
   it("storeZkLoginJwtForNetwork merges with existing primary", async () => {
@@ -167,11 +170,12 @@ describe("storageService (web)", () => {
       expires_at: futureExp(),
     });
     const raw = localStorage.getItem(JWT_STORAGE_KEY);
-    const parsed = JSON.parse(raw as string) as Record<
-      string,
-      { zkLogin?: unknown }
-    >;
-    expect(parsed[SUI_TESTNET_CHAIN].zkLogin).toMatchObject({
+    const parsed = JSON.parse(raw as string) as {
+      primary?: unknown;
+      zkLogin?: Record<string, unknown>;
+    };
+    expect(parsed.primary).toBeDefined();
+    expect(parsed.zkLogin?.[SUI_TESTNET_CHAIN]).toMatchObject({
       id_token: "zk",
     });
   });
@@ -184,12 +188,12 @@ describe("storageService (web)", () => {
     });
     await clearZkLoginJwtForNetwork(SUI_TESTNET_CHAIN);
     const raw = localStorage.getItem(JWT_STORAGE_KEY);
-    const parsed = JSON.parse(raw as string) as Record<
-      string,
-      { primary?: unknown; zkLogin?: unknown }
-    >;
-    expect(parsed[SUI_TESTNET_CHAIN].primary).toBeDefined();
-    expect(parsed[SUI_TESTNET_CHAIN].zkLogin).toBeUndefined();
+    const parsed = JSON.parse(raw as string) as {
+      primary?: unknown;
+      zkLogin?: Record<string, unknown>;
+    };
+    expect(parsed.primary).toBeDefined();
+    expect(parsed.zkLogin?.[SUI_TESTNET_CHAIN]).toBeUndefined();
   });
 
   it("clearZkLoginJwtForNetwork clears storage when only zkLogin existed", async () => {

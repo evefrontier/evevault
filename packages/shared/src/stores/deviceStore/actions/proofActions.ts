@@ -1,8 +1,5 @@
 import { useAuthStore } from "../../../auth";
-import {
-  getJwtForNetwork,
-  hasJwtForNetwork,
-} from "../../../auth/storageService";
+import { getJwtForNetwork, hasJwt } from "../../../auth/storageService";
 import { zkProofService } from "../../../services/vaultService";
 import type { DeviceState, ZkProofResponse } from "../../../types";
 import type { JwtResponse } from "../../../types/authTypes";
@@ -73,8 +70,8 @@ export function createProofActions(set: SetDeviceState, get: GetDeviceState) {
           }
         }
 
-        const hasJwt = await hasJwtForNetwork(chain);
-        if (!hasJwt) {
+        const jwtExists = await hasJwt();
+        if (!jwtExists) {
           throw new Error(
             `No valid JWT found for ${network}. Please sign in again.`,
           );

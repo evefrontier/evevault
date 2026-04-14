@@ -2,7 +2,7 @@ import { SUI_TESTNET_CHAIN, type SuiChain } from "@mysten/wallet-standard";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { chromeStorageAdapter, localStorageAdapter } from "../adapters";
-import { hasJwtForNetwork, useAuthStore } from "../auth";
+import { hasJwt, useAuthStore } from "../auth";
 import type { NetworkState, NetworkSwitchResult } from "../types";
 import { createLogger, isExtension, isWeb } from "../utils";
 import { NETWORK_STORAGE_KEY } from "../utils/storageKeys";
@@ -57,9 +57,9 @@ export const useNetworkStore = create<NetworkState>()(
           return { requiresReauth: false };
         }
 
-        // Check if we have a JWT for the target network
-        const hasJwt = await hasJwtForNetwork(chain);
-        return { requiresReauth: !hasJwt };
+        // Check if we have a JWT
+        const jwtExists = await hasJwt();
+        return { requiresReauth: !jwtExists };
       },
 
       /**
@@ -87,13 +87,13 @@ export const useNetworkStore = create<NetworkState>()(
 
         log.info("Setting chain", { from: currentChain, to: chain });
 
-        // Check if we have a JWT for the target network
-        const hasJwt = await hasJwtForNetwork(chain);
+        // Check if we have a JWT
+        const jwtExists = await hasJwt();
 
         // Switch network state immediately (even if no JWT)
         set({ chain, loading: true });
 
-        if (!hasJwt) {
+        if (!jwtExists) {
           // No JWT for target network - requires re-authentication
           // Re-initialize auth store to check JWT for new network
           // This will automatically set user to null if no JWT exists

@@ -136,7 +136,7 @@ describe("syncPrimaryJwtFromUser", () => {
     expect(mockStoreJwt).not.toHaveBeenCalled();
   });
 
-  it("calls storeJwt with OAuth payload and chain when refresh_token is present", async () => {
+  it("calls storeJwt with OAuth payload when refresh_token is present", async () => {
     const { syncPrimaryJwtFromUser } = await import("../userJwtSync");
     const user = baseUser({});
 
@@ -144,8 +144,7 @@ describe("syncPrimaryJwtFromUser", () => {
 
     expect(mockWarn).not.toHaveBeenCalled();
     expect(mockStoreJwt).toHaveBeenCalledTimes(1);
-    const [jwtArg, chainArg] = mockStoreJwt.mock.calls[0] ?? [];
-    expect(chainArg).toBe(SUI_TESTNET_CHAIN);
+    const [jwtArg] = mockStoreJwt.mock.calls[0] ?? [];
     expect(jwtArg).toMatchObject({
       id_token: user.id_token,
       access_token: "access",

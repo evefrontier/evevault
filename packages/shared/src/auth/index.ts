@@ -16,7 +16,7 @@ export {
   getStoredChain,
   getStoredWalletAddress,
   getZkLoginJwtForNetwork,
-  hasJwtForNetwork,
+  hasJwt,
   storeJwt,
   storeZkLoginJwtForNetwork,
 } from "./storageService";

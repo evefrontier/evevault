@@ -56,7 +56,7 @@ export async function enrichUserWithZkLoginIfNeeded(
   });
 }
 
-/** Mirrors the canonical OIDC `User` into `evevault:jwt` for the given chain. */
+/** Mirrors the canonical OIDC `User` into `evevault:jwt`. */
 export async function syncPrimaryJwtFromUser(
   user: User,
   chain: SuiChain,
@@ -69,5 +69,5 @@ export async function syncPrimaryJwtFromUser(
     );
     return;
   }
-  await storeJwt(jwt as OAuthTokenResponse, chain);
+  await storeJwt(jwt as OAuthTokenResponse);
 }
