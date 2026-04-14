@@ -1,10 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { z } from "zod";
 import { CallbackScreen } from "../features/auth/components/CallbackScreen";
 
-const searchSchema = z.object({
-  code: z.string().optional(),
-  error: z.string().optional(),
+type CallbackSearch = {
+  code?: string;
+  error?: string;
+};
+
+const getOptionalString = (value: unknown): string | undefined =>
+  typeof value === "string" ? value : undefined;
+
+const validateSearch = (search: Record<string, unknown>): CallbackSearch => ({
+  code: getOptionalString(search.code),
+  error: getOptionalString(search.error),
 });
 
 export const Route = createFileRoute("/callback")({
@@ -12,5 +19,5 @@ export const Route = createFileRoute("/callback")({
     document.title = "EVE Vault - Authenticating";
   },
   component: CallbackScreen,
-  validateSearch: searchSchema,
+  validateSearch,
 });

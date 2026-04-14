@@ -1,4 +1,5 @@
-import { getTenantConfig, type TenantId } from "@evevault/shared";
+import type { TenantId } from "@evefrontier/dapp-kit";
+import { getTenantConfig } from "@evevault/shared";
 
 function getAuthUrl(params: { tenantId: TenantId; nonce: string }) {
   const tenantConfig = getTenantConfig(params.tenantId);

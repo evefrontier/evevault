@@ -1,6 +1,7 @@
 import { SUI_DEVNET_CHAIN } from "@mysten/wallet-standard";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react";
+
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -10,12 +11,7 @@ vi.mock("../../../sui/graphqlClient", () => ({
   createSuiGraphQLClient: vi.fn(() => ({ query: mockQuery })),
 }));
 
-vi.mock("@suiet/wallet-kit", () => ({
-  formatSUI: vi.fn(),
-}));
-
 vi.mock("@evevault/shared/utils", () => ({
-  formatSUI: vi.fn(),
   createLogger: vi.fn(() => ({
     debug: vi.fn(),
     info: vi.fn(),
@@ -27,13 +23,14 @@ vi.mock("@evevault/shared/utils", () => ({
   isBrowser: vi.fn(() => true),
   SUI_COIN_TYPE: "0x2::sui::SUI",
   formatByDecimals: vi.fn((balance: string) => balance),
+  formatMistToSui: vi.fn(),
 }));
 
 import { createMockUser } from "@evevault/shared/testing";
-import { formatSUI } from "@suiet/wallet-kit";
+import { formatMistToSui } from "@evevault/shared/utils";
 import { useBalance } from "../useBalance";
 
-const mockedFormatSUI = vi.mocked(formatSUI);
+const mockedFormatSUI = vi.mocked(formatMistToSui);
 
 const createWrapper = (queryClient: QueryClient) => {
   return ({ children }: { children: ReactNode }) => (

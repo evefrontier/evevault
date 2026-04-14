@@ -4,25 +4,81 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const SUI_DEVNET_CHAIN = "sui:devnet" as const;
 const SUI_TESTNET_CHAIN = "sui:testnet" as const;
 
-// Mock idb-keyval with an in-memory store
-// Use vi.hoisted() to define variables that can be used in vi.mock factory
-const { mockStore, mockSetFn } = vi.hoisted(() => {
-  const store = new Map<string, unknown>();
-  const setFn = vi.fn((key: string, val: unknown) => {
-    store.set(key, val);
-    return Promise.resolve();
-  });
-  return { mockStore: store, mockSetFn: setFn };
+const mockStore = new Map<string, unknown>();
+const mockSetFn = vi.fn((key: string, val: unknown) => {
+  mockStore.set(key, val);
+  return Promise.resolve();
+});
+const mockGetFn = vi.fn((key: string) => Promise.resolve(mockStore.get(key)));
+const mockDelFn = vi.fn((key: string) => {
+  mockStore.delete(key);
+  return Promise.resolve();
 });
 
-vi.mock("idb-keyval", () => ({
-  get: vi.fn((key: string) => Promise.resolve(mockStore.get(key))),
-  set: mockSetFn,
-  del: vi.fn((key: string) => {
-    mockStore.delete(key);
-    return Promise.resolve();
-  }),
-}));
+Object.defineProperty(globalThis, "indexedDB", {
+  configurable: true,
+  value: {
+    open: vi.fn(() => {
+      const database = {
+        createObjectStore: vi.fn(),
+        transaction: vi.fn(() => ({
+          objectStore: vi.fn(() => ({
+            get: (key: string) => {
+              const request = {
+                error: null,
+                result: undefined as unknown,
+                onerror: null as null | (() => void),
+                onsuccess: null as null | (() => void),
+              };
+              void mockGetFn(key).then((value) => {
+                request.result = value;
+                request.onsuccess?.();
+              });
+              return request;
+            },
+            put: (value: unknown, key: string) => {
+              const request = {
+                error: null,
+                onerror: null as null | (() => void),
+                onsuccess: null as null | (() => void),
+              };
+              void mockSetFn(key, value).then(() => {
+                request.onsuccess?.();
+              });
+              return request;
+            },
+            delete: (key: string) => {
+              const request = {
+                error: null,
+                onerror: null as null | (() => void),
+                onsuccess: null as null | (() => void),
+              };
+              void mockDelFn(key).then(() => {
+                request.onsuccess?.();
+              });
+              return request;
+            },
+          })),
+        })),
+      };
+
+      const request = {
+        error: null,
+        result: database,
+        onerror: null as null | (() => void),
+        onupgradeneeded: null as null | (() => void),
+        onsuccess: null as null | (() => void),
+      };
+
+      queueMicrotask(() => {
+        request.onupgradeneeded?.();
+        request.onsuccess?.();
+      });
+
+      return request;
+    }),
+  },
+});
 
 // Mock WebCryptoSigner - defined inline to avoid hoisting issues
 vi.mock("@mysten/signers/webcrypto", () => {
@@ -69,6 +125,8 @@ describe("WebVaultService", () => {
     vi.clearAllMocks();
     // Reset mockSetFn call history
     mockSetFn.mockClear();
+    mockGetFn.mockClear();
+    mockDelFn.mockClear();
   });
 
   afterEach(async () => {
@@ -301,11 +359,15 @@ describe("WebVaultService", () => {
 
       await webVaultService.setZkProof(
         SUI_DEVNET_CHAIN,
-        devnetProof as Parameters<typeof webVaultService.setZkProof>[1],
+        devnetProof as unknown as Parameters<
+          typeof webVaultService.setZkProof
+        >[1],
       );
       await webVaultService.setZkProof(
         SUI_TESTNET_CHAIN,
-        testnetProof as Parameters<typeof webVaultService.setZkProof>[1],
+        testnetProof as unknown as Parameters<
+          typeof webVaultService.setZkProof
+        >[1],
       );
 
       const retrievedDevnet =
@@ -322,7 +384,9 @@ describe("WebVaultService", () => {
 
       await webVaultService.setZkProof(
         SUI_DEVNET_CHAIN,
-        mockZkProof as Parameters<typeof webVaultService.setZkProof>[1],
+        mockZkProof as unknown as Parameters<
+          typeof webVaultService.setZkProof
+        >[1],
       );
       await webVaultService.clearZkProof(SUI_DEVNET_CHAIN);
 

@@ -1,8 +1,8 @@
 import { WebCryptoSigner } from "@mysten/signers/webcrypto";
 import type { PublicKey } from "@mysten/sui/cryptography";
 import type { SuiChain } from "@mysten/wallet-standard";
-import { del, get, set } from "idb-keyval";
 import type { ZkProofResponse } from "../types/enoki";
+import { del, get, set } from "../utils/indexedDbKeyval";
 import { sha256Hex } from "../utils/keys/sha256";
 import { createLogger } from "../utils/logger";
 
@@ -92,7 +92,8 @@ class WebVaultService {
 
     // Recover keypair from IndexedDB
     try {
-      const exported = await get(KEYPAIR_STORAGE_KEY);
+      const exported =
+        await get<ReturnType<WebCryptoSigner["export"]>>(KEYPAIR_STORAGE_KEY);
       if (!exported) {
         log.error("[web-vault] No keypair found in IndexedDB");
         return false;
@@ -148,7 +149,8 @@ class WebVaultService {
    * Checks if a keypair exists in IndexedDB.
    */
   async hasKeypair(): Promise<boolean> {
-    const exported = await get(KEYPAIR_STORAGE_KEY);
+    const exported =
+      await get<ReturnType<WebCryptoSigner["export"]>>(KEYPAIR_STORAGE_KEY);
     return exported !== null && exported !== undefined;
   }
 
@@ -198,7 +200,7 @@ class WebVaultService {
    */
   async getZkProof(chain: SuiChain): Promise<ZkProofResponse | null> {
     const key = `${ZKPROOF_STORAGE_PREFIX}${chain}`;
-    const zkProof = await get(key);
+    const zkProof = await get<ZkProofResponse>(key);
     return zkProof ?? null;
   }
 
