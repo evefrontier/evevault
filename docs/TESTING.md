@@ -93,25 +93,27 @@ describe("Button", () => {
 ```typescript
 import { describe, expect, it, vi } from "vitest";
 import { useNetworkStore } from "../stores/networkStore";
-import { hasJwtForNetwork } from "../auth/storageService";
+import { hasJwt } from "../auth/storageService";
 
 describe("Network switching", () => {
   it("seamlessly switches when JWT exists", async () => {
     // Setup: User logged in on both networks
-    vi.mocked(hasJwtForNetwork).mockResolvedValueOnce(true);
-    
+    vi.mocked(hasJwt).mockResolvedValueOnce(true);
+
     const result = await useNetworkStore.getState().setChain("sui:testnet");
-    
+
     expect(result.success).toBe(true);
     expect(result.requiresReauth).toBe(false);
   });
 
   it("requires re-auth when no JWT exists", async () => {
     // Setup: User only logged in on devnet
-    vi.mocked(hasJwtForNetwork).mockResolvedValueOnce(false);
-    
-    const result = await useNetworkStore.getState().checkNetworkSwitch("sui:testnet");
-    
+    vi.mocked(hasJwt).mockResolvedValueOnce(false);
+
+    const result = await useNetworkStore
+      .getState()
+      .checkNetworkSwitch("sui:testnet");
+
     expect(result.requiresReauth).toBe(true);
   });
 
@@ -160,11 +162,10 @@ open coverage/index.html
 
 ## Troubleshooting
 
-| Issue | Fix |
-| --- | --- |
-| Vitest fails to find config | Ensure `vitest.config.ts` exists at repo root and workspace configs extend it. |
-| Tests timeout | Increase `testTimeout` in the relevant config or test block. |
-| Playwright cannot launch browser | Reinstall binaries via `bunx playwright install chromium`. |
+| Issue                            | Fix                                                                            |
+| -------------------------------- | ------------------------------------------------------------------------------ |
+| Vitest fails to find config      | Ensure `vitest.config.ts` exists at repo root and workspace configs extend it. |
+| Tests timeout                    | Increase `testTimeout` in the relevant config or test block.                   |
+| Playwright cannot launch browser | Reinstall binaries via `bunx playwright install chromium`.                     |
 
 Need help beyond this doc? Ask in `#evevault-dev` with the failing command and log snippet.
-

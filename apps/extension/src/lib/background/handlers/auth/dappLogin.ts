@@ -1,14 +1,9 @@
 import { storeJwt } from "@evevault/shared";
-import {
-  exchangeCodeForToken,
-  getJwtForNetwork,
-  hasJwtForNetwork,
-} from "@evevault/shared/auth";
+import { exchangeCodeForToken, getJwt } from "@evevault/shared/auth";
 import {
   getCurrentTenantId,
   getTenantConfig,
   useDeviceStore,
-  useNetworkStore,
   useTenantStore,
 } from "@evevault/shared/stores";
 import { createLogger } from "@evevault/shared/utils";
@@ -193,24 +188,21 @@ export async function handleDappLogin(
   }
 
   if (typeof tabId === "number") {
-    const hasJwt = await hasJwtForNetwork(chain);
-    if (hasJwt) {
-      const existingJwt = await getJwtForNetwork(chain);
-      if (existingJwt?.id_token) {
-        const decodedJwt = decodeJwt<IdTokenClaims>(
-          existingJwt.id_token as string,
-        );
-        log.debug(
-          "Connect: already connected, sending auth_success without OIDC",
-        );
-        const token = {
-          ...existingJwt,
-          email: decodedJwt.email,
-          userId: decodedJwt.sub,
-        };
-        sendAuthSuccessToTab(tabId, [id, ...additionalIds], token);
-        return;
-      }
+    const existingJwt = await getJwt();
+    if (existingJwt?.id_token) {
+      const decodedJwt = decodeJwt<IdTokenClaims>(
+        existingJwt.id_token as string,
+      );
+      log.debug(
+        "Connect: already connected, sending auth_success without OIDC",
+      );
+      const token = {
+        ...existingJwt,
+        email: decodedJwt.email,
+        userId: decodedJwt.sub,
+      };
+      sendAuthSuccessToTab(tabId, [id, ...additionalIds], token);
+      return;
     }
   }
 
@@ -293,9 +285,7 @@ export async function handleDappLogin(
           const decodedJwt = decodeJwt<IdTokenClaims>(
             jwtResponse.id_token as string,
           );
-          const network = useNetworkStore.getState().chain;
-
-          await storeJwt(jwtResponse, network);
+          await storeJwt(jwtResponse);
 
           if (typeof tabId === "number") {
             const token = {
