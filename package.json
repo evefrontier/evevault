@@ -39,12 +39,15 @@
   },
   "dependencies": {
     "@evefrontier/dapp-kit": "0.1.9",
-    "@mysten/sui": "2.4.0",
+    "@mysten/sui": "^2.14.1",
     "@mysten/wallet-standard": "^0.16.3",
     "jose": "6.0.12",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "zustand": "^5.0.7"
+  },
+  "overrides": {
+    "@mysten/sui": "^2.14.1"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.7",

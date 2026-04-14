@@ -33,7 +33,7 @@ For detailed technical information, see the [Architecture Documentation](https:/
 ## Requirements
 
 - Node.js 22+
-- Bun (recommended) or npm/pnpm
+- Bun (recommended) package manager
 - FusionAuth application with client credentials (for EVE Frontier auth)
 - Enoki API key (for zkLogin address derivation)
 
@@ -133,12 +133,14 @@ bunx turbo run lint --filter=@evevault/web
 - Blocks commit if unfixable errors remain
 
 **Configuration:**
+
 - `biome.json` - Formatting and linting rules
 - `.biomeignore` - Files to ignore
 - `.husky/pre-commit` - Pre-commit hook script
 
 **VS Code Integration:**
 Install the Biome extension for real-time feedback:
+
 ```bash
 code --install-extension biomejs.biome
 ```
