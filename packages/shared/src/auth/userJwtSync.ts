@@ -1,4 +1,3 @@
-import type { SuiChain } from "@mysten/wallet-standard";
 import { decodeJwt } from "jose";
 import { type IdTokenClaims, User } from "oidc-client-ts";
 import type { OAuthTokenResponse } from "../types/authTypes";
@@ -56,16 +55,12 @@ export async function enrichUserWithZkLoginIfNeeded(
   });
 }
 
-/** Mirrors the canonical OIDC `User` into `evevault:jwt`. */
-export async function syncPrimaryJwtFromUser(
-  user: User,
-  chain: SuiChain,
-): Promise<void> {
+/** Mirrors the canonical OIDC `User` into persisted JWT storage. */
+export async function syncPrimaryJwtFromUser(user: User): Promise<void> {
   const jwt = userToJwtResponse(user);
   if (!jwt?.refresh_token?.trim()) {
     log.warn(
       "[syncPrimaryJwtFromUser] no refresh token, skipping evevault:jwt mirror",
-      { chain },
     );
     return;
   }

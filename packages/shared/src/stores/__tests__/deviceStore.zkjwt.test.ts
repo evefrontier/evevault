@@ -8,7 +8,7 @@ const vendJwtMock = vi.fn();
 const getZkLoginJwtForNetworkMock = vi.fn();
 const storeZkLoginJwtForNetworkMock = vi.fn();
 const hasJwtMock = vi.fn();
-const getJwtForNetworkMock = vi.fn();
+const getJwtMock = vi.fn();
 const getZkProofFromKeeperMock = vi.fn();
 const setZkProofInKeeperMock = vi.fn();
 
@@ -26,7 +26,7 @@ vi.mock("../../auth/storageService", () => ({
   storeZkLoginJwtForNetwork: (...args: unknown[]) =>
     storeZkLoginJwtForNetworkMock(...args),
   hasJwt: (...args: unknown[]) => hasJwtMock(...args),
-  getJwtForNetwork: (...args: unknown[]) => getJwtForNetworkMock(...args),
+  getJwt: (...args: unknown[]) => getJwtMock(...args),
 }));
 
 vi.mock("../../services/vaultService", () => ({
@@ -87,7 +87,7 @@ describe("deviceStore.getZkProof with expired stored zkLogin JWT", () => {
     });
 
     hasJwtMock.mockResolvedValue(true);
-    getJwtForNetworkMock.mockResolvedValue({
+    getJwtMock.mockResolvedValue({
       id_token: "primary.jwt.token",
       access_token: "primary.jwt.token",
       token_type: "Bearer",

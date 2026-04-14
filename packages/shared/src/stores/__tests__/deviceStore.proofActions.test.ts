@@ -10,7 +10,7 @@ import type {
 
 const mockAuthGetState = vi.hoisted(() => vi.fn());
 const hasJwtMock = vi.hoisted(() => vi.fn());
-const getJwtForNetworkMock = vi.hoisted(() => vi.fn());
+const getJwtMock = vi.hoisted(() => vi.fn());
 const getZkProofFromKeeperMock = vi.hoisted(() => vi.fn());
 const setZkProofMock = vi.hoisted(() => vi.fn());
 const fetchZkProofMock = vi.hoisted(() => vi.fn());
@@ -24,7 +24,7 @@ vi.mock("../../auth", () => ({
 
 vi.mock("../../auth/storageService", () => ({
   hasJwt: (...args: unknown[]) => hasJwtMock(...args),
-  getJwtForNetwork: (...args: unknown[]) => getJwtForNetworkMock(...args),
+  getJwt: (...args: unknown[]) => getJwtMock(...args),
 }));
 
 vi.mock("../../services/vaultService", () => ({
@@ -120,7 +120,7 @@ describe("createProofActions.getZkProof", () => {
       user: { id_token: "primary.id.token" },
     } as never);
     hasJwtMock.mockResolvedValue(true);
-    getJwtForNetworkMock.mockResolvedValue({
+    getJwtMock.mockResolvedValue({
       id_token: "stored.primary",
     } as never);
     resolveVendedMock.mockResolvedValue("vended.id.token");
@@ -169,7 +169,7 @@ describe("createProofActions.getZkProof", () => {
   });
 
   it("returns error when no JWT for network", async () => {
-    hasJwtMock.mockResolvedValue(false);
+    getJwtMock.mockResolvedValue(null);
     const { getZkProof, state } = buildProofHarness({
       networkData: {
         [SUI_DEVNET_CHAIN]: {

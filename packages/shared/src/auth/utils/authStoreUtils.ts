@@ -4,7 +4,7 @@ import { type IdTokenClaims, User } from "oidc-client-ts";
 import type { JwtResponse } from "../../types/authTypes";
 import { createLogger } from "../../utils/logger";
 import { getZkLoginAddress } from "../getZkLoginAddress";
-import { getJwtForNetwork } from "../storageService";
+import { getJwt } from "../storageService";
 import { getEnokiApiKey } from "../stores/authStore";
 
 const log = createLogger();
@@ -68,7 +68,7 @@ export const resolveExpiresAt = (jwt: JwtResponse): number => {
  * for a specific network (e.g., after network switching).
  */
 export async function getUserForNetwork(chain: SuiChain): Promise<User | null> {
-  const storedJwt = await getJwtForNetwork(chain);
+  const storedJwt = await getJwt();
   if (!storedJwt?.id_token) {
     return null;
   }

@@ -117,11 +117,10 @@ describe("syncPrimaryJwtFromUser", () => {
     const { syncPrimaryJwtFromUser } = await import("../userJwtSync");
     const user = baseUser({ refresh_token: undefined });
 
-    await syncPrimaryJwtFromUser(user, SUI_TESTNET_CHAIN);
+    await syncPrimaryJwtFromUser(user);
 
     expect(mockWarn).toHaveBeenCalledWith(
       "[syncPrimaryJwtFromUser] no refresh token, skipping evevault:jwt mirror",
-      { chain: SUI_TESTNET_CHAIN },
     );
     expect(mockStoreJwt).not.toHaveBeenCalled();
   });
@@ -130,7 +129,7 @@ describe("syncPrimaryJwtFromUser", () => {
     const { syncPrimaryJwtFromUser } = await import("../userJwtSync");
     const user = baseUser({ refresh_token: "   " });
 
-    await syncPrimaryJwtFromUser(user, SUI_TESTNET_CHAIN);
+    await syncPrimaryJwtFromUser(user);
 
     expect(mockWarn).toHaveBeenCalled();
     expect(mockStoreJwt).not.toHaveBeenCalled();
@@ -140,7 +139,7 @@ describe("syncPrimaryJwtFromUser", () => {
     const { syncPrimaryJwtFromUser } = await import("../userJwtSync");
     const user = baseUser({});
 
-    await syncPrimaryJwtFromUser(user, SUI_TESTNET_CHAIN);
+    await syncPrimaryJwtFromUser(user);
 
     expect(mockWarn).not.toHaveBeenCalled();
     expect(mockStoreJwt).toHaveBeenCalledTimes(1);

@@ -40,10 +40,8 @@ import { useNetworkStore } from "../../stores/networkStore";
 import { isExtension, isWeb } from "../../utils/environment";
 import {
   clearAllJwts,
-  clearJwtForNetwork,
   clearZkLoginJwtForNetwork,
-  getAllStoredJwts,
-  getJwtForNetwork,
+  getJwt,
   getStoredChain,
   getStoredWalletAddress,
   hasJwt,
@@ -89,59 +87,23 @@ describe("storageService (web)", () => {
     expect(parsed.primary).toMatchObject({ access_token: "at" });
   });
 
-  it("storeJwt ignores chain param (primary is network-agnostic)", async () => {
-    await storeJwt({ ...baseJwt(), access_token: "a1" }, SUI_TESTNET_CHAIN);
-    await storeJwt({ ...baseJwt(), access_token: "a2" }, SUI_DEVNET_CHAIN);
-    const raw = localStorage.getItem(JWT_STORAGE_KEY);
-    const parsed = JSON.parse(raw as string) as {
-      primary?: { access_token: string };
-    };
-    // Second write overwrites the single primary entry
-    expect(parsed.primary?.access_token).toBe("a2");
-  });
-
-  it("getAllStoredJwts returns primary keyed by current chain", async () => {
-    await storeJwt(baseJwt());
-    const all = await getAllStoredJwts();
-    expect(all?.[SUI_TESTNET_CHAIN]).toMatchObject({ access_token: "at" });
-    expect(Object.keys(all ?? {}).length).toBe(1);
-  });
-
-  it("getJwtForNetwork uses OIDC user on web when chain matches", async () => {
+  it("getJwt uses OIDC user on web", async () => {
     const jwt = baseJwt();
     vi.mocked(userToJwtResponse).mockReturnValue(jwt as never);
-    const out = await getJwtForNetwork(SUI_TESTNET_CHAIN);
+    const out = await getJwt();
     expect(out).toEqual(jwt);
     expect(userToJwtResponse).toHaveBeenCalled();
   });
 
-  it("getJwtForNetwork reads from storage for any chain (primary is shared)", async () => {
+  it("getJwt falls back to storage when OIDC user absent", async () => {
     await storeJwt(baseJwt());
-    const out = await getJwtForNetwork(SUI_DEVNET_CHAIN);
+    const out = await getJwt();
     expect(out?.access_token).toBe("at");
   });
 
-  it("getAllJwtEntries returns null for invalid JSON in localStorage", async () => {
+  it("getJwt returns null for invalid JSON in localStorage", async () => {
     localStorage.setItem(JWT_STORAGE_KEY, "{not-json");
-    await expect(getAllStoredJwts()).resolves.toBeNull();
-  });
-
-  it("clearJwtForNetwork only clears zkLogin for that chain, not primary", async () => {
-    await storeJwt(baseJwt());
-    await storeZkLoginJwtForNetwork(
-      { id_token: "zk", expires_at: futureExp() },
-      SUI_DEVNET_CHAIN,
-    );
-    await clearJwtForNetwork(SUI_DEVNET_CHAIN);
-    const all = await getAllStoredJwts();
-    // Primary should still exist
-    expect(all?.[SUI_TESTNET_CHAIN]?.access_token).toBe("at");
-    // zkLogin for devnet should be gone
-    const raw = localStorage.getItem(JWT_STORAGE_KEY);
-    const parsed = JSON.parse(raw as string) as {
-      zkLogin?: Record<string, unknown>;
-    };
-    expect(parsed.zkLogin?.[SUI_DEVNET_CHAIN]).toBeUndefined();
+    await expect(getJwt()).resolves.toBeNull();
   });
 
   it("clearAllJwts removes JWT key", async () => {
@@ -155,12 +117,28 @@ describe("storageService (web)", () => {
       ...baseJwt(),
       expires_at: Math.floor(Date.now() / 1000) - 10,
     });
-    await expect(hasJwt(SUI_TESTNET_CHAIN)).resolves.toBe(false);
+    await expect(hasJwt()).resolves.toBe(false);
   });
 
   it("hasJwt returns true when valid", async () => {
     await storeJwt(baseJwt());
-    await expect(hasJwt(SUI_TESTNET_CHAIN)).resolves.toBe(true);
+    await expect(hasJwt()).resolves.toBe(true);
+  });
+
+  it("clearZkLoginJwtForNetwork leaves primary intact", async () => {
+    await storeJwt(baseJwt());
+    await storeZkLoginJwtForNetwork(
+      { id_token: "zk", expires_at: futureExp() },
+      SUI_DEVNET_CHAIN,
+    );
+    await clearZkLoginJwtForNetwork(SUI_DEVNET_CHAIN);
+    const raw = localStorage.getItem(JWT_STORAGE_KEY);
+    const parsed = JSON.parse(raw as string) as {
+      primary?: { access_token: string };
+      zkLogin?: Record<string, unknown>;
+    };
+    expect(parsed.primary?.access_token).toBe("at");
+    expect(parsed.zkLogin?.[SUI_DEVNET_CHAIN]).toBeUndefined();
   });
 
   it("storeZkLoginJwtForNetwork merges with existing primary", async () => {

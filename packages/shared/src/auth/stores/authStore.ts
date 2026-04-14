@@ -24,7 +24,7 @@ import { DEFAULT_TENANT_ID, getTenantConfig } from "../../utils/tenantConfig";
 import { getUserManager, redirectToFusionAuthLogout } from "../authConfig";
 import { clearZkLoginAddressCache } from "../getZkLoginAddress";
 import { parseOAuthTokenResponse } from "../oauthTokenResponse";
-import { clearAllJwts, getJwtForNetwork } from "../storageService";
+import { clearAllJwts, getJwt } from "../storageService";
 import type { AuthState } from "../types";
 import {
   enrichUserWithZkLoginIfNeeded,
@@ -71,7 +71,7 @@ export const useAuthStore = create<AuthState>()(
           try {
             const deviceStore = useDeviceStore.getState();
             const deviceNonce = deviceStore.networkData[network]?.nonce;
-            const storedJwtForNonceCheck = await getJwtForNetwork(network);
+            const storedJwtForNonceCheck = await getJwt();
 
             if (storedJwtForNonceCheck?.id_token) {
               const decodedJwtForNonceCheck = decodeJwt(
@@ -121,7 +121,7 @@ export const useAuthStore = create<AuthState>()(
                 // The background dapp-login path stores a JWT via storeJwt() but does
                 // not create an OIDC UserManager session. Reconstruct the User from the
                 // stored JWT so the popup does not appear logged-out after a dapp login.
-                const storedJwt = await getJwtForNetwork(network);
+                const storedJwt = await getJwt();
                 if (!storedJwt?.id_token) {
                   log.info(
                     "Extension init: no OIDC user or stored JWT, clearing auth",
@@ -222,7 +222,7 @@ export const useAuthStore = create<AuthState>()(
 
               user = await enrichUserWithZkLoginIfNeeded(user, getEnokiApiKey);
               await getUserManagerInstance().storeUser(user);
-              await syncPrimaryJwtFromUser(user, network);
+              await syncPrimaryJwtFromUser(user);
               set({ user, loading: false });
               return;
             }
@@ -282,7 +282,7 @@ export const useAuthStore = create<AuthState>()(
                   getEnokiApiKey,
                 );
                 await getUserManagerInstance().storeUser(user);
-                await syncPrimaryJwtFromUser(user, network);
+                await syncPrimaryJwtFromUser(user);
                 set({ user, loading: false });
 
                 return user as User;
