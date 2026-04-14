@@ -53,8 +53,10 @@ Create a `.env` file at app root:
 # FusionAuth Configuration
 VITE_TENANT_STILLNESS_CLIENT_SECRET=your-fusionauth-client-secret
 VITE_TENANT_UTOPIA_CLIENT_SECRET=your-fusionauth-client-secret
-VITE_TENANT_TESTEVENET_CLIENT_SECRET=your-fusionauth-client-secret
-VITE_TENANT_NEBULA_CLIENT_SECRET=your-fusionauth-client-secret
+VITE_TENANT_TAUCETI_CLIENT_SECRET=your-fusionauth-client-secret
+VITE_TENANT_TESSERACT_CLIENT_SECRET=your-fusionauth-client-secret
+VITE_TENANT_TETRA_CLIENT_SECRET=your-fusionauth-client-secret
+VITE_TENANT_TIAKI_CLIENT_SECRET=your-fusionauth-client-secret
 VITE_FUSIONAUTH_REDIRECT_URI=
 
 # Enoki Configuration
