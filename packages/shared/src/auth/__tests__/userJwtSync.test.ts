@@ -1,4 +1,3 @@
-import { SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
 import { User } from "oidc-client-ts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 

@@ -83,7 +83,7 @@ const TokenRow: React.FC<ExtendedTokenRowProps> = ({
     }
   };
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLButtonElement>) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
       onSelect();
@@ -91,8 +91,10 @@ const TokenRow: React.FC<ExtendedTokenRowProps> = ({
   };
 
   return (
-    <button
-      type="button"
+    // biome-ignore lint/a11y/useSemanticElements: This needs to nest another button
+    <div
+      role="button"
+      tabIndex={0}
       className={containerClasses}
       onClick={onSelect}
       onKeyDown={handleKeyDown}
@@ -142,7 +144,7 @@ const TokenRow: React.FC<ExtendedTokenRowProps> = ({
           </Button>
         </div>
       )}
-    </button>
+    </div>
   );
 };
 

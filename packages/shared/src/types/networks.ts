@@ -16,6 +16,7 @@ export interface NetworkOption {
 export const AVAILABLE_NETWORKS: NetworkOption[] = [
   { chain: SUI_TESTNET_CHAIN, label: "Testnet", shortLabel: "TEST" },
   { chain: SUI_DEVNET_CHAIN, label: "Devnet", shortLabel: "DEV" },
+  // Mainnet will be added later as a feature flag
 ];
 
 /**

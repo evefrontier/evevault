@@ -137,7 +137,6 @@ export const useNetworkStore = create<NetworkState>()(
           }
 
           // Ensure device data is present and valid for the new chain.
-          // Nonce is no longer tied to the OAuth JWT so it can be freely regenerated.
           const deviceStore = useDeviceStore.getState();
           const networkData = deviceStore.networkData[chain];
           const isExpired =
