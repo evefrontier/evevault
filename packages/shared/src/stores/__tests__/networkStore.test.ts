@@ -27,26 +27,28 @@ vi.mock("../../utils/logger", () => ({
   }),
 }));
 
+const mockDeviceStoreState = vi.hoisted(() => ({
+  networkData: {} as Record<string, unknown>,
+  initializeForChain: vi.fn().mockResolvedValue(undefined),
+  ephemeralPublicKey: null as string | null,
+  isLocked: false,
+}));
+
 vi.mock("../deviceStore", () => ({
   useDeviceStore: {
-    getState: () => ({
-      networkData: {} as Record<string, unknown>,
-      initializeForChain: vi.fn().mockResolvedValue(undefined),
-      ephemeralPublicKey: null,
-      isLocked: false,
-    }),
+    getState: () => mockDeviceStoreState,
   },
 }));
 
 // Import mocked modules after vi.mock calls
 // Using workspace alias in test files due to Vite resolution limitations with relative imports
 import { hasJwt } from "@evevault/shared/auth";
-import { useDeviceStore } from "../deviceStore";
 import { useNetworkStore } from "../networkStore";
 
 describe("networkStore", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockDeviceStoreState.networkData = {};
 
     // Reset store state
     useNetworkStore.setState({
@@ -143,15 +145,16 @@ describe("networkStore", () => {
       expect(useNetworkStore.getState().chain).toBe(SUI_TESTNET_CHAIN);
     });
 
-    it("does NOT regenerate device data when switching to network without JWT", async () => {
+    it("pre-initializes device data when switching to network without JWT", async () => {
       useNetworkStore.setState({ chain: SUI_DEVNET_CHAIN });
       vi.mocked(hasJwt).mockResolvedValue(false);
 
-      const deviceStore = useDeviceStore.getState();
       await useNetworkStore.getState().setChain(SUI_TESTNET_CHAIN);
 
-      // Should NOT call initializeForChain - device data only created during login
-      expect(deviceStore.initializeForChain).not.toHaveBeenCalled();
+      // Pre-initializes device data so it's ready for vendJwt after login
+      expect(mockDeviceStoreState.initializeForChain).toHaveBeenCalledWith(
+        SUI_TESTNET_CHAIN,
+      );
     });
 
     it("performs seamless switch when JWT exists", async () => {
@@ -165,6 +168,9 @@ describe("networkStore", () => {
       expect(result.success).toBe(true);
       expect(result.requiresReauth).toBe(false);
       expect(useNetworkStore.getState().chain).toBe(SUI_TESTNET_CHAIN);
+      expect(mockDeviceStoreState.initializeForChain).toHaveBeenCalledWith(
+        SUI_TESTNET_CHAIN,
+      );
     });
 
     it("allows switch and regenerates device data when JWT exists but device data is missing", async () => {
@@ -178,11 +184,21 @@ describe("networkStore", () => {
       expect(result.success).toBe(true);
       expect(result.requiresReauth).toBe(false);
       expect(useNetworkStore.getState().chain).toBe(SUI_TESTNET_CHAIN);
+      expect(mockDeviceStoreState.initializeForChain).toHaveBeenCalledWith(
+        SUI_TESTNET_CHAIN,
+      );
     });
 
     it("allows switch and regenerates device data when JWT exists but device data is expired", async () => {
       useNetworkStore.setState({ chain: SUI_DEVNET_CHAIN });
       vi.mocked(hasJwt).mockResolvedValue(true);
+      mockDeviceStoreState.networkData = {
+        [SUI_TESTNET_CHAIN]: {
+          nonce: "existing-nonce",
+          maxEpoch: 100,
+          maxEpochTimestampMs: Date.now() - 10_000, // expired
+        },
+      };
 
       const result = await useNetworkStore
         .getState()
@@ -190,6 +206,9 @@ describe("networkStore", () => {
 
       expect(result.success).toBe(true);
       expect(result.requiresReauth).toBe(false);
+      expect(mockDeviceStoreState.initializeForChain).toHaveBeenCalledWith(
+        SUI_TESTNET_CHAIN,
+      );
     });
   });
 });

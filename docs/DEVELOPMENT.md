@@ -118,7 +118,7 @@ useDeviceStore.subscribe((state) => {
 
 ### Network Switching
 
-The extension supports switching between Sui devnet, testnet, and mainnet. Implementation lives in `useNetworkStore` (`setChain`) and the shared `NetworkSelector`.
+The extension supports switching between Sui devnet and testnet. Implementation lives in `useNetworkStore` (`setChain`) and the shared `NetworkSelector`.
 
 - **Network selector UI**: Use the network control in the shell (bottom-left in the extension) to pick a chain. The selector calls `setChain` and, when the switch needs a new login, runs the `onRequiresReauth` / `onNetworkSwitchStart` callbacks from the host app.
 - **Primary OAuth JWT (network-agnostic)**: One **primary** OIDC token is stored and validated with `hasJwt()` / `getJwt()`. The OAuth redirect no longer depends on a client-bound nonce; that is handled when vending zkLogin.

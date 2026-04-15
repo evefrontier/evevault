@@ -187,14 +187,15 @@ Safe accessors for Zustand stores in non-React environments:
 
 **Location**: `packages/shared/src/stores/networkStore.ts`, `packages/shared/src/components/NetworkSelector/`
 
-The extension supports multi-network operation with per-network data isolation:
+The extension supports multi-network operation with shared primary auth and per-network zkLogin/device data:
 
 - **Network Store**: Manages current network state with persistence (`useNetworkStore`)
 - **Network Selector**: UI component for switching between networks (`NetworkSelector`)
-- **Per-network JWTs**: Each network stores its own JWT tokens in `chrome.storage.local` under `evevault:jwt`
+- **Primary JWT**: A single network-agnostic OAuth JWT is stored in `chrome.storage.local` under `evevault:jwt.primary`
+- **Per-network zkLogin JWTs**: Chain-specific zkLogin JWTs are stored under `evevault:jwt.zkLogin[chain]`
 - **Per-network device data**: Nonce, maxEpoch, and jwtRandomness stored per-network in `deviceStore.networkData`
-- **Automatic rollback**: Login failures trigger rollback to previous network with valid JWT
-- **Seamless switching**: If user is already logged in on target network, switching is instant
+- **Selector flow**: Network changes go directly through `setChain()`; the selector no longer calls `checkNetworkSwitch()`
+- **Seamless switching**: Because the primary JWT is global, switching networks can reuse the current auth session while refreshing per-chain device data as needed
 
 **Key Components:**
 
@@ -204,12 +205,15 @@ The extension supports multi-network operation with per-network data isolation:
 
 **Network Switching Flow:**
 
-1. User clicks network selector → `checkNetworkSwitch()` checks if JWT exists for target network
-2. If JWT exists → `setChain()` performs seamless switch (updates device data if needed)
+1. User clicks network selector → `NetworkSelector` calls `setChain(targetChain)` directly
+2. `setChain()` updates the persisted chain immediately and checks for a valid primary JWT via `hasJwt()`
+3. If a primary JWT exists, the switch completes without re-login and `deviceStore.initializeForChain(targetChain)` runs if the target chain is missing or has expired zkLogin device data
+4. If no primary JWT exists, the chain still updates, auth state is re-initialized for the new chain, and device data is pre-initialized so the next login / zkLogin vend can proceed on that chain
 
 **Per-Network Data Isolation:**
 
-- JWTs: `evevault:jwt[sui:devnet]` vs `evevault:jwt[sui:testnet]`
+- Primary JWT: `evevault:jwt.primary` (shared across networks)
+- zkLogin JWTs: `evevault:jwt.zkLogin[sui:devnet]` vs `evevault:jwt.zkLogin[sui:testnet]`
 - Device data: `deviceStore.networkData[sui:devnet]` vs `deviceStore.networkData[sui:testnet]`
 - Network state: `evevault:network` stores current `chain`
 
@@ -299,9 +303,10 @@ Builds Sui transactions with proper sender address.
   - Contains `ephemeralPublicKey`, `isLocked`, and `networkData` object
   - `networkData[sui:devnet]`: Per-network `jwtRandomness`, `nonce`, `maxEpoch`
   - `networkData[sui:testnet]`: Per-network `jwtRandomness`, `nonce`, `maxEpoch`
-- `evevault:jwt`: Per-network token data
-  - `evevault:jwt[sui:devnet]`: JWT tokens for devnet
-  - `evevault:jwt[sui:testnet]`: JWT tokens for testnet
+- `evevault:jwt`: Auth token data
+  - `primary`: Network-agnostic OAuth JWT / refresh token set
+  - `zkLogin[sui:devnet]`: Chain-specific zkLogin JWT for devnet
+  - `zkLogin[sui:testnet]`: Chain-specific zkLogin JWT for testnet
 - `evevault:network`: Current network state (`chain`)
 
 ### `chrome.storage.session` (Cleared on browser close)

@@ -21,7 +21,7 @@ async function handleSponsoredTransaction(
     const chain = await getStoredChain();
     const jwt = await getJwt();
     if (!jwt?.id_token) {
-      const error = "No JWT for current network. Re-authenticate required.";
+      const error = "No valid JWT found. Please re-authenticate.";
       if (senderTabId != null) {
         chrome.tabs
           .sendMessage(senderTabId, {
