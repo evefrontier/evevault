@@ -19,6 +19,9 @@ vi.mock("./webVaultService", () => ({
     createEphemeralKeyPair: vi.fn(() =>
       Promise.resolve({ toRawBytes: () => new Uint8Array(33) }),
     ),
+    rotateEphemeralKeyPair: vi.fn(() =>
+      Promise.resolve({ toRawBytes: () => new Uint8Array(33) }),
+    ),
     getSigner: vi.fn(() => ({ sign: vi.fn() })),
     isUnlocked: vi.fn(() => true),
     lock: vi.fn(),
@@ -38,6 +41,12 @@ vi.mock("./keeperService", () => ({
     createEphemeralKeyPair: vi.fn(() =>
       Promise.resolve({
         hashedSecretKey: { iv: "test", data: "test", salt: "test" },
+        publicKey: { toRawBytes: () => new Uint8Array(32) },
+      }),
+    ),
+    rotateEphemeralKeyPair: vi.fn(() =>
+      Promise.resolve({
+        hashedSecretKey: { iv: "rot", data: "rot", salt: "rot" },
         publicKey: { toRawBytes: () => new Uint8Array(32) },
       }),
     ),
@@ -138,6 +147,14 @@ describe("ephKeyService routing", () => {
       expect(result).toBeDefined();
     });
 
+    it("routes rotateEphemeralKeyPair to webVaultService", async () => {
+      const result = await ephKeyService.rotateEphemeralKeyPair();
+
+      expect(webVaultService.rotateEphemeralKeyPair).toHaveBeenCalled();
+      expect(result).toHaveProperty("hashedSecretKey");
+      expect(result).toHaveProperty("publicKey");
+    });
+
     it("routes getSigner to webVaultService", () => {
       const result = ephKeyService.getSigner();
 
@@ -202,6 +219,14 @@ describe("ephKeyService routing", () => {
       await ephKeyService.getEphemeralPublicKey();
 
       expect(keeperEphKeyService.getEphemeralPublicKey).toHaveBeenCalled();
+    });
+
+    it("routes rotateEphemeralKeyPair to keeperService", async () => {
+      const result = await ephKeyService.rotateEphemeralKeyPair();
+
+      expect(keeperEphKeyService.rotateEphemeralKeyPair).toHaveBeenCalled();
+      expect(result).toHaveProperty("hashedSecretKey");
+      expect(result).toHaveProperty("publicKey");
     });
 
     it("returns null for getSigner in extension context", () => {

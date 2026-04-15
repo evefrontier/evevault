@@ -168,6 +168,18 @@ export async function clearZkLoginJwtForNetwork(
   await writeJwtStorage(updated);
 }
 
+export async function clearAllZkLoginJwts(): Promise<void> {
+  const storage = await readJwtStorage();
+  if (!storage?.zkLogin) return;
+
+  if (!storage.primary) {
+    await clearAllJwts();
+    return;
+  }
+
+  await writeJwtStorage({ primary: storage.primary });
+}
+
 /**
  * Store network-agnostic primary (OAuth) JWT.
  */

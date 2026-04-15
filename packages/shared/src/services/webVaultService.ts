@@ -24,6 +24,7 @@ const ZKPROOF_STORAGE_PREFIX = "evevault:web-zkproof:";
 class WebVaultService {
   private signer: WebCryptoSigner | null = null;
   private unlockExpiry: number | null = null;
+  private sessionPin: string | null = null;
   private initialized = false;
 
   /**
@@ -55,6 +56,7 @@ class WebVaultService {
     await set(PIN_HASH_STORAGE_KEY, pinHash);
 
     this.unlockExpiry = Date.now() + 10 * 60 * 1000;
+    this.sessionPin = pin;
 
     log.info(
       "[web-vault] Created new Secp256r1 ephemeral keypair (PIN hash stored)",
@@ -73,6 +75,7 @@ class WebVaultService {
     // If already unlocked with valid signer, just extend the expiry
     if (this.signer && this.unlockExpiry && Date.now() < this.unlockExpiry) {
       this.unlockExpiry = Date.now() + durationMs;
+      this.sessionPin = pin;
       log.debug("[web-vault] Vault already unlocked, extended expiry");
       return true;
     }
@@ -101,6 +104,7 @@ class WebVaultService {
 
       this.signer = await WebCryptoSigner.import(exported);
       this.unlockExpiry = Date.now() + durationMs;
+      this.sessionPin = pin;
 
       log.info(
         `[web-vault] Vault unlocked for ${durationMs / 1000 / 60} minutes`,
@@ -140,6 +144,7 @@ class WebVaultService {
 
   lock(): void {
     this.unlockExpiry = null;
+    this.sessionPin = null;
     // Clear the signer from memory on lock for security
     this.signer = null;
     log.debug("[web-vault] Vault locked");
@@ -157,9 +162,18 @@ class WebVaultService {
   async clear(): Promise<void> {
     this.signer = null;
     this.unlockExpiry = null;
+    this.sessionPin = null;
     await del(KEYPAIR_STORAGE_KEY);
     await del(PIN_HASH_STORAGE_KEY);
     log.info("[web-vault] Cleared keypair and PIN hash");
+  }
+
+  async rotateEphemeralKeyPair(): Promise<PublicKey> {
+    if (!this.isUnlocked() || !this.sessionPin) {
+      throw new Error("Vault must be unlocked again before rotating keypair");
+    }
+
+    return this.createEphemeralKeyPair(this.sessionPin);
   }
 
   async signTransaction(txBytes: Uint8Array): Promise<{

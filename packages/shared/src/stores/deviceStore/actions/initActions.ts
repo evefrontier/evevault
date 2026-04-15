@@ -1,6 +1,7 @@
 import { generateNonce, generateRandomness } from "@mysten/sui/zklogin";
 import type { SuiChain } from "@mysten/wallet-standard";
-import { ephKeyService } from "../../../services/vaultService";
+import { clearAllZkLoginJwts } from "../../../auth/storageService";
+import { ephKeyService, zkProofService } from "../../../services/vaultService";
 import { getCurrentEpochFromGraphQL } from "../../../sui/graphqlEpoch";
 import type {
   DeviceState,
@@ -13,6 +14,7 @@ import { isWeb } from "../../../utils/environment";
 import { createLogger } from "../../../utils/logger";
 import { DEVICE_STORAGE_KEY } from "../../../utils/storageKeys";
 import { useNetworkStore } from "../../networkStore";
+import { createInitialNetworkData } from "../constants";
 import { resolveStoredSecretKey } from "../keyHelpers";
 import type { GetDeviceState, SetDeviceState } from "./types";
 
@@ -272,5 +274,39 @@ export function createInitActions(set: SetDeviceState, get: GetDeviceState) {
         error: null,
       });
     },
-  } satisfies Pick<DeviceState, "initialize" | "initializeForChain">;
+
+    rotateEphemeralKey: async () => {
+      const currentChain = useNetworkStore.getState().chain;
+
+      log.info("Rotating ephemeral key", { currentChain });
+
+      const { hashedSecretKey, publicKey } =
+        await ephKeyService.rotateEphemeralKeyPair();
+
+      try {
+        await Promise.all([clearAllZkLoginJwts(), zkProofService.clear()]);
+      } catch (error) {
+        log.warn("Failed to fully clear derived state during key rotation", {
+          error,
+        });
+      }
+
+      set({
+        ephemeralPublicKey: publicKey,
+        ephemeralPublicKeyBytes: Array.from(publicKey.toRawBytes()),
+        ephemeralPublicKeyFlag: publicKey.flag(),
+        ephemeralKeyPairSecretKey: isWeb()
+          ? createWebCryptoPlaceholder()
+          : hashedSecretKey,
+        networkData: createInitialNetworkData(),
+        error: null,
+        isLocked: false,
+      });
+
+      await get().initializeForChain(currentChain);
+    },
+  } satisfies Pick<
+    DeviceState,
+    "initialize" | "initializeForChain" | "rotateEphemeralKey"
+  >;
 }

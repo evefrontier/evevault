@@ -21,6 +21,7 @@ import type { BackgroundMessage } from "../../src/lib/background/types";
 
 // RAM-only storage for the ephemeral key
 let ephemeralKey: Ed25519Keypair | null = null;
+let sessionPin: string | null = null;
 let _vaultUnlocked = false;
 let _vaultUnlockExpiry: number | null = null;
 // RAM-only storage for zkProofs (chain-specific)
@@ -43,6 +44,7 @@ function checkAndEnforceExpiry(): boolean {
   if (_vaultUnlockExpiry && Date.now() > _vaultUnlockExpiry) {
     // Expiry reached - lock the vault
     ephemeralKey = null;
+    sessionPin = null;
     _vaultUnlocked = false;
     _vaultUnlockExpiry = null;
     return true; // Now locked
@@ -70,6 +72,7 @@ chrome.runtime.onMessage.addListener(
 
       // Create a new keypair
       ephemeralKey = Ed25519Keypair.generate();
+      sessionPin = pin as string;
       _vaultUnlocked = true;
       _vaultUnlockExpiry = Date.now() + 10 * 60 * 1000; // 10 minutes default
 
@@ -127,6 +130,7 @@ chrome.runtime.onMessage.addListener(
           // Step 2: Reconstruct keypair
           try {
             ephemeralKey = Ed25519Keypair.fromSecretKey(secretKey);
+            sessionPin = pin as string;
             _vaultUnlocked = true;
             _vaultUnlockExpiry = Date.now() + 10 * 60 * 1000; // 10 minutes default
             sendResponse({ ok: true });
@@ -163,6 +167,44 @@ chrome.runtime.onMessage.addListener(
         publicKeyBytes: Array.from(publicKey?.toRawBytes() ?? []),
       });
       return false;
+    }
+
+    if (message.type === KeeperMessageTypes.ROTATE_KEYPAIR) {
+      if (checkAndEnforceExpiry() || !sessionPin) {
+        sendResponse({
+          ok: false,
+          error: "Vault must be unlocked again before rotating keypair",
+        });
+        return false;
+      }
+
+      (async () => {
+        try {
+          ephemeralKey = Ed25519Keypair.generate();
+          _vaultUnlocked = true;
+          _vaultUnlockExpiry = Date.now() + 10 * 60 * 1000;
+
+          const hashedSecretKey = await encrypt(
+            ephemeralKey.getSecretKey(),
+            sessionPin,
+          );
+
+          sendResponse({
+            ok: true,
+            hashedSecretKey,
+            publicKeyBytes: Array.from(
+              ephemeralKey.getPublicKey().toRawBytes(),
+            ),
+          });
+        } catch (error) {
+          sendResponse({
+            ok: false,
+            error: error instanceof Error ? error.message : "Unknown error",
+          });
+        }
+      })();
+
+      return true;
     }
 
     if (message.type === KeeperMessageTypes.EPH_SIGN) {
@@ -256,6 +298,7 @@ chrome.runtime.onMessage.addListener(
     if (message.type === KeeperMessageTypes.CLEAR_EPHKEY) {
       // Lock the vault and clear the key and zkProofs
       ephemeralKey = null;
+      sessionPin = null;
       _vaultUnlocked = false;
       _vaultUnlockExpiry = null;
       sendResponse({ ok: true });

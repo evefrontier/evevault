@@ -42,6 +42,7 @@ export interface DeviceState {
   // Actions
   initialize: (pin: string) => Promise<void>;
   initializeForChain: (chain: SuiChain) => Promise<void>;
+  rotateEphemeralKey: () => Promise<void>;
   getZkProof: () => Promise<ZkProofResponse | { error: string }>;
   lock: () => void;
   unlock: (pin: string) => Promise<void>;

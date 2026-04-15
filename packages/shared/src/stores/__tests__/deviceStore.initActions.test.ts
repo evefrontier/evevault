@@ -7,12 +7,36 @@ import type {
   GetDeviceState,
   SetDeviceState,
 } from "../deviceStore/actions/types";
+import { useNetworkStore } from "../networkStore";
 
 const getCurrentEpochFromGraphQLMock = vi.fn();
+const rotateEphemeralKeyPairMock = vi.fn();
+const clearAllZkLoginJwtsMock = vi.fn();
+const clearZkProofsMock = vi.fn();
 
 vi.mock("../../sui/graphqlEpoch", () => ({
   getCurrentEpochFromGraphQL: (...args: unknown[]) =>
     getCurrentEpochFromGraphQLMock(...args),
+}));
+
+vi.mock("../../services/vaultService", () => ({
+  ephKeyService: {
+    initialize: vi.fn(),
+    hasKeypair: vi.fn(),
+    isUnlocked: vi.fn(() => false),
+    unlockVault: vi.fn(),
+    createEphemeralKeyPair: vi.fn(),
+    rotateEphemeralKeyPair: (...args: unknown[]) =>
+      rotateEphemeralKeyPairMock(...args),
+    getEphemeralPublicKey: vi.fn(),
+  },
+  zkProofService: {
+    clear: (...args: unknown[]) => clearZkProofsMock(...args),
+  },
+}));
+
+vi.mock("../../auth/storageService", () => ({
+  clearAllZkLoginJwts: (...args: unknown[]) => clearAllZkLoginJwtsMock(...args),
 }));
 
 function stubAsync() {
@@ -38,6 +62,7 @@ function baseDeviceState(
     },
     loading: false,
     error: null,
+    rotateEphemeralKey: stubAsync,
     getZkProof: async () => ({ error: "stub" }),
     lock: stubAsync,
     unlock: stubAsync,
@@ -62,7 +87,8 @@ function buildInitHarness(
 
   const get: GetDeviceState = () => state;
 
-  const { initialize, initializeForChain } = createInitActions(set, get);
+  const { initialize, initializeForChain, rotateEphemeralKey } =
+    createInitActions(set, get);
 
   const pub =
     ephemeralPublicKey ?? new Ed25519PublicKey(new Uint8Array(32).fill(1));
@@ -73,6 +99,7 @@ function buildInitHarness(
     ephemeralPublicKey,
     initialize,
     initializeForChain,
+    rotateEphemeralKey,
   };
 
   return { state, initialize, initializeForChain, get, set };
@@ -83,9 +110,16 @@ describe("createInitActions", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    useNetworkStore.setState({ chain: SUI_DEVNET_CHAIN, loading: false });
     getCurrentEpochFromGraphQLMock.mockResolvedValue({
       numericMaxEpoch: 777,
       maxEpochTimestampMs: epochMs,
+    });
+    clearAllZkLoginJwtsMock.mockResolvedValue(undefined);
+    clearZkProofsMock.mockResolvedValue(undefined);
+    rotateEphemeralKeyPairMock.mockResolvedValue({
+      hashedSecretKey: { iv: "new", data: "secret", salt: "salt" },
+      publicKey: new Ed25519PublicKey(new Uint8Array(32).fill(8)),
     });
   });
 
@@ -136,6 +170,45 @@ describe("createInitActions", () => {
       expect(getCurrentEpochFromGraphQLMock).toHaveBeenCalledWith(
         SUI_DEVNET_CHAIN,
       );
+    });
+  });
+
+  describe("rotateEphemeralKey", () => {
+    it("replaces the key and resets derived state before reinitializing current chain", async () => {
+      const pub = new Ed25519PublicKey(new Uint8Array(32).fill(3));
+      const { state } = buildInitHarness(pub, {
+        ephemeralKeyPairSecretKey: { iv: "old", data: "old", salt: "old" },
+        networkData: {
+          [SUI_DEVNET_CHAIN]: {
+            nonce: "stale",
+            maxEpoch: "10",
+            maxEpochTimestampMs: Date.now() - 1000,
+            jwtRandomness: "stale-random",
+          },
+          [SUI_TESTNET_CHAIN]: {
+            nonce: "other",
+            maxEpoch: "11",
+            maxEpochTimestampMs: Date.now() + 1000,
+            jwtRandomness: "other-random",
+          },
+        },
+      });
+
+      await state.rotateEphemeralKey();
+
+      expect(rotateEphemeralKeyPairMock).toHaveBeenCalledTimes(1);
+      expect(clearAllZkLoginJwtsMock).toHaveBeenCalledTimes(1);
+      expect(clearZkProofsMock).toHaveBeenCalledTimes(1);
+      expect(state.ephemeralKeyPairSecretKey).toEqual({
+        iv: "web-crypto-signer",
+        data: "non-extractable-key",
+        salt: "web-crypto-salt",
+      });
+      expect(state.networkData[SUI_DEVNET_CHAIN]?.maxEpoch).toBe("777");
+      expect(state.networkData[SUI_DEVNET_CHAIN]?.nonce).toEqual(
+        expect.any(String),
+      );
+      expect(state.networkData[SUI_TESTNET_CHAIN]?.nonce).toBeNull();
     });
   });
 });

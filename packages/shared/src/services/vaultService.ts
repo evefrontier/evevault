@@ -81,6 +81,22 @@ export const ephKeyService = {
   },
 
   /**
+   * Rotates the ephemeral key pair using the active unlocked session.
+   */
+  async rotateEphemeralKeyPair(): Promise<{
+    hashedSecretKey: StoredSecretKey;
+    publicKey: PublicKey;
+  }> {
+    if (isWeb()) {
+      const publicKey = await webVaultService.rotateEphemeralKeyPair();
+      const webPlaceholderKey = createWebCryptoPlaceholder();
+      return { hashedSecretKey: webPlaceholderKey, publicKey };
+    }
+
+    return keeperEphKeyService.rotateEphemeralKeyPair();
+  },
+
+  /**
    * Gets the current ephemeral public key
    */
   async getEphemeralPublicKey(): Promise<PublicKey | null> {

@@ -13,6 +13,7 @@ vi.mock("../../services/vaultService", () => ({
     hasKeypair: vi.fn(),
     unlockVault: vi.fn(),
     createEphemeralKeyPair: vi.fn(),
+    rotateEphemeralKeyPair: vi.fn(),
     getEphemeralPublicKey: vi.fn(),
     lock: vi.fn(),
     isUnlocked: vi.fn(() => false),

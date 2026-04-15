@@ -173,6 +173,45 @@ export function _handleCreateKeypair(
 }
 
 /**
+ * Handles ROTATE_KEYPAIR message - rotates the ephemeral key pair using the active keeper session
+ */
+export function _handleRotateKeypair(
+  _message: VaultMessage,
+  _sender: chrome.runtime.MessageSender,
+  sendResponse: (response?: unknown) => void,
+): boolean {
+  (async () => {
+    try {
+      const keeperResponse = await sendToKeeper({
+        type: KeeperMessageTypes.ROTATE_KEYPAIR,
+      });
+
+      if (keeperResponse?.ok) {
+        sendResponse({
+          ok: true,
+          hashedSecretKey: keeperResponse.hashedSecretKey,
+          publicKeyBytes: keeperResponse.publicKeyBytes,
+        });
+      } else {
+        sendResponse({
+          ok: false,
+          error:
+            keeperResponse?.error ||
+            "Vault must be unlocked again before rotating keypair",
+        });
+      }
+    } catch (error) {
+      sendResponse({
+        ok: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  })();
+
+  return true;
+}
+
+/**
  * Handles GET_PUBLIC_KEY message - returns the current ephemeral public key from keeper
  */
 export async function _handleGetPublicKey(

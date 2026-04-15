@@ -100,6 +100,34 @@ export const ephKeyService = {
     }
   },
 
+  async rotateEphemeralKeyPair(): Promise<{
+    hashedSecretKey: StoredSecretKey;
+    publicKey: Ed25519PublicKey;
+  }> {
+    log.debug("[ephKeyService] Rotating ephemeral key pair");
+
+    const res = (await chrome.runtime?.sendMessage?.({
+      type: VaultMessageTypes.ROTATE_KEYPAIR,
+    })) as VaultResponse | undefined;
+
+    log.debug("Rotate ephemeral key pair response", { ok: res?.ok });
+
+    if (res?.ok && res.hashedSecretKey) {
+      const publicKey = await ephKeyService.getEphemeralPublicKey();
+      if (!publicKey) {
+        throw new Error("Failed to refresh ephemeral public key");
+      }
+      return {
+        hashedSecretKey: res.hashedSecretKey,
+        publicKey,
+      };
+    }
+
+    throw new Error(
+      res?.error || "Vault must be unlocked again before rotating keypair",
+    );
+  },
+
   /**
    * Gets the current ephemeral public key from the offscreen keeper
    */

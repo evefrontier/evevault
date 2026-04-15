@@ -46,6 +46,7 @@ function buildLockHarness() {
     error: null,
     initialize: stubAsync,
     initializeForChain: stubAsync,
+    rotateEphemeralKey: stubAsync,
     getZkProof: async () => ({ error: "stub" }),
     lock,
     unlock,

@@ -41,6 +41,7 @@ describe("useDevice", () => {
     error: null,
     initialize: vi.fn(),
     initializeForChain: vi.fn(),
+    rotateEphemeralKey: vi.fn(),
     getZkProof: vi.fn(),
     unlock: vi.fn(),
     lock: vi.fn(),
@@ -199,7 +200,7 @@ describe("useDevice", () => {
   });
 
   describe("returns store functions", () => {
-    it("exposes initialize, lock, unlock, and getZkProof functions", () => {
+    it("exposes initialize, lock, unlock, rotateEphemeralKey, and getZkProof functions", () => {
       const { result } = renderHook(() => useDevice());
 
       expect(result.current.initialize).toBe(mockDeviceStoreState.initialize);
@@ -208,6 +209,9 @@ describe("useDevice", () => {
       expect(result.current.getZkProof).toBe(mockDeviceStoreState.getZkProof);
       expect(result.current.initializeForChain).toBe(
         mockDeviceStoreState.initializeForChain,
+      );
+      expect(result.current.rotateEphemeralKey).toBe(
+        mockDeviceStoreState.rotateEphemeralKey,
       );
     });
   });
