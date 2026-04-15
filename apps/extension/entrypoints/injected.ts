@@ -71,6 +71,13 @@ export default defineUnlistedScript(() => {
             }
           }
         });
+
+        // Ask the content script for the persisted chain so #currentChain is
+        // correct before any dApp attempts to connect.
+        window.postMessage(
+          { __to: "Eve Vault", type: "get_current_chain" },
+          "*",
+        );
       } catch (error) {
         log.error("Failed to register wallet", error);
       }

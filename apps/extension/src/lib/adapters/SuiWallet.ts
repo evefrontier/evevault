@@ -66,16 +66,24 @@ export class EveVaultWallet implements Wallet {
   }
 
   get chains(): Wallet["chains"] {
-    return [SUI_TESTNET_CHAIN, SUI_DEVNET_CHAIN] as `sui:${string}`[];
+    const other =
+      this.#currentChain === SUI_TESTNET_CHAIN
+        ? SUI_DEVNET_CHAIN
+        : SUI_TESTNET_CHAIN;
+    return [this.#currentChain, other] as `sui:${string}`[];
   }
 
   get accounts() {
+    const other =
+      this.#currentChain === SUI_TESTNET_CHAIN
+        ? SUI_DEVNET_CHAIN
+        : SUI_TESTNET_CHAIN;
     return this.#accounts.map(
       (walletAccount) =>
         new ReadonlyWalletAccount({
           address: walletAccount.address,
           publicKey: walletAccount.publicKey,
-          chains: [SUI_TESTNET_CHAIN, SUI_DEVNET_CHAIN],
+          chains: [this.#currentChain, other],
           // The features that this account supports. This can be a subset of the wallet's supported features.
           features: [
             StandardConnect,
@@ -270,7 +278,12 @@ export class EveVaultWallet implements Wallet {
                 const newAccount = new ReadonlyWalletAccount({
                   address,
                   publicKey: publicKeyBytes,
-                  chains: [SUI_TESTNET_CHAIN, SUI_DEVNET_CHAIN],
+                  chains: [
+                    this.#currentChain,
+                    this.#currentChain === SUI_TESTNET_CHAIN
+                      ? SUI_DEVNET_CHAIN
+                      : SUI_TESTNET_CHAIN,
+                  ],
                   features: [
                     StandardConnect,
                     StandardDisconnect,

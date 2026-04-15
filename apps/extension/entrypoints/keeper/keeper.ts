@@ -172,6 +172,12 @@ chrome.runtime.onMessage.addListener(
         return false;
       }
 
+      const key = ephemeralKey;
+      if (!key) {
+        sendResponse({ error: "[KEEPER_EPH_SIGN] LOCKED" });
+        return false;
+      }
+
       // Handle async signing
       (async () => {
         try {
@@ -184,7 +190,7 @@ chrome.runtime.onMessage.addListener(
             scope as IntentScope,
             {
               sui_address: sui_address as string,
-              ephemeralKeyPair: ephemeralKey,
+              ephemeralKeyPair: key,
             },
           );
 

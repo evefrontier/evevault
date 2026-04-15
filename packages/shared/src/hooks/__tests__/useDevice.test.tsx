@@ -128,7 +128,7 @@ describe("useDevice", () => {
           networkData: currentNetworkData,
         };
         if (typeof selector === "function") {
-          return (selector as (state: typeof state) => unknown)(state);
+          return (selector as (selectorState: typeof state) => unknown)(state);
         }
         return state;
       });
@@ -164,7 +164,7 @@ describe("useDevice", () => {
           },
         };
         if (typeof selector === "function") {
-          return (selector as (state: typeof state) => unknown)(state);
+          return (selector as (selectorState: typeof state) => unknown)(state);
         }
         return state;
       });
@@ -187,7 +187,7 @@ describe("useDevice", () => {
           ephemeralKeyPairSecretKey: { iv: "only-iv" }, // missing data
         };
         if (typeof selector === "function") {
-          return (selector as (state: typeof state) => unknown)(state);
+          return (selector as (selectorState: typeof state) => unknown)(state);
         }
         return state;
       });
