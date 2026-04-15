@@ -2,7 +2,7 @@ import { SUI_TESTNET_CHAIN, type SuiChain } from "@mysten/wallet-standard";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { chromeStorageAdapter, localStorageAdapter } from "../adapters";
-import { hasJwtForNetwork, useAuthStore } from "../auth";
+import { hasJwt, useAuthStore } from "../auth";
 import type { NetworkState, NetworkSwitchResult } from "../types";
 import { createLogger, isExtension, isWeb } from "../utils";
 import { NETWORK_STORAGE_KEY } from "../utils/storageKeys";
@@ -57,9 +57,9 @@ export const useNetworkStore = create<NetworkState>()(
           return { requiresReauth: false };
         }
 
-        // Check if we have a JWT for the target network
-        const hasJwt = await hasJwtForNetwork(chain);
-        return { requiresReauth: !hasJwt };
+        // Check if we have a JWT
+        const jwtExists = await hasJwt();
+        return { requiresReauth: !jwtExists };
       },
 
       /**
@@ -87,13 +87,13 @@ export const useNetworkStore = create<NetworkState>()(
 
         log.info("Setting chain", { from: currentChain, to: chain });
 
-        // Check if we have a JWT for the target network
-        const hasJwt = await hasJwtForNetwork(chain);
+        // Check if we have a JWT
+        const jwtExists = await hasJwt();
 
         // Switch network state immediately (even if no JWT)
         set({ chain, loading: true });
 
-        if (!hasJwt) {
+        if (!jwtExists) {
           // No JWT for target network - requires re-authentication
           // Re-initialize auth store to check JWT for new network
           // This will automatically set user to null if no JWT exists
@@ -106,7 +106,16 @@ export const useNetworkStore = create<NetworkState>()(
             );
           }
 
-          // Don't create device data here - background handler does it during login to prevent nonce mismatch.
+          // Pre-initialize device data for the new chain so it's ready for vendJwt after login.
+          try {
+            await useDeviceStore.getState().initializeForChain(chain);
+          } catch (error) {
+            // May fail if ephemeral key is not yet loaded (e.g. vault locked); login flow will retry.
+            log.warn(
+              "Could not pre-initialize device data for chain during network switch",
+              { chain, error },
+            );
+          }
 
           set({ loading: false });
           log.info("Switched to chain (no JWT, re-authentication required)", {
@@ -127,61 +136,15 @@ export const useNetworkStore = create<NetworkState>()(
             });
           }
 
-          // Check device data for the new chain
+          // Ensure device data is present and valid for the new chain.
           const deviceStore = useDeviceStore.getState();
-          const existingNonce = deviceStore.getNonce(chain);
-          const existingMaxEpoch = deviceStore.getMaxEpoch(chain);
-          const existingJwtRandomness = deviceStore.getJwtRandomness(chain);
-          const maxEpochTimestampMs = deviceStore.getMaxEpochTimestampMs(chain);
-
-          // Check if device data exists and is valid
-          const hasValidDeviceData =
-            existingNonce &&
-            existingMaxEpoch &&
-            existingJwtRandomness &&
-            maxEpochTimestampMs &&
-            Date.now() < maxEpochTimestampMs;
-
-          if (!hasValidDeviceData) {
-            // Device data is missing or expired, but we have a JWT
-            // We cannot create new device data here because it would have a different nonce
-            // than what's in the existing JWT, causing a nonce mismatch.
-            // Allow the switch to proceed, but the user will need to re-login when they try
-            // to use features that require device data (like signing transactions).
-            // The getZkProof function will detect the nonce mismatch and prompt re-login.
-            log.warn(
-              "JWT exists but device data is missing/expired for chain - switch allowed but re-login will be required for transactions",
-              {
-                chain,
-                hasNonce: !!existingNonce,
-                hasMaxEpoch: !!existingMaxEpoch,
-                hasJwtRandomness: !!existingJwtRandomness,
-                maxEpochTimestampMs,
-                isExpired: maxEpochTimestampMs
-                  ? Date.now() >= maxEpochTimestampMs
-                  : true,
-              },
-            );
-
-            // Still allow the switch - user can see they're logged in
-            // Re-login will be required when they try to sign transactions
-            set({ loading: false });
-            log.info(
-              "Switched to chain (JWT exists but device data missing/expired - re-login required for transactions)",
-              {
-                chain,
-              },
-            );
-            return { success: true, requiresReauth: false };
+          const networkData = deviceStore.networkData[chain];
+          const isExpired =
+            networkData?.maxEpochTimestampMs != null &&
+            Date.now() >= networkData.maxEpochTimestampMs;
+          if (!networkData?.nonce || !networkData?.maxEpoch || isExpired) {
+            await deviceStore.initializeForChain(chain);
           }
-
-          // Device data exists and is valid - seamless switch
-          log.debug(
-            "Device data valid for chain, proceeding with seamless switch",
-            {
-              chain,
-            },
-          );
 
           set({ loading: false });
           log.info("Successfully switched to chain", { chain });

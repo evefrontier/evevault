@@ -1,4 +1,3 @@
-import { SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
 import { User } from "oidc-client-ts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -117,11 +116,10 @@ describe("syncPrimaryJwtFromUser", () => {
     const { syncPrimaryJwtFromUser } = await import("../userJwtSync");
     const user = baseUser({ refresh_token: undefined });
 
-    await syncPrimaryJwtFromUser(user, SUI_TESTNET_CHAIN);
+    await syncPrimaryJwtFromUser(user);
 
     expect(mockWarn).toHaveBeenCalledWith(
       "[syncPrimaryJwtFromUser] no refresh token, skipping evevault:jwt mirror",
-      { chain: SUI_TESTNET_CHAIN },
     );
     expect(mockStoreJwt).not.toHaveBeenCalled();
   });
@@ -130,22 +128,21 @@ describe("syncPrimaryJwtFromUser", () => {
     const { syncPrimaryJwtFromUser } = await import("../userJwtSync");
     const user = baseUser({ refresh_token: "   " });
 
-    await syncPrimaryJwtFromUser(user, SUI_TESTNET_CHAIN);
+    await syncPrimaryJwtFromUser(user);
 
     expect(mockWarn).toHaveBeenCalled();
     expect(mockStoreJwt).not.toHaveBeenCalled();
   });
 
-  it("calls storeJwt with OAuth payload and chain when refresh_token is present", async () => {
+  it("calls storeJwt with OAuth payload when refresh_token is present", async () => {
     const { syncPrimaryJwtFromUser } = await import("../userJwtSync");
     const user = baseUser({});
 
-    await syncPrimaryJwtFromUser(user, SUI_TESTNET_CHAIN);
+    await syncPrimaryJwtFromUser(user);
 
     expect(mockWarn).not.toHaveBeenCalled();
     expect(mockStoreJwt).toHaveBeenCalledTimes(1);
-    const [jwtArg, chainArg] = mockStoreJwt.mock.calls[0] ?? [];
-    expect(chainArg).toBe(SUI_TESTNET_CHAIN);
+    const [jwtArg] = mockStoreJwt.mock.calls[0] ?? [];
     expect(jwtArg).toMatchObject({
       id_token: user.id_token,
       access_token: "access",

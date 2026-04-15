@@ -14,8 +14,8 @@ export interface NetworkOption {
 }
 
 export const AVAILABLE_NETWORKS: NetworkOption[] = [
-  { chain: SUI_DEVNET_CHAIN, label: "Devnet", shortLabel: "DEV" },
   { chain: SUI_TESTNET_CHAIN, label: "Testnet", shortLabel: "TEST" },
+  { chain: SUI_DEVNET_CHAIN, label: "Devnet", shortLabel: "DEV" },
   // Mainnet will be added later as a feature flag
 ];
 
@@ -39,8 +39,8 @@ export function getNetworkOption(chain: SuiChain): NetworkOption | undefined {
 
 /** Default token coin types per chain (e.g. SUI + chain-specific tokens like EVE on testnet). Testnet uses stillness tenant's EVE package for static default. */
 export const DEFAULT_TOKENS_BY_CHAIN: Record<string, string[]> = {
-  [SUI_DEVNET_CHAIN]: [SUI_COIN_TYPE],
   [SUI_TESTNET_CHAIN]: [SUI_COIN_TYPE, getEveCoinType(TenantId.STILLNESS)],
+  [SUI_DEVNET_CHAIN]: [SUI_COIN_TYPE],
 };
 
 /**

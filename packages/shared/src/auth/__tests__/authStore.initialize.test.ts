@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mockGetUser = vi.fn();
 const mockStoreUser = vi.fn();
 const mockSigninSilent = vi.fn();
-const mockGetJwtForNetwork = vi.fn();
+const mockGetJwt = vi.fn();
 const mockEnrichUser = vi.fn();
 const mockSyncPrimaryJwt = vi.fn();
 const mockUserToJwtResponse = vi.fn();
@@ -23,7 +23,7 @@ vi.mock("../authConfig", () => ({
 }));
 
 vi.mock("../storageService", () => ({
-  getJwtForNetwork: (...args: unknown[]) => mockGetJwtForNetwork(...args),
+  getJwt: (...args: unknown[]) => mockGetJwt(...args),
   clearAllJwts: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -189,7 +189,7 @@ describe("authStore.initialize() (extension path)", () => {
     });
 
     it("sets user to null when there is no stored JWT", async () => {
-      mockGetJwtForNetwork.mockResolvedValue(null);
+      mockGetJwt.mockResolvedValue(null);
 
       await useAuthStore.getState().initialize();
 
@@ -201,7 +201,7 @@ describe("authStore.initialize() (extension path)", () => {
 
     it("rebuilds User from stored JWT and sets it", async () => {
       const storedJwt = makeStoredJwt();
-      mockGetJwtForNetwork.mockResolvedValue(storedJwt);
+      mockGetJwt.mockResolvedValue(storedJwt);
       // Return a valid non-expired snapshot so the expiry check passes
       mockUserToJwtResponse.mockReturnValue(storedJwt);
       mockResolveExpiresAt.mockReturnValue(FUTURE);
@@ -209,10 +209,7 @@ describe("authStore.initialize() (extension path)", () => {
       await useAuthStore.getState().initialize();
 
       expect(mockStoreUser).toHaveBeenCalledOnce();
-      expect(mockSyncPrimaryJwt).toHaveBeenCalledWith(
-        expect.any(User),
-        SUI_TESTNET_CHAIN,
-      );
+      expect(mockSyncPrimaryJwt).toHaveBeenCalledWith(expect.any(User));
       const { user } = useAuthStore.getState();
       expect(user).toBeInstanceOf(User);
       expect(user?.id_token).toBe(storedJwt.id_token);
@@ -220,7 +217,7 @@ describe("authStore.initialize() (extension path)", () => {
     });
 
     it("sets user to null when stored JWT is expired and no refresh token", async () => {
-      mockGetJwtForNetwork.mockResolvedValue(
+      mockGetJwt.mockResolvedValue(
         makeStoredJwt({ refresh_token: "", expires_at: PAST }),
       );
       mockUserToJwtResponse.mockReturnValue(
@@ -239,9 +236,7 @@ describe("authStore.initialize() (extension path)", () => {
       const refreshedUser = makeUser({
         id_token: makeJwtPayload({ sub: "user-1", iat: 2000, exp: FUTURE }),
       });
-      mockGetJwtForNetwork.mockResolvedValue(
-        makeStoredJwt({ expires_at: PAST }),
-      );
+      mockGetJwt.mockResolvedValue(makeStoredJwt({ expires_at: PAST }));
       mockUserToJwtResponse.mockReturnValue(
         makeStoredJwt({ expires_at: PAST }),
       );
@@ -259,9 +254,7 @@ describe("authStore.initialize() (extension path)", () => {
     });
 
     it("sets user to null when silent renew fails", async () => {
-      mockGetJwtForNetwork.mockResolvedValue(
-        makeStoredJwt({ expires_at: PAST }),
-      );
+      mockGetJwt.mockResolvedValue(makeStoredJwt({ expires_at: PAST }));
       mockUserToJwtResponse.mockReturnValue(
         makeStoredJwt({ expires_at: PAST }),
       );
@@ -279,7 +272,7 @@ describe("authStore.initialize() (extension path)", () => {
     it("uses the UserManager user directly without touching the stored JWT", async () => {
       const umUser = makeUser();
       mockGetUser.mockResolvedValue(umUser);
-      mockGetJwtForNetwork.mockResolvedValue(makeStoredJwt());
+      mockGetJwt.mockResolvedValue(makeStoredJwt());
       mockUserToJwtResponse.mockReturnValue(makeStoredJwt());
       mockResolveExpiresAt.mockReturnValue(FUTURE);
 

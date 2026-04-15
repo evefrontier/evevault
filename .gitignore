@@ -47,3 +47,7 @@ test-results/
 # Temporary files
 temp_*.txt
 **/temp_*.txt
+
+# Agents
+.cursorrules
+CLAUDE.md

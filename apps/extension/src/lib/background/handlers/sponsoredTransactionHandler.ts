@@ -1,9 +1,5 @@
 import { WalletStandardMessageTypes } from "@evevault/shared";
-import {
-  getApiContext,
-  getJwtForNetwork,
-  getStoredChain,
-} from "@evevault/shared/auth";
+import { getApiContext, getJwt, getStoredChain } from "@evevault/shared/auth";
 import { createLogger } from "@evevault/shared/utils";
 import { openPopupWindow } from "../services/popupWindow";
 import type {
@@ -23,9 +19,9 @@ async function handleSponsoredTransaction(
 
   try {
     const chain = await getStoredChain();
-    const jwt = await getJwtForNetwork(chain);
+    const jwt = await getJwt();
     if (!jwt?.id_token) {
-      const error = "No JWT for current network. Re-authenticate required.";
+      const error = "No valid JWT found. Please re-authenticate.";
       if (senderTabId != null) {
         chrome.tabs
           .sendMessage(senderTabId, {

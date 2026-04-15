@@ -118,24 +118,24 @@ useDeviceStore.subscribe((state) => {
 
 ### Network Switching
 
-The extension supports seamless network switching between Sui devnet and testnet:
+The extension supports switching between Sui devnet and testnet. Implementation lives in `useNetworkStore` (`setChain`) and the shared `NetworkSelector`.
 
-- **Network selector UI**: Click the network display in the bottom-left corner to switch networks
-- **Per-network authentication**: Each network requires separate login (JWTs stored per-network)
-- **Per-network device data**: Nonce, maxEpoch, and jwtRandomness are stored per-network to prevent conflicts
-- **Automatic rollback**: If login fails after switching networks, the app automatically reverts to a network where you're still logged in
-- **Seamless switching**: If you're already logged in on a network, switching is instant
+- **Network selector UI**: Use the network control in the shell (bottom-left in the extension) to pick a chain. The selector calls `setChain` and, when the switch needs a new login, runs the `onRequiresReauth` / `onNetworkSwitchStart` callbacks from the host app.
+- **Primary OAuth JWT (network-agnostic)**: One **primary** OIDC token is stored and validated with `hasJwt()` / `getJwt()`. The OAuth redirect no longer depends on a client-bound nonce; that is handled when vending zkLogin.
+- **Per-network zkLogin JWTs**: After login, **zkLogin** `id_token` entries are stored **per chain** (they are vended with a chain-specific nonce). See `storeZkLoginJwtForNetwork` / `getZkLoginJwtForNetwork` in `storageService`.
+- **Per-network device data**: `deviceStore.networkData[chain]` holds nonce, maxEpoch, `jwtRandomness`, and related fields. Nonce can be regenerated when switching chains. On a seamless switch, missing or stale device data (including expired max-epoch window) triggers `initializeForChain` for the target chain.
 
-**Network switching flow:**
-1. User clicks network selector → checks if JWT exists for target network
-2. If JWT exists → seamless switch (updates device data if needed)
-3. If no JWT → shows "Sign In Required" dialog → user confirms → switches network → prompts login
+**Network switching flow (summary):**
+
+1. User selects a network → `setChain(targetChain)` runs.
+2. **No valid primary JWT** → chain updates → auth re-init → optional `initializeForChain` → `requiresReauth: true`.
+3. **Valid primary JWT** → chain updates → (extension) notify wallet listeners → refresh device data for the target chain if needed → `requiresReauth: false`. On error → revert chain.
 
 **Testing network switching:**
-- Test seamless switch (already logged in on both networks)
-- Test switch requiring re-auth (only logged in on one network)
-- Test login rollback on failure
-- Verify per-network data isolation (no cross-network data leakage)
+
+- Seamless path: valid primary JWT; device data present or successfully refreshed for the target chain.
+- Re-auth path: no valid primary JWT (expect `requiresReauth` and login / OAuth flow).
+- Isolation: zkLogin JWTs and device slots differ per chain; primary OAuth is shared across chains until logout or expiry.
 
 ### Hot Reload Issues
 

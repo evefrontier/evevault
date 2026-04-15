@@ -24,7 +24,7 @@ import { DEFAULT_TENANT_ID, getTenantConfig } from "../../utils/tenantConfig";
 import { getUserManager, redirectToFusionAuthLogout } from "../authConfig";
 import { clearZkLoginAddressCache } from "../getZkLoginAddress";
 import { parseOAuthTokenResponse } from "../oauthTokenResponse";
-import { clearAllJwts, getJwtForNetwork } from "../storageService";
+import { clearAllJwts, getJwt } from "../storageService";
 import type { AuthState } from "../types";
 import {
   enrichUserWithZkLoginIfNeeded,
@@ -60,58 +60,7 @@ export const useAuthStore = create<AuthState>()(
 
         initialize: async () => {
           set({ loading: true });
-          const platform = isExtension()
-            ? "extension"
-            : isWeb()
-              ? "web"
-              : "unknown";
           const network = useNetworkStore.getState().chain;
-
-          // Log nonce comparison on app init for both platforms
-          try {
-            const deviceStore = useDeviceStore.getState();
-            const deviceNonce = deviceStore.networkData[network]?.nonce;
-            const storedJwtForNonceCheck = await getJwtForNetwork(network);
-
-            if (storedJwtForNonceCheck?.id_token) {
-              const decodedJwtForNonceCheck = decodeJwt(
-                storedJwtForNonceCheck.id_token,
-              );
-              const jwtNonce = decodedJwtForNonceCheck.nonce as
-                | string
-                | undefined;
-
-              log.info(
-                `🔑 [${platform.toUpperCase()}] App init nonce check`,
-                deviceNonce && jwtNonce ? deviceNonce === jwtNonce : "N/A",
-                {
-                  network,
-                  deviceNonce: deviceNonce ?? "(not set)",
-                  jwtNonce: jwtNonce ?? "(not set)",
-                  noncesMatch:
-                    deviceNonce && jwtNonce ? deviceNonce === jwtNonce : "N/A",
-                  jwtSub: decodedJwtForNonceCheck.sub,
-                  jwtExp: decodedJwtForNonceCheck.exp,
-                },
-              );
-            } else {
-              log.info(
-                `🔑 [${platform.toUpperCase()}] App init nonce check`,
-                "No JWT stored",
-                {
-                  network,
-                  deviceNonce: deviceNonce ?? "(not set)",
-                  jwtNonce: "(no JWT stored)",
-                  noncesMatch: "N/A",
-                },
-              );
-            }
-          } catch (nonceCheckError) {
-            log.warn(
-              `[${platform.toUpperCase()}] Failed to check nonces on init`,
-              nonceCheckError,
-            );
-          }
 
           try {
             if (isExtension() && typeof chrome !== "undefined") {
@@ -121,7 +70,7 @@ export const useAuthStore = create<AuthState>()(
                 // The background dapp-login path stores a JWT via storeJwt() but does
                 // not create an OIDC UserManager session. Reconstruct the User from the
                 // stored JWT so the popup does not appear logged-out after a dapp login.
-                const storedJwt = await getJwtForNetwork(network);
+                const storedJwt = await getJwt();
                 if (!storedJwt?.id_token) {
                   log.info(
                     "Extension init: no OIDC user or stored JWT, clearing auth",
@@ -222,7 +171,7 @@ export const useAuthStore = create<AuthState>()(
 
               user = await enrichUserWithZkLoginIfNeeded(user, getEnokiApiKey);
               await getUserManagerInstance().storeUser(user);
-              await syncPrimaryJwtFromUser(user, network);
+              await syncPrimaryJwtFromUser(user);
               set({ user, loading: false });
               return;
             }
@@ -252,19 +201,6 @@ export const useAuthStore = create<AuthState>()(
                   jwtResponse.id_token as string,
                 );
 
-                // Log nonce comparison after login
-                const deviceStore = useDeviceStore.getState();
-                const deviceNonce = deviceStore.networkData[network]?.nonce;
-                const jwtNonce = decodedJwt.nonce as string | undefined;
-
-                log.info("🔑 [EXTENSION] Nonce check after login", {
-                  network,
-                  deviceNonce: deviceNonce ?? "(not set)",
-                  jwtNonce: jwtNonce ?? "(not set)",
-                  noncesMatch:
-                    deviceNonce && jwtNonce ? deviceNonce === jwtNonce : "N/A",
-                });
-
                 let user = new User({
                   id_token: jwtResponse.id_token,
                   access_token: jwtResponse.access_token,
@@ -282,7 +218,7 @@ export const useAuthStore = create<AuthState>()(
                   getEnokiApiKey,
                 );
                 await getUserManagerInstance().storeUser(user);
-                await syncPrimaryJwtFromUser(user, network);
+                await syncPrimaryJwtFromUser(user);
                 set({ user, loading: false });
 
                 return user as User;
@@ -304,42 +240,18 @@ export const useAuthStore = create<AuthState>()(
             // Web login flow
             const deviceStore = useDeviceStore.getState();
 
-            // Check if device data exists for current network, initialize if missing
+            // Ensure device data is present and valid for current network — needed
+            // for the vendJwt call after OAuth returns.
             const networkData = deviceStore.networkData[network];
-            if (!networkData?.nonce || !networkData?.maxEpoch) {
+            const isExpired =
+              networkData?.maxEpochTimestampMs != null &&
+              Date.now() >= networkData.maxEpochTimestampMs;
+            if (!networkData?.nonce || !networkData?.maxEpoch || isExpired) {
               log.info("Initializing device data for network before login", {
                 network,
               });
               await deviceStore.initializeForChain(network);
             }
-
-            // Get device params for OAuth
-            const getDeviceParams = () => {
-              const currentDeviceStore = useDeviceStore.getState();
-              // Get per-network jwtRandomness (preferred) or fallback to global (for backwards compatibility)
-              const jwtRandomness =
-                currentDeviceStore.getJwtRandomness(network);
-              const currentNetworkData =
-                currentDeviceStore.networkData[network];
-
-              if (!currentNetworkData) {
-                throw new Error("Network data not found after initialization");
-              }
-
-              const { nonce, maxEpoch } = currentNetworkData;
-
-              if (!nonce || !jwtRandomness || !maxEpoch) {
-                throw new Error(
-                  "Device data not initialized. OAuth params may be missing.",
-                );
-              }
-
-              return {
-                nonce,
-                jwtRandomness,
-                maxEpoch: String(maxEpoch),
-              };
-            };
 
             if (typeof sessionStorage !== "undefined") {
               sessionStorage.setItem(
@@ -347,13 +259,7 @@ export const useAuthStore = create<AuthState>()(
                 getCurrentTenantId(),
               );
             }
-            getUserManagerInstance().signinRedirect({
-              nonce: getDeviceParams().nonce,
-              extraQueryParams: {
-                jwtRandomness: getDeviceParams().jwtRandomness,
-                maxEpoch: getDeviceParams().maxEpoch,
-              },
-            });
+            getUserManagerInstance().signinRedirect();
             set({ loading: false });
           }
         },
