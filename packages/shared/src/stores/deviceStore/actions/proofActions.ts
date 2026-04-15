@@ -43,11 +43,6 @@ export function createProofActions(set: SetDeviceState, get: GetDeviceState) {
           throw new Error("User not authenticated");
         }
 
-        const ephemeralPublicKey = get().ephemeralPublicKey;
-        if (!ephemeralPublicKey) {
-          throw new Error("Ephemeral public key not found");
-        }
-
         const chain = useNetworkStore.getState().chain;
         const network = chain.replace("sui:", "") as string;
 
@@ -58,16 +53,21 @@ export function createProofActions(set: SetDeviceState, get: GetDeviceState) {
 
         if (nonce == null || nonce === "" || isEpochExpired) {
           log.info(
-            "Device nonce missing or epoch expired; initializing chain before ZK proof",
+            "Device nonce missing or epoch expired; rotating eph key before ZK proof",
             { chain },
           );
-          await get().initializeForChain(chain);
+          await get().rotateEphemeralKey();
           nonce = get().getNonce(chain);
           if (nonce == null || nonce === "") {
             throw new Error(
               `Device nonce missing for ${network} after initialization.`,
             );
           }
+        }
+
+        const ephemeralPublicKey = get().ephemeralPublicKey;
+        if (!ephemeralPublicKey) {
+          throw new Error("Ephemeral public key not found");
         }
 
         const primaryJwt = await getJwt();
