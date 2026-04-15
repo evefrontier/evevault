@@ -14,6 +14,7 @@ import {
   TenantSelector,
   Text,
   TokenListSection,
+  useToast,
 } from "@evevault/shared/components";
 import Icon from "@evevault/shared/components/Icon";
 import {
@@ -22,7 +23,7 @@ import {
   useTestTransaction,
 } from "@evevault/shared/hooks";
 import { LockScreen } from "@evevault/shared/screens";
-import { useNetworkStore } from "@evevault/shared/stores";
+import { useDeviceStore, useNetworkStore } from "@evevault/shared/stores";
 import { getFaucetUrlForChain } from "@evevault/shared/sui";
 import {
   createLogger,
@@ -46,11 +47,59 @@ function App() {
     useState<SuiChain | null>(null);
 
   const { user, loading: authLoading, error: authError } = useAuth();
-  const { isLocked, isPinSet, error: deviceError, unlock } = useDevice();
+  const {
+    isLocked,
+    isPinSet,
+    error: deviceError,
+    unlock,
+    rotateEphemeralKey,
+  } = useDevice();
   const { chain } = useNetworkStore();
+  const { showToast } = useToast();
   const faucetUrl = getFaucetUrlForChain(chain);
   const { handleLogin } = useLogin();
   const { handleTestTransaction, txDigest } = useTestTransaction();
+
+  const formatPublicKey = useCallback((bytes: number[] | null | undefined) => {
+    if (!bytes || bytes.length === 0) return null;
+    return bytes
+      .slice(0, 8)
+      .map((byte) => byte.toString(16).padStart(2, "0"))
+      .join("");
+  }, []);
+
+  const handleRotateEphKey = useCallback(async () => {
+    const beforeState = useDeviceStore.getState();
+    const beforeChainData = beforeState.networkData[chain];
+    const beforeKey = formatPublicKey(beforeState.ephemeralPublicKeyBytes);
+
+    log.info("Manual eph key rotation requested", {
+      chain,
+      beforeKey,
+      beforeChainData,
+    });
+
+    try {
+      await rotateEphemeralKey();
+
+      const afterState = useDeviceStore.getState();
+      const afterChainData = afterState.networkData[chain];
+      const afterKey = formatPublicKey(afterState.ephemeralPublicKeyBytes);
+
+      log.info("Manual eph key rotation completed", {
+        chain,
+        beforeKey,
+        afterKey,
+        beforeChainData,
+        afterChainData,
+      });
+
+      showToast("Ephemeral key rotated");
+    } catch (error) {
+      log.error("Manual eph key rotation failed", error);
+      showToast("Failed to rotate eph key");
+    }
+  }, [chain, formatPublicKey, rotateEphemeralKey, showToast]);
 
   // Use TanStack Query for balance fetching
   useBalance({
@@ -186,6 +235,7 @@ function App() {
         showDevActions={devMode}
         onDevModeToggle={handleDevModeToggle}
         onSignSubmitTxClick={devMode ? handleTestTransaction : undefined}
+        onRotateEphKeyClick={devMode ? handleRotateEphKey : undefined}
         onFaucetTestSuiClick={
           devMode && faucetUrl
             ? () => window.open(faucetUrl, "_blank", "noopener,noreferrer")
