@@ -93,6 +93,11 @@ describe("resolveExpiresAt", () => {
 });
 
 describe("getUserForNetwork", () => {
+  // JWT with iat=1748779000 but no exp
+  const tokenWithClaims = new UnsecuredJWT({ sub: "u1", aud: "aud1" })
+    .setIssuedAt(1748779000)
+    .encode();
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -118,7 +123,7 @@ describe("getUserForNetwork", () => {
   it("returns null when zkLogin returns error", async () => {
     vi.mocked(getJwt).mockResolvedValue({
       access_token: "a",
-      id_token: "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.signature",
+      id_token: tokenWithClaims,
       expires_in: 3600,
       scope: "s",
       token_type: "Bearer",
@@ -133,7 +138,7 @@ describe("getUserForNetwork", () => {
   it("returns null when zkLogin has no data", async () => {
     vi.mocked(getJwt).mockResolvedValue({
       access_token: "a",
-      id_token: "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.signature",
+      id_token: tokenWithClaims,
       expires_in: 3600,
       scope: "s",
       token_type: "Bearer",
@@ -146,11 +151,9 @@ describe("getUserForNetwork", () => {
   });
 
   it("returns User when zkLogin succeeds", async () => {
-    const idToken =
-      "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1MSIsImF1ZCI6ImF1ZDEifQ.sig";
     vi.mocked(getJwt).mockResolvedValue({
       access_token: "at",
-      id_token: idToken,
+      id_token: tokenWithClaims,
       expires_in: 3600,
       scope: "openid",
       token_type: "Bearer",
@@ -167,7 +170,7 @@ describe("getUserForNetwork", () => {
 
     const user = await getUserForNetwork("sui:testnet");
     expect(user).not.toBeNull();
-    expect(user?.id_token).toBe(idToken);
+    expect(user?.id_token).toBe(tokenWithClaims);
     expect(user?.profile?.sui_address).toBe("0xsui");
     expect(user?.profile?.salt).toBe("99");
     expect(user?.expires_at).toBe(2_000_000_000);

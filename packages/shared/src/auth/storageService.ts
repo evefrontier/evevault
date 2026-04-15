@@ -14,8 +14,8 @@ import { resolveExpiresAt } from "./utils/authStoreUtils";
 const log = createLogger();
 
 /**
- * Flat storage shape. Primary OAuth JWT is network-agnostic (no nonce in redirect);
- * zkLogin JWTs remain per-chain because they are vended with a chain-specific nonce.
+ * Flat storage shape. zkLogin JWTs remain per-chain
+ * because they are vended with a chain-specific nonce.
  */
 type JwtStorage = {
   primary?: OAuthTokenResponse;
@@ -169,8 +169,7 @@ export async function clearZkLoginJwtForNetwork(
 }
 
 /**
- * Store primary (OAuth) JWT. The JWT is network-agnostic — nonce is handled
- * server-side by vendJwt.
+ * Store network-agnostic primary (OAuth) JWT.
  */
 export async function storeJwt(jwt: OAuthTokenResponse): Promise<void> {
   const existing = (await readJwtStorage()) ?? {};

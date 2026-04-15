@@ -105,23 +105,6 @@ describe("Network switching", () => {
     expect(result.success).toBe(true);
     expect(result.requiresReauth).toBe(false);
   });
-
-  it("requires re-auth when no JWT exists", async () => {
-    // Setup: User only logged in on devnet
-    vi.mocked(hasJwt).mockResolvedValueOnce(false);
-
-    const result = await useNetworkStore
-      .getState()
-      .checkNetworkSwitch("sui:testnet");
-
-    expect(result.requiresReauth).toBe(true);
-  });
-
-  it("rolls back on login failure", async () => {
-    // Setup: User switches network, login fails
-    // Test: Login attempt triggers rollback
-    // Assert: Reverts to previous network with valid JWT
-  });
 });
 ```
 

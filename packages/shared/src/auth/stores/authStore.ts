@@ -60,58 +60,7 @@ export const useAuthStore = create<AuthState>()(
 
         initialize: async () => {
           set({ loading: true });
-          const platform = isExtension()
-            ? "extension"
-            : isWeb()
-              ? "web"
-              : "unknown";
           const network = useNetworkStore.getState().chain;
-
-          // Log nonce comparison on app init for both platforms
-          try {
-            const deviceStore = useDeviceStore.getState();
-            const deviceNonce = deviceStore.networkData[network]?.nonce;
-            const storedJwtForNonceCheck = await getJwt();
-
-            if (storedJwtForNonceCheck?.id_token) {
-              const decodedJwtForNonceCheck = decodeJwt(
-                storedJwtForNonceCheck.id_token,
-              );
-              const jwtNonce = decodedJwtForNonceCheck.nonce as
-                | string
-                | undefined;
-
-              log.info(
-                `🔑 [${platform.toUpperCase()}] App init nonce check`,
-                deviceNonce && jwtNonce ? deviceNonce === jwtNonce : "N/A",
-                {
-                  network,
-                  deviceNonce: deviceNonce ?? "(not set)",
-                  jwtNonce: jwtNonce ?? "(not set)",
-                  noncesMatch:
-                    deviceNonce && jwtNonce ? deviceNonce === jwtNonce : "N/A",
-                  jwtSub: decodedJwtForNonceCheck.sub,
-                  jwtExp: decodedJwtForNonceCheck.exp,
-                },
-              );
-            } else {
-              log.info(
-                `🔑 [${platform.toUpperCase()}] App init nonce check`,
-                "No JWT stored",
-                {
-                  network,
-                  deviceNonce: deviceNonce ?? "(not set)",
-                  jwtNonce: "(no JWT stored)",
-                  noncesMatch: "N/A",
-                },
-              );
-            }
-          } catch (nonceCheckError) {
-            log.warn(
-              `[${platform.toUpperCase()}] Failed to check nonces on init`,
-              nonceCheckError,
-            );
-          }
 
           try {
             if (isExtension() && typeof chrome !== "undefined") {
@@ -252,19 +201,6 @@ export const useAuthStore = create<AuthState>()(
                   jwtResponse.id_token as string,
                 );
 
-                // Log nonce comparison after login
-                const deviceStore = useDeviceStore.getState();
-                const deviceNonce = deviceStore.networkData[network]?.nonce;
-                const jwtNonce = decodedJwt.nonce as string | undefined;
-
-                log.info("🔑 [EXTENSION] Nonce check after login", {
-                  network,
-                  deviceNonce: deviceNonce ?? "(not set)",
-                  jwtNonce: jwtNonce ?? "(not set)",
-                  noncesMatch:
-                    deviceNonce && jwtNonce ? deviceNonce === jwtNonce : "N/A",
-                });
-
                 let user = new User({
                   id_token: jwtResponse.id_token,
                   access_token: jwtResponse.access_token,
@@ -305,8 +241,7 @@ export const useAuthStore = create<AuthState>()(
             const deviceStore = useDeviceStore.getState();
 
             // Ensure device data is present and valid for current network — needed
-            // for the vendJwt call after OAuth returns. Nonce is no longer passed
-            // in the OAuth redirect, so it can be freely regenerated if missing or expired.
+            // for the vendJwt call after OAuth returns.
             const networkData = deviceStore.networkData[network];
             const isExpired =
               networkData?.maxEpochTimestampMs != null &&
