@@ -4,11 +4,7 @@ import { useNetworkStore } from "../stores/networkStore";
 import type { JwtResponse, OAuthTokenResponse } from "../types";
 import { isExtension, isWeb } from "../utils/environment";
 import { createLogger } from "../utils/logger";
-import {
-  AUTH_STORAGE_KEY,
-  JWT_STORAGE_KEY,
-  NETWORK_STORAGE_KEY,
-} from "../utils/storageKeys";
+import { JWT_STORAGE_KEY, NETWORK_STORAGE_KEY } from "../utils/storageKeys";
 import { resolveExpiresAt } from "./utils/authStoreUtils";
 
 const log = createLogger();
@@ -21,35 +17,6 @@ type JwtStorage = {
   primary?: OAuthTokenResponse;
   zkLogin?: Partial<Record<SuiChain, { id_token: string; expires_at: number }>>;
 };
-
-/**
- * Read the connected wallet address (sui_address) from persisted auth state.
- * Used by the background script where the auth store is not hydrated.
- * Returns null on web or when no user with profile.sui_address is stored.
- */
-export async function getStoredWalletAddress(): Promise<string | null> {
-  if (
-    !isExtension() ||
-    typeof chrome === "undefined" ||
-    !chrome.storage?.local
-  ) {
-    return null;
-  }
-  const result = await chrome.storage.local.get([AUTH_STORAGE_KEY]);
-  const raw = result[AUTH_STORAGE_KEY];
-  if (typeof raw !== "string") {
-    return null;
-  }
-  try {
-    const parsed = JSON.parse(raw) as {
-      state?: { user?: { profile?: { sui_address?: string } } };
-    };
-    const address = parsed?.state?.user?.profile?.sui_address;
-    return typeof address === "string" ? address : null;
-  } catch {
-    return null;
-  }
-}
 
 /**
  * Read the current chain from extension storage (chrome.storage.local).
@@ -80,7 +47,7 @@ export async function getStoredChain(): Promise<SuiChain> {
 
 async function readJwtStorage(): Promise<JwtStorage | null> {
   if (isExtension()) {
-    const result = await chrome.storage.local.get([JWT_STORAGE_KEY]);
+    const result = await chrome.storage.session.get([JWT_STORAGE_KEY]);
     const raw = result[JWT_STORAGE_KEY];
     if (raw == null || typeof raw !== "object") return null;
     return raw as JwtStorage;
@@ -103,13 +70,10 @@ async function readJwtStorage(): Promise<JwtStorage | null> {
 
 async function writeJwtStorage(storage: JwtStorage): Promise<void> {
   if (isExtension()) {
-    await chrome.storage.local.set({ [JWT_STORAGE_KEY]: storage });
+    await chrome.storage.session.set({ [JWT_STORAGE_KEY]: storage });
     return;
   }
-
-  if (isWeb()) {
-    window.localStorage.setItem(JWT_STORAGE_KEY, JSON.stringify(storage));
-  }
+  // Web: JWT is owned by oidc-client-ts (userStore, sessionStorage).
 }
 
 /**
@@ -265,16 +229,11 @@ export async function hasJwt(): Promise<boolean> {
 }
 
 /**
- * Clear all stored JWTs (primary + all zkLogin entries).
+ * Clear all stored JWTs (primary + all zkLogin entries) for extension storage.
  */
 export async function clearAllJwts(): Promise<void> {
   if (isExtension()) {
-    await chrome.storage.local.remove([JWT_STORAGE_KEY]);
-    return;
-  }
-
-  if (isWeb()) {
-    window.localStorage.removeItem(JWT_STORAGE_KEY);
+    await chrome.storage.session.remove([JWT_STORAGE_KEY]);
     return;
   }
 }

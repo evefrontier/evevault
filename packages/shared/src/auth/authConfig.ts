@@ -81,9 +81,16 @@ function buildUserManagerSettings(tenantId: TenantId): UserManagerSettings {
     response_type: "code",
     automaticSilentRenew: true,
     scope: "openid email profile offline_access",
+    // PKCE nonce/state — short-lived, written during the redirect only, fine in localStorage.
     stateStore: new WebStorageStateStore({
       store: localStorage,
       prefix: `evevault.oidc.${tenantId}.`,
+    }),
+    // On web, keep the User object (tokens) in sessionStorage so they are never
+    // written to disk-persisted localStorage. Extension uses its own chrome.storage.session
+    // path in storageService, so the oidc-client-ts userStore stays as the default there.
+    ...(!isExtension() && {
+      userStore: new WebStorageStateStore({ store: sessionStorage }),
     }),
   };
 }

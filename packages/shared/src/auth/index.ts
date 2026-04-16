@@ -13,7 +13,6 @@ export {
   clearZkLoginJwtForNetwork,
   getJwt,
   getStoredChain,
-  getStoredWalletAddress,
   getZkLoginJwtForNetwork,
   hasJwt,
   storeJwt,

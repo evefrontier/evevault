@@ -176,7 +176,41 @@ export const useAuthStore = create<AuthState>()(
               return;
             }
 
-            return set({ loading: false });
+            const webUserManager = getUserManagerInstance();
+            let webUser = await webUserManager.getUser();
+
+            const webJwt = userToJwtResponse(webUser);
+            const now = Math.floor(Date.now() / 1000);
+            const isExpired = !webJwt || now >= resolveExpiresAt(webJwt);
+
+            if (isExpired) {
+              if (!webUser?.refresh_token?.trim()) {
+                log.info(
+                  "Web init: no session or refresh token, not logged in",
+                  {
+                    network,
+                  },
+                );
+                return set({ user: null, loading: false });
+              }
+              try {
+                webUser = await webUserManager.signinSilent();
+              } catch (silentErr) {
+                log.info("Web init: silent renew failed, not logged in", {
+                  network,
+                  error:
+                    silentErr instanceof Error
+                      ? silentErr.message
+                      : String(silentErr),
+                });
+                return set({ user: null, loading: false });
+              }
+              if (!webUser?.id_token) {
+                return set({ user: null, loading: false });
+              }
+            }
+
+            return set({ user: webUser ?? null, loading: false });
           } catch (error) {
             log.error("Error initializing auth", error);
             set({
@@ -376,6 +410,13 @@ export const useAuthStore = create<AuthState>()(
       storage: createJSONStorage(() =>
         isWeb() ? localStorageAdapter : chromeStorageAdapter,
       ),
+      // Tokens are managed by context-specific session storage (oidc-client-ts
+      // sessionStorage on web; chrome.storage.session on extension). Never persist
+      // the user object — it contains the JWT — to any disk-backed store.
+      partialize: (state) => {
+        const { user: _user, ...rest } = state;
+        return rest as typeof state;
+      },
       onRehydrateStorage: () => {
         return async (state, error) => {
           if (error) {
