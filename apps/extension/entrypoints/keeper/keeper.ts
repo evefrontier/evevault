@@ -2,7 +2,9 @@
 
 import {
   decrypt,
+  deriveAesKey,
   encrypt,
+  encryptWithKey,
   ephSign,
   type HashedData,
   KeeperMessageTypes,
@@ -21,7 +23,14 @@ import type { BackgroundMessage } from "../../src/lib/background/types";
 
 // RAM-only storage for the ephemeral key
 let ephemeralKey: Ed25519Keypair | null = null;
-let sessionPin: string | null = null;
+
+// Rotation re-encrypts the new ephemeral secret key without requiring the user
+// to re-enter their PIN. We derive a non-extractable CryptoKey at unlock time.
+// The browser's WebCrypto engine holds the actual key bytes — they are never
+// exposed to JavaScript.
+let sessionDerivedKey: CryptoKey | null = null;
+let sessionSalt: string | null = null; // base64 PBKDF2 salt from the stored HashedData
+
 let _vaultUnlocked = false;
 let _vaultUnlockExpiry: number | null = null;
 // RAM-only storage for zkProofs (chain-specific)
@@ -44,7 +53,8 @@ function checkAndEnforceExpiry(): boolean {
   if (_vaultUnlockExpiry && Date.now() > _vaultUnlockExpiry) {
     // Expiry reached - lock the vault
     ephemeralKey = null;
-    sessionPin = null;
+    sessionDerivedKey = null;
+    sessionSalt = null;
     _vaultUnlocked = false;
     _vaultUnlockExpiry = null;
     return true; // Now locked
@@ -72,7 +82,6 @@ chrome.runtime.onMessage.addListener(
 
       // Create a new keypair
       ephemeralKey = Ed25519Keypair.generate();
-      sessionPin = pin as string;
       _vaultUnlocked = true;
       _vaultUnlockExpiry = Date.now() + 10 * 60 * 1000; // 10 minutes default
 
@@ -83,6 +92,15 @@ chrome.runtime.onMessage.addListener(
             ephemeralKey?.getSecretKey(),
             pin as string,
           );
+
+          // At first-time setup, derive and cache the session key.
+          const salt = Uint8Array.from(atob(hashedSecretKey.salt), (c) =>
+            c.charCodeAt(0),
+          );
+          sessionDerivedKey = await deriveAesKey(pin as string, salt, [
+            "encrypt",
+          ]);
+          sessionSalt = hashedSecretKey.salt;
 
           const publicKeyBytes = Array.from(
             ephemeralKey?.getPublicKey().toRawBytes(),
@@ -130,9 +148,20 @@ chrome.runtime.onMessage.addListener(
           // Step 2: Reconstruct keypair
           try {
             ephemeralKey = Ed25519Keypair.fromSecretKey(secretKey);
-            sessionPin = pin as string;
             _vaultUnlocked = true;
             _vaultUnlockExpiry = Date.now() + 10 * 60 * 1000; // 10 minutes default
+
+            // At subsequent unlock attempts, derive and cache the session key
+            // from the stored salt.
+            const salt = Uint8Array.from(
+              atob((hashedSecretKey as HashedData).salt),
+              (c) => c.charCodeAt(0),
+            );
+            sessionDerivedKey = await deriveAesKey(pin as string, salt, [
+              "encrypt",
+            ]);
+            sessionSalt = (hashedSecretKey as HashedData).salt;
+
             sendResponse({ ok: true });
           } catch (keypairError) {
             console.error("[Keeper] Keypair creation failed:", keypairError);
@@ -170,7 +199,7 @@ chrome.runtime.onMessage.addListener(
     }
 
     if (message.type === KeeperMessageTypes.ROTATE_KEYPAIR) {
-      if (checkAndEnforceExpiry() || !sessionPin) {
+      if (checkAndEnforceExpiry() || !sessionDerivedKey || !sessionSalt) {
         sendResponse({
           ok: false,
           error: "Vault must be unlocked again before rotating keypair",
@@ -184,9 +213,10 @@ chrome.runtime.onMessage.addListener(
           _vaultUnlocked = true;
           _vaultUnlockExpiry = Date.now() + 10 * 60 * 1000;
 
-          const hashedSecretKey = await encrypt(
+          const hashedSecretKey = await encryptWithKey(
             ephemeralKey.getSecretKey(),
-            sessionPin,
+            sessionDerivedKey,
+            sessionSalt,
           );
 
           sendResponse({
@@ -298,7 +328,8 @@ chrome.runtime.onMessage.addListener(
     if (message.type === KeeperMessageTypes.CLEAR_EPHKEY) {
       // Lock the vault and clear the key and zkProofs
       ephemeralKey = null;
-      sessionPin = null;
+      sessionDerivedKey = null;
+      sessionSalt = null;
       _vaultUnlocked = false;
       _vaultUnlockExpiry = null;
       sendResponse({ ok: true });

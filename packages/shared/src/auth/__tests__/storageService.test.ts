@@ -92,8 +92,11 @@ describe("storageService (web)", () => {
     expect(out).toBeNull();
   });
 
-  it("getJwt returns null for invalid JSON in localStorage", async () => {
-    localStorage.setItem(JWT_STORAGE_KEY, "{not-json");
+  it("getJwt returns null when no OIDC user even if localStorage has data", async () => {
+    localStorage.setItem(
+      JWT_STORAGE_KEY,
+      JSON.stringify({ primary: baseJwt() }),
+    );
     await expect(getJwt()).resolves.toBeNull();
   });
 

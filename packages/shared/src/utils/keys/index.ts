@@ -1,6 +1,6 @@
 import { decrypt } from "./decrypt";
-import { encrypt } from "./encrypt";
+import { deriveAesKey, encrypt, encryptWithKey } from "./encrypt";
 import { sha256, sha256Hex } from "./sha256";
 
-export { encrypt, decrypt, sha256, sha256Hex };
+export { encrypt, encryptWithKey, deriveAesKey, decrypt, sha256, sha256Hex };
 export * from "./constants";

@@ -45,24 +45,24 @@ export async function getStoredChain(): Promise<SuiChain> {
   }
 }
 
+function getSessionStorage() {
+  if (typeof chrome === "undefined" || !chrome.storage?.session) {
+    log.warn(
+      "chrome.storage.session unavailable — JWT will not persist this session",
+    );
+    return null;
+  }
+  return chrome.storage.session;
+}
+
 async function readJwtStorage(): Promise<JwtStorage | null> {
   if (isExtension()) {
-    const result = await chrome.storage.session.get([JWT_STORAGE_KEY]);
+    const session = getSessionStorage();
+    if (!session) return null;
+    const result = await session.get([JWT_STORAGE_KEY]);
     const raw = result[JWT_STORAGE_KEY];
     if (raw == null || typeof raw !== "object") return null;
     return raw as JwtStorage;
-  }
-
-  if (isWeb()) {
-    const stored = window.localStorage.getItem(JWT_STORAGE_KEY);
-    if (!stored) return null;
-    try {
-      const raw = JSON.parse(stored) as unknown;
-      if (raw == null || typeof raw !== "object") return null;
-      return raw as JwtStorage;
-    } catch {
-      return null;
-    }
   }
 
   return null;
@@ -70,7 +70,9 @@ async function readJwtStorage(): Promise<JwtStorage | null> {
 
 async function writeJwtStorage(storage: JwtStorage): Promise<void> {
   if (isExtension()) {
-    await chrome.storage.session.set({ [JWT_STORAGE_KEY]: storage });
+    const session = getSessionStorage();
+    if (!session) return;
+    await session.set({ [JWT_STORAGE_KEY]: storage });
     return;
   }
   // Web: JWT is owned by oidc-client-ts (userStore, sessionStorage).
@@ -233,7 +235,9 @@ export async function hasJwt(): Promise<boolean> {
  */
 export async function clearAllJwts(): Promise<void> {
   if (isExtension()) {
-    await chrome.storage.session.remove([JWT_STORAGE_KEY]);
+    const session = getSessionStorage();
+    if (!session) return;
+    await session.remove([JWT_STORAGE_KEY]);
     return;
   }
 }
