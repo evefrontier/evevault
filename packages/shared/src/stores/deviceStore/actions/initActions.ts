@@ -280,16 +280,12 @@ export function createInitActions(set: SetDeviceState, get: GetDeviceState) {
 
       log.info("Rotating ephemeral key", { currentChain });
 
+      // Clear derived state before generating the new key. If this fails,
+      // no rotation has occurred.
+      await Promise.all([clearAllZkLoginJwts(), zkProofService.clear()]);
+
       const { hashedSecretKey, publicKey } =
         await ephKeyService.rotateEphemeralKeyPair();
-
-      try {
-        await Promise.all([clearAllZkLoginJwts(), zkProofService.clear()]);
-      } catch (error) {
-        log.warn("Failed to fully clear derived state during key rotation", {
-          error,
-        });
-      }
 
       set({
         ephemeralPublicKey: publicKey,
