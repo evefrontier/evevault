@@ -86,7 +86,9 @@ export function useDevMode() {
     log.info("Manual eph key rotation requested", {
       chain,
       beforeKey,
-      beforeChainData,
+      maxEpoch: beforeChainData?.maxEpoch,
+      hasNonce: beforeChainData?.nonce != null,
+      hasJwtRandomness: beforeChainData?.jwtRandomness != null,
     });
 
     try {
@@ -100,8 +102,9 @@ export function useDevMode() {
         chain,
         beforeKey,
         afterKey,
-        beforeChainData,
-        afterChainData,
+        maxEpoch: afterChainData?.maxEpoch,
+        hasNonce: afterChainData?.nonce != null,
+        hasJwtRandomness: afterChainData?.jwtRandomness != null,
       });
     } catch (error) {
       log.error("Manual eph key rotation failed", error);
