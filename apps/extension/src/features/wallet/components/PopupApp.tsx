@@ -1,9 +1,9 @@
 import "./PopupApp.css";
+import type { TenantId } from "@evefrontier/dapp-kit";
 import {
   getAvailableTenantIds,
   getCurrentTenantId,
   switchTenantAndReload,
-  type TenantId,
 } from "@evevault/shared";
 import { redirectToFusionAuthLogout, useAuth } from "@evevault/shared/auth";
 import {
@@ -17,11 +17,7 @@ import {
   useToast,
 } from "@evevault/shared/components";
 import Icon from "@evevault/shared/components/Icon";
-import {
-  useDevice,
-  useTenant,
-  useTestTransaction,
-} from "@evevault/shared/hooks";
+import { useDevice, useDevMode, useTenant } from "@evevault/shared/hooks";
 import { LockScreen } from "@evevault/shared/screens";
 import { useDeviceStore, useNetworkStore } from "@evevault/shared/stores";
 import { getFaucetUrlForChain } from "@evevault/shared/sui";
@@ -58,7 +54,7 @@ function App() {
   const { showToast } = useToast();
   const faucetUrl = getFaucetUrlForChain(chain);
   const { handleLogin } = useLogin();
-  const { handleTestTransaction, txDigest } = useTestTransaction();
+  const { handleTestTransaction, txDigest } = useDevMode();
 
   const formatPublicKey = useCallback((bytes: number[] | null | undefined) => {
     if (!bytes || bytes.length === 0) return null;
@@ -128,7 +124,7 @@ function App() {
   }, [devMode, setDevMode]);
 
   const onLoginClick = async () => {
-    const success = await handleLogin(previousNetworkBeforeSwitch);
+    const success = await handleLogin();
     if (success) {
       setPreviousNetworkBeforeSwitch(null);
     }

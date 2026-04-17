@@ -411,8 +411,7 @@ export const useAuthStore = create<AuthState>()(
         isWeb() ? localStorageAdapter : chromeStorageAdapter,
       ),
       // Tokens are managed by context-specific session storage (oidc-client-ts
-      // sessionStorage on web; chrome.storage.session on extension). Never persist
-      // the user object — it contains the JWT — to any disk-backed store.
+      // sessionStorage on web; chrome.storage.session on extension).
       partialize: (state) => {
         const { user: _user, ...rest } = state;
         return rest as typeof state;

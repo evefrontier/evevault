@@ -22,7 +22,7 @@ async function sendToKeeper(message: any, retries = 3): Promise<any> {
             const error = chrome.runtime.lastError.message;
 
             // If port closed and we have retries left, wait and retry
-            if (error.includes("port closed") && attempt < retries) {
+            if (error?.includes("port closed") && attempt < retries) {
               log.info(
                 `Keeper not ready yet, retrying... (attempt ${
                   attempt + 1
