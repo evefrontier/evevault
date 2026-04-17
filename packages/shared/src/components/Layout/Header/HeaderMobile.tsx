@@ -37,22 +37,16 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
       items.push({
         label: "Dev mode",
         icon: "Settings" as IconName,
-        onClick: onDevModeToggle,
+        onClick: () => {},
         preventCloseOnClick: true,
         customContent: (
           <>
             {getIdenticon(0)}
             <Text variant="label">Dev mode</Text>
-            <button
-              type="button"
-              className="border-0 bg-transparent p-0 font-inherit"
-              onClick={(e: React.MouseEvent) => e.stopPropagation()}
-            >
-              <Switch
-                isChecked={showDevActions}
-                onChange={(_checked) => onDevModeToggle()}
-              />
-            </button>
+            <Switch
+              isChecked={showDevActions}
+              onChange={(_checked) => onDevModeToggle()}
+            />
           </>
         ),
       });
