@@ -15,7 +15,7 @@ const cryptoApi =
  */
 export async function deriveAesKey(
   pin: string,
-  salt: Uint8Array,
+  salt: Uint8Array<ArrayBuffer>,
   usage: KeyUsage[],
 ): Promise<CryptoKey> {
   const keyMaterial = await cryptoApi.subtle.importKey(
