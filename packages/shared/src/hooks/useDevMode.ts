@@ -1,13 +1,13 @@
-import { getUserForNetwork, useAuth } from "@evevault/shared/auth";
-import { useToast } from "@evevault/shared/components";
-import { useDevice } from "@evevault/shared/hooks";
-import { useNetworkStore } from "@evevault/shared/stores/networkStore";
-import { createSuiClient } from "@evevault/shared/sui";
-import { createLogger } from "@evevault/shared/utils";
-import { zkSignAny } from "@evevault/shared/wallet";
 import { Transaction } from "@mysten/sui/transactions";
 import { useCallback, useMemo, useState } from "react";
+import { getUserForNetwork, useAuth } from "../auth";
+import { useToast } from "../components";
+import { useDevice } from "../hooks";
 import { useDeviceStore } from "../stores";
+import { useNetworkStore } from "../stores/networkStore";
+import { createSuiClient } from "../sui";
+import { createLogger } from "../utils";
+import { zkSignAny } from "../wallet";
 
 const log = createLogger();
 
