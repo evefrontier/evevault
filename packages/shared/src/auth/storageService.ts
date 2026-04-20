@@ -75,7 +75,10 @@ async function writeJwtStorage(storage: JwtStorage): Promise<void> {
     await session.set({ [JWT_STORAGE_KEY]: storage });
     return;
   }
-  // Web: JWT is owned by oidc-client-ts (userStore, sessionStorage).
+  // Web: zkLogin JWTs are intentionally not persisted — resolveVendedIdTokenForZkProof
+  // always vends fresh because getZkLoginJwtForNetwork returns null. If web storage is
+  // ever added here, clearAllZkLoginJwts must be updated to clear it too, otherwise
+  // ephemeral key rotation will leave stale JWTs tied to the old nonce.
 }
 
 /**
@@ -134,6 +137,8 @@ export async function clearZkLoginJwtForNetwork(
   await writeJwtStorage(updated);
 }
 
+// On web, this is a no-op because writeJwtStorage does not persist zkLogin JWTs.
+// If web storage is added to writeJwtStorage, this function must clear it too.
 export async function clearAllZkLoginJwts(): Promise<void> {
   const storage = await readJwtStorage();
   if (!storage?.zkLogin) return;

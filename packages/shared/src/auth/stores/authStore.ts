@@ -196,7 +196,7 @@ export const useAuthStore = create<AuthState>()(
               try {
                 webUser = await webUserManager.signinSilent();
               } catch (silentErr) {
-                log.info("Web init: silent renew failed, not logged in", {
+                log.warn("Web init: silent renew failed, not logged in", {
                   network,
                   error:
                     silentErr instanceof Error

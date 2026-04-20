@@ -112,14 +112,10 @@ export const ephKeyService = {
 
     log.debug("Rotate ephemeral key pair response", { ok: res?.ok });
 
-    if (res?.ok && res.hashedSecretKey) {
-      const publicKey = await ephKeyService.getEphemeralPublicKey();
-      if (!publicKey) {
-        throw new Error("Failed to refresh ephemeral public key");
-      }
+    if (res?.ok && res.hashedSecretKey && res.publicKeyBytes) {
       return {
         hashedSecretKey: res.hashedSecretKey,
-        publicKey,
+        publicKey: new Ed25519PublicKey(new Uint8Array(res.publicKeyBytes)),
       };
     }
 

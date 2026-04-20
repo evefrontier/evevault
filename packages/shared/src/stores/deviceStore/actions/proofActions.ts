@@ -53,9 +53,13 @@ export function createProofActions(set: SetDeviceState, get: GetDeviceState) {
 
         if (nonce == null || nonce === "" || isEpochExpired) {
           log.info(
-            "Device nonce missing or epoch expired; rotating eph key before ZK proof",
+            "Device nonce missing or epoch expired; rotating ephemeral key",
             { chain },
           );
+          // Rotate the keypair on every epoch boundary for forward secrecy.
+          // clearAllZkLoginJwts preserves the primary OAuth JWT,
+          // so resolveVendedIdTokenForZkProof can re-vend with the new nonce.
+          // rotateEphemeralKey calls initializeForChain internally.
           await get().rotateEphemeralKey();
           nonce = get().getNonce(chain);
           if (nonce == null || nonce === "") {
