@@ -124,11 +124,11 @@ export const useAuthStore = create<AuthState>()(
                     },
                   );
 
+                  const userManager = getUserManagerInstance();
                   // Store the reconstructed user so signinSilent() can find its
                   // refresh_token and use the token grant.
-                  await getUserManagerInstance().storeUser(user);
+                  await userManager.storeUser(user);
 
-                  const userManager = getUserManagerInstance();
                   let refreshedUser: User | null = null;
                   try {
                     refreshedUser = await userManager.signinSilent();
