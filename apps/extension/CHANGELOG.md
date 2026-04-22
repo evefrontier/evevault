@@ -1,5 +1,13 @@
 # @evevault/extension
 
+## 0.0.8
+
+### Patch Changes
+
+- fix silent renew, security updates
+- Updated dependencies
+  - @evevault/shared@0.0.8
+
 ## 0.0.7
 
 ### Patch Changes

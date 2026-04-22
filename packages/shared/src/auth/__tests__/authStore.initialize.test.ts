@@ -253,6 +253,39 @@ describe("authStore.initialize() (extension path)", () => {
       expect(useAuthStore.getState().loading).toBe(false);
     });
 
+    it("calls storeUser with reconstructed user before signinSilent when JWT is expired and refresh token exists", async () => {
+      const callOrder: string[] = [];
+      const refreshedUser = makeUser({
+        id_token: makeJwtPayload({ sub: "user-1", iat: 2000, exp: FUTURE }),
+      });
+      mockGetJwt.mockResolvedValue(makeStoredJwt({ expires_at: PAST }));
+      mockUserToJwtResponse.mockReturnValue(
+        makeStoredJwt({ expires_at: PAST }),
+      );
+      mockResolveExpiresAt
+        .mockReturnValueOnce(PAST)
+        .mockReturnValueOnce(FUTURE);
+      mockStoreUser.mockImplementation(async () => {
+        callOrder.push("storeUser");
+      });
+      mockSigninSilent.mockImplementation(async () => {
+        callOrder.push("signinSilent");
+        return refreshedUser;
+      });
+      mockEnrichUser.mockResolvedValue(refreshedUser);
+
+      await useAuthStore.getState().initialize();
+
+      const firstStoreUser = callOrder.indexOf("storeUser");
+      const signinSilentIdx = callOrder.indexOf("signinSilent");
+      expect(firstStoreUser).toBeLessThan(signinSilentIdx);
+      expect(mockStoreUser).toHaveBeenCalledWith(expect.any(User));
+      expect(mockEnrichUser).toHaveBeenCalledWith(
+        expect.any(User),
+        expect.any(Function),
+      );
+    });
+
     it("sets user to null when silent renew fails", async () => {
       mockGetJwt.mockResolvedValue(makeStoredJwt({ expires_at: PAST }));
       mockUserToJwtResponse.mockReturnValue(

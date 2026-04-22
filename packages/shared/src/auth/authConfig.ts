@@ -79,7 +79,10 @@ function buildUserManagerSettings(tenantId: TenantId): UserManagerSettings {
     redirect_uri: getRedirectUri(),
     post_logout_redirect_uri: getOrigin(),
     response_type: "code",
-    automaticSilentRenew: true,
+    // Extension popups have no persistent lifecycle — automatic renewal can't fire
+    // in the background and iframe-based renewal is blocked by extension CSP.
+    // Renewal is handled explicitly in authStore.initialize() using the refresh token.
+    automaticSilentRenew: !isExtension(),
     scope: "openid email profile offline_access",
     // PKCE nonce/state — short-lived, written during the redirect only, fine in localStorage.
     stateStore: new WebStorageStateStore({

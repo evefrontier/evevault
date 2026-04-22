@@ -1,13 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { oidcMocks, logMocks } = vi.hoisted(() => {
+const { oidcMocks, logMocks, envMocks } = vi.hoisted(() => {
   const userManagerConstructor = vi.fn();
   const addSilentRenewError = vi.fn();
   const logError = vi.fn();
+  const isExtension = vi.fn(() => false);
 
   return {
     oidcMocks: { userManagerConstructor, addSilentRenewError },
     logMocks: { logError },
+    envMocks: { isExtension },
   };
 });
 
@@ -50,13 +52,14 @@ vi.mock("../../utils/tenantConfig", () => ({
 }));
 
 vi.mock("../../utils/environment", () => ({
-  isExtension: () => false,
+  isExtension: () => envMocks.isExtension(),
 }));
 
 describe("authConfig UserManager", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
+    envMocks.isExtension.mockReturnValue(false);
   });
 
   it("passes automaticSilentRenew to UserManager", async () => {
@@ -69,6 +72,24 @@ describe("authConfig UserManager", () => {
     };
 
     expect(settings.automaticSilentRenew).toBe(true);
+  });
+
+  it("sets automaticSilentRenew to false in extension environment", async () => {
+    envMocks.isExtension.mockReturnValue(true);
+    (globalThis as unknown as { chrome: unknown }).chrome = {
+      runtime: { id: "test-ext" },
+    };
+    try {
+      const { getUserManager } = await import("../authConfig");
+      getUserManager("stillness");
+
+      const settings = oidcMocks.userManagerConstructor.mock.calls[0]?.[0] as {
+        automaticSilentRenew?: boolean;
+      };
+      expect(settings.automaticSilentRenew).toBe(false);
+    } finally {
+      delete (globalThis as unknown as { chrome?: unknown }).chrome;
+    }
   });
 
   it("logs when silent renew handler is invoked with an error", async () => {
