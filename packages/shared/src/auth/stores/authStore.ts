@@ -195,6 +195,19 @@ export const useAuthStore = create<AuthState>()(
               }
               try {
                 webUser = await webUserManager.signinSilent();
+
+                if (webUser != null) {
+                  webUser = await enrichUserWithZkLoginIfNeeded(
+                    new User(webUser),
+                    getEnokiApiKey,
+                  );
+                  await getUserManagerInstance().storeUser(webUser);
+                  await syncPrimaryJwtFromUser(webUser);
+                  set({ user: webUser, loading: false });
+                  return;
+                } else {
+                  return set({ user: null, loading: false });
+                }
               } catch (silentErr) {
                 log.warn("Web init: silent renew failed, not logged in", {
                   network,
@@ -203,9 +216,6 @@ export const useAuthStore = create<AuthState>()(
                       ? silentErr.message
                       : String(silentErr),
                 });
-                return set({ user: null, loading: false });
-              }
-              if (!webUser?.id_token) {
                 return set({ user: null, loading: false });
               }
             }

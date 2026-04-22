@@ -209,15 +209,17 @@ chrome.runtime.onMessage.addListener(
 
       (async () => {
         try {
-          ephemeralKey = Ed25519Keypair.generate();
-          _vaultUnlocked = true;
-          _vaultUnlockExpiry = Date.now() + 10 * 60 * 1000;
-
+          const newKeypair = Ed25519Keypair.generate();
           const hashedSecretKey = await encryptWithKey(
-            ephemeralKey.getSecretKey(),
+            newKeypair.getSecretKey(),
             sessionDerivedKey,
             sessionSalt,
           );
+
+          // Only swap the in-memory keypair after successful encryption
+          ephemeralKey = newKeypair;
+          _vaultUnlocked = true;
+          _vaultUnlockExpiry = Date.now() + 10 * 60 * 1000;
 
           sendResponse({
             ok: true,

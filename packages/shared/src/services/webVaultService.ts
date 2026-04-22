@@ -168,9 +168,12 @@ class WebVaultService {
 
     // Generate a new keypair. The PIN hash in IndexedDB is unchanged — the
     // user's PIN hasn't changed, only the ephemeral key has been rotated.
-    this.signer = await WebCryptoSigner.generate();
-    const exported = this.signer.export();
+    const newSigner = await WebCryptoSigner.generate();
+    const exported = newSigner.export();
     await set(KEYPAIR_STORAGE_KEY, exported);
+
+    // Only swap the in-memory keypair after successful write
+    this.signer = newSigner;
     this.unlockExpiry = Date.now() + 10 * 60 * 1000;
 
     log.info("[web-vault] Rotated Secp256r1 ephemeral keypair");
