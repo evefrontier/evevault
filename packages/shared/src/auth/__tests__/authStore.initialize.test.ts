@@ -280,6 +280,10 @@ describe("authStore.initialize() (extension path)", () => {
       const signinSilentIdx = callOrder.indexOf("signinSilent");
       expect(firstStoreUser).toBeLessThan(signinSilentIdx);
       expect(mockStoreUser).toHaveBeenCalledWith(expect.any(User));
+      expect(mockEnrichUser).toHaveBeenCalledWith(
+        expect.any(User),
+        expect.any(Function),
+      );
     });
 
     it("sets user to null when silent renew fails", async () => {

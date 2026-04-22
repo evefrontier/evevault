@@ -96,6 +96,7 @@ export const useAuthStore = create<AuthState>()(
                 });
               }
 
+              const userManager = getUserManagerInstance();
               const jwtSnapshot = userToJwtResponse(user);
               if (jwtSnapshot) {
                 const expiresAt = resolveExpiresAt(jwtSnapshot);
@@ -123,8 +124,6 @@ export const useAuthStore = create<AuthState>()(
                       now,
                     },
                   );
-
-                  const userManager = getUserManagerInstance();
                   // Store the reconstructed user so signinSilent() can find its
                   // refresh_token and use the token grant.
                   await userManager.storeUser(user);
@@ -174,7 +173,7 @@ export const useAuthStore = create<AuthState>()(
               }
 
               user = await enrichUserWithZkLoginIfNeeded(user, getEnokiApiKey);
-              await getUserManagerInstance().storeUser(user);
+              await userManager.storeUser(user);
               await syncPrimaryJwtFromUser(user);
               set({ user, loading: false });
               return;
