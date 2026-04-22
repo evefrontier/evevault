@@ -156,6 +156,7 @@ jobs:
             "${EXTENSION_ZIP}" \
             "${CHECKSUMS_FILE}" \
             "${ATTESTATION_FILE}" \
+            --repo "${{ github.repository }}" \
             --clobber
 
   upload-manual-artifact:
