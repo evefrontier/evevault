@@ -9,10 +9,10 @@ export * from "./hooks/useAuth";
 export { resetVaultOnDevice } from "./resetVaultOnDevice";
 export {
   clearAllJwts,
+  clearAllZkLoginJwts,
   clearZkLoginJwtForNetwork,
   getJwt,
   getStoredChain,
-  getStoredWalletAddress,
   getZkLoginJwtForNetwork,
   hasJwt,
   storeJwt,

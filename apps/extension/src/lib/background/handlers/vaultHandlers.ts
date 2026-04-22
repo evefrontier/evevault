@@ -22,7 +22,7 @@ async function sendToKeeper(message: any, retries = 3): Promise<any> {
             const error = chrome.runtime.lastError.message;
 
             // If port closed and we have retries left, wait and retry
-            if (error.includes("port closed") && attempt < retries) {
+            if (error?.includes("port closed") && attempt < retries) {
               log.info(
                 `Keeper not ready yet, retrying... (attempt ${
                   attempt + 1
@@ -170,6 +170,45 @@ export function _handleCreateKeypair(
   })();
 
   return true; // Return synchronously to keep channel open
+}
+
+/**
+ * Handles ROTATE_KEYPAIR message - rotates the ephemeral key pair using the active keeper session
+ */
+export function _handleRotateKeypair(
+  _message: VaultMessage,
+  _sender: chrome.runtime.MessageSender,
+  sendResponse: (response?: unknown) => void,
+): boolean {
+  (async () => {
+    try {
+      const keeperResponse = await sendToKeeper({
+        type: KeeperMessageTypes.ROTATE_KEYPAIR,
+      });
+
+      if (keeperResponse?.ok) {
+        sendResponse({
+          ok: true,
+          hashedSecretKey: keeperResponse.hashedSecretKey,
+          publicKeyBytes: keeperResponse.publicKeyBytes,
+        });
+      } else {
+        sendResponse({
+          ok: false,
+          error:
+            keeperResponse?.error ||
+            "Vault must be unlocked again before rotating keypair",
+        });
+      }
+    } catch (error) {
+      sendResponse({
+        ok: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  })();
+
+  return true;
 }
 
 /**

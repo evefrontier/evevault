@@ -278,6 +278,29 @@ describe("WebVaultService", () => {
       webVaultService.lock();
       expect(webVaultService.isUnlocked()).toBe(false);
     });
+
+    it("requires unlock again before rotating after lock", async () => {
+      webVaultService.lock();
+
+      await expect(webVaultService.rotateEphemeralKeyPair()).rejects.toThrow(
+        "Vault must be unlocked again before rotating keypair",
+      );
+    });
+  });
+
+  describe("rotateEphemeralKeyPair", () => {
+    it("creates a fresh keypair while unlocked", async () => {
+      await webVaultService.createEphemeralKeyPair("123456");
+
+      const publicKey = await webVaultService.rotateEphemeralKeyPair();
+
+      expect(WebCryptoSigner.generate).toHaveBeenCalledTimes(2);
+      expect(publicKey).toBeDefined();
+      expect(mockSetFn).toHaveBeenCalledWith(
+        "evevault:web-ephemeral-keypair",
+        expect.anything(),
+      );
+    });
   });
 
   describe("auto-lock on expiry", () => {

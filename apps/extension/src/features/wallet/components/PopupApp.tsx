@@ -1,9 +1,9 @@
 import "./PopupApp.css";
+import type { TenantId } from "@evefrontier/dapp-kit";
 import {
   getAvailableTenantIds,
   getCurrentTenantId,
   switchTenantAndReload,
-  type TenantId,
 } from "@evevault/shared";
 import { redirectToFusionAuthLogout, useAuth } from "@evevault/shared/auth";
 import {
@@ -14,15 +14,12 @@ import {
   TenantSelector,
   Text,
   TokenListSection,
+  useToast,
 } from "@evevault/shared/components";
 import Icon from "@evevault/shared/components/Icon";
-import {
-  useDevice,
-  useTenant,
-  useTestTransaction,
-} from "@evevault/shared/hooks";
+import { useDevice, useDevMode, useTenant } from "@evevault/shared/hooks";
 import { LockScreen } from "@evevault/shared/screens";
-import { useNetworkStore } from "@evevault/shared/stores";
+import { useDeviceStore, useNetworkStore } from "@evevault/shared/stores";
 import { getFaucetUrlForChain } from "@evevault/shared/sui";
 import {
   createLogger,
@@ -50,7 +47,7 @@ function App() {
   const { chain } = useNetworkStore();
   const faucetUrl = getFaucetUrlForChain(chain);
   const { handleLogin } = useLogin();
-  const { handleTestTransaction, txDigest } = useTestTransaction();
+  const { handleTestTransaction, txDigest, handleRotateEphKey } = useDevMode();
 
   // Use TanStack Query for balance fetching
   useBalance({
@@ -79,7 +76,7 @@ function App() {
   }, [devMode, setDevMode]);
 
   const onLoginClick = async () => {
-    const success = await handleLogin(previousNetworkBeforeSwitch);
+    const success = await handleLogin();
     if (success) {
       setPreviousNetworkBeforeSwitch(null);
     }
@@ -186,6 +183,7 @@ function App() {
         showDevActions={devMode}
         onDevModeToggle={handleDevModeToggle}
         onSignSubmitTxClick={devMode ? handleTestTransaction : undefined}
+        onRotateEphKeyClick={devMode ? handleRotateEphKey : undefined}
         onFaucetTestSuiClick={
           devMode && faucetUrl
             ? () => window.open(faucetUrl, "_blank", "noopener,noreferrer")

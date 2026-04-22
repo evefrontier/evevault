@@ -176,7 +176,51 @@ export const useAuthStore = create<AuthState>()(
               return;
             }
 
-            return set({ loading: false });
+            const webUserManager = getUserManagerInstance();
+            let webUser = await webUserManager.getUser();
+
+            const webJwt = userToJwtResponse(webUser);
+            const now = Math.floor(Date.now() / 1000);
+            const isExpired = !webJwt || now >= resolveExpiresAt(webJwt);
+
+            if (isExpired) {
+              if (!webUser?.refresh_token?.trim()) {
+                log.info(
+                  "Web init: no session or refresh token, not logged in",
+                  {
+                    network,
+                  },
+                );
+                return set({ user: null, loading: false });
+              }
+              try {
+                webUser = await webUserManager.signinSilent();
+
+                if (webUser != null) {
+                  webUser = await enrichUserWithZkLoginIfNeeded(
+                    new User(webUser),
+                    getEnokiApiKey,
+                  );
+                  await getUserManagerInstance().storeUser(webUser);
+                  await syncPrimaryJwtFromUser(webUser);
+                  set({ user: webUser, loading: false });
+                  return;
+                } else {
+                  return set({ user: null, loading: false });
+                }
+              } catch (silentErr) {
+                log.warn("Web init: silent renew failed, not logged in", {
+                  network,
+                  error:
+                    silentErr instanceof Error
+                      ? silentErr.message
+                      : String(silentErr),
+                });
+                return set({ user: null, loading: false });
+              }
+            }
+
+            return set({ user: webUser ?? null, loading: false });
           } catch (error) {
             log.error("Error initializing auth", error);
             set({
@@ -376,6 +420,12 @@ export const useAuthStore = create<AuthState>()(
       storage: createJSONStorage(() =>
         isWeb() ? localStorageAdapter : chromeStorageAdapter,
       ),
+      // Tokens are managed by context-specific session storage (oidc-client-ts
+      // sessionStorage on web; chrome.storage.session on extension).
+      partialize: (state) => {
+        const { user: _user, ...rest } = state;
+        return rest as typeof state;
+      },
       onRehydrateStorage: () => {
         return async (state, error) => {
           if (error) {

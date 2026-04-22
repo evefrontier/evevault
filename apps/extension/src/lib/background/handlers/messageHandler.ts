@@ -20,6 +20,7 @@ import {
   _handleCreateKeypair,
   _handleGetPublicKey,
   _handleGetZkProof,
+  _handleRotateKeypair,
   _handleSetZkProof,
   _handleZkEphSignBytes,
   handleLock,
@@ -99,6 +100,11 @@ export function handleMessage(
 
   if (message.type === VaultMessageTypes.CREATE_KEYPAIR) {
     _handleCreateKeypair(message, sender, sendResponse);
+    return true;
+  }
+
+  if (message.type === VaultMessageTypes.ROTATE_KEYPAIR) {
+    _handleRotateKeypair(message, sender, sendResponse);
     return true;
   }
 

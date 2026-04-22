@@ -40,6 +40,7 @@ vi.mock("../../services/vaultService", () => ({
   zkProofService: {
     getZkProof: (...args: unknown[]) => getZkProofFromKeeperMock(...args),
     setZkProof: (...args: unknown[]) => setZkProofMock(...args),
+    clear: vi.fn(),
   },
 }));
 
@@ -95,6 +96,7 @@ function buildProofHarness(overrides: Partial<DeviceState> = {}) {
     error: null,
     initialize: stubAsync,
     initializeForChain: stubAsync,
+    rotateEphemeralKey: stubAsync,
     lock: stubAsync,
     unlock: stubAsync,
     reset: () => {},
@@ -232,6 +234,44 @@ describe("createProofActions.getZkProof", () => {
     );
     expect(result).toEqual(
       expect.objectContaining({ data: { inputs: "mock" } }),
+    );
+  });
+
+  it("rotates the eph key before generating proof when epoch is expired", async () => {
+    const rotateEphemeralKey = vi.fn().mockImplementation(async () => {
+      state.networkData[SUI_DEVNET_CHAIN] = {
+        nonce: "rotated-nonce",
+        maxEpoch: "22",
+        maxEpochTimestampMs: Date.now() + 60_000,
+        jwtRandomness: "rotated-random",
+      };
+    });
+    const { getZkProof, state } = buildProofHarness({
+      rotateEphemeralKey,
+      networkData: {
+        [SUI_DEVNET_CHAIN]: {
+          nonce: "stale",
+          maxEpoch: "10",
+          maxEpochTimestampMs: Date.now() - 1_000,
+          jwtRandomness: "old-random",
+        },
+      },
+    });
+
+    await getZkProof();
+
+    expect(rotateEphemeralKey).toHaveBeenCalledTimes(1);
+    expect(resolveVendedMock).toHaveBeenCalledWith(
+      SUI_DEVNET_CHAIN,
+      expect.anything(),
+      "rotated-nonce",
+      expect.any(Function),
+    );
+    expect(fetchZkProofMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        jwtRandomness: "rotated-random",
+        maxEpoch: "22",
+      }),
     );
   });
 

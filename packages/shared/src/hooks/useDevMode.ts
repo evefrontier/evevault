@@ -1,21 +1,22 @@
-import { getUserForNetwork, useAuth } from "@evevault/shared/auth";
-import { useToast } from "@evevault/shared/components";
-import { useDevice } from "@evevault/shared/hooks";
-import { useNetworkStore } from "@evevault/shared/stores/networkStore";
-import { createSuiClient } from "@evevault/shared/sui";
-import { createLogger } from "@evevault/shared/utils";
-import { zkSignAny } from "@evevault/shared/wallet";
 import { Transaction } from "@mysten/sui/transactions";
 import { useCallback, useMemo, useState } from "react";
+import { getUserForNetwork, useAuth } from "../auth";
+import { useToast } from "../components";
+import { useDevice } from "../hooks";
+import { useDeviceStore } from "../stores";
+import { useNetworkStore } from "../stores/networkStore";
+import { createSuiClient } from "../sui";
+import { createLogger } from "../utils";
+import { zkSignAny } from "../wallet";
 
 const log = createLogger();
 
 /**
  * Hook for handling test transaction submission
  */
-export function useTestTransaction() {
+export function useDevMode() {
   const { user: globalUser } = useAuth();
-  const { getZkProof } = useDevice();
+  const { getZkProof, rotateEphemeralKey } = useDevice();
   const { chain } = useNetworkStore();
   const { showToast } = useToast();
   const [txDigest, setTxDigest] = useState<string | null>(null);
@@ -69,5 +70,51 @@ export function useTestTransaction() {
     }
   }, [chain, suiClient, getZkProof, showToast]);
 
-  return { handleTestTransaction, txDigest, isAuthenticated: !!globalUser };
+  const formatPublicKey = useCallback((bytes: number[] | null | undefined) => {
+    if (!bytes || bytes.length === 0) return null;
+    return bytes
+      .slice(0, 8)
+      .map((byte) => byte.toString(16).padStart(2, "0"))
+      .join("");
+  }, []);
+
+  const handleRotateEphKey = useCallback(async () => {
+    const beforeState = useDeviceStore.getState();
+    const beforeChainData = beforeState.networkData[chain];
+    const beforeKey = formatPublicKey(beforeState.ephemeralPublicKeyBytes);
+
+    log.info("Manual eph key rotation requested", {
+      chain,
+      beforeKey,
+      maxEpoch: beforeChainData?.maxEpoch,
+      hasNonce: beforeChainData?.nonce != null,
+      hasJwtRandomness: beforeChainData?.jwtRandomness != null,
+    });
+
+    try {
+      await rotateEphemeralKey();
+
+      const afterState = useDeviceStore.getState();
+      const afterChainData = afterState.networkData[chain];
+      const afterKey = formatPublicKey(afterState.ephemeralPublicKeyBytes);
+
+      log.info("Manual eph key rotation completed", {
+        chain,
+        beforeKey,
+        afterKey,
+        maxEpoch: afterChainData?.maxEpoch,
+        hasNonce: afterChainData?.nonce != null,
+        hasJwtRandomness: afterChainData?.jwtRandomness != null,
+      });
+    } catch (error) {
+      log.error("Manual eph key rotation failed", error);
+    }
+  }, [chain, formatPublicKey, rotateEphemeralKey]);
+
+  return {
+    handleTestTransaction,
+    txDigest,
+    handleRotateEphKey,
+    isAuthenticated: !!globalUser,
+  };
 }

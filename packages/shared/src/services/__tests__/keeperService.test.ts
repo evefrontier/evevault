@@ -61,3 +61,30 @@ describe("ephKeyService.lock()", () => {
     await expect(ephKeyService.lock()).rejects.toThrow("Failed to lock vault");
   });
 });
+
+describe("ephKeyService.rotateEphemeralKeyPair()", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("sends ROTATE_KEYPAIR message and returns refreshed key", async () => {
+    mockSendMessage.mockResolvedValueOnce({
+      ok: true,
+      hashedSecretKey: { iv: "iv", data: "data", salt: "salt" },
+      publicKeyBytes: new Uint8Array(32).fill(7),
+    });
+
+    const result = await ephKeyService.rotateEphemeralKeyPair();
+
+    expect(mockSendMessage).toHaveBeenCalledTimes(1);
+    expect(mockSendMessage).toHaveBeenCalledWith({
+      type: VaultMessageTypes.ROTATE_KEYPAIR,
+    });
+    expect(result.hashedSecretKey).toEqual({
+      iv: "iv",
+      data: "data",
+      salt: "salt",
+    });
+    expect(result.publicKey).toBeDefined();
+  });
+});

@@ -1,10 +1,6 @@
 import { SUI_DEVNET_CHAIN, SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  AUTH_STORAGE_KEY,
-  JWT_STORAGE_KEY,
-  NETWORK_STORAGE_KEY,
-} from "../../utils/storageKeys";
+import { JWT_STORAGE_KEY, NETWORK_STORAGE_KEY } from "../../utils/storageKeys";
 
 vi.mock("../../utils/environment", () => ({
   isExtension: vi.fn(),
@@ -43,7 +39,6 @@ import {
   clearZkLoginJwtForNetwork,
   getJwt,
   getStoredChain,
-  getStoredWalletAddress,
   hasJwt,
   storeJwt,
   storeZkLoginJwtForNetwork,
@@ -79,12 +74,9 @@ describe("storageService (web)", () => {
     vi.clearAllMocks();
   });
 
-  it("storeJwt writes flat primary to localStorage", async () => {
-    await storeJwt(baseJwt());
-    const raw = localStorage.getItem(JWT_STORAGE_KEY);
-    expect(raw).toBeTruthy();
-    const parsed = JSON.parse(raw as string) as Record<string, unknown>;
-    expect(parsed.primary).toMatchObject({ access_token: "at" });
+  it("storeJwt is a no-op on web (tokens managed by oidc-client-ts)", async () => {
+    await storeJwt({ ...baseJwt(), refresh_token: "rt" });
+    expect(localStorage.getItem(JWT_STORAGE_KEY)).toBeNull();
   });
 
   it("getJwt uses OIDC user on web", async () => {
@@ -95,97 +87,52 @@ describe("storageService (web)", () => {
     expect(userToJwtResponse).toHaveBeenCalled();
   });
 
-  it("getJwt falls back to storage when OIDC user absent", async () => {
-    await storeJwt(baseJwt());
+  it("getJwt returns null when no OIDC user and no storage", async () => {
     const out = await getJwt();
-    expect(out?.access_token).toBe("at");
+    expect(out).toBeNull();
   });
 
-  it("getJwt returns null for invalid JSON in localStorage", async () => {
-    localStorage.setItem(JWT_STORAGE_KEY, "{not-json");
+  it("getJwt returns null when no OIDC user even if localStorage has data", async () => {
+    localStorage.setItem(
+      JWT_STORAGE_KEY,
+      JSON.stringify({ primary: baseJwt() }),
+    );
     await expect(getJwt()).resolves.toBeNull();
   });
 
-  it("clearAllJwts removes JWT key", async () => {
-    await storeJwt(baseJwt());
-    await clearAllJwts();
-    expect(localStorage.getItem(JWT_STORAGE_KEY)).toBeNull();
-  });
-
-  it("hasJwt returns false when expired", async () => {
-    await storeJwt({
-      ...baseJwt(),
-      expires_at: Math.floor(Date.now() / 1000) - 10,
-    });
+  it("hasJwt returns false when no OIDC user", async () => {
     await expect(hasJwt()).resolves.toBe(false);
   });
 
-  it("hasJwt returns true when valid", async () => {
-    await storeJwt(baseJwt());
+  it("hasJwt returns false when OIDC user token is expired", async () => {
+    vi.mocked(userToJwtResponse).mockReturnValue({
+      ...baseJwt(),
+      expires_at: Math.floor(Date.now() / 1000) - 10,
+    } as never);
+    await expect(hasJwt()).resolves.toBe(false);
+  });
+
+  it("hasJwt returns true when valid OIDC user is present", async () => {
+    vi.mocked(userToJwtResponse).mockReturnValue(baseJwt() as never);
     await expect(hasJwt()).resolves.toBe(true);
   });
 
-  it("clearZkLoginJwtForNetwork leaves primary intact", async () => {
-    await storeJwt(baseJwt());
+  it("storeZkLoginJwtForNetwork is a no-op on web", async () => {
     await storeZkLoginJwtForNetwork(
       { id_token: "zk", expires_at: futureExp() },
       SUI_DEVNET_CHAIN,
     );
-    await clearZkLoginJwtForNetwork(SUI_DEVNET_CHAIN);
-    const raw = localStorage.getItem(JWT_STORAGE_KEY);
-    const parsed = JSON.parse(raw as string) as {
-      primary?: { access_token: string };
-      zkLogin?: Record<string, unknown>;
-    };
-    expect(parsed.primary?.access_token).toBe("at");
-    expect(parsed.zkLogin?.[SUI_DEVNET_CHAIN]).toBeUndefined();
+    expect(localStorage.getItem(JWT_STORAGE_KEY)).toBeNull();
   });
 
-  it("storeZkLoginJwtForNetwork merges with existing primary", async () => {
-    await storeJwt(baseJwt());
-    await storeZkLoginJwtForNetwork({
-      id_token: "zk",
-      expires_at: futureExp(),
-    });
-    const raw = localStorage.getItem(JWT_STORAGE_KEY);
-    const parsed = JSON.parse(raw as string) as {
-      primary?: unknown;
-      zkLogin?: Record<string, unknown>;
-    };
-    expect(parsed.primary).toBeDefined();
-    expect(parsed.zkLogin?.[SUI_TESTNET_CHAIN]).toMatchObject({
-      id_token: "zk",
-    });
-  });
-
-  it("clearZkLoginJwtForNetwork removes zkLogin but keeps primary", async () => {
-    await storeJwt(baseJwt());
-    await storeZkLoginJwtForNetwork({
-      id_token: "zk",
-      expires_at: futureExp(),
-    });
-    await clearZkLoginJwtForNetwork(SUI_TESTNET_CHAIN);
-    const raw = localStorage.getItem(JWT_STORAGE_KEY);
-    const parsed = JSON.parse(raw as string) as {
-      primary?: unknown;
-      zkLogin?: Record<string, unknown>;
-    };
-    expect(parsed.primary).toBeDefined();
-    expect(parsed.zkLogin?.[SUI_TESTNET_CHAIN]).toBeUndefined();
-  });
-
-  it("clearZkLoginJwtForNetwork clears storage when only zkLogin existed", async () => {
-    await storeZkLoginJwtForNetwork({
-      id_token: "zk",
-      expires_at: futureExp(),
-    });
+  it("clearZkLoginJwtForNetwork is a no-op on web when storage is empty", async () => {
     await clearZkLoginJwtForNetwork(SUI_TESTNET_CHAIN);
     expect(localStorage.getItem(JWT_STORAGE_KEY)).toBeNull();
   });
 });
 
-describe("storageService (extension chrome.storage)", () => {
-  const chromeStorage = {
+describe("storageService (extension chrome.storage.session)", () => {
+  const chromeStorageSession = {
     get: vi.fn(),
     set: vi.fn(),
     remove: vi.fn(),
@@ -194,14 +141,14 @@ describe("storageService (extension chrome.storage)", () => {
   beforeEach(() => {
     vi.mocked(isExtension).mockReturnValue(true);
     vi.mocked(isWeb).mockReturnValue(false);
-    chromeStorage.get.mockReset();
-    chromeStorage.set.mockReset();
-    chromeStorage.remove.mockReset();
-    chromeStorage.get.mockResolvedValue({});
-    chromeStorage.set.mockResolvedValue(undefined);
-    chromeStorage.remove.mockResolvedValue(undefined);
+    chromeStorageSession.get.mockReset();
+    chromeStorageSession.set.mockReset();
+    chromeStorageSession.remove.mockReset();
+    chromeStorageSession.get.mockResolvedValue({});
+    chromeStorageSession.set.mockResolvedValue(undefined);
+    chromeStorageSession.remove.mockResolvedValue(undefined);
     (globalThis as unknown as { chrome: typeof chrome }).chrome = {
-      storage: { local: chromeStorage },
+      storage: { session: chromeStorageSession },
       runtime: { id: "test-extension" },
     } as unknown as typeof chrome;
     vi.mocked(useNetworkStore.getState).mockReturnValue({
@@ -214,22 +161,22 @@ describe("storageService (extension chrome.storage)", () => {
     delete (globalThis as unknown as { chrome?: unknown }).chrome;
   });
 
-  it("storeJwt writes via chrome.storage.local.set", async () => {
-    await storeJwt(baseJwt());
-    expect(chromeStorage.set).toHaveBeenCalledWith(
+  it("storeJwt writes via chrome.storage.session.set", async () => {
+    await storeJwt({ ...baseJwt(), refresh_token: "rt" });
+    expect(chromeStorageSession.set).toHaveBeenCalledWith(
       expect.objectContaining({
         [JWT_STORAGE_KEY]: expect.any(Object),
       }),
     );
   });
 
-  it("clearAllJwts calls chrome.storage.local.remove", async () => {
+  it("clearAllJwts calls chrome.storage.session.remove", async () => {
     await clearAllJwts();
-    expect(chromeStorage.remove).toHaveBeenCalledWith([JWT_STORAGE_KEY]);
+    expect(chromeStorageSession.remove).toHaveBeenCalledWith([JWT_STORAGE_KEY]);
   });
 });
 
-describe("getStoredWalletAddress / getStoredChain", () => {
+describe("getStoredChain", () => {
   const chromeStorage = {
     get: vi.fn(),
   };
@@ -246,23 +193,6 @@ describe("getStoredWalletAddress / getStoredChain", () => {
   afterEach(() => {
     delete (globalThis as unknown as { chrome?: unknown }).chrome;
     vi.clearAllMocks();
-  });
-
-  it("getStoredWalletAddress returns null when not extension", async () => {
-    vi.mocked(isExtension).mockReturnValue(false);
-    vi.mocked(isWeb).mockReturnValue(true);
-    await expect(getStoredWalletAddress()).resolves.toBeNull();
-  });
-
-  it("getStoredWalletAddress returns sui_address from persisted auth", async () => {
-    vi.mocked(isExtension).mockReturnValue(true);
-    vi.mocked(isWeb).mockReturnValue(false);
-    chromeStorage.get.mockResolvedValue({
-      [AUTH_STORAGE_KEY]: JSON.stringify({
-        state: { user: { profile: { sui_address: "0xabc" } } },
-      }),
-    });
-    await expect(getStoredWalletAddress()).resolves.toBe("0xabc");
   });
 
   it("getStoredChain returns default when not extension", async () => {

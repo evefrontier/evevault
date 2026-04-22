@@ -140,7 +140,6 @@ class WebVaultService {
 
   lock(): void {
     this.unlockExpiry = null;
-    // Clear the signer from memory on lock for security
     this.signer = null;
     log.debug("[web-vault] Vault locked");
   }
@@ -160,6 +159,25 @@ class WebVaultService {
     await del(KEYPAIR_STORAGE_KEY);
     await del(PIN_HASH_STORAGE_KEY);
     log.info("[web-vault] Cleared keypair and PIN hash");
+  }
+
+  async rotateEphemeralKeyPair(): Promise<PublicKey> {
+    if (!this.isUnlocked()) {
+      throw new Error("Vault must be unlocked again before rotating keypair");
+    }
+
+    // Generate a new keypair. The PIN hash in IndexedDB is unchanged — the
+    // user's PIN hasn't changed, only the ephemeral key has been rotated.
+    const newSigner = await WebCryptoSigner.generate();
+    const exported = newSigner.export();
+    await set(KEYPAIR_STORAGE_KEY, exported);
+
+    // Only swap the in-memory keypair after successful write
+    this.signer = newSigner;
+    this.unlockExpiry = Date.now() + 10 * 60 * 1000;
+
+    log.info("[web-vault] Rotated Secp256r1 ephemeral keypair");
+    return this.signer.getPublicKey();
   }
 
   async signTransaction(txBytes: Uint8Array): Promise<{

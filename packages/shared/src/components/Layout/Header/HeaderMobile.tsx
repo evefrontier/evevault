@@ -21,6 +21,7 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
   showDevActions = false,
   onDevModeToggle,
   onSignSubmitTxClick,
+  onRotateEphKeyClick,
   onFaucetTestSuiClick,
   version,
 }) => {
@@ -36,22 +37,16 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
       items.push({
         label: "Dev mode",
         icon: "Settings" as IconName,
-        onClick: onDevModeToggle,
+        onClick: () => {},
         preventCloseOnClick: true,
         customContent: (
           <>
             {getIdenticon(0)}
             <Text variant="label">Dev mode</Text>
-            <button
-              type="button"
-              className="border-0 bg-transparent p-0 font-inherit"
-              onClick={(e: React.MouseEvent) => e.stopPropagation()}
-            >
-              <Switch
-                isChecked={showDevActions}
-                onChange={(_checked) => onDevModeToggle()}
-              />
-            </button>
+            <Switch
+              isChecked={showDevActions}
+              onChange={(_checked) => onDevModeToggle()}
+            />
           </>
         ),
       });
@@ -66,7 +61,16 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
       });
     }
 
-    // 3. Faucet test SUI (only when dev mode on)
+    // 3. Rotate eph key (only when dev mode on)
+    if (showDevActions && onRotateEphKeyClick) {
+      items.push({
+        label: "Rotate eph key",
+        icon: "Refresh" as IconName,
+        onClick: onRotateEphKeyClick,
+      });
+    }
+
+    // 4. Faucet test SUI (only when dev mode on)
     if (showDevActions && onFaucetTestSuiClick) {
       items.push({
         label: "Faucet test SUI",
@@ -75,14 +79,14 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
       });
     }
 
-    // 4. Copy Address (always)
+    // 5. Copy Address (always)
     items.push({
       label: "Copy Address",
       icon: "Copy" as IconName,
       onClick: () => copy(address),
     });
 
-    // 5. Transaction History (optional)
+    // 6. Transaction History (optional)
     if (onTransactionsClick) {
       items.push({
         label: "Transaction History",
@@ -91,21 +95,21 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
       });
     }
 
-    // 6. Lock Wallet (always)
+    // 7. Lock Wallet (always)
     items.push({
       label: "Lock Wallet",
       icon: "HideEye" as IconName,
       onClick: lock,
     });
 
-    // 7. Logout (always)
+    // 8. Logout (always)
     items.push({
       label: "Logout",
       icon: "Close" as IconName,
       onClick: logout,
     });
 
-    // 8. App version (dev only, display-only)
+    // 9. App version (dev only, display-only)
     if (showDevActions && version) {
       items.push({
         label: `v${version}`,
@@ -121,6 +125,7 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
     showDevActions,
     onDevModeToggle,
     onSignSubmitTxClick,
+    onRotateEphKeyClick,
     copy,
     address,
     lock,

@@ -199,6 +199,8 @@ export interface HeaderMobileProps {
   onDevModeToggle?: () => void | Promise<void>;
   /** Callback when "Sign and submit test" menu item is clicked */
   onSignSubmitTxClick?: () => void;
+  /** Callback when "Rotate eph key" menu item is clicked (dev mode only) */
+  onRotateEphKeyClick?: () => void;
   /** Callback when "Faucet test SUI" menu item is clicked (dev mode only) */
   onFaucetTestSuiClick?: () => void;
   /** App version shown in dev dropdown (from each app's package.json at build time) */
