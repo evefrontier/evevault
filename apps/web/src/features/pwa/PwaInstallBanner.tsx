@@ -1,7 +1,6 @@
 import { Button } from "@evevault/shared/components";
 import Icon from "@evevault/shared/components/Icon";
 import { useEffect, useState } from "react";
-import "./PwaInstallBanner.css";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -64,16 +63,28 @@ export function PwaInstallBanner() {
   if (!mode) return null;
 
   return (
-    <aside className="pwa-banner" aria-label="Install EVE Vault">
-      <div className="pwa-banner__accent" aria-hidden />
-      <div className="pwa-banner__panel">
-        <div className="pwa-banner__body">
-          <p className="pwa-banner__title">Install EVE Vault</p>
+    <aside
+      className="fixed bottom-0 left-0 right-0 z-[9998] flex items-stretch backdrop-blur-[2px] bg-[var(--toast-backdrop)] border-t border-[var(--neutral-50)] animate-[pwa-slide-up_300ms_ease-out]"
+      aria-label="Install EVE Vault"
+    >
+      {/* Red accent bar */}
+      <div
+        className="shrink-0 w-0.5 self-stretch bg-[var(--martian-red)]"
+        aria-hidden
+      />
+
+      {/* Panel */}
+      <div className="flex flex-1 items-center gap-4 min-w-0 py-3 px-6 bg-matter-01">
+        {/* Text */}
+        <div className="flex flex-1 flex-col gap-1 min-w-0">
+          <p className="m-0 font-headline text-sm font-normal leading-[1.1] uppercase text-[var(--neutral-90)] whitespace-nowrap">
+            Install EVE Vault
+          </p>
           {mode === "ios" ? (
-            <p className="pwa-banner__message">
+            <p className="m-0 text-sm font-light leading-[1.5] tracking-[-0.02em] text-[var(--neutral-80)]">
               Tap the{" "}
               <svg
-                className="pwa-banner__ios-share"
+                className="inline-block align-middle w-[14px] h-[14px] relative -top-px text-[var(--neutral-80)]"
                 viewBox="0 0 24 24"
                 fill="currentColor"
                 aria-label="Share"
@@ -81,15 +92,21 @@ export function PwaInstallBanner() {
               >
                 <path d="M12 2l-4 4h3v8h2V6h3L12 2zm-6 14v4h12v-4h-2v2H8v-2H6z" />
               </svg>{" "}
-              Share button, then <strong>Add to Home Screen</strong>.
+              Share button, then{" "}
+              <strong className="font-medium text-[var(--neutral-90)]">
+                Add to Home Screen
+              </strong>
+              .
             </p>
           ) : (
-            <p className="pwa-banner__message">
-              Install as an app for faster access and a native feel.
+            <p className="m-0 text-sm font-light leading-[1.5] tracking-[-0.02em] text-[var(--neutral-80)]">
+              Install the app for faster access and a native feel.
             </p>
           )}
         </div>
-        <div className="pwa-banner__actions">
+
+        {/* Actions */}
+        <div className="flex shrink-0 items-center gap-2">
           {mode === "chromium" && (
             <Button size="small" variant="primary" onClick={install}>
               Install
@@ -98,7 +115,7 @@ export function PwaInstallBanner() {
           <button
             type="button"
             onClick={dismiss}
-            className="pwa-banner__close"
+            className="shrink-0 m-0 p-[2px] border-none rounded-sm bg-transparent cursor-pointer leading-none opacity-90 text-[var(--neutral-90)] hover:opacity-100 focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--neutral-50)]"
             aria-label="Dismiss"
           >
             <Icon
