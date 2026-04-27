@@ -64,6 +64,10 @@ vi.mock("../../zkSignAny", () => ({
   zkSignAny: vi.fn(),
 }));
 
+vi.mock("../useWalletSigningContext", () => ({
+  useWalletSigningContext: vi.fn(),
+}));
+
 vi.mock("@mysten/sui/transactions", () => {
   const mockCoin = {};
   return {
@@ -91,6 +95,7 @@ import type { UseBalanceParams } from "../../types/hooks";
 import { zkSignAny } from "../../zkSignAny";
 import { useBalance } from "../useBalance";
 import { useSendToken } from "../useSendToken";
+import { useWalletSigningContext } from "../useWalletSigningContext";
 
 const mockUseAuth = vi.mocked(useAuth);
 const mockGetUserForNetwork = vi.mocked(getUserForNetwork);
@@ -99,6 +104,7 @@ const mockUseDevice = vi.mocked(useDevice);
 const mockUseNetworkStore = vi.mocked(useNetworkStore);
 const mockUseBalance = vi.mocked(useBalance);
 const mockCreateSuiClient = vi.mocked(createSuiClient);
+const mockUseWalletSigningContext = vi.mocked(useWalletSigningContext);
 
 const createWrapper = (queryClient: QueryClient) => {
   return ({ children }: { children: ReactNode }) => (
@@ -149,7 +155,7 @@ describe("useSendToken", () => {
       // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
     } as any);
 
-    mockCreateSuiClient.mockReturnValue({
+    const mockSuiClient = {
       listCoins: vi.fn().mockResolvedValue({ objects: [] }),
       simulateTransaction: vi.fn().mockResolvedValue({
         $kind: "Transaction",
@@ -170,6 +176,32 @@ describe("useSendToken", () => {
         }),
         resolveTransactionPlugin: vi.fn(),
       },
+    };
+
+    mockCreateSuiClient.mockReturnValue({
+      ...mockSuiClient,
+      // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
+    } as any);
+
+    mockUseWalletSigningContext.mockReturnValue({
+      chain: SUI_DEVNET_CHAIN,
+      localnetUrl: undefined,
+      isAuthenticated: true,
+      isWalletUnlocked: true,
+      senderAddress: VALID_SUI_ADDRESS,
+      localnetAddress: null,
+      globalUser: mockUser,
+      // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
+      suiClient: mockSuiClient as any,
+      getSenderAddress: vi.fn().mockResolvedValue(VALID_SUI_ADDRESS),
+      sign: vi
+        .fn()
+        .mockResolvedValue({
+          bytes: "mock-bytes",
+          signature: "mock-signature",
+        }),
+      mode: "zklogin",
+      isLocalnet: false,
       // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
     } as any);
   });
@@ -326,11 +358,9 @@ describe("useSendToken", () => {
     });
 
     it("returns false when wallet is locked", () => {
-      mockUseDevice.mockReturnValue({
-        ephemeralPublicKey: null,
-        getZkProof: vi.fn(),
-        maxEpoch: null,
-        isLocked: true,
+      mockUseWalletSigningContext.mockReturnValue({
+        ...mockUseWalletSigningContext.mock.results[0]?.value,
+        isWalletUnlocked: false,
         // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
       } as any);
 
@@ -351,8 +381,10 @@ describe("useSendToken", () => {
     });
 
     it("returns false when not authenticated", () => {
-      mockUseAuth.mockReturnValue({
-        user: null,
+      mockUseWalletSigningContext.mockReturnValue({
+        ...mockUseWalletSigningContext.mock.results[0]?.value,
+        isAuthenticated: false,
+        globalUser: null,
         // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
       } as any);
 
@@ -400,7 +432,8 @@ describe("useSendToken", () => {
     });
 
     it("returns false when no network selected", () => {
-      mockUseNetworkStore.mockReturnValue({
+      mockUseWalletSigningContext.mockReturnValue({
+        ...mockUseWalletSigningContext.mock.results[0]?.value,
         chain: null,
         // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
       } as any);
@@ -641,6 +674,8 @@ describe("useSendToken", () => {
 
   describe("post-transfer refresh", () => {
     beforeEach(() => {
+      // sign is already set up in the outer beforeEach via mockUseWalletSigningContext;
+      // keep zkSignAny mock for any residual reference but useSendToken goes through sign()
       mockZkSignAny.mockResolvedValue({
         bytes: "mock-bytes",
         zkSignature: "mock-signature",

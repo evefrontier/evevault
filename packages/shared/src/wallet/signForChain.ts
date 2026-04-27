@@ -31,9 +31,13 @@ export async function signForChain(
     throw new Error("User not found for current network");
   }
 
+  if (!opts.getZkProof) {
+    throw new Error("getZkProof is required for zkLogin signing");
+  }
+
   const { bytes, zkSignature } = await zkSignAny(scope, msgBytes, {
     user: opts.user,
-    getZkProof: opts.getZkProof!,
+    getZkProof: opts.getZkProof,
   });
   return { bytes, signature: zkSignature };
 }

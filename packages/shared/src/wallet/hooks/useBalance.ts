@@ -1,7 +1,7 @@
-import { createSuiClient } from "@evevault/shared/sui";
 import { SUI_LOCALNET_CHAIN, SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
+import { createSuiClient } from "../../sui";
 import { createSuiGraphQLClient } from "../../sui/graphqlClient";
 import { isLocalnetChain } from "../../types/networks";
 import { formatByDecimals, formatMistToSui, SUI_COIN_TYPE } from "../../utils";
@@ -88,8 +88,17 @@ async function fetchLocalnetBalanceViaGrpc(
   const result = await client.getBalance({ owner: address, coinType });
 
   const totalBalance = result.balance?.balance ?? "0";
-  const formattedBalance =
-    coinType === SUI_COIN_TYPE ? formatMistToSui(totalBalance) : totalBalance;
+  let formattedBalance: string;
+  if (coinType === SUI_COIN_TYPE) {
+    formattedBalance = formatMistToSui(totalBalance);
+  } else {
+    // Localnet tokens don't have on-chain metadata; default to 9 decimals
+    log.warn(
+      "fetchLocalnetBalanceViaGrpc: no metadata for coin type, defaulting to 9 decimals",
+      { coinType },
+    );
+    formattedBalance = formatByDecimals(totalBalance, 9);
+  }
   return {
     rawBalance: totalBalance,
     formattedBalance,
@@ -196,7 +205,11 @@ export function useBalance({
         coinType,
       };
     },
-    enabled: !!activeAddress && !!chain && !!coinType,
+    enabled:
+      !!activeAddress &&
+      !!chain &&
+      !!coinType &&
+      (!isLocalnet || !!localnetUrl),
     staleTime: 1000 * 30,
     retry: false,
     refetchOnMount: "always",

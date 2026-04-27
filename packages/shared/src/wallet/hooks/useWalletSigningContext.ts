@@ -56,6 +56,9 @@ export function useWalletSigningContext() {
   const isWalletUnlocked = isLocalnet
     ? !!localnetAddress
     : !isLocked && !!ephemeralPublicKey && !!maxEpoch;
+  // isAuthenticated and senderAddress derive from globalUser (React state) which
+  // may lag by one render after a network switch. getSenderAddress() always
+  // queries the network-scoped user from storage and is safe for actual signing.
   const isAuthenticated = isLocalnet ? true : !!globalUser;
 
   return {

@@ -22,6 +22,8 @@ export interface SwitchProps {
 export interface TokenListProps {
   user: User | null;
   chain: SuiChain | null;
+  balanceAddress?: string | null;
+  localnetUrl?: string;
   onAddToken?: () => void;
   onSendToken?: (coinType: string) => void;
 }
@@ -342,6 +344,8 @@ export interface ExtendedTokenRowProps extends TokenRowProps {
   onTransfer?: () => void;
   isRefreshing?: boolean;
   refreshTick?: number;
+  balanceAddress?: string | null;
+  localnetUrl?: string;
 }
 
 export type LayoutVariant = "web" | "extension";

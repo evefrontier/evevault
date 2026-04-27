@@ -9,15 +9,26 @@ export function useLocalnetAddress(): string | null {
   const [localnetAddress, setLocalnetAddress] = useState<string | null>(null);
 
   useEffect(() => {
+    let isCancelled = false;
+
     if (isLocalnetChain(chain) && isExtension()) {
       localnetKeyService
         .getAddress()
-        .then(setLocalnetAddress)
-        .catch(() => setLocalnetAddress(null));
-      return;
+        .then((addr) => {
+          if (!isCancelled) setLocalnetAddress(addr);
+        })
+        .catch(() => {
+          if (!isCancelled) setLocalnetAddress(null);
+        });
+      return () => {
+        isCancelled = true;
+      };
     }
 
     setLocalnetAddress(null);
+    return () => {
+      isCancelled = true;
+    };
   }, [chain]);
 
   return localnetAddress;
