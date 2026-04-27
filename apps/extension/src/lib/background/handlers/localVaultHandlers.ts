@@ -1,4 +1,4 @@
-import { LOCALNET_KEY_STORAGE_KEY } from "@evevault/shared";
+import { LOCALNET_STORAGE_KEY } from "@evevault/shared";
 import { KeeperMessageTypes } from "@evevault/shared/types";
 
 import type { VaultMessage } from "../types";
@@ -20,7 +20,7 @@ export function _handleLocalnetSetKeypair(
       if (response?.ok) {
         // Persist raw key in background storage so it survives keeper restarts
         chrome.storage.local.set({
-          [LOCALNET_KEY_STORAGE_KEY]: message.privateKey ?? "",
+          [LOCALNET_STORAGE_KEY]: message.privateKey ?? "",
         });
       }
       sendResponse(response);

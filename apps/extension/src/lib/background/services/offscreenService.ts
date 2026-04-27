@@ -1,13 +1,13 @@
 /// <reference types="chrome"/>
 
-import { KeeperMessageTypes, LOCALNET_KEY_STORAGE_KEY } from "@evevault/shared";
+import { KeeperMessageTypes, LOCALNET_STORAGE_KEY } from "@evevault/shared";
 import { createLogger } from "@evevault/shared/utils";
 
 const log = createLogger();
 
 function restoreLocalnetKeyToKeeper(): void {
-  chrome.storage.local.get(LOCALNET_KEY_STORAGE_KEY, (result) => {
-    const raw = result[LOCALNET_KEY_STORAGE_KEY] as string | undefined;
+  chrome.storage.local.get(LOCALNET_STORAGE_KEY, (result) => {
+    const raw = result[LOCALNET_STORAGE_KEY] as string | undefined;
     if (!raw) return;
     const msg = {
       type: KeeperMessageTypes.LOCALNET_SET_KEYPAIR,
