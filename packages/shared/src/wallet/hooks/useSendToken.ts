@@ -3,10 +3,6 @@ import { Transaction } from "@mysten/sui/transactions";
 import { isValidSuiAddress } from "@mysten/sui/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { getUserForNetwork, useAuth } from "../../auth";
-import { useDevice } from "../../hooks";
-import { useNetworkStore } from "../../stores/networkStore";
-import { createSuiClient } from "../../sui";
 import {
   createLogger,
   formatMistToSui,
@@ -15,8 +11,8 @@ import {
   toSmallestUnit,
 } from "../../utils";
 import { isEveCoinType } from "../eveToken";
-import { zkSignAny } from "../zkSignAny";
 import { useBalance } from "./useBalance";
+import { useWalletSigningContext } from "./useWalletSigningContext";
 
 const log = createLogger();
 
@@ -177,9 +173,18 @@ export function useSendToken({
   recipientAddress,
   amount,
 }: UseSendTokenParams): UseSendTokenResult {
-  const { user: globalUser } = useAuth();
-  const { ephemeralPublicKey, getZkProof, maxEpoch, isLocked } = useDevice();
-  const { chain } = useNetworkStore();
+  const {
+    chain,
+    localnetUrl,
+    isAuthenticated,
+    isWalletUnlocked,
+    senderAddress: effectiveSenderAddress,
+    localnetAddress,
+    globalUser,
+    suiClient,
+    getSenderAddress,
+    sign,
+  } = useWalletSigningContext();
   const queryClient = useQueryClient();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -192,13 +197,13 @@ export function useSendToken({
     typeof setTimeout
   > | null>(null);
 
-  const suiClient = useMemo(() => createSuiClient(chain), [chain]);
-
   // Fetch balance for the selected token
   const { data: balanceData, isLoading: balanceLoading } = useBalance({
     user: globalUser,
     chain,
     coinType,
+    address: localnetAddress ?? undefined,
+    localnetUrl,
   });
 
   // Fetch SUI balance for gas warning and send eligibility (non-SUI transfers need SUI for gas)
@@ -206,6 +211,8 @@ export function useSendToken({
     user: globalUser,
     chain,
     coinType: SUI_COIN_TYPE,
+    address: localnetAddress ?? undefined,
+    localnetUrl,
   });
 
   // Extract balance info
@@ -220,8 +227,6 @@ export function useSendToken({
 
   // Validation checks
   const isNetworkReady = !!chain;
-  const isAuthenticated = !!globalUser;
-  const isWalletUnlocked = !isLocked && !!ephemeralPublicKey && !!maxEpoch;
   const hasBalance = !balanceLoading && BigInt(rawBalance) > 0n;
   const isValidRecipient =
     recipientAddress.length > 0 && isValidSuiAddress(recipientAddress);
@@ -253,7 +258,7 @@ export function useSendToken({
     const errors: string[] = [];
     if (!isNetworkReady) errors.push("No network selected");
     if (!isAuthenticated) errors.push("Not authenticated");
-    if (!isWalletUnlocked) errors.push("Wallet is locked");
+    if (!isWalletUnlocked) errors.push("Wallet not ready");
     if (!hasBalance) errors.push("Insufficient balance");
     if (!hasGas) errors.push("No SUI for gas (required for transaction fees)");
     if (recipientAddress && !isValidRecipient)
@@ -292,7 +297,7 @@ export function useSendToken({
     isValidAmount &&
     hasBalance &&
     !balanceLoading &&
-    !!globalUser?.profile?.sui_address &&
+    !!effectiveSenderAddress &&
     !!chain;
 
   // Clear delayed refetch timer on unmount
@@ -317,8 +322,7 @@ export function useSendToken({
       setEstimatedGasFeeLoading(true);
       setEstimatedGasFee(null);
       try {
-        const user = await getUserForNetwork(chain);
-        const senderAddress = user?.profile?.sui_address as string | undefined;
+        const senderAddress = await getSenderAddress();
         if (!senderAddress) {
           if (runId === estimateRunIdRef.current) {
             setEstimatedGasFee(null);
@@ -357,7 +361,7 @@ export function useSendToken({
   }, [
     formValidForEstimate,
     suiClient,
-    chain,
+    getSenderAddress,
     amount,
     decimals,
     recipientAddress,
@@ -375,20 +379,12 @@ export function useSendToken({
     setTxDigest(null);
 
     try {
-      const user = await getUserForNetwork(chain);
-      if (!user) {
-        throw new Error("User not found for current network");
+      const senderAddress = await getSenderAddress();
+
+      if (!senderAddress) {
+        throw new Error("Wallet not ready to sign");
       }
 
-      if (!ephemeralPublicKey) {
-        throw new Error("Ephemeral public key not found");
-      }
-
-      if (!maxEpoch) {
-        throw new Error("Max epoch not set");
-      }
-
-      const senderAddress = user.profile?.sui_address as string;
       const amountInSmallestUnit = toSmallestUnit(amount, decimals);
 
       const txBytes = await buildTransferTransactionBytes(
@@ -399,23 +395,16 @@ export function useSendToken({
         suiClient,
       );
 
-      const { bytes, zkSignature } = await zkSignAny(
-        "TransactionData",
-        txBytes,
-        {
-          user,
-          getZkProof,
-        },
-      );
+      const { bytes, signature } = await sign("TransactionData", txBytes);
 
       log.debug("Transaction signed", {
         bytesLength: bytes.length,
-        signatureLength: zkSignature.length,
+        signatureLength: signature.length,
       });
 
       const result = await suiClient.core.executeTransaction({
         transaction: txBytes,
-        signatures: [zkSignature],
+        signatures: [signature],
       });
 
       // @mysten/sui 2.x: discriminated union Transaction | FailedTransaction
@@ -478,14 +467,12 @@ export function useSendToken({
     }
   }, [
     canSend,
-    chain,
     coinType,
     amount,
     decimals,
     recipientAddress,
-    ephemeralPublicKey,
-    maxEpoch,
-    getZkProof,
+    getSenderAddress,
+    sign,
     suiClient,
     queryClient,
   ]);

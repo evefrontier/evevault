@@ -1,13 +1,11 @@
 import { Transaction } from "@mysten/sui/transactions";
-import { useCallback, useMemo, useState } from "react";
-import { getUserForNetwork, useAuth } from "../auth";
+import { useCallback, useState } from "react";
 import { useToast } from "../components";
-import { useDevice } from "../hooks";
 import { useDeviceStore } from "../stores";
 import { useNetworkStore } from "../stores/networkStore";
-import { createSuiClient } from "../sui";
 import { createLogger } from "../utils";
-import { zkSignAny } from "../wallet";
+import { useWalletSigningContext } from "../wallet/hooks/useWalletSigningContext";
+import { useDevice } from "./useDevice";
 
 const log = createLogger();
 
@@ -15,39 +13,37 @@ const log = createLogger();
  * Hook for handling test transaction submission
  */
 export function useDevMode() {
-  const { user: globalUser } = useAuth();
-  const { getZkProof, rotateEphemeralKey } = useDevice();
+  const { rotateEphemeralKey } = useDevice();
   const { chain } = useNetworkStore();
+  const {
+    isLocalnet,
+    isAuthenticated,
+    isWalletUnlocked,
+    suiClient,
+    getSenderAddress,
+    sign,
+  } = useWalletSigningContext();
   const { showToast } = useToast();
   const [txDigest, setTxDigest] = useState<string | null>(null);
 
-  const suiClient = useMemo(() => createSuiClient(chain), [chain]);
-
   const handleTestTransaction = useCallback(async () => {
     try {
-      // Get user from stored JWT for current network, not the global OIDC user
-      // which may be from a different network
-      const user = await getUserForNetwork(chain);
-
-      if (!user) {
-        log.error("User not found", { user });
-        throw new Error("User not found");
+      const senderAddress = await getSenderAddress();
+      if (!senderAddress) {
+        throw new Error("Wallet not ready to sign");
       }
 
       const tx = new Transaction();
-      tx.setSender(user.profile?.sui_address as string);
+      tx.setSender(senderAddress);
       const txb = await tx.build({ client: suiClient });
+      const { signature } = await sign("TransactionData", txb);
 
-      const { bytes, zkSignature } = await zkSignAny("TransactionData", txb, {
-        user,
-        getZkProof,
-      });
-      log.debug("zkSignature ready", { length: zkSignature.length });
-      log.debug("Transaction bytes ready", { length: bytes.length });
+      log.debug("Signature ready", { length: signature.length });
+      log.debug("Transaction bytes ready", { length: txb.length });
 
       const txDigestResult = await suiClient.core.executeTransaction({
         transaction: new Uint8Array(txb),
-        signatures: [zkSignature],
+        signatures: [signature],
       });
 
       if (
@@ -68,7 +64,7 @@ export function useDevMode() {
       log.error("Error submitting transaction", error);
       showToast("Error submitting transaction");
     }
-  }, [chain, suiClient, getZkProof, showToast]);
+  }, [suiClient, getSenderAddress, sign, showToast]);
 
   const formatPublicKey = useCallback((bytes: number[] | null | undefined) => {
     if (!bytes || bytes.length === 0) return null;
@@ -115,6 +111,6 @@ export function useDevMode() {
     handleTestTransaction,
     txDigest,
     handleRotateEphKey,
-    isAuthenticated: !!globalUser,
+    isAuthenticated: isLocalnet ? isWalletUnlocked : isAuthenticated,
   };
 }

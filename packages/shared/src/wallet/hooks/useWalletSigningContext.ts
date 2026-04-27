@@ -1,0 +1,75 @@
+import type { IntentScope } from "@mysten/sui/cryptography";
+import { useCallback, useMemo } from "react";
+import { getUserForNetwork, useAuth } from "../../auth";
+import { useDevice } from "../../hooks/useDevice";
+import { useNetworkStore } from "../../stores/networkStore";
+import { createSuiClient } from "../../sui";
+import { isLocalnetChain } from "../../types/networks";
+import type { ZkSignAnyParams } from "../../types/wallet";
+import { signForChain } from "../signForChain";
+import { useLocalnetAddress } from "./useLocalnetAddress";
+
+export type WalletSigningMode = "localnet" | "zklogin";
+
+export function useWalletSigningContext() {
+  const { user: globalUser } = useAuth();
+  const { ephemeralPublicKey, getZkProof, maxEpoch, isLocked } = useDevice();
+  const { chain, localnetUrl } = useNetworkStore();
+  const localnetAddress = useLocalnetAddress();
+  const isLocalnet = isLocalnetChain(chain);
+
+  const suiClient = useMemo(
+    () => createSuiClient(chain, isLocalnet ? localnetUrl : undefined),
+    [chain, isLocalnet, localnetUrl],
+  );
+
+  const senderAddress = isLocalnet
+    ? localnetAddress
+    : ((globalUser?.profile?.sui_address as string | undefined) ?? null);
+
+  const getSenderAddress = useCallback(async () => {
+    if (isLocalnet) return localnetAddress;
+    const user = await getUserForNetwork(chain);
+    return (user?.profile?.sui_address as string | undefined) ?? null;
+  }, [chain, isLocalnet, localnetAddress]);
+
+  const getZkLoginUser = useCallback(async () => {
+    if (isLocalnet) return null;
+    return getUserForNetwork(chain);
+  }, [chain, isLocalnet]);
+
+  const sign = useCallback(
+    async (scope: IntentScope, msgBytes: Uint8Array) => {
+      const user = await getZkLoginUser();
+      return signForChain(scope, msgBytes, {
+        chain,
+        user,
+        getZkProof: isLocalnet
+          ? null
+          : (getZkProof as ZkSignAnyParams["getZkProof"]),
+        localnetAddress,
+      });
+    },
+    [chain, isLocalnet, getZkProof, localnetAddress, getZkLoginUser],
+  );
+
+  const isWalletUnlocked = isLocalnet
+    ? !!localnetAddress
+    : !isLocked && !!ephemeralPublicKey && !!maxEpoch;
+  const isAuthenticated = isLocalnet ? true : !!globalUser;
+
+  return {
+    chain,
+    localnetUrl,
+    mode: (isLocalnet ? "localnet" : "zklogin") as WalletSigningMode,
+    isLocalnet,
+    isAuthenticated,
+    isWalletUnlocked,
+    senderAddress,
+    localnetAddress,
+    globalUser,
+    suiClient,
+    getSenderAddress,
+    sign,
+  };
+}

@@ -7,10 +7,13 @@ export {
   WEB_CRYPTO_PLACEHOLDER_IV,
 } from "../types/wallet";
 export { ephSign } from "./ephSign";
+export { useActiveSuiAddress } from "./hooks/useActiveSuiAddress";
 export { useBalance } from "./hooks/useBalance";
 export { useSendToken } from "./hooks/useSendToken";
 export { useTransactionHistory } from "./hooks/useTransactionHistory";
+export { useWalletSigningContext } from "./hooks/useWalletSigningContext";
 export { rawSign } from "./rawSign";
+export { signForChain } from "./signForChain";
 export type {
   CoinMetadataQueryResponse,
   CoinMetadataResult,

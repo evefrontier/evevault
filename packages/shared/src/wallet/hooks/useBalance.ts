@@ -1,7 +1,9 @@
-import { SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
+import { createSuiClient } from "@evevault/shared/sui";
+import { SUI_LOCALNET_CHAIN, SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { createSuiGraphQLClient } from "../../sui/graphqlClient";
+import { isLocalnetChain } from "../../types/networks";
 import { formatByDecimals, formatMistToSui, SUI_COIN_TYPE } from "../../utils";
 import { createLogger } from "../../utils/logger";
 import { isEveCoinType } from "../eveToken";
@@ -27,7 +29,7 @@ const log = createLogger();
 
 export type { CoinBalanceResult };
 
-async function fetchBalanceWithCheckpoint(
+async function fetchZkLoginBalanceViaGraphql(
   graphqlClient: ReturnType<typeof createSuiGraphQLClient>,
   address: string,
   coinType: string,
@@ -77,39 +79,78 @@ async function fetchBalanceWithCheckpoint(
   return result.data ?? null;
 }
 
+async function fetchLocalnetBalanceViaGrpc(
+  localnetUrl: string,
+  address: string,
+  coinType: string,
+): Promise<CoinBalanceResult> {
+  const client = createSuiClient(SUI_LOCALNET_CHAIN, localnetUrl);
+  const result = await client.getBalance({ owner: address, coinType });
+
+  const totalBalance = result.balance?.balance ?? "0";
+  const formattedBalance =
+    coinType === SUI_COIN_TYPE ? formatMistToSui(totalBalance) : totalBalance;
+  return {
+    rawBalance: totalBalance,
+    formattedBalance,
+    metadata: coinType === SUI_COIN_TYPE ? DEFAULT_SUI_METADATA : null,
+    coinType,
+  };
+}
+
 export function useBalance({
   user,
   chain,
   coinType = SUI_COIN_TYPE,
+  address: addressOverride,
+  localnetUrl,
 }: UseBalanceParams) {
   const currentChain = chain || SUI_TESTNET_CHAIN;
+  const isLocalnet = isLocalnetChain(currentChain);
+
+  const activeAddress =
+    addressOverride ||
+    (user?.profile?.sui_address as string | undefined) ||
+    null;
+
   const graphqlClient = useMemo(
-    () => createSuiGraphQLClient(currentChain),
-    [currentChain],
+    () => (isLocalnet ? null : createSuiGraphQLClient(currentChain)),
+    [currentChain, isLocalnet],
   );
 
   return useQuery<CoinBalanceResult>({
-    queryKey: ["coin-balance", user?.profile?.sui_address, chain, coinType],
+    queryKey: ["coin-balance", activeAddress, chain, coinType, localnetUrl],
     queryFn: async () => {
-      if (!user?.profile?.sui_address || !graphqlClient) {
-        throw new Error("Missing user address or client");
+      if (!activeAddress) {
+        throw new Error("Missing address");
       }
 
-      const address = user.profile.sui_address as string;
+      // Localnet: no GraphQL endpoint — use gRPC (same client as useSendToken)
+      if (isLocalnet) {
+        if (!localnetUrl)
+          throw new Error("localnetUrl required for localnet balance");
+        return fetchLocalnetBalanceViaGrpc(
+          localnetUrl,
+          activeAddress,
+          coinType,
+        );
+      }
+
+      if (!graphqlClient) throw new Error("Missing GraphQL client");
 
       let data: BalanceAndMetadataResponse | null = null;
       try {
-        data = await fetchBalanceWithCheckpoint(
+        data = await fetchZkLoginBalanceViaGraphql(
           graphqlClient,
-          address,
+          activeAddress,
           coinType,
         );
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         if (message.toLowerCase().includes("outside consistent range")) {
-          data = await fetchBalanceWithCheckpoint(
+          data = await fetchZkLoginBalanceViaGraphql(
             graphqlClient,
-            address,
+            activeAddress,
             coinType,
           );
         } else {
@@ -155,9 +196,8 @@ export function useBalance({
         coinType,
       };
     },
-    enabled:
-      !!user?.profile?.sui_address && !!chain && !!graphqlClient && !!coinType,
-    staleTime: 1000 * 30, // 30 seconds
+    enabled: !!activeAddress && !!chain && !!coinType,
+    staleTime: 1000 * 30,
     retry: false,
     refetchOnMount: "always",
   });

@@ -25,6 +25,10 @@ export interface UseBalanceParams {
   user: User | null;
   chain: SuiChain | null;
   coinType?: string;
+  /** Explicit address override — used on localnet where user is null */
+  address?: string | null;
+  /** Localnet RPC URL — required when chain is localnet */
+  localnetUrl?: string;
 }
 
 /**

@@ -16,6 +16,10 @@ vi.mock("@evevault/shared/hooks", () => ({
   useDevice: vi.fn(),
 }));
 
+vi.mock("../../../hooks/useDevice", () => ({
+  useDevice: vi.fn(),
+}));
+
 vi.mock("@evevault/shared/stores/networkStore", () => ({
   useNetworkStore: vi.fn(),
 }));
@@ -78,10 +82,10 @@ vi.mock("@mysten/sui/transactions", () => {
 // Import after mocks
 // Using workspace aliases in test files due to Vite resolution limitations with relative imports
 import { getUserForNetwork, useAuth } from "@evevault/shared/auth";
-import { useDevice } from "@evevault/shared/hooks";
 import { useNetworkStore } from "@evevault/shared/stores/networkStore";
 import { createSuiClient } from "@evevault/shared/sui";
 import { createMockUser } from "@evevault/shared/testing";
+import { useDevice } from "../../../hooks/useDevice";
 import { getEveCoinType } from "../../eveToken";
 import type { UseBalanceParams } from "../../types/hooks";
 import { zkSignAny } from "../../zkSignAny";
@@ -342,7 +346,7 @@ describe("useSendToken", () => {
       );
 
       expect(result.current.canSend).toBe(false);
-      expect(result.current.validationErrors).toContain("Wallet is locked");
+      expect(result.current.validationErrors).toContain("Wallet not ready");
       queryClient.clear();
     });
 
