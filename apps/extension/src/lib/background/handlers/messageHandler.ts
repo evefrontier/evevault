@@ -20,6 +20,9 @@ import {
   _handleCreateKeypair,
   _handleGetPublicKey,
   _handleGetZkProof,
+  _handleLocalnetGetAddress,
+  _handleLocalnetSetKeypair,
+  _handleLocalnetSignBytes,
   _handleRotateKeypair,
   _handleSetZkProof,
   _handleZkEphSignBytes,
@@ -130,6 +133,22 @@ export function handleMessage(
 
   if (message.type === VaultMessageTypes.CLEAR_ZKPROOF) {
     _handleClearZkProof(message, sender, sendResponse);
+    return true;
+  }
+
+  // Localnet dev signing
+  if (message.type === VaultMessageTypes.LOCALNET_SET_KEYPAIR) {
+    _handleLocalnetSetKeypair(message, sender, sendResponse);
+    return true;
+  }
+
+  if (message.type === VaultMessageTypes.LOCALNET_GET_ADDRESS) {
+    void _handleLocalnetGetAddress(message, sender, sendResponse);
+    return true;
+  }
+
+  if (message.type === VaultMessageTypes.LOCALNET_SIGN_BYTES) {
+    void _handleLocalnetSignBytes(message, sender, sendResponse);
     return true;
   }
 

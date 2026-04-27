@@ -14,6 +14,12 @@ import type { IntentScope } from "@mysten/sui/cryptography";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import type { SuiChain } from "@mysten/wallet-standard";
 import type { BackgroundMessage } from "../../src/lib/background/types";
+import {
+  type LocalnetState,
+  localnetGetAddress,
+  localnetSetKeypair,
+  localnetSign,
+} from "./local";
 
 /**
  * Keeper - Holds the ephemeral key in RAM-only memory
@@ -23,6 +29,9 @@ import type { BackgroundMessage } from "../../src/lib/background/types";
 
 // RAM-only storage for the ephemeral key
 let ephemeralKey: Ed25519Keypair | null = null;
+
+// RAM-only storage for the localnet dev keypair
+const localnetState: LocalnetState = { localnetKey: null };
 
 // Rotation re-encrypts the new ephemeral secret key without requiring the user
 // to re-enter their PIN. We derive a non-extractable CryptoKey at unlock time.
@@ -34,10 +43,9 @@ let sessionSalt: string | null = null; // base64 PBKDF2 salt from the stored Has
 let _vaultUnlocked = false;
 let _vaultUnlockExpiry: number | null = null;
 // RAM-only storage for zkProofs (chain-specific)
-let zkProofs: Record<SuiChain, ZkProofResponse | null> = {
+let zkProofs: Partial<Record<SuiChain, ZkProofResponse | null>> = {
   "sui:devnet": null,
   "sui:testnet": null,
-  "sui:localnet": null,
   "sui:mainnet": null,
 };
 
@@ -343,11 +351,26 @@ chrome.runtime.onMessage.addListener(
       zkProofs = {
         "sui:devnet": null,
         "sui:testnet": null,
-        "sui:localnet": null,
         "sui:mainnet": null,
       };
       sendResponse({ ok: true });
       return false;
+    }
+
+    // Localnet dev methods
+    if (message.type === KeeperMessageTypes.LOCALNET_SET_KEYPAIR) {
+      localnetSetKeypair(localnetState, message, sendResponse);
+      return true;
+    }
+
+    if (message.type === KeeperMessageTypes.LOCALNET_GET_ADDRESS) {
+      localnetGetAddress(localnetState, sendResponse);
+      return false;
+    }
+
+    if (message.type === KeeperMessageTypes.LOCALNET_SIGN) {
+      localnetSign(localnetState, message, sendResponse);
+      return true;
     }
 
     // Unknown message type

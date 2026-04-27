@@ -3,6 +3,12 @@ import { ensureOffscreen } from "../services/offscreenService";
 import type { VaultMessage } from "../types";
 import { checkPendingAuthAfterUnlock } from "./authHandlers";
 
+export {
+  _handleLocalnetGetAddress,
+  _handleLocalnetSetKeypair,
+  _handleLocalnetSignBytes,
+} from "./localVaultHandlers";
+
 const log = createLogger();
 
 /**
@@ -10,7 +16,7 @@ const log = createLogger();
  * Retries if the keeper isn't ready yet
  */
 // biome-ignore lint/suspicious/noExplicitAny: Keeper messages have dynamic types
-async function sendToKeeper(message: any, retries = 3): Promise<any> {
+export async function sendToKeeper(message: any, retries = 3): Promise<any> {
   await ensureOffscreen(true);
 
   return new Promise((resolve, reject) => {

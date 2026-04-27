@@ -320,7 +320,9 @@ describe("zkProofService routing", () => {
       expect(webVaultService.clearZkProof).toHaveBeenCalledWith("sui:devnet");
       expect(webVaultService.clearZkProof).toHaveBeenCalledWith("sui:testnet");
       expect(webVaultService.clearZkProof).toHaveBeenCalledWith("sui:mainnet");
-      expect(webVaultService.clearZkProof).toHaveBeenCalledWith("sui:localnet");
+      expect(webVaultService.clearZkProof).not.toHaveBeenCalledWith(
+        "sui:localnet",
+      );
     });
   });
 

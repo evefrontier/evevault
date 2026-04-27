@@ -72,6 +72,9 @@ export interface NetworkSwitchResult {
 export interface NetworkState {
   chain: SuiChain;
   loading: boolean;
+  /** Custom fullnode URL for localnet (extension dev mode only). */
+  localnetUrl: string;
+  setLocalnetUrl: (url: string) => void;
   initialize: () => Promise<void>;
   setChain: (chain: SuiChain) => Promise<NetworkSwitchResult>;
   /** Force set chain without JWT check - for logout-based network switching */

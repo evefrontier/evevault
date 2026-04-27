@@ -1,11 +1,22 @@
 import { TenantId } from "@evefrontier/dapp-kit/utils";
 import {
   SUI_DEVNET_CHAIN,
+  SUI_LOCALNET_CHAIN,
   SUI_TESTNET_CHAIN,
   type SuiChain,
 } from "@mysten/wallet-standard";
 import { SUI_COIN_TYPE } from "../utils/constants";
 import { getEveCoinType } from "../wallet/eveToken";
+
+export { SUI_LOCALNET_CHAIN };
+
+export function isLocalnetChain(chain: SuiChain | string | null | undefined) {
+  return chain === SUI_LOCALNET_CHAIN;
+}
+
+export function isZkLoginChain(chain: SuiChain | string | null | undefined) {
+  return !!chain && !isLocalnetChain(chain);
+}
 
 export interface NetworkOption {
   chain: SuiChain;
@@ -18,6 +29,24 @@ export const AVAILABLE_NETWORKS: NetworkOption[] = [
   { chain: SUI_DEVNET_CHAIN, label: "Devnet", shortLabel: "DEV" },
   // Mainnet will be added later as a feature flag
 ];
+
+/**
+ * Returns the network list for the selector.
+ * Localnet is appended only when dev mode is enabled AND running in extension context,
+ * since localnet signing bypasses zkLogin and is not appropriate for the web app.
+ */
+export function getAvailableNetworks(
+  devMode: boolean,
+  isExt: boolean,
+): NetworkOption[] {
+  if (devMode && isExt) {
+    return [
+      ...AVAILABLE_NETWORKS,
+      { chain: SUI_LOCALNET_CHAIN, label: "Localnet", shortLabel: "LOCAL" },
+    ];
+  }
+  return AVAILABLE_NETWORKS;
+}
 
 /**
  * Get the display label for a given SuiChain

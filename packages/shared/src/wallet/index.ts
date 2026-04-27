@@ -10,6 +10,7 @@ export { ephSign } from "./ephSign";
 export { useBalance } from "./hooks/useBalance";
 export { useSendToken } from "./hooks/useSendToken";
 export { useTransactionHistory } from "./hooks/useTransactionHistory";
+export { rawSign } from "./rawSign";
 export type {
   CoinMetadataQueryResponse,
   CoinMetadataResult,

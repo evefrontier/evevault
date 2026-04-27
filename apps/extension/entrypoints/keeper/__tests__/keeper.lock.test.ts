@@ -11,7 +11,7 @@ describe("Keeper CLEAR_EPHKEY message handler", () => {
   let mockEphemeralKey: Ed25519Keypair | null;
   let mockVaultUnlocked: boolean;
   let mockVaultUnlockExpiry: number | null;
-  let mockZkProofs: Record<SuiChain, ZkProofResponse | null>;
+  let mockZkProofs: Partial<Record<SuiChain, ZkProofResponse | null>>;
   let mockSendResponse: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
@@ -23,7 +23,6 @@ describe("Keeper CLEAR_EPHKEY message handler", () => {
       "sui:devnet": { data: undefined, error: undefined } as ZkProofResponse,
       "sui:testnet": { data: undefined, error: undefined } as ZkProofResponse,
       "sui:mainnet": { data: undefined, error: undefined } as ZkProofResponse,
-      "sui:localnet": { data: undefined, error: undefined } as ZkProofResponse,
     };
     mockSendResponse = vi.fn();
   });
@@ -91,7 +90,6 @@ describe("Keeper CLEAR_EPHKEY message handler", () => {
     expect(mockZkProofs["sui:devnet"]).not.toBeNull();
     expect(mockZkProofs["sui:testnet"]).not.toBeNull();
     expect(mockZkProofs["sui:mainnet"]).not.toBeNull();
-    expect(mockZkProofs["sui:localnet"]).not.toBeNull();
 
     simulateClearEphKeyHandler({
       target: "KEEPER",
@@ -102,7 +100,6 @@ describe("Keeper CLEAR_EPHKEY message handler", () => {
     expect(mockZkProofs["sui:devnet"]).not.toBeNull();
     expect(mockZkProofs["sui:testnet"]).not.toBeNull();
     expect(mockZkProofs["sui:mainnet"]).not.toBeNull();
-    expect(mockZkProofs["sui:localnet"]).not.toBeNull();
   });
 
   it("sends { ok: true } response when CLEAR_EPHKEY succeeds", () => {

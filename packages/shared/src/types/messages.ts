@@ -27,6 +27,10 @@ export enum VaultMessageTypes {
   SET_ZKPROOF = "SET_ZKPROOF",
   GET_ZKPROOF = "GET_ZKPROOF",
   CLEAR_ZKPROOF = "CLEAR_ZKPROOF",
+  // Localnet dev-only: persistent keypair management and direct signing
+  LOCALNET_SET_KEYPAIR = "LOCALNET_SET_KEYPAIR",
+  LOCALNET_GET_ADDRESS = "LOCALNET_GET_ADDRESS",
+  LOCALNET_SIGN_BYTES = "LOCALNET_SIGN_BYTES",
 }
 
 export enum WalletStandardMessageTypes {
@@ -47,6 +51,10 @@ export enum KeeperMessageTypes {
   SET_ZKPROOF = "KEEPER_SET_ZKPROOF",
   GET_ZKPROOF = "KEEPER_GET_ZKPROOF",
   CLEAR_ZKPROOF = "KEEPER_CLEAR_ZKPROOF",
+  // Localnet dev-only
+  LOCALNET_SET_KEYPAIR = "KEEPER_LOCALNET_SET_KEYPAIR",
+  LOCALNET_GET_ADDRESS = "KEEPER_LOCALNET_GET_ADDRESS",
+  LOCALNET_SIGN = "KEEPER_LOCALNET_SIGN",
 }
 
 // Response type for vault/keeper message handlers

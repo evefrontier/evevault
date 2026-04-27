@@ -1,14 +1,40 @@
 /// <reference types="chrome"/>
 
+import { KeeperMessageTypes, LOCALNET_KEY_STORAGE_KEY } from "@evevault/shared";
 import { createLogger } from "@evevault/shared/utils";
 
 const log = createLogger();
+
+function restoreLocalnetKeyToKeeper(): void {
+  chrome.storage.local.get(LOCALNET_KEY_STORAGE_KEY, (result) => {
+    const raw = result[LOCALNET_KEY_STORAGE_KEY] as string | undefined;
+    if (!raw) return;
+    const msg = {
+      type: KeeperMessageTypes.LOCALNET_SET_KEYPAIR,
+      privateKey: raw,
+      target: "KEEPER",
+    };
+    chrome.runtime.sendMessage(msg, (response) => {
+      if (chrome.runtime.lastError) {
+        log.warn(
+          "Failed to restore localnet key to keeper",
+          chrome.runtime.lastError.message,
+        );
+        return;
+      }
+      if (response?.ok) {
+        log.info("Keeper: restored localnet keypair", response.address);
+      }
+    });
+  });
+}
 
 let keeperReady = false;
 const keeperReadyPromise = new Promise<void>((resolve) => {
   chrome.runtime.onMessage.addListener((message) => {
     if (message.type === "KEEPER_READY") {
       keeperReady = true;
+      restoreLocalnetKeyToKeeper();
       resolve();
     }
     return false;

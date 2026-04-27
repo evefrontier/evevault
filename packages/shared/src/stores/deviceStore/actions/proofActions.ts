@@ -3,6 +3,7 @@ import { getJwt } from "../../../auth/storageService";
 import { zkProofService } from "../../../services/vaultService";
 import type { DeviceState, ZkProofResponse } from "../../../types";
 import type { JwtResponse } from "../../../types/authTypes";
+import { isLocalnetChain } from "../../../types/networks";
 import { createLogger } from "../../../utils/logger";
 import { fetchZkProof } from "../../../wallet/zkProof";
 import { useNetworkStore } from "../../networkStore";
@@ -15,6 +16,10 @@ export function createProofActions(set: SetDeviceState, get: GetDeviceState) {
   return {
     getZkProof: async () => {
       const currentChain = useNetworkStore.getState().chain;
+      if (isLocalnetChain(currentChain)) {
+        return { error: "zkLogin proofs are not available on localnet" };
+      }
+
       const maxEpochExpiry = get().getMaxEpochTimestampMs(currentChain);
 
       if (maxEpochExpiry && Date.now().valueOf() < maxEpochExpiry) {
