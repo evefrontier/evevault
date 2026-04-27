@@ -90,7 +90,16 @@ export const useNetworkStore = create<NetworkState>()(
         const switchToLocalnetChain = (): NetworkSwitchResult => {
           // Localnet: no JWT or zkLogin needed — direct Ed25519 signing.
           // Don't fetch epoch here: the RPC URL may not be configured yet.
-          set({ chain });
+          set({ chain, loading: false });
+
+          if (isExtension()) {
+            chrome.runtime?.sendMessage?.({
+              __from: "Eve Vault",
+              event: "change",
+              payload: { chains: [chain] },
+            });
+          }
+
           log.info("Switched to localnet");
           return { success: true, requiresReauth: false };
         };

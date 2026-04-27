@@ -24,7 +24,26 @@ function restoreLocalnetKeyToKeeper(): void {
       }
       if (response?.ok) {
         log.info("Keeper: restored localnet keypair", response.address);
+        return;
       }
+
+      const restoreError =
+        typeof response?.error === "string"
+          ? response.error
+          : "Keeper rejected stored localnet key";
+
+      log.warn("Failed to restore localnet key to keeper", restoreError);
+
+      chrome.storage.local.remove(LOCALNET_STORAGE_KEY, () => {
+        if (chrome.runtime.lastError) {
+          log.warn(
+            "Failed to remove invalid localnet key from storage",
+            chrome.runtime.lastError.message,
+          );
+          return;
+        }
+        log.info("Removed invalid localnet key from storage");
+      });
     });
   });
 }

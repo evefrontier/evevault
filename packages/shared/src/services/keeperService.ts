@@ -210,14 +210,14 @@ export const zkProofService = {
   },
 };
 
-/**
- * Extension-only: manages a persistent dev keypair for localnet signing.
- * The keypair lives in keeper RAM; the encrypted secret is stored in chrome.storage.local.
- * Only available in extension context — never used on the web app path.
+/** Extension-only: manages a persistent dev keypair for localnet signing.
+ * The keypair lives in keeper RAM; the raw (unencrypted) private key is stored in
+ * chrome.storage.local for dev convenience across restarts. This is acceptable for
+ * localnet-dev use only — do not use for mainnet/testnet keys.
  */
 export const localnetKeyService = {
   /**
-   * Loads a keypair into the keeper from a raw private key (suiprivkey1..., hex, or base64).
+   * Loads a keypair into the keeper from a Bech32 private key (suiprivkey1...).
    */
   async setKeypairFromPrivateKey(
     privateKey: string,

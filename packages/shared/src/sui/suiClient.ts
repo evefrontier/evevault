@@ -23,7 +23,15 @@ export const createSuiClient = (
 
   const baseUrl =
     network === SUI_LOCALNET_CHAIN
-      ? (localnetUrl ?? NETWORKS.localnet.fullnodeUrl)
+      ? (() => {
+          const configuredUrl = localnetUrl?.trim();
+          if (!configuredUrl) {
+            throw new Error(
+              "createSuiClient requires a non-empty localnetUrl when using SUI_LOCALNET_CHAIN.",
+            );
+          }
+          return configuredUrl;
+        })()
       : NETWORKS[chainName].fullnodeUrl;
 
   return new SuiGrpcClient({

@@ -14,7 +14,11 @@ export async function rawSign(
   msgBytes: Uint8Array,
   suiAddress: string,
 ): Promise<{ bytes: string; signature: string }> {
-  if (isWeb()) {
+  if (
+    isWeb() ||
+    typeof chrome === "undefined" ||
+    !chrome.runtime?.sendMessage
+  ) {
     throw new Error("rawSign is only available in the extension (localnet)");
   }
 
