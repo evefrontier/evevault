@@ -1,4 +1,4 @@
-import { SUI_DEVNET_CHAIN } from "@mysten/wallet-standard";
+import { SUI_DEVNET_CHAIN, SUI_LOCALNET_CHAIN } from "@mysten/wallet-standard";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react";
 
@@ -6,9 +6,14 @@ import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockQuery = vi.fn();
+const mockGetBalance = vi.fn();
 
 vi.mock("../../../sui/graphqlClient", () => ({
   createSuiGraphQLClient: vi.fn(() => ({ query: mockQuery })),
+}));
+
+vi.mock("@evevault/shared/sui", () => ({
+  createSuiClient: vi.fn(() => ({ getBalance: mockGetBalance })),
 }));
 
 vi.mock("@evevault/shared/utils", () => ({
@@ -22,7 +27,9 @@ vi.mock("@evevault/shared/utils", () => ({
   isWeb: vi.fn(() => true),
   isBrowser: vi.fn(() => true),
   SUI_COIN_TYPE: "0x2::sui::SUI",
-  formatByDecimals: vi.fn((balance: string) => balance),
+  formatByDecimals: vi.fn(
+    (balance: string, _decimals: number) => `formatted-${balance}`,
+  ),
   formatMistToSui: vi.fn(),
 }));
 
@@ -41,6 +48,7 @@ const createWrapper = (queryClient: QueryClient) => {
 describe("useBalance hook", () => {
   beforeEach(() => {
     mockQuery.mockClear();
+    mockGetBalance.mockClear();
   });
 
   it("returns a formatted SUI balance for the current user", async () => {
@@ -167,6 +175,115 @@ describe("useBalance hook", () => {
     expect(retryAtCheckpoint).not.toBe(firstAtCheckpoint);
     expect(result.current.data?.formattedBalance).toBe("formatted-500");
 
+    unmount();
+    queryClient.clear();
+  });
+});
+
+describe("useBalance hook — localnet gRPC path", () => {
+  beforeEach(() => {
+    mockGetBalance.mockClear();
+    mockQuery.mockClear();
+  });
+
+  const createWrapper =
+    (queryClient: QueryClient) =>
+    ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
+
+  it("returns formatted SUI balance via gRPC on localnet", async () => {
+    mockGetBalance.mockResolvedValue({ balance: { balance: "2000000000" } });
+    const { formatMistToSui } = await import("@evevault/shared/utils");
+    vi.mocked(formatMistToSui).mockReturnValueOnce("2");
+
+    const user = (await import("@evevault/shared/testing")).createMockUser();
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const { result, unmount } = renderHook(
+      () =>
+        useBalance({
+          user,
+          chain: SUI_LOCALNET_CHAIN,
+          localnetUrl: "http://localhost:9000",
+        }),
+      { wrapper: createWrapper(queryClient) },
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.formattedBalance).toBe("2");
+    expect(result.current.data?.rawBalance).toBe("2000000000");
+    unmount();
+    queryClient.clear();
+  });
+
+  it("uses 9-decimal fallback and warns for unknown localnet tokens", async () => {
+    mockGetBalance.mockResolvedValue({ balance: { balance: "5000000000" } });
+    const { createLogger } = await import("@evevault/shared/utils");
+    const logInstance = vi.mocked(createLogger).mock.results[0]?.value;
+
+    const user = (await import("@evevault/shared/testing")).createMockUser();
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const { result, unmount } = renderHook(
+      () =>
+        useBalance({
+          user,
+          chain: SUI_LOCALNET_CHAIN,
+          coinType: "0xdeadbeef::token::TOKEN",
+          localnetUrl: "http://localhost:9000",
+        }),
+      { wrapper: createWrapper(queryClient) },
+    );
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data?.formattedBalance).toBe("formatted-5000000000");
+    expect(logInstance.warn).toHaveBeenCalledWith(
+      expect.stringContaining("no metadata for coin type"),
+      expect.objectContaining({ coinType: "0xdeadbeef::token::TOKEN" }),
+    );
+    unmount();
+    queryClient.clear();
+  });
+
+  it("stays idle when localnet but localnetUrl is missing", async () => {
+    const user = (await import("@evevault/shared/testing")).createMockUser();
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const { result, unmount } = renderHook(
+      () =>
+        useBalance({ user, chain: SUI_LOCALNET_CHAIN, localnetUrl: undefined }),
+      { wrapper: createWrapper(queryClient) },
+    );
+
+    // Query should be disabled — never fetching
+    expect(result.current.isFetching).toBe(false);
+    expect(result.current.isSuccess).toBe(false);
+    expect(mockGetBalance).not.toHaveBeenCalled();
+    unmount();
+    queryClient.clear();
+  });
+
+  it("stays idle when address is missing", async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const { result, unmount } = renderHook(
+      () =>
+        useBalance({
+          user: null,
+          chain: SUI_LOCALNET_CHAIN,
+          localnetUrl: "http://localhost:9000",
+        }),
+      { wrapper: createWrapper(queryClient) },
+    );
+
+    expect(result.current.isFetching).toBe(false);
+    expect(result.current.isSuccess).toBe(false);
+    expect(mockGetBalance).not.toHaveBeenCalled();
     unmount();
     queryClient.clear();
   });

@@ -32,6 +32,8 @@ const TokenRow: React.FC<ExtendedTokenRowProps> = ({
   coinType,
   user,
   chain,
+  balanceAddress,
+  localnetUrl,
   isSelected,
   onSelect,
   onCopyAddress,
@@ -43,6 +45,8 @@ const TokenRow: React.FC<ExtendedTokenRowProps> = ({
     user,
     chain,
     coinType,
+    address: balanceAddress,
+    localnetUrl,
   });
 
   const knownDisplay = getKnownTokenDisplay(coinType);
@@ -155,7 +159,15 @@ const log = createLogger();
 
 export const TokenSection: React.FC<
   TokenListProps & { walletAddress?: string }
-> = ({ user, chain, onAddToken, onSendToken, walletAddress }) => {
+> = ({
+  user,
+  chain,
+  onAddToken,
+  onSendToken,
+  walletAddress,
+  balanceAddress,
+  localnetUrl,
+}) => {
   const queryClient = useQueryClient();
   const { tokens, removeToken } = useTokenListStore();
   const [selectedToken, setSelectedToken] = useState<string | null>(null);
@@ -345,6 +357,8 @@ export const TokenSection: React.FC<
                 coinType={coinType}
                 user={user}
                 chain={chain}
+                balanceAddress={balanceAddress}
+                localnetUrl={localnetUrl}
                 isSelected={selectedToken === coinType}
                 onSelect={() =>
                   setSelectedToken(selectedToken === coinType ? null : coinType)

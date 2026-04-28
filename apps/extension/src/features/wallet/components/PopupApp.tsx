@@ -14,12 +14,11 @@ import {
   TenantSelector,
   Text,
   TokenListSection,
-  useToast,
 } from "@evevault/shared/components";
 import Icon from "@evevault/shared/components/Icon";
 import { useDevice, useDevMode, useTenant } from "@evevault/shared/hooks";
 import { LockScreen } from "@evevault/shared/screens";
-import { useDeviceStore, useNetworkStore } from "@evevault/shared/stores";
+import { useNetworkStore } from "@evevault/shared/stores";
 import { getFaucetUrlForChain } from "@evevault/shared/sui";
 import {
   createLogger,
