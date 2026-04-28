@@ -29,10 +29,15 @@ function LocalnetSettingsPage() {
   const [address, setAddress] = useState<string | null>(null);
 
   useEffect(() => {
-    localnetKeyService
-      .getAddress()
-      .then(setAddress)
-      .catch(() => setAddress(null));
+    const fetchAddress = async () => {
+      const address = await localnetKeyService.getAddress();
+      if (address) {
+        setAddress(address);
+      } else {
+        setAddress(null);
+      }
+    };
+    fetchAddress();
   }, []);
 
   const validateLocalnetRpcUrl = useCallback(async (rpcUrl: string) => {
