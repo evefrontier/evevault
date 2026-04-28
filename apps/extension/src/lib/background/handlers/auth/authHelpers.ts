@@ -8,7 +8,7 @@ import {
 import type { SuiChain } from "@mysten/wallet-standard";
 import { decodeJwt } from "jose";
 import type { IdTokenClaims } from "oidc-client-ts";
-import type { MessageWithId } from "../../types";
+import type { MessageWithId } from "@/lib/background/types";
 
 const log = createLogger();
 

@@ -15,7 +15,7 @@ import {
 import { zkSignAny } from "@evevault/shared/wallet";
 import { Transaction } from "@mysten/sui/transactions";
 import { useEffect, useState } from "react";
-import { useSignPopupAuth } from "../hooks";
+import { useSignPopupAuth } from "@/features/wallet/hooks";
 import { SignPopupAuthGate } from "./SignPopupAuthGate";
 
 const log = createLogger();

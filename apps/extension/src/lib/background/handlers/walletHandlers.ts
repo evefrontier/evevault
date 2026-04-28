@@ -1,7 +1,7 @@
 import { WalletStandardMessageTypes } from "@evevault/shared";
 import { createLogger } from "@evevault/shared/utils";
-import { openPopupWindow } from "../services/popupWindow";
-import type { WalletActionMessage } from "../types";
+import { openPopupWindow } from "@/lib/background/services/popupWindow";
+import type { WalletActionMessage } from "@/lib/background/types";
 
 const log = createLogger();
 

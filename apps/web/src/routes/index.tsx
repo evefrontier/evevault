@@ -2,7 +2,7 @@ import { useAuthStore, waitForAuthHydration } from "@evevault/shared/auth";
 import type { RoutePath } from "@evevault/shared/types";
 import { ROUTE_PATHS } from "@evevault/shared/utils";
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { LoginScreen } from "../features/auth/components/LoginScreen";
+import { LoginScreen } from "@/features/auth/components/LoginScreen";
 
 const resolveRoute = (target?: string): RoutePath => {
   if (target && ROUTE_PATHS.includes(target as RoutePath)) {

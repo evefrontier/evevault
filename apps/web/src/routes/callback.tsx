@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { CallbackScreen } from "../features/auth/components/CallbackScreen";
+import { CallbackScreen } from "@/features/auth/components/CallbackScreen";
 
 type CallbackSearch = {
   code?: string;

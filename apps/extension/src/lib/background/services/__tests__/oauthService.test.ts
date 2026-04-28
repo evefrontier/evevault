@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getAuthUrl } from "../oauthService";
+import { getAuthUrl } from "@/lib/background/services/oauthService";
 
 const { getTenantConfigMock } = vi.hoisted(() => ({
   getTenantConfigMock: vi.fn(),

@@ -29,7 +29,7 @@ import { SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import React, { useCallback, useEffect, useState } from "react";
-import { APP_VERSION } from "../../../lib/appVersion";
+import { APP_VERSION } from "@/lib/appVersion";
 
 const log = createLogger();
 

@@ -11,10 +11,10 @@ import {
 } from "@tanstack/react-router";
 import React from "react";
 import ReactDOM from "react-dom/client";
-import SignAndExecuteTransaction from "../../src/features/wallet/components/SignExecuteTransaction";
-import SignPersonalMessage from "../../src/features/wallet/components/SignPersonalMessage";
-import SignTransaction from "../../src/features/wallet/components/SignTransaction";
-import { routeTree } from "../../src/routeTree.gen";
+import SignAndExecuteTransaction from "@/features/wallet/components/SignExecuteTransaction";
+import SignPersonalMessage from "@/features/wallet/components/SignPersonalMessage";
+import SignTransaction from "@/features/wallet/components/SignTransaction";
+import { routeTree } from "@/routeTree.gen";
 import "../style.css";
 
 const log = createLogger();

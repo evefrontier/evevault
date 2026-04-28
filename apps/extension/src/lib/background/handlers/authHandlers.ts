@@ -1,5 +1,5 @@
 import { createLogger } from "@evevault/shared/utils";
-import type { MessageWithId } from "../types";
+import type { MessageWithId } from "@/lib/background/types";
 import { handleDappLogin } from "./auth/dappLogin";
 import { handleExtLogin } from "./auth/extLogin";
 import {

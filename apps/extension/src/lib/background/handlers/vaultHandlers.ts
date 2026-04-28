@@ -1,6 +1,6 @@
 import { createLogger, KeeperMessageTypes } from "@evevault/shared";
-import { ensureOffscreen } from "../services/offscreenService";
-import type { VaultMessage } from "../types";
+import { ensureOffscreen } from "@/lib/background/services/offscreenService";
+import type { VaultMessage } from "@/lib/background/types";
 import { checkPendingAuthAfterUnlock } from "./authHandlers";
 
 export {

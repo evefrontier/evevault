@@ -5,7 +5,7 @@ import type {
 } from "@evevault/shared/types";
 import { KeeperMessageTypes } from "@evevault/shared/types";
 import { createLogger, DEVICE_STORAGE_KEY } from "@evevault/shared/utils";
-import { ensureOffscreen } from "../../services/offscreenService";
+import { ensureOffscreen } from "@/lib/background/services/offscreenService";
 
 const log = createLogger();
 

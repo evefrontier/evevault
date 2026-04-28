@@ -7,7 +7,7 @@ import {
 import { createLogger } from "@evevault/shared/utils";
 import { zkSignAny } from "@evevault/shared/wallet";
 import { useEffect, useState } from "react";
-import { useSignPopupAuth } from "../hooks";
+import { useSignPopupAuth } from "@/features/wallet/hooks";
 import { SignPopupAuthGate } from "./SignPopupAuthGate";
 
 const log = createLogger();

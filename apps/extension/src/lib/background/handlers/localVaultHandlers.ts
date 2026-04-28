@@ -1,7 +1,7 @@
 import { LOCALNET_STORAGE_KEY } from "@evevault/shared";
 import { KeeperMessageTypes } from "@evevault/shared/types";
 
-import type { VaultMessage } from "../types";
+import type { VaultMessage } from "@/lib/background/types";
 import { sendToKeeper } from "./vaultHandlers";
 
 // ─── Localnet dev signing ────────────────────────────────────────────────────
