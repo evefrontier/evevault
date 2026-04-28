@@ -209,3 +209,36 @@ export const zkProofService = {
     }
   },
 };
+
+/** Extension-only: manages a persistent dev keypair for localnet signing.
+ * The keypair lives in keeper RAM; the raw (unencrypted) private key is stored in
+ * chrome.storage.local for dev convenience across restarts. This is acceptable for
+ * localnet-dev use only — do not use for mainnet/testnet keys.
+ */
+export const localnetKeyService = {
+  /**
+   * Loads a keypair into the keeper from a Bech32 private key (suiprivkey1...).
+   */
+  async setKeypairFromPrivateKey(
+    privateKey: string,
+  ): Promise<{ address: string }> {
+    const res = (await chrome.runtime?.sendMessage?.({
+      type: VaultMessageTypes.LOCALNET_SET_KEYPAIR,
+      privateKey,
+    })) as { ok?: boolean; address?: string; error?: string } | undefined;
+
+    if (!res?.ok || !res.address) {
+      throw new Error(res?.error ?? "Failed to set localnet keypair");
+    }
+    return { address: res.address };
+  },
+
+  /** Returns the Sui address for the currently loaded localnet keypair, or null if none set. */
+  async getAddress(): Promise<string | null> {
+    const res = (await chrome.runtime?.sendMessage?.({
+      type: VaultMessageTypes.LOCALNET_GET_ADDRESS,
+    })) as { ok?: boolean; address?: string } | undefined;
+
+    return res?.address ?? null;
+  },
+};

@@ -24,6 +24,7 @@ export const EXTENSION_ROUTES = {
   ADD_TOKEN: "/add-token",
   SEND_TOKEN: "/send-token",
   TRANSACTIONS: "/transactions",
+  LOCALNET_SETTINGS: "/localnet-settings",
 } as const;
 
 /**

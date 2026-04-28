@@ -1,10 +1,19 @@
 import { SuiGrpcClient } from "@mysten/sui/grpc";
-import { SUI_TESTNET_CHAIN, type SuiChain } from "@mysten/wallet-standard";
+import {
+  SUI_LOCALNET_CHAIN,
+  SUI_TESTNET_CHAIN,
+  type SuiChain,
+} from "@mysten/wallet-standard";
 import { NETWORKS } from "./networks";
 
-/** Creates a Sui gRPC client for the specified network. Default matches useNetworkStore.getInitialChain(). */
+/**
+ * Creates a Sui gRPC client for the specified network.
+ * For localnet, pass localnetUrl explicitly (stored in network store); the static
+ * NETWORKS.localnet entry has no URL since it is user-configured.
+ */
 export const createSuiClient = (
   network: SuiChain = SUI_TESTNET_CHAIN,
+  localnetUrl?: string,
 ): SuiGrpcClient => {
   const chainName = network.replace("sui:", "") as
     | "mainnet"
@@ -12,10 +21,21 @@ export const createSuiClient = (
     | "devnet"
     | "localnet";
 
-  const networkInfo = NETWORKS[chainName];
+  const baseUrl =
+    network === SUI_LOCALNET_CHAIN
+      ? (() => {
+          const configuredUrl = localnetUrl?.trim();
+          if (!configuredUrl) {
+            throw new Error(
+              "createSuiClient requires a non-empty localnetUrl when using SUI_LOCALNET_CHAIN.",
+            );
+          }
+          return configuredUrl;
+        })()
+      : NETWORKS[chainName].fullnodeUrl;
 
   return new SuiGrpcClient({
     network: chainName,
-    baseUrl: networkInfo.fullnodeUrl,
+    baseUrl,
   });
 };

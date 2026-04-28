@@ -3,12 +3,15 @@ import type { SuiChain } from "@mysten/wallet-standard";
 import { clearAllZkLoginJwts } from "../../../auth/storageService";
 import { ephKeyService, zkProofService } from "../../../services/vaultService";
 import { getCurrentEpochFromGraphQL } from "../../../sui/graphqlEpoch";
+import { getCurrentEpochFromRpc } from "../../../sui/rpcEpoch";
 import type {
   DeviceState,
+  NetworkDataEntry,
   PersistedDeviceStore,
   PersistedDeviceStoreState,
   StoredSecretKey,
 } from "../../../types";
+import { isLocalnetChain } from "../../../types/networks";
 import { createWebCryptoPlaceholder } from "../../../types/wallet";
 import { isWeb } from "../../../utils/environment";
 import { createLogger } from "../../../utils/logger";
@@ -20,7 +23,72 @@ import type { GetDeviceState, SetDeviceState } from "./types";
 
 const log = createLogger();
 
+const emptyChainData = (): NetworkDataEntry => ({
+  maxEpoch: null,
+  maxEpochTimestampMs: null,
+  nonce: null,
+  jwtRandomness: null,
+});
+
 export function createInitActions(set: SetDeviceState, get: GetDeviceState) {
+  const setChainData = (chain: SuiChain, data: NetworkDataEntry) => {
+    set({
+      networkData: {
+        ...get().networkData,
+        [chain]: data,
+      },
+      error: null,
+    });
+  };
+
+  const initializeLocalnetChainData = async (chain: SuiChain) => {
+    const localnetUrl = useNetworkStore.getState().localnetUrl;
+    if (!localnetUrl) {
+      log.warn("Localnet URL not configured, skipping epoch fetch");
+      setChainData(chain, emptyChainData());
+      return;
+    }
+
+    try {
+      const { numericMaxEpoch, maxEpochTimestampMs } =
+        await getCurrentEpochFromRpc(localnetUrl);
+      setChainData(chain, {
+        maxEpoch: numericMaxEpoch.toString(),
+        maxEpochTimestampMs,
+        nonce: null,
+        jwtRandomness: null,
+      });
+    } catch (err) {
+      log.error("Failed to fetch localnet epoch", err);
+      // Non-fatal: store empty entry so we don't retry on every render
+      setChainData(chain, emptyChainData());
+    }
+  };
+
+  const initializeZkLoginChainData = async (chain: SuiChain) => {
+    const ephemeralPubkey = get().ephemeralPublicKey;
+    if (!ephemeralPubkey) {
+      throw new Error("Ephemeral public key not found");
+    }
+
+    const jwtRandomness = generateRandomness().toString();
+    const { numericMaxEpoch, maxEpochTimestampMs } =
+      await getCurrentEpochFromGraphQL(chain);
+
+    const nonce = generateNonce(
+      ephemeralPubkey,
+      numericMaxEpoch,
+      jwtRandomness,
+    );
+
+    setChainData(chain, {
+      maxEpoch: numericMaxEpoch.toString(),
+      maxEpochTimestampMs,
+      nonce,
+      jwtRandomness,
+    });
+  };
+
   return {
     initialize: async (pin: string) => {
       set({ loading: true });
@@ -246,33 +314,12 @@ export function createInitActions(set: SetDeviceState, get: GetDeviceState) {
     initializeForChain: async (chain: SuiChain) => {
       log.info("Generating device data for chain", { chain });
 
-      const ephemeralPubkey = get().ephemeralPublicKey;
-      if (!ephemeralPubkey) {
-        throw new Error("Ephemeral public key not found");
+      if (isLocalnetChain(chain)) {
+        await initializeLocalnetChainData(chain);
+        return;
       }
 
-      const jwtRandomness = generateRandomness().toString();
-      const { numericMaxEpoch, maxEpochTimestampMs } =
-        await getCurrentEpochFromGraphQL(chain);
-
-      const nonce = generateNonce(
-        ephemeralPubkey,
-        numericMaxEpoch,
-        jwtRandomness,
-      );
-
-      set({
-        networkData: {
-          ...get().networkData,
-          [chain]: {
-            maxEpoch: numericMaxEpoch.toString(),
-            maxEpochTimestampMs: maxEpochTimestampMs,
-            nonce: nonce,
-            jwtRandomness: jwtRandomness,
-          },
-        },
-        error: null,
-      });
+      await initializeZkLoginChainData(chain);
     },
 
     rotateEphemeralKey: async () => {

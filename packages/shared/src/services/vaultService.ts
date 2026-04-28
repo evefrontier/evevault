@@ -6,6 +6,7 @@ import { createWebCryptoPlaceholder } from "../types/wallet";
 import { isWeb } from "../utils/environment";
 import {
   ephKeyService as keeperEphKeyService,
+  localnetKeyService as keeperLocalnetKeyService,
   zkProofService as keeperZkProofService,
 } from "./keeperService";
 import { webVaultService } from "./webVaultService";
@@ -219,11 +220,28 @@ export const zkProofService = {
       await webVaultService.clearZkProof("sui:devnet" as SuiChain);
       await webVaultService.clearZkProof("sui:testnet" as SuiChain);
       await webVaultService.clearZkProof("sui:mainnet" as SuiChain);
-      await webVaultService.clearZkProof("sui:localnet" as SuiChain);
       return;
     }
 
     // Extension: delegate to keeperService
     return keeperZkProofService.clear();
+  },
+};
+
+/**
+ * Extension-only: localnet dev keypair management.
+ * Throws at runtime if called from the web app (localnet is extension-only).
+ */
+export const localnetKeyService = {
+  async setKeypairFromPrivateKey(
+    privateKey: string,
+  ): Promise<{ address: string }> {
+    if (isWeb()) throw new Error("localnetKeyService is extension-only");
+    return keeperLocalnetKeyService.setKeypairFromPrivateKey(privateKey);
+  },
+
+  async getAddress(): Promise<string | null> {
+    if (isWeb()) throw new Error("localnetKeyService is extension-only");
+    return keeperLocalnetKeyService.getAddress();
   },
 };
