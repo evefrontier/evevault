@@ -11,21 +11,21 @@ export function useLocalnetAddress(): string | null {
   useEffect(() => {
     let isCancelled = false;
 
-    if (isLocalnetChain(chain) && isExtension()) {
-      localnetKeyService
-        .getAddress()
-        .then((addr) => {
-          if (!isCancelled) setLocalnetAddress(addr);
-        })
-        .catch(() => {
-          if (!isCancelled) setLocalnetAddress(null);
-        });
-      return () => {
-        isCancelled = true;
-      };
-    }
+    const fetchLocalnetAddress = async () => {
+      if (!isLocalnetChain(chain) || !isExtension()) {
+        setLocalnetAddress(null);
+        return;
+      }
+      try {
+        const address = await localnetKeyService.getAddress();
+        if (!isCancelled) setLocalnetAddress(address);
+      } catch {
+        if (!isCancelled) setLocalnetAddress(null);
+      }
+    };
 
-    setLocalnetAddress(null);
+    fetchLocalnetAddress();
+
     return () => {
       isCancelled = true;
     };
