@@ -194,12 +194,10 @@ describe("useSendToken", () => {
       // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
       suiClient: mockSuiClient as any,
       getSenderAddress: vi.fn().mockResolvedValue(VALID_SUI_ADDRESS),
-      sign: vi
-        .fn()
-        .mockResolvedValue({
-          bytes: "mock-bytes",
-          signature: "mock-signature",
-        }),
+      sign: vi.fn().mockResolvedValue({
+        bytes: "mock-bytes",
+        signature: "mock-signature",
+      }),
       mode: "zklogin",
       isLocalnet: false,
       // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type

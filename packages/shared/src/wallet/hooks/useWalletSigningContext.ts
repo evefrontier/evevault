@@ -1,6 +1,7 @@
 import type { IntentScope } from "@mysten/sui/cryptography";
-import { useCallback, useMemo } from "react";
-import { getUserForNetwork, useAuth } from "../../auth";
+import type { User } from "oidc-client-ts";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { getUserForNetwork } from "../../auth";
 import { useDevice } from "../../hooks/useDevice";
 import { useNetworkStore } from "../../stores/networkStore";
 import { createSuiClient } from "../../sui";
@@ -12,11 +13,20 @@ import { useLocalnetAddress } from "./useLocalnetAddress";
 export type WalletSigningMode = "localnet" | "zklogin";
 
 export function useWalletSigningContext() {
-  const { user: globalUser } = useAuth();
+  const [networkUser, setNetworkUser] = useState<User | null>(null);
+
   const { ephemeralPublicKey, getZkProof, maxEpoch, isLocked } = useDevice();
   const { chain, localnetUrl } = useNetworkStore();
   const localnetAddress = useLocalnetAddress();
   const isLocalnet = isLocalnetChain(chain);
+
+  useEffect(() => {
+    const fetchNetworkUser = async () => {
+      const user = await getUserForNetwork(chain);
+      setNetworkUser(user);
+    };
+    fetchNetworkUser();
+  }, [chain]);
 
   const suiClient = useMemo(
     () => createSuiClient(chain, isLocalnet ? localnetUrl : undefined),
@@ -25,13 +35,13 @@ export function useWalletSigningContext() {
 
   const senderAddress = isLocalnet
     ? localnetAddress
-    : ((globalUser?.profile?.sui_address as string | undefined) ?? null);
+    : ((networkUser?.profile?.sui_address as string | undefined) ?? null);
 
   const getSenderAddress = useCallback(async () => {
     if (isLocalnet) return localnetAddress;
     const user = await getUserForNetwork(chain);
     return (user?.profile?.sui_address as string | undefined) ?? null;
-  }, [chain, isLocalnet, localnetAddress]);
+  }, [isLocalnet, localnetAddress, chain]);
 
   const getZkLoginUser = useCallback(async () => {
     if (isLocalnet) return null;
@@ -56,10 +66,10 @@ export function useWalletSigningContext() {
   const isWalletUnlocked = isLocalnet
     ? !!localnetAddress
     : !isLocked && !!ephemeralPublicKey && !!maxEpoch;
-  // isAuthenticated and senderAddress derive from globalUser (React state) which
+  // isAuthenticated and senderAddress derive from networkUser (React state) which
   // may lag by one render after a network switch. getSenderAddress() always
   // queries the network-scoped user from storage and is safe for actual signing.
-  const isAuthenticated = isLocalnet ? true : !!globalUser;
+  const isAuthenticated = isLocalnet ? true : !!networkUser;
 
   return {
     chain,
@@ -70,7 +80,7 @@ export function useWalletSigningContext() {
     isWalletUnlocked,
     senderAddress,
     localnetAddress,
-    globalUser,
+    networkUser,
     suiClient,
     getSenderAddress,
     sign,
