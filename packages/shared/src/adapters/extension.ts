@@ -1,4 +1,4 @@
-import type { StorageAdapter } from "@/types";
+import type { StorageAdapter } from "#/types";
 
 // Chrome storage adapter for extensions
 export const chromeStorageAdapter: StorageAdapter = {

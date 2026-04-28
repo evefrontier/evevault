@@ -1,5 +1,5 @@
-import { useToast } from "@/components/Toast";
-import { copyToClipboard } from "@/utils/address";
+import { useToast } from "#/components/Toast";
+import { copyToClipboard } from "#/utils/address";
 
 export function useCopyToClipboard(
   successMessage: string = "Copied!",

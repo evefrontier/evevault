@@ -1,13 +1,13 @@
 import type { IntentScope } from "@mysten/sui/cryptography";
 import type { User } from "oidc-client-ts";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { getUserForNetwork } from "@/auth";
-import { useDevice } from "@/hooks/useDevice";
-import { useNetworkStore } from "@/stores/networkStore";
-import { createSuiClient } from "@/sui";
-import { isLocalnetChain } from "@/types/networks";
-import type { ZkSignAnyParams } from "@/types/wallet";
-import { signForChain } from "@/wallet/signForChain";
+import { getUserForNetwork } from "#/auth";
+import { useDevice } from "#/hooks/useDevice";
+import { useNetworkStore } from "#/stores/networkStore";
+import { createSuiClient } from "#/sui";
+import { isLocalnetChain } from "#/types/networks";
+import type { ZkSignAnyParams } from "#/types/wallet";
+import { signForChain } from "#/wallet/signForChain";
 import { useLocalnetAddress } from "./useLocalnetAddress";
 
 export type WalletSigningMode = "localnet" | "zklogin";

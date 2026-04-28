@@ -5,8 +5,8 @@ import {
   isHashedSecretKey,
   reconstructPublicKey,
   resolveStoredSecretKey,
-} from "@/stores/deviceStore/keyHelpers";
-import { KEY_FLAG_ED25519, KEY_FLAG_SECP256R1 } from "@/types/stores";
+} from "#/stores/deviceStore/keyHelpers";
+import { KEY_FLAG_ED25519, KEY_FLAG_SECP256R1 } from "#/types/stores";
 
 describe("isHashedSecretKey", () => {
   it("returns true for object with string iv and data", () => {

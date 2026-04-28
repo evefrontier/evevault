@@ -1,15 +1,15 @@
 import { SUI_DEVNET_CHAIN } from "@mysten/wallet-standard";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import * as authConfig from "@/auth/authConfig";
-import { useAuthStore } from "@/auth/stores/authStore";
-import * as vaultService from "@/services/vaultService";
-import { useDeviceStore } from "@/stores/deviceStore";
-import { useNetworkStore } from "@/stores/networkStore";
-import * as utils from "@/utils/authCleanup";
-import { DEFAULT_TENANT_ID } from "@/utils/tenantConfig";
+import * as authConfig from "#/auth/authConfig";
+import { useAuthStore } from "#/auth/stores/authStore";
+import * as vaultService from "#/services/vaultService";
+import { useDeviceStore } from "#/stores/deviceStore";
+import { useNetworkStore } from "#/stores/networkStore";
+import * as utils from "#/utils/authCleanup";
+import { DEFAULT_TENANT_ID } from "#/utils/tenantConfig";
 
 // Mock dependencies
-vi.mock("@/services/vaultService", () => ({
+vi.mock("#/services/vaultService", () => ({
   ephKeyService: {
     lock: vi.fn(),
   },
@@ -18,7 +18,7 @@ vi.mock("@/services/vaultService", () => ({
   },
 }));
 
-vi.mock("@/auth/authConfig", () => {
+vi.mock("#/auth/authConfig", () => {
   const mockUserManager = {
     removeUser: vi.fn(),
     signoutRedirect: vi.fn(),
@@ -34,16 +34,16 @@ vi.mock("@/auth/authConfig", () => {
   };
 });
 
-vi.mock("@/utils/authCleanup", () => ({
+vi.mock("#/utils/authCleanup", () => ({
   performFullCleanup: vi.fn(),
 }));
 
-vi.mock("@/utils/environment", () => ({
+vi.mock("#/utils/environment", () => ({
   isExtension: vi.fn(() => false),
   isWeb: vi.fn(() => true),
 }));
 
-vi.mock("@/utils/logger", () => ({
+vi.mock("#/utils/logger", () => ({
   createLogger: () => ({
     debug: vi.fn(),
     info: vi.fn(),
@@ -53,8 +53,8 @@ vi.mock("@/utils/logger", () => ({
 }));
 
 // Also mock the utils index to catch imports from components that use createLogger
-vi.mock("@/utils", async () => {
-  const actual = await vi.importActual<typeof import("@/utils")>("@/utils");
+vi.mock("#/utils", async () => {
+  const actual = await vi.importActual<typeof import("#/utils")>("#/utils");
   return {
     ...actual,
     createLogger: () => ({
@@ -66,13 +66,13 @@ vi.mock("@/utils", async () => {
   };
 });
 
-vi.mock("@/stores/deviceStore", () => ({
+vi.mock("#/stores/deviceStore", () => ({
   useDeviceStore: {
     getState: vi.fn(),
   },
 }));
 
-vi.mock("@/stores/networkStore", () => ({
+vi.mock("#/stores/networkStore", () => ({
   useNetworkStore: {
     getState: vi.fn(),
   },

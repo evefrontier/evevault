@@ -1,12 +1,12 @@
 import type { IntentScope } from "@mysten/sui/cryptography";
 import { genAddressSeed, getZkLoginSignature } from "@mysten/sui/zklogin";
-import { ephKeyService } from "@/services/vaultService";
-import { useDeviceStore } from "@/stores/deviceStore";
-import { useNetworkStore } from "@/stores/networkStore";
-import { VaultMessageTypes } from "@/types/messages";
-import type { PartialZkLoginSignature, ZkSignAnyParams } from "@/types/wallet";
-import { isWeb } from "@/utils/environment";
-import { createLogger } from "@/utils/logger";
+import { ephKeyService } from "#/services/vaultService";
+import { useDeviceStore } from "#/stores/deviceStore";
+import { useNetworkStore } from "#/stores/networkStore";
+import { VaultMessageTypes } from "#/types/messages";
+import type { PartialZkLoginSignature, ZkSignAnyParams } from "#/types/wallet";
+import { isWeb } from "#/utils/environment";
+import { createLogger } from "#/utils/logger";
 import { ephSign } from "./ephSign";
 
 const log = createLogger();

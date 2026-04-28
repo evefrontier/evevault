@@ -1,3 +1,4 @@
+import { TenantId } from "@evefrontier/dapp-kit";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { oidcMocks, logMocks, envMocks } = vi.hoisted(() => {
@@ -13,7 +14,7 @@ const { oidcMocks, logMocks, envMocks } = vi.hoisted(() => {
   };
 });
 
-vi.mock("@/utils/logger", () => ({
+vi.mock("#/utils/logger", () => ({
   createLogger: () => ({
     debug: vi.fn(),
     info: vi.fn(),
@@ -43,7 +44,7 @@ vi.mock("oidc-client-ts", () => {
   };
 });
 
-vi.mock("@/utils/tenantConfig", () => ({
+vi.mock("#/utils/tenantConfig", () => ({
   getTenantConfig: () => ({
     clientId: "client-id",
     clientSecret: "secret",
@@ -51,7 +52,7 @@ vi.mock("@/utils/tenantConfig", () => ({
   }),
 }));
 
-vi.mock("@/utils/environment", () => ({
+vi.mock("#/utils/environment", () => ({
   isExtension: () => envMocks.isExtension(),
 }));
 
@@ -63,8 +64,8 @@ describe("authConfig UserManager", () => {
   });
 
   it("passes automaticSilentRenew to UserManager", async () => {
-    const { getUserManager } = await import("@/auth/authConfig");
-    getUserManager("stillness");
+    const { getUserManager } = await import("#/auth/authConfig");
+    getUserManager(TenantId.STILLNESS);
 
     expect(oidcMocks.userManagerConstructor).toHaveBeenCalledTimes(1);
     const settings = oidcMocks.userManagerConstructor.mock.calls[0]?.[0] as {
@@ -80,8 +81,8 @@ describe("authConfig UserManager", () => {
       runtime: { id: "test-ext" },
     };
     try {
-      const { getUserManager } = await import("@/auth/authConfig");
-      getUserManager("stillness");
+      const { getUserManager } = await import("#/auth/authConfig");
+      getUserManager(TenantId.STILLNESS);
 
       const settings = oidcMocks.userManagerConstructor.mock.calls[0]?.[0] as {
         automaticSilentRenew?: boolean;
@@ -93,8 +94,8 @@ describe("authConfig UserManager", () => {
   });
 
   it("logs when silent renew handler is invoked with an error", async () => {
-    const { getUserManager } = await import("@/auth/authConfig");
-    getUserManager("stillness");
+    const { getUserManager } = await import("#/auth/authConfig");
+    getUserManager(TenantId.STILLNESS);
 
     expect(oidcMocks.addSilentRenewError).toHaveBeenCalledTimes(1);
     const handler = oidcMocks.addSilentRenewError.mock.calls[0]?.[0] as

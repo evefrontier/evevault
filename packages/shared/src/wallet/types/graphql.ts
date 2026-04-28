@@ -52,7 +52,7 @@ export interface TransactionsQueryResponse {
  * Hook return type for transaction pages
  */
 export interface TransactionPage {
-  transactions: import("@/types/components").Transaction[];
+  transactions: import("#/types/components").Transaction[];
   nextCursor: string | null;
   hasNextPage: boolean;
 }

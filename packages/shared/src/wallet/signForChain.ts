@@ -1,6 +1,6 @@
 import type { IntentScope } from "@mysten/sui/cryptography";
 import { SUI_LOCALNET_CHAIN, type SuiChain } from "@mysten/wallet-standard";
-import type { ZkSignAnyParams } from "@/types/wallet";
+import type { ZkSignAnyParams } from "#/types/wallet";
 import { rawSign } from "./rawSign";
 import { zkSignAny } from "./zkSignAny";
 

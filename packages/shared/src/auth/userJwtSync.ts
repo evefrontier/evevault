@@ -1,7 +1,7 @@
 import { decodeJwt } from "jose";
 import { type IdTokenClaims, User } from "oidc-client-ts";
-import type { OAuthTokenResponse } from "@/types/authTypes";
-import { createLogger } from "@/utils/logger";
+import type { OAuthTokenResponse } from "#/types/authTypes";
+import { createLogger } from "#/utils/logger";
 import { getZkLoginAddress } from "./getZkLoginAddress";
 import { storeJwt } from "./storageService";
 import { userToJwtResponse } from "./userToJwtResponse";

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getSuiscanUrl } from "@/utils/suiscan";
+import { getSuiscanUrl } from "#/utils/suiscan";
 
 describe("getSuiscanUrl", () => {
   it("generates correct URL for devnet", () => {

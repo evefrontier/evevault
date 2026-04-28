@@ -1,4 +1,4 @@
-import type { HashedData } from "@/types/stores";
+import type { HashedData } from "#/types/stores";
 import { deriveAesKey } from "./encrypt";
 
 export async function decrypt(encryptedKey: HashedData, pin: string) {

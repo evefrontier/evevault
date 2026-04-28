@@ -4,7 +4,7 @@ import {
   formatDisplayAmount,
   formatShortDate,
   toSmallestUnit,
-} from "@/utils/format";
+} from "#/utils/format";
 
 describe("toSmallestUnit", () => {
   const DECIMALS = 9; // SUI uses 9 decimals

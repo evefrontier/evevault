@@ -1,5 +1,5 @@
 import { TenantId } from "@evefrontier/dapp-kit/utils";
-import type { TenantConfig } from "@/types";
+import type { TenantConfig } from "#/types";
 import { TENANT_KEYS } from "./constants";
 import { isWeb } from "./environment";
 

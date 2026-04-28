@@ -1,19 +1,19 @@
 import { SUI_DEVNET_CHAIN, SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
 import { renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { useDevice } from "@/hooks/useDevice";
+import { useDevice } from "#/hooks/useDevice";
 
 // Mock dependencies
-vi.mock("@/stores/deviceStore", () => ({
+vi.mock("#/stores/deviceStore", () => ({
   useDeviceStore: vi.fn(),
 }));
 
-vi.mock("@/stores/networkStore", () => ({
+vi.mock("#/stores/networkStore", () => ({
   useNetworkStore: vi.fn(),
 }));
 
-import { useDeviceStore } from "@/stores/deviceStore";
-import { useNetworkStore } from "@/stores/networkStore";
+import { useDeviceStore } from "#/stores/deviceStore";
+import { useNetworkStore } from "#/stores/networkStore";
 
 describe("useDevice", () => {
   const mockNetworkData = {

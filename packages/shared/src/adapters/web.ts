@@ -1,4 +1,4 @@
-import type { StorageAdapter } from "@/types";
+import type { StorageAdapter } from "#/types";
 
 // localStorage adapter for web
 export const localStorageAdapter: StorageAdapter = {

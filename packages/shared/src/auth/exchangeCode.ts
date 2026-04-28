@@ -1,6 +1,6 @@
 import type { TenantId } from "@evefrontier/dapp-kit/utils";
-import type { OAuthTokenResponse } from "@/types";
-import { getTenantConfig } from "@/utils/tenantConfig";
+import type { OAuthTokenResponse } from "#/types";
+import { getTenantConfig } from "#/utils/tenantConfig";
 import { parseOAuthTokenResponse } from "./oauthTokenResponse";
 
 export async function exchangeCodeForToken(

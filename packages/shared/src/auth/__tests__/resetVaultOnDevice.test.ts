@@ -1,51 +1,51 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import * as authConfig from "@/auth/authConfig";
-import * as getZkLoginAddress from "@/auth/getZkLoginAddress";
-import { resetVaultOnDevice } from "@/auth/resetVaultOnDevice";
-import * as storageService from "@/auth/storageService";
-import { useAuthStore } from "@/auth/stores/authStore";
-import * as vaultService from "@/services/vaultService";
-import { useDeviceStore } from "@/stores/deviceStore";
-import { useNetworkStore } from "@/stores/networkStore";
-import { useTokenListStore } from "@/stores/tokenListStore";
-import * as authCleanup from "@/utils/authCleanup";
-import * as env from "@/utils/environment";
+import * as authConfig from "#/auth/authConfig";
+import * as getZkLoginAddress from "#/auth/getZkLoginAddress";
+import { resetVaultOnDevice } from "#/auth/resetVaultOnDevice";
+import * as storageService from "#/auth/storageService";
+import { useAuthStore } from "#/auth/stores/authStore";
+import * as vaultService from "#/services/vaultService";
+import { useDeviceStore } from "#/stores/deviceStore";
+import { useNetworkStore } from "#/stores/networkStore";
+import { useTokenListStore } from "#/stores/tokenListStore";
+import * as authCleanup from "#/utils/authCleanup";
+import * as env from "#/utils/environment";
 
-vi.mock("@/services/vaultService", () => ({
+vi.mock("#/services/vaultService", () => ({
   ephKeyService: { clear: vi.fn() },
   zkProofService: { clear: vi.fn() },
 }));
 
-vi.mock("@/utils/environment", () => ({
+vi.mock("#/utils/environment", () => ({
   isExtension: vi.fn(),
   isWeb: vi.fn(),
 }));
 
-vi.mock("@/utils/authCleanup", () => ({
+vi.mock("#/utils/authCleanup", () => ({
   cleanupOidcStorage: vi.fn(),
   cleanupExtensionStorage: vi.fn(),
 }));
 
-vi.mock("@/auth/authConfig", () => ({
+vi.mock("#/auth/authConfig", () => ({
   getUserManager: vi.fn(() => ({
     removeUser: vi.fn(),
   })),
 }));
 
-vi.mock("@/auth/getZkLoginAddress", () => ({
+vi.mock("#/auth/getZkLoginAddress", () => ({
   clearZkLoginAddressCache: vi.fn(),
 }));
 
-vi.mock("@/auth/storageService", () => ({
+vi.mock("#/auth/storageService", () => ({
   clearAllJwts: vi.fn(),
 }));
 
-vi.mock("@/auth/tenantStore", () => ({
+vi.mock("#/auth/tenantStore", () => ({
   getCurrentTenantId: vi.fn(() => "stillness"),
   getTenantIdForAuth: vi.fn(() => "stillness"),
 }));
 
-vi.mock("@/stores/deviceStore", () => ({
+vi.mock("#/stores/deviceStore", () => ({
   createEmptyNetworkDataEntry: () => ({
     nonce: null,
     maxEpoch: null,
@@ -58,25 +58,25 @@ vi.mock("@/stores/deviceStore", () => ({
   },
 }));
 
-vi.mock("@/stores/networkStore", () => ({
+vi.mock("#/stores/networkStore", () => ({
   useNetworkStore: {
     setState: vi.fn(),
   },
 }));
 
-vi.mock("@/stores/tokenListStore", () => ({
+vi.mock("#/stores/tokenListStore", () => ({
   useTokenListStore: {
     setState: vi.fn(),
   },
 }));
 
-vi.mock("@/auth/stores/authStore", () => ({
+vi.mock("#/auth/stores/authStore", () => ({
   useAuthStore: {
     setState: vi.fn(),
   },
 }));
 
-vi.mock("@/utils/logger", () => ({
+vi.mock("#/utils/logger", () => ({
   createLogger: () => ({
     debug: vi.fn(),
     info: vi.fn(),

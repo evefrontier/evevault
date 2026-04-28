@@ -1,13 +1,13 @@
-import { useAuthStore } from "@/auth";
-import { getJwt } from "@/auth/storageService";
-import { zkProofService } from "@/services/vaultService";
-import { resolveVendedIdTokenForZkProof } from "@/stores/deviceStore/zkJwt";
-import { useNetworkStore } from "@/stores/networkStore";
-import type { DeviceState, ZkProofResponse } from "@/types";
-import type { JwtResponse } from "@/types/authTypes";
-import { isLocalnetChain } from "@/types/networks";
-import { createLogger } from "@/utils/logger";
-import { fetchZkProof } from "@/wallet/zkProof";
+import { useAuthStore } from "#/auth";
+import { getJwt } from "#/auth/storageService";
+import { zkProofService } from "#/services/vaultService";
+import { resolveVendedIdTokenForZkProof } from "#/stores/deviceStore/zkJwt";
+import { useNetworkStore } from "#/stores/networkStore";
+import type { DeviceState, ZkProofResponse } from "#/types";
+import type { JwtResponse } from "#/types/authTypes";
+import { isLocalnetChain } from "#/types/networks";
+import { createLogger } from "#/utils/logger";
+import { fetchZkProof } from "#/wallet/zkProof";
 import type { GetDeviceState, SetDeviceState } from "./types";
 
 const log = createLogger();

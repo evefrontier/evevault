@@ -1,4 +1,4 @@
-import type { ZkLoginAddressResponse } from "@/types/enoki";
+import type { ZkLoginAddressResponse } from "#/types/enoki";
 import type { GetZkLoginAddressParams } from "./types";
 
 const cache = new Map<string, ZkLoginAddressResponse>();

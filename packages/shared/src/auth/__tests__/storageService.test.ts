@@ -1,13 +1,13 @@
 import { SUI_DEVNET_CHAIN, SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { JWT_STORAGE_KEY, NETWORK_STORAGE_KEY } from "@/utils/storageKeys";
+import { JWT_STORAGE_KEY, NETWORK_STORAGE_KEY } from "#/utils/storageKeys";
 
-vi.mock("@/utils/environment", () => ({
+vi.mock("#/utils/environment", () => ({
   isExtension: vi.fn(),
   isWeb: vi.fn(),
 }));
 
-vi.mock("@/utils/logger", () => ({
+vi.mock("#/utils/logger", () => ({
   createLogger: () => ({
     debug: vi.fn(),
     info: vi.fn(),
@@ -16,19 +16,19 @@ vi.mock("@/utils/logger", () => ({
   }),
 }));
 
-vi.mock("@/stores/networkStore", () => ({
+vi.mock("#/stores/networkStore", () => ({
   useNetworkStore: {
     getState: vi.fn(() => ({ chain: SUI_TESTNET_CHAIN })),
   },
 }));
 
-vi.mock("@/auth/stores/authStore", () => ({
+vi.mock("#/auth/stores/authStore", () => ({
   useAuthStore: {
     getState: vi.fn(() => ({ user: null })),
   },
 }));
 
-vi.mock("@/auth/userToJwtResponse", () => ({
+vi.mock("#/auth/userToJwtResponse", () => ({
   userToJwtResponse: vi.fn(),
 }));
 
@@ -40,11 +40,11 @@ import {
   hasJwt,
   storeJwt,
   storeZkLoginJwtForNetwork,
-} from "@/auth/storageService";
-import { useAuthStore } from "@/auth/stores/authStore";
-import { userToJwtResponse } from "@/auth/userToJwtResponse";
-import { useNetworkStore } from "@/stores/networkStore";
-import { isExtension, isWeb } from "@/utils/environment";
+} from "#/auth/storageService";
+import { useAuthStore } from "#/auth/stores/authStore";
+import { userToJwtResponse } from "#/auth/userToJwtResponse";
+import { useNetworkStore } from "#/stores/networkStore";
+import { isExtension, isWeb } from "#/utils/environment";
 
 const futureExp = () => Math.floor(Date.now() / 1000) + 86_400;
 

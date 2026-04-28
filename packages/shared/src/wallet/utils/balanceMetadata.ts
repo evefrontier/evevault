@@ -1,6 +1,6 @@
-import { SUI_COIN_TYPE } from "@/utils";
-import { isEveCoinType } from "@/wallet/eveToken";
-import type { BalanceMetadata } from "@/wallet/types/hooks";
+import { SUI_COIN_TYPE } from "#/utils";
+import { isEveCoinType } from "#/wallet/eveToken";
+import type { BalanceMetadata } from "#/wallet/types/hooks";
 
 export const DEFAULT_SUI_METADATA: BalanceMetadata = {
   decimals: 9,

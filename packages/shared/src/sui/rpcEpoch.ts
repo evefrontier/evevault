@@ -1,6 +1,6 @@
 import { SUI_LOCALNET_CHAIN } from "@mysten/wallet-standard";
-import { DEFAULT_EPOCH_DURATION_MS } from "@/utils/constants";
-import { createLogger } from "@/utils/logger";
+import { DEFAULT_EPOCH_DURATION_MS } from "#/utils/constants";
+import { createLogger } from "#/utils/logger";
 import { createSuiClient } from "./suiClient";
 
 const log = createLogger();

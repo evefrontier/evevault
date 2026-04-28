@@ -725,7 +725,7 @@ export const Route = createFileRoute("/settings")({
 // apps/extension/entrypoints/sign-personal-message/main.tsx
 import React from "react";
 import ReactDOM from "react-dom/client";
-import SignPersonalMessage from "../../src/features/wallet/components/SignPersonalMessage.tsx";
+import SignPersonalMessage from "@/features/wallet/components/SignPersonalMessage.tsx";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

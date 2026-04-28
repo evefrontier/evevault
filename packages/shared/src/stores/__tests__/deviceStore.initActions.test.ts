@@ -1,25 +1,25 @@
 import { Ed25519PublicKey } from "@mysten/sui/keypairs/ed25519";
 import { SUI_DEVNET_CHAIN, SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createInitActions } from "@/stores/deviceStore/actions/initActions";
+import { createInitActions } from "#/stores/deviceStore/actions/initActions";
 import type {
   GetDeviceState,
   SetDeviceState,
-} from "@/stores/deviceStore/actions/types";
-import { useNetworkStore } from "@/stores/networkStore";
-import type { DeviceState } from "@/types";
+} from "#/stores/deviceStore/actions/types";
+import { useNetworkStore } from "#/stores/networkStore";
+import type { DeviceState } from "#/types";
 
 const getCurrentEpochFromGraphQLMock = vi.fn();
 const rotateEphemeralKeyPairMock = vi.fn();
 const clearAllZkLoginJwtsMock = vi.fn();
 const clearZkProofsMock = vi.fn();
 
-vi.mock("@/sui/graphqlEpoch", () => ({
+vi.mock("#/sui/graphqlEpoch", () => ({
   getCurrentEpochFromGraphQL: (...args: unknown[]) =>
     getCurrentEpochFromGraphQLMock(...args),
 }));
 
-vi.mock("@/services/vaultService", () => ({
+vi.mock("#/services/vaultService", () => ({
   ephKeyService: {
     initialize: vi.fn(),
     hasKeypair: vi.fn(),
@@ -35,7 +35,7 @@ vi.mock("@/services/vaultService", () => ({
   },
 }));
 
-vi.mock("@/auth/storageService", () => ({
+vi.mock("#/auth/storageService", () => ({
   clearAllZkLoginJwts: (...args: unknown[]) => clearAllZkLoginJwtsMock(...args),
 }));
 

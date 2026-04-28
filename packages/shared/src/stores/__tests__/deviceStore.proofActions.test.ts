@@ -1,12 +1,12 @@
 import { Ed25519PublicKey } from "@mysten/sui/keypairs/ed25519";
 import { SUI_DEVNET_CHAIN } from "@mysten/wallet-standard";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createProofActions } from "@/stores/deviceStore/actions/proofActions";
+import { createProofActions } from "#/stores/deviceStore/actions/proofActions";
 import type {
   GetDeviceState,
   SetDeviceState,
-} from "@/stores/deviceStore/actions/types";
-import type { DeviceState } from "@/types";
+} from "#/stores/deviceStore/actions/types";
+import type { DeviceState } from "#/types";
 
 const mockAuthGetState = vi.hoisted(() => vi.fn());
 const hasJwtMock = vi.hoisted(() => vi.fn());
@@ -16,18 +16,18 @@ const setZkProofMock = vi.hoisted(() => vi.fn());
 const fetchZkProofMock = vi.hoisted(() => vi.fn());
 const resolveVendedMock = vi.hoisted(() => vi.fn());
 
-vi.mock("@/auth", () => ({
+vi.mock("#/auth", () => ({
   useAuthStore: {
     getState: mockAuthGetState,
   },
 }));
 
-vi.mock("@/auth/storageService", () => ({
+vi.mock("#/auth/storageService", () => ({
   hasJwt: (...args: unknown[]) => hasJwtMock(...args),
   getJwt: (...args: unknown[]) => getJwtMock(...args),
 }));
 
-vi.mock("@/services/vaultService", () => ({
+vi.mock("#/services/vaultService", () => ({
   ephKeyService: {
     isUnlocked: vi.fn(() => false),
     lock: vi.fn(),
@@ -44,16 +44,16 @@ vi.mock("@/services/vaultService", () => ({
   },
 }));
 
-vi.mock("@/wallet/zkProof", () => ({
+vi.mock("#/wallet/zkProof", () => ({
   fetchZkProof: (...args: unknown[]) => fetchZkProofMock(...args),
 }));
 
-vi.mock("@/stores/deviceStore/zkJwt", () => ({
+vi.mock("#/stores/deviceStore/zkJwt", () => ({
   resolveVendedIdTokenForZkProof: (...args: unknown[]) =>
     resolveVendedMock(...args),
 }));
 
-vi.mock("@/stores/networkStore", () => ({
+vi.mock("#/stores/networkStore", () => ({
   useNetworkStore: {
     getState: () => ({ chain: SUI_DEVNET_CHAIN }),
   },

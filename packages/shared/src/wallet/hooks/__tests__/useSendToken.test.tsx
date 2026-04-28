@@ -7,28 +7,28 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock dependencies before imports
 // Using workspace aliases in test files due to Vite resolution limitations with relative imports
-vi.mock("@/auth", () => ({
+vi.mock("#/auth", () => ({
   useAuth: vi.fn(),
   getUserForNetwork: vi.fn(),
 }));
 
-vi.mock("@/hooks", () => ({
+vi.mock("#/hooks", () => ({
   useDevice: vi.fn(),
 }));
 
-vi.mock("@/hooks/useDevice", () => ({
+vi.mock("#/hooks/useDevice", () => ({
   useDevice: vi.fn(),
 }));
 
-vi.mock("@/stores/networkStore", () => ({
+vi.mock("#/stores/networkStore", () => ({
   useNetworkStore: vi.fn(),
 }));
 
-vi.mock("@/sui", () => ({
+vi.mock("#/sui", () => ({
   createSuiClient: vi.fn(),
 }));
 
-vi.mock("@/utils", () => ({
+vi.mock("#/utils", () => ({
   createLogger: vi.fn(() => ({
     debug: vi.fn(),
     info: vi.fn(),
@@ -56,15 +56,15 @@ vi.mock("@/utils", () => ({
   }),
 }));
 
-vi.mock("@/wallet/hooks/useBalance", () => ({
+vi.mock("#/wallet/hooks/useBalance", () => ({
   useBalance: vi.fn(),
 }));
 
-vi.mock("@/wallet/zkSignAny", () => ({
+vi.mock("#/wallet/zkSignAny", () => ({
   zkSignAny: vi.fn(),
 }));
 
-vi.mock("@/wallet/hooks/useWalletSigningContext", () => ({
+vi.mock("#/wallet/hooks/useWalletSigningContext", () => ({
   useWalletSigningContext: vi.fn(),
 }));
 
@@ -86,17 +86,17 @@ vi.mock("@mysten/sui/transactions", () => {
 import { TenantId } from "@evefrontier/dapp-kit";
 // Import after mocks
 // Using workspace aliases in test files due to Vite resolution limitations with relative imports
-import { getUserForNetwork, useAuth } from "@/auth";
-import { useDevice } from "@/hooks/useDevice";
-import { useNetworkStore } from "@/stores/networkStore";
-import { createSuiClient } from "@/sui";
-import { createMockUser } from "@/testing";
-import { getEveCoinType } from "@/wallet/eveToken";
-import { useBalance } from "@/wallet/hooks/useBalance";
-import { useSendToken } from "@/wallet/hooks/useSendToken";
-import { useWalletSigningContext } from "@/wallet/hooks/useWalletSigningContext";
-import type { UseBalanceParams } from "@/wallet/types/hooks";
-import { zkSignAny } from "@/wallet/zkSignAny";
+import { getUserForNetwork, useAuth } from "#/auth";
+import { useDevice } from "#/hooks/useDevice";
+import { useNetworkStore } from "#/stores/networkStore";
+import { createSuiClient } from "#/sui";
+import { createMockUser } from "#/testing";
+import { getEveCoinType } from "#/wallet/eveToken";
+import { useBalance } from "#/wallet/hooks/useBalance";
+import { useSendToken } from "#/wallet/hooks/useSendToken";
+import { useWalletSigningContext } from "#/wallet/hooks/useWalletSigningContext";
+import type { UseBalanceParams } from "#/wallet/types/hooks";
+import { zkSignAny } from "#/wallet/zkSignAny";
 
 const mockUseAuth = vi.mocked(useAuth);
 const mockGetUserForNetwork = vi.mocked(getUserForNetwork);

@@ -3,35 +3,35 @@ import { decodeJwt } from "jose";
 import { type IdTokenClaims, User } from "oidc-client-ts";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { chromeStorageAdapter, localStorageAdapter } from "@/adapters";
-import { getUserManager, redirectToFusionAuthLogout } from "@/auth/authConfig";
-import { clearZkLoginAddressCache } from "@/auth/getZkLoginAddress";
-import { parseOAuthTokenResponse } from "@/auth/oauthTokenResponse";
-import { clearAllJwts, getJwt } from "@/auth/storageService";
-import type { AuthState } from "@/auth/types";
+import { chromeStorageAdapter, localStorageAdapter } from "#/adapters";
+import { getUserManager, redirectToFusionAuthLogout } from "#/auth/authConfig";
+import { clearZkLoginAddressCache } from "#/auth/getZkLoginAddress";
+import { parseOAuthTokenResponse } from "#/auth/oauthTokenResponse";
+import { clearAllJwts, getJwt } from "#/auth/storageService";
+import type { AuthState } from "#/auth/types";
 import {
   enrichUserWithZkLoginIfNeeded,
   syncPrimaryJwtFromUser,
-} from "@/auth/userJwtSync";
-import { userToJwtResponse } from "@/auth/userToJwtResponse";
-import { resolveExpiresAt } from "@/auth/utils/authStoreUtils";
-import { zkProofService } from "@/services/vaultService";
-import { useDeviceStore, useNetworkStore } from "@/stores";
+} from "#/auth/userJwtSync";
+import { userToJwtResponse } from "#/auth/userToJwtResponse";
+import { resolveExpiresAt } from "#/auth/utils/authStoreUtils";
+import { zkProofService } from "#/services/vaultService";
+import { useDeviceStore, useNetworkStore } from "#/stores";
 import {
   getCurrentTenantId,
   OAuthTenantSessionKey,
   setCurrentTenantId,
-} from "@/stores/tenantStore";
-import type { AuthMessage } from "@/types";
+} from "#/stores/tenantStore";
+import type { AuthMessage } from "#/types";
 import {
   createLogger,
   isBrowser,
   isExtension,
   isWeb,
   performFullCleanup,
-} from "@/utils";
-import { AUTH_STORAGE_KEY } from "@/utils/storageKeys";
-import { DEFAULT_TENANT_ID, getTenantConfig } from "@/utils/tenantConfig";
+} from "#/utils";
+import { AUTH_STORAGE_KEY } from "#/utils/storageKeys";
+import { DEFAULT_TENANT_ID, getTenantConfig } from "#/utils/tenantConfig";
 
 // biome-ignore lint/suspicious/noExplicitAny: chrome is a global object
 declare const chrome: any;

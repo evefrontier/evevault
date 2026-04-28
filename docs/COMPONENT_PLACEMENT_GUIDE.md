@@ -16,6 +16,7 @@ Is the component feature-specific?
 ### Step 1: Determine the Scope
 
 **Ask yourself:**
+
 - **Where will this card be used?**
   - Only in the wallet feature? → Feature-specific
   - In multiple features (wallet, auth, etc.)? → App-level shared
@@ -28,11 +29,13 @@ Is the component feature-specific?
 **Location:** `apps/{extension|web}/src/features/{feature}/components/Card.tsx`
 
 **When to use:**
+
 - Card is only used within one feature (e.g., wallet balance card)
 - Card has feature-specific logic or styling
 - Card is tightly coupled to a specific feature
 
 **Example Structure:**
+
 ```
 apps/extension/src/features/wallet/components/
 ├── Card.tsx              # Your new card component
@@ -42,6 +45,7 @@ apps/extension/src/features/wallet/components/
 ```
 
 **Implementation Example:**
+
 ```typescript
 // apps/extension/src/features/wallet/components/Card.tsx
 import { colors, spacing } from "@evevault/shared/design";
@@ -71,6 +75,7 @@ export function Card({ title, children }: CardProps) {
 ```
 
 **Usage:**
+
 ```typescript
 // apps/extension/src/features/wallet/components/PopupApp.tsx
 import { Card } from "./Card";
@@ -89,11 +94,13 @@ function App() {
 **Location:** `apps/{extension|web}/src/lib/components/Card.tsx`
 
 **When to use:**
+
 - Card is used across multiple features in the same app
 - Card is a generic UI component (no feature-specific logic)
 - You want to avoid duplication between features
 
 **Example Structure:**
+
 ```
 apps/extension/src/lib/
 ├── components/
@@ -104,6 +111,7 @@ apps/extension/src/lib/
 ```
 
 **Implementation Example:**
+
 ```typescript
 // apps/extension/src/lib/components/Card.tsx
 import { colors, spacing, typography } from "@evevault/shared/design";
@@ -141,12 +149,13 @@ export function Card({ title, children, variant = "default" }: CardProps) {
 ```
 
 **Usage in Features:**
+
 ```typescript
 // apps/extension/src/features/wallet/components/PopupApp.tsx
-import { Card } from "../../lib/components/Card";
+import { Card } from "@/lib/components/Card";
 
 // apps/extension/src/features/auth/components/LoginCard.tsx
-import { Card } from "../../lib/components/Card";
+import { Card } from "@/lib/components/Card";
 ```
 
 #### Option C: Platform-Shared Component (Rare)
@@ -154,11 +163,13 @@ import { Card } from "../../lib/components/Card";
 **Location:** `packages/shared/ui/Card.tsx` (if created)
 
 **When to use:**
+
 - Component needs to be identical across extension AND web
 - Component has no platform-specific dependencies
 - Component is pure UI (no React hooks that differ by platform)
 
 **⚠️ Note:** Currently, `packages/shared/` doesn't include React components. If you need this, you'd need to:
+
 1. Add React as a peer dependency to `packages/shared/package.json`
 2. Create `packages/shared/src/ui/` directory
 3. Export components from `packages/shared/src/index.ts`
@@ -170,6 +181,7 @@ import { Card } from "../../lib/components/Card";
 ### 1. Always Use Design Tokens
 
 **✅ DO:**
+
 ```typescript
 import { colors, spacing, typography } from "@evevault/shared/design";
 
@@ -177,6 +189,7 @@ import { colors, spacing, typography } from "@evevault/shared/design";
 ```
 
 **❌ DON'T:**
+
 ```typescript
 <div style={{ padding: "16px", color: "#ffffff" }}>
 ```
@@ -184,11 +197,13 @@ import { colors, spacing, typography } from "@evevault/shared/design";
 ### 2. Keep Components Close to Usage
 
 **✅ DO:** Start with feature-specific, move to shared if needed
+
 - Easier to find and maintain
 - Clear ownership
 - Can refactor later if needed
 
 **❌ DON'T:** Create shared components prematurely
+
 - Premature abstraction leads to complexity
 - Harder to change later
 
@@ -203,7 +218,7 @@ import { colors, spacing, typography } from "@evevault/shared/design";
 ```typescript
 // 1. Imports (external first, then internal)
 import { colors, spacing } from "@evevault/shared/design";
-import { Card } from "../../lib/components/Card";
+import { Card } from "@/lib/components/Card";
 
 // 2. Types/Interfaces
 interface MyCardProps {
@@ -235,6 +250,7 @@ export default MyCard;
 > If you later need a similar card in the auth feature, we can extract it to `apps/extension/src/lib/components/Card.tsx` and make it more generic. But for now, keep it simple and feature-specific."
 
 **Implementation:**
+
 ```typescript
 // apps/extension/src/features/wallet/components/BalanceCard.tsx
 import { colors, spacing, typography } from "@evevault/shared/design";
@@ -302,4 +318,3 @@ function App() {
 4. **Refactor later:** Move to `lib/components/` if you need it in multiple features
 
 **Remember:** It's easier to extract a component later than to untangle an over-abstracted one!
-

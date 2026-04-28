@@ -1,7 +1,7 @@
 import { getExtendedEphemeralPublicKey } from "@mysten/sui/zklogin";
-import type { ZkProofResponse } from "@/types/enoki";
-import type { ZkProofParams } from "@/types/wallet";
-import { createLogger } from "@/utils/logger";
+import type { ZkProofResponse } from "#/types/enoki";
+import type { ZkProofParams } from "#/types/wallet";
+import { createLogger } from "#/utils/logger";
 
 const log = createLogger();
 

@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import * as vaultService from "@/services/vaultService";
-import { registerOnLock, useDeviceStore } from "@/stores/deviceStore";
+import * as vaultService from "#/services/vaultService";
+import { registerOnLock, useDeviceStore } from "#/stores/deviceStore";
 
 // Mock the vault service (unified service that routes to keeper/web)
-vi.mock("@/services/vaultService", () => ({
+vi.mock("#/services/vaultService", () => ({
   ephKeyService: {
     lock: vi.fn(),
     isUnlocked: vi.fn(),

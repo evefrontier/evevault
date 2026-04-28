@@ -5,27 +5,27 @@ import {
   SUI_TESTNET_CHAIN,
   type SuiChain,
 } from "@mysten/wallet-standard";
-import { ephKeyService, zkProofService } from "@/services/vaultService";
+import { ephKeyService, zkProofService } from "#/services/vaultService";
 import {
   createEmptyNetworkDataEntry,
   useDeviceStore,
-} from "@/stores/deviceStore";
-import { useNetworkStore } from "@/stores/networkStore";
-import { getCurrentTenantId } from "@/stores/tenantStore";
-import { useTokenListStore } from "@/stores/tokenListStore";
-import { DEFAULT_TOKENS_BY_CHAIN } from "@/types/networks";
-import type { NetworkDataEntry } from "@/types/stores";
+} from "#/stores/deviceStore";
+import { useNetworkStore } from "#/stores/networkStore";
+import { getCurrentTenantId } from "#/stores/tenantStore";
+import { useTokenListStore } from "#/stores/tokenListStore";
+import { DEFAULT_TOKENS_BY_CHAIN } from "#/types/networks";
+import type { NetworkDataEntry } from "#/types/stores";
 import {
   cleanupExtensionStorage,
   cleanupOidcStorage,
-} from "@/utils/authCleanup";
-import { isExtension, isWeb } from "@/utils/environment";
-import { createLogger } from "@/utils/logger";
+} from "#/utils/authCleanup";
+import { isExtension, isWeb } from "#/utils/environment";
+import { createLogger } from "#/utils/logger";
 import {
   EVEVAULT_STORAGE_KEYS,
   EXTENSION_EXTRA_KEYS,
   SESSION_STORAGE_REDIRECT_KEY,
-} from "@/utils/storageKeys";
+} from "#/utils/storageKeys";
 import { getUserManager } from "./authConfig";
 import { clearZkLoginAddressCache } from "./getZkLoginAddress";
 import { clearAllJwts } from "./storageService";

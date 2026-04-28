@@ -1,11 +1,11 @@
 import type { SuiGraphQLClient } from "@mysten/sui/graphql";
-import { SUI_COIN_TYPE } from "@/utils";
-import { createLogger } from "@/utils/logger";
+import { SUI_COIN_TYPE } from "#/utils";
+import { createLogger } from "#/utils/logger";
 import type {
   CoinMetadataQueryResponse,
   CoinMetadataResult,
-} from "@/wallet/types/coinMetadata";
-import type { CacheEntry } from "@/wallet/types/hooks";
+} from "#/wallet/types/coinMetadata";
+import type { CacheEntry } from "#/wallet/types/hooks";
 
 const log = createLogger();
 const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes cache expiry

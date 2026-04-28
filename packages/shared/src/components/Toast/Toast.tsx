@@ -1,7 +1,7 @@
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import Icon from "@/components/Icon";
-import type { ToastProps } from "@/types";
+import Icon from "#/components/Icon";
+import type { ToastProps } from "#/types";
 import "./Toast.css";
 
 const EXIT_DELAY_MS = 300;

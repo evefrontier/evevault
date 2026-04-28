@@ -1,17 +1,17 @@
 import { SUI_DEVNET_CHAIN, SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/utils/environment", () => ({
+vi.mock("#/utils/environment", () => ({
   isWeb: vi.fn(() => true),
   isExtension: vi.fn(() => false),
 }));
 
-vi.mock("@/wallet/eveToken", () => ({
+vi.mock("#/wallet/eveToken", () => ({
   getEveCoinType: vi.fn(() => "0xmock::EVE::EVE"),
 }));
 
-import { useTokenListStore } from "@/stores/tokenListStore";
-import { DEFAULT_TOKENS_BY_CHAIN } from "@/types/networks";
+import { useTokenListStore } from "#/stores/tokenListStore";
+import { DEFAULT_TOKENS_BY_CHAIN } from "#/types/networks";
 
 describe("tokenListStore", () => {
   beforeEach(() => {

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { parseTransactionBytes } from "@/utils/parseTxBytes";
+import { parseTransactionBytes } from "#/utils/parseTxBytes";
 
 const mockToJSON = vi.fn();
 const mockFrom = vi.fn();

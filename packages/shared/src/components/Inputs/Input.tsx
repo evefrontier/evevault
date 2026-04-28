@@ -1,9 +1,9 @@
 import type React from "react";
 import { forwardRef, useState } from "react";
 import "./style.css";
-import { Corners } from "@/components/Corners";
-import Text from "@/components/Text";
-import type { InputProps } from "@/types";
+import { Corners } from "#/components/Corners";
+import Text from "#/components/Text";
+import type { InputProps } from "#/types";
 
 const Input: React.FC<InputProps> = forwardRef<HTMLInputElement, InputProps>(
   (

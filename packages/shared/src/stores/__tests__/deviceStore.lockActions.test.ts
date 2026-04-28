@@ -1,15 +1,15 @@
 import { SUI_DEVNET_CHAIN } from "@mysten/wallet-standard";
 import { describe, expect, it, vi } from "vitest";
-import * as vaultService from "@/services/vaultService";
-import { createLockActions } from "@/stores/deviceStore/actions/lockActions";
+import * as vaultService from "#/services/vaultService";
+import { createLockActions } from "#/stores/deviceStore/actions/lockActions";
 import type {
   GetDeviceState,
   SetDeviceState,
-} from "@/stores/deviceStore/actions/types";
-import { createInitialNetworkData } from "@/stores/deviceStore/constants";
-import type { DeviceState } from "@/types";
+} from "#/stores/deviceStore/actions/types";
+import { createInitialNetworkData } from "#/stores/deviceStore/constants";
+import type { DeviceState } from "#/types";
 
-vi.mock("@/services/vaultService", () => ({
+vi.mock("#/services/vaultService", () => ({
   ephKeyService: {
     lock: vi.fn(),
     isUnlocked: vi.fn(),

@@ -6,7 +6,7 @@ import type {
   IconComponent,
   IconName,
   IconWithoutNameProps,
-} from "@/types";
+} from "#/types";
 import {
   Add,
   ArrowDown,

@@ -5,7 +5,7 @@ const SUI_DEVNET_CHAIN = "sui:devnet" as const;
 
 // Mock environment detection - defined inline to avoid hoisting issues
 let mockIsWebValue = true;
-vi.mock("@/utils/environment", () => ({
+vi.mock("#/utils/environment", () => ({
   isWeb: () => mockIsWebValue,
 }));
 
@@ -63,7 +63,7 @@ vi.mock("./keeperService", () => ({
 }));
 
 // Mock wallet types
-vi.mock("@/types/wallet", () => ({
+vi.mock("#/types/wallet", () => ({
   createWebCryptoPlaceholder: vi.fn(() => ({
     iv: "web-placeholder",
     data: "web-placeholder",

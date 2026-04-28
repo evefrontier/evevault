@@ -5,7 +5,7 @@ import {
   SUI_TESTNET_CHAIN,
   type SuiChain,
 } from "@mysten/wallet-standard";
-import type { NetworkDataEntry } from "@/types";
+import type { NetworkDataEntry } from "#/types";
 
 /** Empty network data entry; used for initial state and reset. */
 export const createEmptyNetworkDataEntry = (): NetworkDataEntry => ({

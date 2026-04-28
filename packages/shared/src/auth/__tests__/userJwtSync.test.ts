@@ -5,15 +5,15 @@ const mockGetZkLoginAddress = vi.fn();
 const mockStoreJwt = vi.fn();
 const mockWarn = vi.fn();
 
-vi.mock("@/auth/getZkLoginAddress", () => ({
+vi.mock("#/auth/getZkLoginAddress", () => ({
   getZkLoginAddress: (...args: unknown[]) => mockGetZkLoginAddress(...args),
 }));
 
-vi.mock("@/auth/storageService", () => ({
+vi.mock("#/auth/storageService", () => ({
   storeJwt: (...args: unknown[]) => mockStoreJwt(...args),
 }));
 
-vi.mock("@/utils/logger", () => ({
+vi.mock("#/utils/logger", () => ({
   createLogger: () => ({
     debug: vi.fn(),
     info: vi.fn(),
@@ -47,7 +47,7 @@ describe("enrichUserWithZkLoginIfNeeded", () => {
 
   it("returns the same user when id_token is missing", async () => {
     const { enrichUserWithZkLoginIfNeeded } = await import(
-      "@/auth/userJwtSync"
+      "#/auth/userJwtSync"
     );
     const user = baseUser({ id_token: undefined });
 
@@ -59,7 +59,7 @@ describe("enrichUserWithZkLoginIfNeeded", () => {
 
   it("returns the same user when profile.sui_address is already set", async () => {
     const { enrichUserWithZkLoginIfNeeded } = await import(
-      "@/auth/userJwtSync"
+      "#/auth/userJwtSync"
     );
     const user = baseUser({
       profile: {
@@ -76,7 +76,7 @@ describe("enrichUserWithZkLoginIfNeeded", () => {
 
   it("calls Enoki and merges sui_address and salt when sui_address is missing", async () => {
     const { enrichUserWithZkLoginIfNeeded } = await import(
-      "@/auth/userJwtSync"
+      "#/auth/userJwtSync"
     );
     mockGetZkLoginAddress.mockResolvedValue({
       data: { address: "0xenoki", salt: "salt-99" },
@@ -100,7 +100,7 @@ describe("enrichUserWithZkLoginIfNeeded", () => {
 
   it("throws when Enoki returns an error", async () => {
     const { enrichUserWithZkLoginIfNeeded } = await import(
-      "@/auth/userJwtSync"
+      "#/auth/userJwtSync"
     );
     mockGetZkLoginAddress.mockResolvedValue({
       data: undefined,
@@ -121,7 +121,7 @@ describe("syncPrimaryJwtFromUser", () => {
   });
 
   it("warns and skips storeJwt when refresh_token is missing", async () => {
-    const { syncPrimaryJwtFromUser } = await import("@/auth/userJwtSync");
+    const { syncPrimaryJwtFromUser } = await import("#/auth/userJwtSync");
     const user = baseUser({ refresh_token: undefined });
 
     await syncPrimaryJwtFromUser(user);
@@ -133,7 +133,7 @@ describe("syncPrimaryJwtFromUser", () => {
   });
 
   it("warns and skips storeJwt when refresh_token is blank", async () => {
-    const { syncPrimaryJwtFromUser } = await import("@/auth/userJwtSync");
+    const { syncPrimaryJwtFromUser } = await import("#/auth/userJwtSync");
     const user = baseUser({ refresh_token: "   " });
 
     await syncPrimaryJwtFromUser(user);
@@ -143,7 +143,7 @@ describe("syncPrimaryJwtFromUser", () => {
   });
 
   it("calls storeJwt with OAuth payload when refresh_token is present", async () => {
-    const { syncPrimaryJwtFromUser } = await import("@/auth/userJwtSync");
+    const { syncPrimaryJwtFromUser } = await import("#/auth/userJwtSync");
     const user = baseUser({});
 
     await syncPrimaryJwtFromUser(user);

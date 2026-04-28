@@ -6,10 +6,10 @@ import {
   KEY_FLAG_ED25519,
   KEY_FLAG_SECP256R1,
   type StoredSecretKey,
-} from "@/types";
-import { encrypt } from "@/utils";
-import { isWeb } from "@/utils/environment";
-import { createLogger } from "@/utils/logger";
+} from "#/types";
+import { encrypt } from "#/utils";
+import { isWeb } from "#/utils/environment";
+import { createLogger } from "#/utils/logger";
 
 const log = createLogger();
 

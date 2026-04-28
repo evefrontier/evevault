@@ -4,7 +4,7 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "imports": {
-    "@/*": [
+    "#/*": [
       "./src/*",
       "./src/*.ts",
       "./src/*/index.ts"
@@ -98,7 +98,8 @@
     "test:coverage": "vitest run --config ./vitest.config.mts --coverage"
   },
   "dependencies": {
-    "@mysten/signers": "^0.6.2"
+    "@mysten/signers": "^0.6.2",
+    "@types/node": "^25.6.0"
   },
   "peerDependencies": {
     "@mysten/sui": "^2.14.1",

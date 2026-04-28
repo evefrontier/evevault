@@ -1,14 +1,14 @@
 import { SUI_LOCALNET_CHAIN, type SuiChain } from "@mysten/wallet-standard";
 import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Dropdown } from "@/components/Dropdown";
-import Icon from "@/components/Icon";
-import Text from "@/components/Text";
-import { useNetworkStore } from "@/stores";
-import { useTenantStore } from "@/stores/tenantStore";
-import type { NetworkSelectorProps } from "@/types";
-import { getAvailableNetworks } from "@/types";
-import { createLogger, isExtension } from "@/utils";
+import { Dropdown } from "#/components/Dropdown";
+import Icon from "#/components/Icon";
+import Text from "#/components/Text";
+import { useNetworkStore } from "#/stores";
+import { useTenantStore } from "#/stores/tenantStore";
+import type { NetworkSelectorProps } from "#/types";
+import { getAvailableNetworks } from "#/types";
+import { createLogger, isExtension } from "#/utils";
 import "./NetworkSelector.css";
 
 const log = createLogger();

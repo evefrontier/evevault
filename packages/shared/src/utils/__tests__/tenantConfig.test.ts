@@ -2,13 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   getAvailableTenantIds,
   getDefaultTenantId,
-} from "@/utils/tenantConfig";
+} from "#/utils/tenantConfig";
 
-vi.mock("@/utils/environment", () => ({
+vi.mock("#/utils/environment", () => ({
   isWeb: vi.fn(),
 }));
 
-vi.mock("@/utils/constants", () => ({
+vi.mock("#/utils/constants", () => ({
   TENANT_KEYS: {
     stillness: {
       clientId: "stillness-client",
@@ -53,7 +53,7 @@ vi.mock("@/utils/constants", () => ({
   },
 }));
 
-import { isWeb } from "@/utils/environment";
+import { isWeb } from "#/utils/environment";
 
 const STILLNESS_ORIGIN = "https://evevault.evefrontier.com";
 const TEST_ORIGIN = "https://test.evevault.evefrontier.com";

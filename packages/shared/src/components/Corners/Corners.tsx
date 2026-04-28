@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { CornersColor, CornersProps } from "@/types";
+import type { CornersColor, CornersProps } from "#/types";
 
 const colorMap: Record<CornersColor, string> = {
   quantum: "#ff4700",

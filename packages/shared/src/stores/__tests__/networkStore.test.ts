@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // Mock dependencies before importing the store
 // Note: vi.mock is hoisted, so we use vi.fn() directly in the mock factory
 // Using workspace alias in test files due to Vite resolution limitations with relative imports
-vi.mock("@/auth", () => ({
+vi.mock("#/auth", () => ({
   hasJwt: vi.fn(),
   useAuthStore: {
     getState: () => ({
@@ -13,12 +13,12 @@ vi.mock("@/auth", () => ({
   },
 }));
 
-vi.mock("@/utils/environment", () => ({
+vi.mock("#/utils/environment", () => ({
   isExtension: vi.fn().mockReturnValue(false),
   isWeb: vi.fn().mockReturnValue(true),
 }));
 
-vi.mock("@/utils/logger", () => ({
+vi.mock("#/utils/logger", () => ({
   createLogger: () => ({
     debug: vi.fn(),
     info: vi.fn(),
@@ -34,7 +34,7 @@ const mockDeviceStoreState = vi.hoisted(() => ({
   isLocked: false,
 }));
 
-vi.mock("@/stores/deviceStore", () => ({
+vi.mock("#/stores/deviceStore", () => ({
   useDeviceStore: {
     getState: () => mockDeviceStoreState,
   },
@@ -42,8 +42,8 @@ vi.mock("@/stores/deviceStore", () => ({
 
 // Import mocked modules after vi.mock calls
 // Using workspace alias in test files due to Vite resolution limitations with relative imports
-import { hasJwt } from "@/auth";
-import { useNetworkStore } from "@/stores/networkStore";
+import { hasJwt } from "#/auth";
+import { useNetworkStore } from "#/stores/networkStore";
 
 describe("networkStore", () => {
   beforeEach(() => {

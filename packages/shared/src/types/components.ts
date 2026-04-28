@@ -9,7 +9,7 @@ import type {
   ReactNode,
   SVGProps,
 } from "react";
-import type { ThemeToken } from "@/theme/colorTheme";
+import type { ThemeToken } from "#/theme/colorTheme";
 
 export interface SwitchProps {
   isChecked: boolean;
@@ -369,7 +369,7 @@ export interface LayoutProps {
 }
 
 /** Re-exported from utils/routes (single source of truth for route path types). */
-export type { NavPath, RoutePath } from "@/utils/routes";
+export type { NavPath, RoutePath } from "#/utils/routes";
 
 // Transaction History Types
 export type TransactionDirection = "sent" | "received";
