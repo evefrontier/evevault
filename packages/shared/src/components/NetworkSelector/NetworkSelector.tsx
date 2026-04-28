@@ -1,6 +1,6 @@
 import { SUI_LOCALNET_CHAIN, type SuiChain } from "@mysten/wallet-standard";
 import type React from "react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNetworkStore } from "../../stores";
 import { useTenantStore } from "../../stores/tenantStore";
 import type { NetworkSelectorProps } from "../../types";
@@ -21,7 +21,7 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
   onRequiresReauth,
   onLocalnetSelected,
 }) => {
-  const { setChain, loading } = useNetworkStore();
+  const { setChain, forceSetChain, loading } = useNetworkStore();
   const { devMode } = useTenantStore();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -35,6 +35,14 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
     [devMode, isExtensionContext],
   );
 
+  // If the persisted chain is no longer in availableNetworks (e.g. localnet persisted
+  // but dev mode was toggled off), reset to the first available network.
+  useEffect(() => {
+    if (!availableNetworks.find((n) => n.chain === chain)) {
+      forceSetChain(availableNetworks[0].chain);
+    }
+  }, [availableNetworks, chain, forceSetChain]);
+
   const handleNetworkSelect = useCallback(
     async (targetChain: SuiChain) => {
       if (targetChain === chain) {
@@ -45,18 +53,23 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
       setIsOpen(false);
       setIsProcessing(true);
 
-      const result = await setChain(targetChain);
+      try {
+        const result = await setChain(targetChain);
 
-      if (!result.success) {
-        log.error("Failed to switch network");
-      } else if (result.requiresReauth) {
-        onNetworkSwitchStart?.(chain, targetChain);
-        onRequiresReauth?.(targetChain);
-      } else if (targetChain === SUI_LOCALNET_CHAIN && isExtensionContext) {
-        await onLocalnetSelected?.();
+        if (!result.success) {
+          log.error("Failed to switch network");
+        } else if (result.requiresReauth) {
+          onNetworkSwitchStart?.(chain, targetChain);
+          onRequiresReauth?.(targetChain);
+        } else if (targetChain === SUI_LOCALNET_CHAIN && isExtensionContext) {
+          await onLocalnetSelected?.();
+        }
+        setIsProcessing(false);
+      } catch (error) {
+        log.error("Failed to switch network", error);
+      } finally {
+        setIsProcessing(false);
       }
-
-      setIsProcessing(false);
     },
     [
       chain,

@@ -5,6 +5,7 @@ import {
   useAuthStore,
 } from "@evevault/shared";
 import type { SendTokenSearch } from "@evevault/shared/router";
+import { localnetKeyService } from "@evevault/shared/services/keeperService";
 import { useNetworkStore } from "@evevault/shared/stores";
 import { EXTENSION_ROUTES } from "@evevault/shared/utils";
 import { useActiveSuiAddress } from "@evevault/shared/wallet";
@@ -43,6 +44,19 @@ export const Route = createFileRoute("/send-token")({
   beforeLoad: () => {
     const { user } = useAuthStore.getState();
     const { chain } = useNetworkStore.getState();
+
+    if (isLocalnetChain(chain)) {
+      // Check for localnet address
+      localnetKeyService
+        .getAddress()
+        .then((address) => {
+          if (!address) {
+            throw redirect({ to: "/" });
+          }
+        })
+        .catch(() => redirect({ to: "/" }));
+    }
+
     if (!user && !isLocalnetChain(chain)) {
       throw redirect({ to: "/" });
     }

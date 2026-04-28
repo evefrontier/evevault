@@ -35,16 +35,44 @@ function LocalnetSettingsPage() {
       .catch(() => setAddress(null));
   }, []);
 
+  const validateLocalnetRpcUrl = useCallback(async (rpcUrl: string) => {
+    try {
+      new URL(rpcUrl);
+    } catch {
+      throw new Error("Please enter a valid RPC URL");
+    }
+    const response = await fetch(rpcUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "suix_getLatestSuiSystemState",
+        params: [],
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(`RPC request failed with status ${response.status}`);
+    }
+    const payload: { error?: { message?: string } } = await response.json();
+    if (payload.error) {
+      throw new Error(payload.error.message ?? "RPC validation failed");
+    }
+  }, []);
+
   const handleUrlSave = useCallback(async () => {
     const trimmed = urlDraft.trim();
     if (!trimmed) return;
-    setLocalnetUrl(trimmed);
     setUrlStatus("loading");
     try {
+      await validateLocalnetRpcUrl(trimmed);
+      setLocalnetUrl(trimmed);
       await useDeviceStore.getState().initializeForChain(SUI_LOCALNET_CHAIN);
       setUrlStatus("ok");
     } catch (err) {
-      log.warn("Localnet epoch fetch failed", err);
+      log.warn("Localnet RPC validation failed", err);
       setUrlStatus("error");
     }
   }, [urlDraft, setLocalnetUrl]);
@@ -143,11 +171,16 @@ function LocalnetSettingsPage() {
               setKeyStatus("idle");
               setKeyError(null);
             }}
-            onKeyDown={(e) => e.key === "Enter" && void handleUrlSave()}
+            onKeyDown={(e) => e.key === "Enter" && void handleKeySave()}
             placeholder="suiprivkey1..."
             value={privateKeyDraft}
             uppercase={false}
             height="48px"
+            type="password"
+            autoCorrect="off"
+            autoCapitalize="off"
+            autoComplete="off"
+            spellCheck={false}
           />
           {keyError && (
             <Text size="small" color="error">

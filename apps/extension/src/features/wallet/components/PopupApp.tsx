@@ -192,7 +192,14 @@ function App() {
           {isPinSet && (
             <button
               type="button"
-              onClick={async () => await resetVaultOnDevice()}
+              onClick={async () => {
+                try {
+                  await resetVaultOnDevice();
+                  navigate({ to: "/" });
+                } catch (error) {
+                  log.error("Failed to reset vault", error);
+                }
+              }}
               className="text-sm underline text-grey-neutral hover:text-neutral focus:outline-none focus:ring-2 focus:ring-primary rounded"
             >
               Forgot PIN
@@ -228,7 +235,7 @@ function App() {
       {/* Header with logo and dropdown */}
       <HeaderMobile
         address={activeAddress ?? ""}
-        email={user?.profile?.email as string}
+        email={user?.profile?.email ?? ""}
         onTransactionsClick={() =>
           navigate({ to: EXTENSION_ROUTES.TRANSACTIONS })
         }
