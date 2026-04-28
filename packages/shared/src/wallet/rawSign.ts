@@ -1,7 +1,7 @@
 import type { IntentScope } from "@mysten/sui/cryptography";
-import { VaultMessageTypes } from "../types/messages";
-import { isWeb } from "../utils/environment";
-import { createLogger } from "../utils/logger";
+import { VaultMessageTypes } from "@/types/messages";
+import { isWeb } from "@/utils/environment";
+import { createLogger } from "@/utils/logger";
 
 const log = createLogger();
 

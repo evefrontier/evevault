@@ -1,9 +1,9 @@
 import type React from "react";
 import { useEffect, useRef } from "react";
-import Button from "../Button";
-import Text from "../Text";
+import Button from "@/components/Button";
+import Text from "@/components/Text";
 import "./Modal.css";
-import Heading from "../Heading";
+import Heading from "@/components/Heading";
 
 export type ModalSize = "small" | "medium" | "large" | "full";
 

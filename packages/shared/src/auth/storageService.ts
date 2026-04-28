@@ -1,10 +1,10 @@
 import type { SuiChain } from "@mysten/wallet-standard";
 import { SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
-import { useNetworkStore } from "../stores/networkStore";
-import type { JwtResponse, OAuthTokenResponse } from "../types";
-import { isExtension, isWeb } from "../utils/environment";
-import { createLogger } from "../utils/logger";
-import { JWT_STORAGE_KEY, NETWORK_STORAGE_KEY } from "../utils/storageKeys";
+import { useNetworkStore } from "@/stores/networkStore";
+import type { JwtResponse, OAuthTokenResponse } from "@/types";
+import { isExtension, isWeb } from "@/utils/environment";
+import { createLogger } from "@/utils/logger";
+import { JWT_STORAGE_KEY, NETWORK_STORAGE_KEY } from "@/utils/storageKeys";
 import { resolveExpiresAt } from "./utils/authStoreUtils";
 
 const log = createLogger();

@@ -1,9 +1,9 @@
 import type { PublicKey, Signer } from "@mysten/sui/cryptography";
 import type { SuiChain } from "@mysten/wallet-standard";
-import type { ZkProofResponse } from "../types/enoki";
-import type { StoredSecretKey } from "../types/stores";
-import { createWebCryptoPlaceholder } from "../types/wallet";
-import { isWeb } from "../utils/environment";
+import type { ZkProofResponse } from "@/types/enoki";
+import type { StoredSecretKey } from "@/types/stores";
+import { createWebCryptoPlaceholder } from "@/types/wallet";
+import { isWeb } from "@/utils/environment";
 import {
   ephKeyService as keeperEphKeyService,
   localnetKeyService as keeperLocalnetKeyService,

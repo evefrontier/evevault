@@ -1,5 +1,5 @@
 import type { TenantId } from "@evefrontier/dapp-kit/utils";
-import type { TenantConfig } from "../types";
+import type { TenantConfig } from "@/types";
 
 export const FULLNODE_URL = "https://fullnode.devnet.sui.io";
 

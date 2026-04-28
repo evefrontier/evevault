@@ -1,6 +1,6 @@
 import { decodeJwt } from "jose";
 import type { IdTokenClaims } from "oidc-client-ts";
-import type { OAuthTokenResponse } from "../types/authTypes";
+import type { OAuthTokenResponse } from "@/types/authTypes";
 
 /**
  * Minimal parser for FusionAuth `/oauth2/token` JSON (snake_case body).

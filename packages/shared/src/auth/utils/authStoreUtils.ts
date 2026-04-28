@@ -1,11 +1,11 @@
 import type { SuiChain } from "@mysten/wallet-standard";
 import { decodeJwt } from "jose";
 import { type IdTokenClaims, User } from "oidc-client-ts";
-import type { JwtResponse } from "../../types/authTypes";
-import { createLogger } from "../../utils/logger";
-import { getZkLoginAddress } from "../getZkLoginAddress";
-import { getJwt } from "../storageService";
-import { getEnokiApiKey } from "../stores/authStore";
+import { getZkLoginAddress } from "@/auth/getZkLoginAddress";
+import { getJwt } from "@/auth/storageService";
+import { getEnokiApiKey } from "@/auth/stores/authStore";
+import type { JwtResponse } from "@/types/authTypes";
+import { createLogger } from "@/utils/logger";
 
 const log = createLogger();
 

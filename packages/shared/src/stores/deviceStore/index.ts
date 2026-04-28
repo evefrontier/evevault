@@ -1,11 +1,11 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { chromeStorageAdapter, localStorageAdapter } from "../../adapters";
-import { ephKeyService } from "../../services/vaultService";
-import type { DeviceState } from "../../types";
-import { isWeb } from "../../utils/environment";
-import { createLogger } from "../../utils/logger";
-import { DEVICE_STORAGE_KEY } from "../../utils/storageKeys";
+import { chromeStorageAdapter, localStorageAdapter } from "@/adapters";
+import { ephKeyService } from "@/services/vaultService";
+import type { DeviceState } from "@/types";
+import { isWeb } from "@/utils/environment";
+import { createLogger } from "@/utils/logger";
+import { DEVICE_STORAGE_KEY } from "@/utils/storageKeys";
 import { createInitActions } from "./actions/initActions";
 import { createLockActions } from "./actions/lockActions";
 import { createProofActions } from "./actions/proofActions";

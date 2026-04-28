@@ -1,5 +1,5 @@
 import { redirect } from "@tanstack/react-router";
-import { useAuthStore } from "../auth";
+import { useAuthStore } from "@/auth";
 
 export interface RequireAuthOptions {
   /** Path to redirect to when not authenticated (default: "/") */

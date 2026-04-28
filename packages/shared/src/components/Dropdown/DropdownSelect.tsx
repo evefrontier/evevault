@@ -1,11 +1,11 @@
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import "./DropdownSelect.css";
-import { useResponsive } from "../../hooks";
-import type { DropdownItem, DropdownSelectProps } from "../../types";
-import { Corners } from "../Corners";
-import Icon from "../Icon";
-import Text from "../Text";
+import { Corners } from "@/components/Corners";
+import Icon from "@/components/Icon";
+import Text from "@/components/Text";
+import { useResponsive } from "@/hooks";
+import type { DropdownItem, DropdownSelectProps } from "@/types";
 import { getIdenticon } from "./Identicons";
 
 export const DropdownSelect: React.FC<DropdownSelectProps> = ({

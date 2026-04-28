@@ -7,28 +7,28 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock dependencies before imports
 // Using workspace aliases in test files due to Vite resolution limitations with relative imports
-vi.mock("@evevault/shared/auth", () => ({
+vi.mock("@/auth", () => ({
   useAuth: vi.fn(),
   getUserForNetwork: vi.fn(),
 }));
 
-vi.mock("@evevault/shared/hooks", () => ({
+vi.mock("@/hooks", () => ({
   useDevice: vi.fn(),
 }));
 
-vi.mock("../../../hooks/useDevice", () => ({
+vi.mock("@/hooks/useDevice", () => ({
   useDevice: vi.fn(),
 }));
 
-vi.mock("@evevault/shared/stores/networkStore", () => ({
+vi.mock("@/stores/networkStore", () => ({
   useNetworkStore: vi.fn(),
 }));
 
-vi.mock("@evevault/shared/sui", () => ({
+vi.mock("@/sui", () => ({
   createSuiClient: vi.fn(),
 }));
 
-vi.mock("@evevault/shared/utils", () => ({
+vi.mock("@/utils", () => ({
   createLogger: vi.fn(() => ({
     debug: vi.fn(),
     info: vi.fn(),
@@ -56,15 +56,15 @@ vi.mock("@evevault/shared/utils", () => ({
   }),
 }));
 
-vi.mock("../useBalance", () => ({
+vi.mock("@/wallet/hooks/useBalance", () => ({
   useBalance: vi.fn(),
 }));
 
-vi.mock("../../zkSignAny", () => ({
+vi.mock("@/wallet/zkSignAny", () => ({
   zkSignAny: vi.fn(),
 }));
 
-vi.mock("../useWalletSigningContext", () => ({
+vi.mock("@/wallet/hooks/useWalletSigningContext", () => ({
   useWalletSigningContext: vi.fn(),
 }));
 
@@ -83,19 +83,20 @@ vi.mock("@mysten/sui/transactions", () => {
   };
 });
 
+import { TenantId } from "@evefrontier/dapp-kit";
 // Import after mocks
 // Using workspace aliases in test files due to Vite resolution limitations with relative imports
-import { getUserForNetwork, useAuth } from "@evevault/shared/auth";
-import { useNetworkStore } from "@evevault/shared/stores/networkStore";
-import { createSuiClient } from "@evevault/shared/sui";
-import { createMockUser } from "@evevault/shared/testing";
-import { useDevice } from "../../../hooks/useDevice";
-import { getEveCoinType } from "../../eveToken";
-import type { UseBalanceParams } from "../../types/hooks";
-import { zkSignAny } from "../../zkSignAny";
-import { useBalance } from "../useBalance";
-import { useSendToken } from "../useSendToken";
-import { useWalletSigningContext } from "../useWalletSigningContext";
+import { getUserForNetwork, useAuth } from "@/auth";
+import { useDevice } from "@/hooks/useDevice";
+import { useNetworkStore } from "@/stores/networkStore";
+import { createSuiClient } from "@/sui";
+import { createMockUser } from "@/testing";
+import { getEveCoinType } from "@/wallet/eveToken";
+import { useBalance } from "@/wallet/hooks/useBalance";
+import { useSendToken } from "@/wallet/hooks/useSendToken";
+import { useWalletSigningContext } from "@/wallet/hooks/useWalletSigningContext";
+import type { UseBalanceParams } from "@/wallet/types/hooks";
+import { zkSignAny } from "@/wallet/zkSignAny";
 
 const mockUseAuth = vi.mocked(useAuth);
 const mockGetUserForNetwork = vi.mocked(getUserForNetwork);
@@ -536,7 +537,7 @@ describe("useSendToken", () => {
 
   describe("SUI for gas warning", () => {
     const SUI_COIN_TYPE = "0x2::sui::SUI";
-    const EVE_COIN_TYPE = getEveCoinType("stillness");
+    const EVE_COIN_TYPE = getEveCoinType(TenantId.STILLNESS);
 
     it("returns suiForGasWarning when sending non-SUI token and SUI balance is zero", () => {
       mockUseBalance.mockImplementation(

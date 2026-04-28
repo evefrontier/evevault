@@ -1,14 +1,14 @@
 import type { SuiChain } from "@mysten/wallet-standard";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { chromeStorageAdapter, localStorageAdapter } from "../adapters";
-import type { TokenListState } from "../types";
+import { chromeStorageAdapter, localStorageAdapter } from "@/adapters";
+import type { TokenListState } from "@/types";
 import {
   DEFAULT_TOKENS_BY_CHAIN,
   getDefaultTokensForChain,
-} from "../types/networks";
-import { isWeb } from "../utils/environment";
-import { TOKENLIST_STORAGE_KEY } from "../utils/storageKeys";
+} from "@/types/networks";
+import { isWeb } from "@/utils/environment";
+import { TOKENLIST_STORAGE_KEY } from "@/utils/storageKeys";
 
 const sanitizeCoinType = (coinType: string) => coinType.trim();
 

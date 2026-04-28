@@ -105,7 +105,7 @@ vi.mock("@mysten/signers/webcrypto", () => {
 });
 
 // Mock logger to avoid console noise
-vi.mock("../utils/logger", () => ({
+vi.mock("@/utils/logger", () => ({
   createLogger: () => ({
     debug: vi.fn(),
     info: vi.fn(),

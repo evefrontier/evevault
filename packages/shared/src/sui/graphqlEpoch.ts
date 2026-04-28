@@ -1,6 +1,6 @@
 import type { SuiChain } from "@mysten/wallet-standard";
-import { DEFAULT_EPOCH_DURATION_MS } from "../utils/constants";
-import { createLogger } from "../utils/logger";
+import { DEFAULT_EPOCH_DURATION_MS } from "@/utils/constants";
+import { createLogger } from "@/utils/logger";
 import { createSuiGraphQLClient } from "./graphqlClient";
 import { EPOCH_QUERY } from "./queries/epoch";
 import type { EpochQueryResponse } from "./types";

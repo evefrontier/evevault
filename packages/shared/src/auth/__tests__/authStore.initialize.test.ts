@@ -13,7 +13,7 @@ const mockResolveExpiresAt = vi.fn();
 const mockIsExtension = vi.fn();
 const mockDecodeJwt = vi.fn();
 
-vi.mock("../authConfig", () => ({
+vi.mock("@/auth/authConfig", () => ({
   getUserManager: () => ({
     getUser: (...args: unknown[]) => mockGetUser(...args),
     storeUser: (...args: unknown[]) => mockStoreUser(...args),
@@ -22,32 +22,32 @@ vi.mock("../authConfig", () => ({
   redirectToFusionAuthLogout: vi.fn(),
 }));
 
-vi.mock("../storageService", () => ({
+vi.mock("@/auth/storageService", () => ({
   getJwt: (...args: unknown[]) => mockGetJwt(...args),
   clearAllJwts: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock("../userJwtSync", () => ({
+vi.mock("@/auth/userJwtSync", () => ({
   enrichUserWithZkLoginIfNeeded: (...args: unknown[]) =>
     mockEnrichUser(...args),
   syncPrimaryJwtFromUser: (...args: unknown[]) => mockSyncPrimaryJwt(...args),
 }));
 
-vi.mock("../userToJwtResponse", () => ({
+vi.mock("@/auth/userToJwtResponse", () => ({
   userToJwtResponse: (...args: unknown[]) => mockUserToJwtResponse(...args),
 }));
 
-vi.mock("../utils/authStoreUtils", () => ({
+vi.mock("@/auth/utils/authStoreUtils", () => ({
   resolveExpiresAt: (...args: unknown[]) => mockResolveExpiresAt(...args),
 }));
 
-vi.mock("../../utils/environment", () => ({
+vi.mock("@/utils/environment", () => ({
   isExtension: () => mockIsExtension(),
   isWeb: () => !mockIsExtension(),
   isBrowser: () => true,
 }));
 
-vi.mock("../../utils/logger", () => ({
+vi.mock("@/utils/logger", () => ({
   createLogger: () => ({
     debug: vi.fn(),
     info: vi.fn(),
@@ -56,11 +56,11 @@ vi.mock("../../utils/logger", () => ({
   }),
 }));
 
-vi.mock("../../utils/authCleanup", () => ({
+vi.mock("@/utils/authCleanup", () => ({
   performFullCleanup: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock("../../stores", () => ({
+vi.mock("@/stores", () => ({
   useNetworkStore: {
     getState: vi.fn(() => ({ chain: SUI_TESTNET_CHAIN })),
   },
@@ -72,18 +72,18 @@ vi.mock("../../stores", () => ({
   },
 }));
 
-vi.mock("../../stores/tenantStore", () => ({
+vi.mock("@/stores/tenantStore", () => ({
   getCurrentTenantId: vi.fn(() => "default"),
   OAuthTenantSessionKey: "evevault:tenant",
   setCurrentTenantId: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock("../../services/vaultService", () => ({
+vi.mock("@/services/vaultService", () => ({
   zkProofService: { clear: vi.fn().mockResolvedValue(undefined) },
   ephKeyService: { lock: vi.fn().mockResolvedValue(undefined) },
 }));
 
-vi.mock("../../utils/tenantConfig", () => ({
+vi.mock("@/utils/tenantConfig", () => ({
   getTenantConfig: vi.fn(() => ({
     serverUrl: "http://localhost",
     clientId: "test-client",
@@ -91,16 +91,16 @@ vi.mock("../../utils/tenantConfig", () => ({
   DEFAULT_TENANT_ID: "default",
 }));
 
-vi.mock("../getZkLoginAddress", () => ({
+vi.mock("@/auth/getZkLoginAddress", () => ({
   clearZkLoginAddressCache: vi.fn(),
   getZkLoginAddress: vi.fn(),
 }));
 
-vi.mock("../oauthTokenResponse", () => ({
+vi.mock("@/auth/oauthTokenResponse", () => ({
   parseOAuthTokenResponse: vi.fn(),
 }));
 
-vi.mock("../../adapters", () => ({
+vi.mock("@/adapters", () => ({
   localStorageAdapter: {
     getItem: vi.fn().mockResolvedValue(null),
     setItem: vi.fn().mockResolvedValue(undefined),
@@ -118,7 +118,7 @@ vi.mock("jose", () => ({
 }));
 
 // ─── import store after mocks ─────────────────────────────────────────────
-import { useAuthStore } from "../stores/authStore";
+import { useAuthStore } from "@/auth/stores/authStore";
 
 // ─── helpers ──────────────────────────────────────────────────────────────
 

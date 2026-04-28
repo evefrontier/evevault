@@ -2,7 +2,7 @@
 
 import { SignJWT } from "jose";
 import { describe, expect, it } from "vitest";
-import { getApiContext } from "../getApiContext";
+import { getApiContext } from "@/auth/getApiContext";
 
 const HS256_SECRET = new TextEncoder().encode(
   "unit-test-hs256-secret-32-chars!!",

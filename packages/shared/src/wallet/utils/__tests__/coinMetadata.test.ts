@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { SUI_COIN_TYPE } from "../../../utils";
+import { SUI_COIN_TYPE } from "@/utils";
 import {
   fetchCoinMetadata,
   invalidateCoinMetadataCache,
-} from "../coinMetadata";
+} from "@/wallet/utils/coinMetadata";
 
-vi.mock("../../../utils/logger", () => ({
+vi.mock("@/utils/logger", () => ({
   createLogger: () => ({
     debug: vi.fn(),
     info: vi.fn(),

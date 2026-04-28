@@ -9,8 +9,8 @@ import {
   GAS_FEE_WARNING_MESSAGE,
   SUI_COIN_TYPE,
   toSmallestUnit,
-} from "../../utils";
-import { isEveCoinType } from "../eveToken";
+} from "@/utils";
+import { isEveCoinType } from "@/wallet/eveToken";
 import { useBalance } from "./useBalance";
 import { useWalletSigningContext } from "./useWalletSigningContext";
 

@@ -4,7 +4,7 @@ import {
   TenantId,
 } from "@evefrontier/dapp-kit";
 import { describe, expect, it } from "vitest";
-import { isEveCoinType } from "../eveToken";
+import { isEveCoinType } from "@/wallet/eveToken";
 
 describe("eveToken", () => {
   describe("getEveCoinType", () => {

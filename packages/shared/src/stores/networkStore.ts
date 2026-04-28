@@ -1,12 +1,12 @@
 import { SUI_TESTNET_CHAIN, type SuiChain } from "@mysten/wallet-standard";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { chromeStorageAdapter, localStorageAdapter } from "../adapters";
-import { hasJwt, useAuthStore } from "../auth";
-import type { NetworkState, NetworkSwitchResult } from "../types";
-import { isLocalnetChain } from "../types/networks";
-import { createLogger, isExtension, isWeb } from "../utils";
-import { NETWORK_STORAGE_KEY } from "../utils/storageKeys";
+import { chromeStorageAdapter, localStorageAdapter } from "@/adapters";
+import { hasJwt, useAuthStore } from "@/auth";
+import type { NetworkState, NetworkSwitchResult } from "@/types";
+import { isLocalnetChain } from "@/types/networks";
+import { createLogger, isExtension, isWeb } from "@/utils";
+import { NETWORK_STORAGE_KEY } from "@/utils/storageKeys";
 import { useDeviceStore } from "./deviceStore";
 
 const log = createLogger();

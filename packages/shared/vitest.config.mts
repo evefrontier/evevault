@@ -12,15 +12,9 @@ export default defineConfig({
   ],
   resolve: {
     alias: [
-      // Self-referential imports within the shared package
-      // Order matters: more specific paths first
       {
-        find: /^@evevault\/shared\/(.+)$/,
+        find: /^@\/(.+)$/,
         replacement: path.resolve(__dirname, "./src/$1"),
-      },
-      {
-        find: "@evevault/shared",
-        replacement: path.resolve(__dirname, "./src"),
       },
     ],
     extensions: [".ts", ".tsx", ".js", ".jsx", ".json"],

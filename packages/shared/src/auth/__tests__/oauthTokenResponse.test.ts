@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseOAuthTokenResponse } from "../oauthTokenResponse";
+import { parseOAuthTokenResponse } from "@/auth/oauthTokenResponse";
 
 describe("parseOAuthTokenResponse", () => {
   const base = {

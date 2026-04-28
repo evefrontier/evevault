@@ -13,7 +13,7 @@ const { oidcMocks, logMocks, envMocks } = vi.hoisted(() => {
   };
 });
 
-vi.mock("../../utils/logger", () => ({
+vi.mock("@/utils/logger", () => ({
   createLogger: () => ({
     debug: vi.fn(),
     info: vi.fn(),
@@ -43,7 +43,7 @@ vi.mock("oidc-client-ts", () => {
   };
 });
 
-vi.mock("../../utils/tenantConfig", () => ({
+vi.mock("@/utils/tenantConfig", () => ({
   getTenantConfig: () => ({
     clientId: "client-id",
     clientSecret: "secret",
@@ -51,7 +51,7 @@ vi.mock("../../utils/tenantConfig", () => ({
   }),
 }));
 
-vi.mock("../../utils/environment", () => ({
+vi.mock("@/utils/environment", () => ({
   isExtension: () => envMocks.isExtension(),
 }));
 
@@ -63,7 +63,7 @@ describe("authConfig UserManager", () => {
   });
 
   it("passes automaticSilentRenew to UserManager", async () => {
-    const { getUserManager } = await import("../authConfig");
+    const { getUserManager } = await import("@/auth/authConfig");
     getUserManager("stillness");
 
     expect(oidcMocks.userManagerConstructor).toHaveBeenCalledTimes(1);
@@ -80,7 +80,7 @@ describe("authConfig UserManager", () => {
       runtime: { id: "test-ext" },
     };
     try {
-      const { getUserManager } = await import("../authConfig");
+      const { getUserManager } = await import("@/auth/authConfig");
       getUserManager("stillness");
 
       const settings = oidcMocks.userManagerConstructor.mock.calls[0]?.[0] as {
@@ -93,7 +93,7 @@ describe("authConfig UserManager", () => {
   });
 
   it("logs when silent renew handler is invoked with an error", async () => {
-    const { getUserManager } = await import("../authConfig");
+    const { getUserManager } = await import("@/auth/authConfig");
     getUserManager("stillness");
 
     expect(oidcMocks.addSilentRenewError).toHaveBeenCalledTimes(1);

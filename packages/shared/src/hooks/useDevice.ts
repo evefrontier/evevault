@@ -2,10 +2,10 @@ import type { PublicKey } from "@mysten/sui/cryptography";
 import { Ed25519PublicKey } from "@mysten/sui/keypairs/ed25519";
 import { Secp256r1PublicKey } from "@mysten/sui/keypairs/secp256r1";
 import { useMemo } from "react";
-import { useDeviceStore } from "../stores/deviceStore";
-import { useNetworkStore } from "../stores/networkStore";
-import { KEY_FLAG_SECP256R1 } from "../types/stores";
-import { createLogger } from "../utils/logger";
+import { useDeviceStore } from "@/stores/deviceStore";
+import { useNetworkStore } from "@/stores/networkStore";
+import { KEY_FLAG_SECP256R1 } from "@/types/stores";
+import { createLogger } from "@/utils/logger";
 
 const log = createLogger();
 

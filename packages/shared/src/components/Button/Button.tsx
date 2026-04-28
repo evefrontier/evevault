@@ -1,8 +1,8 @@
 import type { FC } from "react";
 import { useEffect, useRef, useState } from "react";
 import "./Button.css";
-import type { ButtonProps } from "../../types";
-import { Corners } from "../Corners";
+import { Corners } from "@/components/Corners";
+import type { ButtonProps } from "@/types";
 
 export const Button: FC<ButtonProps> = ({
   size = "medium",

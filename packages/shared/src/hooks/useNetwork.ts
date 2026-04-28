@@ -1,4 +1,4 @@
-import { useNetworkStore } from "../stores/networkStore";
+import { useNetworkStore } from "@/stores/networkStore";
 
 export const useNetwork = () => {
   const { chain, loading, setChain } = useNetworkStore();

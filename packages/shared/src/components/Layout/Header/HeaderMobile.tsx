@@ -1,16 +1,16 @@
-import { formatAddress } from "@evevault/shared/utils";
 import type React from "react";
 import { useMemo } from "react";
-import { useAuth } from "../../../auth";
-import { useCopyToClipboard, useDevice } from "../../../hooks";
-import type { HeaderMobileProps, IconName } from "../../../types";
+import { useAuth } from "@/auth";
 import {
   type DropdownItem,
   DropdownSelect,
   getIdenticon,
-} from "../../Dropdown";
-import Switch from "../../Switch";
-import Text from "../../Text";
+} from "@/components/Dropdown";
+import Switch from "@/components/Switch";
+import Text from "@/components/Text";
+import { useCopyToClipboard, useDevice } from "@/hooks";
+import type { HeaderMobileProps, IconName } from "@/types";
+import { formatAddress } from "@/utils";
 
 export const HeaderMobile: React.FC<HeaderMobileProps> = ({
   address,

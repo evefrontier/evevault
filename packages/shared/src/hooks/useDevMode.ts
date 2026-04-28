@@ -1,10 +1,10 @@
 import { Transaction } from "@mysten/sui/transactions";
 import { useCallback, useState } from "react";
-import { useToast } from "../components";
-import { useDeviceStore } from "../stores";
-import { useNetworkStore } from "../stores/networkStore";
-import { createLogger } from "../utils";
-import { useWalletSigningContext } from "../wallet/hooks/useWalletSigningContext";
+import { useToast } from "@/components";
+import { useDeviceStore } from "@/stores";
+import { useNetworkStore } from "@/stores/networkStore";
+import { createLogger } from "@/utils";
+import { useWalletSigningContext } from "@/wallet/hooks/useWalletSigningContext";
 import { useDevice } from "./useDevice";
 
 const log = createLogger();

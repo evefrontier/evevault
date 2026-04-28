@@ -1,34 +1,34 @@
 import type { User } from "oidc-client-ts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("../../stores/deviceStore", () => ({
+vi.mock("@/stores/deviceStore", () => ({
   useDeviceStore: {
     getState: vi.fn(),
   },
 }));
 
-vi.mock("../../stores/networkStore", () => ({
+vi.mock("@/stores/networkStore", () => ({
   useNetworkStore: {
     getState: vi.fn(),
   },
 }));
 
-vi.mock("../../utils/environment", () => ({
+vi.mock("@/utils/environment", () => ({
   isWeb: vi.fn(() => true),
   isExtension: vi.fn(() => false),
 }));
 
-vi.mock("../../services/vaultService", () => ({
+vi.mock("@/services/vaultService", () => ({
   ephKeyService: {
     getSigner: vi.fn(),
   },
 }));
 
-import { ephKeyService } from "../../services/vaultService";
-import { useDeviceStore } from "../../stores/deviceStore";
-import { useNetworkStore } from "../../stores/networkStore";
-import { isWeb } from "../../utils/environment";
-import { zkSignAny } from "../zkSignAny";
+import { ephKeyService } from "@/services/vaultService";
+import { useDeviceStore } from "@/stores/deviceStore";
+import { useNetworkStore } from "@/stores/networkStore";
+import { isWeb } from "@/utils/environment";
+import { zkSignAny } from "@/wallet/zkSignAny";
 
 const minimalUser = {
   profile: {

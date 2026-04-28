@@ -6,7 +6,7 @@ import {
   useContext,
   useState,
 } from "react";
-import type { ToastVariant } from "../../types/components";
+import type { ToastVariant } from "@/types/components";
 import { Toast } from "./Toast";
 
 type ToastState = {

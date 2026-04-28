@@ -1,23 +1,23 @@
 import type React from "react";
 import { type KeyboardEvent, useMemo, useState } from "react";
-import { useNetworkStore } from "../../stores/networkStore";
+import Button from "@/components/Button";
+import Heading from "@/components/Heading";
+import Icon from "@/components/Icon";
+import { HeaderMobile } from "@/components/Layout";
+import Text from "@/components/Text";
+import { useNetworkStore } from "@/stores/networkStore";
 import type {
   TransactionRowProps,
   TransactionsScreenProps,
-} from "../../types/components";
+} from "@/types/components";
 import {
   formatAddress,
   formatDisplayAmount,
   formatShortDate,
   getSuiscanUrl,
   SUI_COIN_TYPE,
-} from "../../utils";
-import { useActiveSuiAddress, useTransactionHistory } from "../../wallet";
-import Button from "../Button";
-import Heading from "../Heading";
-import Icon from "../Icon";
-import { HeaderMobile } from "../Layout";
-import Text from "../Text";
+} from "@/utils";
+import { useActiveSuiAddress, useTransactionHistory } from "@/wallet";
 
 const TransactionRow: React.FC<TransactionRowProps> = ({
   transaction,

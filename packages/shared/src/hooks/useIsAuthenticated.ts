@@ -1,4 +1,4 @@
-import { useWalletSigningContext } from "../wallet/hooks/useWalletSigningContext";
+import { useWalletSigningContext } from "@/wallet/hooks/useWalletSigningContext";
 
 /**
  * Returns true when the wallet has an identity ready to sign transactions.

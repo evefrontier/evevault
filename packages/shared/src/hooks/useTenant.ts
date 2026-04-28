@@ -1,4 +1,4 @@
-import { useTenantStore } from "../stores/tenantStore";
+import { useTenantStore } from "@/stores/tenantStore";
 
 export const useTenant = () => {
   const { tenantId, devMode, setTenantId, setDevMode } = useTenantStore();

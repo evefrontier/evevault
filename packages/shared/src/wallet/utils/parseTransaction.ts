@@ -3,14 +3,14 @@ import type {
   Transaction,
   TransactionBalanceChange,
   TransactionDirection,
-} from "../../types/components";
-import { SUI_COIN_TYPE } from "../../utils";
-import { formatByDecimals } from "../../utils/format";
-import { createLogger } from "../../utils/logger";
+} from "@/types/components";
+import { SUI_COIN_TYPE } from "@/utils";
+import { formatByDecimals } from "@/utils/format";
+import { createLogger } from "@/utils/logger";
 import type {
   GraphQLBalanceChange,
   GraphQLTransactionNode,
-} from "../types/graphql";
+} from "@/wallet/types/graphql";
 import { fetchCoinMetadata } from "./coinMetadata";
 import { extractSymbolFromCoinType } from "./formatTransaction";
 
