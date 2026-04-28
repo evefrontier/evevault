@@ -22,14 +22,12 @@ export interface SwitchProps {
 export interface TokenListProps {
   user: User | null;
   chain: SuiChain | null;
-  balanceAddress?: string | null;
-  localnetUrl?: string;
-  onAddToken?: () => void;
-  onSendToken?: (coinType: string) => void;
   /** Explicit address for balance queries — overrides user.profile.sui_address (used on localnet) */
   balanceAddress?: string | null;
   /** Localnet RPC URL for balance queries — required when chain is localnet */
   localnetUrl?: string;
+  onAddToken?: () => void;
+  onSendToken?: (coinType: string) => void;
 }
 
 export interface TokenRowProps {
@@ -412,6 +410,8 @@ export interface TransactionsScreenProps {
 export interface TransactionRowProps {
   transaction: Transaction;
   chain: string;
+  localnetUrl?: string;
+  senderAddress?: string;
   isExpanded: boolean;
   onToggle: () => void;
 }

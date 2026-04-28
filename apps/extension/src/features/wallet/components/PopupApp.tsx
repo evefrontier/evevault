@@ -134,7 +134,7 @@ function App() {
   }
 
   if (!isAuthenticated) {
-    if (!isLocalnet && isLocked && isPinSet) {
+    if (isLocked && isPinSet) {
       return (
         <LockScreen
           isPinSet={isPinSet}
@@ -295,7 +295,13 @@ function App() {
         <Text>
           Transaction digest:{" "}
           <a
-            href={chain ? getSuiscanUrl(chain, txDigest) : "#"}
+            href={
+              chain
+                ? getSuiscanUrl(chain, txDigest, {
+                    localnetUrl: localnetUrl ?? undefined,
+                  })
+                : "#"
+            }
             target="_blank"
             rel="noopener noreferrer"
           >

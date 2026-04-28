@@ -22,4 +22,18 @@ describe("getSuiscanUrl", () => {
     const url = getSuiscanUrl("sui:devnet", digest);
     expect(url).toBe(`https://suiscan.xyz/devnet/tx/${digest}`);
   });
+
+  it("generates custom suiscan account URL for localnet", () => {
+    const url = getSuiscanUrl("sui:localnet", "0xdigest", {
+      localnetUrl: "http://127.0.0.1:9000",
+    });
+    expect(url).toBe(
+      "https://custom.suiscan.xyz/custom/tx/0xdigest?network=http%3A%2F%2F127.0.0.1%3A9000",
+    );
+  });
+
+  it("falls back to suiscan.xyz for localnet when opts are missing", () => {
+    const url = getSuiscanUrl("sui:localnet", "0xdigest");
+    expect(url).toBe("https://suiscan.xyz/localnet/tx/0xdigest");
+  });
 });

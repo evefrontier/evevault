@@ -65,8 +65,6 @@ function SignSponsoredTransaction() {
       );
       const { zkSignature } = await zkSignAny("TransactionData", txbBytes, {
         user: auth.user,
-        ephemeralPublicKey: auth.ephemeralPublicKey,
-        maxEpoch: auth.maxEpoch,
         getZkProof: auth.getZkProof,
       });
 
