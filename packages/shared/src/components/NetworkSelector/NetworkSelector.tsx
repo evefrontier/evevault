@@ -1,14 +1,15 @@
-import type { SuiChain } from "@mysten/wallet-standard";
+import { SUI_LOCALNET_CHAIN, type SuiChain } from "@mysten/wallet-standard";
 import type React from "react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNetworkStore } from "../../stores";
+import { useTenantStore } from "../../stores/tenantStore";
 import type { NetworkSelectorProps } from "../../types";
-import { AVAILABLE_NETWORKS } from "../../types";
+import { getAvailableNetworks } from "../../types";
 import { createLogger, isExtension } from "../../utils";
+import { Dropdown } from "../Dropdown";
 import Icon from "../Icon";
 import Text from "../Text";
 import "./NetworkSelector.css";
-import { Dropdown } from "../Dropdown";
 
 const log = createLogger();
 
@@ -18,12 +19,29 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
   compact = false,
   onNetworkSwitchStart,
   onRequiresReauth,
+  onLocalnetSelected,
 }) => {
-  const { setChain, loading } = useNetworkStore();
+  const { setChain, forceSetChain, loading } = useNetworkStore();
+  const { devMode } = useTenantStore();
 
   const [isOpen, setIsOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
+
+  const isExtensionContext = isExtension();
+
+  const availableNetworks = useMemo(
+    () => getAvailableNetworks(devMode, isExtensionContext),
+    [devMode, isExtensionContext],
+  );
+
+  // If the persisted chain is no longer in availableNetworks (e.g. localnet persisted
+  // but dev mode was toggled off), reset to the first available network.
+  useEffect(() => {
+    if (!availableNetworks.find((n) => n.chain === chain)) {
+      forceSetChain(availableNetworks[0].chain);
+    }
+  }, [availableNetworks, chain, forceSetChain]);
 
   const handleNetworkSelect = useCallback(
     async (targetChain: SuiChain) => {
@@ -35,29 +53,41 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
       setIsOpen(false);
       setIsProcessing(true);
 
-      const result = await setChain(targetChain);
+      try {
+        const result = await setChain(targetChain);
 
-      if (!result.success) {
-        log.error("Failed to switch network");
-      } else if (result.requiresReauth) {
-        onNetworkSwitchStart?.(chain, targetChain);
-        onRequiresReauth?.(targetChain);
+        if (!result.success) {
+          log.error("Failed to switch network");
+        } else if (result.requiresReauth) {
+          onNetworkSwitchStart?.(chain, targetChain);
+          onRequiresReauth?.(targetChain);
+        } else if (targetChain === SUI_LOCALNET_CHAIN && isExtensionContext) {
+          await onLocalnetSelected?.();
+        }
+        setIsProcessing(false);
+      } catch (error) {
+        log.error("Failed to switch network", error);
+      } finally {
+        setIsProcessing(false);
       }
-
-      setIsProcessing(false);
     },
-    [chain, setChain, onNetworkSwitchStart, onRequiresReauth],
+    [
+      chain,
+      setChain,
+      onNetworkSwitchStart,
+      onRequiresReauth,
+      onLocalnetSelected,
+      isExtensionContext,
+    ],
   );
 
   const currentNetwork = useMemo(
     () =>
-      AVAILABLE_NETWORKS.find((n) => n.chain === chain) ??
-      AVAILABLE_NETWORKS[0],
-    [chain],
+      availableNetworks.find((n) => n.chain === chain) ?? availableNetworks[0],
+    [availableNetworks, chain],
   );
 
   const isDisabled = loading || isProcessing;
-  const isExtensionContext = isExtension();
 
   return (
     <div
@@ -117,7 +147,7 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
           triggerRef={triggerRef}
           placement={isExtensionContext ? "top" : "bottom"}
         >
-          {AVAILABLE_NETWORKS.map((network) => (
+          {availableNetworks.map((network) => (
             <button
               key={network.chain}
               className={`dropdown__item ${

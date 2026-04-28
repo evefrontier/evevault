@@ -4,7 +4,7 @@ import { useNetworkStore } from "../../stores/networkStore";
 import { getFaucetUrlForChain } from "../../sui";
 import type { SendTokenScreenProps } from "../../types";
 import { formatAddress, getSuiscanUrl } from "../../utils";
-import { useSendToken } from "../../wallet";
+import { useActiveSuiAddress, useSendToken } from "../../wallet";
 import Button from "../Button";
 import Heading from "../Heading";
 import { Input } from "../Inputs";
@@ -16,7 +16,7 @@ export const SendTokenScreen: React.FC<SendTokenScreenProps> = ({
   onCancel,
 }) => {
   const { showToast } = useToast();
-  const { chain: currentChain } = useNetworkStore();
+  const { chain: currentChain, localnetUrl } = useNetworkStore();
   const [recipientAddress, setRecipientAddress] = useState("");
   const [amount, setAmount] = useState("");
   // Store the submitted values to show on success screen
@@ -86,7 +86,9 @@ export const SendTokenScreen: React.FC<SendTokenScreenProps> = ({
   // Show success/confirmation screen
   if (txDigest) {
     const suiscanUrl = currentChain
-      ? getSuiscanUrl(currentChain, txDigest)
+      ? getSuiscanUrl(currentChain, txDigest, {
+          localnetUrl: localnetUrl ?? undefined,
+        })
       : null;
 
     const handleViewOnSuiscan = () => {

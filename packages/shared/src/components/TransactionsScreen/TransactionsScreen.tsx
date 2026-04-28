@@ -1,5 +1,6 @@
 import type React from "react";
 import { type KeyboardEvent, useMemo, useState } from "react";
+import { useNetworkStore } from "../../stores/networkStore";
 import type {
   TransactionRowProps,
   TransactionsScreenProps,
@@ -11,7 +12,7 @@ import {
   getSuiscanUrl,
   SUI_COIN_TYPE,
 } from "../../utils";
-import { useTransactionHistory } from "../../wallet";
+import { useActiveSuiAddress, useTransactionHistory } from "../../wallet";
 import Button from "../Button";
 import Heading from "../Heading";
 import Icon from "../Icon";
@@ -21,13 +22,16 @@ import Text from "../Text";
 const TransactionRow: React.FC<TransactionRowProps> = ({
   transaction,
   chain,
+  localnetUrl,
   isExpanded,
   onToggle,
 }) => {
   const { digest, timestamp, counterparty, direction, balanceChanges } =
     transaction;
 
-  const suiscanUrl = getSuiscanUrl(chain, digest);
+  const suiscanUrl = getSuiscanUrl(chain, digest, {
+    localnetUrl,
+  });
   const formattedDate = formatShortDate(timestamp);
   const shortCounterparty = formatAddress(counterparty, 6, 6);
   const shortDigest = formatAddress(digest, 8, 8);
@@ -151,6 +155,8 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
   onBack,
 }) => {
   const [expandedTx, setExpandedTx] = useState<string | null>(null);
+  const { localnetUrl } = useNetworkStore();
+  const senderAddress = useActiveSuiAddress();
 
   const {
     data,
@@ -272,6 +278,8 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
                 key={tx.digest}
                 transaction={tx}
                 chain={chain}
+                localnetUrl={localnetUrl ?? undefined}
+                senderAddress={senderAddress ?? undefined}
                 isExpanded={expandedTx === tx.digest}
                 onToggle={() => handleToggleExpand(tx.digest)}
               />

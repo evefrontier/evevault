@@ -1,7 +1,14 @@
-import { HeaderMobile, SendTokenScreen, useAuthStore } from "@evevault/shared";
+import {
+  HeaderMobile,
+  isLocalnetChain,
+  SendTokenScreen,
+  useAuthStore,
+} from "@evevault/shared";
 import type { SendTokenSearch } from "@evevault/shared/router";
-import { requireAuth } from "@evevault/shared/router";
+import { localnetKeyService } from "@evevault/shared/services/keeperService";
+import { useNetworkStore } from "@evevault/shared/stores";
 import { EXTENSION_ROUTES } from "@evevault/shared/utils";
+import { useActiveSuiAddress } from "@evevault/shared/wallet";
 import {
   createFileRoute,
   redirect,
@@ -12,6 +19,7 @@ import {
 function SendTokenPage() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const activeAddress = useActiveSuiAddress();
   const { coinType } = useSearch({ from: "/send-token" });
 
   const handleNavigateBack = () => {
@@ -21,8 +29,8 @@ function SendTokenPage() {
   return (
     <div className="flex flex-col gap-10">
       <HeaderMobile
-        email={user?.profile?.email as string}
-        address={user?.profile?.sui_address as string}
+        email={user?.profile?.email ?? ""}
+        address={activeAddress ?? (user?.profile?.sui_address as string)}
         onTransactionsClick={() =>
           navigate({ to: EXTENSION_ROUTES.TRANSACTIONS })
         }
@@ -33,7 +41,22 @@ function SendTokenPage() {
 }
 
 export const Route = createFileRoute("/send-token")({
-  beforeLoad: () => requireAuth(),
+  beforeLoad: async () => {
+    const { user } = useAuthStore.getState();
+    const { chain } = useNetworkStore.getState();
+
+    if (isLocalnetChain(chain)) {
+      const address = await localnetKeyService.getAddress().catch(() => null);
+      if (!address) {
+        throw redirect({ to: EXTENSION_ROUTES.LOCALNET_SETTINGS });
+      }
+      return;
+    }
+
+    if (!user) {
+      throw redirect({ to: "/" });
+    }
+  },
   component: SendTokenPage,
   validateSearch: (search: Record<string, unknown>): SendTokenSearch => {
     const coinType = (search.coinType as string) || "";

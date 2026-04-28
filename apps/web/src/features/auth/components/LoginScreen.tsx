@@ -1,8 +1,5 @@
-import {
-  LockScreen,
-  switchTenantAndReload,
-  type TenantId,
-} from "@evevault/shared";
+import type { TenantId } from "@evefrontier/dapp-kit";
+import { LockScreen, switchTenantAndReload } from "@evevault/shared";
 import { redirectToFusionAuthLogout, useAuth } from "@evevault/shared/auth";
 import { Button, Heading, TenantSelector } from "@evevault/shared/components";
 import Icon from "@evevault/shared/components/Icon";

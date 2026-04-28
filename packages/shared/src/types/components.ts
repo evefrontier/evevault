@@ -22,7 +22,9 @@ export interface SwitchProps {
 export interface TokenListProps {
   user: User | null;
   chain: SuiChain | null;
+  /** Explicit address for balance queries — overrides user.profile.sui_address (used on localnet) */
   balanceAddress?: string | null;
+  /** Localnet RPC URL for balance queries — required when chain is localnet */
   localnetUrl?: string;
   onAddToken?: () => void;
   onSendToken?: (coinType: string) => void;
@@ -32,6 +34,8 @@ export interface TokenRowProps {
   coinType: string;
   user: User | null;
   chain: SuiChain | null;
+  balanceAddress?: string | null;
+  localnetUrl?: string;
 }
 
 export type BracketsProps = {
@@ -205,6 +209,8 @@ export interface HeaderMobileProps {
   onRotateEphKeyClick?: () => void;
   /** Callback when "Faucet test SUI" menu item is clicked (dev mode only) */
   onFaucetTestSuiClick?: () => void;
+  /** Callback when "Localnet Settings" menu item is clicked (dev mode only) */
+  onLocalnetSettingsClick?: () => void;
   /** App version shown in dev dropdown (from each app's package.json at build time) */
   version?: string;
   /** Current tenant id (for Server dropdown when in dev mode) */
@@ -246,6 +252,8 @@ export interface NetworkSelectorProps {
   ) => void;
   /** Callback when network switch requires re-authentication */
   onRequiresReauth?: (targetNetwork: string) => void;
+  /** Extension-only callback for localnet setup after successful selection */
+  onLocalnetSelected?: () => void | Promise<void>;
 }
 
 export interface AddTokenScreenProps {
@@ -402,6 +410,8 @@ export interface TransactionsScreenProps {
 export interface TransactionRowProps {
   transaction: Transaction;
   chain: string;
+  localnetUrl?: string;
+  senderAddress?: string;
   isExpanded: boolean;
   onToggle: () => void;
 }

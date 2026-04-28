@@ -23,6 +23,7 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
   onSignSubmitTxClick,
   onRotateEphKeyClick,
   onFaucetTestSuiClick,
+  onLocalnetSettingsClick,
   version,
 }) => {
   const { copy } = useCopyToClipboard();
@@ -79,14 +80,23 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
       });
     }
 
-    // 5. Copy Address (always)
+    // 5. Localnet Settings (only when dev mode on)
+    if (showDevActions && onLocalnetSettingsClick) {
+      items.push({
+        label: "Localnet Settings",
+        icon: "Settings" as IconName,
+        onClick: onLocalnetSettingsClick,
+      });
+    }
+
+    // 6. Copy Address (always)
     items.push({
       label: "Copy Address",
       icon: "Copy" as IconName,
       onClick: () => copy(address),
     });
 
-    // 6. Transaction History (optional)
+    // 7. Transaction History (optional)
     if (onTransactionsClick) {
       items.push({
         label: "Transaction History",
@@ -95,21 +105,21 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
       });
     }
 
-    // 7. Lock Wallet (always)
+    // 8. Lock Wallet (always)
     items.push({
       label: "Lock Wallet",
       icon: "HideEye" as IconName,
       onClick: lock,
     });
 
-    // 8. Logout (always)
+    // 9. Logout (always)
     items.push({
       label: "Logout",
       icon: "Close" as IconName,
       onClick: logout,
     });
 
-    // 9. App version (dev only, display-only)
+    // 10. App version (dev only, display-only)
     if (showDevActions && version) {
       items.push({
         label: `v${version}`,
@@ -126,11 +136,12 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
     onDevModeToggle,
     onSignSubmitTxClick,
     onRotateEphKeyClick,
+    onFaucetTestSuiClick,
+    onLocalnetSettingsClick,
     copy,
     address,
     lock,
     logout,
-    onFaucetTestSuiClick,
     version,
   ]);
 

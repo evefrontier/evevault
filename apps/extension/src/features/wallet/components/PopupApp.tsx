@@ -3,9 +3,14 @@ import type { TenantId } from "@evefrontier/dapp-kit";
 import {
   getAvailableTenantIds,
   getCurrentTenantId,
+  isLocalnetChain,
   switchTenantAndReload,
 } from "@evevault/shared";
-import { redirectToFusionAuthLogout, useAuth } from "@evevault/shared/auth";
+import {
+  redirectToFusionAuthLogout,
+  resetVaultOnDevice,
+  useAuth,
+} from "@evevault/shared/auth";
 import {
   Button,
   HeaderMobile,
@@ -16,8 +21,14 @@ import {
   TokenListSection,
 } from "@evevault/shared/components";
 import Icon from "@evevault/shared/components/Icon";
-import { useDevice, useDevMode, useTenant } from "@evevault/shared/hooks";
+import {
+  useDevice,
+  useDevMode,
+  useIsAuthenticated,
+  useTenant,
+} from "@evevault/shared/hooks";
 import { LockScreen } from "@evevault/shared/screens";
+import { localnetKeyService } from "@evevault/shared/services/vaultService";
 import { useNetworkStore } from "@evevault/shared/stores";
 import { getFaucetUrlForChain } from "@evevault/shared/sui";
 import {
@@ -25,7 +36,7 @@ import {
   EXTENSION_ROUTES,
   getSuiscanUrl,
 } from "@evevault/shared/utils";
-import { useBalance } from "@evevault/shared/wallet";
+import { useActiveSuiAddress, useBalance } from "@evevault/shared/wallet";
 import type { SuiChain } from "@mysten/wallet-standard";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -43,15 +54,20 @@ function App() {
 
   const { user, loading: authLoading, error: authError } = useAuth();
   const { isLocked, isPinSet, error: deviceError, unlock } = useDevice();
-  const { chain } = useNetworkStore();
+  const { chain, localnetUrl } = useNetworkStore();
+  const isAuthenticated = useIsAuthenticated();
+  const isLocalnet = isLocalnetChain(chain);
   const faucetUrl = getFaucetUrlForChain(chain);
   const { handleLogin } = useLogin();
   const { handleTestTransaction, txDigest, handleRotateEphKey } = useDevMode();
+  const activeAddress = useActiveSuiAddress();
 
   // Use TanStack Query for balance fetching
   useBalance({
     user: user || null,
     chain: chain || null,
+    address: activeAddress, // localnet address or zkLogin address
+    localnetUrl,
   });
 
   // Clear previous network tracking when user successfully logs in
@@ -117,22 +133,50 @@ function App() {
     );
   }
 
-  // First, check for unencrypted ephemeral key pair
-  if (isLocked) {
-    return (
-      <LockScreen
-        isPinSet={isPinSet}
-        unlock={unlock}
-        onResetComplete={() => {
-          redirectToFusionAuthLogout();
-          navigate({ to: "/" });
-        }}
-      />
-    );
-  }
+  if (!isAuthenticated) {
+    if (isLocked && isPinSet) {
+      return (
+        <LockScreen
+          isPinSet={isPinSet}
+          unlock={unlock}
+          onResetComplete={() => {
+            redirectToFusionAuthLogout();
+            navigate({ to: "/" });
+          }}
+        />
+      );
+    }
 
-  // If ephemeral keypair exists, but user is not logged in, show login screen
-  if (!user) {
+    if (isLocalnet) {
+      return (
+        <div className="flex flex-col items-center justify-between gap-4 w-full h-full">
+          <section className="flex flex-col items-center gap-10 w-full flex-1">
+            <img
+              src="/images/logo.png"
+              alt="EVE Vault"
+              className="h-20 w-auto"
+            />
+            <header className="flex flex-col items-center gap-4 text-center">
+              <Heading level={2}>Localnet setup</Heading>
+              <Text variant="light" size="large">
+                Load a localnet keypair to continue.
+              </Text>
+            </header>
+            <div className="w-full max-w-[300px]">
+              <Button
+                size="fill"
+                onClick={() =>
+                  navigate({ to: EXTENSION_ROUTES.LOCALNET_SETTINGS })
+                }
+              >
+                Open Localnet Settings
+              </Button>
+            </div>
+          </section>
+        </div>
+      );
+    }
+
     return (
       <div className="flex flex-col items-center justify-between gap-4 w-full h-full">
         <section className="flex flex-col items-center gap-10 w-full flex-1">
@@ -145,6 +189,22 @@ function App() {
               {authLoading ? "Loading..." : "Login"}
             </Button>
           </div>
+          {isPinSet && (
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  await resetVaultOnDevice();
+                  navigate({ to: "/" });
+                } catch (error) {
+                  log.error("Failed to reset vault", error);
+                }
+              }}
+              className="text-sm underline text-grey-neutral hover:text-neutral focus:outline-none focus:ring-2 focus:ring-primary rounded"
+            >
+              Forgot PIN
+            </button>
+          )}
           <TenantSelector
             currentTenantId={tenantId}
             availableTenantIds={availableTenantIds}
@@ -174,8 +234,8 @@ function App() {
     <div className="flex flex-col  h-full">
       {/* Header with logo and dropdown */}
       <HeaderMobile
-        address={user?.profile?.sui_address as string}
-        email={user?.profile?.email as string}
+        address={activeAddress ?? ""}
+        email={user?.profile?.email ?? ""}
         onTransactionsClick={() =>
           navigate({ to: EXTENSION_ROUTES.TRANSACTIONS })
         }
@@ -188,6 +248,11 @@ function App() {
             ? () => window.open(faucetUrl, "_blank", "noopener,noreferrer")
             : undefined
         }
+        onLocalnetSettingsClick={
+          devMode
+            ? () => navigate({ to: EXTENSION_ROUTES.LOCALNET_SETTINGS })
+            : undefined
+        }
         version={APP_VERSION}
       />
 
@@ -195,7 +260,9 @@ function App() {
       <TokenListSection
         user={user}
         chain={chain || null}
-        walletAddress={user?.profile?.sui_address as string}
+        walletAddress={activeAddress ?? ""}
+        balanceAddress={activeAddress}
+        localnetUrl={localnetUrl}
         onAddToken={() => navigate({ to: "/add-token" })}
         onSendToken={(coinType) =>
           navigate({ to: "/send-token", search: { coinType } })
@@ -206,6 +273,17 @@ function App() {
       <div className="justify-between flex items-center gap-4">
         <NetworkSelector
           chain={chain}
+          onLocalnetSelected={async () => {
+            const addr = await localnetKeyService
+              .getAddress()
+              .catch(() => null);
+            if (!addr) {
+              log.info(
+                "No localnet keypair found, navigating to settings page",
+              );
+              navigate({ to: EXTENSION_ROUTES.LOCALNET_SETTINGS });
+            }
+          }}
           onNetworkSwitchStart={(previousNetwork, targetNetwork) => {
             log.info("Network switch started", {
               previousNetwork,
@@ -224,7 +302,13 @@ function App() {
         <Text>
           Transaction digest:{" "}
           <a
-            href={chain ? getSuiscanUrl(chain, txDigest) : "#"}
+            href={
+              chain
+                ? getSuiscanUrl(chain, txDigest, {
+                    localnetUrl: localnetUrl ?? undefined,
+                  })
+                : "#"
+            }
             target="_blank"
             rel="noopener noreferrer"
           >
