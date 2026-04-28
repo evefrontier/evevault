@@ -7,15 +7,18 @@ const log = createLogger();
 
 /**
  * Signs bytes directly with the localnet keypair held in the keeper.
- * Produces a plain Ed25519 signature — no ZK proof, no zkLogin wrapper.
- * Extension-only: localnet signing is not supported on the web app path.
+ * Extension-only: Produces a plain Ed25519 signature.
  */
 export async function rawSign(
   scope: IntentScope,
   msgBytes: Uint8Array,
   suiAddress: string,
 ): Promise<{ bytes: string; signature: string }> {
-  if (isWeb()) {
+  if (
+    isWeb() ||
+    typeof chrome === "undefined" ||
+    !chrome.runtime?.sendMessage
+  ) {
     throw new Error("rawSign is only available in the extension (localnet)");
   }
 
