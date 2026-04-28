@@ -29,7 +29,7 @@ function SendTokenPage() {
   return (
     <div className="flex flex-col gap-10">
       <HeaderMobile
-        email={user?.profile?.email as string}
+        email={user?.profile?.email ?? ""}
         address={activeAddress ?? (user?.profile?.sui_address as string)}
         onTransactionsClick={() =>
           navigate({ to: EXTENSION_ROUTES.TRANSACTIONS })
@@ -41,23 +41,19 @@ function SendTokenPage() {
 }
 
 export const Route = createFileRoute("/send-token")({
-  beforeLoad: () => {
+  beforeLoad: async () => {
     const { user } = useAuthStore.getState();
     const { chain } = useNetworkStore.getState();
 
     if (isLocalnetChain(chain)) {
-      // Check for localnet address
-      localnetKeyService
-        .getAddress()
-        .then((address) => {
-          if (!address) {
-            throw redirect({ to: "/" });
-          }
-        })
-        .catch(() => redirect({ to: "/" }));
+      const address = await localnetKeyService.getAddress().catch(() => null);
+      if (!address) {
+        throw redirect({ to: EXTENSION_ROUTES.LOCALNET_SETTINGS });
+      }
+      return;
     }
 
-    if (!user && !isLocalnetChain(chain)) {
+    if (!user) {
       throw redirect({ to: "/" });
     }
   },
