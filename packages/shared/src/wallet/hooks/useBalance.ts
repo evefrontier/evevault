@@ -4,8 +4,12 @@ import { useMemo } from "react";
 import { createSuiClient } from "../../sui";
 import { createSuiGraphQLClient } from "../../sui/graphqlClient";
 import { isLocalnetChain } from "../../types/networks";
-import { formatByDecimals, formatMistToSui, SUI_COIN_TYPE } from "../../utils";
-import { createLogger } from "../../utils/logger";
+import {
+  createLogger,
+  formatByDecimals,
+  formatMistToSui,
+  SUI_COIN_TYPE,
+} from "../../utils";
 import { isEveCoinType } from "../eveToken";
 import {
   BALANCE_AND_METADATA_QUERY,

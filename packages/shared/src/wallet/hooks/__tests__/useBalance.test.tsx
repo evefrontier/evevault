@@ -221,13 +221,7 @@ describe("useBalance hook — localnet gRPC path", () => {
   it("uses 9-decimal fallback and warns for unknown localnet tokens", async () => {
     mockGetBalance.mockResolvedValue({ balance: { balance: "5000000000" } });
     const { createLogger } = await import("@evevault/shared/utils");
-    const mockWarn = vi.fn();
-    vi.mocked(createLogger).mockReturnValue({
-      debug: vi.fn(),
-      info: vi.fn(),
-      warn: mockWarn,
-      error: vi.fn(),
-    } as any);
+    const logInstance = vi.mocked(createLogger).mock.results[0]?.value;
 
     const user = (await import("@evevault/shared/testing")).createMockUser();
     const queryClient = new QueryClient({
@@ -246,6 +240,10 @@ describe("useBalance hook — localnet gRPC path", () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.formattedBalance).toBe("formatted-5000000000");
+    expect(logInstance.warn).toHaveBeenCalledWith(
+      expect.stringContaining("no metadata for coin type"),
+      expect.objectContaining({ coinType: "0xdeadbeef::token::TOKEN" }),
+    );
     unmount();
     queryClient.clear();
   });
