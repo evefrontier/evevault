@@ -190,7 +190,7 @@ describe("useSendToken", () => {
       isWalletUnlocked: true,
       senderAddress: VALID_SUI_ADDRESS,
       localnetAddress: null,
-      globalUser: mockUser,
+      networkUser: mockUser,
       // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
       suiClient: mockSuiClient as any,
       getSenderAddress: vi.fn().mockResolvedValue(VALID_SUI_ADDRESS),
@@ -382,7 +382,7 @@ describe("useSendToken", () => {
       mockUseWalletSigningContext.mockReturnValue({
         ...mockUseWalletSigningContext.mock.results[0]?.value,
         isAuthenticated: false,
-        globalUser: null,
+        networkUser: null,
         // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
       } as any);
 
