@@ -20,12 +20,7 @@ import {
   TokenListSection,
 } from "@evevault/shared/components";
 import Icon from "@evevault/shared/components/Icon";
-import {
-  useDevice,
-  useDevMode,
-  useIsAuthenticated,
-  useTenant,
-} from "@evevault/shared/hooks";
+import { useDevice, useDevMode, useTenant } from "@evevault/shared/hooks";
 import { LockScreen } from "@evevault/shared/screens";
 import { localnetKeyService } from "@evevault/shared/services/vaultService";
 import { useNetworkStore } from "@evevault/shared/stores";
@@ -50,7 +45,6 @@ function App() {
   const { user, loading: authLoading, error: authError } = useAuth();
   const { isLocked, isPinSet, error: deviceError, unlock } = useDevice();
   const { chain, localnetUrl } = useNetworkStore();
-  const isAuthenticated = useIsAuthenticated();
   const faucetUrl = getFaucetUrlForChain(chain);
   const { handleLogin } = useLogin();
   const { handleTestTransaction, txDigest, handleRotateEphKey } = useDevMode();
@@ -114,20 +108,20 @@ function App() {
     );
   }
 
-  if (!isAuthenticated && !user) {
-    if (isLocked && (isPinSet || user == null)) {
-      return (
-        <LockScreen
-          isPinSet={isPinSet}
-          unlock={unlock}
-          onResetComplete={() => {
-            redirectToFusionAuthLogout();
-            navigate({ to: "/" });
-          }}
-        />
-      );
-    }
+  if (isLocked) {
+    return (
+      <LockScreen
+        isPinSet={isPinSet}
+        unlock={unlock}
+        onResetComplete={() => {
+          redirectToFusionAuthLogout();
+          navigate({ to: "/" });
+        }}
+      />
+    );
+  }
 
+  if (!user) {
     // Fusionauth sign in screen
     return (
       <div className="flex flex-col items-center justify-between gap-4 w-full h-full">

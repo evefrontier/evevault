@@ -59,7 +59,7 @@ export function useWalletSigningContext() {
 
   const isWalletUnlocked =
     !isLocked && (isLocalnet ? !!localnetAddress : !!ephemeralPublicKey);
-  const isAuthenticated = isLocalnet ? true : !!user;
+  const isAuthenticated = !!user;
 
   return {
     chain,
