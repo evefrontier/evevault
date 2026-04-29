@@ -180,7 +180,7 @@ export function useSendToken({
     isWalletUnlocked,
     senderAddress: effectiveSenderAddress,
     localnetAddress,
-    networkUser,
+    user,
     suiClient,
     getSenderAddress,
     sign,
@@ -199,7 +199,7 @@ export function useSendToken({
 
   // Fetch balance for the selected token
   const { data: balanceData, isLoading: balanceLoading } = useBalance({
-    user: networkUser,
+    user,
     chain,
     coinType,
     address: localnetAddress ?? undefined,
@@ -208,7 +208,7 @@ export function useSendToken({
 
   // Fetch SUI balance for gas warning and send eligibility (non-SUI transfers need SUI for gas)
   const { data: suiBalanceData, isLoading: suiBalanceLoading } = useBalance({
-    user: networkUser,
+    user,
     chain,
     coinType: SUI_COIN_TYPE,
     address: localnetAddress ?? undefined,
