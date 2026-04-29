@@ -1,8 +1,8 @@
 import { Ed25519PublicKey } from "@mysten/sui/keypairs/ed25519";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import * as vaultService from "../../services/vaultService";
+import * as vaultService from "#/services/vaultService";
 
-vi.mock("../../services/vaultService", () => ({
+vi.mock("#/services/vaultService", () => ({
   ephKeyService: {
     initialize: vi.fn(),
     hasKeypair: vi.fn(),
@@ -19,7 +19,7 @@ vi.mock("../../services/vaultService", () => ({
   },
 }));
 
-import { useDeviceStore } from "../deviceStore";
+import { useDeviceStore } from "#/stores/deviceStore";
 
 describe("deviceStore.unlock (web / jsdom path)", () => {
   beforeEach(() => {

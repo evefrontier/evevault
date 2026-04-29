@@ -1,24 +1,24 @@
 import { generateNonce, generateRandomness } from "@mysten/sui/zklogin";
 import type { SuiChain } from "@mysten/wallet-standard";
-import { clearAllZkLoginJwts } from "../../../auth/storageService";
-import { ephKeyService, zkProofService } from "../../../services/vaultService";
-import { getCurrentEpochFromGraphQL } from "../../../sui/graphqlEpoch";
-import { getCurrentEpochFromRpc } from "../../../sui/rpcEpoch";
+import { clearAllZkLoginJwts } from "#/auth/storageService";
+import { ephKeyService, zkProofService } from "#/services/vaultService";
+import { createInitialNetworkData } from "#/stores/deviceStore/constants";
+import { resolveStoredSecretKey } from "#/stores/deviceStore/keyHelpers";
+import { useNetworkStore } from "#/stores/networkStore";
+import { getCurrentEpochFromGraphQL } from "#/sui/graphqlEpoch";
+import { getCurrentEpochFromRpc } from "#/sui/rpcEpoch";
 import type {
   DeviceState,
   NetworkDataEntry,
   PersistedDeviceStore,
   PersistedDeviceStoreState,
   StoredSecretKey,
-} from "../../../types";
-import { isLocalnetChain } from "../../../types/networks";
-import { createWebCryptoPlaceholder } from "../../../types/wallet";
-import { isWeb } from "../../../utils/environment";
-import { createLogger } from "../../../utils/logger";
-import { DEVICE_STORAGE_KEY } from "../../../utils/storageKeys";
-import { useNetworkStore } from "../../networkStore";
-import { createInitialNetworkData } from "../constants";
-import { resolveStoredSecretKey } from "../keyHelpers";
+} from "#/types";
+import { isLocalnetChain } from "#/types/networks";
+import { createWebCryptoPlaceholder } from "#/types/wallet";
+import { isWeb } from "#/utils/environment";
+import { createLogger } from "#/utils/logger";
+import { DEVICE_STORAGE_KEY } from "#/utils/storageKeys";
 import type { GetDeviceState, SetDeviceState } from "./types";
 
 const log = createLogger();

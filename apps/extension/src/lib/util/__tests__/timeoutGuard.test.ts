@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { trySettle } from "../timeoutGuard";
+import { trySettle } from "@/lib/util/timeoutGuard";
 
 describe("trySettle", () => {
   let state: { settled: boolean };

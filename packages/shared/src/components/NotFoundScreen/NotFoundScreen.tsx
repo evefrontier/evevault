@@ -1,7 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
-import Button from "../Button";
-import Heading from "../Heading";
-import Text from "../Text";
+import Button from "#/components/Button";
+import Heading from "#/components/Heading";
+import Text from "#/components/Text";
 
 export function NotFoundScreen() {
   const navigate = useNavigate();

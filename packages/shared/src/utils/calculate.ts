@@ -1,4 +1,4 @@
-import { BREAKPOINTS } from "../hooks/useResponsive";
+import { BREAKPOINTS } from "#/hooks/useResponsive";
 
 export interface PaddingConfig {
   /** Desktop padding values */

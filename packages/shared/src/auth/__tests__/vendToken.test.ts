@@ -2,11 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const getApiContextMock = vi.hoisted(() => vi.fn());
 
-vi.mock("../getApiContext", () => ({
+vi.mock("#/auth/getApiContext", () => ({
   getApiContext: getApiContextMock,
 }));
 
-import { vendJwt } from "../vendToken";
+import { vendJwt } from "#/auth/vendToken";
 
 describe("vendJwt", () => {
   const idToken = "primary.id.jwt";

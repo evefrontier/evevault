@@ -1,10 +1,10 @@
 import type { PublicKey } from "@mysten/sui/cryptography";
-import { ephKeyService } from "../../../services/vaultService";
-import type { DeviceState } from "../../../types";
-import { isWeb } from "../../../utils/environment";
-import { createLogger } from "../../../utils/logger";
-import { createInitialNetworkData } from "../constants";
-import { getOnLockCallback } from "../runtime";
+import { ephKeyService } from "#/services/vaultService";
+import { createInitialNetworkData } from "#/stores/deviceStore/constants";
+import { getOnLockCallback } from "#/stores/deviceStore/runtime";
+import type { DeviceState } from "#/types";
+import { isWeb } from "#/utils/environment";
+import { createLogger } from "#/utils/logger";
 import type { GetDeviceState, SetDeviceState } from "./types";
 
 const log = createLogger();

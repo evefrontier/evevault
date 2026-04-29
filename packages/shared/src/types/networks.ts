@@ -5,8 +5,8 @@ import {
   SUI_TESTNET_CHAIN,
   type SuiChain,
 } from "@mysten/wallet-standard";
-import { SUI_COIN_TYPE } from "../utils/constants";
-import { getEveCoinType } from "../wallet/eveToken";
+import { SUI_COIN_TYPE } from "#/utils/constants";
+import { getEveCoinType } from "#/wallet/eveToken";
 
 export function isLocalnetChain(chain: SuiChain | string | null | undefined) {
   return chain === SUI_LOCALNET_CHAIN;

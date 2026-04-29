@@ -8,15 +8,24 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mockQuery = vi.fn();
 const mockGetBalance = vi.fn();
 
-vi.mock("../../../sui/graphqlClient", () => ({
+vi.mock("#/sui/graphqlClient", () => ({
   createSuiGraphQLClient: vi.fn(() => ({ query: mockQuery })),
 }));
 
-vi.mock("@evevault/shared/sui", () => ({
+vi.mock("#/sui", () => ({
   createSuiClient: vi.fn(() => ({ getBalance: mockGetBalance })),
 }));
 
-vi.mock("@evevault/shared/utils", () => ({
+vi.mock("#/utils/logger", () => ({
+  createLogger: vi.fn(() => ({
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+  })),
+}));
+
+vi.mock("#/utils", () => ({
   createLogger: vi.fn(() => ({
     debug: vi.fn(),
     info: vi.fn(),
@@ -33,9 +42,9 @@ vi.mock("@evevault/shared/utils", () => ({
   formatMistToSui: vi.fn(),
 }));
 
-import { createMockUser } from "@evevault/shared/testing";
-import { formatMistToSui } from "@evevault/shared/utils";
-import { useBalance } from "../useBalance";
+import { createMockUser } from "#/testing";
+import { formatMistToSui } from "#/utils";
+import { useBalance } from "#/wallet/hooks/useBalance";
 
 const mockedFormatSUI = vi.mocked(formatMistToSui);
 
@@ -194,10 +203,10 @@ describe("useBalance hook — localnet gRPC path", () => {
 
   it("returns formatted SUI balance via gRPC on localnet", async () => {
     mockGetBalance.mockResolvedValue({ balance: { balance: "2000000000" } });
-    const { formatMistToSui } = await import("@evevault/shared/utils");
+    const { formatMistToSui } = await import("#/utils");
     vi.mocked(formatMistToSui).mockReturnValueOnce("2");
 
-    const user = (await import("@evevault/shared/testing")).createMockUser();
+    const user = (await import("#/testing")).createMockUser();
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
@@ -220,10 +229,10 @@ describe("useBalance hook — localnet gRPC path", () => {
 
   it("uses 9-decimal fallback and warns for unknown localnet tokens", async () => {
     mockGetBalance.mockResolvedValue({ balance: { balance: "5000000000" } });
-    const { createLogger } = await import("@evevault/shared/utils");
+    const { createLogger } = await import("#/utils/logger");
     const logInstance = vi.mocked(createLogger).mock.results[0]?.value;
 
-    const user = (await import("@evevault/shared/testing")).createMockUser();
+    const user = (await import("#/testing")).createMockUser();
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
@@ -249,7 +258,7 @@ describe("useBalance hook — localnet gRPC path", () => {
   });
 
   it("stays idle when localnet but localnetUrl is missing", async () => {
-    const user = (await import("@evevault/shared/testing")).createMockUser();
+    const user = (await import("#/testing")).createMockUser();
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });

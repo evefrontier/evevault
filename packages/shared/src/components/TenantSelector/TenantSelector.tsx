@@ -1,16 +1,16 @@
 import type React from "react";
 import { useCallback, useRef, useState } from "react";
-import { getTenantLabel } from "../../utils/tenantConfig";
-import { Dropdown } from "../Dropdown";
-import Icon from "../Icon";
-import Text from "../Text";
+import { Dropdown } from "#/components/Dropdown";
+import Icon from "#/components/Icon";
+import Text from "#/components/Text";
+import { getTenantLabel } from "#/utils/tenantConfig";
 import "./TenantSelector.css";
 import type { TenantId } from "@evefrontier/dapp-kit/utils";
 import type {
   TenantSelectorInteractiveProps,
   TenantSelectorProps,
   TenantSelectorPropsBase,
-} from "@evevault/shared/types";
+} from "#/types";
 
 const TenantSelectorViewOnly = ({
   currentTenantId,

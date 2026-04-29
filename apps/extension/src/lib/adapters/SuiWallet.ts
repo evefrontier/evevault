@@ -36,9 +36,9 @@ import type {
   EveFrontierSponsoredTransactionOutput,
   EveVaultWalletFeatures,
   WalletEventListener,
-} from "../background/types";
-import { EVEFRONTIER_SPONSORED_TRANSACTION } from "../background/types";
-import { trySettle } from "../util/timeoutGuard";
+} from "@/lib/background/types";
+import { EVEFRONTIER_SPONSORED_TRANSACTION } from "@/lib/background/types";
+import { trySettle } from "@/lib/util/timeoutGuard";
 
 const log = createLogger();
 

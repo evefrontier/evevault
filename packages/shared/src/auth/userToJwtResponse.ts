@@ -1,5 +1,5 @@
 import type { User } from "oidc-client-ts";
-import type { OAuthTokenResponse } from "../types";
+import type { OAuthTokenResponse } from "#/types";
 
 const DEFAULT_SCOPE = "openid email profile offline_access";
 

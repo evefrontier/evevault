@@ -3,7 +3,7 @@ import { useNetworkStore } from "@evevault/shared/stores";
 import { createLogger } from "@evevault/shared/utils";
 import { decodeJwt } from "jose";
 import type { IdTokenClaims } from "oidc-client-ts";
-import type { WebUnlockMessage } from "../../types";
+import type { WebUnlockMessage } from "@/lib/background/types";
 import { ensureMessageId } from "./authHelpers";
 
 const log = createLogger();

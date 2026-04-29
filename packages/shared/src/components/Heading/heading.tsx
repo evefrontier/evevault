@@ -1,5 +1,5 @@
 import React from "react";
-import type { HeadingProps } from "../../types";
+import type { HeadingProps } from "#/types";
 
 const variantClasses: Record<string, string> = {
   regular: "font-normal",

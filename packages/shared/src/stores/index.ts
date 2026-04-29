@@ -4,7 +4,7 @@ export {
   getTenantConfig,
   getTenantLabel,
   isAvailableTenantId,
-} from "../utils/tenantConfig";
+} from "#/utils/tenantConfig";
 export {
   registerOnLock,
   rehydrateDeviceStore,

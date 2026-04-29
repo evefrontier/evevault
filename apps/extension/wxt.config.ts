@@ -87,9 +87,8 @@ export default defineConfig(() => {
   return {
     modules: ["@wxt-dev/module-react"],
     manifestVersion: 3,
-    alias: {
-      "@": "./src",
-    },
+    srcDir: "src",
+    entrypointsDir: "../entrypoints",
     // Only configure webExt if Chrome path is found
     // If Chrome is not found, WXT will build the extension but won't auto-launch
     // User can manually load the extension from .output/chrome-mv3-dev
@@ -108,11 +107,6 @@ export default defineConfig(() => {
         tanstackRouter({ quoteStyle: "double" }),
         tailwindcss(),
       ],
-      resolve: {
-        alias: {
-          "@": path.resolve(__dirname, "./src"),
-        },
-      },
       server: {
         port: 3000, // Extension dev server port (web app uses 3001)
         strictPort: true, // Don't auto-switch ports

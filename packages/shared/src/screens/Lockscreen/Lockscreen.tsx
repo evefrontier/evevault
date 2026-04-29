@@ -1,6 +1,6 @@
 import type React from "react";
 import { useCallback, useState } from "react";
-import { resetVaultOnDevice } from "../../auth/resetVaultOnDevice";
+import { resetVaultOnDevice } from "#/auth/resetVaultOnDevice";
 import {
   Button,
   Heading,
@@ -9,9 +9,9 @@ import {
   NetworkSelector,
   Text,
   useToast,
-} from "../../components";
-import { useDevice } from "../../hooks/useDevice";
-import { useNetworkStore } from "../../stores/networkStore";
+} from "#/components";
+import { useDevice } from "#/hooks/useDevice";
+import { useNetworkStore } from "#/stores/networkStore";
 
 export default function LockScreen({
   isPinSet,

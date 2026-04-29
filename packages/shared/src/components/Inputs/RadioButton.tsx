@@ -1,7 +1,7 @@
 import { type FC, useState } from "react";
-import type { RadioButtonProps } from "../../types";
+import type { RadioButtonProps } from "#/types";
 import "./style.css";
-import Text from "../Text";
+import Text from "#/components/Text";
 
 const RadioButton: FC<RadioButtonProps> = ({
   name,

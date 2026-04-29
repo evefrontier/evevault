@@ -17,7 +17,7 @@ import { Transaction } from "@mysten/sui/transactions";
 import { toBase64 } from "@mysten/sui/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { useSignPopupAuth } from "../hooks";
+import { useSignPopupAuth } from "@/features/wallet/hooks";
 import { SignPopupAuthGate } from "./SignPopupAuthGate";
 
 const log = createLogger();

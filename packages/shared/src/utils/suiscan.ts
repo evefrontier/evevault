@@ -1,4 +1,4 @@
-import { isLocalnetChain } from "../types/networks";
+import { isLocalnetChain } from "#/types/networks";
 
 /**
  * Generates a Suiscan URL for a transaction.

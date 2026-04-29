@@ -1,10 +1,10 @@
 import { WebCryptoSigner } from "@mysten/signers/webcrypto";
 import type { PublicKey } from "@mysten/sui/cryptography";
 import type { SuiChain } from "@mysten/wallet-standard";
-import type { ZkProofResponse } from "../types/enoki";
-import { del, get, set } from "../utils/indexedDbKeyval";
-import { sha256Hex } from "../utils/keys/sha256";
-import { createLogger } from "../utils/logger";
+import type { ZkProofResponse } from "#/types/enoki";
+import { del, get, set } from "#/utils/indexedDbKeyval";
+import { sha256Hex } from "#/utils/keys/sha256";
+import { createLogger } from "#/utils/logger";
 
 const log = createLogger();
 

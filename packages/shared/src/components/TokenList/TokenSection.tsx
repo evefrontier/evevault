@@ -8,18 +8,18 @@ import {
   useRef,
   useState,
 } from "react";
-import { useResponsive, useTenant } from "../../hooks";
-import { useTokenListStore } from "../../stores";
-import type { ExtendedTokenRowProps, TokenListProps } from "../../types";
-import { getDefaultTokensForChain } from "../../types/networks";
-import { createLogger, formatAddress } from "../../utils";
-import { useBalance } from "../../wallet";
-import { getEveCoinType, isEveCoinType } from "../../wallet/eveToken";
-import { getKnownTokenDisplay } from "../../wallet/utils/balanceMetadata";
-import Button from "../Button";
-import Icon from "../Icon";
-import Text from "../Text";
-import { useToast } from "../Toast";
+import Button from "#/components/Button";
+import Icon from "#/components/Icon";
+import Text from "#/components/Text";
+import { useToast } from "#/components/Toast";
+import { useResponsive, useTenant } from "#/hooks";
+import { useTokenListStore } from "#/stores";
+import type { ExtendedTokenRowProps, TokenListProps } from "#/types";
+import { getDefaultTokensForChain } from "#/types/networks";
+import { createLogger, formatAddress } from "#/utils";
+import { useBalance } from "#/wallet";
+import { getEveCoinType, isEveCoinType } from "#/wallet/eveToken";
+import { getKnownTokenDisplay } from "#/wallet/utils/balanceMetadata";
 import {
   LoadingDots,
   scrambleBalanceWithFixedFirst,

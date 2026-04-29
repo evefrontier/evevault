@@ -9,8 +9,8 @@ import {
   createEmptyNetworkDataEntry,
   useDeviceStore,
   waitForDeviceHydration,
-} from "../deviceStore";
-import { useNetworkStore } from "../networkStore";
+} from "#/stores/deviceStore";
+import { useNetworkStore } from "#/stores/networkStore";
 
 describe("deviceStore selectors", () => {
   beforeEach(() => {

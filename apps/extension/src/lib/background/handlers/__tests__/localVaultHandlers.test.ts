@@ -1,16 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { VaultMessage } from "../../types";
 import {
   _handleLocalnetGetAddress,
   _handleLocalnetSetKeypair,
   _handleLocalnetSignBytes,
-} from "../localVaultHandlers";
+} from "@/lib/background/handlers/localVaultHandlers";
+import type { VaultMessage } from "@/lib/background/types";
 
 const { mockSendToKeeper } = vi.hoisted(() => ({
   mockSendToKeeper: vi.fn(),
 }));
 
-vi.mock("../vaultHandlers", () => ({
+vi.mock("@/lib/background/handlers/vaultHandlers", () => ({
   sendToKeeper: mockSendToKeeper,
 }));
 

@@ -1,12 +1,12 @@
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Secp256r1Keypair } from "@mysten/sui/keypairs/secp256r1";
 import { describe, expect, it } from "vitest";
-import { KEY_FLAG_ED25519, KEY_FLAG_SECP256R1 } from "../../types/stores";
 import {
   isHashedSecretKey,
   reconstructPublicKey,
   resolveStoredSecretKey,
-} from "../deviceStore/keyHelpers";
+} from "#/stores/deviceStore/keyHelpers";
+import { KEY_FLAG_ED25519, KEY_FLAG_SECP256R1 } from "#/types/stores";
 
 describe("isHashedSecretKey", () => {
   it("returns true for object with string iv and data", () => {

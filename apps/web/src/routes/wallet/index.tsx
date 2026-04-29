@@ -1,6 +1,6 @@
 import { requireAuth } from "@evevault/shared/router";
 import { createFileRoute } from "@tanstack/react-router";
-import { WalletScreen } from "../../features/wallet/components/WalletScreen";
+import { WalletScreen } from "@/features/wallet/components/WalletScreen";
 
 export const Route = createFileRoute("/wallet/")({
   beforeLoad: () => {

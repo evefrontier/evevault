@@ -4,10 +4,10 @@ import type { IdTokenClaims } from "oidc-client-ts";
 import {
   getZkLoginJwtForNetwork,
   storeZkLoginJwtForNetwork,
-} from "../../auth/storageService";
-import { vendJwt } from "../../auth/vendToken";
-import type { JwtResponse } from "../../types/authTypes";
-import { createLogger } from "../../utils/logger";
+} from "#/auth/storageService";
+import { vendJwt } from "#/auth/vendToken";
+import type { JwtResponse } from "#/types/authTypes";
+import { createLogger } from "#/utils/logger";
 
 const log = createLogger();
 

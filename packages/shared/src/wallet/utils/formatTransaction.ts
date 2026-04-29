@@ -1,7 +1,7 @@
 import type { SuiGraphQLClient } from "@mysten/sui/graphql";
 import { parseStructTag } from "@mysten/sui/utils";
-import { formatByDecimals } from "../../utils/format";
-import { createLogger } from "../../utils/logger";
+import { formatByDecimals } from "#/utils/format";
+import { createLogger } from "#/utils/logger";
 import { fetchCoinMetadata } from "./coinMetadata";
 
 const log = createLogger();

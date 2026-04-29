@@ -8,7 +8,7 @@ import type {
   EveFrontierSponsoredTransactionMessage,
   WalletActionMessage,
   WebUnlockMessage,
-} from "../types";
+} from "@/lib/background/types";
 import {
   handleDappLogin,
   handleExtLogin,

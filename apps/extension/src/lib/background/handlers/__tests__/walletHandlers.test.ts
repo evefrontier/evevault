@@ -1,7 +1,7 @@
 import { WalletStandardMessageTypes } from "@evevault/shared";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { WalletActionMessage } from "../../types";
-import { handleApprovePopup } from "../walletHandlers";
+import { handleApprovePopup } from "@/lib/background/handlers/walletHandlers";
+import type { WalletActionMessage } from "@/lib/background/types";
 
 const { mockOpenPopupWindow, logMethods } = vi.hoisted(() => ({
   mockOpenPopupWindow: vi.fn(),
@@ -13,7 +13,7 @@ const { mockOpenPopupWindow, logMethods } = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("../../services/popupWindow", () => ({
+vi.mock("@/lib/background/services/popupWindow", () => ({
   openPopupWindow: (action: string) => mockOpenPopupWindow(action),
 }));
 

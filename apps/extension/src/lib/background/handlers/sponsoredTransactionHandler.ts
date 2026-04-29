@@ -1,11 +1,11 @@
 import { WalletStandardMessageTypes } from "@evevault/shared";
 import { getApiContext, getJwt, getStoredChain } from "@evevault/shared/auth";
 import { createLogger } from "@evevault/shared/utils";
-import { openPopupWindow } from "../services/popupWindow";
+import { openPopupWindow } from "@/lib/background/services/popupWindow";
 import type {
   EveFrontierSponsoredTransactionMessage,
   SponsoredTxReturn,
-} from "../types";
+} from "@/lib/background/types";
 
 const log = createLogger();
 

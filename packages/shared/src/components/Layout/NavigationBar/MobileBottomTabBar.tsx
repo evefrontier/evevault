@@ -1,7 +1,7 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import type { IconName, NavigationBarProps } from "../../../types";
-import Icon from "../../Icon";
-import Text from "../../Text";
+import Icon from "#/components/Icon";
+import Text from "#/components/Text";
+import type { IconName, NavigationBarProps } from "#/types";
 
 export const DEFAULT_TABBAR_HEIGHT = 64;
 

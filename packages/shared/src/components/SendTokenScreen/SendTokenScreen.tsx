@@ -1,15 +1,15 @@
 import type React from "react";
 import { useEffect, useState } from "react";
-import { useNetworkStore } from "../../stores/networkStore";
-import { getFaucetUrlForChain } from "../../sui";
-import type { SendTokenScreenProps } from "../../types";
-import { formatAddress, getSuiscanUrl } from "../../utils";
-import { useActiveSuiAddress, useSendToken } from "../../wallet";
-import Button from "../Button";
-import Heading from "../Heading";
-import { Input } from "../Inputs";
-import Text from "../Text";
-import { useToast } from "../Toast";
+import Button from "#/components/Button";
+import Heading from "#/components/Heading";
+import { Input } from "#/components/Inputs";
+import Text from "#/components/Text";
+import { useToast } from "#/components/Toast";
+import { useNetworkStore } from "#/stores/networkStore";
+import { getFaucetUrlForChain } from "#/sui";
+import type { SendTokenScreenProps } from "#/types";
+import { formatAddress, getSuiscanUrl } from "#/utils";
+import { useSendToken } from "#/wallet";
 
 export const SendTokenScreen: React.FC<SendTokenScreenProps> = ({
   coinType,

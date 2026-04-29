@@ -1,5 +1,5 @@
 import type React from "react";
-import type { SwitchProps } from "../../types";
+import type { SwitchProps } from "#/types";
 
 const Switch: React.FC<SwitchProps> = ({
   isChecked,

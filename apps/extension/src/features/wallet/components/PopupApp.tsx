@@ -40,8 +40,8 @@ import { useActiveSuiAddress, useBalance } from "@evevault/shared/wallet";
 import type { SuiChain } from "@mysten/wallet-standard";
 import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { APP_VERSION } from "../../../lib/appVersion";
-import { useAppInitialization, useLogin } from "../hooks";
+import { useAppInitialization, useLogin } from "@/features/wallet/hooks";
+import { APP_VERSION } from "@/lib/appVersion";
 
 const log = createLogger();
 

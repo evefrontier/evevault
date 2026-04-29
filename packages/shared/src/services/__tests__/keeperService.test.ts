@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { VaultMessageTypes } from "../../types/messages";
-import { ephKeyService } from "../keeperService";
+import { ephKeyService } from "#/services/keeperService";
+import { VaultMessageTypes } from "#/types/messages";
 
 // Mock chrome.runtime.sendMessage
 const mockSendMessage = vi.fn();
-global.chrome = {
+(global as unknown as { chrome: unknown }).chrome = {
   runtime: {
     sendMessage: mockSendMessage,
   },

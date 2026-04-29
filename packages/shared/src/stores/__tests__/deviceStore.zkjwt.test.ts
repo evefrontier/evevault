@@ -1,7 +1,7 @@
 import { Ed25519PublicKey } from "@mysten/sui/keypairs/ed25519";
 import { SUI_DEVNET_CHAIN } from "@mysten/wallet-standard";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { useNetworkStore } from "../networkStore";
+import { useNetworkStore } from "#/stores/networkStore";
 
 const fetchZkProofMock = vi.fn();
 const vendJwtMock = vi.fn();
@@ -12,15 +12,15 @@ const getJwtMock = vi.fn();
 const getZkProofFromKeeperMock = vi.fn();
 const setZkProofInKeeperMock = vi.fn();
 
-vi.mock("../../wallet/zkProof", () => ({
+vi.mock("#/wallet/zkProof", () => ({
   fetchZkProof: (...args: unknown[]) => fetchZkProofMock(...args),
 }));
 
-vi.mock("../../auth/vendToken", () => ({
+vi.mock("#/auth/vendToken", () => ({
   vendJwt: (...args: unknown[]) => vendJwtMock(...args),
 }));
 
-vi.mock("../../auth/storageService", () => ({
+vi.mock("#/auth/storageService", () => ({
   getZkLoginJwtForNetwork: (...args: unknown[]) =>
     getZkLoginJwtForNetworkMock(...args),
   storeZkLoginJwtForNetwork: (...args: unknown[]) =>
@@ -29,7 +29,7 @@ vi.mock("../../auth/storageService", () => ({
   getJwt: (...args: unknown[]) => getJwtMock(...args),
 }));
 
-vi.mock("../../services/vaultService", () => ({
+vi.mock("#/services/vaultService", () => ({
   ephKeyService: {
     initialize: vi.fn(),
     hasKeypair: vi.fn(),
@@ -45,7 +45,7 @@ vi.mock("../../services/vaultService", () => ({
   },
 }));
 
-vi.mock("../../auth", () => ({
+vi.mock("#/auth", () => ({
   useAuthStore: {
     getState: () => ({
       user: { id_token: "header.payload.signature" },
@@ -53,7 +53,7 @@ vi.mock("../../auth", () => ({
   },
 }));
 
-import { useDeviceStore } from "../deviceStore";
+import { useDeviceStore } from "#/stores/deviceStore";
 
 function makeJwtWithExp(exp: number): string {
   const header = Buffer.from(

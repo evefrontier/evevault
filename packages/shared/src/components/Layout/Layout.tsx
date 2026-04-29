@@ -1,14 +1,14 @@
 import type React from "react";
 import { useEffect, useMemo, useState } from "react";
-import { useResponsive } from "../../hooks";
-import { spacing } from "../../theme";
-import type { LayoutProps } from "../../types";
+import Background from "#/components/Background";
+import { useResponsive } from "#/hooks";
+import { spacing } from "#/theme";
+import type { LayoutProps } from "#/types";
 import {
   calculateResponsivePadding,
   NAV_ITEMS,
   type PaddingConfig,
-} from "../../utils";
-import Background from "../Background";
+} from "#/utils";
 import { HeaderMobile } from "./Header/HeaderMobile";
 import DesktopLeftSideBar from "./NavigationBar/DesktopLeftSideBar";
 

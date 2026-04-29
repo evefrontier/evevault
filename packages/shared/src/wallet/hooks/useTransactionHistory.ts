@@ -9,16 +9,16 @@
 import { SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { createSuiGraphQLClient } from "../../sui/graphqlClient";
-import { createLogger } from "../../utils";
-import { TRANSACTIONS_QUERY } from "../queries/transactions";
+import { createSuiGraphQLClient } from "#/sui/graphqlClient";
+import { createLogger } from "#/utils";
+import { TRANSACTIONS_QUERY } from "#/wallet/queries/transactions";
 import type {
   GraphQLTransactionNode,
   TransactionPage,
   TransactionsQueryResponse,
-} from "../types/graphql";
-import type { UseTransactionsParams } from "../types/hooks";
-import { parseGraphQLTransaction } from "../utils/parseTransaction";
+} from "#/wallet/types/graphql";
+import type { UseTransactionsParams } from "#/wallet/types/hooks";
+import { parseGraphQLTransaction } from "#/wallet/utils/parseTransaction";
 
 const log = createLogger();
 const DEFAULT_PAGE_SIZE = 50;
@@ -98,8 +98,7 @@ export function useTransactionHistory({
 
       const transactions = parsed
         .filter(
-          (tx): tx is import("../../types/components").Transaction =>
-            tx !== null,
+          (tx): tx is import("#/types/components").Transaction => tx !== null,
         )
         .sort((a, b) => b.timestamp - a.timestamp);
 

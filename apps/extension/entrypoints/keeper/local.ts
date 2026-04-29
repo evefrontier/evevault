@@ -1,7 +1,7 @@
 import { ephSign } from "@evevault/shared";
 import type { IntentScope } from "@mysten/sui/cryptography";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
-import type { BackgroundMessage } from "../../src/lib/background/types";
+import type { BackgroundMessage } from "@/lib/background/types";
 
 type LocalnetState = {
   localnetKey: Ed25519Keypair | null;

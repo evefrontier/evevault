@@ -7,9 +7,9 @@ import {
 } from "@evevault/shared/stores";
 import { createLogger } from "@evevault/shared/utils";
 import { Ed25519PublicKey } from "@mysten/sui/keypairs/ed25519";
-import { getAuthUrl } from "../../services/oauthService";
-import { openPopupWindow } from "../../services/popupWindow";
-import type { MessageWithId } from "../../types";
+import { getAuthUrl } from "@/lib/background/services/oauthService";
+import { openPopupWindow } from "@/lib/background/services/popupWindow";
+import type { MessageWithId } from "@/lib/background/types";
 import {
   ensureMessageId,
   extractAuthCode,

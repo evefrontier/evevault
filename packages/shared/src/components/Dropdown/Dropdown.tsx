@@ -1,7 +1,7 @@
 import type React from "react";
 import { useEffect, useRef } from "react";
-import type { DropdownProps } from "../../types";
-import { Corners } from "../Corners";
+import { Corners } from "#/components/Corners";
+import type { DropdownProps } from "#/types";
 import "./Dropdown.css";
 
 /**

@@ -1,7 +1,7 @@
 import { type FC, useState } from "react";
-import type { CheckBoxProps } from "../../types";
+import type { CheckBoxProps } from "#/types";
 import "./style.css";
-import Text from "../Text";
+import Text from "#/components/Text";
 
 const Checkbox: FC<CheckBoxProps> = ({
   name,

@@ -1,5 +1,5 @@
 import type { User } from "oidc-client-ts";
-import type { OAuthTokenResponse } from "../types/authTypes";
+import type { OAuthTokenResponse } from "#/types/authTypes";
 
 export interface StorageLike {
   getItem: (key: string) => string | null;

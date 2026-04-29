@@ -1,6 +1,6 @@
 import type { IntentScope, SignatureWithBytes } from "@mysten/sui/cryptography";
-import type { EphSignParams } from "../types";
-import { createLogger } from "../utils/logger";
+import type { EphSignParams } from "#/types";
+import { createLogger } from "#/utils/logger";
 
 const log = createLogger();
 

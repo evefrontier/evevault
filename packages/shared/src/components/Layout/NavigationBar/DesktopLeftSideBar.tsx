@@ -1,8 +1,8 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import type { IconName, NavigationBarProps } from "../../../types";
-import { Corners } from "../../Corners";
-import Icon from "../../Icon";
-import Text from "../../Text";
+import { Corners } from "#/components/Corners";
+import Icon from "#/components/Icon";
+import Text from "#/components/Text";
+import type { IconName, NavigationBarProps } from "#/types";
 
 export default function DesktopLeftSideBar({ items }: NavigationBarProps) {
   const location = useLocation();

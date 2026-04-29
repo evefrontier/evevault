@@ -1,9 +1,9 @@
 import { Ed25519PublicKey } from "@mysten/sui/keypairs/ed25519";
 import type { SuiChain } from "@mysten/wallet-standard";
-import type { ZkProofResponse } from "../types/enoki";
-import { VaultMessageTypes, type VaultResponse } from "../types/messages";
-import type { StoredSecretKey } from "../types/stores";
-import { createLogger } from "../utils/logger";
+import type { ZkProofResponse } from "#/types/enoki";
+import { VaultMessageTypes, type VaultResponse } from "#/types/messages";
+import type { StoredSecretKey } from "#/types/stores";
+import { createLogger } from "#/utils/logger";
 
 const log = createLogger();
 

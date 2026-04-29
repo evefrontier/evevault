@@ -1,13 +1,13 @@
 import type React from "react";
 import { useState } from "react";
-import { useTokenListStore } from "../../stores/tokenListStore";
-import type { AddTokenScreenProps } from "../../types";
-import { isValidCoinTypeFormat } from "../../wallet/utils/coinTypeFormat";
-import Button from "../Button";
-import Heading from "../Heading";
-import { Input } from "../Inputs";
-import Text from "../Text";
-import { useToast } from "../Toast";
+import Button from "#/components/Button";
+import Heading from "#/components/Heading";
+import { Input } from "#/components/Inputs";
+import Text from "#/components/Text";
+import { useToast } from "#/components/Toast";
+import { useTokenListStore } from "#/stores/tokenListStore";
+import type { AddTokenScreenProps } from "#/types";
+import { isValidCoinTypeFormat } from "#/wallet/utils/coinTypeFormat";
 
 export const AddTokenScreen: React.FC<AddTokenScreenProps> = ({
   user,

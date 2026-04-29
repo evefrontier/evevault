@@ -1,5 +1,5 @@
-import { chromeStorageAdapter } from "../adapters/extension";
-import { localStorageAdapter } from "../adapters/web";
+import { chromeStorageAdapter } from "#/adapters/extension";
+import { localStorageAdapter } from "#/adapters/web";
 import { isWeb } from "./environment";
 import { TENANT_STORAGE_KEY } from "./storageKeys";
 

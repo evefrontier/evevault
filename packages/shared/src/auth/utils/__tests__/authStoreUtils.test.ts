@@ -1,26 +1,26 @@
 import { UnsecuredJWT } from "jose";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { JwtResponse } from "../../../types/authTypes";
+import type { JwtResponse } from "#/types/authTypes";
 
-vi.mock("../../getZkLoginAddress", () => ({
+vi.mock("#/auth/getZkLoginAddress", () => ({
   getZkLoginAddress: vi.fn(),
 }));
 
-vi.mock("../../storageService", () => ({
+vi.mock("#/auth/storageService", () => ({
   getJwt: vi.fn(),
 }));
 
-vi.mock("../../stores/authStore", () => ({
+vi.mock("#/auth/stores/authStore", () => ({
   getEnokiApiKey: vi.fn(() => "test-enoki-key"),
 }));
 
-import { getZkLoginAddress } from "../../getZkLoginAddress";
-import { getJwt } from "../../storageService";
+import { getZkLoginAddress } from "#/auth/getZkLoginAddress";
+import { getJwt } from "#/auth/storageService";
 import {
   getUserForNetwork,
   isErrorWithMessage,
   resolveExpiresAt,
-} from "../authStoreUtils";
+} from "#/auth/utils/authStoreUtils";
 
 describe("isErrorWithMessage", () => {
   it("returns true for object with string message", () => {

@@ -7,26 +7,26 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const mockGraphQLQuery = vi.fn();
 
 // Mock the GraphQL client
-vi.mock("../../../sui/graphqlClient", () => ({
+vi.mock("#/sui/graphqlClient", () => ({
   createSuiGraphQLClient: vi.fn(() => ({
     query: mockGraphQLQuery,
   })),
 }));
 
 // Mock the queries module for TRANSACTIONS_QUERY
-vi.mock("../../queries/transactions", () => ({
+vi.mock("#/wallet/queries/transactions", () => ({
   TRANSACTIONS_QUERY: "mocked-query",
 }));
 
 // Mock the types/graphql module
-vi.mock("../../types/graphql", () => ({
+vi.mock("#/wallet/types/graphql", () => ({
   GraphQLBalanceChange: {},
   GraphQLTransactionNode: {},
   TransactionsQueryResponse: {},
   TransactionPage: {},
 }));
 
-vi.mock("@evevault/shared/utils", () => ({
+vi.mock("#/utils", () => ({
   formatByDecimals: vi.fn((value: string) => {
     // Simple mock: divide by 10^9 for SUI
     const num = Number(value) / 1_000_000_000;
@@ -44,8 +44,8 @@ vi.mock("@evevault/shared/utils", () => ({
   isBrowser: vi.fn(() => true),
 }));
 
-import { createMockUser } from "@evevault/shared/testing";
-import { useTransactionHistory } from "../useTransactionHistory";
+import { createMockUser } from "#/testing";
+import { useTransactionHistory } from "#/wallet/hooks/useTransactionHistory";
 
 const createWrapper = (queryClient: QueryClient) => {
   return ({ children }: { children: ReactNode }) => (
