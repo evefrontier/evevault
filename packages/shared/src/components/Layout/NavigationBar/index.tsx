@@ -1,4 +1,4 @@
-import { useResponsive } from "src/hooks/useResponsive";
+import { useResponsive } from "#/hooks/useResponsive";
 import type { NavigationBarProps } from "#/types";
 import DesktopLeftSideBar from "./DesktopLeftSideBar";
 import MobileBottomTabBar from "./MobileBottomTabBar";

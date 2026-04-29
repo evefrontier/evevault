@@ -40,7 +40,7 @@ vi.mock("#/auth/storageService", () => ({
   clearAllJwts: vi.fn(),
 }));
 
-vi.mock("#/auth/tenantStore", () => ({
+vi.mock("#/stores/tenantStore", () => ({
   getCurrentTenantId: vi.fn(() => "stillness"),
   getTenantIdForAuth: vi.fn(() => "stillness"),
 }));

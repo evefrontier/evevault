@@ -4,11 +4,10 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "imports": {
-    "#/*": [
-      "./src/*",
-      "./src/*.ts",
-      "./src/*/index.ts"
-    ]
+    "#/*": {
+      "development": "./src/*",
+      "default": "./dist/*"
+    }
   },
   "exports": {
     ".": {
@@ -86,7 +85,7 @@
     }
   },
   "scripts": {
-    "build": "tsc && bun run copy-assets",
+    "build": "tsc -p tsconfig.build.json && bun run copy-assets",
     "copy-assets": "rsync -avm --include='*/' --include='*.css' --exclude='*' src/ dist/",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
@@ -98,8 +97,7 @@
     "test:coverage": "vitest run --config ./vitest.config.mts --coverage"
   },
   "dependencies": {
-    "@mysten/signers": "^0.6.2",
-    "@types/node": "^25.6.0"
+    "@mysten/signers": "^0.6.2"
   },
   "peerDependencies": {
     "@mysten/sui": "^2.14.1",
@@ -113,6 +111,7 @@
   },
   "devDependencies": {
     "@testing-library/react": "^16.3.0",
+    "@types/node": "^25.6.0",
     "typescript": "^5.8.3"
   }
 }
