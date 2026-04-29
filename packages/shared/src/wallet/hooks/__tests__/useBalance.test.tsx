@@ -229,7 +229,7 @@ describe("useBalance hook — localnet gRPC path", () => {
 
   it("uses 9-decimal fallback and warns for unknown localnet tokens", async () => {
     mockGetBalance.mockResolvedValue({ balance: { balance: "5000000000" } });
-    const { createLogger } = await import("@/utils/logger");
+    const { createLogger } = await import("#/utils/logger");
     const logInstance = vi.mocked(createLogger).mock.results[0]?.value;
 
     const user = (await import("#/testing")).createMockUser();

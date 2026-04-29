@@ -1,12 +1,12 @@
 import { SUI_LOCALNET_CHAIN, SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { createSuiClient } from "@/sui";
-import { createSuiGraphQLClient } from "@/sui/graphqlClient";
-import { isLocalnetChain } from "@/types/networks";
-import { formatByDecimals, formatMistToSui, SUI_COIN_TYPE } from "@/utils";
-import { createLogger } from "@/utils/logger";
-import { isEveCoinType } from "@/wallet/eveToken";
+import { createSuiClient } from "#/sui";
+import { createSuiGraphQLClient } from "#/sui/graphqlClient";
+import { isLocalnetChain } from "#/types/networks";
+import { formatByDecimals, formatMistToSui, SUI_COIN_TYPE } from "#/utils";
+import { createLogger } from "#/utils/logger";
+import { isEveCoinType } from "#/wallet/eveToken";
 import {
   BALANCE_AND_METADATA_QUERY,
   LATEST_CHECKPOINT_QUERY,
