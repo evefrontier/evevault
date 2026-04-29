@@ -170,6 +170,26 @@ chrome.runtime.onMessage.addListener(
             ]);
             sessionSalt = (hashedSecretKey as HashedData).salt;
 
+            // If background passed an encrypted blob, restore localnet key
+            const encLocalnet = (message as { encryptedLocalnetKey?: unknown })
+              .encryptedLocalnetKey;
+            if (
+              encLocalnet &&
+              typeof encLocalnet === "object" &&
+              "data" in encLocalnet
+            ) {
+              try {
+                const localnetPrivKey = await decrypt(
+                  encLocalnet as HashedData,
+                  pin as string,
+                );
+                localnetState.localnetKey =
+                  Ed25519Keypair.fromSecretKey(localnetPrivKey);
+              } catch {
+                localnetState.localnetKey = null;
+              }
+            }
+
             sendResponse({ ok: true });
           } catch (keypairError) {
             console.error("[Keeper] Keypair creation failed:", keypairError);
@@ -342,6 +362,7 @@ chrome.runtime.onMessage.addListener(
       sessionSalt = null;
       _vaultUnlocked = false;
       _vaultUnlockExpiry = null;
+      localnetState.localnetKey = null;
       sendResponse({ ok: true });
       return false;
     }
@@ -359,7 +380,21 @@ chrome.runtime.onMessage.addListener(
 
     // Localnet dev methods
     if (message.type === KeeperMessageTypes.LOCALNET_SET_KEYPAIR) {
-      localnetSetKeypair(localnetState, message, sendResponse);
+      if (!sessionDerivedKey || !sessionSalt) {
+        sendResponse({
+          ok: false,
+          error: "Vault must be unlocked to store localnet key",
+        });
+        return false;
+      }
+
+      localnetSetKeypair(
+        localnetState,
+        sessionDerivedKey,
+        sessionSalt,
+        message,
+        sendResponse,
+      );
       return true;
     }
 

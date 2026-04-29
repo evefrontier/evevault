@@ -57,9 +57,8 @@ export function useWalletSigningContext() {
     [chain, isLocalnet, getZkProof, localnetAddress, getZkLoginUser],
   );
 
-  const isWalletUnlocked = isLocalnet
-    ? !!localnetAddress
-    : !isLocked && !!ephemeralPublicKey;
+  const isWalletUnlocked =
+    !isLocked && (isLocalnet ? !!localnetAddress : !!ephemeralPublicKey);
   const isAuthenticated = isLocalnet ? true : !!user;
 
   return {

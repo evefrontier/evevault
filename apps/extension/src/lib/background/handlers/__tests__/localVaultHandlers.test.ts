@@ -56,8 +56,13 @@ describe("_handleLocalnetSetKeypair", () => {
     vi.restoreAllMocks();
   });
 
-  it("persists key and calls sendResponse when keeper returns ok", async () => {
-    mockSendToKeeper.mockResolvedValue({ ok: true, address: "0xabc" });
+  it("persists encrypted key blob and calls sendResponse when keeper returns ok", async () => {
+    const encryptedKey = { iv: "aaa", data: "bbb", salt: "ccc" };
+    mockSendToKeeper.mockResolvedValue({
+      ok: true,
+      address: "0xabc",
+      encryptedKey,
+    });
     const sendResponse = vi.fn();
     const message = makeMessage({
       privateKey: "suiprivkey1abc",
@@ -73,9 +78,13 @@ describe("_handleLocalnetSetKeypair", () => {
       privateKey: "suiprivkey1abc",
     });
     expect(chrome.storage.local.set).toHaveBeenCalledWith({
-      "evevault:localnet-key": "suiprivkey1abc",
+      "evevault:localnet-key": encryptedKey,
     });
-    expect(sendResponse).toHaveBeenCalledWith({ ok: true, address: "0xabc" });
+    expect(sendResponse).toHaveBeenCalledWith({
+      ok: true,
+      address: "0xabc",
+      error: undefined,
+    });
   });
 
   it("does not persist key when keeper returns an error", async () => {
@@ -91,6 +100,7 @@ describe("_handleLocalnetSetKeypair", () => {
     expect(chrome.storage.local.set).not.toHaveBeenCalled();
     expect(sendResponse).toHaveBeenCalledWith({
       ok: false,
+      address: undefined,
       error: "Invalid key",
     });
   });

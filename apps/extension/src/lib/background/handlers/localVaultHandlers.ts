@@ -17,13 +17,19 @@ export function _handleLocalnetSetKeypair(
         type: KeeperMessageTypes.LOCALNET_SET_KEYPAIR,
         privateKey: message.privateKey,
       });
-      if (response?.ok) {
-        // Persist raw key in background storage so it survives keeper restarts
+
+      // Persist encrypted key in localstorage
+      if (response?.ok && response.encryptedKey) {
         chrome.storage.local.set({
-          [LOCALNET_STORAGE_KEY]: message.privateKey ?? "",
+          [LOCALNET_STORAGE_KEY]: response.encryptedKey,
         });
       }
-      sendResponse(response);
+      // Forward { ok, address } but not encryptedKey to the popup
+      sendResponse({
+        ok: response?.ok,
+        address: response?.address,
+        error: response?.error,
+      });
     } catch (error) {
       sendResponse({
         ok: false,
