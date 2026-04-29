@@ -20,6 +20,11 @@ import {
   localnetSetKeypair,
   localnetSign,
 } from "./local";
+import {
+  clearPersistedKeeperState,
+  persistKeeperState,
+  restoreKeeperState,
+} from "./sessionPersistence";
 
 /**
  * Keeper - Holds the ephemeral key in RAM-only memory
@@ -65,11 +70,36 @@ function checkAndEnforceExpiry(): boolean {
     sessionSalt = null;
     _vaultUnlocked = false;
     _vaultUnlockExpiry = null;
+    void clearPersistedKeeperState();
     return true; // Now locked
   }
 
   return false; // Still unlocked
 }
+
+/**
+ * Attempt to restore the ephemeral key and unlock state from
+ * `chrome.storage.session`. This survives offscreen-document teardown
+ * caused by Chromium MV3 service-worker eviction, so the user does not
+ * have to re-enter their PIN every ~30 seconds of inactivity.
+ *
+ * Note: WebCrypto `sessionDerivedKey` is intentionally NOT restored —
+ * key rotation will simply require a fresh unlock if the offscreen has
+ * been torn down. This preserves the existing security boundary for
+ * rotation while fixing the much more common signing-flow regression.
+ */
+async function restoreSessionStateIfAny(): Promise<void> {
+  const restored = await restoreKeeperState();
+  if (!restored) return;
+  ephemeralKey = restored.ephemeralKey;
+  _vaultUnlocked = true;
+  _vaultUnlockExpiry = restored.unlockExpiry;
+}
+
+// Kick off restore as early as possible. Message handlers below await this
+// promise before reading ephemeralKey, so signing requests that arrive
+// during a cold-start race do not falsely fail with LOCKED.
+const restorePromise: Promise<void> = restoreSessionStateIfAny();
 
 /**
  * Message handler for keeper operations
@@ -92,6 +122,10 @@ chrome.runtime.onMessage.addListener(
       ephemeralKey = Ed25519Keypair.generate();
       _vaultUnlocked = true;
       _vaultUnlockExpiry = Date.now() + 10 * 60 * 1000; // 10 minutes default
+
+      // Persist to chrome.storage.session so we survive offscreen-document
+      // teardown without forcing the user to re-unlock.
+      void persistKeeperState(ephemeralKey, _vaultUnlockExpiry);
 
       // Keep sendResponse reference and handle async operation
       (async () => {
@@ -159,6 +193,10 @@ chrome.runtime.onMessage.addListener(
             _vaultUnlocked = true;
             _vaultUnlockExpiry = Date.now() + 10 * 60 * 1000; // 10 minutes default
 
+            // Persist to chrome.storage.session so we survive offscreen
+            // document teardown.
+            void persistKeeperState(ephemeralKey, _vaultUnlockExpiry);
+
             // At subsequent unlock attempts, derive and cache the session key
             // from the stored salt.
             const salt = Uint8Array.from(
@@ -192,18 +230,21 @@ chrome.runtime.onMessage.addListener(
     }
 
     if (message.type === KeeperMessageTypes.GET_PUBLIC_KEY) {
-      // Check if vault is locked or expired
-      if (checkAndEnforceExpiry()) {
-        sendResponse({ error: "LOCKED" });
-        return false;
-      }
-
-      const publicKey = ephemeralKey?.getPublicKey();
-      sendResponse({
-        ok: true,
-        publicKeyBytes: Array.from(publicKey?.toRawBytes() ?? []),
-      });
-      return false;
+      // Wait for any in-flight session restore so a cold-start signing
+      // race does not falsely report LOCKED.
+      (async () => {
+        await restorePromise;
+        if (checkAndEnforceExpiry()) {
+          sendResponse({ error: "LOCKED" });
+          return;
+        }
+        const publicKey = ephemeralKey?.getPublicKey();
+        sendResponse({
+          ok: true,
+          publicKeyBytes: Array.from(publicKey?.toRawBytes() ?? []),
+        });
+      })();
+      return true; // async response
     }
 
     if (message.type === KeeperMessageTypes.ROTATE_KEYPAIR) {
@@ -229,6 +270,10 @@ chrome.runtime.onMessage.addListener(
           _vaultUnlocked = true;
           _vaultUnlockExpiry = Date.now() + 10 * 60 * 1000;
 
+          // Persist rotated keypair so the next offscreen revival sees
+          // the new key, not the old one.
+          void persistKeeperState(ephemeralKey, _vaultUnlockExpiry);
+
           sendResponse({
             ok: true,
             hashedSecretKey,
@@ -248,20 +293,22 @@ chrome.runtime.onMessage.addListener(
     }
 
     if (message.type === KeeperMessageTypes.EPH_SIGN) {
-      // Check if vault is locked or expired
-      if (checkAndEnforceExpiry()) {
-        sendResponse({ error: "[KEEPER_EPH_SIGN] LOCKED" });
-        return false;
-      }
-
-      const key = ephemeralKey;
-      if (!key) {
-        sendResponse({ error: "[KEEPER_EPH_SIGN] LOCKED" });
-        return false;
-      }
-
-      // Handle async signing
+      // Handle async signing — wait for session restore first so a
+      // cold-start race does not falsely report LOCKED.
       (async () => {
+        await restorePromise;
+
+        if (checkAndEnforceExpiry()) {
+          sendResponse({ error: "[KEEPER_EPH_SIGN] LOCKED" });
+          return;
+        }
+
+        const key = ephemeralKey;
+        if (!key) {
+          sendResponse({ error: "[KEEPER_EPH_SIGN] LOCKED" });
+          return;
+        }
+
         try {
           const { msgBytes, scope, sui_address } = message;
           // msgBytes comes as an array from chrome.runtime.sendMessage
@@ -293,46 +340,45 @@ chrome.runtime.onMessage.addListener(
     }
 
     if (message.type === KeeperMessageTypes.SET_ZKPROOF) {
-      // Store zkProof for a specific chain
+      // Store zkProof for a specific chain (await session restore to avoid
+      // cold-start race).
       const { chain, zkProof } = message;
-
-      if (!ephemeralKey) {
-        sendResponse({
-          error: "[KEEPER_SET_ZKPROOF] No ephemeral key found, vault LOCKED",
-        });
-        return false;
-      }
-
-      if (!chain) {
-        sendResponse({ error: "Chain is required" });
-        return false;
-      }
-
-      zkProofs[chain as SuiChain] = zkProof as ZkProofResponse;
-      sendResponse({ ok: true });
-      return false;
+      (async () => {
+        await restorePromise;
+        if (!ephemeralKey) {
+          sendResponse({
+            error: "[KEEPER_SET_ZKPROOF] No ephemeral key found, vault LOCKED",
+          });
+          return;
+        }
+        if (!chain) {
+          sendResponse({ error: "Chain is required" });
+          return;
+        }
+        zkProofs[chain as SuiChain] = zkProof as ZkProofResponse;
+        sendResponse({ ok: true });
+      })();
+      return true;
     }
 
     if (message.type === KeeperMessageTypes.GET_ZKPROOF) {
-      // Retrieve zkProof for a specific chain
+      // Retrieve zkProof for a specific chain (await session restore to
+      // avoid cold-start race).
       const { chain } = message;
-
-      if (!ephemeralKey) {
-        sendResponse({ error: "LOCKED" });
-        return false;
-      }
-
-      if (!chain) {
-        sendResponse({ error: "Chain is required" });
-        return false;
-      }
-
-      const zkProof = zkProofs[chain as SuiChain] ?? null;
-      sendResponse({
-        ok: true,
-        zkProof,
-      });
-      return false;
+      (async () => {
+        await restorePromise;
+        if (!ephemeralKey) {
+          sendResponse({ error: "LOCKED" });
+          return;
+        }
+        if (!chain) {
+          sendResponse({ error: "Chain is required" });
+          return;
+        }
+        const zkProof = zkProofs[chain as SuiChain] ?? null;
+        sendResponse({ ok: true, zkProof });
+      })();
+      return true;
     }
 
     if (message.type === KeeperMessageTypes.CLEAR_EPHKEY) {
@@ -342,6 +388,7 @@ chrome.runtime.onMessage.addListener(
       sessionSalt = null;
       _vaultUnlocked = false;
       _vaultUnlockExpiry = null;
+      void clearPersistedKeeperState();
       sendResponse({ ok: true });
       return false;
     }
