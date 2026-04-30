@@ -78,16 +78,12 @@ export async function handleUnlockVault(
     // Read the encrypted localnet key (if any) so keeper can restore it during unlock
     const stored = await chrome.storage.local.get(LOCALNET_STORAGE_KEY);
     const storedLocalnet = stored[LOCALNET_STORAGE_KEY];
-    // Migration: discard old plain-text format — user must re-enter their key
     const encryptedLocalnetKey =
       storedLocalnet &&
       typeof storedLocalnet === "object" &&
       "data" in storedLocalnet
         ? storedLocalnet
         : null;
-    if (typeof storedLocalnet === "string") {
-      chrome.storage.local.remove(LOCALNET_STORAGE_KEY);
-    }
 
     const keeperResponse = await sendToKeeper({
       type: KeeperMessageTypes.UNLOCK_VAULT,

@@ -122,6 +122,29 @@ describe("_handleLocalnetSetKeypair", () => {
     });
   });
 
+  it("always stores the localnet key as an encrypted object, never a plain string", async () => {
+    const encryptedKey = { iv: "aaa", data: "bbb", salt: "ccc" };
+    mockSendToKeeper.mockResolvedValue({
+      ok: true,
+      address: "0xabc",
+      encryptedKey,
+    });
+
+    _handleLocalnetSetKeypair(
+      makeMessage({ privateKey: "suiprivkey1abc" } as Partial<VaultMessage>),
+      mockSender,
+      vi.fn(),
+    );
+    await new Promise((r) => setTimeout(r, 0));
+
+    const [[stored]] = (chrome.storage.local.set as ReturnType<typeof vi.fn>)
+      .mock.calls;
+    const storedValue = stored["evevault:localnet-key"];
+    expect(typeof storedValue).not.toBe("string");
+    expect(storedValue).toBeTypeOf("object");
+    expect(storedValue).toHaveProperty("data");
+  });
+
   it("returns true (async channel indicator)", () => {
     mockSendToKeeper.mockResolvedValue({ ok: true, address: "0xabc" });
     const result = _handleLocalnetSetKeypair(
