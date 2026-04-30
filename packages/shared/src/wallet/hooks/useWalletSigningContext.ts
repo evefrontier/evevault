@@ -15,7 +15,7 @@ export type WalletSigningMode = "localnet" | "zklogin";
 export function useWalletSigningContext() {
   const { user } = useAuth();
 
-  const { ephemeralPublicKey, getZkProof, isLocked } = useDevice();
+  const { ephemeralPublicKey, getZkProof, maxEpoch, isLocked } = useDevice();
   const { chain, localnetUrl } = useNetworkStore();
   const localnetAddress = useLocalnetAddress();
   const isLocalnet = isLocalnetChain(chain);
@@ -58,7 +58,8 @@ export function useWalletSigningContext() {
   );
 
   const isWalletUnlocked =
-    !isLocked && (isLocalnet ? !!localnetAddress : !!ephemeralPublicKey);
+    !isLocked &&
+    (isLocalnet ? !!localnetAddress : !!ephemeralPublicKey && !!maxEpoch);
 
   return {
     chain,

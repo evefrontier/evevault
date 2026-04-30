@@ -18,7 +18,7 @@ export function _handleLocalnetSetKeypair(
         privateKey: message.privateKey,
       });
 
-      // Persist encrypted key in localstorage
+      // Persist encrypted key in chrome.storage.local
       if (response?.ok && response.encryptedKey) {
         chrome.storage.local.set({
           [LOCALNET_STORAGE_KEY]: response.encryptedKey,

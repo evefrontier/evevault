@@ -54,13 +54,14 @@ let zkProofs: Partial<Record<SuiChain, ZkProofResponse | null>> = {
  * Returns true if the vault is locked (either was already locked or just locked due to expiry).
  */
 function checkAndEnforceExpiry(): boolean {
-  if (!ephemeralKey) {
+  if (!ephemeralKey && !localnetState.localnetKey) {
     return true; // Already locked
   }
 
   if (_vaultUnlockExpiry && Date.now() > _vaultUnlockExpiry) {
     // Expiry reached - lock the vault
     ephemeralKey = null;
+    localnetState.localnetKey = null;
     sessionDerivedKey = null;
     sessionSalt = null;
     _vaultUnlocked = false;
