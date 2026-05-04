@@ -30,7 +30,7 @@ function makeMessage(overrides: Partial<VaultMessage> = {}): VaultMessage {
   return { type: "VAULT_MSG", ...overrides } as unknown as VaultMessage;
 }
 
-function installChromeMock(keeperResponse: unknown = { ok: true }) {
+function stubKeeperBridge(keeperResponse: unknown = { ok: true }) {
   globalThis.chrome = {
     storage: {
       local: {
@@ -55,7 +55,7 @@ function captureKeeperMessage(): Record<string, unknown> | undefined {
 }
 
 describe("handleLock", () => {
-  beforeEach(() => installChromeMock());
+  beforeEach(() => stubKeeperBridge());
   afterEach(() => vi.clearAllMocks());
 
   it("sends CLEAR_EPHKEY to keeper and returns ok", async () => {
@@ -67,7 +67,7 @@ describe("handleLock", () => {
   });
 
   it("returns error when keeper reports failure", async () => {
-    installChromeMock({ ok: false, error: "Keeper unavailable" });
+    stubKeeperBridge({ ok: false, error: "Keeper unavailable" });
     const sendResponse = vi.fn();
 
     await handleLock(makeMessage(), mockSender, sendResponse);
@@ -79,7 +79,7 @@ describe("handleLock", () => {
   });
 
   it("returns fallback error message when keeper fails with no message", async () => {
-    installChromeMock({ ok: false });
+    stubKeeperBridge({ ok: false });
     const sendResponse = vi.fn();
 
     await handleLock(makeMessage(), mockSender, sendResponse);
@@ -103,7 +103,7 @@ describe("_handleCreateKeypair", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("forwards pin to keeper and returns hashedSecretKey and publicKeyBytes", async () => {
-    installChromeMock({
+    stubKeeperBridge({
       ok: true,
       hashedSecretKey: HASHED_KEY,
       publicKeyBytes: PUBLIC_KEY_BYTES,
@@ -128,7 +128,7 @@ describe("_handleCreateKeypair", () => {
   });
 
   it("returns error when keeper reports failure", async () => {
-    installChromeMock({ ok: false, error: "Keypair creation failed" });
+    stubKeeperBridge({ ok: false, error: "Keypair creation failed" });
     const sendResponse = vi.fn();
 
     _handleCreateKeypair(
@@ -145,7 +145,7 @@ describe("_handleCreateKeypair", () => {
   });
 
   it("returns fallback error when keeper fails with no message", async () => {
-    installChromeMock({ ok: false });
+    stubKeeperBridge({ ok: false });
     const sendResponse = vi.fn();
 
     _handleCreateKeypair(makeMessage(), mockSender, sendResponse);
@@ -158,7 +158,7 @@ describe("_handleCreateKeypair", () => {
   });
 
   it("returns true synchronously (keeps channel open)", () => {
-    installChromeMock({ ok: true });
+    stubKeeperBridge({ ok: true });
     const result = _handleCreateKeypair(makeMessage(), mockSender, vi.fn());
     expect(result).toBe(true);
   });
@@ -171,7 +171,7 @@ describe("_handleRotateKeypair", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("sends ROTATE_KEYPAIR to keeper and returns new key material", async () => {
-    installChromeMock({
+    stubKeeperBridge({
       ok: true,
       hashedSecretKey: HASHED_KEY,
       publicKeyBytes: PUBLIC_KEY_BYTES,
@@ -190,9 +190,9 @@ describe("_handleRotateKeypair", () => {
   });
 
   it("returns error when vault is locked (keeper rejects rotation)", async () => {
-    installChromeMock({
+    stubKeeperBridge({
       ok: false,
-      error: "Vault must be unlocked again before rotating keypair",
+      error: "Keeper: rotation denied",
     });
     const sendResponse = vi.fn();
 
@@ -201,12 +201,12 @@ describe("_handleRotateKeypair", () => {
 
     expect(sendResponse).toHaveBeenCalledWith({
       ok: false,
-      error: "Vault must be unlocked again before rotating keypair",
+      error: "Keeper: rotation denied",
     });
   });
 
   it("returns fallback error when keeper fails with no message", async () => {
-    installChromeMock({ ok: false });
+    stubKeeperBridge({ ok: false });
     const sendResponse = vi.fn();
 
     _handleRotateKeypair(makeMessage(), mockSender, sendResponse);
@@ -225,7 +225,7 @@ describe("_handleGetPublicKey", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("returns publicKeyBytes when keeper is unlocked", async () => {
-    installChromeMock({ ok: true, publicKeyBytes: PUBLIC_KEY_BYTES });
+    stubKeeperBridge({ ok: true, publicKeyBytes: PUBLIC_KEY_BYTES });
     const sendResponse = vi.fn();
 
     await _handleGetPublicKey(makeMessage(), mockSender, sendResponse);
@@ -237,7 +237,7 @@ describe("_handleGetPublicKey", () => {
   });
 
   it("returns LOCKED error when keeper has no key", async () => {
-    installChromeMock({ error: "LOCKED" });
+    stubKeeperBridge({ error: "LOCKED" });
     const sendResponse = vi.fn();
 
     await _handleGetPublicKey(makeMessage(), mockSender, sendResponse);
@@ -246,7 +246,7 @@ describe("_handleGetPublicKey", () => {
   });
 
   it("returns fallback error when keeper ok but no publicKeyBytes", async () => {
-    installChromeMock({ ok: true });
+    stubKeeperBridge({ ok: true });
     const sendResponse = vi.fn();
 
     await _handleGetPublicKey(makeMessage(), mockSender, sendResponse);
@@ -261,7 +261,11 @@ describe("_handleZkEphSignBytes", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("forwards msgBytes as array and returns bytes and userSignature", async () => {
-    installChromeMock({ ok: true, bytes: "b64bytes", userSignature: "b64sig" });
+    stubKeeperBridge({
+      ok: true,
+      bytes: "b64bytes",
+      userSignature: "b64sig",
+    });
     const sendResponse = vi.fn();
 
     await _handleZkEphSignBytes(
@@ -286,7 +290,7 @@ describe("_handleZkEphSignBytes", () => {
   });
 
   it("converts Uint8Array msgBytes to plain array", async () => {
-    installChromeMock({ ok: true, bytes: "b", userSignature: "s" });
+    stubKeeperBridge({ ok: true, bytes: "b", userSignature: "s" });
 
     await _handleZkEphSignBytes(
       makeMessage({
@@ -302,7 +306,7 @@ describe("_handleZkEphSignBytes", () => {
   });
 
   it("returns error when keeper signing fails", async () => {
-    installChromeMock({ ok: false, error: "Vault locked" });
+    stubKeeperBridge({ ok: false, error: "Vault locked" });
     const sendResponse = vi.fn();
 
     await _handleZkEphSignBytes(
@@ -328,7 +332,7 @@ describe("_handleSetZkProof / _handleGetZkProof / _handleClearZkProof", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("_handleSetZkProof forwards chain and zkProof to keeper", async () => {
-    installChromeMock({ ok: true });
+    stubKeeperBridge({ ok: true });
     const sendResponse = vi.fn();
 
     await _handleSetZkProof(
@@ -344,7 +348,7 @@ describe("_handleSetZkProof / _handleGetZkProof / _handleClearZkProof", () => {
   });
 
   it("_handleSetZkProof returns error when keeper rejects", async () => {
-    installChromeMock({ ok: false, error: "No ephemeral key" });
+    stubKeeperBridge({ ok: false, error: "No ephemeral key" });
     const sendResponse = vi.fn();
 
     await _handleSetZkProof(
@@ -360,7 +364,7 @@ describe("_handleSetZkProof / _handleGetZkProof / _handleClearZkProof", () => {
   });
 
   it("_handleGetZkProof returns zkProof from keeper", async () => {
-    installChromeMock({ ok: true, zkProof });
+    stubKeeperBridge({ ok: true, zkProof });
     const sendResponse = vi.fn();
 
     await _handleGetZkProof(
@@ -373,7 +377,7 @@ describe("_handleSetZkProof / _handleGetZkProof / _handleClearZkProof", () => {
   });
 
   it("_handleGetZkProof returns null zkProof when keeper is locked", async () => {
-    installChromeMock({ ok: false, error: "LOCKED" });
+    stubKeeperBridge({ ok: false, error: "LOCKED" });
     const sendResponse = vi.fn();
 
     await _handleGetZkProof(
@@ -390,7 +394,7 @@ describe("_handleSetZkProof / _handleGetZkProof / _handleClearZkProof", () => {
   });
 
   it("_handleClearZkProof returns ok when keeper clears successfully", async () => {
-    installChromeMock({ ok: true });
+    stubKeeperBridge({ ok: true });
     const sendResponse = vi.fn();
 
     await _handleClearZkProof(makeMessage(), mockSender, sendResponse);
@@ -400,7 +404,7 @@ describe("_handleSetZkProof / _handleGetZkProof / _handleClearZkProof", () => {
   });
 
   it("_handleClearZkProof returns error when keeper fails", async () => {
-    installChromeMock({ ok: false, error: "Clear failed" });
+    stubKeeperBridge({ ok: false, error: "Clear failed" });
     const sendResponse = vi.fn();
 
     await _handleClearZkProof(makeMessage(), mockSender, sendResponse);

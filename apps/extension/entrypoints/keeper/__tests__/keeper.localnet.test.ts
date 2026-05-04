@@ -4,8 +4,8 @@ import {
   encrypt,
   encryptWithKey,
   type HashedData,
-  KeeperMessageTypes,
 } from "@evevault/shared";
+import { SUI_PRIVATE_KEY_PREFIX } from "@mysten/sui/cryptography";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -14,6 +14,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const TEST_PIN = "123456";
 
+/** Random Ed25519 key material in `suiprivkey` form for keeper / vault simulations. */
 function makeTestKey(): { keypair: Ed25519Keypair; bech32: string } {
   const keypair = Ed25519Keypair.generate();
   return { keypair, bech32: keypair.getSecretKey() };
@@ -41,6 +42,18 @@ describe("Keeper LOCALNET_SET_KEYPAIR handler", () => {
     vi.clearAllMocks();
   });
 
+  /**
+   * Mimics vault unlock: `encrypt(plaintext, PIN)` yields `hashedKey.salt`, which is used to
+   * derive `sessionDerivedKey` / `sessionSalt` (same flow as a real unlock). Only the salt
+   * matters for session setup—the plaintext can be any string. It does not have to differ
+   * from the localnet `suiprivkey` passed later to `simulateSetKeypair`; one test key is enough.
+   */
+  async function setupUnlockedVaultSession(encryptPlaintextBech32: string) {
+    const hashedKey = await encrypt(encryptPlaintextBech32, TEST_PIN);
+    sessionDerivedKey = await makeSessionKey(TEST_PIN, hashedKey.salt);
+    sessionSalt = hashedKey.salt;
+  }
+
   async function simulateSetKeypair(privateKey: string | undefined) {
     if (!privateKey) {
       sendResponse({ ok: false, error: "privateKey required" });
@@ -54,7 +67,7 @@ describe("Keeper LOCALNET_SET_KEYPAIR handler", () => {
       return;
     }
     try {
-      if (!privateKey.startsWith("suiprivkey")) {
+      if (!privateKey.startsWith(SUI_PRIVATE_KEY_PREFIX)) {
         throw new Error("Invalid private key");
       }
       localnetKey = Ed25519Keypair.fromSecretKey(privateKey);
@@ -75,10 +88,7 @@ describe("Keeper LOCALNET_SET_KEYPAIR handler", () => {
 
   it("loads keypair into RAM and returns encrypted blob when vault is unlocked", async () => {
     const { bech32 } = makeTestKey();
-    const hashedKey = await encrypt(makeTestKey().bech32, TEST_PIN);
-    sessionDerivedKey = await makeSessionKey(TEST_PIN, hashedKey.salt);
-    sessionSalt = hashedKey.salt;
-
+    await setupUnlockedVaultSession(bech32);
     await simulateSetKeypair(bech32);
 
     expect(localnetKey).not.toBeNull();
@@ -100,10 +110,7 @@ describe("Keeper LOCALNET_SET_KEYPAIR handler", () => {
 
   it("encrypted blob decrypts back to the original private key", async () => {
     const { bech32 } = makeTestKey();
-    const hashedKey = await encrypt(makeTestKey().bech32, TEST_PIN);
-    sessionDerivedKey = await makeSessionKey(TEST_PIN, hashedKey.salt);
-    sessionSalt = hashedKey.salt;
-
+    await setupUnlockedVaultSession(bech32);
     await simulateSetKeypair(bech32);
 
     const { encryptedKey } = sendResponse.mock.calls[0][0] as {
@@ -114,6 +121,8 @@ describe("Keeper LOCALNET_SET_KEYPAIR handler", () => {
   });
 
   it("returns error when vault is locked (no session key)", async () => {
+    // Start Vault in a locked state
+    // Do not call setupUnlockedVaultSession here so sessionDerivedKey and sessionSalt are null
     const { bech32 } = makeTestKey();
 
     await simulateSetKeypair(bech32);
@@ -126,10 +135,9 @@ describe("Keeper LOCALNET_SET_KEYPAIR handler", () => {
   });
 
   it("returns error when privateKey is missing", async () => {
-    const hashedKey = await encrypt(makeTestKey().bech32, TEST_PIN);
-    sessionDerivedKey = await makeSessionKey(TEST_PIN, hashedKey.salt);
-    sessionSalt = hashedKey.salt;
+    await setupUnlockedVaultSession(makeTestKey().bech32);
 
+    // Missing private key is passed as undefined to simulateSetKeypair
     await simulateSetKeypair(undefined);
 
     expect(localnetKey).toBeNull();
@@ -140,9 +148,7 @@ describe("Keeper LOCALNET_SET_KEYPAIR handler", () => {
   });
 
   it("returns error when private key does not start with suiprivkey", async () => {
-    const hashedKey = await encrypt(makeTestKey().bech32, TEST_PIN);
-    sessionDerivedKey = await makeSessionKey(TEST_PIN, hashedKey.salt);
-    sessionSalt = hashedKey.salt;
+    await setupUnlockedVaultSession(makeTestKey().bech32);
 
     await simulateSetKeypair("not-a-valid-key");
 

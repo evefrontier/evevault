@@ -31,8 +31,8 @@ function makeUnlockMessage(
   } as unknown as VaultMessage;
 }
 
-function installChromeMock(
-  storedValue: unknown,
+function stubKeeperBridge(
+  localStorageValue: unknown,
   keeperResponse: unknown = { ok: true },
 ) {
   globalThis.chrome = {
@@ -41,7 +41,9 @@ function installChromeMock(
         get: vi
           .fn()
           .mockResolvedValue(
-            storedValue !== undefined ? { [LOCALNET_KEY]: storedValue } : {},
+            localStorageValue !== undefined
+              ? { [LOCALNET_KEY]: localStorageValue }
+              : {},
           ),
         remove: vi.fn(),
         set: vi.fn(),
@@ -73,7 +75,7 @@ describe("handleUnlockVault — localnet key forwarding", () => {
 
   it("passes encrypted blob to keeper when storage contains a valid HashedData object", async () => {
     const encryptedBlob = { iv: "aaa", data: "bbb", salt: "ccc" };
-    installChromeMock(encryptedBlob);
+    stubKeeperBridge(encryptedBlob);
     const sendResponse = vi.fn();
 
     await handleUnlockVault(makeUnlockMessage(), mockSender, sendResponse);
@@ -84,7 +86,7 @@ describe("handleUnlockVault — localnet key forwarding", () => {
   });
 
   it("passes null to keeper when storage is empty", async () => {
-    installChromeMock(undefined);
+    stubKeeperBridge(undefined);
     const sendResponse = vi.fn();
 
     await handleUnlockVault(makeUnlockMessage(), mockSender, sendResponse);
@@ -94,7 +96,7 @@ describe("handleUnlockVault — localnet key forwarding", () => {
   });
 
   it("passes null when stored value is an object without a 'data' field", async () => {
-    installChromeMock({ something: "else" });
+    stubKeeperBridge({ something: "else" });
     const sendResponse = vi.fn();
 
     await handleUnlockVault(makeUnlockMessage(), mockSender, sendResponse);
@@ -105,7 +107,7 @@ describe("handleUnlockVault — localnet key forwarding", () => {
   });
 
   it("returns error response when keeper reports failure", async () => {
-    installChromeMock(undefined, { ok: false, error: "Bad PIN" });
+    stubKeeperBridge(undefined, { ok: false, error: "Bad PIN" });
     const sendResponse = vi.fn();
 
     await handleUnlockVault(makeUnlockMessage(), mockSender, sendResponse);
@@ -114,7 +116,7 @@ describe("handleUnlockVault — localnet key forwarding", () => {
   });
 
   it("returns error when hashedSecretKey is missing", async () => {
-    installChromeMock(undefined);
+    stubKeeperBridge(undefined);
     const sendResponse = vi.fn();
 
     await handleUnlockVault(
