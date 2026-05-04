@@ -1,5 +1,6 @@
 import { encryptWithKey, ephSign } from "@evevault/shared";
 import type { IntentScope } from "@mysten/sui/cryptography";
+import { SUI_PRIVATE_KEY_PREFIX } from "@mysten/sui/cryptography";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import type { BackgroundMessage } from "@/lib/background/types";
 
@@ -27,7 +28,7 @@ const localnetSetKeypair = async (
     return;
   }
   try {
-    if (!privateKey.startsWith("suiprivkey")) {
+    if (!privateKey.startsWith(`${SUI_PRIVATE_KEY_PREFIX}1`)) {
       throw new Error("Invalid private key");
     }
     localnetState.localnetKey = Ed25519Keypair.fromSecretKey(privateKey);

@@ -232,7 +232,10 @@ describe("Keeper UNLOCK_VAULT — localnet key restoration", () => {
   });
 
   it("ignores a plain string (old unencrypted format) — no 'data' property", async () => {
-    await simulateUnlockWithLocalnetRestore(TEST_PIN, "suiprivkey1abc");
+    await simulateUnlockWithLocalnetRestore(
+      TEST_PIN,
+      `${SUI_PRIVATE_KEY_PREFIX}1abc`,
+    );
 
     expect(localnetKey).toBeNull();
     expect(sendResponse).toHaveBeenCalledWith({ ok: true });

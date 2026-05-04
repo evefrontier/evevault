@@ -1,6 +1,5 @@
 /// <reference types="chrome"/>
 
-import { KeeperMessageTypes } from "@evevault/shared";
 import { createLogger } from "@evevault/shared/utils";
 
 const log = createLogger();
