@@ -5,7 +5,7 @@ import {
   Text,
 } from "@evevault/shared/components";
 import { createLogger } from "@evevault/shared/utils";
-import { zkSignAny } from "@evevault/shared/wallet";
+import { signForChain } from "@evevault/shared/wallet";
 import { useEffect, useState } from "react";
 import { useSignPopupAuth } from "@/features/wallet/hooks";
 import { SignPopupAuthGate } from "./SignPopupAuthGate";
@@ -63,7 +63,8 @@ function SignSponsoredTransaction() {
       const txbBytes = Uint8Array.from(atob(pending.sponsoredTxB64), (c) =>
         c.charCodeAt(0),
       );
-      const { zkSignature } = await zkSignAny("TransactionData", txbBytes, {
+      const { zkSignature } = await signForChain("TransactionData", txbBytes, {
+        chain: pending.chain as SuiChain,
         user: auth.user,
         getZkProof: auth.getZkProof,
       });

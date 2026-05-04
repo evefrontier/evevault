@@ -1,3 +1,4 @@
+import { isLocalnetChain } from "@evevault/shared";
 import {
   Button,
   Heading,
@@ -5,6 +6,7 @@ import {
   Text,
 } from "@evevault/shared/components";
 import Json from "@evevault/shared/components/Json";
+import { useNetwork } from "@evevault/shared/hooks/useNetwork";
 import { createSuiClient } from "@evevault/shared/sui";
 import type { ParsedTransactionWithDisplay } from "@evevault/shared/types";
 import {
@@ -12,7 +14,7 @@ import {
   createLogger,
   parseTransactionBytes,
 } from "@evevault/shared/utils";
-import { zkSignAny } from "@evevault/shared/wallet";
+import { signForChain, useLocalnetAddress } from "@evevault/shared/wallet";
 import { Transaction } from "@mysten/sui/transactions";
 import { toBase64 } from "@mysten/sui/utils";
 import { useQueryClient } from "@tanstack/react-query";
@@ -23,6 +25,9 @@ import { SignPopupAuthGate } from "./SignPopupAuthGate";
 const log = createLogger();
 
 function SignAndExecuteTransaction() {
+  const { chain } = useNetwork();
+  const isLocalnet = isLocalnetChain(chain);
+  const localnetAddress = useLocalnetAddress();
   const [pendingTransaction, setPendingTransaction] =
     useState<ParsedTransactionWithDisplay | null>(null);
   const [loading, setLoading] = useState(false);
@@ -84,23 +89,26 @@ function SignAndExecuteTransaction() {
         suiClient,
       );
 
-      if (!auth.ephemeralPublicKey) {
-        throw new Error("Ephemeral public key not found");
+      if (!isLocalnet) {
+        if (!auth.ephemeralPublicKey) {
+          throw new Error("Ephemeral public key not found");
+        }
+        if (!auth.maxEpoch) {
+          throw new Error("Max epoch is not set");
+        }
       }
 
-      if (!auth.maxEpoch) {
-        throw new Error("Max epoch is not set");
-      }
-
-      const { zkSignature, bytes } = await zkSignAny("TransactionData", txb, {
+      const { bytes, signature } = await signForChain("TransactionData", txb, {
+        chain,
         user: auth.user,
         getZkProof: auth.getZkProof,
+        localnetAddress,
       });
 
       // Execute the transaction
       const execResult = await suiClient.executeTransaction({
         transaction: txb,
-        signatures: [zkSignature],
+        signatures: [signature],
         include: { effects: true },
       });
 
@@ -136,7 +144,7 @@ function SignAndExecuteTransaction() {
           windowId,
           status: "signed_and_executed",
           bytes,
-          signature: zkSignature,
+          signature,
           digest,
           effects,
         },

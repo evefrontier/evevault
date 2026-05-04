@@ -12,7 +12,7 @@ import {
   createLogger,
   parseTransactionBytes,
 } from "@evevault/shared/utils";
-import { zkSignAny } from "@evevault/shared/wallet";
+import { signForChain } from "@evevault/shared/wallet";
 import { Transaction } from "@mysten/sui/transactions";
 import { useEffect, useState } from "react";
 import { useSignPopupAuth } from "@/features/wallet/hooks";
@@ -21,6 +21,9 @@ import { SignPopupAuthGate } from "./SignPopupAuthGate";
 const log = createLogger();
 
 function SignTransaction() {
+  const { chain } = useNetwork();
+  const isLocalnet = isLocalnetChain(chain);
+  const localnetAddress = useLocalnetAddress();
   const [pendingTransaction, setPendingTransaction] =
     useState<ParsedTransactionWithDisplay | null>(null);
   const [loading, setLoading] = useState(false);
@@ -83,15 +86,17 @@ function SignTransaction() {
         suiClient,
       );
 
-      if (!auth.ephemeralPublicKey) {
-        throw new Error("Ephemeral public key not found");
+      if (!isLocalnet) {
+        if (!auth.ephemeralPublicKey) {
+          throw new Error("Ephemeral public key not found");
+        }
+        if (!auth.maxEpoch) {
+          throw new Error("Max epoch is not set");
+        }
       }
 
-      if (!auth.maxEpoch) {
-        throw new Error("Max epoch is not set");
-      }
-
-      const { zkSignature, bytes } = await zkSignAny("TransactionData", txb, {
+      const { bytes, signature } = await signForChain("TransactionData", txb, {
+        chain,
         user: auth.user,
         getZkProof: auth.getZkProof,
       });
@@ -102,7 +107,7 @@ function SignTransaction() {
           windowId,
           status: "signed",
           bytes,
-          signature: zkSignature,
+          signature,
         },
       });
 

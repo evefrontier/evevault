@@ -1,3 +1,4 @@
+import { isLocalnetChain } from "@evevault/shared";
 import {
   Button,
   Heading,
@@ -7,7 +8,7 @@ import {
 import { useNetwork } from "@evevault/shared/hooks/useNetwork";
 import type { PendingPersonalMessage } from "@evevault/shared/types";
 import { createLogger } from "@evevault/shared/utils";
-import { zkSignAny } from "@evevault/shared/wallet";
+import { signForChain, useLocalnetAddress } from "@evevault/shared/wallet";
 import { SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
 import { useEffect, useState } from "react";
 import { useSignPopupAuth } from "@/features/wallet/hooks";
@@ -50,6 +51,8 @@ function decodeMessageBytes(bytes: Uint8Array): string {
 
 function SignPersonalMessage() {
   const { chain } = useNetwork();
+  const isLocalnet = isLocalnetChain(chain);
+  const localnetAddress = useLocalnetAddress();
   const [pendingMessage, setPendingMessage] =
     useState<PendingPersonalMessage | null>(null);
   const [loading, setLoading] = useState(false);
@@ -74,7 +77,7 @@ function SignPersonalMessage() {
       log.error("No pending transaction found");
       return;
     }
-    if (!auth.user) {
+    if (!isLocalnet && !auth.user) {
       log.error("No user found");
       return;
     }
@@ -85,12 +88,13 @@ function SignPersonalMessage() {
 
       const { message, windowId } = pendingMessage;
 
-      if (!auth.ephemeralPublicKey) {
-        throw new Error("Ephemeral public key not found");
-      }
-
-      if (!auth.maxEpoch) {
-        throw new Error("Max epoch is not set");
+      if (!isLocalnet) {
+        if (!auth.ephemeralPublicKey) {
+          throw new Error("Ephemeral public key not found");
+        }
+        if (!auth.maxEpoch) {
+          throw new Error("Max epoch is not set");
+        }
       }
 
       // Convert message (may be Uint8Array, object with numeric keys, or array)
@@ -99,12 +103,14 @@ function SignPersonalMessage() {
 
       log.debug("Signing personal message", { length: messageBytes.length });
 
-      const { zkSignature, bytes } = await zkSignAny(
+      const { bytes, signature } = await signForChain(
         "PersonalMessage",
         messageBytes,
         {
-          user: auth.user,
-          getZkProof: auth.getZkProof,
+          chain,
+          user: auth.user ?? null,
+          getZkProof: isLocalnet ? null : auth.getZkProof,
+          localnetAddress,
         },
       );
 
@@ -114,7 +120,7 @@ function SignPersonalMessage() {
           windowId,
           status: "signed",
           bytes,
-          signature: zkSignature,
+          signature,
         },
       });
 
