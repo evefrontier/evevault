@@ -11,6 +11,7 @@
     "zip:firefox": "wxt zip -b firefox",
     "typecheck": "tsc --noEmit",
     "lint": "biome check src",
+    "lint:fix": "biome lint --write .",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",

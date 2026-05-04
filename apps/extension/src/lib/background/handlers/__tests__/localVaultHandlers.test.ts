@@ -1,3 +1,4 @@
+import { SUI_PRIVATE_KEY_PREFIX } from "@mysten/sui/cryptography";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   _handleLocalnetGetAddress,
@@ -56,11 +57,16 @@ describe("_handleLocalnetSetKeypair", () => {
     vi.restoreAllMocks();
   });
 
-  it("persists key and calls sendResponse when keeper returns ok", async () => {
-    mockSendToKeeper.mockResolvedValue({ ok: true, address: "0xabc" });
+  it("persists encrypted key blob and calls sendResponse when keeper returns ok", async () => {
+    const encryptedKey = { iv: "aaa", data: "bbb", salt: "ccc" };
+    mockSendToKeeper.mockResolvedValue({
+      ok: true,
+      address: "0xabc",
+      encryptedKey,
+    });
     const sendResponse = vi.fn();
     const message = makeMessage({
-      privateKey: "suiprivkey1abc",
+      privateKey: `${SUI_PRIVATE_KEY_PREFIX}1abc`,
     } as Partial<VaultMessage>);
 
     _handleLocalnetSetKeypair(message, mockSender, sendResponse);
@@ -70,12 +76,16 @@ describe("_handleLocalnetSetKeypair", () => {
 
     expect(mockSendToKeeper).toHaveBeenCalledWith({
       type: "LOCALNET_SET_KEYPAIR",
-      privateKey: "suiprivkey1abc",
+      privateKey: `${SUI_PRIVATE_KEY_PREFIX}1abc`,
     });
     expect(chrome.storage.local.set).toHaveBeenCalledWith({
-      "evevault:localnet-key": "suiprivkey1abc",
+      "evevault:localnet-key": encryptedKey,
     });
-    expect(sendResponse).toHaveBeenCalledWith({ ok: true, address: "0xabc" });
+    expect(sendResponse).toHaveBeenCalledWith({
+      ok: true,
+      address: "0xabc",
+      error: undefined,
+    });
   });
 
   it("does not persist key when keeper returns an error", async () => {
@@ -91,6 +101,7 @@ describe("_handleLocalnetSetKeypair", () => {
     expect(chrome.storage.local.set).not.toHaveBeenCalled();
     expect(sendResponse).toHaveBeenCalledWith({
       ok: false,
+      address: undefined,
       error: "Invalid key",
     });
   });
@@ -99,7 +110,7 @@ describe("_handleLocalnetSetKeypair", () => {
     mockSendToKeeper.mockRejectedValue(new Error("Keeper unavailable"));
     const sendResponse = vi.fn();
     const message = makeMessage({
-      privateKey: "suiprivkey1abc",
+      privateKey: `${SUI_PRIVATE_KEY_PREFIX}1abc`,
     } as Partial<VaultMessage>);
 
     _handleLocalnetSetKeypair(message, mockSender, sendResponse);
@@ -110,6 +121,31 @@ describe("_handleLocalnetSetKeypair", () => {
       ok: false,
       error: "Keeper unavailable",
     });
+  });
+
+  it("always stores the localnet key as an encrypted object, never a plain string", async () => {
+    const encryptedKey = { iv: "aaa", data: "bbb", salt: "ccc" };
+    mockSendToKeeper.mockResolvedValue({
+      ok: true,
+      address: "0xabc",
+      encryptedKey,
+    });
+
+    _handleLocalnetSetKeypair(
+      makeMessage({
+        privateKey: `${SUI_PRIVATE_KEY_PREFIX}1abc`,
+      } as Partial<VaultMessage>),
+      mockSender,
+      vi.fn(),
+    );
+    await new Promise((r) => setTimeout(r, 0));
+
+    const [[stored]] = (chrome.storage.local.set as ReturnType<typeof vi.fn>)
+      .mock.calls;
+    const storedValue = stored["evevault:localnet-key"];
+    expect(typeof storedValue).not.toBe("string");
+    expect(storedValue).toBeTypeOf("object");
+    expect(storedValue).toHaveProperty("data");
   });
 
   it("returns true (async channel indicator)", () => {

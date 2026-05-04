@@ -1,5 +1,5 @@
 import type React from "react";
-import { type KeyboardEvent, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Button from "#/components/Button";
 import Heading from "#/components/Heading";
 import Icon from "#/components/Icon";
@@ -47,37 +47,26 @@ const TransactionRow: React.FC<TransactionRowProps> = ({
       ? `−${summaryAmountsRaw}`
       : summaryAmountsRaw;
 
-  // Container classes - expands when selected
-  const containerClasses = [
-    "flex flex-col w-full p-2 gap-2",
+  const summaryClasses = [
+    "flex w-full p-2 items-center justify-between gap-2",
     "border-none cursor-pointer text-left transition-colors",
     isExpanded
       ? "bg-quantum-40 hover:bg-quantum-40"
       : "bg-transparent hover:bg-quantum-10",
   ].join(" ");
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLButtonElement>) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      onToggle();
-    }
-  };
-
-  const handleViewOnSuiscan = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleViewOnSuiscan = () => {
     window.open(suiscanUrl, "_blank", "noopener,noreferrer");
   };
 
   return (
-    <button
-      type="button"
-      className={containerClasses}
-      onClick={onToggle}
-      onKeyDown={handleKeyDown}
-      aria-expanded={isExpanded}
-    >
-      {/* Transaction Row Content */}
-      <div className="flex w-full items-center justify-between gap-2">
+    <div className="flex flex-col w-full">
+      <button
+        type="button"
+        className={summaryClasses}
+        onClick={onToggle}
+        aria-expanded={isExpanded}
+      >
         <div className="flex items-center">
           <div className="flex items-center w-[72px] shrink-0">
             <Text variant="light" size="small">
@@ -101,11 +90,13 @@ const TransactionRow: React.FC<TransactionRowProps> = ({
             {summaryAmounts}
           </Text>
         </div>
-      </div>
+      </button>
 
       {/* Expanded Details - tokens left, transaction + button right */}
       {isExpanded && (
-        <div className="flex items-start justify-between w-full pt-2 gap-4">
+        <div
+          className={`flex items-start justify-between w-full px-2 pb-2 gap-4 ${isExpanded ? "bg-quantum-40" : ""}`}
+        >
           <div className="flex flex-col gap-1 min-w-0">
             {balanceChanges.map((bc, index) => (
               <div
@@ -145,7 +136,7 @@ const TransactionRow: React.FC<TransactionRowProps> = ({
           </div>
         </div>
       )}
-    </button>
+    </div>
   );
 };
 

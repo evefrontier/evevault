@@ -12,11 +12,13 @@ describe("Keeper CLEAR_EPHKEY message handler", () => {
   let mockVaultUnlocked: boolean;
   let mockVaultUnlockExpiry: number | null;
   let mockZkProofs: Partial<Record<SuiChain, ZkProofResponse | null>>;
+  let mockLocalnetKey: Ed25519Keypair | null;
   let mockSendResponse: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     // Initialize mock state
     mockEphemeralKey = Ed25519Keypair.generate();
+    mockLocalnetKey = Ed25519Keypair.generate();
     mockVaultUnlocked = true;
     mockVaultUnlockExpiry = Date.now() + 10 * 60 * 1000;
     mockZkProofs = {
@@ -31,7 +33,7 @@ describe("Keeper CLEAR_EPHKEY message handler", () => {
     vi.clearAllMocks();
   });
 
-  // Simulate CLEAR_EPHKEY message handler logic (clears ephkey but NOT zkProofs)
+  // Simulate CLEAR_EPHKEY message handler logic
   const simulateClearEphKeyHandler = (message: {
     target?: string;
     type: string;
@@ -41,8 +43,8 @@ describe("Keeper CLEAR_EPHKEY message handler", () => {
     }
 
     if (message.type === KeeperMessageTypes.CLEAR_EPHKEY) {
-      // Clear ephemeral key and vault state only
       mockEphemeralKey = null;
+      mockLocalnetKey = null;
       mockVaultUnlocked = false;
       mockVaultUnlockExpiry = null;
       (mockSendResponse as (response?: unknown) => void)({ ok: true });
@@ -133,5 +135,27 @@ describe("Keeper CLEAR_EPHKEY message handler", () => {
     expect(mockEphemeralKey).toBeNull();
     expect(mockVaultUnlocked).toBe(false);
     expect(mockVaultUnlockExpiry).toBeNull();
+  });
+
+  it("clears localnet keypair when CLEAR_EPHKEY is received", () => {
+    expect(mockLocalnetKey).not.toBeNull();
+
+    simulateClearEphKeyHandler({
+      target: "KEEPER",
+      type: KeeperMessageTypes.CLEAR_EPHKEY,
+    });
+
+    expect(mockLocalnetKey).toBeNull();
+  });
+
+  it("does not clear localnet keypair when target is not KEEPER", () => {
+    const original = mockLocalnetKey;
+
+    simulateClearEphKeyHandler({
+      target: "OTHER",
+      type: KeeperMessageTypes.CLEAR_EPHKEY,
+    });
+
+    expect(mockLocalnetKey).toBe(original);
   });
 });

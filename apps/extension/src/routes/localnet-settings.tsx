@@ -6,6 +6,7 @@ import { useDeviceStore } from "@evevault/shared/stores/deviceStore";
 import { useNetworkStore } from "@evevault/shared/stores/networkStore";
 import { useTenantStore } from "@evevault/shared/stores/tenantStore";
 import { createLogger, EXTENSION_ROUTES } from "@evevault/shared/utils";
+import { SUI_PRIVATE_KEY_PREFIX } from "@mysten/sui/cryptography";
 import { SUI_LOCALNET_CHAIN } from "@mysten/wallet-standard";
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
@@ -177,7 +178,7 @@ function LocalnetSettingsPage() {
               setKeyError(null);
             }}
             onKeyDown={(e) => e.key === "Enter" && void handleKeySave()}
-            placeholder="suiprivkey1..."
+            placeholder={`${SUI_PRIVATE_KEY_PREFIX}1...`}
             value={privateKeyDraft}
             uppercase={false}
             height="48px"

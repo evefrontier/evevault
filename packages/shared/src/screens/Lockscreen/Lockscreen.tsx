@@ -105,7 +105,7 @@ export default function LockScreen({
           </div>
         </form>
 
-        {isPinSet && (
+        {(isPinSet || !!deviceError) && (
           <button
             type="button"
             onClick={() => setShowResetConfirm(true)}
@@ -117,7 +117,7 @@ export default function LockScreen({
             }}
             className="text-sm underline text-grey-neutral hover:text-neutral focus:outline-none focus:ring-2 focus:ring-primary rounded"
           >
-            Forgot PIN
+            {isPinSet ? "Forgot PIN" : "Reset and try again"}
           </button>
         )}
 

@@ -5,7 +5,7 @@ export const NETWORK_STORAGE_KEY = "evevault:network";
 export const TOKENLIST_STORAGE_KEY = "evevault:tokenlist";
 export const JWT_STORAGE_KEY = "evevault:jwt";
 export const TENANT_STORAGE_KEY = "evevault:tenant";
-/** Extension-only: raw localnet keypair for dev/localnet signing (extension-dev use only, not encrypted at rest). */
+/** Extension-only: localnet keypair for dev signing, stored as an AES-GCM encrypted blob (PIN-protected, same scheme as ephemeral key). */
 export const LOCALNET_STORAGE_KEY = "evevault:localnet-key";
 
 /** Persist keys used by Zustand and auth (localStorage / chrome.storage.local). Cleared on reset. */

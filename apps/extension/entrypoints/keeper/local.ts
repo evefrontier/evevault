@@ -1,5 +1,6 @@
-import { ephSign } from "@evevault/shared";
+import { encryptWithKey, ephSign } from "@evevault/shared";
 import type { IntentScope } from "@mysten/sui/cryptography";
+import { SUI_PRIVATE_KEY_PREFIX } from "@mysten/sui/cryptography";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import type { BackgroundMessage } from "@/lib/background/types";
 
@@ -8,33 +9,38 @@ type LocalnetState = {
 };
 
 const localnetSetKeypair = async (
-  state: LocalnetState,
+  localnetState: LocalnetState,
+  sessionDerivedKey: CryptoKey,
+  sessionSalt: string,
   message: BackgroundMessage,
-  sendResponse: (response: {
-    ok: boolean;
-    address?: string;
-    error?: string;
-  }) => void,
+  sendResponse: (response?: unknown) => void,
 ) => {
+  const { privateKey } = message as { privateKey?: string };
+  if (!privateKey) {
+    sendResponse({ ok: false, error: "privateKey required" });
+    return;
+  }
+  if (!sessionDerivedKey || !sessionSalt) {
+    sendResponse({
+      ok: false,
+      error: "Vault must be unlocked to store localnet key",
+    });
+    return;
+  }
   try {
-    const { privateKey } = message as { privateKey?: string };
-
-    if (!privateKey) {
-      sendResponse({ ok: false, error: "privateKey required" });
-      return;
-    }
-
-    // suiprivkey1... (Bech32): SDK handles this directly
-    if (privateKey.startsWith("suiprivkey")) {
-      state.localnetKey = Ed25519Keypair.fromSecretKey(privateKey);
-    } else {
+    if (!privateKey.startsWith(`${SUI_PRIVATE_KEY_PREFIX}1`)) {
       throw new Error("Invalid private key");
     }
-
-    sendResponse({
-      ok: true,
-      address: state.localnetKey.getPublicKey().toSuiAddress(),
-    });
+    localnetState.localnetKey = Ed25519Keypair.fromSecretKey(privateKey);
+    const address = localnetState.localnetKey.getPublicKey().toSuiAddress();
+    // Encrypt and return the blob to the background script for storage
+    // (offscreen documents cannot access chrome.storage)
+    const encryptedKey = await encryptWithKey(
+      privateKey,
+      sessionDerivedKey,
+      sessionSalt,
+    );
+    sendResponse({ ok: true, address, encryptedKey });
   } catch (error) {
     sendResponse({
       ok: false,
