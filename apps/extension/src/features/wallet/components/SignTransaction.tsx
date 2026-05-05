@@ -1,3 +1,4 @@
+import { isLocalnetChain, useLocalnetAddress } from "@evevault/shared";
 import {
   Button,
   Heading,
@@ -5,6 +6,7 @@ import {
   Text,
 } from "@evevault/shared/components";
 import Json from "@evevault/shared/components/Json";
+import { useNetwork } from "@evevault/shared/hooks/useNetwork";
 import { createSuiClient } from "@evevault/shared/sui";
 import type { ParsedTransactionWithDisplay } from "@evevault/shared/types";
 import {

@@ -136,7 +136,10 @@ export async function handleDappLogin(
     }
   }
 
-  if (!deviceStore.ephemeralPublicKey && keeperStatus.publicKeyBytes) {
+  if (
+    !deviceStore.ephemeralPublicKey &&
+    keeperStatus.publicKeyBytes?.length > 0
+  ) {
     log.info("Syncing ephemeral public key from keeper to deviceStore", {
       chain,
     });
@@ -172,7 +175,7 @@ export async function handleDappLogin(
   }
 
   const deviceWithPublicKey = useDeviceStore.getState();
-  if (!deviceWithPublicKey.ephemeralPublicKey) {
+  if (!deviceWithPublicKey.ephemeralPublicKey && !isLocalnetChain(chain)) {
     log.error("Keeper is unlocked but no public key bytes available", {
       chain,
     });
@@ -190,26 +193,6 @@ export async function handleDappLogin(
   }
 
   if (typeof tabId === "number") {
-    if (isLocalnetChain(chain)) {
-      const response = await sendToKeeper({
-        type: KeeperMessageTypes.LOCALNET_GET_ADDRESS,
-      });
-
-      log.debug(
-        "Connect: localnet, sending auth_success with localnet address",
-      );
-
-      if (response?.ok && response?.address) {
-        sendAuthSuccessToTab(
-          tabId,
-          [id, ...additionalIds],
-          { address: response.address },
-          chain,
-        );
-      }
-      return;
-    }
-
     const existingJwt = await getJwt();
     if (existingJwt?.id_token) {
       const decodedJwt = decodeJwt<IdTokenClaims>(
@@ -223,7 +206,28 @@ export async function handleDappLogin(
         email: decodedJwt.email,
         userId: decodedJwt.sub,
       };
-      sendAuthSuccessToTab(tabId, [id, ...additionalIds], token);
+
+      if (isLocalnetChain(chain)) {
+        const response = await sendToKeeper({
+          type: KeeperMessageTypes.LOCALNET_GET_ADDRESS,
+        });
+
+        log.debug(
+          "Connect: localnet, sending auth_success with localnet address",
+        );
+
+        if (response?.ok && response?.address) {
+          sendAuthSuccessToTab(
+            tabId,
+            [id, ...additionalIds],
+            token,
+            chain,
+            response.address,
+          );
+        }
+      }
+
+      sendAuthSuccessToTab(tabId, [id, ...additionalIds], token, chain);
       return;
     }
   }
@@ -315,7 +319,13 @@ export async function handleDappLogin(
               email: decodedJwt.email,
               userId: decodedJwt.sub,
             };
-            sendAuthSuccessToTab(tabId, [id, ...additionalIds], token, log);
+            sendAuthSuccessToTab(
+              tabId,
+              [id, ...additionalIds],
+              token,
+              chain,
+              log,
+            );
           }
         })
         .catch((error) => {

@@ -74,12 +74,13 @@ export function sendAuthSuccessToTab(
   ids: string[],
   token: AuthSuccessToken,
   chain: SuiChain,
+  address?: string,
   logger?: Logger,
 ): void {
   const logErr = logger ?? log;
   for (const id of ids) {
     chrome.tabs
-      .sendMessage(tabId, { id, type: "auth_success", token, chain })
+      .sendMessage(tabId, { id, type: "auth_success", token, chain, address })
       .catch((err) => {
         logErr.error("Failed to send auth_success to tab", { tabId, id, err });
       });
