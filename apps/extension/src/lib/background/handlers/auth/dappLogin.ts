@@ -1,4 +1,4 @@
-import { storeJwt } from "@evevault/shared";
+import { LOCALNET_STORAGE_KEY, storeJwt } from "@evevault/shared";
 import { exchangeCodeForToken, getJwt } from "@evevault/shared/auth";
 import {
   getCurrentTenantId,
@@ -6,6 +6,7 @@ import {
   useDeviceStore,
   useTenantStore,
 } from "@evevault/shared/stores";
+import { isLocalnetChain, KeeperMessageTypes } from "@evevault/shared/types";
 import { createLogger } from "@evevault/shared/utils";
 import { Ed25519PublicKey } from "@mysten/sui/keypairs/ed25519";
 import { decodeJwt } from "jose";
@@ -13,6 +14,7 @@ import type { IdTokenClaims } from "oidc-client-ts";
 import { getAuthUrl } from "@/lib/background/services/oauthService";
 import { openPopupWindow } from "@/lib/background/services/popupWindow";
 import type { MessageWithId } from "@/lib/background/types";
+import { sendToKeeper } from "../vaultHandlers";
 import {
   ensureMessageId,
   getCurrentChain,
@@ -188,6 +190,26 @@ export async function handleDappLogin(
   }
 
   if (typeof tabId === "number") {
+    if (isLocalnetChain(chain)) {
+      const response = await sendToKeeper({
+        type: KeeperMessageTypes.LOCALNET_GET_ADDRESS,
+      });
+
+      log.debug(
+        "Connect: localnet, sending auth_success with localnet address",
+      );
+
+      if (response?.ok && response?.address) {
+        sendAuthSuccessToTab(
+          tabId,
+          [id, ...additionalIds],
+          { address: response.address },
+          chain,
+        );
+      }
+      return;
+    }
+
     const existingJwt = await getJwt();
     if (existingJwt?.id_token) {
       const decodedJwt = decodeJwt<IdTokenClaims>(
