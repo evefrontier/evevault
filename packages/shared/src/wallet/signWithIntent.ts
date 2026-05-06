@@ -43,10 +43,6 @@ export const signWithIntent = async (
     throw new Error("Error signing message");
   }
 
-  if (rawSignature === undefined) {
-    throw new Error("Signature not found");
-  }
-
   return {
     bytes: rawSignature.bytes,
     userSignature: rawSignature.signature,

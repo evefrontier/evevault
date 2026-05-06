@@ -21,7 +21,7 @@ export async function signForChain(
   if (opts.chain === SUI_LOCALNET_CHAIN) {
     if (!opts.localnetAddress) {
       throw new Error(
-        "No localnet keypair loaded. Enter your private key in the network selector.",
+        "[signForChain] No localnet address. Localnet private key might be missing.",
       );
     }
 
@@ -43,7 +43,7 @@ export async function signForChain(
 
       if (!response) {
         throw new Error(
-          "No response from background script. The extension may not be properly initialized.",
+          "[signForChain] No response from background script. The extension may not be properly initialized.",
         );
       }
 
@@ -57,17 +57,19 @@ export async function signForChain(
       const errorMessage =
         error instanceof Error
           ? error.message
-          : "Unknown error during localnet signing";
+          : "[signForChain] Unknown error during localnet signing";
       throw new Error(errorMessage);
     }
   }
 
   if (!opts.user) {
-    throw new Error("User not found for current network");
+    throw new Error("[signForChain] User not found for current network");
   }
 
   if (!opts.getZkProof) {
-    throw new Error("getZkProof is required for zkLogin signing");
+    throw new Error(
+      "[signForChain] getZkProof is required for zkLogin signing",
+    );
   }
 
   const { bytes, zkSignature } = await zkSignAny(scope, msgBytes, {
