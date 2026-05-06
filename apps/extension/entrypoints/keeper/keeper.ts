@@ -5,11 +5,11 @@ import {
   deriveAesKey,
   encrypt,
   encryptWithKey,
-  ephSign,
   type HashedData,
   KeeperMessageTypes,
   type ZkProofResponse,
 } from "@evevault/shared";
+import { rawSign } from "@evevault/shared/wallet/rawSign";
 import type { IntentScope } from "@mysten/sui/cryptography";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import type { SuiChain } from "@mysten/wallet-standard";
@@ -149,7 +149,11 @@ chrome.runtime.onMessage.addListener(
             console.error("[Keeper] Decryption failed:", decryptError);
             sendResponse({
               ok: false,
-              error: `[Keeper] Decryption failed: ${decryptError instanceof Error ? decryptError.message : "Unknown error"}`,
+              error: `[Keeper] Decryption failed: ${
+                decryptError instanceof Error
+                  ? decryptError.message
+                  : "Unknown error"
+              }`,
             });
             return;
           }
@@ -196,7 +200,11 @@ chrome.runtime.onMessage.addListener(
             console.error("[Keeper] Keypair creation failed:", keypairError);
             sendResponse({
               ok: false,
-              error: `[Keeper] Failed to create keypair: ${keypairError instanceof Error ? keypairError.message : "Unknown error"}`,
+              error: `[Keeper] Failed to create keypair: ${
+                keypairError instanceof Error
+                  ? keypairError.message
+                  : "Unknown error"
+              }`,
             });
             return;
           }
@@ -204,7 +212,9 @@ chrome.runtime.onMessage.addListener(
           console.error("[Keeper] Unexpected error:", error);
           sendResponse({
             ok: false,
-            error: `[Keeper] Unexpected error: ${error instanceof Error ? error.message : "Unknown error"}`,
+            error: `[Keeper] Unexpected error: ${
+              error instanceof Error ? error.message : "Unknown error"
+            }`,
           });
         }
       })();
@@ -288,12 +298,13 @@ chrome.runtime.onMessage.addListener(
           // msgBytes comes as an array from chrome.runtime.sendMessage
           const messageBytes = new Uint8Array(msgBytes as number[]);
 
-          const ephSignature = await ephSign(
+          // Use standard rawSign function for eph signature
+          const ephSignature = await rawSign(
             messageBytes,
             scope as IntentScope,
             {
               sui_address: sui_address as string,
-              ephemeralKeyPair: key,
+              keypair: key,
             },
           );
 

@@ -32,7 +32,7 @@
     },
     "apps/extension": {
       "name": "@evevault/extension",
-      "version": "0.0.8",
+      "version": "0.0.9",
       "dependencies": {
         "@evevault/shared": "workspace:*",
         "@mysten/wallet-standard": "^0.16.3",
@@ -55,7 +55,7 @@
     },
     "apps/web": {
       "name": "@evevault/web",
-      "version": "0.0.8",
+      "version": "0.0.9",
       "dependencies": {
         "@evevault/shared": "workspace:*",
         "@tanstack/react-query": "^5.90.16",
@@ -80,7 +80,7 @@
     },
     "packages/shared": {
       "name": "@evevault/shared",
-      "version": "0.0.8",
+      "version": "0.0.9",
       "dependencies": {
         "@mysten/signers": "^0.6.2",
       },

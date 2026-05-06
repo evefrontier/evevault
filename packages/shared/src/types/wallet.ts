@@ -44,6 +44,11 @@ export interface EphSignParams {
   ephemeralKeyPair: Signer;
 }
 
+export interface RawSignParams {
+  sui_address: string;
+  keypair: Signer;
+}
+
 // Legacy types for extension (Ed25519-specific)
 export interface ExtensionZkProofParams {
   jwtRandomness: string;

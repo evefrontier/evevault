@@ -8,6 +8,7 @@ import type { PartialZkLoginSignature, ZkSignAnyParams } from "#/types/wallet";
 import { isWeb } from "#/utils/environment";
 import { createLogger } from "#/utils/logger";
 import { ephSign } from "./ephSign";
+import { rawSign } from "./rawSign";
 
 const log = createLogger();
 
@@ -62,7 +63,7 @@ export const zkSignAny = async (
     const sui_address = user.profile?.sui_address as string;
     const signResult = await ephSign(msgBytes, scope, {
       sui_address,
-      ephemeralKeyPair: signer,
+      ephemeralKeyPair: signer, // Ephemeral keypair
     });
 
     bytes = signResult.bytes;

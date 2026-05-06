@@ -1,41 +1,54 @@
-import type { IntentScope } from "@mysten/sui/cryptography";
-import { VaultMessageTypes } from "#/types/messages";
-import { isWeb } from "#/utils/environment";
+import type { IntentScope, SignatureWithBytes } from "@mysten/sui/cryptography";
+import type { RawSignParams } from "#/types";
 import { createLogger } from "#/utils/logger";
 
 const log = createLogger();
 
 /**
- * Signs bytes directly with the localnet keypair held in the keeper.
- * Extension-only: Produces a plain Ed25519 signature.
+ * Signs message bytes with a key pair.
+ * Works with any Signer implementation (Ed25519Keypair, WebCryptoSigner, etc.)
  */
-export async function rawSign(
+export const rawSign = async (
+  messageBytes: Uint8Array,
   scope: IntentScope,
-  msgBytes: Uint8Array,
-  suiAddress: string,
-): Promise<{ bytes: string; signature: string }> {
-  if (
-    isWeb() ||
-    typeof chrome === "undefined" ||
-    !chrome.runtime?.sendMessage
-  ) {
-    throw new Error("rawSign is only available in the extension (localnet)");
+  params: RawSignParams,
+): Promise<{ bytes: string; userSignature: string }> => {
+  const { sui_address, keypair } = params;
+
+  if (!sui_address) {
+    throw new Error("[rawSign] User address not found");
   }
 
-  log.info("rawSign: requesting direct signature from keeper", { scope });
-
-  const response = (await chrome.runtime?.sendMessage?.({
-    type: VaultMessageTypes.LOCALNET_SIGN_BYTES,
-    msgBytes: Array.from(msgBytes),
-    scope,
-    suiAddress,
-  })) as
-    | { ok?: boolean; bytes?: string; signature?: string; error?: string }
-    | undefined;
-
-  if (!response?.ok || !response.bytes || !response.signature) {
-    throw new Error(response?.error ?? "rawSign: no response from keeper");
+  if (!keypair) {
+    throw new Error("[rawSign] Key pair not found");
   }
 
-  return { bytes: response.bytes, signature: response.signature };
-}
+  log.info("[rawSign] Signing payload with key", { scope });
+
+  let rawSignature: SignatureWithBytes | undefined;
+  try {
+    if (scope === "TransactionData") {
+      rawSignature = await keypair.signTransaction(messageBytes);
+      log.debug("[rawSign] Signed transaction bytes with key", {
+        byteLength: messageBytes.length,
+      });
+    } else {
+      rawSignature = await keypair.signPersonalMessage(messageBytes);
+      log.debug("[rawSign] Signed personal message bytes with key", {
+        byteLength: messageBytes.length,
+      });
+    }
+  } catch (error) {
+    log.error("Error signing message", error);
+    throw new Error("Error signing message");
+  }
+
+  if (rawSignature === undefined) {
+    throw new Error("Signature not found");
+  }
+
+  return {
+    bytes: rawSignature.bytes,
+    userSignature: rawSignature.signature,
+  };
+};

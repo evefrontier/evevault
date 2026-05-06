@@ -7,6 +7,7 @@ import {
 } from "@evevault/shared/components";
 import Json from "@evevault/shared/components/Json";
 import { useNetwork } from "@evevault/shared/hooks/useNetwork";
+import { useNetworkStore } from "@evevault/shared/stores";
 import { createSuiClient } from "@evevault/shared/sui";
 import type { ParsedTransactionWithDisplay } from "@evevault/shared/types";
 import {
@@ -16,6 +17,7 @@ import {
 } from "@evevault/shared/utils";
 import { signForChain } from "@evevault/shared/wallet";
 import { Transaction } from "@mysten/sui/transactions";
+import type { SuiChain } from "@mysten/wallet-standard";
 import { useEffect, useState } from "react";
 import { useSignPopupAuth } from "@/features/wallet/hooks";
 import { SignPopupAuthGate } from "./SignPopupAuthGate";
@@ -26,6 +28,7 @@ function SignTransaction() {
   const { chain } = useNetwork();
   const isLocalnet = isLocalnetChain(chain);
   const localnetAddress = useLocalnetAddress();
+  const { localnetUrl } = useNetworkStore();
   const [pendingTransaction, setPendingTransaction] =
     useState<ParsedTransactionWithDisplay | null>(null);
   const [loading, setLoading] = useState(false);
@@ -77,15 +80,16 @@ function SignTransaction() {
 
       const { transaction, chain, windowId } = pendingTransaction;
 
-      // Create SuiClient for the specified chain
-      const suiClient = createSuiClient(chain);
+      const suiClient = createSuiClient(
+        chain,
+        isLocalnet ? localnetUrl : undefined,
+      );
 
-      // Convert the transaction bytes to a Transaction object
-      // And set the sender to the user's address
       const txb = await buildTx(
         Transaction.from(transaction as string),
         auth.user,
         suiClient,
+        isLocalnet ? (localnetAddress ?? undefined) : undefined,
       );
 
       if (!isLocalnet) {
@@ -98,9 +102,10 @@ function SignTransaction() {
       }
 
       const { bytes, signature } = await signForChain("TransactionData", txb, {
-        chain,
+        chain: chain as SuiChain,
         user: auth.user,
-        getZkProof: auth.getZkProof,
+        getZkProof: isLocalnet ? null : auth.getZkProof,
+        localnetAddress,
       });
 
       // Store the result in storage so the background handler can pick it up

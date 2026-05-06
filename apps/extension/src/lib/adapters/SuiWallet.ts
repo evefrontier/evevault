@@ -430,7 +430,7 @@ export class EveVaultWallet implements Wallet {
           action: "sign_transaction",
           transaction: tx,
           account: input.account,
-          chain: input.chain,
+          chain: this.#currentChain, // TODO: This should be from the tx input
         },
         "*",
       );
@@ -475,7 +475,7 @@ export class EveVaultWallet implements Wallet {
             action: WalletStandardMessageTypes.SIGN_AND_EXECUTE_TRANSACTION,
             transaction: tx,
             account: input.account,
-            chain: input.chain,
+            chain: this.#currentChain, // TODO: This should be from the tx input
           },
           "*",
         );

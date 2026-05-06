@@ -1,4 +1,4 @@
-import { LOCALNET_STORAGE_KEY, storeJwt } from "@evevault/shared";
+import { storeJwt } from "@evevault/shared";
 import { exchangeCodeForToken, getJwt } from "@evevault/shared/auth";
 import {
   getCurrentTenantId,

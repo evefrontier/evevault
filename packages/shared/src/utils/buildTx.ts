@@ -6,8 +6,9 @@ export const buildTx = async (
   tx: Transaction,
   user: User,
   suiClient: SuiGrpcClient,
+  localnetAddress?: string,
 ): Promise<Uint8Array> => {
-  tx.setSender(user.profile?.sui_address as string);
+  tx.setSender(localnetAddress ?? (user.profile?.sui_address as string));
   const txb = await tx.build({ client: suiClient });
   return txb;
 };

@@ -1,4 +1,4 @@
-import { encryptWithKey, ephSign } from "@evevault/shared";
+import { encryptWithKey, rawSign } from "@evevault/shared";
 import type { IntentScope } from "@mysten/sui/cryptography";
 import { SUI_PRIVATE_KEY_PREFIX } from "@mysten/sui/cryptography";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
@@ -91,9 +91,9 @@ const localnetSign = async (
     };
 
     const messageBytes = new Uint8Array(msgBytes);
-    const result = await ephSign(messageBytes, scope, {
+    const result = await rawSign(messageBytes, scope, {
       sui_address: suiAddress,
-      ephemeralKeyPair: key,
+      keypair: key,
     });
 
     sendResponse({

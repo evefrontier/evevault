@@ -21,6 +21,8 @@ export const createSuiClient = (
     | "devnet"
     | "localnet";
 
+  console.log("[createSuiClient] localnetUrl", localnetUrl);
+
   const baseUrl =
     network === SUI_LOCALNET_CHAIN
       ? (() => {
