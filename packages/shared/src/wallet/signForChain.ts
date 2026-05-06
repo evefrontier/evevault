@@ -25,9 +25,15 @@ export async function signForChain(
       );
     }
 
+    if (typeof chrome === "undefined" || !chrome.runtime?.sendMessage) {
+      throw new Error(
+        "[signForChain] Localnet signing is only available in the extension.",
+      );
+    }
+
     try {
       // Extension: Use background script
-      const response = (await chrome.runtime?.sendMessage?.({
+      const response = (await chrome.runtime.sendMessage({
         type: VaultMessageTypes.LOCALNET_SIGN_BYTES,
         msgBytes: Array.from(msgBytes), // Convert Uint8Array to array for serialization
         scope,

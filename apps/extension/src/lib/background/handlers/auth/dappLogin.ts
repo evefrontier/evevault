@@ -217,17 +217,21 @@ export async function handleDappLogin(
         );
 
         if (response?.ok && response?.address) {
-          sendAuthSuccessToTab(
-            tabId,
-            [id, ...additionalIds],
-            token,
+          sendAuthSuccessToTab(tabId, [id, ...additionalIds], token, {
             chain,
-            response.address,
-          );
+            address: response.address,
+          });
+        } else {
+          chrome.tabs.sendMessage(tabId, {
+            id,
+            type: "auth_error",
+            error: { message: "Could not retrieve localnet address" },
+          });
         }
+        return;
       }
 
-      sendAuthSuccessToTab(tabId, [id, ...additionalIds], token, chain);
+      sendAuthSuccessToTab(tabId, [id, ...additionalIds], token, { chain });
       return;
     }
   }
@@ -319,13 +323,22 @@ export async function handleDappLogin(
               email: decodedJwt.email,
               userId: decodedJwt.sub,
             };
-            sendAuthSuccessToTab(
-              tabId,
-              [id, ...additionalIds],
-              token,
-              chain,
-              log,
-            );
+
+            if (isLocalnetChain(chain)) {
+              const addrResponse = await sendToKeeper({
+                type: KeeperMessageTypes.LOCALNET_GET_ADDRESS,
+              });
+              sendAuthSuccessToTab(tabId, [id, ...additionalIds], token, {
+                chain,
+                address: addrResponse?.address,
+                logger: log,
+              });
+            } else {
+              sendAuthSuccessToTab(tabId, [id, ...additionalIds], token, {
+                chain,
+                logger: log,
+              });
+            }
           }
         })
         .catch((error) => {

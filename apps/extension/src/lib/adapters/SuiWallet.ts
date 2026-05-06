@@ -232,6 +232,10 @@ export class EveVaultWallet implements Wallet {
           if (trySettle(state, onMsg, timeoutId)) {
             try {
               if (m.chain === SUI_LOCALNET_CHAIN) {
+                if (!m.address) {
+                  reject(new Error("Localnet auth_success missing address"));
+                  return;
+                }
                 const localnetAccount = new ReadonlyWalletAccount({
                   address: m.address as string,
                   publicKey: new Uint8Array(0),
@@ -430,7 +434,7 @@ export class EveVaultWallet implements Wallet {
           action: "sign_transaction",
           transaction: tx,
           account: input.account,
-          chain: this.#currentChain, // TODO: This should be from the tx input
+          chain: input.chain ?? this.#currentChain,
         },
         "*",
       );
@@ -475,7 +479,7 @@ export class EveVaultWallet implements Wallet {
             action: WalletStandardMessageTypes.SIGN_AND_EXECUTE_TRANSACTION,
             transaction: tx,
             account: input.account,
-            chain: this.#currentChain, // TODO: This should be from the tx input
+            chain: input.chain ?? this.#currentChain,
           },
           "*",
         );

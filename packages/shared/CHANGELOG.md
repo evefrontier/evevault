@@ -2,6 +2,10 @@
 
 ## 0.0.9
 
+### Patch Changes
+
+- localnet signing support; ephemeral key rotation; signing refactor using `useWalletSigningContext`
+
 ## 0.0.8
 
 ### Patch Changes
