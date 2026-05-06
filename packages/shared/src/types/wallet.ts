@@ -39,11 +39,6 @@ export interface ZkProofParams {
   network?: string; // Optional network parameter (devnet, testnet, mainnet)
 }
 
-export interface EphSignParams {
-  sui_address: string;
-  ephemeralKeyPair: Signer;
-}
-
 export interface RawSignParams {
   sui_address: string;
   keypair: Signer;

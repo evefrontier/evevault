@@ -1,10 +1,8 @@
 import type { SuiGrpcClient } from "@mysten/sui/grpc";
 import type { Transaction } from "@mysten/sui/transactions";
-import type { User } from "oidc-client-ts";
 
-// Sets the sender of the tx and builds the transaction bytes
-// If is localnet, sender should be set to the localnet address
-// Otherwise, use the user's sui address
+// Sets the sender of the tx using useWalletSigningContext
+// Then builds the transaction bytes
 export const buildTx = async (
   tx: Transaction,
   sender: string,

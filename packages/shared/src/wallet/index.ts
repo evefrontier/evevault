@@ -8,7 +8,6 @@ export {
 } from "../types/wallet";
 export { useActiveSuiAddress } from "./hooks/useActiveSuiAddress";
 export { useBalance } from "./hooks/useBalance";
-export { useLocalnetAddress } from "./hooks/useLocalnetAddress";
 export { useSendToken } from "./hooks/useSendToken";
 export { useTransactionHistory } from "./hooks/useTransactionHistory";
 export { useWalletSigningContext } from "./hooks/useWalletSigningContext";

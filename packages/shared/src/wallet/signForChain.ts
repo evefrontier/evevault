@@ -18,8 +18,6 @@ export async function signForChain(
     localnetAddress?: string | null;
   },
 ): Promise<{ bytes: string; signature: string }> {
-  console.log("opts", opts);
-
   if (opts.chain === SUI_LOCALNET_CHAIN) {
     if (!opts.localnetAddress) {
       throw new Error(
