@@ -1,4 +1,4 @@
-import { encryptWithKey, rawSign } from "@evevault/shared";
+import { encryptWithKey, signWithIntent } from "@evevault/shared";
 import type { IntentScope } from "@mysten/sui/cryptography";
 import { SUI_PRIVATE_KEY_PREFIX } from "@mysten/sui/cryptography";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
@@ -91,7 +91,7 @@ const localnetSign = async (
     };
 
     const messageBytes = new Uint8Array(msgBytes);
-    const result = await rawSign(messageBytes, scope, {
+    const result = await signWithIntent(messageBytes, scope, {
       sui_address: suiAddress,
       keypair: key,
     });

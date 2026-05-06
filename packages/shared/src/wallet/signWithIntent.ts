@@ -8,7 +8,7 @@ const log = createLogger();
  * Signs message bytes with a key pair.
  * Works with any Signer implementation (Ed25519Keypair, WebCryptoSigner, etc.)
  */
-export const rawSign = async (
+export const signWithIntent = async (
   messageBytes: Uint8Array,
   scope: IntentScope,
   params: RawSignParams,
@@ -16,25 +16,25 @@ export const rawSign = async (
   const { sui_address, keypair } = params;
 
   if (!sui_address) {
-    throw new Error("[rawSign] User address not found");
+    throw new Error("[signWithIntent] User address not found");
   }
 
   if (!keypair) {
-    throw new Error("[rawSign] Key pair not found");
+    throw new Error("[signWithIntent] Key pair not found");
   }
 
-  log.info("[rawSign] Signing payload with key", { scope });
+  log.info("[signWithIntent] Signing payload with key", { scope });
 
   let rawSignature: SignatureWithBytes | undefined;
   try {
     if (scope === "TransactionData") {
       rawSignature = await keypair.signTransaction(messageBytes);
-      log.debug("[rawSign] Signed transaction bytes with key", {
+      log.debug("[signWithIntent] Signed transaction bytes with key", {
         byteLength: messageBytes.length,
       });
     } else {
       rawSignature = await keypair.signPersonalMessage(messageBytes);
-      log.debug("[rawSign] Signed personal message bytes with key", {
+      log.debug("[signWithIntent] Signed personal message bytes with key", {
         byteLength: messageBytes.length,
       });
     }

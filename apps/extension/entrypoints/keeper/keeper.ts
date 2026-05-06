@@ -9,7 +9,7 @@ import {
   KeeperMessageTypes,
   type ZkProofResponse,
 } from "@evevault/shared";
-import { rawSign } from "@evevault/shared/wallet/rawSign";
+import { signWithIntent } from "@evevault/shared/wallet/signWithIntent";
 import type { IntentScope } from "@mysten/sui/cryptography";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import type { SuiChain } from "@mysten/wallet-standard";
@@ -298,8 +298,8 @@ chrome.runtime.onMessage.addListener(
           // msgBytes comes as an array from chrome.runtime.sendMessage
           const messageBytes = new Uint8Array(msgBytes as number[]);
 
-          // Use standard rawSign function for eph signature
-          const ephSignature = await rawSign(
+          // Use standard signWithIntent function for eph signature
+          const ephSignature = await signWithIntent(
             messageBytes,
             scope as IntentScope,
             {
