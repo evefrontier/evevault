@@ -6,6 +6,7 @@ import {
 } from "@evevault/shared/components";
 import { createLogger } from "@evevault/shared/utils";
 import { signForChain } from "@evevault/shared/wallet";
+import type { SuiChain } from "@mysten/wallet-standard";
 import { useEffect, useState } from "react";
 import { useSignPopupAuth } from "@/features/wallet/hooks";
 import { SignPopupAuthGate } from "./SignPopupAuthGate";
@@ -63,11 +64,15 @@ function SignSponsoredTransaction() {
       const txbBytes = Uint8Array.from(atob(pending.sponsoredTxB64), (c) =>
         c.charCodeAt(0),
       );
-      const { zkSignature } = await signForChain("TransactionData", txbBytes, {
-        chain: pending.chain as SuiChain,
-        user: auth.user,
-        getZkProof: auth.getZkProof,
-      });
+      const { signature: zkSignature } = await signForChain(
+        "TransactionData",
+        txbBytes,
+        {
+          chain: pending.chain as SuiChain,
+          user: auth.user,
+          getZkProof: auth.getZkProof,
+        },
+      );
 
       await chrome.storage.local.set({
         transactionResult: {

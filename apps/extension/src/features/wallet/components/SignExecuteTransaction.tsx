@@ -1,4 +1,3 @@
-import { isLocalnetChain } from "@evevault/shared";
 import {
   Button,
   Heading,
@@ -6,19 +5,15 @@ import {
   Text,
 } from "@evevault/shared/components";
 import Json from "@evevault/shared/components/Json";
-import { useNetwork } from "@evevault/shared/hooks/useNetwork";
-import { useNetworkStore } from "@evevault/shared/stores";
-import { createSuiClient } from "@evevault/shared/sui";
 import type { ParsedTransactionWithDisplay } from "@evevault/shared/types";
 import {
   buildTx,
   createLogger,
   parseTransactionBytes,
 } from "@evevault/shared/utils";
-import { signForChain, useLocalnetAddress } from "@evevault/shared/wallet";
+import { useWalletSigningContext } from "@evevault/shared/wallet";
 import { Transaction } from "@mysten/sui/transactions";
 import { toBase64 } from "@mysten/sui/utils";
-import type { SuiChain } from "@mysten/wallet-standard";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useSignPopupAuth } from "@/features/wallet/hooks";
@@ -27,10 +22,8 @@ import { SignPopupAuthGate } from "./SignPopupAuthGate";
 const log = createLogger();
 
 function SignAndExecuteTransaction() {
-  const { chain } = useNetwork();
-  const isLocalnet = isLocalnetChain(chain);
-  const localnetAddress = useLocalnetAddress();
-  const { localnetUrl } = useNetworkStore();
+  const { getSenderAddress, isLocalnet, sign, suiClient } =
+    useWalletSigningContext();
   const [pendingTransaction, setPendingTransaction] =
     useState<ParsedTransactionWithDisplay | null>(null);
   const [loading, setLoading] = useState(false);
@@ -43,8 +36,6 @@ function SignAndExecuteTransaction() {
     // Retrieve the pending transaction from storage
     chrome.storage.local.get("pendingAction").then(async (data) => {
       const pending = data.pendingAction;
-
-      console.log(data);
 
       if (pending) {
         // When pending.transaction is present,
@@ -84,22 +75,22 @@ function SignAndExecuteTransaction() {
       setLoading(true);
       setError(null);
 
-      const { transaction, chain, windowId } = pendingTransaction;
+      const { transaction, windowId } = pendingTransaction;
 
-      // Create SuiClient for the specified chain
-      // Explicitly pass localnetUrl if isLocalnet
-      const suiClient = createSuiClient(
-        chain,
-        isLocalnet ? localnetUrl : undefined,
-      );
+      const senderAddress = await getSenderAddress();
+      if (!senderAddress) {
+        throw new Error(
+          isLocalnet
+            ? "No localnet keypair loaded. Enter your private key in the network selector."
+            : "User address not found",
+        );
+      }
 
       // Convert the transaction bytes to a Transaction object
       // And set the sender to the user's address
       const txb = await buildTx(
         Transaction.from(transaction as string),
-        isLocalnet
-          ? (localnetAddress ?? "")
-          : (auth.user.profile.sui_address as string),
+        senderAddress,
         suiClient,
       );
 
@@ -112,12 +103,7 @@ function SignAndExecuteTransaction() {
         }
       }
 
-      const { bytes, signature } = await signForChain("TransactionData", txb, {
-        chain: chain as SuiChain,
-        user: auth.user,
-        getZkProof: isLocalnet ? null : auth.getZkProof,
-        localnetAddress,
-      });
+      const { bytes, signature } = await sign("TransactionData", txb);
 
       // Execute the transaction
       const execResult = await suiClient.executeTransaction({

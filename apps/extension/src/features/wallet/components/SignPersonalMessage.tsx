@@ -1,14 +1,12 @@
-import { isLocalnetChain } from "@evevault/shared";
 import {
   Button,
   Heading,
   NetworkSelector,
   Text,
 } from "@evevault/shared/components";
-import { useNetwork } from "@evevault/shared/hooks/useNetwork";
 import type { PendingPersonalMessage } from "@evevault/shared/types";
 import { createLogger } from "@evevault/shared/utils";
-import { signForChain, useLocalnetAddress } from "@evevault/shared/wallet";
+import { useWalletSigningContext } from "@evevault/shared/wallet";
 import { SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
 import { useEffect, useState } from "react";
 import { useSignPopupAuth } from "@/features/wallet/hooks";
@@ -50,9 +48,7 @@ function decodeMessageBytes(bytes: Uint8Array): string {
 }
 
 function SignPersonalMessage() {
-  const { chain } = useNetwork();
-  const isLocalnet = isLocalnetChain(chain);
-  const localnetAddress = useLocalnetAddress();
+  const { chain, isLocalnet, sign } = useWalletSigningContext();
   const [pendingMessage, setPendingMessage] =
     useState<PendingPersonalMessage | null>(null);
   const [loading, setLoading] = useState(false);
@@ -77,7 +73,7 @@ function SignPersonalMessage() {
       log.error("No pending transaction found");
       return;
     }
-    if (!isLocalnet && !auth.user) {
+    if (!auth.user) {
       log.error("No user found");
       return;
     }
@@ -103,16 +99,7 @@ function SignPersonalMessage() {
 
       log.debug("Signing personal message", { length: messageBytes.length });
 
-      const { bytes, signature } = await signForChain(
-        "PersonalMessage",
-        messageBytes,
-        {
-          chain,
-          user: auth.user ?? null,
-          getZkProof: isLocalnet ? null : auth.getZkProof,
-          localnetAddress,
-        },
-      );
+      const { bytes, signature } = await sign("PersonalMessage", messageBytes);
 
       // Store the result in storage so the background handler can pick it up
       await chrome.storage.local.set({
