@@ -87,9 +87,10 @@ function SignTransaction() {
 
       const txb = await buildTx(
         Transaction.from(transaction as string),
-        auth.user,
+        isLocalnet
+          ? (localnetAddress ?? "")
+          : (auth.user.profile.sui_address as string),
         suiClient,
-        isLocalnet ? (localnetAddress ?? undefined) : undefined,
       );
 
       if (!isLocalnet) {

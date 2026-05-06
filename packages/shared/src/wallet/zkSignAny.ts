@@ -62,7 +62,7 @@ export const zkSignAny = async (
     const sui_address = user.profile?.sui_address as string;
     const signResult = await signWithIntent(msgBytes, scope, {
       sui_address,
-      ephemeralKeyPair: signer, // Ephemeral keypair
+      keypair: signer, // Ephemeral keypair
     });
 
     bytes = signResult.bytes;

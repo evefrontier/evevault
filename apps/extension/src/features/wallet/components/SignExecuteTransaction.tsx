@@ -87,6 +87,7 @@ function SignAndExecuteTransaction() {
       const { transaction, chain, windowId } = pendingTransaction;
 
       // Create SuiClient for the specified chain
+      // Explicitly pass localnetUrl if isLocalnet
       const suiClient = createSuiClient(
         chain,
         isLocalnet ? localnetUrl : undefined,
@@ -96,9 +97,10 @@ function SignAndExecuteTransaction() {
       // And set the sender to the user's address
       const txb = await buildTx(
         Transaction.from(transaction as string),
-        auth.user,
+        isLocalnet
+          ? (localnetAddress ?? "")
+          : (auth.user.profile.sui_address as string),
         suiClient,
-        isLocalnet ? (localnetAddress ?? undefined) : undefined,
       );
 
       if (!isLocalnet) {
