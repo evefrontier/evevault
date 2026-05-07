@@ -1,10 +1,9 @@
 /** Individual storage keys for use in stores and auth. */
 export const AUTH_STORAGE_KEY = "evevault:auth";
 export const DEVICE_STORAGE_KEY = "evevault:device";
-export const NETWORK_STORAGE_KEY = "evevault:network";
+export const CONTEXT_STORAGE_KEY = "evevault:context";
 export const TOKENLIST_STORAGE_KEY = "evevault:tokenlist";
 export const JWT_STORAGE_KEY = "evevault:jwt";
-export const TENANT_STORAGE_KEY = "evevault:tenant";
 /** Extension-only: localnet keypair for dev signing, stored as an AES-GCM encrypted blob (PIN-protected, same scheme as ephemeral key). */
 export const LOCALNET_STORAGE_KEY = "evevault:localnet-key";
 
@@ -12,10 +11,9 @@ export const LOCALNET_STORAGE_KEY = "evevault:localnet-key";
 export const EVEVAULT_STORAGE_KEYS = [
   AUTH_STORAGE_KEY,
   DEVICE_STORAGE_KEY,
-  NETWORK_STORAGE_KEY,
+  CONTEXT_STORAGE_KEY,
   TOKENLIST_STORAGE_KEY,
   JWT_STORAGE_KEY,
-  TENANT_STORAGE_KEY,
   LOCALNET_STORAGE_KEY,
 ] as const;
 

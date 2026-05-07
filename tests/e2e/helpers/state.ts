@@ -63,26 +63,28 @@ export async function seedPersistedAppState(page: Page) {
     },
   };
 
-  const networkState = {
+  const contextState = {
     version: 0,
     state: {
+      tenantId: "stillness",
+      devMode: false,
       chain: "sui:devnet",
-      loading: false,
+      localnetUrl: "http://127.0.0.1:9000",
     },
   };
 
   // Storage keys must match packages/shared/src/utils/storageKeys.ts
   await page.addInitScript(
-    ({ auth, device, network }) => {
+    ({ auth, device, context }) => {
       window.localStorage.clear();
       window.localStorage.setItem("evevault:auth", JSON.stringify(auth));
       window.localStorage.setItem("evevault:device", JSON.stringify(device));
-      window.localStorage.setItem("evevault:network", JSON.stringify(network));
+      window.localStorage.setItem("evevault:context", JSON.stringify(context));
     },
     {
       auth: authState,
       device: deviceState,
-      network: networkState,
+      context: contextState,
     },
   );
 }

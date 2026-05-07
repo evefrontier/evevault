@@ -2,6 +2,7 @@ import type { PublicKey } from "@mysten/sui/cryptography";
 import type { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import type { SuiChain } from "@mysten/wallet-standard";
 import type { ZkProofResponse } from "./enoki";
+import type { TenantState } from "./tenant";
 
 // Key type flag bytes (matches Sui signature scheme flags)
 export const KEY_FLAG_ED25519 = 0x00;
@@ -35,7 +36,6 @@ export interface DeviceState {
   ephemeralKeyPairSecretKey: StoredSecretKey;
   // Network-specific data stored by chain (jwtRandomness is per-network)
   networkData: Partial<Record<SuiChain, NetworkDataEntry>>;
-
   loading: boolean;
   error: string | null;
 
@@ -82,6 +82,8 @@ export interface NetworkState {
   /** Check if switching to a network requires re-authentication */
   checkNetworkSwitch: (chain: SuiChain) => Promise<{ requiresReauth: boolean }>;
 }
+
+export type ContextState = NetworkState & TenantState;
 
 export type PersistedDeviceStoreState = {
   jwtRandomness?: string | null;

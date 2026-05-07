@@ -52,6 +52,10 @@ vi.mock("#/stores/deviceStore", () => ({
     maxEpochTimestampMs: null,
     jwtRandomness: null,
   }),
+  createEmptyLocalnetDeviceData: () => ({
+    encryptedKey: null,
+    address: null,
+  }),
   useDeviceStore: {
     getState: vi.fn(),
     setState: vi.fn(),
@@ -173,10 +177,12 @@ describe("resetVaultOnDevice", () => {
       loading: false,
       error: null,
     });
-    expect(useNetworkStore.setState).toHaveBeenCalledWith({
-      chain: expect.any(String),
-      loading: false,
-    });
+    expect(useNetworkStore.setState).toHaveBeenCalledWith(
+      expect.objectContaining({
+        chain: expect.any(String),
+        loading: false,
+      }),
+    );
     expect(useTokenListStore.setState).toHaveBeenCalled();
   });
 

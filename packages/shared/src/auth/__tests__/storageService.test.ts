@@ -1,6 +1,6 @@
 import { SUI_DEVNET_CHAIN, SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { JWT_STORAGE_KEY, NETWORK_STORAGE_KEY } from "#/utils/storageKeys";
+import { CONTEXT_STORAGE_KEY, JWT_STORAGE_KEY } from "#/utils/storageKeys";
 
 vi.mock("#/utils/environment", () => ({
   isExtension: vi.fn(),
@@ -201,11 +201,11 @@ describe("getStoredChain", () => {
     await expect(getStoredChain()).resolves.toBe(SUI_TESTNET_CHAIN);
   });
 
-  it("getStoredChain reads chain from persisted network store", async () => {
+  it("getStoredChain reads chain from persisted context store", async () => {
     vi.mocked(isExtension).mockReturnValue(true);
     vi.mocked(isWeb).mockReturnValue(false);
     chromeStorage.get.mockResolvedValue({
-      [NETWORK_STORAGE_KEY]: JSON.stringify({
+      [CONTEXT_STORAGE_KEY]: JSON.stringify({
         state: { chain: SUI_DEVNET_CHAIN },
       }),
     });

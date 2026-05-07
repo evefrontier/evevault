@@ -74,7 +74,7 @@ vi.mock("#/stores", () => ({
 
 vi.mock("#/stores/tenantStore", () => ({
   getCurrentTenantId: vi.fn(() => "default"),
-  OAuthTenantSessionKey: "evevault:tenant",
+  OAuthTenantSessionKey: "evevault_oauth_tenant",
   setCurrentTenantId: vi.fn().mockResolvedValue(undefined),
 }));
 

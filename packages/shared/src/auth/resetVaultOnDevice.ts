@@ -1,3 +1,4 @@
+import type { TenantId } from "@evefrontier/dapp-kit/utils";
 import {
   SUI_DEVNET_CHAIN,
   SUI_LOCALNET_CHAIN,
@@ -84,7 +85,10 @@ function resetStoresToInitial(): void {
   });
 
   useNetworkStore.setState({
+    tenantId: "stillness" as TenantId,
+    devMode: false,
     chain: SUI_TESTNET_CHAIN,
+    localnetUrl: "http://127.0.0.1:9000",
     loading: false,
   });
 

@@ -4,7 +4,7 @@ import { useNetworkStore } from "#/stores/networkStore";
 import type { JwtResponse, OAuthTokenResponse } from "#/types";
 import { isExtension, isWeb } from "#/utils/environment";
 import { createLogger } from "#/utils/logger";
-import { JWT_STORAGE_KEY, NETWORK_STORAGE_KEY } from "#/utils/storageKeys";
+import { CONTEXT_STORAGE_KEY, JWT_STORAGE_KEY } from "#/utils/storageKeys";
 import { resolveExpiresAt } from "./utils/authStoreUtils";
 
 const log = createLogger();
@@ -31,8 +31,8 @@ export async function getStoredChain(): Promise<SuiChain> {
   ) {
     return SUI_TESTNET_CHAIN;
   }
-  const result = await chrome.storage.local.get([NETWORK_STORAGE_KEY]);
-  const raw = result[NETWORK_STORAGE_KEY];
+  const result = await chrome.storage.local.get([CONTEXT_STORAGE_KEY]);
+  const raw = result[CONTEXT_STORAGE_KEY];
   if (typeof raw !== "string") {
     return SUI_TESTNET_CHAIN;
   }
