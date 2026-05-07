@@ -7,7 +7,7 @@
     "packages/*",
     "apps/*"
   ],
-  "packageManager": "bun@1.3.1",
+  "packageManager": "bun@1.3.13",
   "scripts": {
     "dev": "turbo run dev",
     "dev:ext": "turbo run dev --filter=@evevault/extension",
@@ -56,14 +56,14 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
     "@vitejs/plugin-react": "^5.1.1",
-    "@vitest/coverage-v8": "^4.1.1",
-    "@vitest/ui": "^4.1.1",
+    "@vitest/coverage-v8": "^4.1.5",
+    "@vitest/ui": "^4.1.5",
     "husky": "^9.1.7",
     "jsdom": "^27.2.0",
     "lint-staged": "^16.2.7",
     "turbo": "^2.6.0",
     "typescript": "^5.8.3",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^4.1.1"
+    "vitest": "^4.1.5"
   }
 }

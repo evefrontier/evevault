@@ -2,11 +2,9 @@ import { describe, expect, it } from "vitest";
 import { sha256, sha256Hex } from "./sha256";
 
 describe("sha256", () => {
-  it("returns ArrayBuffer-like object for string input", async () => {
+  it("returns a real ArrayBuffer for string input", async () => {
     const result = await sha256("test");
-    // jsdom's crypto returns ArrayBuffer-like object, check for byteLength property
-    expect(result).toHaveProperty("byteLength");
-    expect(typeof result.byteLength).toBe("number");
+    expect(result).toBeInstanceOf(ArrayBuffer);
   });
 
   it("produces consistent hashes for same input", async () => {

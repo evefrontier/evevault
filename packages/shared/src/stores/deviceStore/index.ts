@@ -12,6 +12,7 @@ import { createProofActions } from "./actions/proofActions";
 import {
   createEmptyLocalnetDeviceData,
   createInitialNetworkData,
+  DEFAULT_LOCALNET_URL,
 } from "./constants";
 import { reconstructPublicKey } from "./keyHelpers";
 import { createDeviceSelectors } from "./selectors";
@@ -33,6 +34,7 @@ export const useDeviceStore = create<DeviceState>()(
       ephemeralKeyPairSecretKey: null,
       networkData: createInitialNetworkData(),
       localnet: createEmptyLocalnetDeviceData(),
+      localnetUrl: DEFAULT_LOCALNET_URL,
       setLocalnetUrl: (url: string) =>
         set((state) => ({
           localnet: {
