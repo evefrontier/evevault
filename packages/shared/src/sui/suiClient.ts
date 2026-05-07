@@ -8,8 +8,8 @@ import { NETWORKS } from "./networks";
 
 /**
  * Creates a Sui gRPC client for the specified network.
- * For localnet, pass localnetUrl explicitly (stored in network store); the static
- * NETWORKS.localnet entry has no URL since it is user-configured.
+ * For localnet, pass user-configured localnetUrl explicitly
+ * stored in network store
  */
 export const createSuiClient = (
   network: SuiChain = SUI_TESTNET_CHAIN,
@@ -27,7 +27,7 @@ export const createSuiClient = (
           const configuredUrl = localnetUrl?.trim();
           if (!configuredUrl) {
             throw new Error(
-              "createSuiClient requires a non-empty localnetUrl when using SUI_LOCALNET_CHAIN.",
+              "[createSuiClient] requires a non-empty localnetUrl when using SUI_LOCALNET_CHAIN.",
             );
           }
           return configuredUrl;

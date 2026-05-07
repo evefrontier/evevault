@@ -6,6 +6,7 @@ import {
   useDeviceStore,
   useTenantStore,
 } from "@evevault/shared/stores";
+import { isLocalnetChain, KeeperMessageTypes } from "@evevault/shared/types";
 import { createLogger } from "@evevault/shared/utils";
 import { Ed25519PublicKey } from "@mysten/sui/keypairs/ed25519";
 import { decodeJwt } from "jose";
@@ -13,6 +14,7 @@ import type { IdTokenClaims } from "oidc-client-ts";
 import { getAuthUrl } from "@/lib/background/services/oauthService";
 import { openPopupWindow } from "@/lib/background/services/popupWindow";
 import type { MessageWithId } from "@/lib/background/types";
+import { sendToKeeper } from "../vaultHandlers";
 import {
   ensureMessageId,
   getCurrentChain,
@@ -134,7 +136,10 @@ export async function handleDappLogin(
     }
   }
 
-  if (!deviceStore.ephemeralPublicKey && keeperStatus.publicKeyBytes) {
+  if (
+    !deviceStore.ephemeralPublicKey &&
+    keeperStatus.publicKeyBytes?.length > 0
+  ) {
     log.info("Syncing ephemeral public key from keeper to deviceStore", {
       chain,
     });
@@ -170,7 +175,7 @@ export async function handleDappLogin(
   }
 
   const deviceWithPublicKey = useDeviceStore.getState();
-  if (!deviceWithPublicKey.ephemeralPublicKey) {
+  if (!deviceWithPublicKey.ephemeralPublicKey && !isLocalnetChain(chain)) {
     log.error("Keeper is unlocked but no public key bytes available", {
       chain,
     });
@@ -201,7 +206,32 @@ export async function handleDappLogin(
         email: decodedJwt.email,
         userId: decodedJwt.sub,
       };
-      sendAuthSuccessToTab(tabId, [id, ...additionalIds], token);
+
+      if (isLocalnetChain(chain)) {
+        const response = await sendToKeeper({
+          type: KeeperMessageTypes.LOCALNET_GET_ADDRESS,
+        });
+
+        log.debug(
+          "Connect: localnet, sending auth_success with localnet address",
+        );
+
+        if (response?.ok && response?.address) {
+          sendAuthSuccessToTab(tabId, [id, ...additionalIds], token, {
+            chain,
+            address: response.address,
+          });
+        } else {
+          chrome.tabs.sendMessage(tabId, {
+            id,
+            type: "auth_error",
+            error: { message: "Could not retrieve localnet address" },
+          });
+        }
+        return;
+      }
+
+      sendAuthSuccessToTab(tabId, [id, ...additionalIds], token, { chain });
       return;
     }
   }
@@ -293,7 +323,22 @@ export async function handleDappLogin(
               email: decodedJwt.email,
               userId: decodedJwt.sub,
             };
-            sendAuthSuccessToTab(tabId, [id, ...additionalIds], token, log);
+
+            if (isLocalnetChain(chain)) {
+              const addrResponse = await sendToKeeper({
+                type: KeeperMessageTypes.LOCALNET_GET_ADDRESS,
+              });
+              sendAuthSuccessToTab(tabId, [id, ...additionalIds], token, {
+                chain,
+                address: addrResponse?.address,
+                logger: log,
+              });
+            } else {
+              sendAuthSuccessToTab(tabId, [id, ...additionalIds], token, {
+                chain,
+                logger: log,
+              });
+            }
           }
         })
         .catch((error) => {

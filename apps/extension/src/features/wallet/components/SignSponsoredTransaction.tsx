@@ -5,7 +5,7 @@ import {
   Text,
 } from "@evevault/shared/components";
 import { createLogger } from "@evevault/shared/utils";
-import { zkSignAny } from "@evevault/shared/wallet";
+import { useWalletSigningContext } from "@evevault/shared/wallet";
 import { useEffect, useState } from "react";
 import { useSignPopupAuth } from "@/features/wallet/hooks";
 import { SignPopupAuthGate } from "./SignPopupAuthGate";
@@ -29,6 +29,7 @@ function SignSponsoredTransaction() {
   const [error, setError] = useState<string | null>(null);
 
   const auth = useSignPopupAuth();
+  const { isLocalnet, sign } = useWalletSigningContext();
 
   useEffect(() => {
     chrome.storage.local.get("pendingAction").then((data) => {
@@ -43,6 +44,10 @@ function SignSponsoredTransaction() {
 
   const handleApprove = async () => {
     if (!pending) return;
+    if (isLocalnet) {
+      setError("Sponsored transactions are not available on localnet.");
+      return;
+    }
     if (!auth.user) {
       setError("Sign in and try again.");
       return;
@@ -63,10 +68,10 @@ function SignSponsoredTransaction() {
       const txbBytes = Uint8Array.from(atob(pending.sponsoredTxB64), (c) =>
         c.charCodeAt(0),
       );
-      const { zkSignature } = await zkSignAny("TransactionData", txbBytes, {
-        user: auth.user,
-        getZkProof: auth.getZkProof,
-      });
+      const { signature: zkSignature } = await sign(
+        "TransactionData",
+        txbBytes,
+      );
 
       await chrome.storage.local.set({
         transactionResult: {

@@ -5,14 +5,13 @@ import {
   Text,
 } from "@evevault/shared/components";
 import Json from "@evevault/shared/components/Json";
-import { createSuiClient } from "@evevault/shared/sui";
 import type { ParsedTransactionWithDisplay } from "@evevault/shared/types";
 import {
   buildTx,
   createLogger,
   parseTransactionBytes,
 } from "@evevault/shared/utils";
-import { zkSignAny } from "@evevault/shared/wallet";
+import { useWalletSigningContext } from "@evevault/shared/wallet";
 import { Transaction } from "@mysten/sui/transactions";
 import { useEffect, useState } from "react";
 import { useSignPopupAuth } from "@/features/wallet/hooks";
@@ -21,6 +20,8 @@ import { SignPopupAuthGate } from "./SignPopupAuthGate";
 const log = createLogger();
 
 function SignTransaction() {
+  const { getSenderAddress, isLocalnet, sign, suiClient } =
+    useWalletSigningContext();
   const [pendingTransaction, setPendingTransaction] =
     useState<ParsedTransactionWithDisplay | null>(null);
   const [loading, setLoading] = useState(false);
@@ -70,31 +71,33 @@ function SignTransaction() {
       setLoading(true);
       setError(null);
 
-      const { transaction, chain, windowId } = pendingTransaction;
+      const { transaction, windowId } = pendingTransaction;
 
-      // Create SuiClient for the specified chain
-      const suiClient = createSuiClient(chain);
+      const senderAddress = await getSenderAddress();
+      if (!senderAddress) {
+        throw new Error(
+          isLocalnet
+            ? "No localnet keypair loaded. Enter your private key in the network selector."
+            : "User address not found",
+        );
+      }
 
-      // Convert the transaction bytes to a Transaction object
-      // And set the sender to the user's address
       const txb = await buildTx(
         Transaction.from(transaction as string),
-        auth.user,
+        senderAddress,
         suiClient,
       );
 
-      if (!auth.ephemeralPublicKey) {
-        throw new Error("Ephemeral public key not found");
+      if (!isLocalnet) {
+        if (!auth.ephemeralPublicKey) {
+          throw new Error("Ephemeral public key not found");
+        }
+        if (!auth.maxEpoch) {
+          throw new Error("Max epoch is not set");
+        }
       }
 
-      if (!auth.maxEpoch) {
-        throw new Error("Max epoch is not set");
-      }
-
-      const { zkSignature, bytes } = await zkSignAny("TransactionData", txb, {
-        user: auth.user,
-        getZkProof: auth.getZkProof,
-      });
+      const { bytes, signature } = await sign("TransactionData", txb);
 
       // Store the result in storage so the background handler can pick it up
       await chrome.storage.local.set({
@@ -102,7 +105,7 @@ function SignTransaction() {
           windowId,
           status: "signed",
           bytes,
-          signature: zkSignature,
+          signature,
         },
       });
 

@@ -1,13 +1,14 @@
 import type { SuiGrpcClient } from "@mysten/sui/grpc";
 import type { Transaction } from "@mysten/sui/transactions";
-import type { User } from "oidc-client-ts";
 
+// Sets the sender of the tx using useWalletSigningContext
+// Then builds the transaction bytes
 export const buildTx = async (
   tx: Transaction,
-  user: User,
+  sender: string,
   suiClient: SuiGrpcClient,
 ): Promise<Uint8Array> => {
-  tx.setSender(user.profile?.sui_address as string);
+  tx.setSender(sender);
   const txb = await tx.build({ client: suiClient });
   return txb;
 };

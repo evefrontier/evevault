@@ -4,10 +4,9 @@ import {
   NetworkSelector,
   Text,
 } from "@evevault/shared/components";
-import { useNetwork } from "@evevault/shared/hooks/useNetwork";
 import type { PendingPersonalMessage } from "@evevault/shared/types";
 import { createLogger } from "@evevault/shared/utils";
-import { zkSignAny } from "@evevault/shared/wallet";
+import { useWalletSigningContext } from "@evevault/shared/wallet";
 import { SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
 import { useEffect, useState } from "react";
 import { useSignPopupAuth } from "@/features/wallet/hooks";
@@ -49,7 +48,7 @@ function decodeMessageBytes(bytes: Uint8Array): string {
 }
 
 function SignPersonalMessage() {
-  const { chain } = useNetwork();
+  const { chain, isLocalnet, sign } = useWalletSigningContext();
   const [pendingMessage, setPendingMessage] =
     useState<PendingPersonalMessage | null>(null);
   const [loading, setLoading] = useState(false);
@@ -85,12 +84,13 @@ function SignPersonalMessage() {
 
       const { message, windowId } = pendingMessage;
 
-      if (!auth.ephemeralPublicKey) {
-        throw new Error("Ephemeral public key not found");
-      }
-
-      if (!auth.maxEpoch) {
-        throw new Error("Max epoch is not set");
+      if (!isLocalnet) {
+        if (!auth.ephemeralPublicKey) {
+          throw new Error("Ephemeral public key not found");
+        }
+        if (!auth.maxEpoch) {
+          throw new Error("Max epoch is not set");
+        }
       }
 
       // Convert message (may be Uint8Array, object with numeric keys, or array)
@@ -99,14 +99,7 @@ function SignPersonalMessage() {
 
       log.debug("Signing personal message", { length: messageBytes.length });
 
-      const { zkSignature, bytes } = await zkSignAny(
-        "PersonalMessage",
-        messageBytes,
-        {
-          user: auth.user,
-          getZkProof: auth.getZkProof,
-        },
-      );
+      const { bytes, signature } = await sign("PersonalMessage", messageBytes);
 
       // Store the result in storage so the background handler can pick it up
       await chrome.storage.local.set({
@@ -114,7 +107,7 @@ function SignPersonalMessage() {
           windowId,
           status: "signed",
           bytes,
-          signature: zkSignature,
+          signature,
         },
       });
 

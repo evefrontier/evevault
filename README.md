@@ -4,18 +4,20 @@ EVE Vault Wallet is a Chrome MV3 extension and web app built with WXT and React.
 
 ## Features
 
-- ✅ EVE Frontier-provider OAuth (FusionAuth)
-- ✅ zkLogin address derivation via Enoki
-- ✅ Wallet Standard implementation for dApp discovery
-- ✅ Transaction signing with zkLogin
-- ✅ **Multi-network support** (Devnet, Testnet)
-- ✅ **Multi-tenant support** (Stillness, Utopia)
-- ✅ Reactive state management with Zustand
-- ✅ Chrome storage persistence
+- EVE Frontier OAuth (FusionAuth)
+- zkLogin address derivation (Enoki)
+- Wallet Standard implementation for dApp discovery
+- Transaction signing with zkLogin and privatekey (localnet-only)
+- Multi-network support (Devnet, Testnet, Localnet)
+- Multi-tenant FusionAuth configuration
+- Zustand for client state
+- Chrome storage persistence (extension)
 
 ## How It Works
 
-EVE Vault uses **zkLogin** to create a Sui wallet address from your OAuth credentials (FusionAuth). Instead of managing a private key, your wallet address is cryptographically derived from your authenticated identity using zero-knowledge proofs.
+EVE Vault uses **zkLogin** to create a Sui wallet address from your OAuth credentials (FusionAuth). Your wallet address is cryptographically derived from your authenticated identity using zero-knowledge proofs.
+
+On Sui Localnet, signing uses a local Ed25519 keypair (imported in the app), which keeps dev/test flows simple.
 
 For detailed technical information, see the [Architecture Documentation](https://github.com/evefrontier/architecture-decision-log/blob/main/adr/0008-zklogin-implementation-auth-flow.md) and [Sui zkLogin docs](https://docs.sui.io/concepts/cryptography/zklogin).
 
@@ -33,216 +35,163 @@ For detailed technical information, see the [Architecture Documentation](https:/
 ## Requirements
 
 - Node.js 22+
-- Bun (recommended) package manager
-- FusionAuth application with client credentials (for EVE Frontier auth)
-- Enoki API key (for zkLogin address derivation)
+- [Bun](https://bun.sh/) (package manager used in this repo)
+- FusionAuth application with client credentials (per-tenant secrets in env)
+- Enoki API key (zkLogin address derivation)
 
 ## Quick Start
 
-### 1. Install Dependencies
+### 1. Install dependencies
 
 ```bash
 bun install
 ```
 
-### 2. Environment Configuration
+### 2. Environment configuration
 
-Create a `.env` file at app root:
+Create a `.env` at the **repository root** (WXT loads env from the monorepo root). Use the tenant secret names that match `packages/shared/src/utils/constants.ts` (Stillness, Utopia, and additional test tenants as needed):
 
 ```env
-# FusionAuth Configuration
-VITE_TENANT_STILLNESS_CLIENT_SECRET=your-fusionauth-client-secret
-VITE_TENANT_UTOPIA_CLIENT_SECRET=your-fusionauth-client-secret
-VITE_TENANT_TAUCETI_CLIENT_SECRET=your-fusionauth-client-secret
-VITE_TENANT_TESSERACT_CLIENT_SECRET=your-fusionauth-client-secret
-VITE_TENANT_TETRA_CLIENT_SECRET=your-fusionauth-client-secret
-VITE_TENANT_TIAKI_CLIENT_SECRET=your-fusionauth-client-secret
+# FusionAuth — set secrets for each tenant you enable
+VITE_TENANT_STILLNESS_CLIENT_SECRET=
+VITE_TENANT_UTOPIA_CLIENT_SECRET=
+VITE_TENANT_TAUCETI_CLIENT_SECRET=
+VITE_TENANT_TESSERACT_CLIENT_SECRET=
+VITE_TENANT_TETRA_CLIENT_SECRET=
+VITE_TENANT_TIAKI_CLIENT_SECRET=
 VITE_FUSIONAUTH_REDIRECT_URI=
 
-# Enoki Configuration
-VITE_ENOKI_API_KEY=your-enoki-api-key
+# Enoki
+VITE_ENOKI_API_KEY=
 
-# Extension Configuration
-EXTENSION_ID="your-extension-public-key"
+# Extension (when required by your build / OAuth redirect)
+EXTENSION_ID=
 ```
 
-### 3. OAuth Provider Setup
+### 3. OAuth provider setup (FusionAuth)
 
-**FusionAuth:**
+1. FusionAuth admin → Applications → your app → OAuth
+2. Add redirect URI: `https://<your-extension-id>.chromiumapp.org/` (extension flow)
+3. Enable scopes: `openid`, `profile`, `email`
 
-1. Go to your FusionAuth admin panel
-2. Navigate to Applications → Your App → OAuth
-3. Add redirect URI: `https://<your-extension-id>.chromiumapp.org/`
-4. Enable scopes: `openid`, `profile`, `email`
-
-### 4. Start Development
+### 4. Start development
 
 ```bash
-# Run extension
-bun run dev:extension
+# Extension only
+bun run dev:ext
 
-# Or run all apps
+# Extension and web apps
 bun run dev
 ```
 
-### 5. Load Extension in Browser
+### 5. Load the extension in Chrome
 
-- **Chrome**: Go to `chrome://extensions`, enable Developer mode, click "Load unpacked", and select `apps/extension/.output/chrome-mv3`
+1. Open `chrome://extensions`
+2. Enable **Developer mode**
+3. **Load unpacked** → select `apps/extension/.output/chrome-mv3` (after `dev` or `build` has produced output)
 
-### 6. Test the Extension
+### 6. Smoke-test the popup
 
 1. Open the extension popup
-2. Click "Sign in with EVE Vault"
-3. Complete the OAuth flow
-4. After success, the popup displays your zkLogin address and Sui balance
-5. Switch between Devnet and Testnet using the network selector in the bottom-left corner
+2. Sign in with your configured tenant
+3. After success, you should see your zkLogin address and balance (when the network and APIs are available)
+4. Use the in-app network selector to switch networks where supported
 
 ## Build
 
 ```bash
-# Build extension (Chrome)
-bun run build:extension
+# Extension (Turborepo)
+bun run build:ext
 
-# Build all apps
+# Web app
+bun run build:web
+
+# Both apps
 bun run build
 ```
 
-Output: `apps/extension/.output/chrome-mv3/`
+Extension artifact directory: `apps/extension/.output/chrome-mv3/`
 
-## Code Quality
+## Code quality
 
-### Linting & Formatting
+### Linting and formatting
 
-This project uses **[Biome](https://biomejs.dev/)** for fast formatting and linting (~35x faster than Prettier).
+[Biome](https://biomejs.dev/) is used for format + lint.
 
 ```bash
-# Check all files
 bun run lint
+bun run lint:fix
+bun run typecheck
+```
 
-# Auto-fix issues
-bun run lint --write
+Run a task for one workspace, for example:
 
-# Check specific workspace
+```bash
 bunx turbo run lint --filter=@evevault/web
 ```
 
-### Pre-commit Hooks
+### Pre-commit (Husky + lint-staged)
 
-**Husky** + **lint-staged** automatically format and lint staged files on commit:
+Staged `*.{ts,tsx,js,jsx,json,css}` files are run through `biome check --write` before commit (see root `package.json` `lint-staged`).
 
-- Runs `biome check --write` on staged `.ts`, `.tsx`, `.js`, `.jsx`, `.json`, `.css` files
-- Auto-fixes formatting, import order, and style issues
-- Blocks commit if unfixable errors remain
+Config: `biome.json`, `.biomeignore`, `.husky/pre-commit`.
 
-**Configuration:**
-
-- `biome.json` - Formatting and linting rules
-- `.biomeignore` - Files to ignore
-- `.husky/pre-commit` - Pre-commit hook script
-
-**VS Code Integration:**
-Install the Biome extension for real-time feedback:
+### Tests
 
 ```bash
-code --install-extension biomejs.biome
-```
-
-### Testing
-
-```bash
-# Run all tests
 bun run test
-
-# Run tests once (for CI)
-bun run test --run
-
-# Run tests for specific workspace
+bun run test:run
 bunx turbo run test --filter=@evevault/shared
 ```
 
-See [Testing Guide](./docs/TESTING.md) for detailed testing information.
+## Project structure
 
-## Project Structure
-
-This is a **monorepo** using Bun workspaces and Turborepo:
+Monorepo: Bun workspaces + [Turborepo](https://turbo.build/).
 
 ```
-eve-frontier-vault-sui/
+evevault/
 ├── packages/
-│   └── shared/              # Cross-platform business logic
+│   └── shared/          # Shared types, auth, wallet, UI used by web + extension
 └── apps/
-    ├── extension/           # Browser extension
-    └── web/                 # Web application
+    ├── extension/       # WXT Chrome MV3 extension
+    └── web/             # Vite + React web app
 ```
-
-For detailed structure and architecture, see [Monorepo Documentation](./docs/MONOREPO_README.md).
 
 ## Documentation
 
-- **[Release extension (CI)](./docs/RELEASE_EXTENSION.md)** - GitHub Actions build ZIP
-- **[Monorepo Guide](./docs/MONOREPO_README.md)** - Structure, getting started, commands
-- **[Architecture](https://github.com/evefrontier/architecture-decision-log/blob/main/adr/0008-zklogin-implementation-auth-flow.md)** - ZKLogin and auth flow
-- **[Bun + Turborepo Setup](./docs/BUN_TURBO_SETUP.md)** - Tooling deep-dive
-- **[Development Guide](./docs/DEVELOPMENT.md)** - Development workflow, debugging, tips
-- **[Implementation Details](./docs/IMPLEMENTATION.md)** - Core scripts, authentication, wallet implementation
-- **[Testing Guide](./docs/TESTING.md)** - Testing setup, examples, and best practices
-- **[Troubleshooting](./docs/TROUBLESHOOTING.md)** - Common issues and solutions
+- [Release extension (CI)](./docs/RELEASE_EXTENSION.md) — GitHub Actions ZIP
+- [ADR: hybrid monorepo structure](./docs/adr/001-hybrid-monorepo-structure.md)
+- [Troubleshooting](./docs/TROUBLESHOOTING.md)
+- [Architecture (zkLogin / auth)](https://github.com/evefrontier/architecture-decision-log/blob/main/adr/0008-zklogin-implementation-auth-flow.md) — external ADR
 
 ## Usage
 
-### For dApp Integration
+### For dApp developers
 
-```typescript
-import { SuiClientProvider, WalletProvider } from "@mysten/dapp-kit";
+EVE Vault registers as **Eve Vault** through the [Sui Wallet Standard](https://docs.sui.io/standards/wallet-standard). Use any stack that lists Wallet Standard wallets (for example `@mysten/dapp-kit`); connect or filter for the wallet named **Eve Vault**. The extension injects the provider in pages where it is allowed to run.
 
-<WalletProvider
-  autoConnect
-  walletFilter={(wallet) => wallet.name.includes("Eve Vault")}
->
-  <App />
-</WalletProvider>;
-```
+### For extension users
 
-The extension registers as "Eve Vault" in the page context. Connecting triggers the login flow if the user isn't authenticated.
+1. Open the popup from the toolbar icon
+2. Complete sign-in for your tenant
+3. Once authenticated, the wallet is available to permitted sites
+4. Switch Sui networks from the network selector when offered
 
-### For Extension Users
+## Known limitations
 
-1. Click the extension icon to open the popup
-2. Complete the OAuth flow (or switch networks using the network selector)
-3. The wallet is automatically available to all dApps once authenticated
-4. Switch between Devnet and Testnet using the network selector in the bottom-left corner
-
-## Current State
-
-### Working Features
-
-- FusionAuth OAuth Provider
-- zkLogin address derivation via Enoki
-- Sui balance display
-- Ephemeral keypair generation
-- ZK proof request preparation
-- Wallet Standard registration
-- Reactive state management
-- **Multi-network support** with seamless switching between Devnet and Testnet
-- **Per-network authentication** with automatic rollback on login failures
-
-### Known Limitations
-
-- MaxEpoch expiry requires manual re-login
-
-For detailed limitations and TODOs, see [Implementation Details](./docs/IMPLEMENTATION.md#current-state--limitations).
+- zkLogin **maxEpoch** expiry can require unlocking / signing again after an epoch boundary
 
 ## Contributing
 
-1. Follow the [Development Guide](./docs/DEVELOPMENT.md)
-2. Review the [Architecture Decision Record](./docs/adr/001-hybrid-monorepo-structure.md)
-3. Check [Troubleshooting](./docs/TROUBLESHOOTING.md) for common issues
+1. Use **Quick start** and **Build** above for a working tree
+2. Read [ADR: hybrid monorepo structure](./docs/adr/001-hybrid-monorepo-structure.md) for layout decisions
+3. See [Troubleshooting](./docs/TROUBLESHOOTING.md) for common extension and env issues
 
 ## Acknowledgements
 
-- Built with [WXT](https://wxt.dev/) and React
+- [WXT](https://wxt.dev/) and React
 - Sui Wallet Standard: [@mysten/wallet-standard](https://sdk.mystenlabs.com/dapp-kit/wallet-standard)
-- ZKLogin: [@mysten/sui/zklogin](https://docs.sui.io/concepts/cryptography/zklogin)
-- State Management: [Zustand](https://zustand-demo.pmnd.rs/)
-- Auth: [oidc-client-ts](https://github.com/authts/oidc-client-ts) + FusionAuth
-- zkLogin Integration: [Enoki by Mysten Labs](https://docs.enoki.mystenlabs.com/)
+- zkLogin: [@mysten/sui](https://docs.sui.io/concepts/cryptography/zklogin)
+- [Zustand](https://zustand-demo.pmnd.rs/)
+- [oidc-client-ts](https://github.com/authts/oidc-client-ts) + FusionAuth
+- [Enoki](https://docs.enoki.mystenlabs.com/) (Mysten Labs)

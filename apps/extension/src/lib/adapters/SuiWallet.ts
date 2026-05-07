@@ -25,6 +25,7 @@ import {
   StandardDisconnect,
   StandardEvents,
   SUI_DEVNET_CHAIN,
+  SUI_LOCALNET_CHAIN,
   SUI_TESTNET_CHAIN,
   SuiSignAndExecuteTransaction,
   SuiSignPersonalMessage,
@@ -214,7 +215,11 @@ export class EveVaultWallet implements Wallet {
   }
 
   // Not authenticated, trigger login flow
-  #connect: StandardConnectMethod = async () => {
+  #connect: StandardConnectMethod = async (input) => {
+    if (input?.silent && this.#accounts.length > 0) {
+      return { accounts: this.accounts };
+    }
+
     return new Promise<StandardConnectOutput>((resolve, reject) => {
       const id = crypto.randomUUID();
       const state = { settled: false };
@@ -226,64 +231,15 @@ export class EveVaultWallet implements Wallet {
         if (m.type === "auth_success") {
           if (trySettle(state, onMsg, timeoutId)) {
             try {
-              const result = m.token;
-
-              sessionStorage.setItem(
-                "evevault_jwt",
-                JSON.stringify(result.access_token),
-              );
-
-              if (result) {
-                const zkLoginResponse = await getZkLoginAddress({
-                  jwt: result.access_token,
-                  enokiApiKey: import.meta.env.VITE_ENOKI_API_KEY,
-                });
-
-                if (zkLoginResponse.error) {
-                  reject(new Error(zkLoginResponse.error.message));
+              if (m.chain === SUI_LOCALNET_CHAIN) {
+                if (!m.address) {
+                  reject(new Error("Localnet auth_success missing address"));
                   return;
                 }
-
-                if (!zkLoginResponse.data) {
-                  reject(
-                    new Error("No data returned from zkLogin address lookup"),
-                  );
-                  return;
-                }
-
-                const { address, publicKey: publicKeyB64 } =
-                  zkLoginResponse.data;
-                const trimmedPublicKey = publicKeyB64.trim();
-                if (!trimmedPublicKey) {
-                  reject(
-                    new Error(
-                      "No public key returned from zkLogin address lookup",
-                    ),
-                  );
-                  return;
-                }
-
-                let publicKeyBytes: Uint8Array;
-                try {
-                  publicKeyBytes = fromBase64(trimmedPublicKey);
-                } catch {
-                  reject(
-                    new Error(
-                      "Invalid base64 public key returned from zkLogin address lookup",
-                    ),
-                  );
-                  return;
-                }
-
-                const newAccount = new ReadonlyWalletAccount({
-                  address,
-                  publicKey: publicKeyBytes,
-                  chains: [
-                    this.#currentChain,
-                    this.#currentChain === SUI_TESTNET_CHAIN
-                      ? SUI_DEVNET_CHAIN
-                      : SUI_TESTNET_CHAIN,
-                  ],
+                const localnetAccount = new ReadonlyWalletAccount({
+                  address: m.address as string,
+                  publicKey: new Uint8Array(0),
+                  chains: [SUI_LOCALNET_CHAIN],
                   features: [
                     StandardConnect,
                     StandardDisconnect,
@@ -293,13 +249,81 @@ export class EveVaultWallet implements Wallet {
                     EVEFRONTIER_SPONSORED_TRANSACTION,
                   ],
                 });
-
-                this.#accounts = [newAccount];
-
+                this.#accounts = [localnetAccount];
                 this.#emitChangeEvent({ accounts: this.#accounts });
+                resolve({ accounts: this.accounts });
+                return;
               }
 
-              resolve({ accounts: this.#accounts });
+              const result = m.token;
+
+              sessionStorage.setItem(
+                "evevault_jwt",
+                JSON.stringify(result.access_token),
+              );
+
+              const zkLoginResponse = await getZkLoginAddress({
+                jwt: result.access_token,
+                enokiApiKey: import.meta.env.VITE_ENOKI_API_KEY,
+              });
+
+              if (zkLoginResponse.error) {
+                reject(new Error(zkLoginResponse.error.message));
+                return;
+              }
+
+              if (!zkLoginResponse.data) {
+                reject(
+                  new Error("No data returned from zkLogin address lookup"),
+                );
+                return;
+              }
+
+              const { address, publicKey: publicKeyB64 } = zkLoginResponse.data;
+              const trimmedPublicKey = publicKeyB64.trim();
+              if (!trimmedPublicKey) {
+                reject(
+                  new Error(
+                    "No public key returned from zkLogin address lookup",
+                  ),
+                );
+                return;
+              }
+
+              let publicKeyBytes: Uint8Array;
+              try {
+                publicKeyBytes = fromBase64(trimmedPublicKey);
+              } catch {
+                reject(
+                  new Error(
+                    "Invalid base64 public key returned from zkLogin address lookup",
+                  ),
+                );
+                return;
+              }
+
+              const newAccount = new ReadonlyWalletAccount({
+                address,
+                publicKey: publicKeyBytes,
+                chains: [
+                  this.#currentChain,
+                  this.#currentChain === SUI_TESTNET_CHAIN
+                    ? SUI_DEVNET_CHAIN
+                    : SUI_TESTNET_CHAIN,
+                ],
+                features: [
+                  StandardConnect,
+                  StandardDisconnect,
+                  SuiSignPersonalMessage,
+                  SuiSignTransaction,
+                  SuiSignAndExecuteTransaction,
+                  EVEFRONTIER_SPONSORED_TRANSACTION,
+                ],
+              });
+
+              this.#accounts = [newAccount];
+              this.#emitChangeEvent({ accounts: this.#accounts });
+              resolve({ accounts: this.accounts });
             } catch (err) {
               reject(err instanceof Error ? err : new Error(String(err)));
             }
@@ -410,7 +434,7 @@ export class EveVaultWallet implements Wallet {
           action: "sign_transaction",
           transaction: tx,
           account: input.account,
-          chain: input.chain,
+          chain: input.chain ?? this.#currentChain,
         },
         "*",
       );
@@ -455,7 +479,7 @@ export class EveVaultWallet implements Wallet {
             action: WalletStandardMessageTypes.SIGN_AND_EXECUTE_TRANSACTION,
             transaction: tx,
             account: input.account,
-            chain: input.chain,
+            chain: input.chain ?? this.#currentChain,
           },
           "*",
         );

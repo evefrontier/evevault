@@ -39,9 +39,9 @@ export interface ZkProofParams {
   network?: string; // Optional network parameter (devnet, testnet, mainnet)
 }
 
-export interface EphSignParams {
+export interface RawSignParams {
   sui_address: string;
-  ephemeralKeyPair: Signer;
+  keypair: Signer;
 }
 
 // Legacy types for extension (Ed25519-specific)
