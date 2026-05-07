@@ -14,7 +14,7 @@ type ContextPersisted = {
 };
 
 /**
- * Returns whether dev mode is enabled (persisted with tenant store in localStorage on web, chrome.storage in extension).
+ * Returns whether dev mode is enabled (persisted with context store in localStorage on web, chrome.storage in extension).
  */
 export async function getDevModeEnabled(): Promise<boolean> {
   const raw = await getStorage().getItem(CONTEXT_STORAGE_KEY);

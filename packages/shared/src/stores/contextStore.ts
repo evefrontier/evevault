@@ -5,7 +5,12 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import { chromeStorageAdapter, localStorageAdapter } from "#/adapters";
 import type { ContextState, NetworkSwitchResult } from "#/types";
 import { isLocalnetChain } from "#/types/networks";
-import { createLogger, isExtension, isWeb } from "#/utils";
+import {
+  createLogger,
+  DEFAULT_LOCALNET_URL,
+  isExtension,
+  isWeb,
+} from "#/utils";
 import { CONTEXT_STORAGE_KEY } from "#/utils/storageKeys";
 import {
   getAvailableTenantIds,
@@ -14,7 +19,6 @@ import {
 
 const log = createLogger();
 
-const DEFAULT_LOCALNET_URL = "http://127.0.0.1:9000";
 const INITIAL_TENANT_ID = "stillness" as TenantId;
 
 type PersistedContextState = Partial<{
