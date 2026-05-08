@@ -8,12 +8,12 @@ vi.mock("#/stores/deviceStore", () => ({
   useDeviceStore: vi.fn(),
 }));
 
-vi.mock("#/stores/networkStore", () => ({
-  useNetworkStore: vi.fn(),
+vi.mock("#/stores/contextStore", () => ({
+  useContextStore: vi.fn(),
 }));
 
+import { useContextStore } from "#/stores/contextStore";
 import { useDeviceStore } from "#/stores/deviceStore";
-import { useNetworkStore } from "#/stores/networkStore";
 
 describe("useDevice", () => {
   const mockNetworkData = {
@@ -46,13 +46,20 @@ describe("useDevice", () => {
     unlock: vi.fn(),
     lock: vi.fn(),
     networkData: mockNetworkData,
+    localnet: {
+      encryptedKey: null,
+      address: null,
+      url: "",
+      maxEpoch: null,
+      maxEpochTimestampMs: null,
+    },
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
 
     // Default mock for network store - devnet
-    vi.mocked(useNetworkStore).mockReturnValue({
+    vi.mocked(useContextStore).mockReturnValue({
       chain: SUI_DEVNET_CHAIN,
       // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
     } as any);
@@ -87,7 +94,7 @@ describe("useDevice", () => {
 
     it("returns device data for testnet when chain changes", () => {
       // Start with testnet
-      vi.mocked(useNetworkStore).mockReturnValue({
+      vi.mocked(useContextStore).mockReturnValue({
         chain: SUI_TESTNET_CHAIN,
         // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
       } as any);
@@ -200,18 +207,27 @@ describe("useDevice", () => {
   });
 
   describe("returns store functions", () => {
-    it("exposes initialize, lock, unlock, rotateEphemeralKey, and getZkProof functions", () => {
+    it("exposes store functions and binds chain-aware actions to the current chain", () => {
       const { result } = renderHook(() => useDevice());
 
-      expect(result.current.initialize).toBe(mockDeviceStoreState.initialize);
       expect(result.current.lock).toBe(mockDeviceStoreState.lock);
       expect(result.current.unlock).toBe(mockDeviceStoreState.unlock);
-      expect(result.current.getZkProof).toBe(mockDeviceStoreState.getZkProof);
       expect(result.current.initializeForChain).toBe(
         mockDeviceStoreState.initializeForChain,
       );
       expect(result.current.rotateEphemeralKey).toBe(
         mockDeviceStoreState.rotateEphemeralKey,
+      );
+
+      result.current.initialize("123456");
+      expect(mockDeviceStoreState.initialize).toHaveBeenCalledWith(
+        "123456",
+        SUI_DEVNET_CHAIN,
+      );
+
+      result.current.getZkProof();
+      expect(mockDeviceStoreState.getZkProof).toHaveBeenCalledWith(
+        SUI_DEVNET_CHAIN,
       );
     });
   });

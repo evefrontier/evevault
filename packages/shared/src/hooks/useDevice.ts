@@ -2,8 +2,9 @@ import type { PublicKey } from "@mysten/sui/cryptography";
 import { Ed25519PublicKey } from "@mysten/sui/keypairs/ed25519";
 import { Secp256r1PublicKey } from "@mysten/sui/keypairs/secp256r1";
 import { useMemo } from "react";
+import { useContextStore } from "#/stores/contextStore";
 import { useDeviceStore } from "#/stores/deviceStore";
-import { useNetworkStore } from "#/stores/networkStore";
+import { isLocalnetChain, isZkLoginSuiChain } from "#/types/networks";
 import { KEY_FLAG_SECP256R1 } from "#/types/stores";
 import { createLogger } from "#/utils/logger";
 
@@ -20,7 +21,7 @@ export const useDevice = () => {
     initialize,
     initializeForChain,
     rotateEphemeralKey,
-    getZkProof,
+    getZkProof: getZkProofForChain,
     getJwtRandomness,
     unlock,
     lock,
@@ -36,25 +37,28 @@ export const useDevice = () => {
   }, [ephemeralKeyPairSecretKey]);
 
   // Subscribe to chain changes reactively
-  const { chain: currentChain } = useNetworkStore();
+  const { chain: currentChain } = useContextStore();
 
   // Subscribe to the entire networkData object to ensure we react to any changes
   // Using a selector that returns the whole networkData ensures we catch updates
   // even when a new chain's data is added
-  const networkData = useDeviceStore((state) => state.networkData);
+  const { networkData, localnet } = useDeviceStore();
 
   // Read device data directly from networkData instead of using getter functions
   // This ensures we react to changes in networkData and don't capture stale values
   const maxEpoch = useMemo(() => {
-    if (!currentChain || !networkData) return null;
+    if (isLocalnetChain(currentChain)) return localnet.maxEpoch;
+    if (!isZkLoginSuiChain(currentChain) || !networkData) return null;
     return networkData[currentChain]?.maxEpoch ?? null;
-  }, [currentChain, networkData]);
+  }, [currentChain, networkData, localnet.maxEpoch]);
   const maxEpochTimestampMs = useMemo(() => {
-    if (!currentChain || !networkData) return null;
+    if (isLocalnetChain(currentChain)) return localnet.maxEpochTimestampMs;
+    if (!isZkLoginSuiChain(currentChain) || !networkData) return null;
     return networkData[currentChain]?.maxEpochTimestampMs ?? null;
-  }, [currentChain, networkData]);
+  }, [currentChain, networkData, localnet.maxEpochTimestampMs]);
   const nonce = useMemo(() => {
-    if (!currentChain || !networkData) return null;
+    if (isLocalnetChain(currentChain)) return null;
+    if (!isZkLoginSuiChain(currentChain) || !networkData) return null;
     return networkData[currentChain]?.nonce ?? null;
   }, [currentChain, networkData]);
 
@@ -83,15 +87,16 @@ export const useDevice = () => {
     ephemeralPublicKey,
     ephemeralKeyPairSecretKey,
     getJwtRandomness,
+    localnetUrl: localnet.url,
     maxEpoch,
     maxEpochTimestampMs,
     nonce,
     loading,
     error,
-    initialize,
+    initialize: (pin: string) => initialize(pin, currentChain),
     initializeForChain,
     rotateEphemeralKey,
-    getZkProof,
+    getZkProof: () => getZkProofForChain(currentChain),
     unlock,
     lock,
   };

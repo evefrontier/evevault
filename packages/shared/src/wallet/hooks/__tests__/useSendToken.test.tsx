@@ -20,8 +20,8 @@ vi.mock("#/hooks/useDevice", () => ({
   useDevice: vi.fn(),
 }));
 
-vi.mock("#/stores/networkStore", () => ({
-  useNetworkStore: vi.fn(),
+vi.mock("#/stores/contextStore", () => ({
+  useContextStore: vi.fn(),
 }));
 
 vi.mock("#/sui", () => ({
@@ -88,7 +88,7 @@ import { TenantId } from "@evefrontier/dapp-kit";
 // Using workspace aliases in test files due to Vite resolution limitations with relative imports
 import { getUserForNetwork, useAuth } from "#/auth";
 import { useDevice } from "#/hooks/useDevice";
-import { useNetworkStore } from "#/stores/networkStore";
+import { useContextStore } from "#/stores/contextStore";
 import { createSuiClient } from "#/sui";
 import { createMockUser } from "#/testing";
 import { getEveCoinType } from "#/wallet/eveToken";
@@ -102,7 +102,7 @@ const mockUseAuth = vi.mocked(useAuth);
 const mockGetUserForNetwork = vi.mocked(getUserForNetwork);
 const mockZkSignAny = vi.mocked(zkSignAny);
 const mockUseDevice = vi.mocked(useDevice);
-const mockUseNetworkStore = vi.mocked(useNetworkStore);
+const mockUsecontextStore = vi.mocked(useContextStore);
 const mockUseBalance = vi.mocked(useBalance);
 const mockCreateSuiClient = vi.mocked(createSuiClient);
 const mockUseWalletSigningContext = vi.mocked(useWalletSigningContext);
@@ -137,7 +137,7 @@ describe("useSendToken", () => {
       // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
     } as any);
 
-    mockUseNetworkStore.mockReturnValue({
+    mockUsecontextStore.mockReturnValue({
       chain: SUI_DEVNET_CHAIN,
       // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
     } as any);

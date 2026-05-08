@@ -9,14 +9,19 @@ import { DEVICE_STORAGE_KEY } from "#/utils/storageKeys";
 import { createInitActions } from "./actions/initActions";
 import { createLockActions } from "./actions/lockActions";
 import { createProofActions } from "./actions/proofActions";
-import { createInitialNetworkData } from "./constants";
+import {
+  createEmptyLocalnetDeviceData,
+  createInitialNetworkData,
+} from "./constants";
 import { reconstructPublicKey } from "./keyHelpers";
 import { createDeviceSelectors } from "./selectors";
 
 const log = createLogger();
 
-export { createEmptyNetworkDataEntry } from "./constants";
-export { registerOnLock } from "./runtime";
+export {
+  createEmptyLocalnetDeviceData,
+  createEmptyNetworkDataEntry,
+} from "./constants";
 
 export const useDeviceStore = create<DeviceState>()(
   persist(
@@ -27,6 +32,14 @@ export const useDeviceStore = create<DeviceState>()(
       ephemeralPublicKeyFlag: null,
       ephemeralKeyPairSecretKey: null,
       networkData: createInitialNetworkData(),
+      localnet: createEmptyLocalnetDeviceData(),
+      setLocalnetUrl: (url: string) =>
+        set((state) => ({
+          localnet: {
+            ...state.localnet,
+            url,
+          },
+        })),
       loading: false,
       error: null,
 
@@ -53,6 +66,15 @@ export const useDeviceStore = create<DeviceState>()(
           if (error) {
             log.error("Error rehydrating device store", error);
             return;
+          }
+
+          if (state && !state.localnet) {
+            state.localnet = createEmptyLocalnetDeviceData();
+          } else if (state?.localnet) {
+            state.localnet = {
+              ...createEmptyLocalnetDeviceData(),
+              ...state.localnet,
+            };
           }
 
           if (

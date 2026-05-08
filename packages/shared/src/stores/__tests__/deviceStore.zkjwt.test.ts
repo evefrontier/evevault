@@ -1,7 +1,7 @@
 import { Ed25519PublicKey } from "@mysten/sui/keypairs/ed25519";
 import { SUI_DEVNET_CHAIN } from "@mysten/wallet-standard";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { useNetworkStore } from "#/stores/networkStore";
+import { useContextStore } from "#/stores/contextStore";
 
 const fetchZkProofMock = vi.fn();
 const vendJwtMock = vi.fn();
@@ -66,7 +66,7 @@ function makeJwtWithExp(exp: number): string {
 describe("deviceStore.getZkProof with expired stored zkLogin JWT", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    useNetworkStore.setState({ chain: SUI_DEVNET_CHAIN });
+    useContextStore.setState({ chain: SUI_DEVNET_CHAIN });
 
     const publicKey = new Ed25519PublicKey(new Uint8Array(32).fill(1));
     useDeviceStore.setState({
@@ -116,7 +116,7 @@ describe("deviceStore.getZkProof with expired stored zkLogin JWT", () => {
   });
 
   it("re-vends from primary JWT and uses new token for proof", async () => {
-    await useDeviceStore.getState().getZkProof();
+    await useDeviceStore.getState().getZkProof(SUI_DEVNET_CHAIN);
 
     expect(vendJwtMock).toHaveBeenCalledTimes(1);
     expect(vendJwtMock).toHaveBeenCalledWith("primary.jwt.token", {

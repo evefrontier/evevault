@@ -42,6 +42,13 @@ function buildLockHarness() {
     ephemeralPublicKeyFlag: null,
     ephemeralKeyPairSecretKey: { iv: "i", data: "d", salt: "s" },
     networkData: {},
+    localnet: {
+      encryptedKey: null,
+      address: null,
+      url: "http://127.0.0.1:9000",
+      maxEpoch: null,
+      maxEpochTimestampMs: null,
+    },
     loading: false,
     error: null,
     initialize: stubAsync,
@@ -55,6 +62,7 @@ function buildLockHarness() {
     getMaxEpochTimestampMs: () => null,
     getNonce: () => null,
     getJwtRandomness: () => null,
+    setLocalnetUrl: () => {},
   };
 
   return { state, lock, unlock, reset };

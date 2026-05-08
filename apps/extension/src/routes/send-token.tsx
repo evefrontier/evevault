@@ -6,7 +6,7 @@ import {
 } from "@evevault/shared";
 import type { SendTokenSearch } from "@evevault/shared/router";
 import { localnetKeyService } from "@evevault/shared/services/keeperService";
-import { useNetworkStore } from "@evevault/shared/stores";
+import { useContextStore } from "@evevault/shared/stores";
 import { EXTENSION_ROUTES } from "@evevault/shared/utils";
 import { useActiveSuiAddress } from "@evevault/shared/wallet";
 import {
@@ -43,7 +43,7 @@ function SendTokenPage() {
 export const Route = createFileRoute("/send-token")({
   beforeLoad: async () => {
     const { user } = useAuthStore.getState();
-    const { chain } = useNetworkStore.getState();
+    const { chain } = useContextStore.getState();
 
     if (isLocalnetChain(chain)) {
       const address = await localnetKeyService.getAddress().catch(() => null);

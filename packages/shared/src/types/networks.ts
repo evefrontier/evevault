@@ -2,6 +2,7 @@ import { TenantId } from "@evefrontier/dapp-kit/utils";
 import {
   SUI_DEVNET_CHAIN,
   SUI_LOCALNET_CHAIN,
+  SUI_MAINNET_CHAIN,
   SUI_TESTNET_CHAIN,
   type SuiChain,
 } from "@mysten/wallet-standard";
@@ -14,6 +15,21 @@ export function isLocalnetChain(chain: SuiChain | string | null | undefined) {
 
 export function isZkLoginChain(chain: SuiChain | string | null | undefined) {
   return !!chain && !isLocalnetChain(chain);
+}
+
+export type ZkLoginSuiChain =
+  | typeof SUI_DEVNET_CHAIN
+  | typeof SUI_TESTNET_CHAIN
+  | typeof SUI_MAINNET_CHAIN;
+
+export function isZkLoginSuiChain(
+  chain: SuiChain | string | null | undefined,
+): chain is ZkLoginSuiChain {
+  return (
+    chain === SUI_DEVNET_CHAIN ||
+    chain === SUI_TESTNET_CHAIN ||
+    chain === SUI_MAINNET_CHAIN
+  );
 }
 
 export interface NetworkOption {

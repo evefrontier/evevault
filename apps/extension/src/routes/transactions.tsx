@@ -1,13 +1,13 @@
 import { TransactionsScreen, useAuthStore } from "@evevault/shared";
 import { requireAuth } from "@evevault/shared/router";
-import { useNetworkStore } from "@evevault/shared/stores/networkStore";
+import { useContextStore } from "@evevault/shared/stores/contextStore";
 import { EXTENSION_ROUTES } from "@evevault/shared/utils";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
 function TransactionsPage() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { chain } = useNetworkStore();
+  const { chain } = useContextStore();
 
   const handleNavigateBack = () => {
     navigate({ to: EXTENSION_ROUTES.HOME });

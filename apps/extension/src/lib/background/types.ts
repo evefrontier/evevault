@@ -1,5 +1,8 @@
 import type { SponsoredTransactionMetadata } from "@evefrontier/dapp-kit/types";
-import type { JwtResponse } from "@evevault/shared/types/authTypes";
+import type {
+  JwtResponse,
+  OAuthTokenResponse,
+} from "@evevault/shared/types/authTypes";
 import type {
   StandardEventsOnMethod,
   SuiSignAndExecuteTransactionOutput,
@@ -38,7 +41,7 @@ export type MessageWithId = BackgroundMessage & {
 
 export type WebUnlockMessage = MessageWithId & {
   /** JWT response from OAuth/OIDC provider */
-  jwt: JwtResponse;
+  jwt: OAuthTokenResponse;
   tabId?: number;
 };
 

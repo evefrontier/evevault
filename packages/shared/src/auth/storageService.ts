@@ -1,6 +1,6 @@
 import type { SuiChain } from "@mysten/wallet-standard";
 import { SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
-import { useNetworkStore } from "#/stores/networkStore";
+import { useContextStore } from "#/stores/contextStore";
 import type { JwtResponse, OAuthTokenResponse } from "#/types";
 import { isExtension, isWeb } from "#/utils/environment";
 import { createLogger } from "#/utils/logger";
@@ -20,7 +20,7 @@ type JwtStorage = {
 
 /**
  * Read the current chain from extension storage (chrome.storage.local).
- * Used by the background script where useNetworkStore is not hydrated.
+ * Used by the background script where useContext is not hydrated.
  * In web context returns the default chain; call only from extension when possible.
  */
 export async function getStoredChain(): Promise<SuiChain> {
@@ -88,7 +88,7 @@ export async function storeZkLoginJwtForNetwork(
   jwt: { id_token: string; expires_at: number },
   chain?: SuiChain,
 ): Promise<void> {
-  const network = chain ?? useNetworkStore.getState().chain;
+  const network = chain ?? useContextStore.getState().chain;
   const existing = (await readJwtStorage()) ?? {};
 
   log.info("Storing zkLogin JWT for network", {
@@ -111,7 +111,7 @@ export async function storeZkLoginJwtForNetwork(
 export async function getZkLoginJwtForNetwork(
   chain?: SuiChain,
 ): Promise<{ id_token: string; expires_at: number } | null> {
-  const network = chain ?? useNetworkStore.getState().chain;
+  const network = chain ?? useContextStore.getState().chain;
   const storage = await readJwtStorage();
   return storage?.zkLogin?.[network] ?? null;
 }

@@ -1,15 +1,11 @@
-import {
-  AddTokenScreen,
-  useAuthStore,
-  useNetworkStore,
-} from "@evevault/shared";
+import { AddTokenScreen, useAuthStore, useContext } from "@evevault/shared";
 import { requireAuth } from "@evevault/shared/router";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 
 function AddTokenPage() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { chain } = useNetworkStore();
+  const { chain } = useContext();
 
   const handleSuccess = () => {
     navigate({ to: "/wallet" });

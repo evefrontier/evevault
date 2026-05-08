@@ -15,10 +15,6 @@ vi.mock("@/lib/background/handlers/vaultHandlers", () => ({
   sendToKeeper: mockSendToKeeper,
 }));
 
-vi.mock("@evevault/shared", () => ({
-  LOCALNET_STORAGE_KEY: "evevault:localnet-key",
-}));
-
 vi.mock("@evevault/shared/types", () => ({
   KeeperMessageTypes: {
     LOCALNET_SET_KEYPAIR: "LOCALNET_SET_KEYPAIR",
@@ -40,6 +36,7 @@ function installChromeMock() {
   globalThis.chrome = {
     storage: {
       local: {
+        get: vi.fn().mockResolvedValue({}),
         set: vi.fn(),
         remove: vi.fn(),
       },
@@ -79,8 +76,17 @@ describe("_handleLocalnetSetKeypair", () => {
       privateKey: `${SUI_PRIVATE_KEY_PREFIX}1abc`,
     });
     expect(chrome.storage.local.set).toHaveBeenCalledWith({
-      "evevault:localnet-key": encryptedKey,
+      "evevault:device": JSON.stringify({
+        state: {
+          localnet: {
+            encryptedKey: JSON.stringify(encryptedKey),
+            address: "0xabc",
+          },
+        },
+        version: 0,
+      }),
     });
+    expect(chrome.storage.local.remove).not.toHaveBeenCalled();
     expect(sendResponse).toHaveBeenCalledWith({
       ok: true,
       address: "0xabc",
@@ -142,10 +148,10 @@ describe("_handleLocalnetSetKeypair", () => {
 
     const [[stored]] = (chrome.storage.local.set as ReturnType<typeof vi.fn>)
       .mock.calls;
-    const storedValue = stored["evevault:localnet-key"];
-    expect(typeof storedValue).not.toBe("string");
-    expect(storedValue).toBeTypeOf("object");
-    expect(storedValue).toHaveProperty("data");
+    const storedValue = JSON.parse(stored["evevault:device"]).state.localnet
+      .encryptedKey;
+    expect(typeof storedValue).toBe("string");
+    expect(JSON.parse(storedValue)).toHaveProperty("data");
   });
 
   it("returns true (async channel indicator)", () => {

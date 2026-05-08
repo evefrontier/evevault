@@ -1,4 +1,4 @@
-import { useNetworkStore } from "@evevault/shared/stores";
+import { useContextStore } from "@evevault/shared/stores";
 import type { AuthSuccessToken, JwtResponse } from "@evevault/shared/types";
 import {
   CONTEXT_STORAGE_KEY,
@@ -28,7 +28,7 @@ export function ensureMessageId(message: MessageWithId): string {
 }
 
 export function getCurrentChain(): SuiChain {
-  return useNetworkStore.getState().chain;
+  return useContextStore.getState().chain;
 }
 
 /**
@@ -55,7 +55,7 @@ export async function getCurrentChainFromStorage(): Promise<SuiChain> {
       } catch (error) {
         log.error("Error reading chain from storage", error);
       }
-      const fallbackChain = useNetworkStore.getState().chain;
+      const fallbackChain = useContext.getState().chain;
       log.debug("Using fallback chain from Zustand", {
         chain: fallbackChain,
       });

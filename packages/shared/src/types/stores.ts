@@ -2,6 +2,7 @@ import type { PublicKey } from "@mysten/sui/cryptography";
 import type { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import type { SuiChain } from "@mysten/wallet-standard";
 import type { ZkProofResponse } from "./enoki";
+import type { ZkLoginSuiChain } from "./networks";
 import type { TenantState } from "./tenant";
 
 // Key type flag bytes (matches Sui signature scheme flags)
@@ -18,6 +19,14 @@ export type HashedData = { iv: string; data: string; salt: string };
 
 export type StoredSecretKey = HashedData | null;
 
+export interface LocalnetDeviceData {
+  encryptedKey: string | null;
+  address: string | null;
+  url: string;
+  maxEpoch: string | null;
+  maxEpochTimestampMs: number | null;
+}
+
 export interface NetworkDataEntry {
   nonce: string | null;
   maxEpoch: string | null;
@@ -25,7 +34,7 @@ export interface NetworkDataEntry {
   jwtRandomness: string | null;
 }
 
-export type NetworkDataMap = Partial<Record<SuiChain, NetworkDataEntry>>;
+export type NetworkDataMap = Partial<Record<ZkLoginSuiChain, NetworkDataEntry>>;
 
 // Device store state shape
 export interface DeviceState {
@@ -35,22 +44,26 @@ export interface DeviceState {
   ephemeralPublicKeyFlag: number | null; // To identify key type (0x00=Ed25519, 0x02=Secp256r1)
   ephemeralKeyPairSecretKey: StoredSecretKey;
   // Network-specific data stored by chain (jwtRandomness is per-network)
-  networkData: Partial<Record<SuiChain, NetworkDataEntry>>;
+  networkData: NetworkDataMap;
+  /** Extension-only localnet key material, encrypted with the same PIN-derived key as the device vault. */
+  localnet: LocalnetDeviceData;
+
   loading: boolean;
   error: string | null;
 
   // Actions
-  initialize: (pin: string) => Promise<void>;
+  initialize: (pin: string, chain: SuiChain) => Promise<void>;
   initializeForChain: (chain: SuiChain) => Promise<void>;
-  rotateEphemeralKey: () => Promise<void>;
-  getZkProof: () => Promise<ZkProofResponse | { error: string }>;
+  rotateEphemeralKey: (chain: SuiChain) => Promise<void>;
+  getZkProof: (chain: SuiChain) => Promise<ZkProofResponse | { error: string }>;
   lock: () => void;
   unlock: (pin: string) => Promise<void>;
   reset: () => void;
-  getMaxEpoch: (chain?: SuiChain) => string | null;
-  getMaxEpochTimestampMs: (chain?: SuiChain) => number | null;
-  getNonce: (chain?: SuiChain) => string | null;
-  getJwtRandomness: (chain?: SuiChain) => string | null;
+  getMaxEpoch: (chain: SuiChain) => string | null;
+  getMaxEpochTimestampMs: (chain: SuiChain) => number | null;
+  getNonce: (chain: SuiChain) => string | null;
+  getJwtRandomness: (chain: SuiChain) => string | null;
+  setLocalnetUrl: (url: string) => void;
 }
 
 export interface SessionData {
@@ -72,10 +85,6 @@ export interface NetworkSwitchResult {
 export interface NetworkState {
   chain: SuiChain;
   loading: boolean;
-  /** Custom fullnode URL for localnet (extension dev mode only). */
-  localnetUrl: string;
-  setLocalnetUrl: (url: string) => void;
-  initialize: () => Promise<void>;
   setChain: (chain: SuiChain) => Promise<NetworkSwitchResult>;
   /** Force set chain without JWT check - for logout-based network switching */
   forceSetChain: (chain: SuiChain) => void;
@@ -91,6 +100,7 @@ export type PersistedDeviceStoreState = {
   ephemeralPublicKeyBytes?: number[] | null;
   ephemeralPublicKeyFlag?: number | null;
   networkData?: NetworkDataMap;
+  localnet?: Partial<LocalnetDeviceData> | null;
 };
 
 export type PersistedDeviceStore = {

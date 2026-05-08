@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { localnetKeyService } from "#/services/vaultService";
+import { useContextStore } from "#/stores/contextStore";
 import { useDeviceStore } from "#/stores/deviceStore";
-import { useNetworkStore } from "#/stores/networkStore";
 import { isLocalnetChain } from "#/types/networks";
 import { isExtension } from "#/utils/environment";
 
 export function useLocalnetAddress(): string | null {
-  const { chain } = useNetworkStore();
-  const isLocked = useDeviceStore((s) => s.isLocked);
+  const { chain } = useContextStore();
+  const { isLocked } = useDeviceStore();
   const [localnetAddress, setLocalnetAddress] = useState<string | null>(null);
 
   useEffect(() => {

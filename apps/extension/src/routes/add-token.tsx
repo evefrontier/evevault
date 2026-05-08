@@ -2,7 +2,7 @@ import {
   AddTokenScreen,
   HeaderMobile,
   useAuthStore,
-  useNetworkStore,
+  useContext,
 } from "@evevault/shared";
 import { requireAuth } from "@evevault/shared/router";
 import { EXTENSION_ROUTES } from "@evevault/shared/utils";
@@ -11,7 +11,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 function AddTokenPage() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { chain } = useNetworkStore();
+  const { chain } = useContext();
 
   const handleNavigateBack = () => {
     navigate({ to: "/" });
@@ -19,7 +19,7 @@ function AddTokenPage() {
 
   // Note: Layout is provided by popup entrypoint, so we only render content here
   return (
-    <div className="flex flex-col gap-[40px]">
+    <div className="flex flex-col gap-10">
       <HeaderMobile
         email={user?.profile?.email as string}
         address={user?.profile?.sui_address as string}

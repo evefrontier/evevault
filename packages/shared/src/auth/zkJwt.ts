@@ -19,11 +19,10 @@ export async function resolveVendedIdTokenForZkProof(
   chain: SuiChain,
   primaryJwt: JwtResponse,
   deviceNonce: string,
-  getMaxEpochTimestampMs: (chain: SuiChain) => number | null,
+  maxEpochTimestampMs: number | null,
 ): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
   const stored = await getZkLoginJwtForNetwork(chain);
-  const maxEpochTimestampMs = getMaxEpochTimestampMs(chain);
   const isEpochValid =
     maxEpochTimestampMs != null && Date.now() < maxEpochTimestampMs;
 

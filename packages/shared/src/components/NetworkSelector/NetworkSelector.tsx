@@ -4,8 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Dropdown } from "#/components/Dropdown";
 import Icon from "#/components/Icon";
 import Text from "#/components/Text";
-import { useNetworkStore } from "#/stores";
-import { useTenantStore } from "#/stores/tenantStore";
+import { useContext } from "#/hooks";
 import type { NetworkSelectorProps } from "#/types";
 import { getAvailableNetworks } from "#/types";
 import { createLogger, isExtension } from "#/utils";
@@ -21,8 +20,8 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
   onRequiresReauth,
   onLocalnetSelected,
 }) => {
-  const { setChain, forceSetChain, loading } = useNetworkStore();
-  const { devMode } = useTenantStore();
+  const { setChain, forceSetChain, loading } = useContext();
+  const { devMode } = useContext();
 
   const [isOpen, setIsOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);

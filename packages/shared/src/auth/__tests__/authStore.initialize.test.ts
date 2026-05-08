@@ -61,7 +61,7 @@ vi.mock("#/utils/authCleanup", () => ({
 }));
 
 vi.mock("#/stores", () => ({
-  useNetworkStore: {
+  useContextStore: {
     getState: vi.fn(() => ({ chain: SUI_TESTNET_CHAIN })),
   },
   useDeviceStore: {

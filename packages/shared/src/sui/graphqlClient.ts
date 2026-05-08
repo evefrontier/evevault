@@ -13,7 +13,7 @@ const GRAPHQL_ENDPOINTS: Record<string, string> = {
 
 /**
  * Creates a Sui GraphQL client for the specified network.
- * Default SUI_TESTNET_CHAIN is intentional and matches useNetworkStore.getInitialChain().
+ * Default SUI_TESTNET_CHAIN is intentional and matches useContextStore.getInitialChain().
  * Callers should pass the store's chain when available so queries use the selected network.
  */
 export function createSuiGraphQLClient(

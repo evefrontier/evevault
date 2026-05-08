@@ -19,11 +19,6 @@ vi.mock("@/lib/background/services/offscreenService", () => ({
   ensureOffscreen: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock("@evevault/shared", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@evevault/shared")>();
-  return { ...actual, LOCALNET_STORAGE_KEY: "evevault:localnet-key" };
-});
-
 const mockSender = {} as chrome.runtime.MessageSender;
 
 function makeMessage(overrides: Partial<VaultMessage> = {}): VaultMessage {

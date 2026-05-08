@@ -1,12 +1,12 @@
 import { Ed25519PublicKey } from "@mysten/sui/keypairs/ed25519";
 import { SUI_DEVNET_CHAIN, SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { useContextStore } from "#/stores/contextStore";
 import { createInitActions } from "#/stores/deviceStore/actions/initActions";
 import type {
   GetDeviceState,
   SetDeviceState,
 } from "#/stores/deviceStore/actions/types";
-import { useNetworkStore } from "#/stores/networkStore";
 import type { DeviceState } from "#/types";
 
 const getCurrentEpochFromGraphQLMock = vi.fn();
@@ -60,6 +60,13 @@ function baseDeviceState(
         jwtRandomness: "jr",
       },
     },
+    localnet: {
+      encryptedKey: null,
+      address: null,
+      url: "http://127.0.0.1:9000",
+      maxEpoch: null,
+      maxEpochTimestampMs: null,
+    },
     loading: false,
     error: null,
     rotateEphemeralKey: stubAsync,
@@ -71,6 +78,7 @@ function baseDeviceState(
     getMaxEpochTimestampMs: () => null,
     getNonce: () => null,
     getJwtRandomness: () => null,
+    setLocalnetUrl: () => {},
   };
 }
 
@@ -110,7 +118,7 @@ describe("createInitActions", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    useNetworkStore.setState({ chain: SUI_DEVNET_CHAIN, loading: false });
+    useContextStore.setState({ chain: SUI_DEVNET_CHAIN, loading: false });
     getCurrentEpochFromGraphQLMock.mockResolvedValue({
       numericMaxEpoch: 777,
       maxEpochTimestampMs: epochMs,
@@ -128,7 +136,7 @@ describe("createInitActions", () => {
       const pub = new Ed25519PublicKey(new Uint8Array(32).fill(2));
       const { initialize, state } = buildInitHarness(pub);
 
-      await initialize("");
+      await initialize("", SUI_DEVNET_CHAIN);
 
       expect(state.error).toBe("PIN is required");
       expect(state.loading).toBe(false);
@@ -138,7 +146,7 @@ describe("createInitActions", () => {
       const pub = new Ed25519PublicKey(new Uint8Array(32).fill(2));
       const { initialize, state } = buildInitHarness(pub);
 
-      await initialize("   ");
+      await initialize("   ", SUI_DEVNET_CHAIN);
 
       expect(state.error).toBe("PIN is required");
       expect(state.loading).toBe(false);
@@ -194,7 +202,7 @@ describe("createInitActions", () => {
         },
       });
 
-      await state.rotateEphemeralKey();
+      await state.rotateEphemeralKey(SUI_DEVNET_CHAIN);
 
       expect(rotateEphemeralKeyPairMock).toHaveBeenCalledTimes(1);
       expect(clearAllZkLoginJwtsMock).toHaveBeenCalledTimes(1);

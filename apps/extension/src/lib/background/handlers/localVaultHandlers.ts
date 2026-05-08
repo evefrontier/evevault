@@ -1,7 +1,7 @@
-import { LOCALNET_STORAGE_KEY } from "@evevault/shared";
 import { KeeperMessageTypes } from "@evevault/shared/types";
 
 import type { VaultMessage } from "@/lib/background/types";
+import { writeEncryptedLocalnetKey } from "./localnetDeviceStorage";
 import { sendToKeeper } from "./vaultHandlers";
 
 // ─── Localnet dev signing ────────────────────────────────────────────────────
@@ -20,9 +20,10 @@ export function _handleLocalnetSetKeypair(
 
       // Persist encrypted key in chrome.storage.local
       if (response?.ok && response.encryptedKey) {
-        chrome.storage.local.set({
-          [LOCALNET_STORAGE_KEY]: response.encryptedKey,
-        });
+        await writeEncryptedLocalnetKey(
+          response.encryptedKey,
+          response.address ?? null,
+        );
       }
       // Forward { ok, address } but not encryptedKey to the popup
       sendResponse({

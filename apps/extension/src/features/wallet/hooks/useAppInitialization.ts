@@ -1,9 +1,5 @@
 import { useAuth } from "@evevault/shared/auth";
-import {
-  registerOnLock,
-  useDeviceStore,
-} from "@evevault/shared/stores/deviceStore";
-import { useNetworkStore } from "@evevault/shared/stores/networkStore";
+import { useDeviceStore } from "@evevault/shared/stores/deviceStore";
 import { createLogger, DEVICE_STORAGE_KEY } from "@evevault/shared/utils";
 import { useEffect, useState } from "react";
 
@@ -14,22 +10,26 @@ const log = createLogger();
  */
 export function useAppInitialization() {
   const { initialize: initializeAuth, loading: authLoading } = useAuth();
-  const { initialize: initializeNetwork } = useNetworkStore();
   const { loading: deviceLoading } = useDeviceStore();
 
   const [initError, setInitError] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
-    registerOnLock(() => {
-      if (typeof chrome !== "undefined" && chrome.runtime?.sendMessage) {
+    const unsubscribe = useDeviceStore.subscribe((state, prevState) => {
+      if (
+        state.isLocked &&
+        !prevState.isLocked &&
+        typeof chrome !== "undefined" &&
+        chrome.runtime?.sendMessage
+      ) {
         chrome.runtime.sendMessage({
           event: "change",
           payload: { accounts: [] },
         });
       }
     });
-    return () => registerOnLock(null);
+    return unsubscribe;
   }, []);
 
   useEffect(() => {
@@ -39,7 +39,6 @@ export function useAppInitialization() {
       try {
         log.info("Initializing stores");
         await initializeAuth();
-        await initializeNetwork();
 
         // Subscribe to device store changes for debugging
         unsubscribe = useDeviceStore.subscribe(async (state, prevState) => {
@@ -69,7 +68,7 @@ export function useAppInitialization() {
         unsubscribe();
       }
     };
-  }, [initializeAuth, initializeNetwork]);
+  }, [initializeAuth]);
 
   return {
     initError,

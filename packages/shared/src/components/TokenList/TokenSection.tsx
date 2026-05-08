@@ -12,7 +12,7 @@ import Button from "#/components/Button";
 import Icon from "#/components/Icon";
 import Text from "#/components/Text";
 import { useToast } from "#/components/Toast";
-import { useResponsive, useTenant } from "#/hooks";
+import { useContext, useResponsive } from "#/hooks";
 import { useTokenListStore } from "#/stores";
 import type { ExtendedTokenRowProps, TokenListProps } from "#/types";
 import { getDefaultTokensForChain } from "#/types/networks";
@@ -229,7 +229,7 @@ export const TokenSection: React.FC<
     }
   }, [queryClient, isRefreshing, showToast]);
 
-  const { tenantId } = useTenant();
+  const { tenantId } = useContext();
   const currentEveCoinType = getEveCoinType(tenantId);
   const tokensForChain = useMemo(() => {
     if (!chain) return [];

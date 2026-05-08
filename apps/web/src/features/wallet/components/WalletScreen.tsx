@@ -10,12 +10,11 @@ import {
   TokenListSection,
 } from "@evevault/shared/components";
 import Icon from "@evevault/shared/components/Icon";
-import { useDevice, useTenant } from "@evevault/shared/hooks";
+import { useContext, useDevice } from "@evevault/shared/hooks";
 import {
   getCurrentTenantId,
   getTenantLabel,
   useDeviceStore,
-  useNetworkStore,
 } from "@evevault/shared/stores";
 import { createSuiClient, getFaucetUrlForChain } from "@evevault/shared/sui";
 import {
@@ -39,7 +38,7 @@ export const WalletScreen = () => {
   const [initError, setInitError] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const [txDigest, setTxDigest] = useState<string | null>(null);
-  const { devMode, setDevMode } = useTenant();
+  const { devMode, setDevMode } = useContext();
 
   const {
     user,
@@ -58,7 +57,7 @@ export const WalletScreen = () => {
     loading: deviceLoading,
     unlock,
   } = useDevice();
-  const { chain } = useNetworkStore();
+  const { chain } = useContext();
   const faucetUrl = getFaucetUrlForChain(chain);
   const tenantId = getCurrentTenantId();
 
@@ -70,14 +69,14 @@ export const WalletScreen = () => {
     return createSuiClient(currentChain);
   }, [chain]);
 
+  const { chain: networkState } = useContext();
+
   useEffect(() => {
     const initializeStores = async () => {
       try {
         log.info("Initializing stores");
         await initializeAuth();
-        await useNetworkStore.getState().initialize();
 
-        const networkState = useNetworkStore.getState();
         log.debug("Network state after init", networkState);
 
         useDeviceStore.subscribe(async (state, prevState) => {
@@ -96,7 +95,7 @@ export const WalletScreen = () => {
     };
 
     initializeStores();
-  }, [initializeAuth]);
+  }, [initializeAuth, networkState]);
 
   const handleDevModeToggle = useCallback(() => {
     setDevMode(!devMode);

@@ -16,13 +16,14 @@ import {
 import { userToJwtResponse } from "#/auth/userToJwtResponse";
 import { resolveExpiresAt } from "#/auth/utils/authStoreUtils";
 import { zkProofService } from "#/services/vaultService";
-import { useDeviceStore, useNetworkStore } from "#/stores";
+import { useContextStore, useDeviceStore } from "#/stores";
 import {
   getCurrentTenantId,
   OAuthTenantSessionKey,
   setCurrentTenantId,
 } from "#/stores/tenantStore";
 import type { AuthMessage } from "#/types";
+import { isZkLoginSuiChain } from "#/types/networks";
 import {
   createLogger,
   isBrowser,
@@ -60,7 +61,7 @@ export const useAuthStore = create<AuthState>()(
 
         initialize: async () => {
           set({ loading: true });
-          const network = useNetworkStore.getState().chain;
+          const network = useContextStore.getState().chain;
 
           try {
             if (isExtension() && typeof chrome !== "undefined") {
@@ -237,7 +238,7 @@ export const useAuthStore = create<AuthState>()(
         setUser: (user) => set({ user }),
 
         login: async () => {
-          const network = useNetworkStore.getState().chain;
+          const network = useContextStore.getState().chain;
           set({ loading: true });
 
           if (isExtension()) {
@@ -289,7 +290,9 @@ export const useAuthStore = create<AuthState>()(
 
             // Ensure device data is present and valid for current network — needed
             // for the vendJwt call after OAuth returns.
-            const networkData = deviceStore.networkData[network];
+            const networkData = isZkLoginSuiChain(network)
+              ? deviceStore.networkData[network]
+              : undefined;
             const isExpired =
               networkData?.maxEpochTimestampMs != null &&
               Date.now() >= networkData.maxEpochTimestampMs;

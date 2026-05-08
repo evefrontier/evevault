@@ -1,8 +1,7 @@
 import { useAuthStore } from "#/auth";
 import { getJwt } from "#/auth/storageService";
+import { resolveVendedIdTokenForZkProof } from "#/auth/zkJwt";
 import { zkProofService } from "#/services/vaultService";
-import { resolveVendedIdTokenForZkProof } from "#/stores/deviceStore/zkJwt";
-import { useNetworkStore } from "#/stores/networkStore";
 import type { DeviceState, ZkProofResponse } from "#/types";
 import type { JwtResponse } from "#/types/authTypes";
 import { isLocalnetChain } from "#/types/networks";
@@ -14,8 +13,7 @@ const log = createLogger();
 
 export function createProofActions(set: SetDeviceState, get: GetDeviceState) {
   return {
-    getZkProof: async () => {
-      const currentChain = useNetworkStore.getState().chain;
+    getZkProof: async (currentChain) => {
       if (isLocalnetChain(currentChain)) {
         return { error: "zkLogin proofs are not available on localnet" };
       }
@@ -48,7 +46,7 @@ export function createProofActions(set: SetDeviceState, get: GetDeviceState) {
           throw new Error("User not authenticated");
         }
 
-        const chain = useNetworkStore.getState().chain;
+        const chain = currentChain;
         const network = chain.replace("sui:", "") as string;
 
         let nonce = get().getNonce(chain);
@@ -65,7 +63,7 @@ export function createProofActions(set: SetDeviceState, get: GetDeviceState) {
           // clearAllZkLoginJwts preserves the primary OAuth JWT,
           // so resolveVendedIdTokenForZkProof can re-vend with the new nonce.
           // rotateEphemeralKey calls initializeForChain internally.
-          await get().rotateEphemeralKey();
+          await get().rotateEphemeralKey(chain);
           nonce = get().getNonce(chain);
           if (nonce == null || nonce === "") {
             throw new Error(
@@ -90,7 +88,7 @@ export function createProofActions(set: SetDeviceState, get: GetDeviceState) {
           chain,
           primaryJwt as JwtResponse,
           nonce,
-          get().getMaxEpochTimestampMs,
+          get().getMaxEpochTimestampMs(chain),
         );
 
         log.debug("Generating ZK proof for network", { chain, network });

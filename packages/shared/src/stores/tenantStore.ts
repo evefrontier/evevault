@@ -3,8 +3,6 @@ import { isWeb } from "#/utils/environment";
 import { isAvailableTenantId } from "#/utils/tenantConfig";
 import { getCurrentContextTenantId, useContextStore } from "./contextStore";
 
-export const useTenantStore = useContextStore;
-
 export function getCurrentTenantId(): TenantId {
   return getCurrentContextTenantId();
 }

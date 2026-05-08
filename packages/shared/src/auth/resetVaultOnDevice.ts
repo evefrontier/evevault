@@ -1,22 +1,20 @@
 import { TenantId } from "@evefrontier/dapp-kit/utils";
 import {
   SUI_DEVNET_CHAIN,
-  SUI_LOCALNET_CHAIN,
   SUI_MAINNET_CHAIN,
   SUI_TESTNET_CHAIN,
-  type SuiChain,
 } from "@mysten/wallet-standard";
 import { ephKeyService, zkProofService } from "#/services/vaultService";
+import { useContextStore } from "#/stores";
 import {
+  createEmptyLocalnetDeviceData,
   createEmptyNetworkDataEntry,
   useDeviceStore,
 } from "#/stores/deviceStore";
-import { useNetworkStore } from "#/stores/networkStore";
 import { getCurrentTenantId } from "#/stores/tenantStore";
 import { useTokenListStore } from "#/stores/tokenListStore";
+import type { NetworkDataMap } from "#/types";
 import { DEFAULT_TOKENS_BY_CHAIN } from "#/types/networks";
-import type { NetworkDataEntry } from "#/types/stores";
-import { DEFAULT_LOCALNET_URL } from "#/utils";
 import {
   cleanupExtensionStorage,
   cleanupOidcStorage,
@@ -67,10 +65,9 @@ function resetStoresToInitial(): void {
     error: null,
   });
 
-  const emptyNetworkData: Partial<Record<SuiChain, NetworkDataEntry>> = {
+  const emptyNetworkData: NetworkDataMap = {
     [SUI_DEVNET_CHAIN]: createEmptyNetworkDataEntry(),
     [SUI_TESTNET_CHAIN]: createEmptyNetworkDataEntry(),
-    [SUI_LOCALNET_CHAIN]: createEmptyNetworkDataEntry(),
     [SUI_MAINNET_CHAIN]: createEmptyNetworkDataEntry(),
   };
 
@@ -81,15 +78,15 @@ function resetStoresToInitial(): void {
     ephemeralPublicKeyFlag: null,
     ephemeralKeyPairSecretKey: null,
     networkData: emptyNetworkData,
+    localnet: createEmptyLocalnetDeviceData(),
     loading: false,
     error: null,
   });
 
-  useNetworkStore.setState({
+  useContextStore.setState({
     tenantId: TenantId.STILLNESS,
     devMode: false,
     chain: SUI_TESTNET_CHAIN,
-    localnetUrl: DEFAULT_LOCALNET_URL,
     loading: false,
   });
 

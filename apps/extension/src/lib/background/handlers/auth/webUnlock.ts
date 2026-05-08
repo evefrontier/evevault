@@ -1,5 +1,4 @@
 import { storeJwt } from "@evevault/shared";
-import { useNetworkStore } from "@evevault/shared/stores";
 import { createLogger } from "@evevault/shared/utils";
 import { decodeJwt } from "jose";
 import type { IdTokenClaims } from "oidc-client-ts";
@@ -21,9 +20,8 @@ export async function handleWebUnlock(
     const { jwt, tabId } = message;
 
     const decodedJwt = decodeJwt<IdTokenClaims>(jwt.id_token as string);
-    const network = useNetworkStore.getState().chain;
 
-    await storeJwt(jwt, network);
+    await storeJwt(jwt);
 
     if (typeof tabId === "number") {
       chrome.tabs.sendMessage(tabId, {
