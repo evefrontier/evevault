@@ -192,4 +192,21 @@ describe("fetchZkProof", () => {
       }),
     ).rejects.toThrow("Failed to fetch ZK proof");
   });
+
+  it("re-throws when fetch itself rejects with a network error", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockRejectedValue(new Error("Network failure")),
+    );
+
+    await expect(
+      fetchZkProof({
+        jwtRandomness: "randomness",
+        maxEpoch: 12,
+        ephemeralPublicKey: "ephemeral-public-key" as never,
+        idToken: "id-token",
+        enokiApiKey: "enoki-api-key",
+      }),
+    ).rejects.toThrow("Network failure");
+  });
 });

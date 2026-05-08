@@ -22,15 +22,13 @@ import {
   vi,
 } from "vitest";
 
-// ── module-level mocks (hoisted before imports) ───────────────────────────────
-
 const { mockEncryptWithKey, mockSignWithIntent } = vi.hoisted(() => ({
   mockEncryptWithKey: vi.fn(),
   mockSignWithIntent: vi.fn(),
 }));
 
-// Mock only the exports that need per-test control; spread the real module for
-// everything else so UNLOCK_VAULT / CLEAR_EPHKEY / etc. use real crypto.
+// Mock only the exports that need per-test control. Everything else e.g.
+// UNLOCK_VAULT / CLEAR_EPHKEY / etc. uses real crypto.
 vi.mock("@evevault/shared", async (importActual) => {
   const actual = await importActual<typeof import("@evevault/shared")>();
   return { ...actual, encryptWithKey: mockEncryptWithKey };
@@ -40,15 +38,13 @@ vi.mock("@evevault/shared/wallet", () => ({
   signWithIntent: mockSignWithIntent,
 }));
 
-// ── types ────────────────────────────────────────────────────────────────────
+// ── keeper loader ─────────────────────────────────────────────────────────────
 
 type KeeperHandler = (
   message: Record<string, unknown>,
   sender: object,
   sendResponse: (response?: unknown) => void,
 ) => boolean | void;
-
-// ── keeper loader ─────────────────────────────────────────────────────────────
 
 let keeperHandler: KeeperHandler;
 

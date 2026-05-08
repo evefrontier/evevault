@@ -171,4 +171,21 @@ describe("authStore.login() web path", () => {
 
     expect(useAuthStore.getState().loading).toBe(false);
   });
+
+  it("two concurrent login() calls both resolve and leave loading: false", async () => {
+    await Promise.all([
+      useAuthStore.getState().login(),
+      useAuthStore.getState().login(),
+    ]);
+
+    expect(useAuthStore.getState().loading).toBe(false);
+  });
+
+  it("sets loading to false when initializeForChain rejects with a network error", async () => {
+    mockInitializeForChain.mockRejectedValue(new Error("Network error"));
+
+    await useAuthStore.getState().login();
+
+    expect(useAuthStore.getState().loading).toBe(false);
+  });
 });

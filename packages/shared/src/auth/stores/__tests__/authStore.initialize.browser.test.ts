@@ -334,4 +334,25 @@ describe("authStore.initialize() (extension path)", () => {
       expect(useAuthStore.getState().loading).toBe(false);
     });
   });
+
+  describe("concurrent initialize() calls", () => {
+    beforeEach(() => {
+      mockGetUser.mockResolvedValue(null);
+    });
+
+    it("both calls complete with loading: false and a non-null user", async () => {
+      const storedJwt = makeStoredJwt();
+      mockGetJwt.mockResolvedValue(storedJwt);
+      mockUserToJwtResponse.mockReturnValue(storedJwt);
+      mockResolveExpiresAt.mockReturnValue(FUTURE);
+
+      await Promise.all([
+        useAuthStore.getState().initialize(),
+        useAuthStore.getState().initialize(),
+      ]);
+
+      expect(useAuthStore.getState().loading).toBe(false);
+      expect(useAuthStore.getState().user).not.toBeNull();
+    });
+  });
 });

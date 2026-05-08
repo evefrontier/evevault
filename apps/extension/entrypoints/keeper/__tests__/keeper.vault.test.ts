@@ -1,522 +1,336 @@
 import {
   decrypt,
-  deriveAesKey,
   encrypt,
   type HashedData,
   KeeperMessageTypes,
 } from "@evevault/shared";
-import type { ZkProofResponse } from "@evevault/shared/types";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
-import type { SuiChain } from "@mysten/wallet-standard";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
-// These tests simulate keeper handler branches inline because keeper.ts is a
-// Chrome offscreen document and registers its listener at module load.
+// keeper.ts registers chrome.runtime.onMessage.addListener at module scope.
+// Chrome must be stubbed before the dynamic import so the real handler is captured.
+
+type KeeperHandler = (
+  message: Record<string, unknown>,
+  sender: object,
+  sendResponse: (response?: unknown) => void,
+) => boolean | undefined;
+
+let keeperHandler: KeeperHandler;
+
+beforeAll(async () => {
+  vi.stubGlobal("chrome", {
+    runtime: {
+      onMessage: {
+        addListener: (fn: KeeperHandler) => {
+          keeperHandler = fn;
+        },
+      },
+      sendMessage: vi.fn().mockResolvedValue(undefined),
+    },
+  });
+  await import("../keeper");
+});
+
+// ── helpers ───────────────────────────────────────────────────────────────────
 
 const TEST_PIN = "123456";
-const TEN_MINUTES_MS = 10 * 60 * 1000;
 
-function saltBytes(salt: string): Uint8Array {
-  return Uint8Array.from(atob(salt), (c) => c.charCodeAt(0));
+/** Send a KEEPER-targeted message and await the sendResponse callback. */
+function dispatch(
+  msg: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  return new Promise((resolve) => {
+    keeperHandler({ target: "KEEPER", ...msg }, {}, (resp) =>
+      resolve((resp ?? {}) as Record<string, unknown>),
+    );
+  });
 }
 
+/** Dispatch without the KEEPER target — used to test the routing guard. */
+function rawDispatch(msg: Record<string, unknown>): {
+  returnValue: boolean | void;
+  sendResponse: ReturnType<typeof vi.fn>;
+} {
+  const sendResponse = vi.fn();
+  const returnValue = keeperHandler(msg, {}, sendResponse);
+  return { returnValue, sendResponse };
+}
+
+/** Unlock the vault with a freshly encrypted keypair. */
+async function unlockVault(): Promise<{
+  keypair: Ed25519Keypair;
+  hashedSecretKey: HashedData;
+}> {
+  const keypair = Ed25519Keypair.generate();
+  const hashedSecretKey = await encrypt(keypair.getSecretKey(), TEST_PIN);
+  const resp = await dispatch({
+    type: KeeperMessageTypes.UNLOCK_VAULT,
+    hashedSecretKey,
+    pin: TEST_PIN,
+  });
+  expect(resp.ok).toBe(true);
+  return { keypair, hashedSecretKey };
+}
+
+afterEach(async () => {
+  vi.useRealTimers();
+  await dispatch({ type: KeeperMessageTypes.CLEAR_EPHKEY });
+  await dispatch({ type: KeeperMessageTypes.CLEAR_ZKPROOF });
+  vi.clearAllMocks();
+});
+
+// ── CREATE_KEYPAIR ────────────────────────────────────────────────────────────
+
 describe("Keeper CREATE_KEYPAIR handler", () => {
-  let ephemeralKey: Ed25519Keypair | null;
-  let vaultUnlocked: boolean;
-  let vaultUnlockExpiry: number | null;
-  let sessionDerivedKey: CryptoKey | null;
-  let sessionSalt: string | null;
-  let sendResponse: ReturnType<typeof vi.fn>;
-
-  beforeEach(() => {
-    ephemeralKey = null;
-    vaultUnlocked = false;
-    vaultUnlockExpiry = null;
-    sessionDerivedKey = null;
-    sessionSalt = null;
-    sendResponse = vi.fn();
-  });
-
-  async function simulateCreateKeypair(
-    pin: string,
-    encryptFn: typeof encrypt = encrypt,
-  ) {
-    ephemeralKey = Ed25519Keypair.generate();
-    vaultUnlocked = true;
-    vaultUnlockExpiry = Date.now() + TEN_MINUTES_MS;
-
-    try {
-      const hashedSecretKey = await encryptFn(ephemeralKey.getSecretKey(), pin);
-      sessionDerivedKey = await deriveAesKey(
-        pin,
-        saltBytes(hashedSecretKey.salt),
-        ["encrypt"],
-      );
-      sessionSalt = hashedSecretKey.salt;
-
-      sendResponse({
-        ok: true,
-        hashedSecretKey,
-        publicKeyBytes: Array.from(ephemeralKey.getPublicKey().toRawBytes()),
-      });
-    } catch (error) {
-      sendResponse({
-        ok: false,
-        error: error instanceof Error ? error.message : "Unknown error",
-      });
-    }
-  }
-
-  it("generates an Ed25519 keypair, encrypts it with PIN, and derives a session key", async () => {
-    await simulateCreateKeypair(TEST_PIN);
-
-    const response = sendResponse.mock.calls[0][0] as {
-      ok: boolean;
-      hashedSecretKey: HashedData;
-      publicKeyBytes: number[];
-    };
-
-    expect(response.ok).toBe(true);
-    expect(ephemeralKey).toBeInstanceOf(Ed25519Keypair);
-    expect(vaultUnlocked).toBe(true);
-    expect(vaultUnlockExpiry).toBeGreaterThan(Date.now());
-    expect(sessionDerivedKey).toBeInstanceOf(CryptoKey);
-    expect(sessionSalt).toBe(response.hashedSecretKey.salt);
-    const currentKey = ephemeralKey as Ed25519Keypair;
-    expect(response.publicKeyBytes).toEqual(
-      Array.from(currentKey.getPublicKey().toRawBytes()),
-    );
-    await expect(decrypt(response.hashedSecretKey, TEST_PIN)).resolves.toBe(
-      currentKey.getSecretKey(),
-    );
-  });
-
-  it("returns hashedSecretKey and publicKeyBytes", async () => {
-    await simulateCreateKeypair(TEST_PIN);
-
-    expect(sendResponse).toHaveBeenCalledWith({
-      ok: true,
-      hashedSecretKey: {
-        iv: expect.any(String),
-        data: expect.any(String),
-        salt: expect.any(String),
-      },
-      publicKeyBytes: expect.any(Array),
-    });
-  });
-
-  it("returns an error when encryption fails", async () => {
-    await simulateCreateKeypair(
-      TEST_PIN,
-      vi.fn().mockRejectedValue(new Error("encrypt failed")) as typeof encrypt,
-    );
-
-    expect(sendResponse).toHaveBeenCalledWith({
-      ok: false,
-      error: "encrypt failed",
-    });
-  });
-
-  it("handles only KEEPER-targeted CREATE_KEYPAIR messages", async () => {
-    const message = {
-      target: "OTHER",
+  it("generates an Ed25519 keypair, encrypts it with PIN, and returns hashedSecretKey + publicKeyBytes", async () => {
+    const resp = await dispatch({
       type: KeeperMessageTypes.CREATE_KEYPAIR,
       pin: TEST_PIN,
-    };
+    });
 
-    const handled = message.target === "KEEPER";
-    if (handled) {
-      await simulateCreateKeypair(message.pin);
-    }
+    expect(resp.ok).toBe(true);
+    expect(resp.hashedSecretKey).toMatchObject({
+      iv: expect.any(String),
+      data: expect.any(String),
+      salt: expect.any(String),
+    });
+    expect(Array.isArray(resp.publicKeyBytes)).toBe(true);
+    expect((resp.publicKeyBytes as number[]).length).toBeGreaterThan(0);
+  });
 
-    expect(handled).toBe(false);
-    expect(sendResponse).not.toHaveBeenCalled();
+  it("stores a decryptable keypair — decrypt returns key bytes that reconstruct to the same public key", async () => {
+    const resp = await dispatch({
+      type: KeeperMessageTypes.CREATE_KEYPAIR,
+      pin: TEST_PIN,
+    });
+
+    const secretKey = await decrypt(
+      resp.hashedSecretKey as HashedData,
+      TEST_PIN,
+    );
+    const reconstructed = Ed25519Keypair.fromSecretKey(secretKey);
+    expect(Array.from(reconstructed.getPublicKey().toRawBytes())).toEqual(
+      resp.publicKeyBytes,
+    );
+  });
+
+  it("unlocks the vault — GET_PUBLIC_KEY succeeds immediately after CREATE_KEYPAIR", async () => {
+    await dispatch({ type: KeeperMessageTypes.CREATE_KEYPAIR, pin: TEST_PIN });
+    const pubResp = await dispatch({ type: KeeperMessageTypes.GET_PUBLIC_KEY });
+    expect(pubResp.ok).toBe(true);
+    expect(Array.isArray(pubResp.publicKeyBytes)).toBe(true);
+  });
+
+  it("enables key rotation — ROTATE_KEYPAIR succeeds after CREATE_KEYPAIR (session key was derived)", async () => {
+    await dispatch({ type: KeeperMessageTypes.CREATE_KEYPAIR, pin: TEST_PIN });
+    const rotResp = await dispatch({ type: KeeperMessageTypes.ROTATE_KEYPAIR });
+    expect(rotResp.ok).toBe(true);
   });
 });
 
+// ── UNLOCK_VAULT ──────────────────────────────────────────────────────────────
+
 describe("Keeper UNLOCK_VAULT handler", () => {
-  let ephemeralKey: Ed25519Keypair | null;
-  let vaultUnlocked: boolean;
-  let vaultUnlockExpiry: number | null;
-  let sessionDerivedKey: CryptoKey | null;
-  let sessionSalt: string | null;
-  let sendResponse: ReturnType<typeof vi.fn>;
+  it("decrypts the secret key, reconstructs the keypair, and responds { ok: true }", async () => {
+    const keypair = Ed25519Keypair.generate();
+    const hashedSecretKey = await encrypt(keypair.getSecretKey(), TEST_PIN);
+    const resp = await dispatch({
+      type: KeeperMessageTypes.UNLOCK_VAULT,
+      hashedSecretKey,
+      pin: TEST_PIN,
+    });
 
-  beforeEach(() => {
-    ephemeralKey = null;
-    vaultUnlocked = false;
-    vaultUnlockExpiry = null;
-    sessionDerivedKey = null;
-    sessionSalt = null;
-    sendResponse = vi.fn();
+    expect(resp.ok).toBe(true);
   });
 
-  async function simulateUnlockVault(hashedSecretKey: HashedData, pin: string) {
-    try {
-      let secretKey: string;
-      try {
-        secretKey = await decrypt(hashedSecretKey, pin);
-      } catch (decryptError) {
-        sendResponse({
-          ok: false,
-          error: `[Keeper] Decryption failed: ${
-            decryptError instanceof Error
-              ? decryptError.message
-              : "Unknown error"
-          }`,
-        });
-        return;
-      }
+  it("GET_PUBLIC_KEY returns the original public key after unlock", async () => {
+    const { keypair } = await unlockVault();
+    const pubResp = await dispatch({ type: KeeperMessageTypes.GET_PUBLIC_KEY });
 
-      try {
-        ephemeralKey = Ed25519Keypair.fromSecretKey(secretKey);
-        vaultUnlocked = true;
-        vaultUnlockExpiry = Date.now() + TEN_MINUTES_MS;
-        sessionDerivedKey = await deriveAesKey(
-          pin,
-          saltBytes(hashedSecretKey.salt),
-          ["encrypt"],
-        );
-        sessionSalt = hashedSecretKey.salt;
-        sendResponse({ ok: true });
-      } catch (keypairError) {
-        sendResponse({
-          ok: false,
-          error: `[Keeper] Failed to create keypair: ${
-            keypairError instanceof Error
-              ? keypairError.message
-              : "Unknown error"
-          }`,
-        });
-      }
-    } catch (error) {
-      sendResponse({
-        ok: false,
-        error: `[Keeper] Unexpected error: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`,
-      });
-    }
-  }
-
-  it("decrypts secret key with PIN, reconstructs Ed25519Keypair, and derives session key", async () => {
-    const originalKeypair = Ed25519Keypair.generate();
-    const hashedSecretKey = await encrypt(
-      originalKeypair.getSecretKey(),
-      TEST_PIN,
+    expect(pubResp.ok).toBe(true);
+    expect(pubResp.publicKeyBytes).toEqual(
+      Array.from(keypair.getPublicKey().toRawBytes()),
     );
-
-    await simulateUnlockVault(hashedSecretKey, TEST_PIN);
-
-    expect(sendResponse).toHaveBeenCalledWith({ ok: true });
-    expect(ephemeralKey).toBeInstanceOf(Ed25519Keypair);
-    const currentKey = ephemeralKey as Ed25519Keypair;
-    expect(currentKey.getPublicKey().toSuiAddress()).toBe(
-      originalKeypair.getPublicKey().toSuiAddress(),
-    );
-    expect(vaultUnlocked).toBe(true);
-    expect(vaultUnlockExpiry).toBeGreaterThan(Date.now());
-    expect(sessionDerivedKey).toBeInstanceOf(CryptoKey);
-    expect(sessionSalt).toBe(hashedSecretKey.salt);
   });
 
-  it("returns a distinct decryption error for a wrong PIN", async () => {
+  it("returns a decryption error and leaves vault locked for a wrong PIN", async () => {
     const hashedSecretKey = await encrypt(
       Ed25519Keypair.generate().getSecretKey(),
       TEST_PIN,
     );
-
-    await simulateUnlockVault(hashedSecretKey, "wrong-pin");
-
-    expect(ephemeralKey).toBeNull();
-    expect(sendResponse).toHaveBeenCalledWith({
-      ok: false,
-      error: expect.stringContaining("[Keeper] Decryption failed:"),
+    const resp = await dispatch({
+      type: KeeperMessageTypes.UNLOCK_VAULT,
+      hashedSecretKey,
+      pin: "wrong-pin",
     });
+
+    expect(resp.ok).toBe(false);
+    expect(String(resp.error)).toContain("[Keeper] Decryption failed");
+
+    const pubResp = await dispatch({ type: KeeperMessageTypes.GET_PUBLIC_KEY });
+    expect(pubResp.error).toBe("LOCKED");
   });
 
-  it("returns a distinct keypair reconstruction error when decrypted data is not a secret key", async () => {
+  it("returns a keypair reconstruction error when decrypted data is not a valid secret key", async () => {
     const hashedSecretKey = await encrypt("not-a-secret-key", TEST_PIN);
-
-    await simulateUnlockVault(hashedSecretKey, TEST_PIN);
-
-    expect(ephemeralKey).toBeNull();
-    expect(sendResponse).toHaveBeenCalledWith({
-      ok: false,
-      error: expect.stringContaining("[Keeper] Failed to create keypair:"),
+    const resp = await dispatch({
+      type: KeeperMessageTypes.UNLOCK_VAULT,
+      hashedSecretKey,
+      pin: TEST_PIN,
     });
+
+    expect(resp.ok).toBe(false);
+    expect(String(resp.error)).toContain("[Keeper] Failed to create keypair");
   });
 });
 
-describe("Keeper CLEAR_EPHKEY message handler", () => {
-  let mockEphemeralKey: Ed25519Keypair | null;
-  let mockVaultUnlocked: boolean;
-  let mockVaultUnlockExpiry: number | null;
-  let mockSessionDerivedKey: CryptoKey | null;
-  let mockSessionSalt: string | null;
-  let mockZkProofs: Partial<Record<SuiChain, ZkProofResponse | null>>;
-  let mockLocalnetKey: Ed25519Keypair | null;
-  let mockSendResponse: ReturnType<typeof vi.fn>;
+// ── CLEAR_EPHKEY ──────────────────────────────────────────────────────────────
 
-  beforeEach(() => {
-    mockEphemeralKey = Ed25519Keypair.generate();
-    mockLocalnetKey = Ed25519Keypair.generate();
-    mockVaultUnlocked = true;
-    mockVaultUnlockExpiry = Date.now() + TEN_MINUTES_MS;
-    mockSessionDerivedKey = {} as CryptoKey;
-    mockSessionSalt = "base64salt==";
-    mockZkProofs = {
-      "sui:devnet": { data: undefined, error: undefined } as ZkProofResponse,
-      "sui:testnet": { data: undefined, error: undefined } as ZkProofResponse,
-      "sui:mainnet": { data: undefined, error: undefined } as ZkProofResponse,
+describe("Keeper CLEAR_EPHKEY handler", () => {
+  beforeEach(async () => {
+    await unlockVault();
+  });
+
+  it("responds { ok: true }", async () => {
+    const resp = await dispatch({ type: KeeperMessageTypes.CLEAR_EPHKEY });
+    expect(resp.ok).toBe(true);
+  });
+
+  it("GET_PUBLIC_KEY returns LOCKED after CLEAR_EPHKEY", async () => {
+    const before = await dispatch({ type: KeeperMessageTypes.GET_PUBLIC_KEY });
+    expect(before.ok).toBe(true);
+
+    await dispatch({ type: KeeperMessageTypes.CLEAR_EPHKEY });
+
+    const after = await dispatch({ type: KeeperMessageTypes.GET_PUBLIC_KEY });
+    expect(after.error).toBe("LOCKED");
+  });
+
+  it("clears sessionDerivedKey — ROTATE_KEYPAIR fails until re-unlocked", async () => {
+    await dispatch({ type: KeeperMessageTypes.CLEAR_EPHKEY });
+
+    const resp = await dispatch({ type: KeeperMessageTypes.ROTATE_KEYPAIR });
+    expect(resp.ok).toBe(false);
+    expect(String(resp.error)).toContain("Vault must be unlocked again");
+  });
+
+  it("does NOT clear zkProofs (CLEAR_ZKPROOF is required for that)", async () => {
+    const proof = {
+      data: { proofPoints: { a: ["1"], b: [["2", "3"]], c: ["4"] } },
     };
-    mockSendResponse = vi.fn();
+    await dispatch({
+      type: KeeperMessageTypes.SET_ZKPROOF,
+      chain: "sui:testnet",
+      zkProof: proof,
+    });
+
+    await dispatch({ type: KeeperMessageTypes.CLEAR_EPHKEY });
+
+    // Re-unlock so the ephemeralKey guard in GET_ZKPROOF passes
+    await unlockVault();
+    const resp = await dispatch({
+      type: KeeperMessageTypes.GET_ZKPROOF,
+      chain: "sui:testnet",
+    });
+    expect(resp.ok).toBe(true);
+    expect(resp.zkProof).toEqual(proof);
   });
 
-  afterEach(() => {
-    vi.clearAllMocks();
+  it("clears all 6 ephemeral-state fields atomically (both GET_PUBLIC_KEY and ROTATE_KEYPAIR are blocked)", async () => {
+    await dispatch({ type: KeeperMessageTypes.CLEAR_EPHKEY });
+
+    const pubResp = await dispatch({ type: KeeperMessageTypes.GET_PUBLIC_KEY });
+    expect(pubResp.error).toBe("LOCKED");
+
+    const rotResp = await dispatch({ type: KeeperMessageTypes.ROTATE_KEYPAIR });
+    expect(rotResp.ok).toBe(false);
   });
 
-  const simulateClearEphKeyHandler = (message: {
-    target?: string;
-    type: string;
-  }) => {
-    if (message.target !== "KEEPER") {
-      return false;
-    }
-
-    if (message.type === KeeperMessageTypes.CLEAR_EPHKEY) {
-      mockEphemeralKey = null;
-      mockLocalnetKey = null;
-      mockSessionDerivedKey = null;
-      mockSessionSalt = null;
-      mockVaultUnlocked = false;
-      mockVaultUnlockExpiry = null;
-      (mockSendResponse as (response?: unknown) => void)({ ok: true });
-      return false;
-    }
-
-    return false;
-  };
-
-  it("clears ephemeralKey when CLEAR_EPHKEY message is received", () => {
-    expect(mockEphemeralKey).not.toBeNull();
-
-    simulateClearEphKeyHandler({
-      target: "KEEPER",
+  it("does not clear the vault when target is not KEEPER", async () => {
+    const { returnValue, sendResponse } = rawDispatch({
+      target: "BACKGROUND",
       type: KeeperMessageTypes.CLEAR_EPHKEY,
     });
 
-    expect(mockEphemeralKey).toBeNull();
-    expect(mockSendResponse).toHaveBeenCalledWith({ ok: true });
-  });
+    expect(returnValue).toBe(false);
+    expect(sendResponse).not.toHaveBeenCalled();
 
-  it("sets _vaultUnlocked to false when CLEAR_EPHKEY message is received", () => {
-    expect(mockVaultUnlocked).toBe(true);
-
-    simulateClearEphKeyHandler({
-      target: "KEEPER",
-      type: KeeperMessageTypes.CLEAR_EPHKEY,
-    });
-
-    expect(mockVaultUnlocked).toBe(false);
-  });
-
-  it("sets _vaultUnlockExpiry to null when CLEAR_EPHKEY message is received", () => {
-    expect(mockVaultUnlockExpiry).not.toBeNull();
-
-    simulateClearEphKeyHandler({
-      target: "KEEPER",
-      type: KeeperMessageTypes.CLEAR_EPHKEY,
-    });
-
-    expect(mockVaultUnlockExpiry).toBeNull();
-  });
-
-  it("does NOT clear zkProofs when CLEAR_EPHKEY is received (use CLEAR_ZKPROOF for that)", () => {
-    expect(mockZkProofs["sui:devnet"]).not.toBeNull();
-    expect(mockZkProofs["sui:testnet"]).not.toBeNull();
-    expect(mockZkProofs["sui:mainnet"]).not.toBeNull();
-
-    simulateClearEphKeyHandler({
-      target: "KEEPER",
-      type: KeeperMessageTypes.CLEAR_EPHKEY,
-    });
-
-    expect(mockZkProofs["sui:devnet"]).not.toBeNull();
-    expect(mockZkProofs["sui:testnet"]).not.toBeNull();
-    expect(mockZkProofs["sui:mainnet"]).not.toBeNull();
-  });
-
-  it("sends { ok: true } response when CLEAR_EPHKEY succeeds", () => {
-    simulateClearEphKeyHandler({
-      target: "KEEPER",
-      type: KeeperMessageTypes.CLEAR_EPHKEY,
-    });
-
-    expect(mockSendResponse).toHaveBeenCalledTimes(1);
-    expect(mockSendResponse).toHaveBeenCalledWith({ ok: true });
-  });
-
-  it("does not process CLEAR_EPHKEY message if target is not KEEPER", () => {
-    const originalKey = mockEphemeralKey;
-
-    simulateClearEphKeyHandler({
-      target: "OTHER",
-      type: KeeperMessageTypes.CLEAR_EPHKEY,
-    });
-
-    expect(mockEphemeralKey).toBe(originalKey);
-    expect(mockSendResponse).not.toHaveBeenCalled();
-  });
-
-  it("clears ephemeral key state in a single operation", () => {
-    simulateClearEphKeyHandler({
-      target: "KEEPER",
-      type: KeeperMessageTypes.CLEAR_EPHKEY,
-    });
-
-    expect(mockEphemeralKey).toBeNull();
-    expect(mockLocalnetKey).toBeNull();
-    expect(mockSessionDerivedKey).toBeNull();
-    expect(mockSessionSalt).toBeNull();
-    expect(mockVaultUnlocked).toBe(false);
-    expect(mockVaultUnlockExpiry).toBeNull();
-  });
-
-  it("clears localnet keypair when CLEAR_EPHKEY is received", () => {
-    expect(mockLocalnetKey).not.toBeNull();
-
-    simulateClearEphKeyHandler({
-      target: "KEEPER",
-      type: KeeperMessageTypes.CLEAR_EPHKEY,
-    });
-
-    expect(mockLocalnetKey).toBeNull();
-  });
-
-  it("does not clear localnet keypair when target is not KEEPER", () => {
-    const original = mockLocalnetKey;
-
-    simulateClearEphKeyHandler({
-      target: "OTHER",
-      type: KeeperMessageTypes.CLEAR_EPHKEY,
-    });
-
-    expect(mockLocalnetKey).toBe(original);
+    // Vault is still unlocked
+    const pubResp = await dispatch({ type: KeeperMessageTypes.GET_PUBLIC_KEY });
+    expect(pubResp.ok).toBe(true);
   });
 });
 
-describe("Keeper checkAndEnforceExpiry", () => {
-  let ephemeralKey: Ed25519Keypair | null;
-  let localnetKey: Ed25519Keypair | null;
-  let sessionDerivedKey: CryptoKey | null;
-  let sessionSalt: string | null;
-  let vaultUnlocked: boolean;
-  let vaultUnlockExpiry: number | null;
+// ── checkAndEnforceExpiry ─────────────────────────────────────────────────────
 
-  beforeEach(() => {
-    ephemeralKey = Ed25519Keypair.generate();
-    localnetKey = Ed25519Keypair.generate();
-    sessionDerivedKey = {} as CryptoKey;
-    sessionSalt = "salt";
-    vaultUnlocked = true;
-    vaultUnlockExpiry = Date.now() + TEN_MINUTES_MS;
+describe("Keeper vault expiry (checkAndEnforceExpiry)", () => {
+  it("GET_PUBLIC_KEY returns LOCKED when the vault has never been unlocked", async () => {
+    const resp = await dispatch({ type: KeeperMessageTypes.GET_PUBLIC_KEY });
+    expect(resp.error).toBe("LOCKED");
   });
 
-  function checkAndEnforceExpiry(): boolean {
-    if (!ephemeralKey && !localnetKey) {
-      return true;
-    }
-
-    if (vaultUnlockExpiry && Date.now() > vaultUnlockExpiry) {
-      ephemeralKey = null;
-      localnetKey = null;
-      sessionDerivedKey = null;
-      sessionSalt = null;
-      vaultUnlocked = false;
-      vaultUnlockExpiry = null;
-      return true;
-    }
-
-    return false;
-  }
-
-  it("returns true immediately when no ephemeralKey and no localnetKey exist", () => {
-    ephemeralKey = null;
-    localnetKey = null;
-
-    expect(checkAndEnforceExpiry()).toBe(true);
+  it("GET_PUBLIC_KEY succeeds when the vault is unlocked and within the expiry window", async () => {
+    await unlockVault();
+    const resp = await dispatch({ type: KeeperMessageTypes.GET_PUBLIC_KEY });
+    expect(resp.ok).toBe(true);
   });
 
-  it("returns false when unlock expiry is in the future", () => {
-    expect(checkAndEnforceExpiry()).toBe(false);
-    expect(ephemeralKey).not.toBeNull();
-    expect(localnetKey).not.toBeNull();
-    expect(vaultUnlocked).toBe(true);
+  it("GET_PUBLIC_KEY returns LOCKED after the 10-minute unlock window elapses", async () => {
+    await unlockVault();
+
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(Date.now() + 11 * 60 * 1000);
+
+    const resp = await dispatch({ type: KeeperMessageTypes.GET_PUBLIC_KEY });
+    expect(resp.error).toBe("LOCKED");
   });
 
-  it("clears all in-memory vault state and returns true when expiry has passed", () => {
-    vaultUnlockExpiry = Date.now() - 1;
+  it("enforces expiry atomically — ROTATE_KEYPAIR also fails once time elapses", async () => {
+    await unlockVault();
 
-    expect(checkAndEnforceExpiry()).toBe(true);
-    expect(ephemeralKey).toBeNull();
-    expect(localnetKey).toBeNull();
-    expect(sessionDerivedKey).toBeNull();
-    expect(sessionSalt).toBeNull();
-    expect(vaultUnlocked).toBe(false);
-    expect(vaultUnlockExpiry).toBeNull();
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(Date.now() + 11 * 60 * 1000);
+
+    const resp = await dispatch({ type: KeeperMessageTypes.ROTATE_KEYPAIR });
+    expect(resp.ok).toBe(false);
+    expect(String(resp.error)).toContain("Vault must be unlocked again");
   });
 
-  it("clears localnet key on expiry even when the zkLogin key is already absent", () => {
-    ephemeralKey = null;
-    vaultUnlockExpiry = Date.now() - 1;
-
-    expect(checkAndEnforceExpiry()).toBe(true);
-    expect(localnetKey).toBeNull();
+  it("EPH_SIGN returns LOCKED when neither ephemeralKey nor localnetKey is set", async () => {
+    const resp = await dispatch({
+      type: KeeperMessageTypes.EPH_SIGN,
+      msgBytes: [],
+      scope: "TransactionData",
+      sui_address: "0x1",
+    });
+    expect(String(resp.error)).toContain("LOCKED");
   });
 });
+
+// ── message guards ────────────────────────────────────────────────────────────
 
 describe("Keeper message guards", () => {
-  let sendResponse: ReturnType<typeof vi.fn>;
-
-  beforeEach(() => {
-    sendResponse = vi.fn();
-  });
-
-  function simulateMessageGuard(message: { target?: string; type?: string }) {
-    if (message.target !== "KEEPER") {
-      return false;
-    }
-
-    if (message.type === KeeperMessageTypes.GET_PUBLIC_KEY) {
-      sendResponse({ error: "LOCKED" });
-      return false;
-    }
-
-    sendResponse({ error: "Unknown message type" });
-    return false;
-  }
-
-  it("returns false without calling sendResponse for non-KEEPER targets", () => {
-    const result = simulateMessageGuard({
+  it("ignores messages not targeted to KEEPER (returns false, no sendResponse called)", () => {
+    const { returnValue, sendResponse } = rawDispatch({
       target: "BACKGROUND",
       type: KeeperMessageTypes.GET_PUBLIC_KEY,
     });
 
-    expect(result).toBe(false);
+    expect(returnValue).toBe(false);
     expect(sendResponse).not.toHaveBeenCalled();
   });
 
-  it("sends Unknown message type for unsupported KEEPER messages", () => {
-    const result = simulateMessageGuard({
-      target: "KEEPER",
-      type: "NOT_A_REAL_MESSAGE",
-    });
-
-    expect(result).toBe(false);
-    expect(sendResponse).toHaveBeenCalledWith({
-      error: "Unknown message type",
-    });
+  it("responds with { error: 'Unknown message type' } for unrecognised KEEPER messages", async () => {
+    const resp = await dispatch({ type: "NOT_A_REAL_MESSAGE" });
+    expect(resp).toEqual({ error: "Unknown message type" });
   });
 });

@@ -102,4 +102,12 @@ describe("getCurrentEpochFromGraphQL", () => {
         new Date(startTimestamp).getTime() + DEFAULT_EPOCH_DURATION_MS,
     });
   });
+
+  it("propagates a network-level error thrown by the GraphQL client", async () => {
+    mockQuery.mockRejectedValue(new Error("Network unreachable"));
+
+    await expect(getCurrentEpochFromGraphQL(SUI_TESTNET_CHAIN)).rejects.toThrow(
+      "Network unreachable",
+    );
+  });
 });

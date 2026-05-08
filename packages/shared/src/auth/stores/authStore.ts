@@ -286,37 +286,45 @@ export const useAuthStore = create<AuthState>()(
             }
           } else {
             // Web login flow
-            if (!isZkLoginSuiChain(network)) {
-              log.info("Skipping OAuth redirect for non-zkLogin network", {
-                network,
-              });
+            try {
+              if (!isZkLoginSuiChain(network)) {
+                log.info("Skipping OAuth redirect for non-zkLogin network", {
+                  network,
+                });
+                set({ loading: false });
+                return;
+              }
+
+              const deviceStore = useDeviceStore.getState();
+
+              // Ensure device data is present and valid for current network — needed
+              // for the vendJwt call after OAuth returns.
+              const networkData = deviceStore.networkData[network];
+              const isExpired =
+                networkData?.maxEpochTimestampMs != null &&
+                Date.now() >= networkData.maxEpochTimestampMs;
+              if (!networkData?.nonce || !networkData?.maxEpoch || isExpired) {
+                log.info("Initializing device data for network before login", {
+                  network,
+                });
+                await deviceStore.initializeForChain(network);
+              }
+
+              if (typeof sessionStorage !== "undefined") {
+                sessionStorage.setItem(
+                  OAuthTenantSessionKey,
+                  getCurrentTenantId(),
+                );
+              }
+              getUserManagerInstance().signinRedirect();
               set({ loading: false });
-              return;
-            }
-
-            const deviceStore = useDeviceStore.getState();
-
-            // Ensure device data is present and valid for current network — needed
-            // for the vendJwt call after OAuth returns.
-            const networkData = deviceStore.networkData[network];
-            const isExpired =
-              networkData?.maxEpochTimestampMs != null &&
-              Date.now() >= networkData.maxEpochTimestampMs;
-            if (!networkData?.nonce || !networkData?.maxEpoch || isExpired) {
-              log.info("Initializing device data for network before login", {
-                network,
+            } catch (error) {
+              log.error("Login failed (web)", error);
+              set({
+                loading: false,
+                error: error instanceof Error ? error.message : "Unknown error",
               });
-              await deviceStore.initializeForChain(network);
             }
-
-            if (typeof sessionStorage !== "undefined") {
-              sessionStorage.setItem(
-                OAuthTenantSessionKey,
-                getCurrentTenantId(),
-              );
-            }
-            getUserManagerInstance().signinRedirect();
-            set({ loading: false });
           }
         },
 

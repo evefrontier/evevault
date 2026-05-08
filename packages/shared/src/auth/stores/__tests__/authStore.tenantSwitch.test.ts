@@ -175,4 +175,32 @@ describe("tenant switch auth cleanup", () => {
       value: originalLocation,
     });
   });
+
+  it("switchTenantAndReload is a no-op when the new tenant ID matches the current one", async () => {
+    const reload = vi.fn();
+    const originalLocation = window.location;
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: { reload },
+    });
+
+    // mockGetCurrentTenantId returns "stillness" and we pass "stillness" — early return
+    await switchTenantAndReload("stillness" as never);
+
+    expect(mockSetCurrentTenantId).not.toHaveBeenCalled();
+    expect(reload).not.toHaveBeenCalled();
+
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: originalLocation,
+    });
+  });
+
+  it("runTenantSwitchCleanup does not throw when a cleanup step rejects (error is caught internally)", async () => {
+    mockClearAllJwts.mockRejectedValue(new Error("storage unavailable"));
+
+    await expect(
+      runTenantSwitchCleanup("stillness" as never),
+    ).resolves.toBeUndefined();
+  });
 });
