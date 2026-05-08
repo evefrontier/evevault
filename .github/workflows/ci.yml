@@ -54,14 +54,23 @@ jobs:
 
       - name: Download latest main coverage baseline
         if: github.event_name == 'pull_request'
+        id: download-baseline
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           run_id="$(gh run list --workflow ci.yml --branch main --event push --status success --limit 1 --json databaseId --jq '.[0].databaseId')"
-          gh run download "$run_id" --name coverage-baseline --dir coverage-baseline
+          if [ -z "$run_id" ] || [ "$run_id" = "null" ]; then
+            echo "No successful main run found, skipping baseline check"
+            exit 0
+          fi
+          if ! gh run download "$run_id" --name coverage-baseline --dir coverage-baseline 2>/dev/null; then
+            echo "No coverage baseline artifact on latest main run, skipping baseline check"
+            exit 0
+          fi
+          echo "has-baseline=true" >> "$GITHUB_OUTPUT"
 
       - name: Check coverage did not drop
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && steps.download-baseline.outputs.has-baseline == 'true'
         env:
           COVERAGE_TOLERANCE: 0.05
         run: node scripts/check-coverage-regression.mjs coverage-baseline .
