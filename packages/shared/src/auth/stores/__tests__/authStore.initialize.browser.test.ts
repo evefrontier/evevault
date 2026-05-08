@@ -332,6 +332,8 @@ describe("authStore.initialize() (extension path)", () => {
       expect(mockStoreUser).toHaveBeenCalledOnce();
       expect(useAuthStore.getState().user?.id_token).toBe(umUser.id_token);
       expect(useAuthStore.getState().loading).toBe(false);
+      // The stored JWT path is never reached — the UserManager user is used directly
+      expect(mockGetJwt).not.toHaveBeenCalled();
     });
   });
 
@@ -353,6 +355,9 @@ describe("authStore.initialize() (extension path)", () => {
 
       expect(useAuthStore.getState().loading).toBe(false);
       expect(useAuthStore.getState().user).not.toBeNull();
+      // There is no de-duplication guard: both calls run to completion independently.
+      // If a guard is ever added, this count will drop to 1 and the test documents the intent.
+      expect(mockStoreUser).toHaveBeenCalledTimes(2);
     });
   });
 });

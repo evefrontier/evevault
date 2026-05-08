@@ -179,17 +179,35 @@ describe("Keeper ROTATE_KEYPAIR handler", () => {
     );
   });
 
-  it("resets expiry to ten minutes after successful rotation", async () => {
-    await unlockVault();
-    const before = Date.now();
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
-    const resp = await dispatch({ type: KeeperMessageTypes.ROTATE_KEYPAIR });
+  it("resets the vault expiry to 10 minutes after a successful rotation", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    const T0 = 1_000_000_000_000;
+    vi.setSystemTime(T0);
 
-    expect(resp.ok).toBe(true);
-    // Vault should still respond to GET_PUBLIC_KEY (not locked)
-    const pkResp = await dispatch({ type: KeeperMessageTypes.GET_PUBLIC_KEY });
-    expect(pkResp.ok).toBe(true);
-    expect(Date.now()).toBeGreaterThanOrEqual(before);
+    await unlockVault(); // _vaultUnlockExpiry = T0 + 10 min
+
+    // Advance 9 minutes and rotate — expiry resets to (T0 + 9min) + 10min = T0 + 19min
+    vi.setSystemTime(T0 + 9 * 60 * 1000);
+    const rotResp = await dispatch({ type: KeeperMessageTypes.ROTATE_KEYPAIR });
+    expect(rotResp.ok).toBe(true);
+
+    // Past the ORIGINAL expiry (T0 + 10min): rotation kept the vault open
+    vi.setSystemTime(T0 + 10 * 60 * 1000 + 1000);
+    const stillOpen = await dispatch({
+      type: KeeperMessageTypes.GET_PUBLIC_KEY,
+    });
+    expect(stillOpen.ok).toBe(true);
+
+    // Past the ROTATED expiry (T0 + 19min): vault now locks
+    vi.setSystemTime(T0 + 19 * 60 * 1000 + 1000);
+    const nowLocked = await dispatch({
+      type: KeeperMessageTypes.GET_PUBLIC_KEY,
+    });
+    expect(nowLocked.error).toBe("LOCKED");
   });
 });
 
@@ -427,7 +445,12 @@ describe("Keeper LOCALNET_SET_KEYPAIR handler", () => {
     expect(enc.data).not.toBe(bech32);
   });
 
-  it("encrypted blob decrypts back to the original private key", async () => {
+  it("encrypted blob is recoverable with the vault PIN (session key is PIN-derived)", async () => {
+    // LOCALNET_SET_KEYPAIR stores the key via encryptWithKey(privateKey, sessionDerivedKey, sessionSalt).
+    // sessionDerivedKey is derived from TEST_PIN + sessionSalt during UNLOCK_VAULT, so the
+    // resulting ciphertext is compatible with decrypt(blob, TEST_PIN) which re-derives the
+    // same key internally. If session key derivation ever changes to use a different source,
+    // this round-trip test will catch it.
     const keypair = Ed25519Keypair.generate();
     const bech32 = keypair.getSecretKey();
 

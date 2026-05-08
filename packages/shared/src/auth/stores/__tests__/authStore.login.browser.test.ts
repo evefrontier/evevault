@@ -156,6 +156,9 @@ describe("authStore.login() web path", () => {
   });
 
   it("does not call signinRedirect on non-zkLogin chains", async () => {
+    // isZkLoginSuiChain returns true only for devnet, testnet, and mainnet.
+    // SUI_LOCALNET_CHAIN ("sui:localnet") is explicitly excluded, so login skips
+    // the OIDC redirect entirely. This tests the boundary: the first non-zkLogin chain.
     vi.mocked(useContextStore.getState).mockReturnValue({
       chain: SUI_LOCALNET_CHAIN,
     } as ReturnType<typeof useContextStore.getState>);

@@ -132,8 +132,10 @@ describe("Keeper CREATE_KEYPAIR handler", () => {
 
   it("enables key rotation — ROTATE_KEYPAIR succeeds after CREATE_KEYPAIR (session key was derived)", async () => {
     await dispatch({ type: KeeperMessageTypes.CREATE_KEYPAIR, pin: TEST_PIN });
-    const rotResp = await dispatch({ type: KeeperMessageTypes.ROTATE_KEYPAIR });
-    expect(rotResp.ok).toBe(true);
+    const rotateResp = await dispatch({
+      type: KeeperMessageTypes.ROTATE_KEYPAIR,
+    });
+    expect(rotateResp.ok).toBe(true);
   });
 });
 
@@ -245,14 +247,39 @@ describe("Keeper CLEAR_EPHKEY handler", () => {
     expect(resp.zkProof).toEqual(proof);
   });
 
-  it("clears all 6 ephemeral-state fields atomically (both GET_PUBLIC_KEY and ROTATE_KEYPAIR are blocked)", async () => {
+  it("clears ephemeralKey, sessionDerivedKey, and localnetKey in one CLEAR_EPHKEY call", async () => {
+    // Set a localnet key so we can verify it is cleared alongside the ephemeral key
+    const localnetKeypair = Ed25519Keypair.generate();
+    const setResp = await dispatch({
+      type: KeeperMessageTypes.LOCALNET_SET_KEYPAIR,
+      privateKey: localnetKeypair.getSecretKey(),
+    });
+    expect(setResp.ok).toBe(true);
+    const addrBefore = await dispatch({
+      type: KeeperMessageTypes.LOCALNET_GET_ADDRESS,
+    });
+    expect(addrBefore.address).not.toBeNull();
+
     await dispatch({ type: KeeperMessageTypes.CLEAR_EPHKEY });
 
+    // ephemeralKey cleared → GET_PUBLIC_KEY returns LOCKED
     const pubResp = await dispatch({ type: KeeperMessageTypes.GET_PUBLIC_KEY });
     expect(pubResp.error).toBe("LOCKED");
 
-    const rotResp = await dispatch({ type: KeeperMessageTypes.ROTATE_KEYPAIR });
-    expect(rotResp.ok).toBe(false);
+    // sessionDerivedKey (and sessionSalt) cleared → ROTATE_KEYPAIR fails
+    const rotateResp = await dispatch({
+      type: KeeperMessageTypes.ROTATE_KEYPAIR,
+    });
+    expect(rotateResp.ok).toBe(false);
+    expect(String(rotateResp.error)).toContain("Vault must be unlocked again");
+
+    // localnetKey cleared → LOCALNET_GET_ADDRESS returns null
+    // (_vaultUnlocked and _vaultUnlockExpiry are internal and not directly observable)
+    const addrAfter = await dispatch({
+      type: KeeperMessageTypes.LOCALNET_GET_ADDRESS,
+    });
+    expect(addrAfter.ok).toBe(true);
+    expect(addrAfter.address).toBeNull();
   });
 
   it("does not clear the vault when target is not KEEPER", async () => {
