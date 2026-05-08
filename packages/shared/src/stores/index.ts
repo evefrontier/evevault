@@ -5,6 +5,7 @@ export {
   getTenantLabel,
   isAvailableTenantId,
 } from "#/utils/tenantConfig";
+export { useContextStore } from "./contextStore";
 export {
   registerOnLock,
   rehydrateDeviceStore,

@@ -1,9 +1,9 @@
 import { useNetworkStore } from "@evevault/shared/stores";
 import type { AuthSuccessToken, JwtResponse } from "@evevault/shared/types";
 import {
+  CONTEXT_STORAGE_KEY,
   createLogger,
   type Logger,
-  NETWORK_STORAGE_KEY,
 } from "@evevault/shared/utils";
 import type { SuiChain } from "@mysten/wallet-standard";
 import { decodeJwt } from "jose";
@@ -38,14 +38,16 @@ export function getCurrentChain(): SuiChain {
  */
 export async function getCurrentChainFromStorage(): Promise<SuiChain> {
   return new Promise((resolve) => {
-    chrome.storage.local.get([NETWORK_STORAGE_KEY], (result) => {
+    chrome.storage.local.get([CONTEXT_STORAGE_KEY], (result) => {
       try {
-        const stored = result[NETWORK_STORAGE_KEY];
+        const stored = result[CONTEXT_STORAGE_KEY];
         if (stored) {
           const parsed =
             typeof stored === "string" ? JSON.parse(stored) : stored;
           if (parsed?.state?.chain) {
-            log.debug("Read chain from storage", { chain: parsed.state.chain });
+            log.debug("Read chain from storage", {
+              chain: parsed.state.chain,
+            });
             resolve(parsed.state.chain);
             return;
           }
@@ -54,7 +56,9 @@ export async function getCurrentChainFromStorage(): Promise<SuiChain> {
         log.error("Error reading chain from storage", error);
       }
       const fallbackChain = useNetworkStore.getState().chain;
-      log.debug("Using fallback chain from Zustand", { chain: fallbackChain });
+      log.debug("Using fallback chain from Zustand", {
+        chain: fallbackChain,
+      });
       resolve(fallbackChain);
     });
   });

@@ -6,11 +6,12 @@ const { oidcMocks, logMocks, envMocks } = vi.hoisted(() => {
   const addSilentRenewError = vi.fn();
   const logError = vi.fn();
   const isExtension = vi.fn(() => false);
+  const isWeb = vi.fn(() => false);
 
   return {
     oidcMocks: { userManagerConstructor, addSilentRenewError },
     logMocks: { logError },
-    envMocks: { isExtension },
+    envMocks: { isExtension, isWeb },
   };
 });
 
@@ -54,6 +55,7 @@ vi.mock("#/utils/tenantConfig", () => ({
 
 vi.mock("#/utils/environment", () => ({
   isExtension: () => envMocks.isExtension(),
+  isWeb: () => envMocks.isWeb(),
 }));
 
 describe("authConfig UserManager", () => {
@@ -61,6 +63,7 @@ describe("authConfig UserManager", () => {
     vi.resetModules();
     vi.clearAllMocks();
     envMocks.isExtension.mockReturnValue(false);
+    envMocks.isWeb.mockReturnValue(false);
   });
 
   it("passes automaticSilentRenew to UserManager", async () => {

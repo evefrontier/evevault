@@ -1,3 +1,4 @@
+import { TenantId } from "@evefrontier/dapp-kit/utils";
 import {
   SUI_DEVNET_CHAIN,
   SUI_LOCALNET_CHAIN,
@@ -15,6 +16,7 @@ import { getCurrentTenantId } from "#/stores/tenantStore";
 import { useTokenListStore } from "#/stores/tokenListStore";
 import { DEFAULT_TOKENS_BY_CHAIN } from "#/types/networks";
 import type { NetworkDataEntry } from "#/types/stores";
+import { DEFAULT_LOCALNET_URL } from "#/utils";
 import {
   cleanupExtensionStorage,
   cleanupOidcStorage,
@@ -84,7 +86,10 @@ function resetStoresToInitial(): void {
   });
 
   useNetworkStore.setState({
+    tenantId: TenantId.STILLNESS,
+    devMode: false,
     chain: SUI_TESTNET_CHAIN,
+    localnetUrl: DEFAULT_LOCALNET_URL,
     loading: false,
   });
 

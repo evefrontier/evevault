@@ -1,5 +1,5 @@
 import { createLogger } from "@evevault/shared/utils";
-import { NETWORK_STORAGE_KEY } from "@evevault/shared/utils/storageKeys";
+import { CONTEXT_STORAGE_KEY } from "@evevault/shared/utils/storageKeys";
 
 const log = createLogger();
 
@@ -28,10 +28,10 @@ export default defineContentScript({
       // Respond directly from the content script (which has storage access)
       // so the injected wallet can seed #currentChain before any dApp connects.
       if (data.__to === "Eve Vault" && data.type === "get_current_chain") {
-        chrome.storage.local.get([NETWORK_STORAGE_KEY], (result) => {
+        chrome.storage.local.get([CONTEXT_STORAGE_KEY], (result) => {
           let chain = "sui:testnet";
           try {
-            const stored = result[NETWORK_STORAGE_KEY];
+            const stored = result[CONTEXT_STORAGE_KEY];
             if (stored) {
               const parsed =
                 typeof stored === "string" ? JSON.parse(stored) : stored;

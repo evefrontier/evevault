@@ -9,6 +9,8 @@ export const SUI_PROVER_DEV_ENDPOINT = "https://prover-dev.mystenlabs.com/v1";
 
 export const SUI_COIN_TYPE = "0x2::sui::SUI";
 
+export const DEFAULT_LOCALNET_URL = "http://127.0.0.1:9000";
+
 /** Default epoch duration (24h in ms) when endTimestamp is not yet set for current epoch */
 export const DEFAULT_EPOCH_DURATION_MS = 86_400_000;
 
