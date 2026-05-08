@@ -126,7 +126,10 @@ const FUTURE = Math.floor(Date.now() / 1000) + 3600;
 const PAST = Math.floor(Date.now() / 1000) - 60;
 
 function makeJwtPayload(claims: Record<string, unknown>): string {
-  const payload = Buffer.from(JSON.stringify(claims)).toString("base64url");
+  const payload = btoa(JSON.stringify(claims))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=/g, "");
   return `eyJhbGciOiJIUzI1NiJ9.${payload}.sig`;
 }
 
@@ -159,6 +162,8 @@ function makeUser(
 }
 
 describe("authStore.initialize() (extension path)", () => {
+  let originalChrome: unknown;
+
   beforeEach(() => {
     vi.clearAllMocks();
     mockIsExtension.mockReturnValue(true);
@@ -173,6 +178,7 @@ describe("authStore.initialize() (extension path)", () => {
     mockSyncPrimaryJwt.mockResolvedValue(undefined);
     useAuthStore.setState({ user: null, loading: false, error: null });
 
+    originalChrome = (globalThis as unknown as { chrome: unknown }).chrome;
     (globalThis as unknown as { chrome: unknown }).chrome = {
       runtime: { id: "test-ext" },
       storage: { local: { get: vi.fn().mockResolvedValue({}) } },
@@ -180,7 +186,7 @@ describe("authStore.initialize() (extension path)", () => {
   });
 
   afterEach(() => {
-    delete (globalThis as unknown as { chrome?: unknown }).chrome;
+    (globalThis as unknown as { chrome: unknown }).chrome = originalChrome;
   });
 
   describe("when UserManager has no user", () => {

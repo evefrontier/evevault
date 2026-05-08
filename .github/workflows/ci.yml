@@ -57,3 +57,12 @@ jobs:
           json-summary-path: "./apps/extension/coverage/coverage-summary.json"
           json-final-path: "./apps/extension/coverage/coverage-final.json"
           vite-config-path: "./apps/extension/vitest.config.ts"
+
+      - name: Report @evevault/web coverage
+        if: always()
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          name: "@evevault/web"
+          json-summary-path: "./apps/web/coverage/coverage-summary.json"
+          json-final-path: "./apps/web/coverage/coverage-final.json"
+          vite-config-path: "./apps/web/vitest.config.ts"
