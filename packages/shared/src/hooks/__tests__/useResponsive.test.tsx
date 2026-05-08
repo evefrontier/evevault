@@ -115,6 +115,23 @@ describe("useResponsive", () => {
     expect(result.current.isDesktop).toBe(true);
   });
 
+  it("falls back to desktop when window.innerWidth is undefined", () => {
+    Object.defineProperty(window, "innerWidth", {
+      configurable: true,
+      writable: true,
+      value: undefined,
+    });
+
+    const { result } = renderHook(() => useResponsive());
+
+    expect(result.current.isDesktop).toBe(true);
+    expect(result.current.isMobile).toBe(false);
+    expect(result.current.isTablet).toBe(false);
+    expect(result.current.width).toBe(1200);
+    // Restore for subsequent tests
+    setInnerWidth(1200);
+  });
+
   it("cancels pending RAF on unmount", () => {
     const { unmount } = renderHook(() => useResponsive());
 

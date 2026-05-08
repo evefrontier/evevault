@@ -1,11 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { mockFetchCoinMetadata, mockFormatByDecimals, mockParseStructTag } =
-  vi.hoisted(() => ({
-    mockFetchCoinMetadata: vi.fn(),
-    mockFormatByDecimals: vi.fn(),
-    mockParseStructTag: vi.fn(),
-  }));
+const {
+  mockFetchCoinMetadata,
+  mockFormatByDecimals,
+  mockParseStructTag,
+  mockWarn,
+} = vi.hoisted(() => ({
+  mockFetchCoinMetadata: vi.fn(),
+  mockFormatByDecimals: vi.fn(),
+  mockParseStructTag: vi.fn(),
+  mockWarn: vi.fn(),
+}));
 
 vi.mock("@mysten/sui/utils", () => ({
   parseStructTag: (...args: unknown[]) => mockParseStructTag(...args),
@@ -19,7 +24,7 @@ vi.mock("#/utils/logger", () => ({
   createLogger: () => ({
     debug: vi.fn(),
     info: vi.fn(),
-    warn: vi.fn(),
+    warn: mockWarn,
     error: vi.fn(),
   }),
 }));
@@ -115,6 +120,14 @@ describe("formatTransactionAmount", () => {
     ).resolves.toBe("1000000000:9");
 
     expect(mockFormatByDecimals).toHaveBeenCalledWith("1000000000", 9);
+    expect(mockWarn).toHaveBeenCalledWith(
+      "Falling back to default decimals for coin type",
+      {
+        coinType: "0x1::unknown::COIN",
+        rawAmount: "1000000000",
+        defaultDecimals: 9,
+      },
+    );
   });
 
   it("propagates metadata fetch errors", async () => {

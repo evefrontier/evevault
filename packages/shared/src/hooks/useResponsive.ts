@@ -71,10 +71,14 @@ export function useResponsive(): ResponsiveState {
   return state;
 }
 
-function getResponsiveState(width: number): ResponsiveState {
-  const isMobile = width < BREAKPOINTS.mobile;
-  const isTablet = width >= BREAKPOINTS.mobile && width < BREAKPOINTS.tablet;
-  const isDesktop = width >= BREAKPOINTS.tablet;
+function getResponsiveState(width: number | undefined): ResponsiveState {
+  // Guard against undefined/NaN (e.g. window exists but innerWidth is unavailable)
+  const safeWidth =
+    typeof width === "number" && !Number.isNaN(width) ? width : 1200;
+  const isMobile = safeWidth < BREAKPOINTS.mobile;
+  const isTablet =
+    safeWidth >= BREAKPOINTS.mobile && safeWidth < BREAKPOINTS.tablet;
+  const isDesktop = safeWidth >= BREAKPOINTS.tablet;
 
-  return { isMobile, isTablet, isDesktop, width };
+  return { isMobile, isTablet, isDesktop, width: safeWidth };
 }

@@ -104,6 +104,51 @@ describe("fetchZkProof", () => {
     });
   });
 
+  it("routes different network params to distinct API requests and returns the correct response for each", async () => {
+    const testnetProof = {
+      data: { proofPoints: { a: ["testnet-a"], b: [], c: [] } },
+    };
+    const mainnetProof = {
+      data: { proofPoints: { a: ["mainnet-a"], b: [], c: [] } },
+    };
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue(testnetProof),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: vi.fn().mockResolvedValue(mainnetProof),
+      });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const baseParams = {
+      jwtRandomness: "randomness",
+      maxEpoch: 12,
+      ephemeralPublicKey: "ephemeral-public-key" as never,
+      idToken: "id-token",
+      enokiApiKey: "enoki-api-key",
+    };
+
+    const testnetResult = await fetchZkProof({
+      ...baseParams,
+      network: "testnet",
+    });
+    const mainnetResult = await fetchZkProof({
+      ...baseParams,
+      network: "mainnet",
+    });
+
+    // Each call sent the correct network to the API
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).network).toBe("testnet");
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body).network).toBe("mainnet");
+    // Each call returned the response that the API produced for that network
+    expect(testnetResult).toBe(testnetProof);
+    expect(mainnetResult).toBe(mainnetProof);
+    expect(testnetResult).not.toEqual(mainnetResult);
+  });
+
   it("throws when Enoki returns a non-OK response with a JSON body", async () => {
     vi.stubGlobal(
       "fetch",

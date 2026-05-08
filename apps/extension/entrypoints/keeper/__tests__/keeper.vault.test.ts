@@ -252,6 +252,8 @@ describe("Keeper CLEAR_EPHKEY message handler", () => {
   let mockEphemeralKey: Ed25519Keypair | null;
   let mockVaultUnlocked: boolean;
   let mockVaultUnlockExpiry: number | null;
+  let mockSessionDerivedKey: CryptoKey | null;
+  let mockSessionSalt: string | null;
   let mockZkProofs: Partial<Record<SuiChain, ZkProofResponse | null>>;
   let mockLocalnetKey: Ed25519Keypair | null;
   let mockSendResponse: ReturnType<typeof vi.fn>;
@@ -261,6 +263,8 @@ describe("Keeper CLEAR_EPHKEY message handler", () => {
     mockLocalnetKey = Ed25519Keypair.generate();
     mockVaultUnlocked = true;
     mockVaultUnlockExpiry = Date.now() + TEN_MINUTES_MS;
+    mockSessionDerivedKey = {} as CryptoKey;
+    mockSessionSalt = "base64salt==";
     mockZkProofs = {
       "sui:devnet": { data: undefined, error: undefined } as ZkProofResponse,
       "sui:testnet": { data: undefined, error: undefined } as ZkProofResponse,
@@ -284,6 +288,8 @@ describe("Keeper CLEAR_EPHKEY message handler", () => {
     if (message.type === KeeperMessageTypes.CLEAR_EPHKEY) {
       mockEphemeralKey = null;
       mockLocalnetKey = null;
+      mockSessionDerivedKey = null;
+      mockSessionSalt = null;
       mockVaultUnlocked = false;
       mockVaultUnlockExpiry = null;
       (mockSendResponse as (response?: unknown) => void)({ ok: true });
@@ -371,6 +377,9 @@ describe("Keeper CLEAR_EPHKEY message handler", () => {
     });
 
     expect(mockEphemeralKey).toBeNull();
+    expect(mockLocalnetKey).toBeNull();
+    expect(mockSessionDerivedKey).toBeNull();
+    expect(mockSessionSalt).toBeNull();
     expect(mockVaultUnlocked).toBe(false);
     expect(mockVaultUnlockExpiry).toBeNull();
   });

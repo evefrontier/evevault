@@ -255,6 +255,11 @@ describe("authStore.initialize() (extension path)", () => {
       await useAuthStore.getState().initialize();
 
       expect(mockSigninSilent).toHaveBeenCalledOnce();
+      // storeUser must have been called before signinSilent so the UserManager
+      // had the refresh token available when signinSilent() ran.
+      expect(mockStoreUser).toHaveBeenCalledBefore(mockSigninSilent);
+      const seededUser = mockStoreUser.mock.calls[0][0] as User;
+      expect(seededUser.refresh_token).toBe("rt");
       expect(useAuthStore.getState().user).toBe(refreshedUser);
       expect(useAuthStore.getState().loading).toBe(false);
     });
@@ -271,8 +276,12 @@ describe("authStore.initialize() (extension path)", () => {
       mockResolveExpiresAt
         .mockReturnValueOnce(PAST)
         .mockReturnValueOnce(FUTURE);
-      mockStoreUser.mockImplementation(async () => {
+      mockStoreUser.mockImplementation(async (user: User) => {
         callOrder.push("storeUser");
+        // First call must carry the refresh token so signinSilent can use it
+        if (callOrder.filter((e) => e === "storeUser").length === 1) {
+          expect(user.refresh_token).toBe("rt");
+        }
       });
       mockSigninSilent.mockImplementation(async () => {
         callOrder.push("signinSilent");
@@ -282,10 +291,13 @@ describe("authStore.initialize() (extension path)", () => {
 
       await useAuthStore.getState().initialize();
 
-      const firstStoreUser = callOrder.indexOf("storeUser");
-      const signinSilentIdx = callOrder.indexOf("signinSilent");
-      expect(firstStoreUser).toBeLessThan(signinSilentIdx);
-      expect(mockStoreUser).toHaveBeenCalledWith(expect.any(User));
+      // Full expected sequence: seed expired user → silent renew → persist refreshed user
+      expect(callOrder).toEqual(["storeUser", "signinSilent", "storeUser"]);
+      // First storeUser seeded the expired-but-refresh-token-bearing user
+      expect(mockStoreUser.mock.calls[0][0]).toBeInstanceOf(User);
+      expect((mockStoreUser.mock.calls[0][0] as User).refresh_token).toBe("rt");
+      // Second storeUser persisted the refreshed user
+      expect(mockStoreUser.mock.calls[1][0]).toBe(refreshedUser);
       expect(mockEnrichUser).toHaveBeenCalledWith(
         expect.any(User),
         expect.any(Function),

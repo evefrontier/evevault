@@ -37,4 +37,18 @@ describe("buildTx", () => {
     );
     expect(tx.setSender).toHaveBeenCalledWith("0xabc");
   });
+
+  it("does not call build when setSender throws", async () => {
+    const tx = {
+      setSender: vi.fn().mockImplementation(() => {
+        throw new Error("setSender failed");
+      }),
+      build: vi.fn(),
+    };
+
+    await expect(buildTx(tx as never, "0xabc", {} as never)).rejects.toThrow(
+      "setSender failed",
+    );
+    expect(tx.build).not.toHaveBeenCalled();
+  });
 });
