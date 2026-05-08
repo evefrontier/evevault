@@ -3,5 +3,4 @@ export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 nvm use 22 --silent
 export PATH="$HOME/.bun/bin:$PATH"
-bun run lint:fix
-bun x lint-staged
+bun run test:run
