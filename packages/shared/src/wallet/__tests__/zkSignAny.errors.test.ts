@@ -7,8 +7,8 @@ vi.mock("#/stores/deviceStore", () => ({
   },
 }));
 
-vi.mock("#/stores/networkStore", () => ({
-  useNetworkStore: {
+vi.mock("#/stores/contextStore", () => ({
+  useContextStore: {
     getState: vi.fn(),
   },
 }));
@@ -25,8 +25,8 @@ vi.mock("#/services/vaultService", () => ({
 }));
 
 import { ephKeyService } from "#/services/vaultService";
+import { useContextStore } from "#/stores/contextStore";
 import { useDeviceStore } from "#/stores/deviceStore";
-import { useNetworkStore } from "#/stores/networkStore";
 import { isWeb } from "#/utils/environment";
 import { zkSignAny } from "#/wallet/zkSignAny";
 
@@ -47,7 +47,7 @@ describe("zkSignAny error branches", () => {
       ephemeralPublicKey: { toRawBytes: () => new Uint8Array([1]) },
       getMaxEpoch: () => "5",
     } as never);
-    vi.mocked(useNetworkStore.getState).mockReturnValue({
+    vi.mocked(useContextStore.getState).mockReturnValue({
       chain: "sui:testnet",
     } as never);
   });

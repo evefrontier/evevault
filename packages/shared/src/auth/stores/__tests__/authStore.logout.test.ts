@@ -3,8 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as authConfig from "#/auth/authConfig";
 import { useAuthStore } from "#/auth/stores/authStore";
 import * as vaultService from "#/services/vaultService";
+import { useContextStore } from "#/stores/contextStore";
 import { useDeviceStore } from "#/stores/deviceStore";
-import { useNetworkStore } from "#/stores/networkStore";
 import * as utils from "#/utils/authCleanup";
 import { DEFAULT_TENANT_ID } from "#/utils/tenantConfig";
 
@@ -33,6 +33,13 @@ vi.mock("#/auth/authConfig", () => {
     redirectToFusionAuthLogout: vi.fn(),
   };
 });
+
+vi.mock("#/stores/contextStore", () => ({
+  useContextStore: {
+    getState: vi.fn(),
+  },
+  getCurrentContextTenantId: vi.fn(() => "stillness"),
+}));
 
 vi.mock("#/utils/authCleanup", () => ({
   performFullCleanup: vi.fn(),
@@ -72,12 +79,6 @@ vi.mock("#/stores/deviceStore", () => ({
   },
 }));
 
-vi.mock("#/stores/networkStore", () => ({
-  useNetworkStore: {
-    getState: vi.fn(),
-  },
-}));
-
 describe("authStore.logout()", () => {
   let mockUserManager: ReturnType<typeof vi.fn> & {
     removeUser: ReturnType<typeof vi.fn>;
@@ -100,7 +101,7 @@ describe("authStore.logout()", () => {
     vi.mocked(utils.performFullCleanup).mockResolvedValue(undefined);
     vi.mocked(vaultService.ephKeyService.lock).mockResolvedValue(undefined);
     vi.mocked(vaultService.zkProofService.clear).mockResolvedValue(undefined);
-    vi.mocked(useNetworkStore.getState).mockReturnValue({
+    vi.mocked(useContextStore.getState).mockReturnValue({
       chain: SUI_DEVNET_CHAIN,
       // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
     } as any);

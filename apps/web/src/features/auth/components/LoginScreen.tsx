@@ -3,7 +3,7 @@ import { LockScreen, switchTenantAndReload } from "@evevault/shared";
 import { redirectToFusionAuthLogout, useAuth } from "@evevault/shared/auth";
 import { Button, Heading, TenantSelector } from "@evevault/shared/components";
 import Icon from "@evevault/shared/components/Icon";
-import { useDevice, useTenant } from "@evevault/shared/hooks";
+import { useContext, useDevice } from "@evevault/shared/hooks";
 import {
   getAvailableTenantIds,
   getCurrentTenantId,
@@ -13,7 +13,7 @@ import { useMemo } from "react";
 export const LoginScreen = () => {
   const { login, loading } = useAuth();
   const { isLocked, isPinSet, unlock } = useDevice();
-  const { devMode, setDevMode } = useTenant();
+  const { devMode, setDevMode } = useContext();
 
   const availableTenantIds = useMemo(
     () => getAvailableTenantIds(devMode),

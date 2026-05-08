@@ -4,19 +4,16 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { chromeStorageAdapter, localStorageAdapter } from "#/adapters";
 import type { ContextState, NetworkSwitchResult } from "#/types";
-import { isLocalnetChain } from "#/types/networks";
-import {
-  createLogger,
-  DEFAULT_LOCALNET_URL,
-  isExtension,
-  isWeb,
-} from "#/utils";
+import { isLocalnetChain, isZkLoginSuiChain } from "#/types/networks";
+import { createLogger, isExtension, isWeb } from "#/utils";
 import { CONTEXT_STORAGE_KEY } from "#/utils/storageKeys";
 import {
   getAvailableTenantIds,
   isAvailableTenantId,
 } from "#/utils/tenantConfig";
 
+// Store dependency direction is intentional: contextStore may coordinate with
+// deviceStore during network switches, but deviceStore must not import contextStore.
 const log = createLogger();
 
 const INITIAL_TENANT_ID = "stillness" as TenantId;
@@ -25,7 +22,6 @@ type PersistedContextState = Partial<{
   tenantId: TenantId;
   devMode: boolean;
   chain: SuiChain;
-  localnetUrl: string;
 }>;
 
 type PersistedStore<TState> = {
@@ -63,28 +59,14 @@ export const useContextStore = create<ContextState>()(
       devMode: initialState.devMode ?? false,
       setTenantId: async (id: TenantId) => {
         if (!getAvailableTenantIds(true).includes(id)) {
-          log.error("[ContextStore] Invalid tenant ID", { id });
           return;
         }
-        log.debug("[ContextStore] Setting tenant ID", { id });
         set({ tenantId: id });
       },
-      setDevMode: (value) => {
-        log.debug("[ContextStore] Setting dev mode", { to: value });
-        set({ devMode: value });
-      },
+      setDevMode: (value) => set({ devMode: value }),
 
       chain: initialState.chain ?? SUI_TESTNET_CHAIN,
       loading: false,
-      localnetUrl: initialState.localnetUrl ?? DEFAULT_LOCALNET_URL,
-      setLocalnetUrl: (url: string) => {
-        log.debug("[ContextStore] Setting localnet URL", { to: url });
-        set({ localnetUrl: url });
-      },
-
-      initialize: async () => {
-        return set({ loading: false });
-      },
 
       checkNetworkSwitch: async (
         chain: SuiChain,
@@ -92,35 +74,21 @@ export const useContextStore = create<ContextState>()(
         const currentChain = get().chain;
 
         if (currentChain === chain || isLocalnetChain(chain)) {
-          log.debug("[ContextStore] Network switch check bypassed", {
-            currentChain,
-            targetChain: chain,
-            reason: currentChain === chain ? "same-chain" : "localnet",
-          });
           return { requiresReauth: false };
         }
 
         const { hasJwt } = await import("#/auth");
         const jwtExists = await hasJwt();
-        log.debug("[ContextStore] Network switch check evaluated", {
-          currentChain,
-          targetChain: chain,
-          jwtExists,
-          requiresReauth: !jwtExists,
-        });
         return { requiresReauth: !jwtExists };
       },
 
       forceSetChain: (chain: SuiChain) => {
         const currentChain = get().chain;
         if (currentChain !== chain) {
-          log.info(
-            "[ContextStore] Force setting chain (for logout-based switch)",
-            {
-              from: currentChain,
-              to: chain,
-            },
-          );
+          log.info("Force setting chain (for logout-based switch)", {
+            from: currentChain,
+            to: chain,
+          });
           set({ chain });
         }
       },
@@ -139,7 +107,7 @@ export const useContextStore = create<ContextState>()(
             });
           }
 
-          log.info("[ContextStore] Switched to localnet", { chain });
+          log.info("Switched to localnet");
           return { success: true, requiresReauth: false };
         };
 
@@ -147,11 +115,6 @@ export const useContextStore = create<ContextState>()(
           const { hasJwt, useAuthStore } = await import("#/auth");
           const { useDeviceStore } = await import("#/stores/deviceStore");
           const jwtExists = await hasJwt();
-          log.debug("[ContextStore] Switching to zkLogin chain", {
-            from: currentChain,
-            to: chain,
-            jwtExists,
-          });
 
           set({ chain, loading: true });
 
@@ -175,12 +138,9 @@ export const useContextStore = create<ContextState>()(
             }
 
             set({ loading: false });
-            log.info(
-              "[ContextStore] Switched to zkLogin chain (re-authentication required)",
-              {
-                chain,
-              },
-            );
+            log.info("Switched to zkLogin chain (re-authentication required)", {
+              chain,
+            });
             return { success: true, requiresReauth: true };
           }
 
@@ -194,39 +154,23 @@ export const useContextStore = create<ContextState>()(
             }
 
             const deviceStore = useDeviceStore.getState();
-            const networkData = deviceStore.networkData[chain];
+            const networkData = isZkLoginSuiChain(chain)
+              ? deviceStore.networkData[chain]
+              : undefined;
             const isExpired =
               networkData?.maxEpochTimestampMs != null &&
               Date.now() >= networkData.maxEpochTimestampMs;
             const needsInit =
               !networkData?.maxEpoch || isExpired || !networkData?.nonce;
-            log.debug(
-              "[ContextStore] Evaluated device initialization requirements",
-              {
-                chain,
-                hasNetworkData: Boolean(networkData),
-                isExpired,
-                needsInit,
-              },
-            );
             if (needsInit) {
-              log.info(
-                "[ContextStore] Initializing device data for switched chain",
-                { chain },
-              );
               await deviceStore.initializeForChain(chain);
             }
 
             set({ loading: false });
-            log.info("[ContextStore] Successfully switched to zkLogin chain", {
-              chain,
-            });
+            log.info("Successfully switched to zkLogin chain", { chain });
             return { success: true, requiresReauth: false };
           } catch (error) {
-            log.error(
-              "[ContextStore] Failed to complete network switch",
-              error,
-            );
+            log.error("Failed to complete network switch", error);
             set({ loading: false });
             set({ chain: currentChain });
             return { success: false, requiresReauth: false };
@@ -234,17 +178,10 @@ export const useContextStore = create<ContextState>()(
         };
 
         if (currentChain === chain) {
-          log.debug(
-            "[ContextStore] Chain switch skipped because chain is unchanged",
-            { chain },
-          );
           return { success: true, requiresReauth: false };
         }
 
-        log.info("[ContextStore] Setting chain", {
-          from: currentChain,
-          to: chain,
-        });
+        log.info("Setting chain", { from: currentChain, to: chain });
 
         if (isLocalnetChain(chain)) {
           return switchToLocalnetChain();
@@ -262,7 +199,6 @@ export const useContextStore = create<ContextState>()(
         tenantId: state.tenantId,
         devMode: state.devMode,
         chain: state.chain,
-        localnetUrl: state.localnetUrl,
       }),
     },
   ),

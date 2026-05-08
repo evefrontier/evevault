@@ -10,12 +10,7 @@ vi.mock("@/lib/background/services/offscreenService", () => ({
   ensureOffscreen: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock("@evevault/shared", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@evevault/shared")>();
-  return { ...actual, LOCALNET_STORAGE_KEY: "evevault:localnet-key" };
-});
-
-const LOCALNET_KEY = "evevault:localnet-key";
+const DEVICE_KEY = "evevault:device";
 const HASHED_SECRET_KEY = { iv: "iv", data: "data", salt: "salt" };
 
 const mockSender = {} as chrome.runtime.MessageSender;
@@ -32,18 +27,31 @@ function makeUnlockMessage(
 }
 
 function stubKeeperBridge(
-  localStorageValue: unknown,
+  localnetValue: unknown,
   keeperResponse: unknown = { ok: true },
 ) {
+  const deviceValue =
+    localnetValue !== undefined
+      ? JSON.stringify({
+          state: {
+            localnet: {
+              encryptedKey:
+                typeof localnetValue === "object"
+                  ? JSON.stringify(localnetValue)
+                  : localnetValue,
+              address: null,
+            },
+          },
+          version: 0,
+        })
+      : undefined;
   globalThis.chrome = {
     storage: {
       local: {
         get: vi
           .fn()
           .mockResolvedValue(
-            localStorageValue !== undefined
-              ? { [LOCALNET_KEY]: localStorageValue }
-              : {},
+            deviceValue !== undefined ? { [DEVICE_KEY]: deviceValue } : {},
           ),
         remove: vi.fn(),
         set: vi.fn(),
@@ -101,7 +109,6 @@ describe("handleUnlockVault — localnet key forwarding", () => {
 
     await handleUnlockVault(makeUnlockMessage(), mockSender, sendResponse);
 
-    expect(chrome.storage.local.remove).not.toHaveBeenCalled();
     const msg = captureKeeperMessage();
     expect(msg?.encryptedLocalnetKey).toBeNull();
   });

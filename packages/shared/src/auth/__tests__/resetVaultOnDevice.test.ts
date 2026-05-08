@@ -5,8 +5,8 @@ import { resetVaultOnDevice } from "#/auth/resetVaultOnDevice";
 import * as storageService from "#/auth/storageService";
 import { useAuthStore } from "#/auth/stores/authStore";
 import * as vaultService from "#/services/vaultService";
+import { useContextStore } from "#/stores/contextStore";
 import { useDeviceStore } from "#/stores/deviceStore";
-import { useNetworkStore } from "#/stores/networkStore";
 import { useTokenListStore } from "#/stores/tokenListStore";
 import * as authCleanup from "#/utils/authCleanup";
 import * as env from "#/utils/environment";
@@ -62,8 +62,8 @@ vi.mock("#/stores/deviceStore", () => ({
   },
 }));
 
-vi.mock("#/stores/networkStore", () => ({
-  useNetworkStore: {
+vi.mock("#/stores/contextStore", () => ({
+  useContextStore: {
     setState: vi.fn(),
   },
 }));
@@ -177,7 +177,7 @@ describe("resetVaultOnDevice", () => {
       loading: false,
       error: null,
     });
-    expect(useNetworkStore.setState).toHaveBeenCalledWith(
+    expect(useContextStore.setState).toHaveBeenCalledWith(
       expect.objectContaining({
         chain: expect.any(String),
         loading: false,

@@ -2,9 +2,7 @@ import { Button, Heading, Text } from "@evevault/shared/components";
 import Icon from "@evevault/shared/components/Icon";
 import Input from "@evevault/shared/components/Inputs/Input";
 import { localnetKeyService } from "@evevault/shared/services/vaultService";
-import { useDeviceStore } from "@evevault/shared/stores/deviceStore";
-import { useNetworkStore } from "@evevault/shared/stores/networkStore";
-import { useTenantStore } from "@evevault/shared/stores/tenantStore";
+import { useContextStore, useDeviceStore } from "@evevault/shared/stores";
 import { createLogger, EXTENSION_ROUTES } from "@evevault/shared/utils";
 import { SUI_PRIVATE_KEY_PREFIX } from "@mysten/sui/cryptography";
 import { SUI_LOCALNET_CHAIN } from "@mysten/wallet-standard";
@@ -15,7 +13,10 @@ const log = createLogger();
 
 function LocalnetSettingsPage() {
   const navigate = useNavigate();
-  const { localnetUrl, setLocalnetUrl } = useNetworkStore();
+  const {
+    localnet: { url: localnetUrl },
+    setLocalnetUrl,
+  } = useDeviceStore();
   const [urlDraft, setUrlDraft] = useState(localnetUrl);
   const [urlStatus, setUrlStatus] = useState<
     "idle" | "loading" | "ok" | "error"
@@ -232,7 +233,7 @@ function LocalnetSettingsPage() {
 
 export const Route = createFileRoute("/localnet-settings")({
   beforeLoad: () => {
-    const { devMode } = useTenantStore.getState();
+    const { devMode } = useContextStore.getState();
     if (!devMode) throw redirect({ to: "/" });
   },
   component: LocalnetSettingsPage,

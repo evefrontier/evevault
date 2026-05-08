@@ -6,15 +6,14 @@ import {
 } from "@mysten/wallet-standard";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
+  createEmptyLocalnetDeviceData,
   createEmptyNetworkDataEntry,
   useDeviceStore,
   waitForDeviceHydration,
 } from "#/stores/deviceStore";
-import { useNetworkStore } from "#/stores/networkStore";
 
 describe("deviceStore selectors", () => {
   beforeEach(() => {
-    useNetworkStore.setState({ chain: SUI_TESTNET_CHAIN });
     useDeviceStore.setState({
       isLocked: true,
       ephemeralPublicKey: null,
@@ -35,6 +34,7 @@ describe("deviceStore selectors", () => {
           jwtRandomness: "jr-devnet",
         },
       },
+      localnet: createEmptyLocalnetDeviceData(),
       loading: false,
       error: null,
     });
@@ -45,12 +45,12 @@ describe("deviceStore selectors", () => {
     useDeviceStore.setState(useDeviceStore.getInitialState());
   });
 
-  it("uses current network chain when chain arg is omitted", () => {
+  it("requires an explicit chain", () => {
     const s = useDeviceStore.getState();
-    expect(s.getNonce()).toBe("testnet-nonce");
-    expect(s.getMaxEpoch()).toBe("99");
-    expect(s.getMaxEpochTimestampMs()).toBe(42);
-    expect(s.getJwtRandomness()).toBe("jr-testnet");
+    expect(s.getNonce(SUI_TESTNET_CHAIN)).toBe("testnet-nonce");
+    expect(s.getMaxEpoch(SUI_TESTNET_CHAIN)).toBe("99");
+    expect(s.getMaxEpochTimestampMs(SUI_TESTNET_CHAIN)).toBe(42);
+    expect(s.getJwtRandomness(SUI_TESTNET_CHAIN)).toBe("jr-testnet");
   });
 
   it("uses explicit chain when provided", () => {
@@ -64,8 +64,8 @@ describe("deviceStore selectors", () => {
       networkData: {},
     });
     const s = useDeviceStore.getState();
-    expect(s.getNonce()).toBeNull();
-    expect(s.getMaxEpoch()).toBeNull();
+    expect(s.getNonce(SUI_TESTNET_CHAIN)).toBeNull();
+    expect(s.getMaxEpoch(SUI_TESTNET_CHAIN)).toBeNull();
   });
 });
 
@@ -85,6 +85,13 @@ describe("deviceStore.reset()", () => {
           maxEpochTimestampMs: 1,
           jwtRandomness: "y",
         },
+      },
+      localnet: {
+        ...createEmptyLocalnetDeviceData(),
+        encryptedKey: "dirty",
+        address: "0xabc",
+        maxEpoch: "local",
+        maxEpochTimestampMs: 2,
       },
       loading: true,
       error: "err",
@@ -110,6 +117,7 @@ describe("deviceStore.reset()", () => {
     expect(s.networkData[SUI_TESTNET_CHAIN]).toEqual(
       createEmptyNetworkDataEntry(),
     );
+    expect(s.localnet).toEqual(createEmptyLocalnetDeviceData());
   });
 });
 

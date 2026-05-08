@@ -1,3 +1,4 @@
+import type { SuiChain } from "@mysten/wallet-standard";
 import type React from "react";
 import { useCallback, useState } from "react";
 import { resetVaultOnDevice } from "#/auth/resetVaultOnDevice";
@@ -10,8 +11,8 @@ import {
   Text,
   useToast,
 } from "#/components";
+import { useContext } from "#/hooks/useContext";
 import { useDevice } from "#/hooks/useDevice";
-import { useNetworkStore } from "#/stores/networkStore";
 
 export default function LockScreen({
   isPinSet,
@@ -23,7 +24,7 @@ export default function LockScreen({
   /** Called after reset completes; use to redirect to `/` (e.g. window.location.href = "/") */
   onResetComplete?: () => void;
 }) {
-  const chain = useNetworkStore.getState().chain;
+  const { chain } = useContext();
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState<string | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
@@ -121,7 +122,10 @@ export default function LockScreen({
           </button>
         )}
 
-        <NetworkSelector chain={chain} className="align-self-start w-full" />
+        <NetworkSelector
+          chain={chain as SuiChain}
+          className="align-self-start w-full"
+        />
       </section>
 
       <Modal

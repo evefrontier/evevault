@@ -1,7 +1,9 @@
 import type { PublicKey } from "@mysten/sui/cryptography";
 import { ephKeyService } from "#/services/vaultService";
-import { createInitialNetworkData } from "#/stores/deviceStore/constants";
-import { getOnLockCallback } from "#/stores/deviceStore/runtime";
+import {
+  createEmptyLocalnetDeviceData,
+  createInitialNetworkData,
+} from "#/stores/deviceStore/constants";
 import type { DeviceState } from "#/types";
 import { isWeb } from "#/utils/environment";
 import { createLogger } from "#/utils/logger";
@@ -14,12 +16,6 @@ export function createLockActions(set: SetDeviceState, get: GetDeviceState) {
     lock: async () => {
       await ephKeyService.lock();
       set({ isLocked: true });
-      const onLockCallback = getOnLockCallback();
-      if (onLockCallback) {
-        onLockCallback();
-      } else {
-        log.error("No onLockCallback registered");
-      }
     },
 
     unlock: async (pin: string) => {
@@ -79,6 +75,7 @@ export function createLockActions(set: SetDeviceState, get: GetDeviceState) {
         ephemeralPublicKeyFlag: null,
         ephemeralKeyPairSecretKey: null,
         networkData: createInitialNetworkData(),
+        localnet: createEmptyLocalnetDeviceData(),
         loading: false,
         error: null,
       });

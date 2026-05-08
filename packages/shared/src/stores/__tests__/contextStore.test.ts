@@ -43,15 +43,15 @@ vi.mock("#/stores/deviceStore", () => ({
 // Import mocked modules after vi.mock calls
 // Using workspace alias in test files due to Vite resolution limitations with relative imports
 import { hasJwt } from "#/auth";
-import { useNetworkStore } from "#/stores/networkStore";
+import { useContextStore } from "#/stores/contextStore";
 
-describe("networkStore", () => {
+describe("contextStore", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockDeviceStoreState.networkData = {};
 
     // Reset store state
-    useNetworkStore.setState({
+    useContextStore.setState({
       chain: SUI_DEVNET_CHAIN,
       loading: false,
     });
@@ -66,9 +66,9 @@ describe("networkStore", () => {
 
   describe("checkNetworkSwitch", () => {
     it("returns requiresReauth: false for same chain", async () => {
-      useNetworkStore.setState({ chain: SUI_DEVNET_CHAIN });
+      useContextStore.setState({ chain: SUI_DEVNET_CHAIN });
 
-      const result = await useNetworkStore
+      const result = await useContextStore
         .getState()
         .checkNetworkSwitch(SUI_DEVNET_CHAIN);
 
@@ -77,10 +77,10 @@ describe("networkStore", () => {
     });
 
     it("returns requiresReauth: false when JWT exists for target chain", async () => {
-      useNetworkStore.setState({ chain: SUI_DEVNET_CHAIN });
+      useContextStore.setState({ chain: SUI_DEVNET_CHAIN });
       vi.mocked(hasJwt).mockResolvedValue(true);
 
-      const result = await useNetworkStore
+      const result = await useContextStore
         .getState()
         .checkNetworkSwitch(SUI_TESTNET_CHAIN);
 
@@ -89,10 +89,10 @@ describe("networkStore", () => {
     });
 
     it("returns requiresReauth: true when no JWT exists for target chain", async () => {
-      useNetworkStore.setState({ chain: SUI_DEVNET_CHAIN });
+      useContextStore.setState({ chain: SUI_DEVNET_CHAIN });
       vi.mocked(hasJwt).mockResolvedValue(false);
 
-      const result = await useNetworkStore
+      const result = await useContextStore
         .getState()
         .checkNetworkSwitch(SUI_TESTNET_CHAIN);
 
@@ -103,28 +103,28 @@ describe("networkStore", () => {
 
   describe("forceSetChain", () => {
     it("sets chain directly without checking JWT", () => {
-      useNetworkStore.setState({ chain: SUI_DEVNET_CHAIN });
+      useContextStore.setState({ chain: SUI_DEVNET_CHAIN });
 
-      useNetworkStore.getState().forceSetChain(SUI_TESTNET_CHAIN);
+      useContextStore.getState().forceSetChain(SUI_TESTNET_CHAIN);
 
-      expect(useNetworkStore.getState().chain).toBe(SUI_TESTNET_CHAIN);
+      expect(useContextStore.getState().chain).toBe(SUI_TESTNET_CHAIN);
       expect(hasJwt).not.toHaveBeenCalled();
     });
 
     it("does not change chain if already on target chain", () => {
-      useNetworkStore.setState({ chain: SUI_TESTNET_CHAIN });
+      useContextStore.setState({ chain: SUI_TESTNET_CHAIN });
 
-      useNetworkStore.getState().forceSetChain(SUI_TESTNET_CHAIN);
+      useContextStore.getState().forceSetChain(SUI_TESTNET_CHAIN);
 
-      expect(useNetworkStore.getState().chain).toBe(SUI_TESTNET_CHAIN);
+      expect(useContextStore.getState().chain).toBe(SUI_TESTNET_CHAIN);
     });
   });
 
   describe("setChain", () => {
     it("returns success without reauth for same chain", async () => {
-      useNetworkStore.setState({ chain: SUI_DEVNET_CHAIN });
+      useContextStore.setState({ chain: SUI_DEVNET_CHAIN });
 
-      const result = await useNetworkStore
+      const result = await useContextStore
         .getState()
         .setChain(SUI_DEVNET_CHAIN);
 
@@ -133,23 +133,23 @@ describe("networkStore", () => {
     });
 
     it("returns requiresReauth: true when no JWT for target chain", async () => {
-      useNetworkStore.setState({ chain: SUI_DEVNET_CHAIN });
+      useContextStore.setState({ chain: SUI_DEVNET_CHAIN });
       vi.mocked(hasJwt).mockResolvedValue(false);
 
-      const result = await useNetworkStore
+      const result = await useContextStore
         .getState()
         .setChain(SUI_TESTNET_CHAIN);
 
       expect(result.success).toBe(true);
       expect(result.requiresReauth).toBe(true);
-      expect(useNetworkStore.getState().chain).toBe(SUI_TESTNET_CHAIN);
+      expect(useContextStore.getState().chain).toBe(SUI_TESTNET_CHAIN);
     });
 
     it("pre-initializes device data when switching to network without JWT", async () => {
-      useNetworkStore.setState({ chain: SUI_DEVNET_CHAIN });
+      useContextStore.setState({ chain: SUI_DEVNET_CHAIN });
       vi.mocked(hasJwt).mockResolvedValue(false);
 
-      await useNetworkStore.getState().setChain(SUI_TESTNET_CHAIN);
+      await useContextStore.getState().setChain(SUI_TESTNET_CHAIN);
 
       // Pre-initializes device data so it's ready for vendJwt after login
       expect(mockDeviceStoreState.initializeForChain).toHaveBeenCalledWith(
@@ -158,39 +158,39 @@ describe("networkStore", () => {
     });
 
     it("performs seamless switch when JWT exists", async () => {
-      useNetworkStore.setState({ chain: SUI_DEVNET_CHAIN });
+      useContextStore.setState({ chain: SUI_DEVNET_CHAIN });
       vi.mocked(hasJwt).mockResolvedValue(true);
 
-      const result = await useNetworkStore
+      const result = await useContextStore
         .getState()
         .setChain(SUI_TESTNET_CHAIN);
 
       expect(result.success).toBe(true);
       expect(result.requiresReauth).toBe(false);
-      expect(useNetworkStore.getState().chain).toBe(SUI_TESTNET_CHAIN);
+      expect(useContextStore.getState().chain).toBe(SUI_TESTNET_CHAIN);
       expect(mockDeviceStoreState.initializeForChain).toHaveBeenCalledWith(
         SUI_TESTNET_CHAIN,
       );
     });
 
     it("allows switch and regenerates device data when JWT exists but device data is missing", async () => {
-      useNetworkStore.setState({ chain: SUI_DEVNET_CHAIN });
+      useContextStore.setState({ chain: SUI_DEVNET_CHAIN });
       vi.mocked(hasJwt).mockResolvedValue(true);
 
-      const result = await useNetworkStore
+      const result = await useContextStore
         .getState()
         .setChain(SUI_TESTNET_CHAIN);
 
       expect(result.success).toBe(true);
       expect(result.requiresReauth).toBe(false);
-      expect(useNetworkStore.getState().chain).toBe(SUI_TESTNET_CHAIN);
+      expect(useContextStore.getState().chain).toBe(SUI_TESTNET_CHAIN);
       expect(mockDeviceStoreState.initializeForChain).toHaveBeenCalledWith(
         SUI_TESTNET_CHAIN,
       );
     });
 
     it("allows switch and regenerates device data when JWT exists but device data is expired", async () => {
-      useNetworkStore.setState({ chain: SUI_DEVNET_CHAIN });
+      useContextStore.setState({ chain: SUI_DEVNET_CHAIN });
       vi.mocked(hasJwt).mockResolvedValue(true);
       mockDeviceStoreState.networkData = {
         [SUI_TESTNET_CHAIN]: {
@@ -200,7 +200,7 @@ describe("networkStore", () => {
         },
       };
 
-      const result = await useNetworkStore
+      const result = await useContextStore
         .getState()
         .setChain(SUI_TESTNET_CHAIN);
 

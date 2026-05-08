@@ -5,7 +5,8 @@ import Heading from "#/components/Heading";
 import { Input } from "#/components/Inputs";
 import Text from "#/components/Text";
 import { useToast } from "#/components/Toast";
-import { useNetworkStore } from "#/stores/networkStore";
+import { useContext } from "#/hooks/useContext";
+import { useDeviceStore } from "#/stores/deviceStore";
 import { getFaucetUrlForChain } from "#/sui";
 import type { SendTokenScreenProps } from "#/types";
 import { formatAddress, getSuiscanUrl } from "#/utils";
@@ -16,7 +17,10 @@ export const SendTokenScreen: React.FC<SendTokenScreenProps> = ({
   onCancel,
 }) => {
   const { showToast } = useToast();
-  const { chain: currentChain, localnetUrl } = useNetworkStore();
+  const { chain: currentChain } = useContext();
+  const {
+    localnet: { url: localnetUrl },
+  } = useDeviceStore();
   const [recipientAddress, setRecipientAddress] = useState("");
   const [amount, setAmount] = useState("");
   // Store the submitted values to show on success screen

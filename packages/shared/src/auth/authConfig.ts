@@ -131,7 +131,7 @@ function addUserManagerEventHandlers(
 
 /**
  * Returns a UserManager for the given tenant. Cached per tenant.
- * Use getCurrentTenantId() from tenantStore when calling from app code.
+ * Use getCurrentTenantId() from contextStore when calling from app code.
  */
 export function getUserManager(tenantId: TenantId): UserManager {
   let instance = userManagerCache.get(tenantId);

@@ -1,12 +1,16 @@
 import { storeJwt } from "@evevault/shared";
 import { exchangeCodeForToken, getJwt } from "@evevault/shared/auth";
 import {
-  getCurrentTenantId,
   getTenantConfig,
+  useContextStore,
   useDeviceStore,
-  useTenantStore,
 } from "@evevault/shared/stores";
-import { isLocalnetChain, KeeperMessageTypes } from "@evevault/shared/types";
+import { getCurrentTenantId } from "@evevault/shared/stores/tenantStore";
+import {
+  isLocalnetChain,
+  isZkLoginSuiChain,
+  KeeperMessageTypes,
+} from "@evevault/shared/types";
 import { createLogger } from "@evevault/shared/utils";
 import { Ed25519PublicKey } from "@mysten/sui/keypairs/ed25519";
 import { decodeJwt } from "jose";
@@ -46,7 +50,7 @@ export async function handleDappLogin(
     (message as MessageWithId & { additionalIds?: string[] }).additionalIds ??
     [];
 
-  const tenant = useTenantStore.getState().tenantId;
+  const tenant = useContextStore.getState().tenantId;
 
   const clientId = getTenantConfig(tenant).clientId;
   const chromeRedirectUri = chrome.identity.getRedirectURL();
@@ -235,6 +239,8 @@ export async function handleDappLogin(
       return;
     }
   }
+
+  if (!isZkLoginSuiChain(chain)) return;
 
   let nonce = useDeviceStore.getState().networkData[chain]?.nonce;
   if (!nonce) {

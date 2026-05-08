@@ -1,11 +1,8 @@
-import {
-  createLogger,
-  KeeperMessageTypes,
-  LOCALNET_STORAGE_KEY,
-} from "@evevault/shared";
+import { createLogger, KeeperMessageTypes } from "@evevault/shared";
 import { ensureOffscreen } from "@/lib/background/services/offscreenService";
 import type { VaultMessage } from "@/lib/background/types";
 import { checkPendingAuthAfterUnlock } from "./authHandlers";
+import { readEncryptedLocalnetKey } from "./localnetDeviceStorage";
 
 export {
   _handleLocalnetGetAddress,
@@ -75,15 +72,8 @@ export async function handleUnlockVault(
   }
 
   try {
-    // Read the encrypted localnet key (if any) so keeper can restore it during unlock
-    const stored = await chrome.storage.local.get(LOCALNET_STORAGE_KEY);
-    const storedLocalnet = stored[LOCALNET_STORAGE_KEY];
-    const encryptedLocalnetKey =
-      storedLocalnet &&
-      typeof storedLocalnet === "object" &&
-      "data" in storedLocalnet
-        ? storedLocalnet
-        : null;
+    // Read the encrypted localnet key (if any) so keeper can restore it during unlock.
+    const encryptedLocalnetKey = await readEncryptedLocalnetKey();
 
     const keeperResponse = await sendToKeeper({
       type: KeeperMessageTypes.UNLOCK_VAULT,

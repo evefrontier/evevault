@@ -1,27 +1,29 @@
 import type { SuiChain } from "@mysten/wallet-standard";
-import { useNetworkStore } from "#/stores/networkStore";
 import type { DeviceState } from "#/types";
+import { isLocalnetChain, isZkLoginSuiChain } from "#/types/networks";
 
 export function createDeviceSelectors(get: () => DeviceState) {
   return {
-    getMaxEpoch: (chain?: SuiChain) => {
-      const currentChain = chain || useNetworkStore.getState().chain;
-      return get().networkData[currentChain]?.maxEpoch ?? null;
+    getMaxEpoch: (chain: SuiChain) => {
+      if (isLocalnetChain(chain)) return get().localnet.maxEpoch;
+      if (!isZkLoginSuiChain(chain)) return null;
+      return get().networkData[chain]?.maxEpoch ?? null;
     },
 
-    getMaxEpochTimestampMs: (chain?: SuiChain) => {
-      const currentChain = chain || useNetworkStore.getState().chain;
-      return get().networkData[currentChain]?.maxEpochTimestampMs ?? null;
+    getMaxEpochTimestampMs: (chain: SuiChain) => {
+      if (isLocalnetChain(chain)) return get().localnet.maxEpochTimestampMs;
+      if (!isZkLoginSuiChain(chain)) return null;
+      return get().networkData[chain]?.maxEpochTimestampMs ?? null;
     },
 
-    getNonce: (chain?: SuiChain) => {
-      const currentChain = chain || useNetworkStore.getState().chain;
-      return get().networkData[currentChain]?.nonce ?? null;
+    getNonce: (chain: SuiChain) => {
+      if (!isZkLoginSuiChain(chain)) return null;
+      return get().networkData[chain]?.nonce ?? null;
     },
 
-    getJwtRandomness: (chain?: SuiChain) => {
-      const currentChain = chain || useNetworkStore.getState().chain;
-      return get().networkData[currentChain]?.jwtRandomness ?? null;
+    getJwtRandomness: (chain: SuiChain) => {
+      if (!isZkLoginSuiChain(chain)) return null;
+      return get().networkData[chain]?.jwtRandomness ?? null;
     },
   };
 }

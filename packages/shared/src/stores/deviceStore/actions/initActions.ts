@@ -4,7 +4,6 @@ import { clearAllZkLoginJwts } from "#/auth/storageService";
 import { ephKeyService, zkProofService } from "#/services/vaultService";
 import { createInitialNetworkData } from "#/stores/deviceStore/constants";
 import { resolveStoredSecretKey } from "#/stores/deviceStore/keyHelpers";
-import { useNetworkStore } from "#/stores/networkStore";
 import { getCurrentEpochFromGraphQL } from "#/sui/graphqlEpoch";
 import { getCurrentEpochFromRpc } from "#/sui/rpcEpoch";
 import type {
@@ -14,7 +13,7 @@ import type {
   PersistedDeviceStoreState,
   StoredSecretKey,
 } from "#/types";
-import { isLocalnetChain } from "#/types/networks";
+import { isLocalnetChain, isZkLoginSuiChain } from "#/types/networks";
 import { createWebCryptoPlaceholder } from "#/types/wallet";
 import { isWeb } from "#/utils/environment";
 import { createLogger } from "#/utils/logger";
@@ -23,15 +22,9 @@ import type { GetDeviceState, SetDeviceState } from "./types";
 
 const log = createLogger();
 
-const emptyChainData = (): NetworkDataEntry => ({
-  maxEpoch: null,
-  maxEpochTimestampMs: null,
-  nonce: null,
-  jwtRandomness: null,
-});
-
 export function createInitActions(set: SetDeviceState, get: GetDeviceState) {
   const setChainData = (chain: SuiChain, data: NetworkDataEntry) => {
+    if (!isZkLoginSuiChain(chain)) return;
     set({
       networkData: {
         ...get().networkData,
@@ -41,31 +34,47 @@ export function createInitActions(set: SetDeviceState, get: GetDeviceState) {
     });
   };
 
-  const initializeLocalnetChainData = async (chain: SuiChain) => {
-    const localnetUrl = useNetworkStore.getState().localnetUrl;
+  const initializeLocalnetChainData = async () => {
+    const localnetUrl = get().localnet.url;
     if (!localnetUrl) {
       log.warn("Localnet URL not configured, skipping epoch fetch");
-      setChainData(chain, emptyChainData());
+      set({
+        localnet: {
+          ...get().localnet,
+          maxEpoch: null,
+          maxEpochTimestampMs: null,
+        },
+        error: null,
+      });
       return;
     }
 
     try {
       const { numericMaxEpoch, maxEpochTimestampMs } =
         await getCurrentEpochFromRpc(localnetUrl);
-      setChainData(chain, {
-        maxEpoch: numericMaxEpoch.toString(),
-        maxEpochTimestampMs,
-        nonce: null,
-        jwtRandomness: null,
+      set({
+        localnet: {
+          ...get().localnet,
+          maxEpoch: numericMaxEpoch.toString(),
+          maxEpochTimestampMs,
+        },
+        error: null,
       });
     } catch (err) {
       log.error("Failed to fetch localnet epoch", err);
-      // Non-fatal: store empty entry so we don't retry on every render
-      setChainData(chain, emptyChainData());
+      set({
+        localnet: {
+          ...get().localnet,
+          maxEpoch: null,
+          maxEpochTimestampMs: null,
+        },
+        error: null,
+      });
     }
   };
 
   const initializeZkLoginChainData = async (chain: SuiChain) => {
+    if (!isZkLoginSuiChain(chain)) return;
     const ephemeralPubkey = get().ephemeralPublicKey;
     if (!ephemeralPubkey) {
       throw new Error("Ephemeral public key not found");
@@ -90,7 +99,7 @@ export function createInitActions(set: SetDeviceState, get: GetDeviceState) {
   };
 
   return {
-    initialize: async (pin: string) => {
+    initialize: async (pin: string, currentChain: SuiChain) => {
       set({ loading: true });
 
       if (!pin || pin.trim().length === 0) {
@@ -102,9 +111,10 @@ export function createInitActions(set: SetDeviceState, get: GetDeviceState) {
       }
 
       const currentState = get();
-      const currentChain = useNetworkStore.getState().chain;
 
-      const networkDataEntry = currentState.networkData[currentChain];
+      const networkDataEntry = isZkLoginSuiChain(currentChain)
+        ? currentState.networkData[currentChain]
+        : undefined;
       const {
         maxEpoch,
         nonce,
@@ -213,8 +223,9 @@ export function createInitActions(set: SetDeviceState, get: GetDeviceState) {
               }
 
               if (persistedDeviceStoreState) {
-                const persistedNetworkData =
-                  persistedDeviceStoreState.networkData?.[currentChain];
+                const persistedNetworkData = isZkLoginSuiChain(currentChain)
+                  ? persistedDeviceStoreState.networkData?.[currentChain]
+                  : undefined;
                 const persistedJwtRandomness =
                   persistedNetworkData?.jwtRandomness ?? null;
                 jwtRandomness = persistedJwtRandomness;
@@ -284,7 +295,15 @@ export function createInitActions(set: SetDeviceState, get: GetDeviceState) {
           );
         }
 
-        const currentDeviceData = get().networkData[currentChain];
+        const currentDeviceData = isLocalnetChain(currentChain)
+          ? {
+              maxEpoch: get().localnet.maxEpoch,
+              maxEpochTimestampMs: get().localnet.maxEpochTimestampMs,
+              nonce: "localnet",
+            }
+          : isZkLoginSuiChain(currentChain)
+            ? get().networkData[currentChain]
+            : undefined;
         const isExpired =
           currentDeviceData?.maxEpochTimestampMs != null &&
           Date.now() >= currentDeviceData.maxEpochTimestampMs;
@@ -315,16 +334,14 @@ export function createInitActions(set: SetDeviceState, get: GetDeviceState) {
       log.info("Generating device data for chain", { chain });
 
       if (isLocalnetChain(chain)) {
-        await initializeLocalnetChainData(chain);
+        await initializeLocalnetChainData();
         return;
       }
 
       await initializeZkLoginChainData(chain);
     },
 
-    rotateEphemeralKey: async () => {
-      const currentChain = useNetworkStore.getState().chain;
-
+    rotateEphemeralKey: async (currentChain: SuiChain) => {
       log.info("Rotating ephemeral key", { currentChain });
 
       // Clear derived state before generating the new key. If rotateEphemeralKeyPair()

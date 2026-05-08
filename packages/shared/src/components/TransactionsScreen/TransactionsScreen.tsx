@@ -5,7 +5,7 @@ import Heading from "#/components/Heading";
 import Icon from "#/components/Icon";
 import { HeaderMobile } from "#/components/Layout";
 import Text from "#/components/Text";
-import { useNetworkStore } from "#/stores/networkStore";
+import { useDeviceStore } from "#/stores/deviceStore";
 import type {
   TransactionRowProps,
   TransactionsScreenProps,
@@ -95,7 +95,9 @@ const TransactionRow: React.FC<TransactionRowProps> = ({
       {/* Expanded Details - tokens left, transaction + button right */}
       {isExpanded && (
         <div
-          className={`flex items-start justify-between w-full px-2 pb-2 gap-4 ${isExpanded ? "bg-quantum-40" : ""}`}
+          className={`flex items-start justify-between w-full px-2 pb-2 gap-4 ${
+            isExpanded ? "bg-quantum-40" : ""
+          }`}
         >
           <div className="flex flex-col gap-1 min-w-0">
             {balanceChanges.map((bc, index) => (
@@ -146,7 +148,9 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
   onBack,
 }) => {
   const [expandedTx, setExpandedTx] = useState<string | null>(null);
-  const { localnetUrl } = useNetworkStore();
+  const {
+    localnet: { url: localnetUrl },
+  } = useDeviceStore();
   const senderAddress = useActiveSuiAddress();
 
   const {

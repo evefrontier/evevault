@@ -1,10 +1,10 @@
 import { useAuth } from "@evevault/shared/auth";
 import { useToast } from "@evevault/shared/components";
+import { useContextStore } from "@evevault/shared/stores/contextStore";
 import {
   rehydrateDeviceStore,
   useDeviceStore,
 } from "@evevault/shared/stores/deviceStore";
-import { useNetworkStore } from "@evevault/shared/stores/networkStore";
 import { createLogger } from "@evevault/shared/utils";
 import { useCallback } from "react";
 
@@ -15,7 +15,7 @@ const log = createLogger();
  */
 export function useLogin() {
   const { login } = useAuth();
-  const { chain } = useNetworkStore();
+  const { chain } = useContextStore();
   const { showToast } = useToast();
 
   const handleLogin = useCallback(async () => {

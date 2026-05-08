@@ -3,7 +3,8 @@ import { useCallback, useMemo } from "react";
 import { getUserForNetwork } from "#/auth";
 import { useAuth } from "#/auth/hooks/useAuth";
 import { useDevice } from "#/hooks/useDevice";
-import { useNetworkStore } from "#/stores/networkStore";
+import { useContextStore } from "#/stores/contextStore";
+import { useDeviceStore } from "#/stores/deviceStore";
 import { createSuiClient } from "#/sui";
 import { isLocalnetChain } from "#/types/networks";
 import type { ZkSignAnyParams } from "#/types/wallet";
@@ -16,7 +17,10 @@ export function useWalletSigningContext() {
   const { user } = useAuth();
 
   const { ephemeralPublicKey, getZkProof, maxEpoch, isLocked } = useDevice();
-  const { chain, localnetUrl } = useNetworkStore();
+  const { chain } = useContextStore();
+  const {
+    localnet: { url: localnetUrl },
+  } = useDeviceStore();
   const localnetAddress = useLocalnetAddress();
   const isLocalnet = isLocalnetChain(chain);
 

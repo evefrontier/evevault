@@ -58,6 +58,13 @@ export async function seedPersistedAppState(page: Page) {
         "sui:mainnet": createEmptyNetworkEntry(),
         "sui:localnet": createEmptyNetworkEntry(),
       },
+      localnet: {
+        encryptedKey: null,
+        address: null,
+        url: "http://127.0.0.1:9000",
+        maxEpoch: null,
+        maxEpochTimestampMs: null,
+      },
       loading: false,
       error: null,
     },
@@ -69,7 +76,6 @@ export async function seedPersistedAppState(page: Page) {
       tenantId: "stillness",
       devMode: false,
       chain: "sui:devnet",
-      localnetUrl: "http://127.0.0.1:9000",
     },
   };
 

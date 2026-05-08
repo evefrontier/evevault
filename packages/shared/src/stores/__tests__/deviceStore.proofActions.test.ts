@@ -7,6 +7,7 @@ import type {
   SetDeviceState,
 } from "#/stores/deviceStore/actions/types";
 import type { DeviceState } from "#/types";
+import { isZkLoginSuiChain } from "#/types/networks";
 
 const mockAuthGetState = vi.hoisted(() => vi.fn());
 const hasJwtMock = vi.hoisted(() => vi.fn());
@@ -48,13 +49,13 @@ vi.mock("#/wallet/zkProof", () => ({
   fetchZkProof: (...args: unknown[]) => fetchZkProofMock(...args),
 }));
 
-vi.mock("#/stores/deviceStore/zkJwt", () => ({
+vi.mock("#/auth/zkJwt", () => ({
   resolveVendedIdTokenForZkProof: (...args: unknown[]) =>
     resolveVendedMock(...args),
 }));
 
-vi.mock("#/stores/networkStore", () => ({
-  useNetworkStore: {
+vi.mock("#/stores/contextStore", () => ({
+  useContextStore: {
     getState: () => ({ chain: SUI_DEVNET_CHAIN }),
   },
 }));
@@ -75,7 +76,6 @@ function buildProofHarness(overrides: Partial<DeviceState> = {}) {
 
   const { getZkProof } = createProofActions(set, get);
 
-  const chain = SUI_DEVNET_CHAIN;
   const pk = new Ed25519PublicKey(new Uint8Array(32).fill(4));
 
   state = {
@@ -101,13 +101,27 @@ function buildProofHarness(overrides: Partial<DeviceState> = {}) {
     unlock: stubAsync,
     reset: () => {},
     getZkProof,
-    getMaxEpoch: (c) => state.networkData[c ?? chain]?.maxEpoch ?? null,
+    getMaxEpoch: (c) =>
+      isZkLoginSuiChain(c) ? (state.networkData[c]?.maxEpoch ?? null) : null,
     getMaxEpochTimestampMs: (c) =>
-      state.networkData[c ?? chain]?.maxEpochTimestampMs ?? null,
-    getNonce: (c) => state.networkData[c ?? chain]?.nonce ?? null,
+      isZkLoginSuiChain(c)
+        ? (state.networkData[c]?.maxEpochTimestampMs ?? null)
+        : null,
+    getNonce: (c) =>
+      isZkLoginSuiChain(c) ? (state.networkData[c]?.nonce ?? null) : null,
     getJwtRandomness: (c) =>
-      state.networkData[c ?? chain]?.jwtRandomness ?? null,
+      isZkLoginSuiChain(c)
+        ? (state.networkData[c]?.jwtRandomness ?? null)
+        : null,
+    setLocalnetUrl: () => {},
     ...overrides,
+    localnet: overrides.localnet ?? {
+      encryptedKey: null,
+      address: null,
+      url: "http://127.0.0.1:9000",
+      maxEpoch: null,
+      maxEpochTimestampMs: null,
+    },
   };
 
   return { state, getZkProof };
@@ -145,7 +159,7 @@ describe("createProofActions.getZkProof", () => {
       },
     });
 
-    const result = await getZkProof();
+    const result = await getZkProof(SUI_DEVNET_CHAIN);
 
     expect(result).toEqual({ error: "User not authenticated" });
     expect(state.error).toBe("User not authenticated");
@@ -164,7 +178,7 @@ describe("createProofActions.getZkProof", () => {
       },
     });
 
-    const result = await getZkProof();
+    const result = await getZkProof(SUI_DEVNET_CHAIN);
 
     expect(result).toEqual({ error: "Ephemeral public key not found" });
     expect(state.error).toBe("Ephemeral public key not found");
@@ -183,7 +197,7 @@ describe("createProofActions.getZkProof", () => {
       },
     });
 
-    const result = await getZkProof();
+    const result = await getZkProof(SUI_DEVNET_CHAIN);
 
     expect(result).toEqual({
       error: "No valid JWT found for devnet. Please sign in again.",
@@ -205,7 +219,7 @@ describe("createProofActions.getZkProof", () => {
       },
     });
 
-    const result = await getZkProof();
+    const result = await getZkProof(SUI_DEVNET_CHAIN);
 
     expect(result).toEqual({
       error: "JWT randomness not found for devnet. Please sign in again.",
@@ -218,7 +232,7 @@ describe("createProofActions.getZkProof", () => {
   it("persists proof and returns response when fetchZkProof succeeds", async () => {
     const { getZkProof } = buildProofHarness();
 
-    const result = await getZkProof();
+    const result = await getZkProof(SUI_DEVNET_CHAIN);
 
     expect(resolveVendedMock).toHaveBeenCalled();
     expect(fetchZkProofMock).toHaveBeenCalledWith(
@@ -258,14 +272,14 @@ describe("createProofActions.getZkProof", () => {
       },
     });
 
-    await getZkProof();
+    await getZkProof(SUI_DEVNET_CHAIN);
 
     expect(rotateEphemeralKey).toHaveBeenCalledTimes(1);
     expect(resolveVendedMock).toHaveBeenCalledWith(
       SUI_DEVNET_CHAIN,
       expect.anything(),
       "rotated-nonce",
-      expect.any(Function),
+      expect.any(Number),
     );
     expect(fetchZkProofMock).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -284,7 +298,7 @@ describe("createProofActions.getZkProof", () => {
 
     const { getZkProof } = buildProofHarness();
 
-    const result = await getZkProof();
+    const result = await getZkProof(SUI_DEVNET_CHAIN);
 
     expect(result).toBe(cached);
     expect(fetchZkProofMock).not.toHaveBeenCalled();

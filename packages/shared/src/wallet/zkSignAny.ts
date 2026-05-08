@@ -1,8 +1,8 @@
 import type { IntentScope } from "@mysten/sui/cryptography";
 import { genAddressSeed, getZkLoginSignature } from "@mysten/sui/zklogin";
 import { ephKeyService } from "#/services/vaultService";
+import { useContextStore } from "#/stores/contextStore";
 import { useDeviceStore } from "#/stores/deviceStore";
-import { useNetworkStore } from "#/stores/networkStore";
 import { VaultMessageTypes } from "#/types/messages";
 import type { PartialZkLoginSignature, ZkSignAnyParams } from "#/types/wallet";
 import { isWeb } from "#/utils/environment";
@@ -41,7 +41,7 @@ export const zkSignAny = async (
     throw new Error(errorMsg);
   }
 
-  const chain = useNetworkStore.getState().chain;
+  const chain = useContextStore.getState().chain;
   const maxEpoch = useDeviceStore.getState().getMaxEpoch(chain);
   if (maxEpoch == null || maxEpoch === "") {
     throw new Error("Max epoch is not set");

@@ -2,9 +2,10 @@ import { Transaction } from "@mysten/sui/transactions";
 import { useCallback, useState } from "react";
 import { useToast } from "#/components";
 import { useDeviceStore } from "#/stores";
-import { useNetworkStore } from "#/stores/networkStore";
+import { isZkLoginSuiChain } from "#/types/networks";
 import { createLogger } from "#/utils";
 import { useWalletSigningContext } from "#/wallet/hooks/useWalletSigningContext";
+import { useContext } from "./useContext";
 import { useDevice } from "./useDevice";
 
 const log = createLogger();
@@ -14,7 +15,7 @@ const log = createLogger();
  */
 export function useDevMode() {
   const { rotateEphemeralKey } = useDevice();
-  const { chain } = useNetworkStore();
+  const { chain } = useContext();
   const {
     isLocalnet,
     isAuthenticated,
@@ -76,7 +77,9 @@ export function useDevMode() {
 
   const handleRotateEphKey = useCallback(async () => {
     const beforeState = useDeviceStore.getState();
-    const beforeChainData = beforeState.networkData[chain];
+    const beforeChainData = isZkLoginSuiChain(chain)
+      ? beforeState.networkData[chain]
+      : null;
     const beforeKey = formatPublicKey(beforeState.ephemeralPublicKeyBytes);
 
     log.info("Manual eph key rotation requested", {
@@ -88,10 +91,12 @@ export function useDevMode() {
     });
 
     try {
-      await rotateEphemeralKey();
+      await rotateEphemeralKey(chain);
 
       const afterState = useDeviceStore.getState();
-      const afterChainData = afterState.networkData[chain];
+      const afterChainData = isZkLoginSuiChain(chain)
+        ? afterState.networkData[chain]
+        : null;
       const afterKey = formatPublicKey(afterState.ephemeralPublicKeyBytes);
 
       log.info("Manual eph key rotation completed", {

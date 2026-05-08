@@ -20,10 +20,10 @@ import {
   TokenListSection,
 } from "@evevault/shared/components";
 import Icon from "@evevault/shared/components/Icon";
-import { useDevice, useDevMode, useTenant } from "@evevault/shared/hooks";
+import { useContext, useDevice, useDevMode } from "@evevault/shared/hooks";
 import { LockScreen } from "@evevault/shared/screens";
 import { localnetKeyService } from "@evevault/shared/services/vaultService";
-import { useNetworkStore } from "@evevault/shared/stores";
+import { useDeviceStore } from "@evevault/shared/stores";
 import { getFaucetUrlForChain } from "@evevault/shared/sui";
 import {
   createLogger,
@@ -41,10 +41,16 @@ const log = createLogger();
 function App() {
   const navigate = useNavigate();
   const { initError, isInitializing } = useAppInitialization();
-  const { devMode, setDevMode } = useTenant();
+  const { devMode, setDevMode } = useContext();
   const { user, loading: authLoading, error: authError } = useAuth();
-  const { isLocked, isPinSet, error: deviceError, unlock } = useDevice();
-  const { chain, localnetUrl } = useNetworkStore();
+  const {
+    isLocked,
+    isPinSet,
+    error: deviceError,
+    unlock,
+    localnetUrl,
+  } = useDevice();
+  const { chain } = useContext();
   const faucetUrl = getFaucetUrlForChain(chain);
   const { handleLogin } = useLogin();
   const { handleTestTransaction, txDigest, handleRotateEphKey } = useDevMode();

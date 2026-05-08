@@ -1,6 +1,5 @@
 import { useAuth } from "@evevault/shared/auth";
-import { useDevice } from "@evevault/shared/hooks/useDevice";
-import { useNetworkStore } from "@evevault/shared/stores";
+import { useContext, useDevice } from "@evevault/shared/hooks";
 import { createLogger } from "@evevault/shared/utils";
 import { useEffect } from "react";
 
@@ -14,7 +13,7 @@ const log = createLogger();
 export function useSignPopupAuth() {
   const device = useDevice();
   const auth = useAuth();
-  const { chain } = useNetworkStore();
+  const { chain } = useContext();
 
   useEffect(() => {
     auth.initialize();
