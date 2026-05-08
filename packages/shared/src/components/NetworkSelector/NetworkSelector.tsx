@@ -20,8 +20,7 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
   onRequiresReauth,
   onLocalnetSelected,
 }) => {
-  const { setChain, forceSetChain, loading } = useContext();
-  const { devMode } = useContext();
+  const { setChain, forceSetChain, loading, devMode } = useContext();
 
   const [isOpen, setIsOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
