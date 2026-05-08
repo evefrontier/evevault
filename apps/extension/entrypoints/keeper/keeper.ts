@@ -258,7 +258,6 @@ chrome.runtime.onMessage.addListener(
           // Only swap the in-memory keypair after successful encryption
           ephemeralKey = newKeypair;
           _vaultUnlocked = true;
-          _vaultUnlockExpiry = Date.now() + 10 * 60 * 1000;
 
           sendResponse({
             ok: true,

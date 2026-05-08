@@ -183,27 +183,20 @@ describe("Keeper ROTATE_KEYPAIR handler", () => {
     vi.useRealTimers();
   });
 
-  it("resets the vault expiry to 10 minutes after a successful rotation", async () => {
+  it("does not extend the vault expiry after a successful rotation", async () => {
     vi.useFakeTimers({ toFake: ["Date"] });
     const T0 = 1_000_000_000_000;
     vi.setSystemTime(T0);
 
     await unlockVault(); // _vaultUnlockExpiry = T0 + 10 min
 
-    // Advance 9 minutes and rotate — expiry resets to (T0 + 9min) + 10min = T0 + 19min
+    // Advance 9 minutes and rotate — expiry stays at T0 + 10 min
     vi.setSystemTime(T0 + 9 * 60 * 1000);
     const rotResp = await dispatch({ type: KeeperMessageTypes.ROTATE_KEYPAIR });
     expect(rotResp.ok).toBe(true);
 
-    // Past the ORIGINAL expiry (T0 + 10min): rotation kept the vault open
+    // Past the original expiry (T0 + 10min): vault locks despite recent rotation
     vi.setSystemTime(T0 + 10 * 60 * 1000 + 1000);
-    const stillOpen = await dispatch({
-      type: KeeperMessageTypes.GET_PUBLIC_KEY,
-    });
-    expect(stillOpen.ok).toBe(true);
-
-    // Past the ROTATED expiry (T0 + 19min): vault now locks
-    vi.setSystemTime(T0 + 19 * 60 * 1000 + 1000);
     const nowLocked = await dispatch({
       type: KeeperMessageTypes.GET_PUBLIC_KEY,
     });
@@ -463,7 +456,9 @@ describe("Keeper LOCALNET_SET_KEYPAIR handler", () => {
     expect(decrypted).toBe(bech32);
   });
 
-  it("returns error when vault is locked (no session key)", async () => {
+  it("after CLEAR_EPHKEY, LOCALNET_SET_KEYPAIR fails until vault is unlocked again", async () => {
+    // Simulates locked keeper: unlock sets sessionDerivedKey/sessionSalt;
+    // CLEAR_EPHKEY clears them (same branch as never unlocked for this handler).
     await dispatch({ type: KeeperMessageTypes.CLEAR_EPHKEY });
     const keypair = Ed25519Keypair.generate();
 
