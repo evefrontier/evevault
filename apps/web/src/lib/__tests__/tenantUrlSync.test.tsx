@@ -81,7 +81,7 @@ describe("TenantUrlSync no-change path", () => {
     vi.clearAllMocks();
   });
 
-  it("does not run cleanup or redirect when the tenant did not change", async () => {
+  it("skips cleanup and redirect when the tenant is unchanged", async () => {
     await renderAndFlush();
     expect(mockRunTenantSwitchCleanup).not.toHaveBeenCalled();
     expect(window.location.href).toBe("");

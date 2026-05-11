@@ -73,7 +73,7 @@ describe("getAvailableTenantIds", () => {
     vi.clearAllMocks();
   });
 
-  describe("when not web or not production (no URL filter)", () => {
+  describe("when outside web-production context (no URL filter)", () => {
     it("returns default tenant plus tenants with client secret when isWeb is false", () => {
       vi.mocked(isWeb).mockReturnValue(false);
       const ids = getAvailableTenantIds(false);

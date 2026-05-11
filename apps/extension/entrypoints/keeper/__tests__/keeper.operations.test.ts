@@ -12,16 +12,12 @@ import {
   SUI_TESTNET_CHAIN,
   type SuiChain,
 } from "@mysten/wallet-standard";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  afterEach,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vitest";
-import { createKeeperTestContext, TEST_PIN } from "./keeperTestUtils";
+  createKeeperTestContext,
+  setupKeeperSuite,
+  TEST_PIN,
+} from "./keeperTestUtils";
 
 const { mockEncryptWithKey, mockSignWithIntent } = vi.hoisted(() => ({
   mockEncryptWithKey: vi.fn(),
@@ -43,29 +39,7 @@ vi.mock("@evevault/shared/wallet", () => ({
 
 const ctx = createKeeperTestContext();
 const { dispatch, rawDispatch, unlockVault } = ctx;
-
-beforeAll(async () => {
-  // chrome must exist before keeper.ts loads because it calls
-  // chrome.runtime.onMessage.addListener() at module scope.
-  vi.stubGlobal("chrome", {
-    runtime: {
-      onMessage: { addListener: ctx.captureHandler },
-      sendMessage: vi.fn().mockResolvedValue(undefined),
-    },
-  });
-
-  // Dynamic import so the chrome stub is in place when the module registers
-  // its listener. This exercises the real message-handler registration.
-  await import("../keeper");
-});
-
-afterEach(async () => {
-  vi.useRealTimers();
-  // Reset keeper's RAM state so tests don't bleed into each other.
-  await dispatch({ type: KeeperMessageTypes.CLEAR_EPHKEY });
-  await dispatch({ type: KeeperMessageTypes.CLEAR_ZKPROOF });
-  vi.clearAllMocks();
-});
+setupKeeperSuite(ctx);
 
 // ── ROTATE_KEYPAIR ────────────────────────────────────────────────────────────
 

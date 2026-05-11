@@ -1,6 +1,6 @@
 import { encrypt, type HashedData, KeeperMessageTypes } from "@evevault/shared";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
-import { expect, vi } from "vitest";
+import { afterEach, beforeAll, expect, vi } from "vitest";
 
 export const TEST_PIN = "123456";
 
@@ -83,4 +83,39 @@ export function createKeeperTestContext(): {
   }
 
   return { captureHandler, dispatch, rawDispatch, unlockVault };
+}
+
+/**
+ * Registers the shared beforeAll/afterEach hooks for a keeper test file.
+ * Call this at the top level of any file that tests keeper message handling.
+ *
+ * - beforeAll: stubs the chrome global and loads keeper.ts so it registers
+ *   its runtime.onMessage listener with the captured handler.
+ * - afterEach: clears ephemeral key + zkProofs and resets all mocks so tests
+ *   don't bleed into each other.
+ */
+export function setupKeeperSuite(
+  ctx: ReturnType<typeof createKeeperTestContext>,
+) {
+  beforeAll(async () => {
+    // chrome must exist before keeper.ts loads because it calls
+    // chrome.runtime.onMessage.addListener() at module scope.
+    vi.stubGlobal("chrome", {
+      runtime: {
+        onMessage: { addListener: ctx.captureHandler },
+        sendMessage: vi.fn().mockResolvedValue(undefined),
+      },
+    });
+    // Dynamic import so the chrome stub is in place when the module registers
+    // its listener. This exercises the real message-handler registration.
+    await import("../keeper");
+  });
+
+  afterEach(async () => {
+    vi.useRealTimers();
+    // Reset keeper's RAM state so tests don't bleed into each other.
+    await ctx.dispatch({ type: KeeperMessageTypes.CLEAR_EPHKEY });
+    await ctx.dispatch({ type: KeeperMessageTypes.CLEAR_ZKPROOF });
+    vi.clearAllMocks();
+  });
 }

@@ -5,39 +5,16 @@ import {
   KeeperMessageTypes,
 } from "@evevault/shared";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  afterEach,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vitest";
-import { createKeeperTestContext, TEST_PIN } from "./keeperTestUtils";
-
-// keeper.ts registers chrome.runtime.onMessage.addListener at module scope.
-// Chrome must be stubbed before the dynamic import so the real handler is captured.
+  createKeeperTestContext,
+  setupKeeperSuite,
+  TEST_PIN,
+} from "./keeperTestUtils";
 
 const ctx = createKeeperTestContext();
 const { dispatch, rawDispatch, unlockVault } = ctx;
-
-beforeAll(async () => {
-  vi.stubGlobal("chrome", {
-    runtime: {
-      onMessage: { addListener: ctx.captureHandler },
-      sendMessage: vi.fn().mockResolvedValue(undefined),
-    },
-  });
-  await import("../keeper");
-});
-
-afterEach(async () => {
-  vi.useRealTimers();
-  await dispatch({ type: KeeperMessageTypes.CLEAR_EPHKEY });
-  await dispatch({ type: KeeperMessageTypes.CLEAR_ZKPROOF });
-  vi.clearAllMocks();
-});
+setupKeeperSuite(ctx);
 
 // ── CREATE_KEYPAIR ────────────────────────────────────────────────────────────
 
@@ -233,7 +210,7 @@ describe("Keeper CLEAR_EPHKEY handler", () => {
     expect(addrAfter.address).toBeNull();
   });
 
-  it("does not clear the vault when target is not KEEPER", async () => {
+  it("preserves the vault for non-KEEPER targets", async () => {
     const { returnValue, sendResponse } = rawDispatch({
       target: "BACKGROUND",
       type: KeeperMessageTypes.CLEAR_EPHKEY,
