@@ -14,72 +14,23 @@ import {
   it,
   vi,
 } from "vitest";
+import { createKeeperTestContext, TEST_PIN } from "./keeperTestUtils";
 
 // keeper.ts registers chrome.runtime.onMessage.addListener at module scope.
 // Chrome must be stubbed before the dynamic import so the real handler is captured.
 
-type KeeperHandler = (
-  message: Record<string, unknown>,
-  sender: object,
-  sendResponse: (response?: unknown) => void,
-) => boolean | undefined;
-
-let keeperHandler: KeeperHandler;
+const ctx = createKeeperTestContext();
+const { dispatch, rawDispatch, unlockVault } = ctx;
 
 beforeAll(async () => {
   vi.stubGlobal("chrome", {
     runtime: {
-      onMessage: {
-        addListener: (fn: KeeperHandler) => {
-          keeperHandler = fn;
-        },
-      },
+      onMessage: { addListener: ctx.captureHandler },
       sendMessage: vi.fn().mockResolvedValue(undefined),
     },
   });
   await import("../keeper");
 });
-
-// ── helpers ───────────────────────────────────────────────────────────────────
-
-const TEST_PIN = "123456";
-
-/** Send a KEEPER-targeted message and await the sendResponse callback. */
-function dispatch(
-  msg: Record<string, unknown>,
-): Promise<Record<string, unknown>> {
-  return new Promise((resolve) => {
-    keeperHandler({ target: "KEEPER", ...msg }, {}, (resp) =>
-      resolve((resp ?? {}) as Record<string, unknown>),
-    );
-  });
-}
-
-/** Dispatch without the KEEPER target — used to test the routing guard. */
-function rawDispatch(msg: Record<string, unknown>): {
-  returnValue: boolean | void;
-  sendResponse: ReturnType<typeof vi.fn>;
-} {
-  const sendResponse = vi.fn();
-  const returnValue = keeperHandler(msg, {}, sendResponse);
-  return { returnValue, sendResponse };
-}
-
-/** Unlock the vault with a freshly encrypted keypair. */
-async function unlockVault(): Promise<{
-  keypair: Ed25519Keypair;
-  hashedSecretKey: HashedData;
-}> {
-  const keypair = Ed25519Keypair.generate();
-  const hashedSecretKey = await encrypt(keypair.getSecretKey(), TEST_PIN);
-  const resp = await dispatch({
-    type: KeeperMessageTypes.UNLOCK_VAULT,
-    hashedSecretKey,
-    pin: TEST_PIN,
-  });
-  expect(resp.ok).toBe(true);
-  return { keypair, hashedSecretKey };
-}
 
 afterEach(async () => {
   vi.useRealTimers();

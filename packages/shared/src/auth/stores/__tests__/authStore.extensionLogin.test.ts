@@ -220,50 +220,52 @@ describe("authStore.extensionLogin()", () => {
     expect(mockParseOAuthTokenResponse).toHaveBeenCalledWith("right-token");
   });
 
-  it("silently swallows user-did-not-approve errors during login", async () => {
-    useAuthStore.setState({
-      extensionLogin: vi
-        .fn()
-        .mockRejectedValue(new Error("The user did not approve access.")),
+  describe("login() wrapping extensionLogin()", () => {
+    it("silently swallows user-did-not-approve errors during login", async () => {
+      useAuthStore.setState({
+        extensionLogin: vi
+          .fn()
+          .mockRejectedValue(new Error("The user did not approve access.")),
+      });
+
+      await useAuthStore.getState().login();
+
+      expect(useAuthStore.getState().error).toBeNull();
+      expect(useAuthStore.getState().loading).toBe(false);
     });
 
-    await useAuthStore.getState().login();
+    it("creates a User from the parsed JWT, enriches it, and syncs the primary JWT", async () => {
+      const tokenResponse = makeTokenResponse();
+      useAuthStore.setState({
+        extensionLogin: vi.fn().mockResolvedValue(tokenResponse),
+      });
 
-    expect(useAuthStore.getState().error).toBeNull();
-    expect(useAuthStore.getState().loading).toBe(false);
-  });
+      // Return a distinctly different enriched user so we can verify the store
+      // holds the *result* of enrichment, not the pre-enrichment user.
+      const enrichedUser = new User({
+        id_token: tokenResponse.id_token,
+        access_token: "enriched-access-token",
+        token_type: "Bearer",
+        scope: "openid",
+        profile: {
+          sub: "user-1",
+          zkLoginAddress: "0xenriched",
+        } as User["profile"],
+      });
+      mockEnrichUser.mockResolvedValue(enrichedUser);
 
-  it("creates a User from the parsed JWT, enriches it, and syncs the primary JWT", async () => {
-    const tokenResponse = makeTokenResponse();
-    useAuthStore.setState({
-      extensionLogin: vi.fn().mockResolvedValue(tokenResponse),
+      const user = await useAuthStore.getState().login();
+
+      expect(user).toBe(enrichedUser);
+      expect(mockDecodeJwt).toHaveBeenCalledWith(tokenResponse.id_token);
+      expect(mockEnrichUser).toHaveBeenCalledWith(
+        expect.any(User),
+        expect.any(Function),
+      );
+      // storeUser and syncPrimaryJwt must receive the enriched user, not the original
+      expect(mockStoreUser).toHaveBeenCalledWith(enrichedUser);
+      expect(mockSyncPrimaryJwtFromUser).toHaveBeenCalledWith(enrichedUser);
+      expect(useAuthStore.getState().user).toBe(enrichedUser);
     });
-
-    // Return a distinctly different enriched user so we can verify the store
-    // holds the *result* of enrichment, not the pre-enrichment user.
-    const enrichedUser = new User({
-      id_token: tokenResponse.id_token,
-      access_token: "enriched-access-token",
-      token_type: "Bearer",
-      scope: "openid",
-      profile: {
-        sub: "user-1",
-        zkLoginAddress: "0xenriched",
-      } as User["profile"],
-    });
-    mockEnrichUser.mockResolvedValue(enrichedUser);
-
-    const user = await useAuthStore.getState().login();
-
-    expect(user).toBe(enrichedUser);
-    expect(mockDecodeJwt).toHaveBeenCalledWith(tokenResponse.id_token);
-    expect(mockEnrichUser).toHaveBeenCalledWith(
-      expect.any(User),
-      expect.any(Function),
-    );
-    // storeUser and syncPrimaryJwt must receive the enriched user, not the original
-    expect(mockStoreUser).toHaveBeenCalledWith(enrichedUser);
-    expect(mockSyncPrimaryJwtFromUser).toHaveBeenCalledWith(enrichedUser);
-    expect(useAuthStore.getState().user).toBe(enrichedUser);
   });
 });

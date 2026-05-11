@@ -1,3 +1,4 @@
+import { DEFAULT_TENANT, TenantId } from "@evefrontier/dapp-kit";
 import {
   applyTenantFromUrl,
   getCurrentTenantId,
@@ -64,10 +65,10 @@ const renderAndFlush = async () => {
 describe("TenantUrlSync no-change path", () => {
   beforeEach(() => {
     setMockLocation();
-    mockGetCurrentTenantId.mockReturnValue("default");
-    mockGetDefaultTenantId.mockReturnValue("default");
+    mockGetCurrentTenantId.mockReturnValue(DEFAULT_TENANT);
+    mockGetDefaultTenantId.mockReturnValue(DEFAULT_TENANT);
     mockApplyTenantFromUrl.mockResolvedValue({
-      tenantId: "default",
+      tenantId: DEFAULT_TENANT,
       changed: false,
     });
   });
@@ -82,20 +83,17 @@ describe("TenantUrlSync no-change path", () => {
 
   it("does not run cleanup or redirect when the tenant did not change", async () => {
     await renderAndFlush();
-
     expect(mockRunTenantSwitchCleanup).not.toHaveBeenCalled();
     expect(window.location.href).toBe("");
   });
 
   it("reads the current tenant exactly once", async () => {
     await renderAndFlush();
-
     expect(mockGetCurrentTenantId).toHaveBeenCalledTimes(1);
   });
 
   it("applies the tenant from the URL exactly once", async () => {
     await renderAndFlush();
-
     expect(mockApplyTenantFromUrl).toHaveBeenCalledTimes(1);
   });
 });
@@ -103,10 +101,10 @@ describe("TenantUrlSync no-change path", () => {
 describe("TenantUrlSync tenant changed", () => {
   beforeEach(() => {
     setMockLocation();
-    mockGetCurrentTenantId.mockReturnValue("tauceti");
-    mockGetDefaultTenantId.mockReturnValue("default");
+    mockGetCurrentTenantId.mockReturnValue(TenantId.TAUCETI);
+    mockGetDefaultTenantId.mockReturnValue(DEFAULT_TENANT);
     mockApplyTenantFromUrl.mockResolvedValue({
-      tenantId: "tauceti",
+      tenantId: TenantId.TAUCETI,
       changed: true,
     });
   });
@@ -132,7 +130,7 @@ describe("TenantUrlSync tenant changed", () => {
   });
 
   it("redirects to the origin without a query string for the default tenant", async () => {
-    mockGetDefaultTenantId.mockReturnValue("tauceti");
+    mockGetDefaultTenantId.mockReturnValue(TenantId.TAUCETI);
 
     await renderAndFlush();
 
@@ -159,10 +157,10 @@ describe("TenantUrlSync tenant changed", () => {
 describe("TenantUrlSync didRun guard", () => {
   beforeEach(() => {
     setMockLocation();
-    mockGetCurrentTenantId.mockReturnValue("default");
-    mockGetDefaultTenantId.mockReturnValue("default");
+    mockGetCurrentTenantId.mockReturnValue(DEFAULT_TENANT);
+    mockGetDefaultTenantId.mockReturnValue(DEFAULT_TENANT);
     mockApplyTenantFromUrl.mockResolvedValue({
-      tenantId: "default",
+      tenantId: DEFAULT_TENANT,
       changed: false,
     });
   });
@@ -198,10 +196,10 @@ describe("TenantUrlSync didRun guard", () => {
 describe("TenantUrlSync render output", () => {
   beforeEach(() => {
     setMockLocation();
-    mockGetCurrentTenantId.mockReturnValue("default");
-    mockGetDefaultTenantId.mockReturnValue("default");
+    mockGetCurrentTenantId.mockReturnValue(DEFAULT_TENANT);
+    mockGetDefaultTenantId.mockReturnValue(DEFAULT_TENANT);
     mockApplyTenantFromUrl.mockResolvedValue({
-      tenantId: "default",
+      tenantId: DEFAULT_TENANT,
       changed: false,
     });
   });

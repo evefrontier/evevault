@@ -21,6 +21,7 @@ import {
   it,
   vi,
 } from "vitest";
+import { createKeeperTestContext, TEST_PIN } from "./keeperTestUtils";
 
 const { mockEncryptWithKey, mockSignWithIntent } = vi.hoisted(() => ({
   mockEncryptWithKey: vi.fn(),
@@ -40,24 +41,15 @@ vi.mock("@evevault/shared/wallet", () => ({
 
 // ── keeper loader ─────────────────────────────────────────────────────────────
 
-type KeeperHandler = (
-  message: Record<string, unknown>,
-  sender: object,
-  sendResponse: (response?: unknown) => void,
-) => boolean | void;
-
-let keeperHandler: KeeperHandler;
+const ctx = createKeeperTestContext();
+const { dispatch, rawDispatch, unlockVault } = ctx;
 
 beforeAll(async () => {
   // chrome must exist before keeper.ts loads because it calls
   // chrome.runtime.onMessage.addListener() at module scope.
   vi.stubGlobal("chrome", {
     runtime: {
-      onMessage: {
-        addListener: (fn: KeeperHandler) => {
-          keeperHandler = fn;
-        },
-      },
+      onMessage: { addListener: ctx.captureHandler },
       sendMessage: vi.fn().mockResolvedValue(undefined),
     },
   });
@@ -67,38 +59,8 @@ beforeAll(async () => {
   await import("../keeper");
 });
 
-// ── helpers ───────────────────────────────────────────────────────────────────
-
-const TEST_PIN = "123456";
-
-/** Send a KEEPER-targeted message and await the sendResponse callback. */
-function dispatch(
-  msg: Record<string, unknown>,
-): Promise<Record<string, unknown>> {
-  return new Promise((resolve) => {
-    keeperHandler({ target: "KEEPER", ...msg }, {}, (resp) =>
-      resolve((resp ?? {}) as Record<string, unknown>),
-    );
-  });
-}
-
-/** Unlock the vault and return the keypair that was stored inside the keeper. */
-async function unlockVault(): Promise<{
-  keypair: Ed25519Keypair;
-  hashedSecretKey: HashedData;
-}> {
-  const keypair = Ed25519Keypair.generate();
-  const hashedSecretKey = await encrypt(keypair.getSecretKey(), TEST_PIN);
-  const resp = await dispatch({
-    type: KeeperMessageTypes.UNLOCK_VAULT,
-    hashedSecretKey,
-    pin: TEST_PIN,
-  });
-  expect(resp.ok).toBe(true);
-  return { keypair, hashedSecretKey };
-}
-
 afterEach(async () => {
+  vi.useRealTimers();
   // Reset keeper's RAM state so tests don't bleed into each other.
   await dispatch({ type: KeeperMessageTypes.CLEAR_EPHKEY });
   await dispatch({ type: KeeperMessageTypes.CLEAR_ZKPROOF });
@@ -177,10 +139,6 @@ describe("Keeper ROTATE_KEYPAIR handler", () => {
     expect(resp.error).toBe(
       "Vault must be unlocked again before rotating keypair",
     );
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
   });
 
   it("does not extend the vault expiry after a successful rotation", async () => {
@@ -265,14 +223,12 @@ describe("Keeper EPH_SIGN handler", () => {
   });
 
   it("returns false without responding for non-KEEPER targets", () => {
-    const sendResponse = vi.fn();
-    const result = keeperHandler(
-      { target: "OTHER", type: KeeperMessageTypes.EPH_SIGN },
-      {},
-      sendResponse,
-    );
+    const { returnValue, sendResponse } = rawDispatch({
+      target: "OTHER",
+      type: KeeperMessageTypes.EPH_SIGN,
+    });
 
-    expect(result).toBe(false);
+    expect(returnValue).toBe(false);
     expect(sendResponse).not.toHaveBeenCalled();
   });
 });
@@ -363,7 +319,7 @@ describe("Keeper zkProof handlers", () => {
   });
 
   it("CLEAR_ZKPROOF resets every chain regardless of lock state", async () => {
-    // Populate proofs on all chains
+    // Populate proofs on all chains while unlocked
     for (const chain of [
       SUI_DEVNET_CHAIN,
       SUI_TESTNET_CHAIN,
@@ -376,16 +332,16 @@ describe("Keeper zkProof handlers", () => {
       });
     }
 
-    // Lock then clear
+    // Lock the vault — CLEAR_ZKPROOF must work regardless of lock state
     await dispatch({ type: KeeperMessageTypes.CLEAR_EPHKEY });
-    // Re-unlock so GET_ZKPROOF doesn't return LOCKED errors
-    await unlockVault();
 
     const clearResp = await dispatch({
       type: KeeperMessageTypes.CLEAR_ZKPROOF,
     });
     expect(clearResp.ok).toBe(true);
 
+    // Re-unlock so GET_ZKPROOF's ephemeral-key guard passes, then verify proofs are gone
+    await unlockVault();
     for (const chain of [
       SUI_DEVNET_CHAIN,
       SUI_TESTNET_CHAIN,
