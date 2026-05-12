@@ -1,4 +1,3 @@
-import { SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
 import { User } from "oidc-client-ts";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AuthStoreMockHandles } from "./authStoreTestMocks";

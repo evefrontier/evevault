@@ -286,15 +286,14 @@ export const useAuthStore = create<AuthState>()(
             }
           } else {
             // Web login flow
+            if (!isZkLoginSuiChain(network)) {
+              log.info("Skipping OAuth redirect for non-zkLogin network", {
+                network,
+              });
+              set({ loading: false });
+              return;
+            }
             try {
-              if (!isZkLoginSuiChain(network)) {
-                log.info("Skipping OAuth redirect for non-zkLogin network", {
-                  network,
-                });
-                set({ loading: false });
-                return;
-              }
-
               const deviceStore = useDeviceStore.getState();
 
               // Ensure device data is present and valid for current network — needed

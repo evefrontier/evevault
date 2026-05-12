@@ -53,7 +53,7 @@ export const CallbackScreen = () => {
         const userManager = getUserManager(tenantId);
         const user = await userManager.signinRedirectCallback();
 
-        if (!user || !user.id_token) {
+        if (!user?.id_token) {
           throw new Error("Failed to authenticate");
         }
 

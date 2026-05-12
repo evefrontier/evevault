@@ -1,11 +1,7 @@
 import { useAuthStore, waitForAuthHydration } from "@evevault/shared/auth";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { LoginScreen } from "@/features/auth/components/LoginScreen";
-import {
-  type IndexSearch,
-  resolveRoute,
-  validateSearch,
-} from "@/lib/routeUtils";
+import { resolveRoute, validateSearch } from "@/lib/routeUtils";
 
 export const Route = createFileRoute("/")({
   validateSearch,

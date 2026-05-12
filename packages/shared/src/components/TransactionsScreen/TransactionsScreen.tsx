@@ -100,9 +100,9 @@ const TransactionRow: React.FC<TransactionRowProps> = ({
           }`}
         >
           <div className="flex flex-col gap-1 min-w-0">
-            {balanceChanges.map((bc, index) => (
+            {balanceChanges.map((bc) => (
               <div
-                key={`${bc.coinType}-${index}`}
+                key={`${bc.coinType}-${bc.amount}-${String(bc.isDebit)}`}
                 className="flex flex-col gap-0.5"
               >
                 {bc.tokenName ? (
