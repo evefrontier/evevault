@@ -1,115 +1,62 @@
 import { SUI_LOCALNET_CHAIN, SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { AuthStoreMockHandles } from "./authStoreTestMocks";
+import {
+  makeAdaptersMock,
+  makeAuthConfigMock,
+  makeAuthStoreUtilsMock,
+  makeGetZkLoginAddressMock,
+  makeJoseMock,
+  makeOAuthTokenResponseMock,
+  makeStorageServiceMock,
+  makeStoresMock,
+  makeTenantConfigMock,
+  makeTenantStoreMock,
+  makeUserJwtSyncMock,
+  makeUserToJwtResponseMock,
+  makeUtilsMock,
+  makeVaultServiceMock,
+  setupAuthStoreMocks,
+} from "./authStoreTestMocks";
 
-const {
-  mockSigninRedirect,
-  mockInitializeForChain,
-  mockIsExtension,
-  mockGetCurrentTenantId,
-} = vi.hoisted(() => ({
+const h: AuthStoreMockHandles = vi.hoisted(() => ({
+  mockGetUser: vi.fn(),
+  mockStoreUser: vi.fn(),
+  mockRemoveUser: vi.fn(),
   mockSigninRedirect: vi.fn(),
+  mockSigninSilent: vi.fn(),
+  mockGetJwt: vi.fn(),
+  mockClearAllJwts: vi.fn(),
+  mockEnrichUser: vi.fn(),
+  mockSyncPrimaryJwt: vi.fn(),
+  mockUserToJwtResponse: vi.fn(),
+  mockResolveExpiresAt: vi.fn(),
+  mockClearZkLoginAddressCache: vi.fn(),
+  mockParseOAuthTokenResponse: vi.fn(),
+  mockZkProofClear: vi.fn(),
   mockInitializeForChain: vi.fn(),
-  mockIsExtension: vi.fn(),
+  mockDeviceLock: vi.fn(),
   mockGetCurrentTenantId: vi.fn(),
+  mockSetCurrentTenantId: vi.fn(),
+  mockPerformFullCleanup: vi.fn(),
+  mockIsExtension: vi.fn(),
+  mockDecodeJwt: vi.fn(),
 }));
 
-vi.mock("#/auth/authConfig", () => ({
-  getUserManager: vi.fn(() => ({
-    signinRedirect: mockSigninRedirect,
-    getUser: vi.fn(),
-    storeUser: vi.fn(),
-    removeUser: vi.fn(),
-    signinSilent: vi.fn(),
-  })),
-  redirectToFusionAuthLogout: vi.fn(),
-}));
-
-vi.mock("#/auth/storageService", () => ({
-  clearAllJwts: vi.fn().mockResolvedValue(undefined),
-  getJwt: vi.fn().mockResolvedValue(null),
-}));
-
-vi.mock("#/auth/userJwtSync", () => ({
-  enrichUserWithZkLoginIfNeeded: vi.fn(async (user) => user),
-  syncPrimaryJwtFromUser: vi.fn().mockResolvedValue(undefined),
-}));
-
-vi.mock("#/auth/userToJwtResponse", () => ({
-  userToJwtResponse: vi.fn(),
-}));
-
-vi.mock("#/auth/utils/authStoreUtils", () => ({
-  resolveExpiresAt: vi.fn(),
-}));
-
-vi.mock("#/auth/getZkLoginAddress", () => ({
-  clearZkLoginAddressCache: vi.fn(),
-}));
-
-vi.mock("#/auth/oauthTokenResponse", () => ({
-  parseOAuthTokenResponse: vi.fn(),
-}));
-
-vi.mock("#/services/vaultService", () => ({
-  zkProofService: { clear: vi.fn().mockResolvedValue(undefined) },
-}));
-
-vi.mock("#/stores", () => ({
-  useContextStore: {
-    getState: vi.fn(() => ({ chain: SUI_TESTNET_CHAIN })),
-  },
-  useDeviceStore: {
-    getState: vi.fn(() => ({
-      networkData: {},
-      initializeForChain: mockInitializeForChain,
-      lock: vi.fn().mockResolvedValue(undefined),
-    })),
-  },
-}));
-
-vi.mock("#/stores/tenantStore", () => ({
-  getCurrentTenantId: () => mockGetCurrentTenantId(),
-  OAuthTenantSessionKey: "evevault_oauth_tenant",
-  setCurrentTenantId: vi.fn().mockResolvedValue(undefined),
-}));
-
-vi.mock("#/utils", () => ({
-  createLogger: () => ({
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-  }),
-  isBrowser: () => true,
-  isExtension: () => mockIsExtension(),
-  isWeb: () => !mockIsExtension(),
-  performFullCleanup: vi.fn().mockResolvedValue(undefined),
-}));
-
-vi.mock("#/utils/tenantConfig", () => ({
-  getTenantConfig: vi.fn(() => ({
-    serverUrl: "http://localhost",
-    clientId: "test-client",
-  })),
-  DEFAULT_TENANT_ID: "stillness",
-}));
-
-vi.mock("#/adapters", () => ({
-  localStorageAdapter: {
-    getItem: vi.fn().mockResolvedValue(null),
-    setItem: vi.fn().mockResolvedValue(undefined),
-    removeItem: vi.fn().mockResolvedValue(undefined),
-  },
-  chromeStorageAdapter: {
-    getItem: vi.fn().mockResolvedValue(null),
-    setItem: vi.fn().mockResolvedValue(undefined),
-    removeItem: vi.fn().mockResolvedValue(undefined),
-  },
-}));
-
-vi.mock("jose", () => ({
-  decodeJwt: vi.fn(),
-}));
+vi.mock("#/auth/authConfig", () => makeAuthConfigMock(h));
+vi.mock("#/auth/storageService", () => makeStorageServiceMock(h));
+vi.mock("#/auth/userJwtSync", () => makeUserJwtSyncMock(h));
+vi.mock("#/auth/userToJwtResponse", () => makeUserToJwtResponseMock(h));
+vi.mock("#/auth/utils/authStoreUtils", () => makeAuthStoreUtilsMock(h));
+vi.mock("#/auth/getZkLoginAddress", () => makeGetZkLoginAddressMock(h));
+vi.mock("#/auth/oauthTokenResponse", () => makeOAuthTokenResponseMock(h));
+vi.mock("#/services/vaultService", () => makeVaultServiceMock(h));
+vi.mock("#/stores", () => makeStoresMock(h));
+vi.mock("#/stores/tenantStore", () => makeTenantStoreMock(h));
+vi.mock("#/utils", () => makeUtilsMock(h));
+vi.mock("#/utils/tenantConfig", () => makeTenantConfigMock());
+vi.mock("#/adapters", () => makeAdaptersMock());
+vi.mock("jose", () => makeJoseMock(h));
 
 import { useAuthStore } from "#/auth/stores/authStore";
 import { useContextStore } from "#/stores";
@@ -117,10 +64,8 @@ import { useContextStore } from "#/stores";
 describe("authStore.login() web path", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockIsExtension.mockReturnValue(false);
-    mockGetCurrentTenantId.mockReturnValue("tauceti");
-    mockInitializeForChain.mockResolvedValue(undefined);
-    mockSigninRedirect.mockImplementation(() => undefined);
+    setupAuthStoreMocks(h, { tenantId: "tauceti" });
+    h.mockSigninRedirect.mockImplementation(() => undefined);
     vi.mocked(useContextStore.getState).mockReturnValue({
       chain: SUI_TESTNET_CHAIN,
     } as ReturnType<typeof useContextStore.getState>);
@@ -130,23 +75,23 @@ describe("authStore.login() web path", () => {
 
   it("calls initializeForChain before signinRedirect on a zkLogin chain", async () => {
     const callOrder: string[] = [];
-    mockInitializeForChain.mockImplementation(async () => {
+    h.mockInitializeForChain.mockImplementation(async () => {
       callOrder.push("initializeForChain");
     });
-    mockSigninRedirect.mockImplementation(() => {
+    h.mockSigninRedirect.mockImplementation(() => {
       callOrder.push("signinRedirect");
     });
 
     await useAuthStore.getState().login();
 
-    expect(mockInitializeForChain).toHaveBeenCalledWith(SUI_TESTNET_CHAIN);
-    expect(mockSigninRedirect).toHaveBeenCalledTimes(1);
+    expect(h.mockInitializeForChain).toHaveBeenCalledWith(SUI_TESTNET_CHAIN);
+    expect(h.mockSigninRedirect).toHaveBeenCalledTimes(1);
     expect(callOrder).toEqual(["initializeForChain", "signinRedirect"]);
   });
 
   it("stores tenantId in sessionStorage before redirecting", async () => {
     let tenantAtRedirect: string | null = null;
-    mockSigninRedirect.mockImplementation(() => {
+    h.mockSigninRedirect.mockImplementation(() => {
       tenantAtRedirect = sessionStorage.getItem("evevault_oauth_tenant");
     });
 
@@ -165,8 +110,8 @@ describe("authStore.login() web path", () => {
 
     await useAuthStore.getState().login();
 
-    expect(mockInitializeForChain).not.toHaveBeenCalled();
-    expect(mockSigninRedirect).not.toHaveBeenCalled();
+    expect(h.mockInitializeForChain).not.toHaveBeenCalled();
+    expect(h.mockSigninRedirect).not.toHaveBeenCalled();
   });
 
   it("sets loading to false after completion", async () => {
@@ -185,7 +130,7 @@ describe("authStore.login() web path", () => {
   });
 
   it("sets loading to false when initializeForChain rejects with a network error", async () => {
-    mockInitializeForChain.mockRejectedValue(new Error("Network error"));
+    h.mockInitializeForChain.mockRejectedValue(new Error("Network error"));
 
     await useAuthStore.getState().login();
 

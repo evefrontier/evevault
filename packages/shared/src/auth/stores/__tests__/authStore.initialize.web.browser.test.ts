@@ -1,118 +1,70 @@
 import { User } from "oidc-client-ts";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { AuthStoreMockHandles } from "./authStoreTestMocks";
+import {
+  makeAdaptersMock,
+  makeAuthCleanupMock,
+  makeAuthConfigMock,
+  makeAuthStoreUtilsMock,
+  makeEnvironmentMock,
+  makeGetZkLoginAddressMock,
+  makeJoseMock,
+  makeLoggerMock,
+  makeOAuthTokenResponseMock,
+  makeStorageServiceMock,
+  makeStoresMock,
+  makeTenantConfigMock,
+  makeTenantStoreMock,
+  makeUserJwtSyncMock,
+  makeUserToJwtResponseMock,
+  makeVaultServiceMock,
+  setupAuthStoreMocks,
+} from "./authStoreTestMocks";
 
-const mockGetUser = vi.fn();
-const mockStoreUser = vi.fn();
-const mockSigninSilent = vi.fn();
-const mockEnrichUser = vi.fn();
-const mockSyncPrimaryJwt = vi.fn();
-const mockUserToJwtResponse = vi.fn();
-const mockResolveExpiresAt = vi.fn();
-const mockIsExtension = vi.fn();
-
-vi.mock("#/auth/authConfig", () => ({
-  getUserManager: () => ({
-    getUser: (...args: unknown[]) => mockGetUser(...args),
-    storeUser: (...args: unknown[]) => mockStoreUser(...args),
-    signinSilent: (...args: unknown[]) => mockSigninSilent(...args),
-  }),
-  redirectToFusionAuthLogout: vi.fn(),
+const h: AuthStoreMockHandles = vi.hoisted(() => ({
+  mockGetUser: vi.fn(),
+  mockStoreUser: vi.fn(),
+  mockRemoveUser: vi.fn(),
+  mockSigninRedirect: vi.fn(),
+  mockSigninSilent: vi.fn(),
+  mockGetJwt: vi.fn(),
+  mockClearAllJwts: vi.fn(),
+  mockEnrichUser: vi.fn(),
+  mockSyncPrimaryJwt: vi.fn(),
+  mockUserToJwtResponse: vi.fn(),
+  mockResolveExpiresAt: vi.fn(),
+  mockClearZkLoginAddressCache: vi.fn(),
+  mockParseOAuthTokenResponse: vi.fn(),
+  mockZkProofClear: vi.fn(),
+  mockInitializeForChain: vi.fn(),
+  mockDeviceLock: vi.fn(),
+  mockGetCurrentTenantId: vi.fn(),
+  mockSetCurrentTenantId: vi.fn(),
+  mockPerformFullCleanup: vi.fn(),
+  mockIsExtension: vi.fn(),
+  mockDecodeJwt: vi.fn(),
 }));
 
-vi.mock("#/auth/storageService", () => ({
-  getJwt: vi.fn().mockResolvedValue(null),
-  clearAllJwts: vi.fn().mockResolvedValue(undefined),
-}));
-
-vi.mock("#/auth/userJwtSync", () => ({
-  enrichUserWithZkLoginIfNeeded: (...args: unknown[]) =>
-    mockEnrichUser(...args),
-  syncPrimaryJwtFromUser: (...args: unknown[]) => mockSyncPrimaryJwt(...args),
-}));
-
-vi.mock("#/auth/userToJwtResponse", () => ({
-  userToJwtResponse: (...args: unknown[]) => mockUserToJwtResponse(...args),
-}));
-
-vi.mock("#/auth/utils/authStoreUtils", () => ({
-  resolveExpiresAt: (...args: unknown[]) => mockResolveExpiresAt(...args),
-}));
-
-vi.mock("#/utils/environment", () => ({
-  isExtension: () => mockIsExtension(),
-  isWeb: () => true,
-  isBrowser: () => true,
-}));
-
-vi.mock("#/utils/logger", () => ({
-  createLogger: () => ({
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-  }),
-}));
-
-vi.mock("#/utils/authCleanup", () => ({
-  performFullCleanup: vi.fn().mockResolvedValue(undefined),
-}));
-
-vi.mock("#/stores", () => ({
-  useContextStore: {
-    getState: vi.fn(() => ({ chain: "sui:testnet" })),
-  },
-  useDeviceStore: {
-    getState: vi.fn(() => ({
-      networkData: {},
-      lock: vi.fn().mockResolvedValue(undefined),
-    })),
-  },
-}));
-
-vi.mock("#/stores/tenantStore", () => ({
-  getCurrentTenantId: vi.fn(() => "default"),
-  OAuthTenantSessionKey: "evevault_oauth_tenant",
-  setCurrentTenantId: vi.fn().mockResolvedValue(undefined),
-}));
-
-vi.mock("#/services/vaultService", () => ({
-  zkProofService: { clear: vi.fn().mockResolvedValue(undefined) },
-  ephKeyService: { lock: vi.fn().mockResolvedValue(undefined) },
-}));
-
-vi.mock("#/utils/tenantConfig", () => ({
-  getTenantConfig: vi.fn(() => ({
-    serverUrl: "http://localhost",
-    clientId: "test-client",
-  })),
-  DEFAULT_TENANT_ID: "default",
-}));
-
-vi.mock("#/auth/getZkLoginAddress", () => ({
-  clearZkLoginAddressCache: vi.fn(),
-  getZkLoginAddress: vi.fn(),
-}));
-
-vi.mock("#/auth/oauthTokenResponse", () => ({
-  parseOAuthTokenResponse: vi.fn(),
-}));
-
-vi.mock("#/adapters", () => ({
-  localStorageAdapter: {
-    getItem: vi.fn().mockResolvedValue(null),
-    setItem: vi.fn().mockResolvedValue(undefined),
-    removeItem: vi.fn().mockResolvedValue(undefined),
-  },
-  chromeStorageAdapter: {
-    getItem: vi.fn().mockResolvedValue(null),
-    setItem: vi.fn().mockResolvedValue(undefined),
-    removeItem: vi.fn().mockResolvedValue(undefined),
-  },
-}));
-
-vi.mock("jose", () => ({
-  decodeJwt: vi.fn(),
-}));
+vi.mock("#/auth/authConfig", () => makeAuthConfigMock(h));
+vi.mock("#/auth/storageService", () => makeStorageServiceMock(h));
+vi.mock("#/auth/userJwtSync", () => makeUserJwtSyncMock(h));
+vi.mock("#/auth/userToJwtResponse", () => makeUserToJwtResponseMock(h));
+vi.mock("#/auth/utils/authStoreUtils", () => makeAuthStoreUtilsMock(h));
+vi.mock("#/auth/getZkLoginAddress", () =>
+  makeGetZkLoginAddressMock(h, { includeGetZkLogin: true }),
+);
+vi.mock("#/auth/oauthTokenResponse", () => makeOAuthTokenResponseMock(h));
+vi.mock("#/services/vaultService", () =>
+  makeVaultServiceMock(h, { includeEphKey: true }),
+);
+vi.mock("#/stores", () => makeStoresMock(h, { withInitializeForChain: false }));
+vi.mock("#/stores/tenantStore", () => makeTenantStoreMock(h));
+vi.mock("#/utils/environment", () => makeEnvironmentMock(h));
+vi.mock("#/utils/logger", () => makeLoggerMock());
+vi.mock("#/utils/authCleanup", () => makeAuthCleanupMock(h));
+vi.mock("#/utils/tenantConfig", () => makeTenantConfigMock("default"));
+vi.mock("#/adapters", () => makeAdaptersMock());
+vi.mock("jose", () => makeJoseMock(h));
 
 // ─── import store after mocks ─────────────────────────────────────────────
 import { useAuthStore } from "#/auth/stores/authStore";
@@ -161,88 +113,85 @@ function makeUser(
 describe("authStore.initialize() (web path)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockIsExtension.mockReturnValue(false);
-    mockEnrichUser.mockImplementation(async (user: unknown) => user);
-    mockStoreUser.mockResolvedValue(undefined);
-    mockSyncPrimaryJwt.mockResolvedValue(undefined);
+    setupAuthStoreMocks(h, { tenantId: "default" });
     useAuthStore.setState({ user: null, loading: false, error: null });
   });
 
   it("sets user to webUser when the token is still valid", async () => {
     const user = makeUser();
-    mockGetUser.mockResolvedValue(user);
-    mockUserToJwtResponse.mockReturnValue(makeStoredJwt());
-    mockResolveExpiresAt.mockReturnValue(FUTURE);
+    h.mockGetUser.mockResolvedValue(user);
+    h.mockUserToJwtResponse.mockReturnValue(makeStoredJwt());
+    h.mockResolveExpiresAt.mockReturnValue(FUTURE);
 
     await useAuthStore.getState().initialize();
 
     expect(useAuthStore.getState().user).toBe(user);
     expect(useAuthStore.getState().loading).toBe(false);
-    expect(mockSigninSilent).not.toHaveBeenCalled();
+    expect(h.mockSigninSilent).not.toHaveBeenCalled();
   });
 
   describe("when the token is expired", () => {
     beforeEach(() => {
-      mockUserToJwtResponse.mockReturnValue(
+      h.mockUserToJwtResponse.mockReturnValue(
         makeStoredJwt({ expires_at: PAST }),
       );
-      mockResolveExpiresAt.mockReturnValue(PAST);
+      h.mockResolveExpiresAt.mockReturnValue(PAST);
     });
 
     it("sets user to null when there is no refresh token", async () => {
-      mockGetUser.mockResolvedValue(makeUser({ refresh_token: "" }));
+      h.mockGetUser.mockResolvedValue(makeUser({ refresh_token: "" }));
 
       await useAuthStore.getState().initialize();
 
       expect(useAuthStore.getState().user).toBeNull();
       expect(useAuthStore.getState().loading).toBe(false);
-      expect(mockSigninSilent).not.toHaveBeenCalled();
+      expect(h.mockSigninSilent).not.toHaveBeenCalled();
     });
 
     it("sets user to null when the refresh token is whitespace only", async () => {
-      mockGetUser.mockResolvedValue(makeUser({ refresh_token: "   " }));
+      h.mockGetUser.mockResolvedValue(makeUser({ refresh_token: "   " }));
 
       await useAuthStore.getState().initialize();
 
       expect(useAuthStore.getState().user).toBeNull();
-      expect(mockSigninSilent).not.toHaveBeenCalled();
+      expect(h.mockSigninSilent).not.toHaveBeenCalled();
     });
 
     it("runs silent renew and sets the refreshed user", async () => {
       const refreshed = makeUser({
         id_token: makeJwtPayload({ sub: "user-1", iat: 2000, exp: FUTURE }),
       });
-      mockGetUser.mockResolvedValue(makeUser());
-      mockSigninSilent.mockResolvedValue(refreshed);
-      mockEnrichUser.mockResolvedValue(refreshed);
+      h.mockGetUser.mockResolvedValue(makeUser());
+      h.mockSigninSilent.mockResolvedValue(refreshed);
+      h.mockEnrichUser.mockResolvedValue(refreshed);
 
       await useAuthStore.getState().initialize();
 
-      expect(mockSigninSilent).toHaveBeenCalledOnce();
-      expect(mockEnrichUser).toHaveBeenCalledWith(
+      expect(h.mockSigninSilent).toHaveBeenCalledOnce();
+      expect(h.mockEnrichUser).toHaveBeenCalledWith(
         expect.any(User),
         expect.any(Function),
       );
-      expect(mockStoreUser).toHaveBeenCalledWith(refreshed);
-      expect(mockSyncPrimaryJwt).toHaveBeenCalledWith(refreshed);
+      expect(h.mockStoreUser).toHaveBeenCalledWith(refreshed);
+      expect(h.mockSyncPrimaryJwt).toHaveBeenCalledWith(refreshed);
       expect(useAuthStore.getState().user).toBe(refreshed);
       expect(useAuthStore.getState().loading).toBe(false);
     });
 
     it("sets user to null when silent renew returns null", async () => {
-      mockGetUser.mockResolvedValue(makeUser());
-      mockSigninSilent.mockResolvedValue(null);
+      h.mockGetUser.mockResolvedValue(makeUser());
+      h.mockSigninSilent.mockResolvedValue(null);
 
       await useAuthStore.getState().initialize();
 
       expect(useAuthStore.getState().user).toBeNull();
       expect(useAuthStore.getState().loading).toBe(false);
-      expect(mockStoreUser).not.toHaveBeenCalled();
+      expect(h.mockStoreUser).not.toHaveBeenCalled();
     });
 
     it("sets user to null when silent renew throws", async () => {
-      mockGetUser.mockResolvedValue(makeUser());
-      mockSigninSilent.mockRejectedValue(new Error("network error"));
+      h.mockGetUser.mockResolvedValue(makeUser());
+      h.mockSigninSilent.mockRejectedValue(new Error("network error"));
 
       await useAuthStore.getState().initialize();
 
@@ -252,13 +201,13 @@ describe("authStore.initialize() (web path)", () => {
   });
 
   it("sets user to null when getUser returns null (no JWT to inspect)", async () => {
-    mockGetUser.mockResolvedValue(null);
-    mockUserToJwtResponse.mockReturnValue(null);
+    h.mockGetUser.mockResolvedValue(null);
+    h.mockUserToJwtResponse.mockReturnValue(null);
 
     await useAuthStore.getState().initialize();
 
     expect(useAuthStore.getState().user).toBeNull();
     expect(useAuthStore.getState().loading).toBe(false);
-    expect(mockSigninSilent).not.toHaveBeenCalled();
+    expect(h.mockSigninSilent).not.toHaveBeenCalled();
   });
 });

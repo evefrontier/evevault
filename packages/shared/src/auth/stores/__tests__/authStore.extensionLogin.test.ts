@@ -1,123 +1,62 @@
-import { SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
 import { User } from "oidc-client-ts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { AuthStoreMockHandles } from "./authStoreTestMocks";
+import {
+  makeAdaptersMock,
+  makeAuthConfigMock,
+  makeAuthStoreUtilsMock,
+  makeGetZkLoginAddressMock,
+  makeJoseMock,
+  makeOAuthTokenResponseMock,
+  makeStorageServiceMock,
+  makeStoresMock,
+  makeTenantConfigMock,
+  makeTenantStoreMock,
+  makeUserJwtSyncMock,
+  makeUserToJwtResponseMock,
+  makeUtilsMock,
+  makeVaultServiceMock,
+  setupAuthStoreMocks,
+} from "./authStoreTestMocks";
 
-const {
-  mockStoreUser,
-  mockDecodeJwt,
-  mockEnrichUser,
-  mockSyncPrimaryJwtFromUser,
-  mockParseOAuthTokenResponse,
-  mockIsExtension,
-} = vi.hoisted(() => ({
+const h: AuthStoreMockHandles = vi.hoisted(() => ({
+  mockGetUser: vi.fn(),
   mockStoreUser: vi.fn(),
-  mockDecodeJwt: vi.fn(),
+  mockRemoveUser: vi.fn(),
+  mockSigninRedirect: vi.fn(),
+  mockSigninSilent: vi.fn(),
+  mockGetJwt: vi.fn(),
+  mockClearAllJwts: vi.fn(),
   mockEnrichUser: vi.fn(),
-  mockSyncPrimaryJwtFromUser: vi.fn(),
+  mockSyncPrimaryJwt: vi.fn(),
+  mockUserToJwtResponse: vi.fn(),
+  mockResolveExpiresAt: vi.fn(),
+  mockClearZkLoginAddressCache: vi.fn(),
   mockParseOAuthTokenResponse: vi.fn(),
+  mockZkProofClear: vi.fn(),
+  mockInitializeForChain: vi.fn(),
+  mockDeviceLock: vi.fn(),
+  mockGetCurrentTenantId: vi.fn(),
+  mockSetCurrentTenantId: vi.fn(),
+  mockPerformFullCleanup: vi.fn(),
   mockIsExtension: vi.fn(),
+  mockDecodeJwt: vi.fn(),
 }));
 
-vi.mock("#/auth/authConfig", () => ({
-  getUserManager: vi.fn(() => ({
-    getUser: vi.fn(),
-    storeUser: mockStoreUser,
-    removeUser: vi.fn(),
-    signinRedirect: vi.fn(),
-    signinSilent: vi.fn(),
-  })),
-  redirectToFusionAuthLogout: vi.fn(),
-}));
-
-vi.mock("#/auth/storageService", () => ({
-  clearAllJwts: vi.fn().mockResolvedValue(undefined),
-  getJwt: vi.fn().mockResolvedValue(null),
-}));
-
-vi.mock("#/auth/userJwtSync", () => ({
-  enrichUserWithZkLoginIfNeeded: (...args: unknown[]) =>
-    mockEnrichUser(...args),
-  syncPrimaryJwtFromUser: (...args: unknown[]) =>
-    mockSyncPrimaryJwtFromUser(...args),
-}));
-
-vi.mock("#/auth/userToJwtResponse", () => ({
-  userToJwtResponse: vi.fn(),
-}));
-
-vi.mock("#/auth/utils/authStoreUtils", () => ({
-  resolveExpiresAt: vi.fn(),
-}));
-
-vi.mock("#/auth/getZkLoginAddress", () => ({
-  clearZkLoginAddressCache: vi.fn(),
-}));
-
-vi.mock("#/auth/oauthTokenResponse", () => ({
-  parseOAuthTokenResponse: (...args: unknown[]) =>
-    mockParseOAuthTokenResponse(...args),
-}));
-
-vi.mock("#/services/vaultService", () => ({
-  zkProofService: { clear: vi.fn().mockResolvedValue(undefined) },
-}));
-
-vi.mock("#/stores", () => ({
-  useContextStore: {
-    getState: vi.fn(() => ({ chain: SUI_TESTNET_CHAIN })),
-  },
-  useDeviceStore: {
-    getState: vi.fn(() => ({
-      networkData: {},
-      initializeForChain: vi.fn().mockResolvedValue(undefined),
-      lock: vi.fn().mockResolvedValue(undefined),
-    })),
-  },
-}));
-
-vi.mock("#/stores/tenantStore", () => ({
-  getCurrentTenantId: vi.fn(() => "stillness"),
-  OAuthTenantSessionKey: "evevault_oauth_tenant",
-  setCurrentTenantId: vi.fn().mockResolvedValue(undefined),
-}));
-
-vi.mock("#/utils", () => ({
-  createLogger: () => ({
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-  }),
-  isBrowser: () => true,
-  isExtension: () => mockIsExtension(),
-  isWeb: () => !mockIsExtension(),
-  performFullCleanup: vi.fn().mockResolvedValue(undefined),
-}));
-
-vi.mock("#/utils/tenantConfig", () => ({
-  getTenantConfig: vi.fn(() => ({
-    serverUrl: "http://localhost",
-    clientId: "test-client",
-  })),
-  DEFAULT_TENANT_ID: "stillness",
-}));
-
-vi.mock("#/adapters", () => ({
-  localStorageAdapter: {
-    getItem: vi.fn().mockResolvedValue(null),
-    setItem: vi.fn().mockResolvedValue(undefined),
-    removeItem: vi.fn().mockResolvedValue(undefined),
-  },
-  chromeStorageAdapter: {
-    getItem: vi.fn().mockResolvedValue(null),
-    setItem: vi.fn().mockResolvedValue(undefined),
-    removeItem: vi.fn().mockResolvedValue(undefined),
-  },
-}));
-
-vi.mock("jose", () => ({
-  decodeJwt: (...args: unknown[]) => mockDecodeJwt(...args),
-}));
+vi.mock("#/auth/authConfig", () => makeAuthConfigMock(h));
+vi.mock("#/auth/storageService", () => makeStorageServiceMock(h));
+vi.mock("#/auth/userJwtSync", () => makeUserJwtSyncMock(h));
+vi.mock("#/auth/userToJwtResponse", () => makeUserToJwtResponseMock(h));
+vi.mock("#/auth/utils/authStoreUtils", () => makeAuthStoreUtilsMock(h));
+vi.mock("#/auth/getZkLoginAddress", () => makeGetZkLoginAddressMock(h));
+vi.mock("#/auth/oauthTokenResponse", () => makeOAuthTokenResponseMock(h));
+vi.mock("#/services/vaultService", () => makeVaultServiceMock(h));
+vi.mock("#/stores", () => makeStoresMock(h));
+vi.mock("#/stores/tenantStore", () => makeTenantStoreMock(h));
+vi.mock("#/utils", () => makeUtilsMock(h));
+vi.mock("#/utils/tenantConfig", () => makeTenantConfigMock());
+vi.mock("#/adapters", () => makeAdaptersMock());
+vi.mock("jose", () => makeJoseMock(h));
 
 import { useAuthStore } from "#/auth/stores/authStore";
 
@@ -151,12 +90,9 @@ describe("authStore.extensionLogin()", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockIsExtension.mockReturnValue(true);
-    mockParseOAuthTokenResponse.mockReturnValue(makeTokenResponse());
-    mockDecodeJwt.mockReturnValue({ sub: "user-1", iat: 1000, exp: 4600 });
-    mockEnrichUser.mockImplementation(async (user: User) => user);
-    mockStoreUser.mockResolvedValue(undefined);
-    mockSyncPrimaryJwtFromUser.mockResolvedValue(undefined);
+    setupAuthStoreMocks(h, { isExtension: true });
+    h.mockParseOAuthTokenResponse.mockReturnValue(makeTokenResponse());
+    h.mockDecodeJwt.mockReturnValue({ sub: "user-1", iat: 1000, exp: 4600 });
     useAuthStore.setState({ user: null, loading: false, error: null });
     vi.stubGlobal("crypto", { randomUUID: vi.fn(() => "uuid-1") });
     vi.stubGlobal("chrome", {
@@ -180,14 +116,14 @@ describe("authStore.extensionLogin()", () => {
 
   it("resolves when the response message carries matching messageId and auth_success", async () => {
     const tokenResponse = makeTokenResponse();
-    mockParseOAuthTokenResponse.mockReturnValue(tokenResponse);
+    h.mockParseOAuthTokenResponse.mockReturnValue(tokenResponse);
     const promise = useAuthStore.getState().extensionLogin();
     const listener = addListener.mock.calls[0][0] as ChromeMessageListener;
 
     listener({ id: "uuid-1", type: "auth_success", token: "raw-token" });
 
     await expect(promise).resolves.toBe(tokenResponse);
-    expect(mockParseOAuthTokenResponse).toHaveBeenCalledWith("raw-token");
+    expect(h.mockParseOAuthTokenResponse).toHaveBeenCalledWith("raw-token");
     expect(removeListener).toHaveBeenCalledWith(listener);
   });
 
@@ -207,17 +143,17 @@ describe("authStore.extensionLogin()", () => {
 
   it("ignores messages with a non-matching messageId", async () => {
     const tokenResponse = makeTokenResponse();
-    mockParseOAuthTokenResponse.mockReturnValue(tokenResponse);
+    h.mockParseOAuthTokenResponse.mockReturnValue(tokenResponse);
     const promise = useAuthStore.getState().extensionLogin();
     const listener = addListener.mock.calls[0][0] as ChromeMessageListener;
 
     listener({ id: "other-id", type: "auth_success", token: "wrong-token" });
-    expect(mockParseOAuthTokenResponse).not.toHaveBeenCalled();
+    expect(h.mockParseOAuthTokenResponse).not.toHaveBeenCalled();
 
     listener({ id: "uuid-1", type: "auth_success", token: "right-token" });
 
     await expect(promise).resolves.toBe(tokenResponse);
-    expect(mockParseOAuthTokenResponse).toHaveBeenCalledWith("right-token");
+    expect(h.mockParseOAuthTokenResponse).toHaveBeenCalledWith("right-token");
   });
 
   describe("login() wrapping extensionLogin()", () => {
@@ -252,19 +188,19 @@ describe("authStore.extensionLogin()", () => {
           zkLoginAddress: "0xenriched",
         } as User["profile"],
       });
-      mockEnrichUser.mockResolvedValue(enrichedUser);
+      h.mockEnrichUser.mockResolvedValue(enrichedUser);
 
       const user = await useAuthStore.getState().login();
 
       expect(user).toBe(enrichedUser);
-      expect(mockDecodeJwt).toHaveBeenCalledWith(tokenResponse.id_token);
-      expect(mockEnrichUser).toHaveBeenCalledWith(
+      expect(h.mockDecodeJwt).toHaveBeenCalledWith(tokenResponse.id_token);
+      expect(h.mockEnrichUser).toHaveBeenCalledWith(
         expect.any(User),
         expect.any(Function),
       );
       // storeUser and syncPrimaryJwt must receive the enriched user, not the original
-      expect(mockStoreUser).toHaveBeenCalledWith(enrichedUser);
-      expect(mockSyncPrimaryJwtFromUser).toHaveBeenCalledWith(enrichedUser);
+      expect(h.mockStoreUser).toHaveBeenCalledWith(enrichedUser);
+      expect(h.mockSyncPrimaryJwt).toHaveBeenCalledWith(enrichedUser);
       expect(useAuthStore.getState().user).toBe(enrichedUser);
     });
   });

@@ -1,121 +1,66 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { AuthStoreMockHandles } from "./authStoreTestMocks";
+import {
+  makeAdaptersMock,
+  makeAuthConfigMock,
+  makeAuthStoreUtilsMock,
+  makeGetZkLoginAddressMock,
+  makeJoseMock,
+  makeOAuthTokenResponseMock,
+  makeStorageServiceMock,
+  makeStoresMock,
+  makeTenantConfigMock,
+  makeTenantStoreMock,
+  makeUserJwtSyncMock,
+  makeUserToJwtResponseMock,
+  makeUtilsMock,
+  makeVaultServiceMock,
+  setupAuthStoreMocks,
+} from "./authStoreTestMocks";
 
-const {
-  mockRemoveUser,
-  mockClearAllJwts,
-  mockClearZkLoginAddressCache,
-  mockPerformFullCleanup,
-  mockZkProofClear,
-  mockDeviceLock,
-} = vi.hoisted(() => ({
+const h: AuthStoreMockHandles = vi.hoisted(() => ({
+  mockGetUser: vi.fn(),
+  mockStoreUser: vi.fn(),
   mockRemoveUser: vi.fn(),
+  mockSigninRedirect: vi.fn(),
+  mockSigninSilent: vi.fn(),
+  mockGetJwt: vi.fn(),
   mockClearAllJwts: vi.fn(),
+  mockEnrichUser: vi.fn(),
+  mockSyncPrimaryJwt: vi.fn(),
+  mockUserToJwtResponse: vi.fn(),
+  mockResolveExpiresAt: vi.fn(),
   mockClearZkLoginAddressCache: vi.fn(),
-  mockPerformFullCleanup: vi.fn(),
+  mockParseOAuthTokenResponse: vi.fn(),
   mockZkProofClear: vi.fn(),
+  mockInitializeForChain: vi.fn(),
   mockDeviceLock: vi.fn(),
+  mockGetCurrentTenantId: vi.fn(),
+  mockSetCurrentTenantId: vi.fn(),
+  mockPerformFullCleanup: vi.fn(),
+  mockIsExtension: vi.fn(),
+  mockDecodeJwt: vi.fn(),
 }));
 
-vi.mock("#/auth/authConfig", () => ({
-  getUserManager: vi.fn(() => ({
-    getUser: vi.fn(),
-    storeUser: vi.fn(),
-    removeUser: mockRemoveUser,
-    signinRedirect: vi.fn(),
-    signinSilent: vi.fn(),
-  })),
-  redirectToFusionAuthLogout: vi.fn(),
-}));
-
-vi.mock("#/auth/storageService", () => ({
-  clearAllJwts: (...args: unknown[]) => mockClearAllJwts(...args),
-  getJwt: vi.fn().mockResolvedValue(null),
-}));
-
-vi.mock("#/auth/getZkLoginAddress", () => ({
-  clearZkLoginAddressCache: (...args: unknown[]) =>
-    mockClearZkLoginAddressCache(...args),
-}));
-
-vi.mock("#/auth/oauthTokenResponse", () => ({
-  parseOAuthTokenResponse: vi.fn(),
-}));
-
-vi.mock("#/auth/userJwtSync", () => ({
-  enrichUserWithZkLoginIfNeeded: vi.fn(async (user) => user),
-  syncPrimaryJwtFromUser: vi.fn().mockResolvedValue(undefined),
-}));
-
-vi.mock("#/auth/userToJwtResponse", () => ({
-  userToJwtResponse: vi.fn(),
-}));
-
-vi.mock("#/auth/utils/authStoreUtils", () => ({
-  resolveExpiresAt: vi.fn(),
-}));
-
-vi.mock("#/services/vaultService", () => ({
-  zkProofService: {
-    clear: (...args: unknown[]) => mockZkProofClear(...args),
-  },
-}));
-
-vi.mock("#/stores", () => ({
-  useContextStore: {
-    getState: vi.fn(() => ({ chain: "sui:testnet" })),
-  },
-  useDeviceStore: {
-    getState: vi.fn(() => ({
-      networkData: {},
-      initializeForChain: vi.fn().mockResolvedValue(undefined),
-      lock: mockDeviceLock,
-    })),
-  },
-}));
-
-vi.mock("#/stores/tenantStore", () => ({
-  getCurrentTenantId: vi.fn(() => "stillness"),
-  OAuthTenantSessionKey: "evevault_oauth_tenant",
-  setCurrentTenantId: vi.fn().mockResolvedValue(undefined),
-}));
-
-vi.mock("#/utils", () => ({
-  createLogger: () => ({
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-  }),
-  isBrowser: () => true,
-  isExtension: () => true,
-  isWeb: () => false,
-  performFullCleanup: (...args: unknown[]) => mockPerformFullCleanup(...args),
-}));
-
-vi.mock("#/utils/tenantConfig", () => ({
-  getTenantConfig: vi.fn(() => ({
+vi.mock("#/auth/authConfig", () => makeAuthConfigMock(h));
+vi.mock("#/auth/storageService", () => makeStorageServiceMock(h));
+vi.mock("#/auth/userJwtSync", () => makeUserJwtSyncMock(h));
+vi.mock("#/auth/userToJwtResponse", () => makeUserToJwtResponseMock(h));
+vi.mock("#/auth/utils/authStoreUtils", () => makeAuthStoreUtilsMock(h));
+vi.mock("#/auth/getZkLoginAddress", () => makeGetZkLoginAddressMock(h));
+vi.mock("#/auth/oauthTokenResponse", () => makeOAuthTokenResponseMock(h));
+vi.mock("#/services/vaultService", () => makeVaultServiceMock(h));
+vi.mock("#/stores", () => makeStoresMock(h));
+vi.mock("#/stores/tenantStore", () => makeTenantStoreMock(h));
+vi.mock("#/utils", () => makeUtilsMock(h));
+vi.mock("#/utils/tenantConfig", () =>
+  makeTenantConfigMock("stillness", {
     serverUrl: "https://auth.example.test/",
     clientId: "client-1",
-  })),
-  DEFAULT_TENANT_ID: "stillness",
-}));
-
-vi.mock("#/adapters", () => ({
-  localStorageAdapter: {
-    getItem: vi.fn().mockResolvedValue(null),
-    setItem: vi.fn().mockResolvedValue(undefined),
-    removeItem: vi.fn().mockResolvedValue(undefined),
-  },
-  chromeStorageAdapter: {
-    getItem: vi.fn().mockResolvedValue(null),
-    setItem: vi.fn().mockResolvedValue(undefined),
-    removeItem: vi.fn().mockResolvedValue(undefined),
-  },
-}));
-
-vi.mock("jose", () => ({
-  decodeJwt: vi.fn(),
-}));
+  }),
+);
+vi.mock("#/adapters", () => makeAdaptersMock());
+vi.mock("jose", () => makeJoseMock(h));
 
 import { useAuthStore } from "#/auth/stores/authStore";
 
@@ -126,11 +71,7 @@ describe("authStore.logout() extension path", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockRemoveUser.mockResolvedValue(undefined);
-    mockClearAllJwts.mockResolvedValue(undefined);
-    mockPerformFullCleanup.mockResolvedValue(undefined);
-    mockZkProofClear.mockResolvedValue(undefined);
-    mockDeviceLock.mockResolvedValue(undefined);
+    setupAuthStoreMocks(h, { isExtension: true });
     getRedirectURL.mockReturnValue("chrome-extension://extension-id/callback");
     launchWebAuthFlow.mockImplementation((_, callback) => callback?.());
     vi.stubGlobal("chrome", {

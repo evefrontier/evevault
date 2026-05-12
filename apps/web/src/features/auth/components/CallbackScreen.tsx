@@ -10,18 +10,14 @@ import {
   createLogger,
   getDevModeEnabled,
   isAvailableTenantId,
-  ROUTE_PATHS,
   SESSION_STORAGE_REDIRECT_KEY,
 } from "@evevault/shared/utils";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { User } from "oidc-client-ts";
 import { useEffect, useState } from "react";
+import { isRoutePath } from "@/lib/routeUtils";
 
 const log = createLogger();
-
-const isRoutePath = (value: string): value is RoutePath => {
-  return ROUTE_PATHS.includes(value as RoutePath);
-};
 
 /** Guard so the OAuth code is only exchanged once (avoids "Invalid Authorization Code" from double-run in Strict Mode or reload). */
 let callbackExchangeStarted = false;
