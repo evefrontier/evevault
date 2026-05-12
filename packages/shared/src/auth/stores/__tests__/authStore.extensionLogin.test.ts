@@ -59,6 +59,7 @@ vi.mock("#/adapters", () => makeAdaptersMock());
 vi.mock("jose", () => makeJoseMock(h));
 
 import { useAuthStore } from "#/auth/stores/authStore";
+import { makeJwtPayload } from "#/testing";
 
 type ChromeMessageListener = (message: {
   id: string;
@@ -66,11 +67,6 @@ type ChromeMessageListener = (message: {
   token?: unknown;
   error?: unknown;
 }) => void;
-
-function makeJwtPayload(claims: Record<string, unknown>): string {
-  const payload = Buffer.from(JSON.stringify(claims)).toString("base64url");
-  return `eyJhbGciOiJIUzI1NiJ9.${payload}.sig`;
-}
 
 function makeTokenResponse() {
   return {
@@ -186,7 +182,7 @@ describe("authStore.extensionLogin()", () => {
         profile: {
           sub: "user-1",
           zkLoginAddress: "0xenriched",
-        } as User["profile"],
+        } as unknown as User["profile"],
       });
       h.mockEnrichUser.mockResolvedValue(enrichedUser);
 

@@ -1,4 +1,5 @@
 import { SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
+import type { Mock } from "vitest";
 import { vi } from "vitest";
 
 /**
@@ -25,27 +26,27 @@ import { vi } from "vitest";
  * ```
  */
 export type AuthStoreMockHandles = {
-  mockIsExtension: ReturnType<typeof vi.fn>;
-  mockDecodeJwt: ReturnType<typeof vi.fn>;
-  mockGetUser: ReturnType<typeof vi.fn>;
-  mockStoreUser: ReturnType<typeof vi.fn>;
-  mockRemoveUser: ReturnType<typeof vi.fn>;
-  mockSigninRedirect: ReturnType<typeof vi.fn>;
-  mockSigninSilent: ReturnType<typeof vi.fn>;
-  mockGetJwt: ReturnType<typeof vi.fn>;
-  mockClearAllJwts: ReturnType<typeof vi.fn>;
-  mockEnrichUser: ReturnType<typeof vi.fn>;
-  mockSyncPrimaryJwt: ReturnType<typeof vi.fn>;
-  mockUserToJwtResponse: ReturnType<typeof vi.fn>;
-  mockResolveExpiresAt: ReturnType<typeof vi.fn>;
-  mockClearZkLoginAddressCache: ReturnType<typeof vi.fn>;
-  mockParseOAuthTokenResponse: ReturnType<typeof vi.fn>;
-  mockZkProofClear: ReturnType<typeof vi.fn>;
-  mockInitializeForChain: ReturnType<typeof vi.fn>;
-  mockDeviceLock: ReturnType<typeof vi.fn>;
-  mockGetCurrentTenantId: ReturnType<typeof vi.fn>;
-  mockSetCurrentTenantId: ReturnType<typeof vi.fn>;
-  mockPerformFullCleanup: ReturnType<typeof vi.fn>;
+  mockIsExtension: Mock;
+  mockDecodeJwt: Mock;
+  mockGetUser: Mock;
+  mockStoreUser: Mock;
+  mockRemoveUser: Mock;
+  mockSigninRedirect: Mock;
+  mockSigninSilent: Mock;
+  mockGetJwt: Mock;
+  mockClearAllJwts: Mock;
+  mockEnrichUser: Mock;
+  mockSyncPrimaryJwt: Mock;
+  mockUserToJwtResponse: Mock;
+  mockResolveExpiresAt: Mock;
+  mockClearZkLoginAddressCache: Mock;
+  mockParseOAuthTokenResponse: Mock;
+  mockZkProofClear: Mock;
+  mockInitializeForChain: Mock;
+  mockDeviceLock: Mock;
+  mockGetCurrentTenantId: Mock;
+  mockSetCurrentTenantId: Mock;
+  mockPerformFullCleanup: Mock;
 };
 
 // ─── vi.mock() factory functions ──────────────────────────────────────────

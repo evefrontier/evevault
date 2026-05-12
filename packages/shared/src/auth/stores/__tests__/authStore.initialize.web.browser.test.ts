@@ -68,19 +68,12 @@ vi.mock("jose", () => makeJoseMock(h));
 
 // ─── import store after mocks ─────────────────────────────────────────────
 import { useAuthStore } from "#/auth/stores/authStore";
+import { makeJwtPayload } from "#/testing";
 
 // ─── helpers ──────────────────────────────────────────────────────────────
 
 const FUTURE = Math.floor(Date.now() / 1000) + 3600;
 const PAST = Math.floor(Date.now() / 1000) - 60;
-
-function makeJwtPayload(claims: Record<string, unknown>): string {
-  const payload = btoa(JSON.stringify(claims))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=/g, "");
-  return `eyJhbGciOiJIUzI1NiJ9.${payload}.sig`;
-}
 
 function makeStoredJwt(overrides: Record<string, unknown> = {}) {
   return {

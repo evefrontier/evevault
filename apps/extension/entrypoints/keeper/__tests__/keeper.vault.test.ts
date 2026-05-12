@@ -260,7 +260,7 @@ describe("Keeper vault expiry (checkAndEnforceExpiry)", () => {
     expect(String(resp.error)).toContain("Vault must be unlocked again");
   });
 
-  it("EPH_SIGN returns LOCKED when neither ephemeralKey nor localnetKey is set", async () => {
+  it("EPH_SIGN returns LOCKED when ephemeralKey and localnetKey are not set", async () => {
     const resp = await dispatch({
       type: KeeperMessageTypes.EPH_SIGN,
       msgBytes: [],

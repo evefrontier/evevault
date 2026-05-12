@@ -52,7 +52,7 @@ export default defineConfig({
         test: {
           name: "jsdom",
           include: ["src/**/*.test.{ts,tsx}"],
-          exclude: ["**/node_modules/**", "**/dist/**", "src/**/*.browser.test.{ts,tsx}"],
+          exclude: ["**/node_modules/**", "**/dist/**", "src/**/*.browser.test.{ts,tsx}", "src/**/*.node.test.{ts,tsx}"],
           environment: "jsdom",
           globals: true,
           setupFiles: ["../../vitest.setup.ts"],

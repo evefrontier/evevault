@@ -1,4 +1,4 @@
-import { ROUTE_PATHS } from "@evevault/shared/utils";
+import { FILE_ROUTE_PATHS } from "@evevault/shared/utils";
 import { describe, expect, it } from "vitest";
 import {
   getOptionalString,
@@ -44,7 +44,7 @@ describe("validateSearch", () => {
 });
 
 describe("isRoutePath", () => {
-  it.each(ROUTE_PATHS)("returns true for %s", (path) => {
+  it.each(FILE_ROUTE_PATHS)("returns true for %s", (path) => {
     expect(isRoutePath(path)).toBe(true);
   });
 
@@ -64,7 +64,7 @@ describe("resolveRoute", () => {
   it.each([
     ["undefined", undefined, "/wallet"],
     ["empty string", "", "/wallet"],
-    ...ROUTE_PATHS.map((path) => [path, path, path] as const),
+    ...FILE_ROUTE_PATHS.map((path) => [path, path, path] as const),
     ["unknown path", "/unknown", "/wallet"],
     ["absolute URL", "https://example.com/wallet", "/wallet"],
   ])("resolves %s", (_label, target, expected) => {

@@ -1,5 +1,6 @@
 import { User } from "oidc-client-ts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { makeJwtPayload } from "#/testing";
 
 const mockGetZkLoginAddress = vi.fn();
 const mockStoreJwt = vi.fn();
@@ -21,12 +22,6 @@ vi.mock("#/utils/logger", () => ({
     error: vi.fn(),
   }),
 }));
-
-function makeJwtPayload(claims: Record<string, unknown>): string {
-  const payload = Buffer.from(JSON.stringify(claims)).toString("base64url");
-  return `eyJhbGciOiJIUzI1NiJ9.${payload}.sig`;
-}
-
 function baseUser(overrides: Partial<ConstructorParameters<typeof User>[0]>) {
   return new User({
     id_token: makeJwtPayload({ sub: "user-1", exp: 4_000_000_000 }),
