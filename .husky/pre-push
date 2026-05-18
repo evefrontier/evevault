@@ -1,7 +1,9 @@
 #!/usr/bin/env sh
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-nvm use 22 --silent
+if command -v nvm >/dev/null 2>&1; then
+  nvm use --silent
+fi
 export PATH="$HOME/.bun/bin:$PATH"
 # GHSA-3v7f-55p6-f55p / GHSA-c2c7-rcm5-vvqj: picomatch 2.3.1 nested inside micromatch/anymatch/readdirp.
 # A global override to 2.3.2 would break fdir (requires picomatch ^3||^4). Dev-only, no runtime exposure.
