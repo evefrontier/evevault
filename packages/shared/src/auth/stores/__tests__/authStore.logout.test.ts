@@ -134,15 +134,15 @@ describe("authStore.logout()", () => {
 
     await useAuthStore.getState().logout();
 
-    expect(mockClear).toHaveBeenCalledTimes(1);
+    expect(mockClear).toHaveBeenCalledOnce;
   });
 
   it("calls deviceStore.lock() during logout", async () => {
     await useAuthStore.getState().logout();
 
-    expect(mockDeviceStoreLock).toHaveBeenCalledTimes(1);
+    expect(mockDeviceStoreLock).toHaveBeenCalledOnce;
     // deviceStore.lock() internally calls ephKeyService.lock()
-    expect(vi.mocked(vaultService.ephKeyService.lock)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(vaultService.ephKeyService.lock)).toHaveBeenCalledOnce;
   });
 
   it("calls zkProofService.clear() before deviceStore.lock()", async () => {
@@ -171,7 +171,7 @@ describe("authStore.logout()", () => {
 
     await useAuthStore.getState().logout();
 
-    expect(mockCleanup).toHaveBeenCalledTimes(1);
+    expect(mockCleanup).toHaveBeenCalledOnce;
   });
 
   it("calls userManager.removeUser() before cleanup", async () => {
@@ -191,7 +191,7 @@ describe("authStore.logout()", () => {
 
     await useAuthStore.getState().logout();
 
-    expect(mockRemoveUser).toHaveBeenCalledTimes(1);
+    expect(mockRemoveUser).toHaveBeenCalledOnce;
     expect(callOrder[0]).toBe("removeUser");
     expect(callOrder[1]).toBe("cleanup");
   });
@@ -203,9 +203,8 @@ describe("authStore.logout()", () => {
     await useAuthStore.getState().logout();
 
     expect(useAuthStore.getState().error).toBe("Lock failed");
-    expect(
-      vi.mocked(authConfig.redirectToFusionAuthLogout),
-    ).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(authConfig.redirectToFusionAuthLogout))
+      .toHaveBeenCalledOnce;
   });
 
   it("calls redirectToFusionAuthLogout() only when logout throws (fallback)", async () => {

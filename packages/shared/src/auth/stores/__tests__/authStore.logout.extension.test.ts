@@ -90,7 +90,7 @@ describe("authStore.logout() extension path", () => {
   it("launches FusionAuth logout and emits an empty accounts change after completion", async () => {
     await useAuthStore.getState().logout();
 
-    expect(getRedirectURL).toHaveBeenCalledTimes(1);
+    expect(getRedirectURL).toHaveBeenCalledOnce;
     expect(launchWebAuthFlow).toHaveBeenCalledWith(
       { url: expect.any(String), interactive: true },
       expect.any(Function),

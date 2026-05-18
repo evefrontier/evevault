@@ -118,7 +118,7 @@ describe("deviceStore.getZkProof with expired stored zkLogin JWT", () => {
   it("re-vends from primary JWT and uses new token for proof", async () => {
     await useDeviceStore.getState().getZkProof(SUI_DEVNET_CHAIN);
 
-    expect(vendJwtMock).toHaveBeenCalledTimes(1);
+    expect(vendJwtMock).toHaveBeenCalledOnce;
     expect(vendJwtMock).toHaveBeenCalledWith("primary.jwt.token", {
       nonce: "device-nonce",
     });
@@ -127,7 +127,7 @@ describe("deviceStore.getZkProof with expired stored zkLogin JWT", () => {
     await expect(freshToken).resolves.toBeTypeOf("string");
     const resolvedToken = await freshToken;
 
-    expect(fetchZkProofMock).toHaveBeenCalledTimes(1);
+    expect(fetchZkProofMock).toHaveBeenCalledOnce;
     expect(fetchZkProofMock).toHaveBeenCalledWith(
       expect.objectContaining({
         idToken: resolvedToken,

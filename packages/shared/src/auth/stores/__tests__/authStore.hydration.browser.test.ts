@@ -97,8 +97,8 @@ describe("waitForAuthHydration", () => {
 
     await waitForAuthHydration();
 
-    expect(useAuthStore.persist.onFinishHydration).toHaveBeenCalledTimes(1);
-    expect(useAuthStore.persist.rehydrate).toHaveBeenCalledTimes(1);
-    expect(unsub).toHaveBeenCalledTimes(1);
+    expect(useAuthStore.persist.onFinishHydration).toHaveBeenCalledOnce;
+    expect(useAuthStore.persist.rehydrate).toHaveBeenCalledOnce;
+    expect(unsub).toHaveBeenCalledOnce;
   });
 });

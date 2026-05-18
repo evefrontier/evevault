@@ -26,13 +26,14 @@ describe("deviceStore rehydration", () => {
 
   it("reconstructs the ephemeral public key from persisted bytes", async () => {
     const publicKey = new Ed25519PublicKey(new Uint8Array(32).fill(7));
+    const publicKeyFlag = publicKey.flag();
 
     window.localStorage.setItem(
       DEVICE_STORAGE_KEY,
       JSON.stringify({
         state: {
           ephemeralPublicKeyBytes: Array.from(publicKey.toRawBytes()),
-          ephemeralPublicKeyFlag: KEY_FLAG_ED25519,
+          ephemeralPublicKeyFlag: publicKeyFlag,
           ephemeralKeyPairSecretKey: { iv: "iv", data: "data", salt: "salt" },
           isLocked: false,
         },
@@ -49,7 +50,7 @@ describe("deviceStore rehydration", () => {
     expect(state.ephemeralPublicKeyBytes).toEqual(
       Array.from(publicKey.toRawBytes()),
     );
-    expect(state.ephemeralPublicKeyFlag).toBe(KEY_FLAG_ED25519);
+    expect(state.ephemeralPublicKeyFlag).toBe(publicKeyFlag);
   });
 
   it("clears persisted public key fields when bytes cannot be reconstructed", async () => {

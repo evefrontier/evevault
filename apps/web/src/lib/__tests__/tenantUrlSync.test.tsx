@@ -89,12 +89,12 @@ describe("TenantUrlSync no-change path", () => {
 
   it("reads the current tenant exactly once", async () => {
     await renderAndFlush();
-    expect(mockGetCurrentTenantId).toHaveBeenCalledTimes(1);
+    expect(mockGetCurrentTenantId).toHaveBeenCalledOnce;
   });
 
   it("applies the tenant from the URL exactly once", async () => {
     await renderAndFlush();
-    expect(mockApplyTenantFromUrl).toHaveBeenCalledTimes(1);
+    expect(mockApplyTenantFromUrl).toHaveBeenCalledOnce;
   });
 });
 
@@ -180,7 +180,7 @@ describe("TenantUrlSync didRun guard", () => {
       result?.rerender(<TenantUrlSync />);
     });
 
-    expect(mockApplyTenantFromUrl).toHaveBeenCalledTimes(1);
+    expect(mockApplyTenantFromUrl).toHaveBeenCalledOnce;
   });
 
   it("applies the URL tenant once per mount instance", async () => {

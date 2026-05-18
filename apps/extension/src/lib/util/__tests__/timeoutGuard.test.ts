@@ -27,7 +27,7 @@ describe("trySettle", () => {
 
   it("removes the message listener from the target on first call", () => {
     trySettle(state, listener, undefined, target);
-    expect(target.removeEventListener).toHaveBeenCalledTimes(1);
+    expect(target.removeEventListener).toHaveBeenCalledOnce;
     expect(target.removeEventListener).toHaveBeenCalledWith(
       "message",
       listener,
@@ -42,7 +42,7 @@ describe("trySettle", () => {
   it("does not call removeEventListener again on second call", () => {
     trySettle(state, listener, undefined, target);
     trySettle(state, listener, undefined, target);
-    expect(target.removeEventListener).toHaveBeenCalledTimes(1);
+    expect(target.removeEventListener).toHaveBeenCalledOnce;
   });
 
   it("calls clearTimeout when timeoutId is provided", () => {

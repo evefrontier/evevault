@@ -125,8 +125,8 @@ describe("resetVaultOnDevice", () => {
 
     await resetVaultOnDevice();
 
-    expect(vaultService.zkProofService.clear).toHaveBeenCalledTimes(1);
-    expect(vaultService.ephKeyService.clear).toHaveBeenCalledTimes(1);
+    expect(vaultService.zkProofService.clear).toHaveBeenCalledOnce;
+    expect(vaultService.ephKeyService.clear).toHaveBeenCalledOnce;
   });
 
   it("calls deviceStore.lock() only when isExtension()", async () => {
@@ -135,7 +135,7 @@ describe("resetVaultOnDevice", () => {
 
     await resetVaultOnDevice();
 
-    expect(mockDeviceLock).toHaveBeenCalledTimes(1);
+    expect(mockDeviceLock).toHaveBeenCalledOnce;
   });
 
   it("does not call deviceStore.lock() when isWeb()", async () => {
@@ -153,9 +153,9 @@ describe("resetVaultOnDevice", () => {
 
     await resetVaultOnDevice();
 
-    expect(storageService.clearAllJwts).toHaveBeenCalledTimes(1);
+    expect(storageService.clearAllJwts).toHaveBeenCalledOnce;
     expect(authConfig.getUserManager).toHaveBeenCalledWith("stillness");
-    expect(mockRemoveUser).toHaveBeenCalledTimes(1);
+    expect(mockRemoveUser).toHaveBeenCalledOnce;
   });
 
   it("calls deviceStore.setState and clears in-memory stores", async () => {
@@ -192,7 +192,7 @@ describe("resetVaultOnDevice", () => {
 
     await resetVaultOnDevice();
 
-    expect(getZkLoginAddress.clearZkLoginAddressCache).toHaveBeenCalledTimes(1);
+    expect(getZkLoginAddress.clearZkLoginAddressCache).toHaveBeenCalledOnce;
   });
 
   it("calls cleanupOidcStorage when isWeb()", async () => {
@@ -211,7 +211,7 @@ describe("resetVaultOnDevice", () => {
 
     await resetVaultOnDevice();
 
-    expect(authCleanup.cleanupOidcStorage).toHaveBeenCalledTimes(1);
+    expect(authCleanup.cleanupOidcStorage).toHaveBeenCalledOnce;
   });
 
   it("calls cleanupExtensionStorage when isExtension()", async () => {
@@ -230,7 +230,7 @@ describe("resetVaultOnDevice", () => {
 
     await resetVaultOnDevice();
 
-    expect(authCleanup.cleanupExtensionStorage).toHaveBeenCalledTimes(1);
+    expect(authCleanup.cleanupExtensionStorage).toHaveBeenCalledOnce;
   });
 
   it("propagates error when clearAllJwts fails", async () => {

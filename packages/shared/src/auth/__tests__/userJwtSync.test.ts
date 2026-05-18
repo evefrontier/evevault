@@ -144,7 +144,7 @@ describe("syncPrimaryJwtFromUser", () => {
     await syncPrimaryJwtFromUser(user);
 
     expect(mockWarn).not.toHaveBeenCalled();
-    expect(mockStoreJwt).toHaveBeenCalledTimes(1);
+    expect(mockStoreJwt).toHaveBeenCalledOnce;
     const [jwtArg] = mockStoreJwt.mock.calls[0] ?? [];
     expect(jwtArg).toMatchObject({
       id_token: user.id_token,

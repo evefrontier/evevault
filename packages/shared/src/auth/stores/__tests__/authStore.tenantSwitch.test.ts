@@ -72,12 +72,11 @@ describe("tenant switch auth cleanup", () => {
 
   it("runTenantSwitchCleanup clears JWTs, removes OIDC user, and clears zkLogin address cache", async () => {
     await runTenantSwitchCleanup("stillness" as never);
-
-    expect(h.mockRemoveUser).toHaveBeenCalledTimes(1);
-    expect(h.mockPerformFullCleanup).toHaveBeenCalledTimes(1);
-    expect(h.mockClearAllJwts).toHaveBeenCalledTimes(1);
-    expect(h.mockClearZkLoginAddressCache).toHaveBeenCalledTimes(1);
-    expect(h.mockZkProofClear).toHaveBeenCalledTimes(1);
+    expect(h.mockRemoveUser).toHaveBeenCalledOnce;
+    expect(h.mockPerformFullCleanup).toHaveBeenCalledOnce;
+    expect(h.mockClearAllJwts).toHaveBeenCalledOnce;
+    expect(h.mockClearZkLoginAddressCache).toHaveBeenCalledOnce;
+    expect(h.mockZkProofClear).toHaveBeenCalledOnce;
     expect(useAuthStore.getState().user).toBeNull();
   });
 
@@ -95,15 +94,18 @@ describe("tenant switch auth cleanup", () => {
       value: { reload },
     });
 
-    await switchTenantAndReload("tauceti" as never);
+    try {
+      await switchTenantAndReload("tauceti" as never);
 
-    expect(h.mockSetCurrentTenantId).toHaveBeenCalledWith("tauceti");
-    expect(reload).toHaveBeenCalledTimes(1);
-
-    Object.defineProperty(window, "location", {
-      configurable: true,
-      value: originalLocation,
-    });
+      expect(h.mockSetCurrentTenantId).toHaveBeenCalledWith("tauceti");
+      expect(reload).toHaveBeenCalledOnce();
+      expect(window.location.href).toBe("http://localhost:3001?tenant=tauceti");
+    } finally {
+      Object.defineProperty(window, "location", {
+        configurable: true,
+        value: originalLocation,
+      });
+    }
   });
 
   it("switchTenantAndReload is a no-op when the new tenant ID matches the current one", async () => {
@@ -114,16 +116,18 @@ describe("tenant switch auth cleanup", () => {
       value: { reload },
     });
 
-    // mockGetCurrentTenantId returns "stillness" and we pass "stillness" — early return
-    await switchTenantAndReload("stillness" as never);
+    try {
+      // mockGetCurrentTenantId returns "stillness" and we pass "stillness" — early return
+      await switchTenantAndReload("stillness" as never);
 
-    expect(h.mockSetCurrentTenantId).not.toHaveBeenCalled();
-    expect(reload).not.toHaveBeenCalled();
-
-    Object.defineProperty(window, "location", {
-      configurable: true,
-      value: originalLocation,
-    });
+      expect(h.mockSetCurrentTenantId).not.toHaveBeenCalled();
+      expect(reload).not.toHaveBeenCalled();
+    } finally {
+      Object.defineProperty(window, "location", {
+        configurable: true,
+        value: originalLocation,
+      });
+    }
   });
 
   it("runTenantSwitchCleanup does not throw when a cleanup step rejects (error is caught internally)", async () => {

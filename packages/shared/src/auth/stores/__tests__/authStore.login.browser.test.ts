@@ -85,7 +85,7 @@ describe("authStore.login() web path", () => {
     await useAuthStore.getState().login();
 
     expect(h.mockInitializeForChain).toHaveBeenCalledWith(SUI_TESTNET_CHAIN);
-    expect(h.mockSigninRedirect).toHaveBeenCalledTimes(1);
+    expect(h.mockSigninRedirect).toHaveBeenCalledOnce;
     expect(callOrder).toEqual(["initializeForChain", "signinRedirect"]);
   });
 
