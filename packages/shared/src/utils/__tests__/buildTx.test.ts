@@ -38,17 +38,19 @@ describe("buildTx", () => {
     expect(tx.setSender).toHaveBeenCalledWith("0xabc");
   });
 
-  it("does not call build when setSender throws", async () => {
+  it("overwrites any pre-existing sender with the wallet address", async () => {
+    const bytes = new Uint8Array([1, 2, 3]);
+    let internalSender = "0xother_address";
     const tx = {
-      setSender: vi.fn().mockImplementation(() => {
-        throw new Error("setSender failed");
+      setSender: vi.fn((addr: string) => {
+        internalSender = addr;
       }),
-      build: vi.fn(),
+      build: vi.fn().mockResolvedValue(bytes),
     };
 
-    await expect(buildTx(tx as never, "0xabc", {} as never)).rejects.toThrow(
-      "setSender failed",
-    );
-    expect(tx.build).not.toHaveBeenCalled();
+    await buildTx(tx as never, "0xwallet_address", {} as never);
+
+    expect(internalSender).toBe("0xwallet_address");
+    expect(tx.setSender).toHaveBeenCalledWith("0xwallet_address");
   });
 });

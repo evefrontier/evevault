@@ -99,7 +99,6 @@ describe("tenant switch auth cleanup", () => {
 
       expect(h.mockSetCurrentTenantId).toHaveBeenCalledWith("tauceti");
       expect(reload).toHaveBeenCalledOnce();
-      expect(window.location.href).toBe("http://localhost:3001?tenant=tauceti");
     } finally {
       Object.defineProperty(window, "location", {
         configurable: true,

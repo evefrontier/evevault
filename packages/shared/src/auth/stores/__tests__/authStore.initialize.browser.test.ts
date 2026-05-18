@@ -68,7 +68,7 @@ vi.mock("jose", () => makeJoseMock(h));
 
 // ─── import store after mocks ─────────────────────────────────────────────
 import { useAuthStore } from "#/auth/stores/authStore";
-import { makeJwtPayload } from "#/testing";
+import { makeJwt } from "#/testing";
 
 // ─── helpers ──────────────────────────────────────────────────────────────
 
@@ -76,7 +76,7 @@ const FUTURE = Math.floor(Date.now() / 1000) + 3600;
 const PAST = Math.floor(Date.now() / 1000) - 60;
 function makeStoredJwt(overrides: Record<string, unknown> = {}) {
   return {
-    id_token: makeJwtPayload({ sub: "user-1", iat: 1000, exp: FUTURE }),
+    id_token: makeJwt({ sub: "user-1", iat: 1000, exp: FUTURE }),
     access_token: "at",
     token_type: "Bearer",
     scope: "openid",
@@ -91,7 +91,7 @@ function makeUser(
   overrides: Partial<ConstructorParameters<typeof User>[0]> = {},
 ) {
   return new User({
-    id_token: makeJwtPayload({ sub: "user-1", iat: 1000, exp: FUTURE }),
+    id_token: makeJwt({ sub: "user-1", iat: 1000, exp: FUTURE }),
     access_token: "at",
     token_type: "Bearer",
     scope: "openid",
@@ -178,7 +178,7 @@ describe("authStore.initialize() (extension path)", () => {
 
     it("runs silent renew when stored JWT is expired but refresh token is present", async () => {
       const refreshedUser = makeUser({
-        id_token: makeJwtPayload({ sub: "user-1", iat: 2000, exp: FUTURE }),
+        id_token: makeJwt({ sub: "user-1", iat: 2000, exp: FUTURE }),
       });
       h.mockGetJwt.mockResolvedValue(makeStoredJwt({ expires_at: PAST }));
       h.mockUserToJwtResponse.mockReturnValue(
@@ -205,7 +205,7 @@ describe("authStore.initialize() (extension path)", () => {
     it("calls storeUser with reconstructed user before signinSilent when JWT is expired and refresh token exists", async () => {
       const callOrder: string[] = [];
       const refreshedUser = makeUser({
-        id_token: makeJwtPayload({ sub: "user-1", iat: 2000, exp: FUTURE }),
+        id_token: makeJwt({ sub: "user-1", iat: 2000, exp: FUTURE }),
       });
       h.mockGetJwt.mockResolvedValue(makeStoredJwt({ expires_at: PAST }));
       h.mockUserToJwtResponse.mockReturnValue(

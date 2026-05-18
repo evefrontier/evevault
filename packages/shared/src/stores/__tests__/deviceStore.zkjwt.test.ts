@@ -54,14 +54,7 @@ vi.mock("#/auth", () => ({
 }));
 
 import { useDeviceStore } from "#/stores/deviceStore";
-
-function makeJwtWithExp(exp: number): string {
-  const header = Buffer.from(
-    JSON.stringify({ alg: "none", typ: "JWT" }),
-  ).toString("base64url");
-  const payload = Buffer.from(JSON.stringify({ exp })).toString("base64url");
-  return `${header}.${payload}.signature`;
-}
+import { makeJwtWithExp } from "#/testing";
 
 describe("deviceStore.getZkProof with expired stored zkLogin JWT", () => {
   beforeEach(() => {

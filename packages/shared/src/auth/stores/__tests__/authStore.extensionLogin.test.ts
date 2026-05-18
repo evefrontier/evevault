@@ -59,7 +59,7 @@ vi.mock("#/adapters", () => makeAdaptersMock());
 vi.mock("jose", () => makeJoseMock(h));
 
 import { useAuthStore } from "#/auth/stores/authStore";
-import { makeJwtPayload } from "#/testing";
+import { makeJwt } from "#/testing";
 
 type ChromeMessageListener = (message: {
   id: string;
@@ -70,7 +70,7 @@ type ChromeMessageListener = (message: {
 
 function makeTokenResponse() {
   return {
-    id_token: makeJwtPayload({ sub: "user-1", iat: 1000, exp: 4600 }),
+    id_token: makeJwt({ sub: "user-1", iat: 1000, exp: 4600 }),
     access_token: "access-token",
     token_type: "Bearer",
     scope: "openid",

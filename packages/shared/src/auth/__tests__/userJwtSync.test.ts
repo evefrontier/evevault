@@ -1,6 +1,6 @@
 import { User } from "oidc-client-ts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { makeJwtPayload } from "#/testing";
+import { makeJwt } from "#/testing";
 
 const mockGetZkLoginAddress = vi.fn();
 const mockStoreJwt = vi.fn();
@@ -24,7 +24,7 @@ vi.mock("#/utils/logger", () => ({
 }));
 function baseUser(overrides: Partial<ConstructorParameters<typeof User>[0]>) {
   return new User({
-    id_token: makeJwtPayload({ sub: "user-1", exp: 4_000_000_000 }),
+    id_token: makeJwt({ sub: "user-1", exp: 4_000_000_000 }),
     access_token: "access",
     token_type: "Bearer",
     scope: "openid",
