@@ -25,7 +25,7 @@ describe("ephKeyService.lock()", () => {
 
     await ephKeyService.lock();
 
-    expect(mockSendMessage).toHaveBeenCalledOnce;
+    expect(mockSendMessage).toHaveBeenCalledOnce();
     expect(mockSendMessage).toHaveBeenCalledWith({
       type: VaultMessageTypes.LOCK,
     });
@@ -76,7 +76,7 @@ describe("ephKeyService.rotateEphemeralKeyPair()", () => {
 
     const result = await ephKeyService.rotateEphemeralKeyPair();
 
-    expect(mockSendMessage).toHaveBeenCalledOnce;
+    expect(mockSendMessage).toHaveBeenCalledOnce();
     expect(mockSendMessage).toHaveBeenCalledWith({
       type: VaultMessageTypes.ROTATE_KEYPAIR,
     });

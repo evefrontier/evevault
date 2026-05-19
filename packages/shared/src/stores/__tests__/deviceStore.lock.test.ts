@@ -43,7 +43,7 @@ describe("deviceStore.lock()", () => {
 
     await useDeviceStore.getState().lock();
 
-    expect(mockLock).toHaveBeenCalledOnce;
+    expect(mockLock).toHaveBeenCalledOnce();
     expect(useDeviceStore.getState().isLocked).toBe(true);
   });
 
@@ -54,7 +54,7 @@ describe("deviceStore.lock()", () => {
 
     await useDeviceStore.getState().lock();
 
-    expect(mockLock).toHaveBeenCalledOnce;
+    expect(mockLock).toHaveBeenCalledOnce();
     expect(useDeviceStore.getState().isLocked).toBe(true);
   });
 
@@ -67,7 +67,7 @@ describe("deviceStore.lock()", () => {
       "Keeper lock failed",
     );
 
-    expect(mockLock).toHaveBeenCalledOnce;
+    expect(mockLock).toHaveBeenCalledOnce();
     // State should not change if lock fails
     expect(useDeviceStore.getState().isLocked).toBe(false);
   });

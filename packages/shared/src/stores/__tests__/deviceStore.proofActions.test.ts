@@ -274,7 +274,7 @@ describe("createProofActions.getZkProof", () => {
 
     await getZkProof(SUI_DEVNET_CHAIN);
 
-    expect(rotateEphemeralKey).toHaveBeenCalledOnce;
+    expect(rotateEphemeralKey).toHaveBeenCalledOnce();
     expect(resolveVendedMock).toHaveBeenCalledWith(
       SUI_DEVNET_CHAIN,
       expect.anything(),

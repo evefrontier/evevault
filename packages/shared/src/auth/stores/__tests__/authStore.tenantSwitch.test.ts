@@ -71,13 +71,15 @@ describe("tenant switch auth cleanup", () => {
     useAuthStore.setState({ user: { id_token: "token" } as never });
   });
 
+  const originalLocation = window.location;
+
   it("runTenantSwitchCleanup clears JWTs, removes OIDC user, and clears zkLogin address cache", async () => {
     await runTenantSwitchCleanup("stillness" as never);
-    expect(h.mockRemoveUser).toHaveBeenCalledOnce;
-    expect(h.mockPerformFullCleanup).toHaveBeenCalledOnce;
-    expect(h.mockClearAllJwts).toHaveBeenCalledOnce;
-    expect(h.mockClearZkLoginAddressCache).toHaveBeenCalledOnce;
-    expect(h.mockZkProofClear).toHaveBeenCalledOnce;
+    expect(h.mockRemoveUser).toHaveBeenCalledOnce();
+    expect(h.mockPerformFullCleanup).toHaveBeenCalledOnce();
+    expect(h.mockClearAllJwts).toHaveBeenCalledOnce();
+    expect(h.mockClearZkLoginAddressCache).toHaveBeenCalledOnce();
+    expect(h.mockZkProofClear).toHaveBeenCalledOnce();
     expect(useAuthStore.getState().user).toBeNull();
   });
 
@@ -89,7 +91,6 @@ describe("tenant switch auth cleanup", () => {
 
   it("switchTenantAndReload updates currentTenantId then reloads the page", async () => {
     const reload = vi.fn();
-    const originalLocation = window.location;
     setWindowLocation({ reload });
 
     try {
@@ -104,7 +105,6 @@ describe("tenant switch auth cleanup", () => {
 
   it("switchTenantAndReload is a no-op when the new tenant ID matches the current one", async () => {
     const reload = vi.fn();
-    const originalLocation = window.location;
     setWindowLocation({ reload });
 
     try {

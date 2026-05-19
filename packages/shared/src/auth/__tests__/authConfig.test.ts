@@ -70,7 +70,7 @@ describe("authConfig UserManager", () => {
     const { getUserManager } = await import("#/auth/authConfig");
     getUserManager(TenantId.STILLNESS);
 
-    expect(oidcMocks.userManagerConstructor).toHaveBeenCalledOnce;
+    expect(oidcMocks.userManagerConstructor).toHaveBeenCalledOnce();
     const settings = oidcMocks.userManagerConstructor.mock.calls[0]?.[0] as {
       automaticSilentRenew?: boolean;
     };
@@ -100,7 +100,7 @@ describe("authConfig UserManager", () => {
     const { getUserManager } = await import("#/auth/authConfig");
     getUserManager(TenantId.STILLNESS);
 
-    expect(oidcMocks.addSilentRenewError).toHaveBeenCalledOnce;
+    expect(oidcMocks.addSilentRenewError).toHaveBeenCalledOnce();
     const handler = oidcMocks.addSilentRenewError.mock.calls[0]?.[0] as
       | ((error: unknown) => void)
       | undefined;

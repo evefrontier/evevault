@@ -204,9 +204,9 @@ describe("createInitActions", () => {
 
       await state.rotateEphemeralKey(SUI_DEVNET_CHAIN);
 
-      expect(rotateEphemeralKeyPairMock).toHaveBeenCalledOnce;
-      expect(clearAllZkLoginJwtsMock).toHaveBeenCalledOnce;
-      expect(clearZkProofsMock).toHaveBeenCalledOnce;
+      expect(rotateEphemeralKeyPairMock).toHaveBeenCalledOnce();
+      expect(clearAllZkLoginJwtsMock).toHaveBeenCalledOnce();
+      expect(clearZkProofsMock).toHaveBeenCalledOnce();
       expect(state.ephemeralKeyPairSecretKey).toEqual({
         iv: "web-crypto-signer",
         data: "non-extractable-key",
