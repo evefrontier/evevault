@@ -1,52 +1,34 @@
 import type { TenantId } from "@evefrontier/dapp-kit/utils";
-import { decodeJwt } from "jose";
-import { type IdTokenClaims, User } from "oidc-client-ts";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { chromeStorageAdapter, localStorageAdapter } from "#/adapters";
 import { getUserManager, redirectToFusionAuthLogout } from "#/auth/authConfig";
 import { clearZkLoginAddressCache } from "#/auth/getZkLoginAddress";
-import { parseOAuthTokenResponse } from "#/auth/oauthTokenResponse";
-import { clearAllJwts, getJwt } from "#/auth/storageService";
+import { clearAllJwts } from "#/auth/storageService";
+import {
+  clearAuthSession,
+  createExtensionAuthListener,
+  finishExtensionLogout,
+  getEnokiApiKey,
+  getErrorMessage,
+  initializeExtensionSession,
+  initializeWebSession,
+  loginExtensionSession,
+  loginWebSession,
+} from "#/auth/stores/authStoreWorkflows";
 import type { AuthState } from "#/auth/types";
-import {
-  enrichUserWithZkLoginIfNeeded,
-  syncPrimaryJwtFromUser,
-} from "#/auth/userJwtSync";
-import { userToJwtResponse } from "#/auth/userToJwtResponse";
-import { resolveExpiresAt } from "#/auth/utils/authStoreUtils";
 import { zkProofService } from "#/services/vaultService";
-import { useContextStore, useDeviceStore } from "#/stores";
-import {
-  getCurrentTenantId,
-  OAuthTenantSessionKey,
-  setCurrentTenantId,
-} from "#/stores/tenantStore";
-import type { AuthMessage } from "#/types";
-import { isZkLoginSuiChain } from "#/types/networks";
-import {
-  createLogger,
-  isBrowser,
-  isExtension,
-  isWeb,
-  performFullCleanup,
-} from "#/utils";
+import { useContextStore } from "#/stores";
+import { getCurrentTenantId, setCurrentTenantId } from "#/stores/tenantStore";
+import { createLogger, isExtension, isWeb, performFullCleanup } from "#/utils";
 import { AUTH_STORAGE_KEY } from "#/utils/storageKeys";
-import { getTenantConfig } from "#/utils/tenantConfig";
 
 // biome-ignore lint/suspicious/noExplicitAny: chrome is a global object
 declare const chrome: any;
 
-const log = createLogger();
+export { getEnokiApiKey };
 
-export const getEnokiApiKey = (): string => {
-  if (isBrowser()) {
-    const env = (import.meta as unknown as { env: Record<string, string> }).env;
-    return env?.VITE_ENOKI_API_KEY ?? "";
-  }
-  // biome-ignore lint/suspicious/noExplicitAny: Node.js process.env access requires any type
-  return (globalThis as any)?.process?.env?.VITE_ENOKI_API_KEY ?? "";
-};
+const log = createLogger();
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -64,173 +46,21 @@ export const useAuthStore = create<AuthState>()(
           const network = useContextStore.getState().chain;
 
           try {
-            if (isExtension() && typeof chrome !== "undefined") {
-              let user = await getUserManagerInstance().getUser();
-
-              if (!user?.id_token) {
-                // The background dapp-login path stores a JWT via storeJwt() but does
-                // not create an OIDC UserManager session. Reconstruct the User from the
-                // stored JWT so the popup does not appear logged-out after a dapp login.
-                const storedJwt = await getJwt();
-                if (!storedJwt?.id_token) {
-                  log.info(
-                    "Extension init: no OIDC user or stored JWT, clearing auth",
-                    { network },
-                  );
-                  set({ user: null, loading: false });
-                  return;
-                }
-
-                log.info(
-                  "Extension init: no OIDC user in UserManager, rebuilding from stored JWT",
-                  { network },
-                );
-                const decodedJwt = decodeJwt<IdTokenClaims>(storedJwt.id_token);
-                user = new User({
-                  id_token: storedJwt.id_token,
-                  access_token: storedJwt.access_token,
-                  token_type: storedJwt.token_type ?? "Bearer",
-                  scope: storedJwt.scope ?? "",
-                  refresh_token: storedJwt.refresh_token,
-                  profile: { ...decodedJwt } as User["profile"],
-                  expires_at: storedJwt.expires_at,
-                });
-              }
-
-              const userManager = getUserManagerInstance();
-              const jwtSnapshot = userToJwtResponse(user);
-              if (jwtSnapshot) {
-                const expiresAt = resolveExpiresAt(jwtSnapshot);
-                const now = Math.floor(Date.now() / 1000);
-
-                if (now >= expiresAt) {
-                  if (!user.refresh_token?.trim()) {
-                    log.info(
-                      "Extension init: JWT expired, no refresh token; clearing user",
-                      {
-                        network,
-                        expiresAt,
-                        now,
-                      },
-                    );
-                    set({ user: null, loading: false });
-                    return;
-                  }
-
-                  log.info(
-                    "[Extension init] JWT expired, attempting silent renew",
-                    {
-                      network,
-                      expiresAt,
-                      now,
-                    },
-                  );
-                  // Store the reconstructed user so signinSilent() can find its
-                  // refresh_token and use the token grant.
-                  await userManager.storeUser(user);
-
-                  let refreshedUser: User | null = null;
-                  try {
-                    refreshedUser = await userManager.signinSilent();
-                  } catch (silentErr) {
-                    log.error("[Extension init] OIDC silent renew failed", {
-                      network,
-                      error:
-                        silentErr instanceof Error
-                          ? silentErr.message
-                          : String(silentErr),
-                    });
-                    set({ user: null, loading: false });
-                    return;
-                  }
-
-                  if (!refreshedUser?.id_token) {
-                    log.info(
-                      "[Extension init] silent renew returned no user session",
-                      { network },
-                    );
-                    set({ user: null, loading: false });
-                    return;
-                  }
-
-                  user = refreshedUser;
-
-                  const after = userToJwtResponse(user);
-                  if (after) {
-                    const expAfter = resolveExpiresAt(after);
-                    const nowAfter = Math.floor(Date.now() / 1000);
-                    if (nowAfter >= expAfter) {
-                      log.info(
-                        "[Extension init] JWT still expired after silent renew",
-                        {
-                          network,
-                        },
-                      );
-                      set({ user: null, loading: false });
-                      return;
-                    }
-                  }
-                }
-              }
-
-              user = await enrichUserWithZkLoginIfNeeded(user, getEnokiApiKey);
-              await userManager.storeUser(user);
-              await syncPrimaryJwtFromUser(user);
-              set({ user, loading: false });
-              return;
-            }
-
-            const webUserManager = getUserManagerInstance();
-            let webUser = await webUserManager.getUser();
-
-            const webJwt = userToJwtResponse(webUser);
-            const now = Math.floor(Date.now() / 1000);
-            const isExpired = !webJwt || now >= resolveExpiresAt(webJwt);
-
-            if (isExpired) {
-              if (!webUser?.refresh_token?.trim()) {
-                log.info(
-                  "Web init: no session or refresh token, not logged in",
-                  {
+            const user =
+              isExtension() && typeof chrome !== "undefined"
+                ? await initializeExtensionSession(
+                    getUserManagerInstance,
                     network,
-                  },
-                );
-                return set({ user: null, loading: false });
-              }
-              try {
-                webUser = await webUserManager.signinSilent();
+                  )
+                : await initializeWebSession(getUserManagerInstance, network);
 
-                if (webUser != null) {
-                  webUser = await enrichUserWithZkLoginIfNeeded(
-                    new User(webUser),
-                    getEnokiApiKey,
-                  );
-                  await getUserManagerInstance().storeUser(webUser);
-                  await syncPrimaryJwtFromUser(webUser);
-                  set({ user: webUser, loading: false });
-                  return;
-                } else {
-                  return set({ user: null, loading: false });
-                }
-              } catch (silentErr) {
-                log.warn("Web init: silent renew failed, not logged in", {
-                  network,
-                  error:
-                    silentErr instanceof Error
-                      ? silentErr.message
-                      : String(silentErr),
-                });
-                return set({ user: null, loading: false });
-              }
-            }
-
-            return set({ user: webUser ?? null, loading: false });
+            set({ user, loading: false });
           } catch (error) {
             log.error("Error initializing auth", error);
             set({
               user: null,
               loading: false,
-              error: error instanceof Error ? error.message : "Unknown error",
+              error: getErrorMessage(error),
             });
           }
         },
@@ -242,89 +72,10 @@ export const useAuthStore = create<AuthState>()(
           set({ loading: true });
 
           if (isExtension()) {
-            try {
-              const jwtResponse = await get().extensionLogin();
-              if (jwtResponse) {
-                const decodedJwt = decodeJwt<IdTokenClaims>(
-                  jwtResponse.id_token as string,
-                );
-
-                let user = new User({
-                  id_token: jwtResponse.id_token,
-                  access_token: jwtResponse.access_token,
-                  token_type: jwtResponse.token_type,
-                  scope: jwtResponse.scope,
-                  refresh_token: jwtResponse.refresh_token,
-                  profile: {
-                    ...(decodedJwt as IdTokenClaims),
-                  } as User["profile"],
-                  expires_at: decodedJwt.iat + jwtResponse.expires_in,
-                });
-
-                user = await enrichUserWithZkLoginIfNeeded(
-                  user,
-                  getEnokiApiKey,
-                );
-                await getUserManagerInstance().storeUser(user);
-                await syncPrimaryJwtFromUser(user);
-                set({ user, loading: false });
-
-                return user as User;
-              }
-              set({ loading: false });
-            } catch (error) {
-              log.error("Extension login failed", error);
-              const errorMessage =
-                error instanceof Error ? error.message : String(error);
-              if (errorMessage !== "The user did not approve access.") {
-                set({
-                  error:
-                    error instanceof Error ? error.message : "Unknown error",
-                });
-              }
-              set({ loading: false });
-            }
-          } else {
-            // Web login flow
-            if (!isZkLoginSuiChain(network)) {
-              log.info("Skipping OAuth redirect for non-zkLogin network", {
-                network,
-              });
-              set({ loading: false });
-              return;
-            }
-            try {
-              const deviceStore = useDeviceStore.getState();
-
-              // Ensure device data is present and valid for current network — needed
-              // for the vendJwt call after OAuth returns.
-              const networkData = deviceStore.networkData[network];
-              const isExpired =
-                networkData?.maxEpochTimestampMs != null &&
-                Date.now() >= networkData.maxEpochTimestampMs;
-              if (!networkData?.nonce || !networkData?.maxEpoch || isExpired) {
-                log.info("Initializing device data for network before login", {
-                  network,
-                });
-                await deviceStore.initializeForChain(network);
-              }
-
-              if (typeof sessionStorage !== "undefined") {
-                sessionStorage.setItem(
-                  OAuthTenantSessionKey,
-                  getCurrentTenantId(),
-                );
-              }
-              getUserManagerInstance().signinRedirect();
-              set({ loading: false });
-            } catch (error) {
-              log.error("Login failed (web)", error);
-              set({
-                loading: false,
-                error: error instanceof Error ? error.message : "Unknown error",
-              });
-            }
+            return loginExtensionSession(get, set, getUserManagerInstance);
           }
+
+          await loginWebSession(set, getUserManagerInstance, network);
         },
 
         extensionLogin: async () => {
@@ -335,30 +86,12 @@ export const useAuthStore = create<AuthState>()(
             }
 
             const id = crypto.randomUUID();
-
-            const authSuccessListener = (message: AuthMessage) => {
-              // Only process messages with matching ID
-              if (message.id === id) {
-                if (message.type === "auth_success") {
-                  chrome.runtime?.onMessage?.removeListener(
-                    authSuccessListener,
-                  );
-                  if (!message.token) {
-                    reject(new Error("No token received from auth"));
-                    return;
-                  }
-                  resolve(parseOAuthTokenResponse(message.token));
-                } else if (message.type === "auth_error") {
-                  chrome.runtime?.onMessage?.removeListener(
-                    authSuccessListener,
-                  );
-                  reject(message.error);
-                }
-              }
-            };
-
+            const authSuccessListener = createExtensionAuthListener(
+              id,
+              resolve,
+              reject,
+            );
             chrome.runtime?.onMessage?.addListener(authSuccessListener);
-
             chrome.runtime?.sendMessage?.({
               action: "ext_login",
               id: id,
@@ -369,51 +102,10 @@ export const useAuthStore = create<AuthState>()(
 
         logout: async () => {
           try {
-            await getUserManagerInstance().removeUser();
-            await performFullCleanup();
-
-            // Clear JWTs and user state
-            await clearAllJwts();
-            clearZkLoginAddressCache();
-            set({ user: null });
-
-            // Clear zkProofs first (separate from ephemeral key)
-            await zkProofService.clear();
-
-            // Lock vault (clears ephemeral key) but preserve device data
-            // User just needs to re-authenticate, keys should persist across logouts
-            // Use deviceStore.lock() to ensure isLocked state is updated
-            await useDeviceStore.getState().lock();
-
-            const tenant = getCurrentTenantId();
-
-            // Build logout URL manually to avoid CORS issues with OIDC discovery
-            const fusionAuthUrl = getTenantConfig(tenant).serverUrl;
-            const clientId = getTenantConfig(tenant).clientId;
+            await clearAuthSession(set, getUserManagerInstance);
 
             if (isExtension() && typeof chrome !== "undefined") {
-              // Extensions use chrome.identity.launchWebAuthFlow to trigger OIDC logout
-              const redirectUri = chrome.identity.getRedirectURL();
-
-              const logoutUrl = new URL(
-                `${fusionAuthUrl.replace(/\/$/, "")}/oauth2/logout`,
-              );
-              logoutUrl.searchParams.set("client_id", clientId);
-              logoutUrl.searchParams.set(
-                "post_logout_redirect_uri",
-                redirectUri,
-              );
-
-              chrome.identity.launchWebAuthFlow(
-                { url: logoutUrl.toString(), interactive: true },
-                async () => {
-                  chrome.runtime.sendMessage({
-                    __from: "Eve Vault",
-                    event: "change",
-                    payload: { accounts: [] },
-                  });
-                },
-              );
+              finishExtensionLogout();
             } else {
               // For web, just redirect to home - FusionAuth session can remain
               // (user will re-authenticate to get new JWT with correct network params)
@@ -425,7 +117,7 @@ export const useAuthStore = create<AuthState>()(
             log.error("Error during logout cleanup", error);
             set({
               user: null,
-              error: error instanceof Error ? error.message : "Unknown error",
+              error: getErrorMessage(error),
             });
 
             // Fallback: redirect so user is not stuck
