@@ -195,7 +195,8 @@ export const useAuthStore = create<AuthState>()(
                     network,
                   },
                 );
-                return set({ user: null, loading: false });
+                set({ user: null, loading: false });
+                return;
               }
               try {
                 webUser = await webUserManager.signinSilent();
@@ -210,7 +211,8 @@ export const useAuthStore = create<AuthState>()(
                   set({ user: webUser, loading: false });
                   return;
                 } else {
-                  return set({ user: null, loading: false });
+                  set({ user: null, loading: false });
+                  return;
                 }
               } catch (silentErr) {
                 log.warn("Web init: silent renew failed, not logged in", {
@@ -220,11 +222,12 @@ export const useAuthStore = create<AuthState>()(
                       ? silentErr.message
                       : String(silentErr),
                 });
-                return set({ user: null, loading: false });
+                set({ user: null, loading: false });
+                return;
               }
             }
 
-            return set({ user: webUser ?? null, loading: false });
+            set({ user: webUser ?? null, loading: false });
           } catch (error) {
             log.error("Error initializing auth", error);
             set({

@@ -1,8 +1,5 @@
 import type { SponsoredTransactionMetadata } from "@evefrontier/dapp-kit/types";
-import type {
-  JwtResponse,
-  OAuthTokenResponse,
-} from "@evevault/shared/types/authTypes";
+import type { OAuthTokenResponse } from "@evevault/shared/types/authTypes";
 import type {
   StandardEventsOnMethod,
   SuiSignAndExecuteTransactionOutput,

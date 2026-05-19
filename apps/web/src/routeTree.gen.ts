@@ -60,7 +60,7 @@ export interface FileRoutesByFullPath {
   "/wallet/add-token": typeof WalletAddTokenRoute
   "/wallet/send-token": typeof WalletSendTokenRoute
   "/wallet/transactions": typeof WalletTransactionsRoute
-  "/wallet": typeof WalletIndexRoute
+  "/wallet/": typeof WalletIndexRoute
 }
 export interface FileRoutesByTo {
   "/": typeof IndexRoute
@@ -90,7 +90,7 @@ export interface FileRouteTypes {
     | "/wallet/add-token"
     | "/wallet/send-token"
     | "/wallet/transactions"
-    | "/wallet"
+    | "/wallet/"
   fileRoutesByTo: FileRoutesByTo
   to:
     | "/"
@@ -147,7 +147,7 @@ declare module "@tanstack/react-router" {
     "/wallet/": {
       id: "/wallet/"
       path: "/wallet"
-      fullPath: "/wallet"
+      fullPath: "/wallet/"
       preLoaderRoute: typeof WalletIndexRouteImport
       parentRoute: typeof rootRouteImport
     }

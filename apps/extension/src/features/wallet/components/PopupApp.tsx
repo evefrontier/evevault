@@ -23,7 +23,6 @@ import Icon from "@evevault/shared/components/Icon";
 import { useContext, useDevice, useDevMode } from "@evevault/shared/hooks";
 import { LockScreen } from "@evevault/shared/screens";
 import { localnetKeyService } from "@evevault/shared/services/vaultService";
-import { useDeviceStore } from "@evevault/shared/stores";
 import { getFaucetUrlForChain } from "@evevault/shared/sui";
 import {
   createLogger,
