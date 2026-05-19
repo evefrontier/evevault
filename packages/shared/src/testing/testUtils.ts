@@ -1,5 +1,6 @@
 // ─── test utility functions ────────────────────────────────────────────────
 
+// Creates a JWT with the given claims in base64url format
 export function makeJwt(claims: Record<string, unknown>): string {
   const b64url = (obj: unknown) =>
     btoa(JSON.stringify(obj))

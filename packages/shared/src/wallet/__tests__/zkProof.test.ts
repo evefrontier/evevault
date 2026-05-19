@@ -19,11 +19,10 @@ vi.mock("#/utils/logger", () => ({
   }),
 }));
 
+import { makeJwt } from "#/testing";
 import { fetchZkProof } from "#/wallet/zkProof";
 
-const headerBase64 = Buffer.from(
-  JSON.stringify({ alg: "none", typ: "JWT" }),
-).toString("base64url");
+const headerBase64 = makeJwt({}).split(".")[0];
 
 describe("fetchZkProof", () => {
   const proofResponse: ZkProofResponse = {
