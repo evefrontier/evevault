@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AuthStoreMockHandles } from "./authStoreTestMocks";
 import {
   makeAdaptersMock,
@@ -65,11 +65,14 @@ describe("waitForAuthHydration", () => {
   const originalRehydrate = useAuthStore.persist.rehydrate;
 
   beforeEach(() => {
-    vi.clearAllMocks();
     setupAuthStoreMocks(h);
     useAuthStore.persist.hasHydrated = originalHasHydrated;
     useAuthStore.persist.onFinishHydration = originalOnFinishHydration;
     useAuthStore.persist.rehydrate = originalRehydrate;
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
   });
 
   it("resolves immediately when the store is already hydrated", async () => {

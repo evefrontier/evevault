@@ -1,5 +1,5 @@
 import { TenantId } from "@evefrontier/dapp-kit";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { oidcMocks, logMocks, envMocks } = vi.hoisted(() => {
   const userManagerConstructor = vi.fn();
@@ -61,9 +61,12 @@ vi.mock("#/utils/environment", () => ({
 describe("authConfig UserManager", () => {
   beforeEach(() => {
     vi.resetModules();
-    vi.clearAllMocks();
     envMocks.isExtension.mockReturnValue(false);
     envMocks.isWeb.mockReturnValue(false);
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
   });
 
   it("passes automaticSilentRenew to UserManager", async () => {

@@ -92,7 +92,6 @@ describe("authStore.logout()", () => {
   let mockDeviceStoreLock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    vi.clearAllMocks();
     // Get the mock user manager from the mocked function
     mockUserManager = vi.mocked(authConfig.getUserManager)(
       DEFAULT_TENANT_ID,
@@ -126,6 +125,7 @@ describe("authStore.logout()", () => {
   });
 
   afterEach(() => {
+    vi.clearAllMocks();
     vi.restoreAllMocks();
   });
 

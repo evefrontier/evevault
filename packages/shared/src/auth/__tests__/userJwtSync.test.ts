@@ -1,5 +1,5 @@
 import { User } from "oidc-client-ts";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { makeJwt } from "#/testing";
 
 const mockGetZkLoginAddress = vi.fn();
@@ -36,7 +36,7 @@ function baseUser(overrides: Partial<ConstructorParameters<typeof User>[0]>) {
 }
 
 describe("enrichUserWithZkLoginIfNeeded", () => {
-  beforeEach(() => {
+  afterEach(() => {
     vi.clearAllMocks();
   });
 
@@ -111,7 +111,7 @@ describe("enrichUserWithZkLoginIfNeeded", () => {
 });
 
 describe("syncPrimaryJwtFromUser", () => {
-  beforeEach(() => {
+  afterEach(() => {
     vi.clearAllMocks();
   });
 

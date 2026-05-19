@@ -12,11 +12,8 @@ const mockSendMessage = vi.fn();
 } as any;
 
 describe("ephKeyService.lock()", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   afterEach(() => {
+    vi.clearAllMocks();
     vi.restoreAllMocks();
   });
 

@@ -95,7 +95,7 @@ describe("_handleCreateKeypair", () => {
   const HASHED_KEY = { iv: "i", data: "d", salt: "s" };
   const PUBLIC_KEY_BYTES = [1, 2, 3];
 
-  beforeEach(() => vi.clearAllMocks());
+  afterEach(() => vi.clearAllMocks());
 
   it("forwards pin to keeper and returns hashedSecretKey and publicKeyBytes", async () => {
     stubKeeperBridge({
@@ -163,7 +163,7 @@ describe("_handleRotateKeypair", () => {
   const HASHED_KEY = { iv: "i", data: "d", salt: "s" };
   const PUBLIC_KEY_BYTES = [4, 5, 6];
 
-  beforeEach(() => vi.clearAllMocks());
+  afterEach(() => vi.clearAllMocks());
 
   it("sends ROTATE_KEYPAIR to keeper and returns new key material", async () => {
     stubKeeperBridge({
@@ -217,7 +217,7 @@ describe("_handleRotateKeypair", () => {
 describe("_handleGetPublicKey", () => {
   const PUBLIC_KEY_BYTES = [7, 8, 9];
 
-  beforeEach(() => vi.clearAllMocks());
+  afterEach(() => vi.clearAllMocks());
 
   it("returns publicKeyBytes when keeper is unlocked", async () => {
     stubKeeperBridge({ ok: true, publicKeyBytes: PUBLIC_KEY_BYTES });
@@ -253,7 +253,7 @@ describe("_handleGetPublicKey", () => {
 });
 
 describe("_handleZkEphSignBytes", () => {
-  beforeEach(() => vi.clearAllMocks());
+  afterEach(() => vi.clearAllMocks());
 
   it("forwards msgBytes as array and returns bytes and userSignature", async () => {
     stubKeeperBridge({
@@ -324,7 +324,7 @@ describe("_handleZkEphSignBytes", () => {
 describe("_handleSetZkProof / _handleGetZkProof / _handleClearZkProof", () => {
   const zkProof = { data: { proofPoints: {} } };
 
-  beforeEach(() => vi.clearAllMocks());
+  afterEach(() => vi.clearAllMocks());
 
   it("_handleSetZkProof forwards chain and zkProof to keeper", async () => {
     stubKeeperBridge({ ok: true });

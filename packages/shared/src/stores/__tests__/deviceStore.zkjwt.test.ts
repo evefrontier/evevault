@@ -58,7 +58,6 @@ import { makeJwtWithExp } from "#/testing";
 
 describe("deviceStore.getZkProof with expired stored zkLogin JWT", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
     useContextStore.setState({ chain: SUI_DEVNET_CHAIN });
 
     const publicKey = new Ed25519PublicKey(new Uint8Array(32).fill(1));
@@ -105,6 +104,7 @@ describe("deviceStore.getZkProof with expired stored zkLogin JWT", () => {
   });
 
   afterEach(() => {
+    vi.clearAllMocks();
     vi.restoreAllMocks();
   });
 

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getAuthUrl } from "@/lib/background/services/oauthService";
 
 const { getTenantConfigMock } = vi.hoisted(() => ({
@@ -11,8 +11,6 @@ vi.mock("@evevault/shared", () => ({
 
 describe("getAuthUrl", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-
     getTenantConfigMock.mockReturnValue({
       clientId: "test-client-id",
       serverUrl: "https://auth.example.com/",
@@ -25,6 +23,10 @@ describe("getAuthUrl", () => {
         ),
       },
     } as unknown as typeof chrome;
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
   });
 
   it("includes nonce when provided", () => {

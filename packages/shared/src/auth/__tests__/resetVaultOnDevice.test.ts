@@ -94,7 +94,6 @@ describe("resetVaultOnDevice", () => {
   let mockDeviceLock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    vi.clearAllMocks();
     mockRemoveUser = vi.fn().mockResolvedValue(undefined);
     vi.mocked(authConfig.getUserManager).mockReturnValue({
       removeUser: mockRemoveUser,
@@ -116,6 +115,7 @@ describe("resetVaultOnDevice", () => {
   });
 
   afterEach(() => {
+    vi.clearAllMocks();
     vi.restoreAllMocks();
   });
 

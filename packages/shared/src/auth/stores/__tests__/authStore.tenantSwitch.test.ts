@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AuthStoreMockHandles } from "./authStoreTestMocks";
 import {
   makeAdaptersMock,
@@ -66,9 +66,12 @@ import { setWindowLocation } from "#/testing";
 
 describe("tenant switch auth cleanup", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
     setupAuthStoreMocks(h);
     useAuthStore.setState({ user: { id_token: "token" } as never });
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
   });
 
   const originalLocation = window.location;

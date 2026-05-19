@@ -13,7 +13,6 @@ vi.mock("#/services/vaultService", () => ({
 
 describe("deviceStore.lock()", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
     // Reset store state before each test
     useDeviceStore.setState({
       isLocked: false,
@@ -34,6 +33,7 @@ describe("deviceStore.lock()", () => {
   });
 
   afterEach(() => {
+    vi.clearAllMocks();
     vi.restoreAllMocks();
   });
 

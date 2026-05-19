@@ -1,6 +1,6 @@
 import { Ed25519PublicKey } from "@mysten/sui/keypairs/ed25519";
 import { SUI_DEVNET_CHAIN, SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useContextStore } from "#/stores/contextStore";
 import { createInitActions } from "#/stores/deviceStore/actions/initActions";
 import type {
@@ -117,7 +117,6 @@ describe("createInitActions", () => {
   const epochMs = Date.now() + 120_000;
 
   beforeEach(() => {
-    vi.clearAllMocks();
     useContextStore.setState({ chain: SUI_DEVNET_CHAIN, loading: false });
     getCurrentEpochFromGraphQLMock.mockResolvedValue({
       numericMaxEpoch: 777,
@@ -129,6 +128,10 @@ describe("createInitActions", () => {
       hashedSecretKey: { iv: "new", data: "secret", salt: "salt" },
       publicKey: new Ed25519PublicKey(new Uint8Array(32).fill(8)),
     });
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
   });
 
   describe("initialize", () => {

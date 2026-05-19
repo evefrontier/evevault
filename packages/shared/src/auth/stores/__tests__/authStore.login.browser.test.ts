@@ -1,5 +1,5 @@
 import { SUI_LOCALNET_CHAIN, SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AuthStoreMockHandles } from "./authStoreTestMocks";
 import {
   makeAdaptersMock,
@@ -63,7 +63,6 @@ import { useContextStore } from "#/stores";
 
 describe("authStore.login() web path", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
     setupAuthStoreMocks(h, { tenantId: "tauceti" });
     h.mockSigninRedirect.mockImplementation(() => undefined);
     vi.mocked(useContextStore.getState).mockReturnValue({
@@ -71,6 +70,10 @@ describe("authStore.login() web path", () => {
     } as ReturnType<typeof useContextStore.getState>);
     sessionStorage.clear();
     useAuthStore.setState({ user: null, loading: false, error: null });
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
   });
 
   it("calls initializeForChain before signinRedirect on a zkLogin chain", async () => {

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AuthStoreMockHandles } from "./authStoreTestMocks";
 import {
   makeAdaptersMock,
@@ -70,7 +70,6 @@ describe("authStore.logout() extension path", () => {
   const sendMessage = vi.fn();
 
   beforeEach(() => {
-    vi.clearAllMocks();
     setupAuthStoreMocks(h, { isExtension: true });
     getRedirectURL.mockReturnValue("chrome-extension://extension-id/callback");
     launchWebAuthFlow.mockImplementation((_, callback) => callback?.());
@@ -85,6 +84,10 @@ describe("authStore.logout() extension path", () => {
       },
     });
     useAuthStore.setState({ user: null, loading: false, error: null });
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
   });
 
   it("launches FusionAuth logout and emits an empty accounts change after completion", async () => {
