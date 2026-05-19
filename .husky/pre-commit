@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-nvm use --silent
+nvm use 25 --silent
 export PATH="$HOME/.bun/bin:$PATH"
 bun run lint:fix
 bun x lint-staged

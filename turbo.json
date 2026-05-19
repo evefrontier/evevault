@@ -35,7 +35,8 @@
     },
     "test:run": {
       "dependsOn": ["^test:run"],
-      "outputs": []
+      "outputs": [],
+      "cache": false
     },
     "test:coverage": {
       "dependsOn": ["^test:coverage"],
