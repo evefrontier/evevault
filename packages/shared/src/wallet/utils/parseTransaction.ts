@@ -140,7 +140,7 @@ export async function parseGraphQLTransaction(
     return BigInt(bc.amount) < 0n;
   });
 
-  if (!outgoingChange || !outgoingChange.amount) {
+  if (!outgoingChange?.amount) {
     return null;
   }
 

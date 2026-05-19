@@ -12,11 +12,8 @@ const mockSendMessage = vi.fn();
 } as any;
 
 describe("ephKeyService.lock()", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   afterEach(() => {
+    vi.clearAllMocks();
     vi.restoreAllMocks();
   });
 
@@ -25,7 +22,7 @@ describe("ephKeyService.lock()", () => {
 
     await ephKeyService.lock();
 
-    expect(mockSendMessage).toHaveBeenCalledTimes(1);
+    expect(mockSendMessage).toHaveBeenCalledOnce();
     expect(mockSendMessage).toHaveBeenCalledWith({
       type: VaultMessageTypes.LOCK,
     });
@@ -76,7 +73,7 @@ describe("ephKeyService.rotateEphemeralKeyPair()", () => {
 
     const result = await ephKeyService.rotateEphemeralKeyPair();
 
-    expect(mockSendMessage).toHaveBeenCalledTimes(1);
+    expect(mockSendMessage).toHaveBeenCalledOnce();
     expect(mockSendMessage).toHaveBeenCalledWith({
       type: VaultMessageTypes.ROTATE_KEYPAIR,
     });

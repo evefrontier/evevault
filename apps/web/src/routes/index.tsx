@@ -1,26 +1,7 @@
 import { useAuthStore, waitForAuthHydration } from "@evevault/shared/auth";
-import type { RoutePath } from "@evevault/shared/types";
-import { ROUTE_PATHS } from "@evevault/shared/utils";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { LoginScreen } from "@/features/auth/components/LoginScreen";
-
-const resolveRoute = (target?: string): RoutePath => {
-  if (target && ROUTE_PATHS.includes(target as RoutePath)) {
-    return target as RoutePath;
-  }
-  return "/wallet";
-};
-
-type IndexSearch = {
-  redirect?: string;
-};
-
-const getOptionalString = (value: unknown): string | undefined =>
-  typeof value === "string" ? value : undefined;
-
-const validateSearch = (search: Record<string, unknown>): IndexSearch => ({
-  redirect: getOptionalString(search.redirect),
-});
+import { resolveRoute, validateSearch } from "@/lib/routeUtils";
 
 export const Route = createFileRoute("/")({
   validateSearch,

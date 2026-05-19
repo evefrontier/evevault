@@ -36,7 +36,7 @@ describe("vendJwt", () => {
     const result = await vendJwt(idToken, { nonce: "device-nonce-1" });
 
     expect(getApiContextMock).toHaveBeenCalledWith(idToken);
-    expect(globalThis.fetch).toHaveBeenCalledTimes(1);
+    expect(globalThis.fetch).toHaveBeenCalledOnce();
     expect(globalThis.fetch).toHaveBeenCalledWith(
       `${apiBase}/auth/zklogin/vend-jwt`,
       expect.objectContaining({

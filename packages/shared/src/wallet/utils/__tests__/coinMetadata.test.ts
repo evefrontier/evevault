@@ -40,7 +40,7 @@ describe("coinMetadata", () => {
     invalidateCoinMetadataCache("0x1::m::T");
     graphqlClient.query.mockClear();
     await fetchCoinMetadata(graphqlClient as never, "0x1::m::T");
-    expect(graphqlClient.query).toHaveBeenCalledTimes(1);
+    expect(graphqlClient.query).toHaveBeenCalledOnce();
   });
 
   it("invalidateCoinMetadataCache with no arg clears entire cache", async () => {
@@ -60,7 +60,7 @@ describe("coinMetadata", () => {
     graphqlClient.query.mockClear();
     invalidateCoinMetadataCache();
     await fetchCoinMetadata(graphqlClient as never, "0x1::a::A");
-    expect(graphqlClient.query).toHaveBeenCalledTimes(1);
+    expect(graphqlClient.query).toHaveBeenCalledOnce();
   });
 
   it("returns SUI metadata without calling GraphQL", async () => {
@@ -144,6 +144,6 @@ describe("coinMetadata", () => {
     const first = await fetchCoinMetadata(graphqlClient as never, t);
     const second = await fetchCoinMetadata(graphqlClient as never, t);
     expect(first).toEqual(second);
-    expect(graphqlClient.query).toHaveBeenCalledTimes(1);
+    expect(graphqlClient.query).toHaveBeenCalledOnce();
   });
 });

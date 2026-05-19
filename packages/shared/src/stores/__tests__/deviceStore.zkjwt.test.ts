@@ -54,18 +54,10 @@ vi.mock("#/auth", () => ({
 }));
 
 import { useDeviceStore } from "#/stores/deviceStore";
-
-function makeJwtWithExp(exp: number): string {
-  const header = Buffer.from(
-    JSON.stringify({ alg: "none", typ: "JWT" }),
-  ).toString("base64url");
-  const payload = Buffer.from(JSON.stringify({ exp })).toString("base64url");
-  return `${header}.${payload}.signature`;
-}
+import { makeJwtWithExp } from "#/testing";
 
 describe("deviceStore.getZkProof with expired stored zkLogin JWT", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
     useContextStore.setState({ chain: SUI_DEVNET_CHAIN });
 
     const publicKey = new Ed25519PublicKey(new Uint8Array(32).fill(1));
@@ -112,13 +104,14 @@ describe("deviceStore.getZkProof with expired stored zkLogin JWT", () => {
   });
 
   afterEach(() => {
+    vi.clearAllMocks();
     vi.restoreAllMocks();
   });
 
   it("re-vends from primary JWT and uses new token for proof", async () => {
     await useDeviceStore.getState().getZkProof(SUI_DEVNET_CHAIN);
 
-    expect(vendJwtMock).toHaveBeenCalledTimes(1);
+    expect(vendJwtMock).toHaveBeenCalledOnce();
     expect(vendJwtMock).toHaveBeenCalledWith("primary.jwt.token", {
       nonce: "device-nonce",
     });
@@ -127,7 +120,7 @@ describe("deviceStore.getZkProof with expired stored zkLogin JWT", () => {
     await expect(freshToken).resolves.toBeTypeOf("string");
     const resolvedToken = await freshToken;
 
-    expect(fetchZkProofMock).toHaveBeenCalledTimes(1);
+    expect(fetchZkProofMock).toHaveBeenCalledOnce();
     expect(fetchZkProofMock).toHaveBeenCalledWith(
       expect.objectContaining({
         idToken: resolvedToken,

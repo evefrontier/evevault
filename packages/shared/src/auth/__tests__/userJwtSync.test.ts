@@ -1,5 +1,6 @@
 import { User } from "oidc-client-ts";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { makeJwt } from "#/testing";
 
 const mockGetZkLoginAddress = vi.fn();
 const mockStoreJwt = vi.fn();
@@ -21,15 +22,9 @@ vi.mock("#/utils/logger", () => ({
     error: vi.fn(),
   }),
 }));
-
-function makeJwtPayload(claims: Record<string, unknown>): string {
-  const payload = Buffer.from(JSON.stringify(claims)).toString("base64url");
-  return `eyJhbGciOiJIUzI1NiJ9.${payload}.sig`;
-}
-
 function baseUser(overrides: Partial<ConstructorParameters<typeof User>[0]>) {
   return new User({
-    id_token: makeJwtPayload({ sub: "user-1", exp: 4_000_000_000 }),
+    id_token: makeJwt({ sub: "user-1", exp: 4_000_000_000 }),
     access_token: "access",
     token_type: "Bearer",
     scope: "openid",
@@ -41,7 +36,7 @@ function baseUser(overrides: Partial<ConstructorParameters<typeof User>[0]>) {
 }
 
 describe("enrichUserWithZkLoginIfNeeded", () => {
-  beforeEach(() => {
+  afterEach(() => {
     vi.clearAllMocks();
   });
 
@@ -116,7 +111,7 @@ describe("enrichUserWithZkLoginIfNeeded", () => {
 });
 
 describe("syncPrimaryJwtFromUser", () => {
-  beforeEach(() => {
+  afterEach(() => {
     vi.clearAllMocks();
   });
 
@@ -149,7 +144,7 @@ describe("syncPrimaryJwtFromUser", () => {
     await syncPrimaryJwtFromUser(user);
 
     expect(mockWarn).not.toHaveBeenCalled();
-    expect(mockStoreJwt).toHaveBeenCalledTimes(1);
+    expect(mockStoreJwt).toHaveBeenCalledOnce();
     const [jwtArg] = mockStoreJwt.mock.calls[0] ?? [];
     expect(jwtArg).toMatchObject({
       id_token: user.id_token,

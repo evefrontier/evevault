@@ -180,7 +180,7 @@ describe("WebVaultService", () => {
       const pinHashCall = mockSetFn.mock.calls.find(
         (call) => call[0] === "evevault:web-pin-hash",
       );
-      expect(pinHashCall![1]).toHaveLength(64);
+      expect(pinHashCall?.[1]).toHaveLength(64);
     });
 
     it("throws if PIN is empty", async () => {

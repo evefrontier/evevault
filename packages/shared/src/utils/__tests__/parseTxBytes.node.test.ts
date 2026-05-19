@@ -32,7 +32,7 @@ describe("parseTransactionBytes", () => {
     }));
   });
 
-  describe("plain string (not comma-separated, not base64)", () => {
+  describe("plain string (raw, unencoded)", () => {
     it("returns displayValue as the string and no transactionForSigning", async () => {
       const input = '{"kind":"ProgrammableTransaction"}';
       const result = await parseTransactionBytes(input);

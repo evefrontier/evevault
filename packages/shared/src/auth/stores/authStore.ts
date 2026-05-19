@@ -32,7 +32,7 @@ import {
   performFullCleanup,
 } from "#/utils";
 import { AUTH_STORAGE_KEY } from "#/utils/storageKeys";
-import { DEFAULT_TENANT_ID, getTenantConfig } from "#/utils/tenantConfig";
+import { getTenantConfig } from "#/utils/tenantConfig";
 
 // biome-ignore lint/suspicious/noExplicitAny: chrome is a global object
 declare const chrome: any;
@@ -286,31 +286,44 @@ export const useAuthStore = create<AuthState>()(
             }
           } else {
             // Web login flow
-            const deviceStore = useDeviceStore.getState();
-
-            // Ensure device data is present and valid for current network — needed
-            // for the vendJwt call after OAuth returns.
-            const networkData = isZkLoginSuiChain(network)
-              ? deviceStore.networkData[network]
-              : undefined;
-            const isExpired =
-              networkData?.maxEpochTimestampMs != null &&
-              Date.now() >= networkData.maxEpochTimestampMs;
-            if (!networkData?.nonce || !networkData?.maxEpoch || isExpired) {
-              log.info("Initializing device data for network before login", {
+            if (!isZkLoginSuiChain(network)) {
+              log.info("Skipping OAuth redirect for non-zkLogin network", {
                 network,
               });
-              await deviceStore.initializeForChain(network);
+              set({ loading: false });
+              return;
             }
+            try {
+              const deviceStore = useDeviceStore.getState();
 
-            if (typeof sessionStorage !== "undefined") {
-              sessionStorage.setItem(
-                OAuthTenantSessionKey,
-                getCurrentTenantId(),
-              );
+              // Ensure device data is present and valid for current network — needed
+              // for the vendJwt call after OAuth returns.
+              const networkData = deviceStore.networkData[network];
+              const isExpired =
+                networkData?.maxEpochTimestampMs != null &&
+                Date.now() >= networkData.maxEpochTimestampMs;
+              if (!networkData?.nonce || !networkData?.maxEpoch || isExpired) {
+                log.info("Initializing device data for network before login", {
+                  network,
+                });
+                await deviceStore.initializeForChain(network);
+              }
+
+              if (typeof sessionStorage !== "undefined") {
+                sessionStorage.setItem(
+                  OAuthTenantSessionKey,
+                  getCurrentTenantId(),
+                );
+              }
+              getUserManagerInstance().signinRedirect();
+              set({ loading: false });
+            } catch (error) {
+              log.error("Login failed (web)", error);
+              set({
+                loading: false,
+                error: error instanceof Error ? error.message : "Unknown error",
+              });
             }
-            getUserManagerInstance().signinRedirect();
-            set({ loading: false });
           }
         },
 
@@ -463,7 +476,6 @@ export async function runTenantSwitchCleanup(
     clearZkLoginAddressCache();
     useAuthStore.getState().setUser(null);
     await zkProofService.clear();
-    await useDeviceStore.getState().lock();
   } catch (error) {
     log.error("Error during tenant switch cleanup", error);
   }
@@ -483,11 +495,7 @@ export async function switchTenantAndReload(
   await setCurrentTenantId(newTenantId as TenantId);
 
   if (isWeb() && typeof window !== "undefined") {
-    const url =
-      newTenantId === DEFAULT_TENANT_ID
-        ? window.location.origin
-        : `${window.location.origin}?tenant=${newTenantId}`;
-    window.location.href = url;
+    window.location.reload();
   }
 }
 

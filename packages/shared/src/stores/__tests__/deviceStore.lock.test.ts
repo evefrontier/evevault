@@ -13,7 +13,6 @@ vi.mock("#/services/vaultService", () => ({
 
 describe("deviceStore.lock()", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
     // Reset store state before each test
     useDeviceStore.setState({
       isLocked: false,
@@ -34,6 +33,7 @@ describe("deviceStore.lock()", () => {
   });
 
   afterEach(() => {
+    vi.clearAllMocks();
     vi.restoreAllMocks();
   });
 
@@ -43,7 +43,7 @@ describe("deviceStore.lock()", () => {
 
     await useDeviceStore.getState().lock();
 
-    expect(mockLock).toHaveBeenCalledTimes(1);
+    expect(mockLock).toHaveBeenCalledOnce();
     expect(useDeviceStore.getState().isLocked).toBe(true);
   });
 
@@ -54,7 +54,7 @@ describe("deviceStore.lock()", () => {
 
     await useDeviceStore.getState().lock();
 
-    expect(mockLock).toHaveBeenCalledTimes(1);
+    expect(mockLock).toHaveBeenCalledOnce();
     expect(useDeviceStore.getState().isLocked).toBe(true);
   });
 
@@ -67,7 +67,7 @@ describe("deviceStore.lock()", () => {
       "Keeper lock failed",
     );
 
-    expect(mockLock).toHaveBeenCalledTimes(1);
+    expect(mockLock).toHaveBeenCalledOnce();
     // State should not change if lock fails
     expect(useDeviceStore.getState().isLocked).toBe(false);
   });

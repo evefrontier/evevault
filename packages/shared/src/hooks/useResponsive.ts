@@ -71,10 +71,11 @@ export function useResponsive(): ResponsiveState {
   return state;
 }
 
-function getResponsiveState(width: number): ResponsiveState {
+function getResponsiveState(width: number | undefined): ResponsiveState {
+  // Guard against undefined/NaN (e.g. window exists but innerWidth is unavailable)
+  width = typeof width === "number" && !Number.isNaN(width) ? width : 1200;
   const isMobile = width < BREAKPOINTS.mobile;
   const isTablet = width >= BREAKPOINTS.mobile && width < BREAKPOINTS.tablet;
   const isDesktop = width >= BREAKPOINTS.tablet;
-
   return { isMobile, isTablet, isDesktop, width };
 }

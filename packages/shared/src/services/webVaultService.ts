@@ -174,7 +174,6 @@ class WebVaultService {
 
     // Only swap the in-memory keypair after successful write
     this.signer = newSigner;
-    this.unlockExpiry = Date.now() + 10 * 60 * 1000;
 
     log.info("[web-vault] Rotated Secp256r1 ephemeral keypair");
     return this.signer.getPublicKey();
