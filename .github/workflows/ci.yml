@@ -15,6 +15,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      actions: read
 
     defaults:
       run:
@@ -31,11 +32,48 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      - name: Install Playwright browsers
+        run: bunx playwright install --with-deps chromium-headless-shell chromium
+
       - name: Build
         run: bun run build
 
       - name: Run tests with coverage
         run: bun run test:coverage
+
+      - name: Upload coverage baseline
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-baseline
+          path: |
+            packages/shared/coverage/coverage-summary.json
+            apps/extension/coverage/coverage-summary.json
+            apps/web/coverage/coverage-summary.json
+          retention-days: 30
+
+      - name: Download latest main coverage baseline
+        if: github.event_name == 'pull_request'
+        id: download-baseline
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          run_id="$(gh run list --workflow ci.yml --branch main --event push --status success --limit 1 --json databaseId --jq '.[0].databaseId')"
+          if [ -z "$run_id" ] || [ "$run_id" = "null" ]; then
+            echo "No successful main run found, skipping baseline check"
+            exit 0
+          fi
+          if ! gh run download "$run_id" --name coverage-baseline --dir coverage-baseline 2>/dev/null; then
+            echo "No coverage baseline artifact on latest main run, skipping baseline check"
+            exit 0
+          fi
+          echo "has-baseline=true" >> "$GITHUB_OUTPUT"
+
+      - name: Check coverage did not drop
+        if: github.event_name == 'pull_request' && steps.download-baseline.outputs.has-baseline == 'true'
+        env:
+          COVERAGE_TOLERANCE: 0.05
+        run: node scripts/check-coverage-regression.mjs coverage-baseline .
 
       - name: Report @evevault/shared coverage
         if: always()
@@ -54,3 +92,12 @@ jobs:
           json-summary-path: "./apps/extension/coverage/coverage-summary.json"
           json-final-path: "./apps/extension/coverage/coverage-final.json"
           vite-config-path: "./apps/extension/vitest.config.ts"
+
+      - name: Report @evevault/web coverage
+        if: always()
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          name: "@evevault/web"
+          json-summary-path: "./apps/web/coverage/coverage-summary.json"
+          json-final-path: "./apps/web/coverage/coverage-final.json"
+          vite-config-path: "./apps/web/vitest.config.ts"

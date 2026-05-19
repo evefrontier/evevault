@@ -53,6 +53,7 @@ vi.mock("#/utils/constants", () => ({
   },
 }));
 
+import { setWindowLocation } from "#/testing";
 import { isWeb } from "#/utils/environment";
 
 const STILLNESS_ORIGIN = "https://evevault.evefrontier.com";
@@ -66,14 +67,11 @@ describe("getAvailableTenantIds", () => {
 
   afterEach(() => {
     process.env.NODE_ENV = originalNodeEnv;
-    Object.defineProperty(window, "location", {
-      value: originalLocation,
-      writable: true,
-    });
+    setWindowLocation(originalLocation);
     vi.clearAllMocks();
   });
 
-  describe("when not web or not production (no URL filter)", () => {
+  describe("when outside web-production context (no URL filter)", () => {
     it("returns default tenant plus tenants with client secret when isWeb is false", () => {
       vi.mocked(isWeb).mockReturnValue(false);
       const ids = getAvailableTenantIds(false);
@@ -108,28 +106,19 @@ describe("getAvailableTenantIds", () => {
     });
 
     it("returns only tenants whose webOrigin matches window.location.origin", () => {
-      Object.defineProperty(window, "location", {
-        value: { origin: STILLNESS_ORIGIN },
-        writable: true,
-      });
+      setWindowLocation({ origin: STILLNESS_ORIGIN });
       const ids = getAvailableTenantIds(false);
       expect(ids).toEqual(["stillness"]);
     });
 
     it("returns tenants for uat webOrigin when devMode false", () => {
-      Object.defineProperty(window, "location", {
-        value: { origin: UAT_ORIGIN },
-        writable: true,
-      });
+      setWindowLocation({ origin: UAT_ORIGIN });
       const ids = getAvailableTenantIds(false);
       expect(ids).toEqual(["utopia"]);
     });
 
     it("returns tenants for test webOrigin when devMode true", () => {
-      Object.defineProperty(window, "location", {
-        value: { origin: TEST_ORIGIN },
-        writable: true,
-      });
+      setWindowLocation({ origin: TEST_ORIGIN });
       const ids = getAvailableTenantIds(true);
       expect(ids).not.toContain("utopia");
       expect(ids).not.toContain("stillness");
@@ -140,10 +129,7 @@ describe("getAvailableTenantIds", () => {
     });
 
     it("returns all test-webOrigin tenants when devMode true and origin is test webOrigin", () => {
-      Object.defineProperty(window, "location", {
-        value: { origin: TEST_ORIGIN },
-        writable: true,
-      });
+      setWindowLocation({ origin: TEST_ORIGIN });
       const ids = getAvailableTenantIds(true);
       expect(ids).not.toContain("utopia");
       expect(ids).toContain("tesseract");
@@ -154,19 +140,13 @@ describe("getAvailableTenantIds", () => {
     });
 
     it("returns empty array when origin matches no tenant webOrigin", () => {
-      Object.defineProperty(window, "location", {
-        value: { origin: UNKNOWN_ORIGIN },
-        writable: true,
-      });
+      setWindowLocation({ origin: UNKNOWN_ORIGIN });
       const ids = getAvailableTenantIds(false);
       expect(ids).toEqual([]);
     });
 
     it("normalizes trailing slash when comparing origin to webOrigin", () => {
-      Object.defineProperty(window, "location", {
-        value: { origin: `${STILLNESS_ORIGIN}/` },
-        writable: true,
-      });
+      setWindowLocation({ origin: `${STILLNESS_ORIGIN}/` });
       const ids = getAvailableTenantIds(false);
       expect(ids).toEqual(["stillness"]);
     });

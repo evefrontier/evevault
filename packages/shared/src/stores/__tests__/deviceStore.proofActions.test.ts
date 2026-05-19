@@ -1,6 +1,6 @@
 import { Ed25519PublicKey } from "@mysten/sui/keypairs/ed25519";
 import { SUI_DEVNET_CHAIN } from "@mysten/wallet-standard";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createProofActions } from "#/stores/deviceStore/actions/proofActions";
 import type {
   GetDeviceState,
@@ -129,7 +129,6 @@ function buildProofHarness(overrides: Partial<DeviceState> = {}) {
 
 describe("createProofActions.getZkProof", () => {
   beforeEach(() => {
-    vi.clearAllMocks();
     getZkProofFromKeeperMock.mockResolvedValue(null);
     setZkProofMock.mockResolvedValue(undefined);
     mockAuthGetState.mockReturnValue({
@@ -144,6 +143,10 @@ describe("createProofActions.getZkProof", () => {
       data: { inputs: "mock" } as never,
       error: undefined,
     });
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
   });
 
   it("returns error when user is not authenticated", async () => {
@@ -274,7 +277,7 @@ describe("createProofActions.getZkProof", () => {
 
     await getZkProof(SUI_DEVNET_CHAIN);
 
-    expect(rotateEphemeralKey).toHaveBeenCalledTimes(1);
+    expect(rotateEphemeralKey).toHaveBeenCalledOnce();
     expect(resolveVendedMock).toHaveBeenCalledWith(
       SUI_DEVNET_CHAIN,
       expect.anything(),

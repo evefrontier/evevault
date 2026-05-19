@@ -1,5 +1,5 @@
 import type { SponsoredTransactionMetadata } from "@evefrontier/dapp-kit/types";
-import type { OAuthTokenResponse } from "@evevault/shared/types/authTypes";
+import type { OAuthTokenResponse } from "@evevault/shared/types";
 import type {
   StandardEventsOnMethod,
   SuiSignAndExecuteTransactionOutput,

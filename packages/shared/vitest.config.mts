@@ -1,5 +1,6 @@
 import path from "node:path";
 import react from "@vitejs/plugin-react";
+import { playwright } from "@vitest/browser-playwright";
 import tsconfigPaths from "vite-tsconfig-paths";
 import { defineConfig } from "vitest/config";
 
@@ -21,14 +22,9 @@ export default defineConfig({
     mainFields: ["module", "main"],
   },
   test: {
-    globals: true,
-    environment: "jsdom",
-    setupFiles: ["../../vitest.setup.ts"],
-    // Only run tests from src/, not from compiled dist/
     exclude: ["**/node_modules/**", "**/dist/**"],
     server: {
       deps: {
-        // Force vitest to inline and transform workspace packages
         inline: [/@evevault\/shared/],
       },
     },
@@ -42,5 +38,39 @@ export default defineConfig({
         "**/*.config.{ts,js,mjs,cjs}",
       ],
     },
+    projects: [
+      {
+        test: {
+          name: "unit-node",
+          include: ["src/**/*.node.test.{ts,tsx}"],
+          environment: "node",
+          globals: true,
+          setupFiles: ["../../vitest.setup.ts"],
+        },
+      },
+      {
+        test: {
+          name: "jsdom",
+          include: ["src/**/*.test.{ts,tsx}"],
+          exclude: ["**/node_modules/**", "**/dist/**", "src/**/*.browser.test.{ts,tsx}", "src/**/*.node.test.{ts,tsx}"],
+          environment: "jsdom",
+          globals: true,
+          setupFiles: ["../../vitest.setup.ts"],
+        },
+      },
+      {
+        test: {
+          name: "browser",
+          include: ["src/**/*.browser.test.{ts,tsx}"],
+          globals: true,
+          setupFiles: ["../../vitest.setup.ts"],
+          browser: {
+            enabled: true,
+            provider: playwright(),
+            instances: [{ browser: "chromium" }],
+          },
+        },
+      },
+    ],
   },
 });

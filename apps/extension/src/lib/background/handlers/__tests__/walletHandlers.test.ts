@@ -63,7 +63,6 @@ describe("handleApprovePopup", () => {
   >;
 
   beforeEach(() => {
-    vi.clearAllMocks();
     storageListeners = [];
     mockOpenPopupWindow.mockResolvedValue(99);
     installChromeMock(storageListeners);
