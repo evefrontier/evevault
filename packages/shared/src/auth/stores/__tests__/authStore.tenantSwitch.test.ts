@@ -62,6 +62,7 @@ import {
   switchTenantAndReload,
   useAuthStore,
 } from "#/auth/stores/authStore";
+import { setWindowLocation } from "#/testing";
 
 describe("tenant switch auth cleanup", () => {
   beforeEach(() => {
@@ -89,10 +90,7 @@ describe("tenant switch auth cleanup", () => {
   it("switchTenantAndReload updates currentTenantId then reloads the page", async () => {
     const reload = vi.fn();
     const originalLocation = window.location;
-    Object.defineProperty(window, "location", {
-      configurable: true,
-      value: { reload },
-    });
+    setWindowLocation({ reload });
 
     try {
       await switchTenantAndReload("tauceti" as never);
@@ -100,20 +98,14 @@ describe("tenant switch auth cleanup", () => {
       expect(h.mockSetCurrentTenantId).toHaveBeenCalledWith("tauceti");
       expect(reload).toHaveBeenCalledOnce();
     } finally {
-      Object.defineProperty(window, "location", {
-        configurable: true,
-        value: originalLocation,
-      });
+      setWindowLocation(originalLocation);
     }
   });
 
   it("switchTenantAndReload is a no-op when the new tenant ID matches the current one", async () => {
     const reload = vi.fn();
     const originalLocation = window.location;
-    Object.defineProperty(window, "location", {
-      configurable: true,
-      value: { reload },
-    });
+    setWindowLocation({ reload });
 
     try {
       // mockGetCurrentTenantId returns "stillness" and we pass "stillness" — early return
@@ -122,10 +114,7 @@ describe("tenant switch auth cleanup", () => {
       expect(h.mockSetCurrentTenantId).not.toHaveBeenCalled();
       expect(reload).not.toHaveBeenCalled();
     } finally {
-      Object.defineProperty(window, "location", {
-        configurable: true,
-        value: originalLocation,
-      });
+      setWindowLocation(originalLocation);
     }
   });
 

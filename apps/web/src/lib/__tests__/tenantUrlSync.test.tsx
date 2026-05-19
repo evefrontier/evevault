@@ -5,6 +5,7 @@ import {
   getDefaultTenantId,
 } from "@evevault/shared";
 import { runTenantSwitchCleanup } from "@evevault/shared/auth";
+import { setWindowLocation } from "@evevault/shared/testing";
 import { act, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TenantUrlSync } from "../tenantUrlSync";
@@ -74,10 +75,7 @@ describe("TenantUrlSync no-change path", () => {
   });
 
   afterEach(() => {
-    Object.defineProperty(window, "location", {
-      value: originalLocation,
-      configurable: true,
-    });
+    setWindowLocation(originalLocation);
     vi.clearAllMocks();
   });
 
@@ -110,10 +108,7 @@ describe("TenantUrlSync tenant changed", () => {
   });
 
   afterEach(() => {
-    Object.defineProperty(window, "location", {
-      value: originalLocation,
-      configurable: true,
-    });
+    setWindowLocation(originalLocation);
     vi.clearAllMocks();
   });
 
@@ -166,10 +161,7 @@ describe("TenantUrlSync didRun guard", () => {
   });
 
   afterEach(() => {
-    Object.defineProperty(window, "location", {
-      value: originalLocation,
-      configurable: true,
-    });
+    setWindowLocation(originalLocation);
     vi.clearAllMocks();
   });
 
@@ -205,10 +197,7 @@ describe("TenantUrlSync render output", () => {
   });
 
   afterEach(() => {
-    Object.defineProperty(window, "location", {
-      value: originalLocation,
-      configurable: true,
-    });
+    setWindowLocation(originalLocation);
     vi.clearAllMocks();
   });
 

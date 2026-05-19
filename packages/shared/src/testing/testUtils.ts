@@ -16,3 +16,10 @@ export function makeJwtWithExp(exp: number): string {
   const payload = Buffer.from(JSON.stringify({ exp })).toString("base64url");
   return `${header}.${payload}.signature`;
 }
+
+export function setWindowLocation(value: any): void {
+  Object.defineProperty(window, "location", {
+    value: value,
+    configurable: true,
+  });
+}
