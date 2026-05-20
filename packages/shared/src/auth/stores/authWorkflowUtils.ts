@@ -13,8 +13,7 @@ export type GetUserManagerInstance = () => UserManager;
 
 export const getEnokiApiKey = (): string => {
   if (isBrowser()) {
-    const env = (import.meta as unknown as { env: Record<string, string> }).env;
-    return env?.VITE_ENOKI_API_KEY ?? "";
+    return import.meta.env.VITE_ENOKI_API_KEY ?? "";
   }
   // biome-ignore lint/suspicious/noExplicitAny: Node.js process.env access requires any type
   return (globalThis as any)?.process?.env?.VITE_ENOKI_API_KEY ?? "";
