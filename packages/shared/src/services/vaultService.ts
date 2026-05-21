@@ -1,15 +1,15 @@
-import type { PublicKey, Signer } from '@mysten/sui/cryptography';
-import type { SuiChain } from '@mysten/wallet-standard';
-import type { ZkProofResponse } from '#/types/enoki';
-import type { StoredSecretKey } from '#/types/stores';
-import { createWebCryptoPlaceholder } from '#/types/wallet';
-import { isWeb } from '#/utils/environment';
+import type { PublicKey, Signer } from '@mysten/sui/cryptography'
+import type { SuiChain } from '@mysten/wallet-standard'
+import type { ZkProofResponse } from '#/types/enoki'
+import type { StoredSecretKey } from '#/types/stores'
+import { createWebCryptoPlaceholder } from '#/types/wallet'
+import { isWeb } from '#/utils/environment'
 import {
   ephKeyService as keeperEphKeyService,
   localnetKeyService as keeperLocalnetKeyService,
   zkProofService as keeperZkProofService,
-} from './keeperService';
-import { webVaultService } from './webVaultService';
+} from './keeperService'
+import { webVaultService } from './webVaultService'
 
 /**
  * Unified vault service that routes to the appropriate implementation:
@@ -22,7 +22,7 @@ export const ephKeyService = {
    */
   async initialize(): Promise<void> {
     if (isWeb()) {
-      await webVaultService.initialize();
+      await webVaultService.initialize()
     }
     // Extension: keeperService doesn't need initialization
   },
@@ -36,65 +36,65 @@ export const ephKeyService = {
   ): Promise<PublicKey | null> {
     if (isWeb()) {
       if (!password || password.trim().length === 0) {
-        throw new Error('PIN is required to unlock');
+        throw new Error('PIN is required to unlock')
       }
 
-      await webVaultService.initialize();
+      await webVaultService.initialize()
 
-      const hasKeypair = await webVaultService.hasKeypair();
+      const hasKeypair = await webVaultService.hasKeypair()
       if (!hasKeypair) {
         throw new Error(
           'No keypair exists. Use createEphemeralKeyPair() to create one first.',
-        );
+        )
       }
 
-      const success = await webVaultService.unlock(password);
+      const success = await webVaultService.unlock(password)
       if (!success) {
-        throw new Error('Failed to unlock vault');
+        throw new Error('Failed to unlock vault')
       }
-      return webVaultService.getPublicKey();
+      return webVaultService.getPublicKey()
     }
 
     // Extension: delegate to keeperService
-    return keeperEphKeyService.unlockVault(hashedSecretKey, password);
+    return keeperEphKeyService.unlockVault(hashedSecretKey, password)
   },
 
   /**
    * Creates a new ephemeral key pair
    */
   async createEphemeralKeyPair(password: string): Promise<{
-    hashedSecretKey: StoredSecretKey;
-    publicKey: PublicKey;
+    hashedSecretKey: StoredSecretKey
+    publicKey: PublicKey
   }> {
     if (isWeb()) {
       if (!password || password.trim().length === 0) {
-        throw new Error('PIN is required to create keypair');
+        throw new Error('PIN is required to create keypair')
       }
 
-      const publicKey = await webVaultService.createEphemeralKeyPair(password);
-      const webPlaceholderKey = createWebCryptoPlaceholder();
+      const publicKey = await webVaultService.createEphemeralKeyPair(password)
+      const webPlaceholderKey = createWebCryptoPlaceholder()
 
-      return { hashedSecretKey: webPlaceholderKey, publicKey };
+      return { hashedSecretKey: webPlaceholderKey, publicKey }
     }
 
     // Extension: delegate to keeperService
-    return keeperEphKeyService.createEphemeralKeyPair(password);
+    return keeperEphKeyService.createEphemeralKeyPair(password)
   },
 
   /**
    * Rotates the ephemeral key pair using the active unlocked session.
    */
   async rotateEphemeralKeyPair(): Promise<{
-    hashedSecretKey: StoredSecretKey;
-    publicKey: PublicKey;
+    hashedSecretKey: StoredSecretKey
+    publicKey: PublicKey
   }> {
     if (isWeb()) {
-      const publicKey = await webVaultService.rotateEphemeralKeyPair();
-      const webPlaceholderKey = createWebCryptoPlaceholder();
-      return { hashedSecretKey: webPlaceholderKey, publicKey };
+      const publicKey = await webVaultService.rotateEphemeralKeyPair()
+      const webPlaceholderKey = createWebCryptoPlaceholder()
+      return { hashedSecretKey: webPlaceholderKey, publicKey }
     }
 
-    return keeperEphKeyService.rotateEphemeralKeyPair();
+    return keeperEphKeyService.rotateEphemeralKeyPair()
   },
 
   /**
@@ -102,21 +102,21 @@ export const ephKeyService = {
    */
   async getEphemeralPublicKey(): Promise<PublicKey | null> {
     if (isWeb()) {
-      await webVaultService.initialize();
-      return webVaultService.getPublicKey();
+      await webVaultService.initialize()
+      return webVaultService.getPublicKey()
     }
 
     // Extension: delegate to keeperService
-    return keeperEphKeyService.getEphemeralPublicKey();
+    return keeperEphKeyService.getEphemeralPublicKey()
   },
 
   /**
    * Gets the public key bytes for storage/serialization
    */
   async getEphemeralPublicKeyBytes(): Promise<number[] | null> {
-    const publicKey = await ephKeyService.getEphemeralPublicKey();
-    if (!publicKey) return null;
-    return Array.from(publicKey.toRawBytes());
+    const publicKey = await ephKeyService.getEphemeralPublicKey()
+    if (!publicKey) return null
+    return Array.from(publicKey.toRawBytes())
   },
 
   /**
@@ -125,10 +125,10 @@ export const ephKeyService = {
    */
   getSigner(): Signer | null {
     if (isWeb()) {
-      return webVaultService.getSigner() as Signer | null;
+      return webVaultService.getSigner() as Signer | null
     }
     // Extension doesn't expose signer directly - use signBytes instead
-    return null;
+    return null
   },
 
   /**
@@ -136,11 +136,11 @@ export const ephKeyService = {
    */
   isUnlocked(): boolean {
     if (isWeb()) {
-      return webVaultService.isUnlocked();
+      return webVaultService.isUnlocked()
     }
     // Extension: would need to check with background script
     // For now, assume unlocked if we can get the public key
-    return true;
+    return true
   },
 
   /**
@@ -148,12 +148,12 @@ export const ephKeyService = {
    */
   async hasKeypair(): Promise<boolean> {
     if (isWeb()) {
-      await webVaultService.initialize();
-      return webVaultService.hasKeypair();
+      await webVaultService.initialize()
+      return webVaultService.hasKeypair()
     }
     // Extension: try to get public key via keeperService
-    const publicKey = await keeperEphKeyService.getEphemeralPublicKey();
-    return publicKey !== null;
+    const publicKey = await keeperEphKeyService.getEphemeralPublicKey()
+    return publicKey !== null
   },
 
   /**
@@ -161,12 +161,12 @@ export const ephKeyService = {
    */
   async lock(): Promise<void> {
     if (isWeb()) {
-      webVaultService.lock();
-      return;
+      webVaultService.lock()
+      return
     }
 
     // Extension: forward to keeper service
-    await keeperEphKeyService.lock();
+    await keeperEphKeyService.lock()
   },
 
   /**
@@ -174,11 +174,11 @@ export const ephKeyService = {
    */
   async clear(): Promise<void> {
     if (isWeb()) {
-      await webVaultService.clear();
+      await webVaultService.clear()
     }
     // Extension: keypair is managed by offscreen keeper
   },
-};
+}
 
 /**
  * Unified zkProof service that routes to the appropriate implementation:
@@ -191,12 +191,12 @@ export const zkProofService = {
    */
   async setZkProof(chain: SuiChain, zkProof: ZkProofResponse): Promise<void> {
     if (isWeb()) {
-      await webVaultService.setZkProof(chain, zkProof);
-      return;
+      await webVaultService.setZkProof(chain, zkProof)
+      return
     }
 
     // Extension: delegate to keeperService
-    return keeperZkProofService.setZkProof(chain, zkProof);
+    return keeperZkProofService.setZkProof(chain, zkProof)
   },
 
   /**
@@ -204,11 +204,11 @@ export const zkProofService = {
    */
   async getZkProof(chain: SuiChain): Promise<ZkProofResponse | null> {
     if (isWeb()) {
-      return webVaultService.getZkProof(chain);
+      return webVaultService.getZkProof(chain)
     }
 
     // Extension: delegate to keeperService
-    return keeperZkProofService.getZkProof(chain);
+    return keeperZkProofService.getZkProof(chain)
   },
 
   /**
@@ -217,16 +217,16 @@ export const zkProofService = {
   async clear(): Promise<void> {
     if (isWeb()) {
       // Web: clear zkProofs from in-memory/IndexedDB storage
-      await webVaultService.clearZkProof('sui:devnet' as SuiChain);
-      await webVaultService.clearZkProof('sui:testnet' as SuiChain);
-      await webVaultService.clearZkProof('sui:mainnet' as SuiChain);
-      return;
+      await webVaultService.clearZkProof('sui:devnet' as SuiChain)
+      await webVaultService.clearZkProof('sui:testnet' as SuiChain)
+      await webVaultService.clearZkProof('sui:mainnet' as SuiChain)
+      return
     }
 
     // Extension: delegate to keeperService
-    return keeperZkProofService.clear();
+    return keeperZkProofService.clear()
   },
-};
+}
 
 /**
  * Extension-only: localnet dev keypair management.
@@ -236,12 +236,12 @@ export const localnetKeyService = {
   async setKeypairFromPrivateKey(
     privateKey: string,
   ): Promise<{ address: string }> {
-    if (isWeb()) throw new Error('localnetKeyService is extension-only');
-    return keeperLocalnetKeyService.setKeypairFromPrivateKey(privateKey);
+    if (isWeb()) throw new Error('localnetKeyService is extension-only')
+    return keeperLocalnetKeyService.setKeypairFromPrivateKey(privateKey)
   },
 
   async getAddress(): Promise<string | null> {
-    if (isWeb()) throw new Error('localnetKeyService is extension-only');
-    return keeperLocalnetKeyService.getAddress();
+    if (isWeb()) throw new Error('localnetKeyService is extension-only')
+    return keeperLocalnetKeyService.getAddress()
   },
-};
+}

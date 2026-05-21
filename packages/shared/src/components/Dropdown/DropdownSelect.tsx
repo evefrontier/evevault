@@ -1,12 +1,12 @@
-import type React from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import './DropdownSelect.css';
-import { Corners } from '#/components/Corners';
-import Icon from '#/components/Icon';
-import Text from '#/components/Text';
-import { useResponsive } from '#/hooks';
-import type { DropdownItem, DropdownSelectProps } from '#/types';
-import { getIdenticon } from './Identicons';
+import type React from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import './DropdownSelect.css'
+import { Corners } from '#/components/Corners'
+import Icon from '#/components/Icon'
+import Text from '#/components/Text'
+import { useResponsive } from '#/hooks'
+import type { DropdownItem, DropdownSelectProps } from '#/types'
+import { getIdenticon } from './Identicons'
 
 export const DropdownSelect: React.FC<DropdownSelectProps> = ({
   items,
@@ -17,29 +17,29 @@ export const DropdownSelect: React.FC<DropdownSelectProps> = ({
   isOpen: controlledIsOpen,
   onOpenChange,
 }) => {
-  const [internalIsOpen, setInternalIsOpen] = useState(false);
-  const [menuHeight, setMenuHeight] = useState(0);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const { width } = useResponsive();
+  const [internalIsOpen, setInternalIsOpen] = useState(false)
+  const [menuHeight, setMenuHeight] = useState(0)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const { width } = useResponsive()
 
   // Support both controlled and uncontrolled modes
-  const isControlled = controlledIsOpen !== undefined;
-  const isOpen = isControlled ? controlledIsOpen : internalIsOpen;
+  const isControlled = controlledIsOpen !== undefined
+  const isOpen = isControlled ? controlledIsOpen : internalIsOpen
 
   // Show only icon when width is less than 500px
-  const showIconOnly = width < 500;
+  const showIconOnly = width < 500
 
   const setIsOpen = useCallback(
     (open: boolean) => {
       if (controlledIsOpen !== undefined) {
-        onOpenChange?.(open);
+        onOpenChange?.(open)
       } else {
-        setInternalIsOpen(open);
+        setInternalIsOpen(open)
       }
     },
     [controlledIsOpen, onOpenChange],
-  );
+  )
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -48,27 +48,27 @@ export const DropdownSelect: React.FC<DropdownSelectProps> = ({
         dropdownRef.current &&
         !dropdownRef.current.contains(event.target as Node)
       ) {
-        setIsOpen(false);
+        setIsOpen(false)
       }
-    };
+    }
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [setIsOpen]);
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [setIsOpen])
 
   // Measure menu height when open
   useEffect(() => {
     if (isOpen && menuRef.current) {
-      setMenuHeight(menuRef.current.offsetHeight);
+      setMenuHeight(menuRef.current.offsetHeight)
     }
-  }, [isOpen]);
+  }, [isOpen])
 
   const handleItemClick = (item: DropdownItem) => {
-    item.onClick();
+    item.onClick()
     if (!item.preventCloseOnClick) {
-      setIsOpen(false);
+      setIsOpen(false)
     }
-  };
+  }
 
   return (
     <div
@@ -134,7 +134,7 @@ export const DropdownSelect: React.FC<DropdownSelectProps> = ({
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default DropdownSelect;
+export default DropdownSelect

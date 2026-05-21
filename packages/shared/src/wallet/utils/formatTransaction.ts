@@ -1,10 +1,10 @@
-import type { SuiGraphQLClient } from '@mysten/sui/graphql';
-import { parseStructTag } from '@mysten/sui/utils';
-import { formatByDecimals } from '#/utils/format';
-import { createLogger } from '#/utils/logger';
-import { fetchCoinMetadata } from './coinMetadata';
+import type { SuiGraphQLClient } from '@mysten/sui/graphql'
+import { parseStructTag } from '@mysten/sui/utils'
+import { formatByDecimals } from '#/utils/format'
+import { createLogger } from '#/utils/logger'
+import { fetchCoinMetadata } from './coinMetadata'
 
-const log = createLogger();
+const log = createLogger()
 
 /**
  * Extracts the symbol from a coin type string
@@ -13,12 +13,12 @@ const log = createLogger();
  */
 export function extractSymbolFromCoinType(coinType: string): string {
   try {
-    const struct = parseStructTag(coinType);
-    return struct.name || coinType;
+    const struct = parseStructTag(coinType)
+    return struct.name || coinType
   } catch {
     // Fallback to simple parsing if parseStructTag fails
-    const parts = coinType.split('::');
-    return parts[parts.length - 1] || coinType;
+    const parts = coinType.split('::')
+    return parts[parts.length - 1] || coinType
   }
 }
 
@@ -30,21 +30,21 @@ export async function formatTransactionAmount(
   coinType: string,
   graphqlClient: SuiGraphQLClient,
 ): Promise<string> {
-  const metadata = await fetchCoinMetadata(graphqlClient, coinType);
-  let decimals: number;
+  const metadata = await fetchCoinMetadata(graphqlClient, coinType)
+  let decimals: number
 
   if (metadata) {
-    decimals = metadata.decimals;
+    decimals = metadata.decimals
   } else {
     // Fallback to 9 decimals (SUI default) if metadata is unavailable.
     // This may be incorrect for non-SUI tokens, so we log a warning for observability.
-    decimals = 9;
+    decimals = 9
     log.warn('Falling back to default decimals for coin type', {
       coinType,
       rawAmount,
       defaultDecimals: decimals,
-    });
+    })
   }
 
-  return formatByDecimals(rawAmount, decimals);
+  return formatByDecimals(rawAmount, decimals)
 }

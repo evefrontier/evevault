@@ -1,4 +1,4 @@
-import type { SVGProps } from 'react';
+import type { SVGProps } from 'react'
 
 const CorporationFolderIcon = ({
   className,
@@ -24,6 +24,6 @@ const CorporationFolderIcon = ({
       fill={color}
     />
   </svg>
-);
+)
 
-export default CorporationFolderIcon;
+export default CorporationFolderIcon

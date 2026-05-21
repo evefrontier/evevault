@@ -1,6 +1,6 @@
-import type { JwtResponse } from './authTypes';
-import type { ZkProofResponse } from './enoki';
-import type { StoredSecretKey } from './stores';
+import type { JwtResponse } from './authTypes'
+import type { ZkProofResponse } from './enoki'
+import type { StoredSecretKey } from './stores'
 
 export enum AuthMessageTypes {
   AUTH_SUCCESS = 'auth_success',
@@ -10,12 +10,12 @@ export enum AuthMessageTypes {
 }
 
 export type AuthMessage = {
-  type: AuthMessageTypes | string;
+  type: AuthMessageTypes | string
   /** JWT response from OAuth/OIDC provider */
-  token?: JwtResponse;
-  error?: unknown;
-  id?: string;
-};
+  token?: JwtResponse
+  error?: unknown
+  id?: string
+}
 
 export enum VaultMessageTypes {
   UNLOCK_VAULT = 'UNLOCK_VAULT',
@@ -59,9 +59,9 @@ export enum KeeperMessageTypes {
 
 // Response type for vault/keeper message handlers
 export interface VaultResponse {
-  ok?: boolean;
-  error?: string;
-  hashedSecretKey?: StoredSecretKey;
-  publicKeyBytes?: number[];
-  zkProof?: ZkProofResponse;
+  ok?: boolean
+  error?: string
+  hashedSecretKey?: StoredSecretKey
+  publicKeyBytes?: number[]
+  zkProof?: ZkProofResponse
 }

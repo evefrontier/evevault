@@ -1,25 +1,25 @@
-import type { User } from 'oidc-client-ts';
+import type { User } from 'oidc-client-ts'
 
 /** JWT and user authentication response from OAuth/OIDC provider (includes OIDC user profile fields via Partial<User>) */
 export interface JwtResponse extends Partial<User> {
-  access_token: string;
-  id_token: string;
-  expires_in: number;
-  scope: string;
-  token_type: string;
-  refresh_token?: string;
-  refresh_token_id?: string;
-  userId?: string;
+  access_token: string
+  id_token: string
+  expires_in: number
+  scope: string
+  token_type: string
+  refresh_token?: string
+  refresh_token_id?: string
+  userId?: string
 }
 
 export type OAuthTokenResponse = JwtResponse & {
-  refresh_token: string;
-  expires_at: number;
-};
+  refresh_token: string
+  expires_at: number
+}
 
 export interface AuthSuccessToken {
-  id_token?: string;
-  access_token?: string;
-  email?: string;
-  userId?: string;
+  id_token?: string
+  access_token?: string
+  email?: string
+  userId?: string
 }

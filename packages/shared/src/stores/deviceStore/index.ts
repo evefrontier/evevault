@@ -1,28 +1,28 @@
-import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
-import { chromeStorageAdapter, localStorageAdapter } from '#/adapters';
-import { ephKeyService } from '#/services/vaultService';
-import type { DeviceState } from '#/types';
-import { isWeb } from '#/utils/environment';
-import { createLogger } from '#/utils/logger';
-import { DEVICE_STORAGE_KEY } from '#/utils/storageKeys';
-import { createInitActions } from './actions/initActions';
-import { createLockActions } from './actions/lockActions';
-import { createProofActions } from './actions/proofActions';
+import { create } from 'zustand'
+import { createJSONStorage, persist } from 'zustand/middleware'
+import { chromeStorageAdapter, localStorageAdapter } from '#/adapters'
+import { ephKeyService } from '#/services/vaultService'
+import type { DeviceState } from '#/types'
+import { isWeb } from '#/utils/environment'
+import { createLogger } from '#/utils/logger'
+import { DEVICE_STORAGE_KEY } from '#/utils/storageKeys'
+import { createInitActions } from './actions/initActions'
+import { createLockActions } from './actions/lockActions'
+import { createProofActions } from './actions/proofActions'
 import {
   createEmptyLocalnetDeviceData,
   createInitialNetworkData,
   DEFAULT_LOCALNET_URL,
-} from './constants';
-import { reconstructPublicKey } from './keyHelpers';
-import { createDeviceSelectors } from './selectors';
+} from './constants'
+import { reconstructPublicKey } from './keyHelpers'
+import { createDeviceSelectors } from './selectors'
 
-const log = createLogger();
+const log = createLogger()
 
 export {
   createEmptyLocalnetDeviceData,
   createEmptyNetworkDataEntry,
-} from './constants';
+} from './constants'
 
 export const useDeviceStore = create<DeviceState>()(
   persist(
@@ -61,29 +61,29 @@ export const useDeviceStore = create<DeviceState>()(
           ephemeralPublicKey: undefined,
           loading: undefined,
           error: undefined,
-        };
+        }
       },
       onRehydrateStorage: () => {
         return (state, error) => {
           if (error) {
-            log.error('Error rehydrating device store', error);
-            return;
+            log.error('Error rehydrating device store', error)
+            return
           }
 
           if (state && !state.localnet) {
-            state.localnet = createEmptyLocalnetDeviceData();
+            state.localnet = createEmptyLocalnetDeviceData()
           } else if (state?.localnet) {
             state.localnet = {
               ...createEmptyLocalnetDeviceData(),
               ...state.localnet,
-            };
+            }
           }
 
           if (
             state?.ephemeralKeyPairSecretKey &&
             typeof state.ephemeralKeyPairSecretKey === 'object'
           ) {
-            const key = state.ephemeralKeyPairSecretKey;
+            const key = state.ephemeralKeyPairSecretKey
             if (!('iv' in key) || !('data' in key)) {
               log.warn(
                 'Invalid ephemeralKeyPairSecretKey structure on rehydration, setting to null',
@@ -92,8 +92,8 @@ export const useDeviceStore = create<DeviceState>()(
                   hasData: 'data' in key,
                   keys: Object.keys(key),
                 },
-              );
-              state.ephemeralKeyPairSecretKey = null;
+              )
+              state.ephemeralKeyPairSecretKey = null
             }
           }
 
@@ -101,17 +101,17 @@ export const useDeviceStore = create<DeviceState>()(
             const publicKey = reconstructPublicKey(
               state.ephemeralPublicKeyBytes,
               state.ephemeralPublicKeyFlag ?? null,
-            );
+            )
 
             if (publicKey) {
-              state.ephemeralPublicKey = publicKey;
+              state.ephemeralPublicKey = publicKey
               log.debug(
                 `Reconstructed ${isWeb() ? 'Secp256r1' : 'Ed25519'} public key from storage`,
-              );
+              )
             } else {
-              state.ephemeralPublicKey = null;
-              state.ephemeralPublicKeyBytes = null;
-              state.ephemeralPublicKeyFlag = null;
+              state.ephemeralPublicKey = null
+              state.ephemeralPublicKeyBytes = null
+              state.ephemeralPublicKeyFlag = null
             }
           }
 
@@ -125,43 +125,43 @@ export const useDeviceStore = create<DeviceState>()(
                 hasEphemeralPublicKeyBytes: !!state.ephemeralPublicKeyBytes,
                 hasEphemeralKeyPairSecretKey: !!state.ephemeralKeyPairSecretKey,
               },
-            );
-            state.ephemeralPublicKey = null;
-            state.ephemeralPublicKeyBytes = null;
-            state.ephemeralPublicKeyFlag = null;
-            state.isLocked = true;
+            )
+            state.ephemeralPublicKey = null
+            state.ephemeralPublicKeyBytes = null
+            state.ephemeralPublicKeyFlag = null
+            state.isLocked = true
           }
 
           if (isWeb() && state) {
-            state.isLocked = !ephKeyService.isUnlocked();
-            state.loading = false;
+            state.isLocked = !ephKeyService.isUnlocked()
+            state.loading = false
           }
-        };
+        }
       },
     },
   ),
-);
+)
 
 export const waitForDeviceHydration = async () => {
   if (useDeviceStore.persist.hasHydrated()) {
-    return;
+    return
   }
 
   await new Promise<void>((resolve) => {
     const unsub = useDeviceStore.persist.onFinishHydration(() => {
-      unsub();
-      resolve();
-    });
-    useDeviceStore.persist.rehydrate();
-  });
-};
+      unsub()
+      resolve()
+    })
+    useDeviceStore.persist.rehydrate()
+  })
+}
 
 export const rehydrateDeviceStore = async () => {
   await new Promise<void>((resolve) => {
     const unsub = useDeviceStore.persist.onFinishHydration(() => {
-      unsub();
-      resolve();
-    });
-    useDeviceStore.persist.rehydrate();
-  });
-};
+      unsub()
+      resolve()
+    })
+    useDeviceStore.persist.rehydrate()
+  })
+}

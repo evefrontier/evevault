@@ -1,44 +1,44 @@
-import { createLogger } from '@evevault/shared/utils';
-import { sendAuthError } from './authHelpers';
+import { createLogger } from '@evevault/shared/utils'
+import { sendAuthError } from './authHelpers'
 
-const log = createLogger();
+const log = createLogger()
 
 /** Delay in ms before retrying keeper unlock check (gives unlock time to complete) */
-export const KEEPER_RETRY_DELAY_MS = 100;
+export const KEEPER_RETRY_DELAY_MS = 100
 
 /** Time to wait for vault unlock before sending auth_error (2 minutes) */
-export const PENDING_AUTH_TIMEOUT_MS = 2 * 60 * 1000;
+export const PENDING_AUTH_TIMEOUT_MS = 2 * 60 * 1000
 
 export interface PendingAuthAfterUnlock {
-  id: string;
-  type: 'ext' | 'dapp';
-  tabId?: number;
-  windowId?: number;
+  id: string
+  type: 'ext' | 'dapp'
+  tabId?: number
+  windowId?: number
   /** Extra connect request ids for same tab (all get auth_success when unlock completes). */
-  additionalIds?: string[];
+  additionalIds?: string[]
   /** Tenant id for ext_login resume (popup context tenant when vault was locked). */
-  tenantId?: string;
+  tenantId?: string
 }
 
-let pendingAuthAfterUnlock: PendingAuthAfterUnlock | null = null;
-let pendingAuthTimeoutId: ReturnType<typeof setTimeout> | null = null;
+let pendingAuthAfterUnlock: PendingAuthAfterUnlock | null = null
+let pendingAuthTimeoutId: ReturnType<typeof setTimeout> | null = null
 
 export function clearPendingAuth(): void {
   if (pendingAuthTimeoutId !== null) {
-    clearTimeout(pendingAuthTimeoutId);
-    pendingAuthTimeoutId = null;
+    clearTimeout(pendingAuthTimeoutId)
+    pendingAuthTimeoutId = null
   }
-  pendingAuthAfterUnlock = null;
+  pendingAuthAfterUnlock = null
 }
 
 export function sendPendingAuthError(pending: PendingAuthAfterUnlock): void {
   const errorPayload = {
     message: 'Vault unlock was cancelled or timed out.',
-  };
+  }
   if (pending.type === 'ext') {
-    sendAuthError(pending.id, errorPayload);
+    sendAuthError(pending.id, errorPayload)
   } else if (pending.tabId !== undefined) {
-    const ids = [pending.id, ...(pending.additionalIds ?? [])];
+    const ids = [pending.id, ...(pending.additionalIds ?? [])]
     for (const id of ids) {
       chrome.tabs
         .sendMessage(pending.tabId, {
@@ -51,8 +51,8 @@ export function sendPendingAuthError(pending: PendingAuthAfterUnlock): void {
             tabId: pending.tabId,
             id,
             err,
-          });
-        });
+          })
+        })
     }
   }
 }
@@ -62,18 +62,18 @@ export function sendPendingAuthError(pending: PendingAuthAfterUnlock): void {
  * @returns true if the id was added (no new popup should be opened)
  */
 export function addPendingDappId(tabId: number, id: string): boolean {
-  if (!pendingAuthAfterUnlock) return false;
-  if (pendingAuthAfterUnlock.type !== 'dapp') return false;
-  if (pendingAuthAfterUnlock.tabId !== tabId) return false;
+  if (!pendingAuthAfterUnlock) return false
+  if (pendingAuthAfterUnlock.type !== 'dapp') return false
+  if (pendingAuthAfterUnlock.tabId !== tabId) return false
   if (!pendingAuthAfterUnlock.additionalIds) {
-    pendingAuthAfterUnlock.additionalIds = [];
+    pendingAuthAfterUnlock.additionalIds = []
   }
   // Deduplicate: only add if not already present
   if (pendingAuthAfterUnlock.additionalIds.includes(id)) {
-    return true; // Already tracked, still no new popup needed
+    return true // Already tracked, still no new popup needed
   }
-  pendingAuthAfterUnlock.additionalIds.push(id);
-  return true;
+  pendingAuthAfterUnlock.additionalIds.push(id)
+  return true
 }
 
 export function setPendingAuthAfterUnlock(
@@ -83,7 +83,7 @@ export function setPendingAuthAfterUnlock(
   windowId?: number,
   tenantId?: string,
 ): void {
-  clearPendingAuth();
+  clearPendingAuth()
   pendingAuthAfterUnlock = {
     id,
     type,
@@ -91,15 +91,15 @@ export function setPendingAuthAfterUnlock(
     windowId,
     tenantId,
     additionalIds: undefined,
-  };
+  }
   pendingAuthTimeoutId = setTimeout(() => {
-    pendingAuthTimeoutId = null;
-    const pending = pendingAuthAfterUnlock;
-    pendingAuthAfterUnlock = null;
+    pendingAuthTimeoutId = null
+    const pending = pendingAuthAfterUnlock
+    pendingAuthAfterUnlock = null
     if (pending) {
-      sendPendingAuthError(pending);
+      sendPendingAuthError(pending)
     }
-  }, PENDING_AUTH_TIMEOUT_MS);
+  }, PENDING_AUTH_TIMEOUT_MS)
 }
 
 /**
@@ -108,8 +108,8 @@ export function setPendingAuthAfterUnlock(
  * The `id` must match the current pending entry to guard against concurrent flows.
  */
 export function setPendingAuthWindowId(id: string, windowId: number): void {
-  const pending = pendingAuthAfterUnlock;
-  if (!pending) return;
+  const pending = pendingAuthAfterUnlock
+  if (!pending) return
 
   // Guard against races: only update if the pending entry still matches the caller's id.
   if (pending.id !== id) {
@@ -119,8 +119,8 @@ export function setPendingAuthWindowId(id: string, windowId: number): void {
         expectedId: id,
         pendingId: pending.id,
       },
-    );
-    return;
+    )
+    return
   }
 
   // If a different windowId is already set, treat this as a race and ignore.
@@ -129,16 +129,16 @@ export function setPendingAuthWindowId(id: string, windowId: number): void {
       pendingId: pending.id,
       existingWindowId: pending.windowId,
       newWindowId: windowId,
-    });
-    return;
+    })
+    return
   }
 
-  pending.windowId = windowId;
+  pending.windowId = windowId
 }
 
 /** Returns the current pending auth without clearing (e.g. for window-close check). */
 export function getPending(): PendingAuthAfterUnlock | null {
-  return pendingAuthAfterUnlock;
+  return pendingAuthAfterUnlock
 }
 
 /**
@@ -146,7 +146,7 @@ export function getPending(): PendingAuthAfterUnlock | null {
  * resume the appropriate handler after unlock.
  */
 export function getPendingAndClear(): PendingAuthAfterUnlock | null {
-  const pending = pendingAuthAfterUnlock;
-  clearPendingAuth();
-  return pending;
+  const pending = pendingAuthAfterUnlock
+  clearPendingAuth()
+  return pending
 }

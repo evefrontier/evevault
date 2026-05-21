@@ -66,7 +66,7 @@ export const dark = {
   'success-30': 'rgba(94, 227, 156, 0.3)',
   'bg-top': '#180A04',
   'bg-bottom': '#592506',
-};
+}
 
 export const light = {
   'crude-01': '#A6AEB8',
@@ -135,24 +135,24 @@ export const light = {
   'success-80': 'hsl(148, 70%, 63%, 0.8)',
   'bg-top': '#180A04',
   'bg-bottom': '#592506',
-};
+}
 
 const theme = {
   light,
   dark,
-} as const;
+} as const
 
-export type ThemeVariant = keyof typeof theme;
-export type ThemeValues = (typeof theme)[ThemeVariant];
-export type ThemeToken = keyof ThemeValues;
+export type ThemeVariant = keyof typeof theme
+export type ThemeValues = (typeof theme)[ThemeVariant]
+export type ThemeToken = keyof ThemeValues
 
-export default theme;
+export default theme
 
 export function applyTheme(variant: ThemeVariant) {
-  const values = theme[variant];
-  const root = document.documentElement;
-  (Object.keys(values) as Array<ThemeToken>).forEach((token) => {
-    const value = values[token];
-    root.style.setProperty(`--${token}` as string, String(value));
-  });
+  const values = theme[variant]
+  const root = document.documentElement
+  ;(Object.keys(values) as Array<ThemeToken>).forEach((token) => {
+    const value = values[token]
+    root.style.setProperty(`--${token}` as string, String(value))
+  })
 }

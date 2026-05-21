@@ -1,54 +1,54 @@
-import type { IntentScope } from '@mysten/sui/cryptography';
-import { useCallback, useMemo } from 'react';
-import { getUserForNetwork } from '#/auth';
-import { useAuth } from '#/auth/hooks/useAuth';
-import { useDevice } from '#/hooks/useDevice';
-import { useContextStore } from '#/stores/contextStore';
-import { useDeviceStore } from '#/stores/deviceStore';
-import { createSuiClient } from '#/sui';
-import { isLocalnetChain } from '#/types/networks';
-import type { ZkSignAnyParams } from '#/types/wallet';
-import { signForChain } from '#/wallet/signForChain';
-import { useLocalnetAddress } from './useLocalnetAddress';
+import type { IntentScope } from '@mysten/sui/cryptography'
+import { useCallback, useMemo } from 'react'
+import { getUserForNetwork } from '#/auth'
+import { useAuth } from '#/auth/hooks/useAuth'
+import { useDevice } from '#/hooks/useDevice'
+import { useContextStore } from '#/stores/contextStore'
+import { useDeviceStore } from '#/stores/deviceStore'
+import { createSuiClient } from '#/sui'
+import { isLocalnetChain } from '#/types/networks'
+import type { ZkSignAnyParams } from '#/types/wallet'
+import { signForChain } from '#/wallet/signForChain'
+import { useLocalnetAddress } from './useLocalnetAddress'
 
-export type WalletSigningMode = 'localnet' | 'zklogin';
+export type WalletSigningMode = 'localnet' | 'zklogin'
 
 export function useWalletSigningContext() {
-  const { user } = useAuth();
+  const { user } = useAuth()
 
-  const { ephemeralPublicKey, getZkProof, maxEpoch, isLocked } = useDevice();
-  const { chain } = useContextStore();
+  const { ephemeralPublicKey, getZkProof, maxEpoch, isLocked } = useDevice()
+  const { chain } = useContextStore()
   const {
     localnet: { url: localnetUrl },
-  } = useDeviceStore();
-  const localnetAddress = useLocalnetAddress();
-  const isLocalnet = isLocalnetChain(chain);
+  } = useDeviceStore()
+  const localnetAddress = useLocalnetAddress()
+  const isLocalnet = isLocalnetChain(chain)
 
   const suiClient = useMemo(
     () => createSuiClient(chain, isLocalnet ? localnetUrl : undefined),
     [chain, isLocalnet, localnetUrl],
-  );
+  )
 
   const senderAddress = isLocalnet
     ? localnetAddress
-    : ((user?.profile?.sui_address as string | undefined) ?? null);
+    : ((user?.profile?.sui_address as string | undefined) ?? null)
 
   // getSenderAddress and getZkLoginUser read fresh from storage rather than
   // relying on React render state — safe to call just before signing.
   const getSenderAddress = useCallback(async () => {
-    if (isLocalnet) return localnetAddress;
-    const networkUser = await getUserForNetwork(chain);
-    return (networkUser?.profile?.sui_address as string | undefined) ?? null;
-  }, [isLocalnet, localnetAddress, chain]);
+    if (isLocalnet) return localnetAddress
+    const networkUser = await getUserForNetwork(chain)
+    return (networkUser?.profile?.sui_address as string | undefined) ?? null
+  }, [isLocalnet, localnetAddress, chain])
 
   const getZkLoginUser = useCallback(async () => {
-    if (isLocalnet) return null;
-    return getUserForNetwork(chain);
-  }, [chain, isLocalnet]);
+    if (isLocalnet) return null
+    return getUserForNetwork(chain)
+  }, [chain, isLocalnet])
 
   const sign = useCallback(
     async (scope: IntentScope, msgBytes: Uint8Array) => {
-      const zkLoginUser = await getZkLoginUser();
+      const zkLoginUser = await getZkLoginUser()
       return signForChain(scope, msgBytes, {
         chain,
         user: zkLoginUser,
@@ -56,14 +56,14 @@ export function useWalletSigningContext() {
           ? null
           : (getZkProof as ZkSignAnyParams['getZkProof']),
         localnetAddress,
-      });
+      })
     },
     [chain, isLocalnet, getZkProof, localnetAddress, getZkLoginUser],
-  );
+  )
 
   const isWalletUnlocked =
     !isLocked &&
-    (isLocalnet ? !!localnetAddress : !!ephemeralPublicKey && !!maxEpoch);
+    (isLocalnet ? !!localnetAddress : !!ephemeralPublicKey && !!maxEpoch)
 
   return {
     chain,
@@ -78,5 +78,5 @@ export function useWalletSigningContext() {
     suiClient,
     getSenderAddress,
     sign,
-  };
+  }
 }

@@ -1,13 +1,13 @@
-import type React from 'react';
-import { useState } from 'react';
-import Button from '#/components/Button';
-import Heading from '#/components/Heading';
-import { Input } from '#/components/Inputs';
-import Text from '#/components/Text';
-import { useToast } from '#/components/Toast';
-import { useTokenListStore } from '#/stores/tokenListStore';
-import type { AddTokenScreenProps } from '#/types';
-import { isValidCoinTypeFormat } from '#/wallet/utils/coinTypeFormat';
+import type React from 'react'
+import { useState } from 'react'
+import Button from '#/components/Button'
+import Heading from '#/components/Heading'
+import { Input } from '#/components/Inputs'
+import Text from '#/components/Text'
+import { useToast } from '#/components/Toast'
+import { useTokenListStore } from '#/stores/tokenListStore'
+import type { AddTokenScreenProps } from '#/types'
+import { isValidCoinTypeFormat } from '#/wallet/utils/coinTypeFormat'
 
 export const AddTokenScreen: React.FC<AddTokenScreenProps> = ({
   user,
@@ -15,47 +15,47 @@ export const AddTokenScreen: React.FC<AddTokenScreenProps> = ({
   onSuccess,
   onCancel,
 }) => {
-  const { addToken } = useTokenListStore();
-  const { showToast } = useToast();
-  const [inputValue, setInputValue] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const { addToken } = useTokenListStore()
+  const { showToast } = useToast()
+  const [inputValue, setInputValue] = useState('')
+  const [error, setError] = useState<string | null>(null)
 
   const handleAddToken = () => {
     if (!chain) {
-      showToast('Failed to add token');
-      return;
+      showToast('Failed to add token')
+      return
     }
-    const normalized = inputValue.trim();
+    const normalized = inputValue.trim()
     if (!normalized) {
-      setError('Please enter a coin type');
-      showToast('Failed to add token');
-      return;
+      setError('Please enter a coin type')
+      showToast('Failed to add token')
+      return
     }
 
     if (!isValidCoinTypeFormat(normalized)) {
       setError(
         'Invalid coin type format. Expected: 0x...::module::COIN or 0x2::Coin<...>',
-      );
-      showToast('Failed to add token');
-      return;
+      )
+      showToast('Failed to add token')
+      return
     }
 
-    addToken(chain, normalized);
-    setInputValue('');
-    setError(null);
-    showToast('Token added');
+    addToken(chain, normalized)
+    setInputValue('')
+    setError(null)
+    showToast('Token added')
 
     if (onSuccess) {
-      onSuccess();
+      onSuccess()
     }
-  };
+  }
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setInputValue(event.target.value);
-    setError(null);
-  };
+    setInputValue(event.target.value)
+    setError(null)
+  }
 
-  const canAdd = !!user && !!chain && inputValue.trim().length > 0;
+  const canAdd = !!user && !!chain && inputValue.trim().length > 0
 
   return (
     <div className="mt-10 flex flex-col gap-10">
@@ -90,5 +90,5 @@ export const AddTokenScreen: React.FC<AddTokenScreenProps> = ({
         </Button>
       </div>
     </div>
-  );
-};
+  )
+}

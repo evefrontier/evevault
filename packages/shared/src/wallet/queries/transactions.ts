@@ -39,4 +39,4 @@ export const TRANSACTIONS_QUERY = `
       }
     }
   }
-`;
+`

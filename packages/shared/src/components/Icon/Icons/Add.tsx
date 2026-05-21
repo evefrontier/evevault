@@ -1,4 +1,4 @@
-import type { SVGProps } from 'react';
+import type { SVGProps } from 'react'
 
 const AddIcon = ({
   className,
@@ -23,6 +23,6 @@ const AddIcon = ({
       fill={color}
     />
   </svg>
-);
+)
 
-export default AddIcon;
+export default AddIcon

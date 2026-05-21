@@ -1,4 +1,4 @@
-import type { SVGProps } from 'react';
+import type { SVGProps } from 'react'
 
 const RefreshIcon = ({
   className,
@@ -32,6 +32,6 @@ const RefreshIcon = ({
     </g>
     <path d="M9 6H14V1" stroke={color} strokeWidth="2" />
   </svg>
-);
+)
 
-export default RefreshIcon;
+export default RefreshIcon

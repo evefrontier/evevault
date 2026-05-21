@@ -2,5 +2,5 @@
 
 /** Virtual module provided by wxt.config appVersionPlugin (version from extension package.json). */
 declare module 'virtual:app-version' {
-  export const APP_VERSION: string;
+  export const APP_VERSION: string
 }

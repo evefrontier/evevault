@@ -1,8 +1,8 @@
-import { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useDeviceStore } from '#/stores/deviceStore';
-import { KEY_FLAG_ED25519 } from '#/types';
-import { DEVICE_STORAGE_KEY } from '#/utils/storageKeys';
+import { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { useDeviceStore } from '#/stores/deviceStore'
+import { KEY_FLAG_ED25519 } from '#/types'
+import { DEVICE_STORAGE_KEY } from '#/utils/storageKeys'
 
 vi.mock('#/services/vaultService', () => ({
   ephKeyService: {
@@ -10,23 +10,23 @@ vi.mock('#/services/vaultService', () => ({
     lock: vi.fn(),
   },
   zkProofService: {},
-}));
+}))
 
 describe('deviceStore rehydration', () => {
   beforeEach(() => {
-    window.localStorage.clear();
-    useDeviceStore.setState(useDeviceStore.getInitialState());
-  });
+    window.localStorage.clear()
+    useDeviceStore.setState(useDeviceStore.getInitialState())
+  })
 
   afterEach(() => {
-    window.localStorage.clear();
-    useDeviceStore.persist.clearStorage();
-    useDeviceStore.setState(useDeviceStore.getInitialState());
-  });
+    window.localStorage.clear()
+    useDeviceStore.persist.clearStorage()
+    useDeviceStore.setState(useDeviceStore.getInitialState())
+  })
 
   it('reconstructs the ephemeral public key from persisted bytes', async () => {
-    const publicKey = new Ed25519PublicKey(new Uint8Array(32).fill(7));
-    const publicKeyFlag = publicKey.flag();
+    const publicKey = new Ed25519PublicKey(new Uint8Array(32).fill(7))
+    const publicKeyFlag = publicKey.flag()
 
     window.localStorage.setItem(
       DEVICE_STORAGE_KEY,
@@ -39,19 +39,19 @@ describe('deviceStore rehydration', () => {
         },
         version: 0,
       }),
-    );
+    )
 
-    await useDeviceStore.persist.rehydrate();
+    await useDeviceStore.persist.rehydrate()
 
-    const state = useDeviceStore.getState();
+    const state = useDeviceStore.getState()
     expect(state.ephemeralPublicKey?.toRawBytes()).toEqual(
       publicKey.toRawBytes(),
-    );
+    )
     expect(state.ephemeralPublicKeyBytes).toEqual(
       Array.from(publicKey.toRawBytes()),
-    );
-    expect(state.ephemeralPublicKeyFlag).toBe(publicKeyFlag);
-  });
+    )
+    expect(state.ephemeralPublicKeyFlag).toBe(publicKeyFlag)
+  })
 
   it('clears persisted public key fields when bytes cannot be reconstructed', async () => {
     window.localStorage.setItem(
@@ -65,13 +65,13 @@ describe('deviceStore rehydration', () => {
         },
         version: 0,
       }),
-    );
+    )
 
-    await useDeviceStore.persist.rehydrate();
+    await useDeviceStore.persist.rehydrate()
 
-    const state = useDeviceStore.getState();
-    expect(state.ephemeralPublicKey).toBeNull();
-    expect(state.ephemeralPublicKeyBytes).toBeNull();
-    expect(state.ephemeralPublicKeyFlag).toBeNull();
-  });
-});
+    const state = useDeviceStore.getState()
+    expect(state.ephemeralPublicKey).toBeNull()
+    expect(state.ephemeralPublicKeyBytes).toBeNull()
+    expect(state.ephemeralPublicKeyFlag).toBeNull()
+  })
+})

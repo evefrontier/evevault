@@ -1,16 +1,16 @@
-import type React from 'react';
-import { useCallback, useRef, useState } from 'react';
-import { Dropdown } from '#/components/Dropdown';
-import Icon from '#/components/Icon';
-import Text from '#/components/Text';
-import { getTenantLabel } from '#/utils/tenantConfig';
-import './TenantSelector.css';
-import type { TenantId } from '@evefrontier/dapp-kit/utils';
+import type React from 'react'
+import { useCallback, useRef, useState } from 'react'
+import { Dropdown } from '#/components/Dropdown'
+import Icon from '#/components/Icon'
+import Text from '#/components/Text'
+import { getTenantLabel } from '#/utils/tenantConfig'
+import './TenantSelector.css'
+import type { TenantId } from '@evefrontier/dapp-kit/utils'
 import type {
   TenantSelectorInteractiveProps,
   TenantSelectorProps,
   TenantSelectorPropsBase,
-} from '#/types';
+} from '#/types'
 
 const TenantSelectorViewOnly = ({
   currentTenantId,
@@ -27,8 +27,8 @@ const TenantSelectorViewOnly = ({
         </Text>
       </div>
     </div>
-  );
-};
+  )
+}
 
 const TenantSelectorInteractive = ({
   currentTenantId,
@@ -36,18 +36,18 @@ const TenantSelectorInteractive = ({
   onServerChange,
   className = '',
 }: TenantSelectorInteractiveProps) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [isOpen, setIsOpen] = useState(false)
+  const triggerRef = useRef<HTMLButtonElement>(null)
 
   const handleSelect = useCallback(
     (id: TenantId) => {
-      onServerChange(id);
-      setIsOpen(false);
+      onServerChange(id)
+      setIsOpen(false)
     },
     [onServerChange],
-  );
+  )
 
-  const currentLabel = getTenantLabel(currentTenantId);
+  const currentLabel = getTenantLabel(currentTenantId)
 
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: div is for event capture only, not interactive content
@@ -88,7 +88,7 @@ const TenantSelectorInteractive = ({
           placement="bottom"
         >
           {availableTenantIds.map((id: TenantId) => {
-            const isActive = id === currentTenantId;
+            const isActive = id === currentTenantId
             return (
               <button
                 key={id}
@@ -105,19 +105,19 @@ const TenantSelectorInteractive = ({
                 </Text>
                 {isActive && <span className="dropdown__check">✓</span>}
               </button>
-            );
+            )
           })}
         </Dropdown>
       )}
     </div>
-  );
-};
+  )
+}
 
 export const TenantSelector: React.FC<TenantSelectorProps> = (props) => {
   if (props.viewOnly === true) {
-    return <TenantSelectorViewOnly {...props} />;
+    return <TenantSelectorViewOnly {...props} />
   }
-  return <TenantSelectorInteractive {...props} />;
-};
+  return <TenantSelectorInteractive {...props} />
+}
 
-export default TenantSelector;
+export default TenantSelector

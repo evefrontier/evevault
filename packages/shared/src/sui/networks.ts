@@ -1,4 +1,4 @@
-import type { SuiChain } from '@mysten/wallet-standard';
+import type { SuiChain } from '@mysten/wallet-standard'
 
 export const NETWORKS = {
   devnet: {
@@ -17,9 +17,9 @@ export const NETWORKS = {
     fullnodeUrl: '',
     faucetUrl: null,
   },
-} as const;
+} as const
 
-type NetworkKey = keyof typeof NETWORKS;
+type NetworkKey = keyof typeof NETWORKS
 
 /**
  * Returns the faucet URL for the given chain, or null if the network has no faucet (e.g. mainnet).
@@ -28,8 +28,8 @@ type NetworkKey = keyof typeof NETWORKS;
 export function getFaucetUrlForChain(
   chain: SuiChain | null | undefined,
 ): string | null {
-  if (!chain || typeof chain !== 'string') return null;
-  const key = chain.replace(/^sui:/, '') as NetworkKey;
-  const config = NETWORKS[key];
-  return config?.faucetUrl ?? null;
+  if (!chain || typeof chain !== 'string') return null
+  const key = chain.replace(/^sui:/, '') as NetworkKey
+  const config = NETWORKS[key]
+  return config?.faucetUrl ?? null
 }

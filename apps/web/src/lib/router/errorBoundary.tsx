@@ -1,5 +1,5 @@
-import { Background, Button, Heading, Text } from '@evevault/shared/components';
-import type { ErrorComponentProps } from '@tanstack/react-router';
+import { Background, Button, Heading, Text } from '@evevault/shared/components'
+import type { ErrorComponentProps } from '@tanstack/react-router'
 
 /**
  * Route-level error boundary component
@@ -7,9 +7,9 @@ import type { ErrorComponentProps } from '@tanstack/react-router';
  */
 export function RouteErrorBoundary({ error, reset }: ErrorComponentProps) {
   const handleReset = () => {
-    reset();
-    window.location.href = '/';
-  };
+    reset()
+    window.location.href = '/'
+  }
 
   return (
     <Background>
@@ -37,5 +37,5 @@ export function RouteErrorBoundary({ error, reset }: ErrorComponentProps) {
         </main>
       </div>
     </Background>
-  );
+  )
 }

@@ -1,14 +1,14 @@
-import { useNavigate } from '@tanstack/react-router';
-import Button from '#/components/Button';
-import Heading from '#/components/Heading';
-import Text from '#/components/Text';
+import { useNavigate } from '@tanstack/react-router'
+import Button from '#/components/Button'
+import Heading from '#/components/Heading'
+import Text from '#/components/Text'
 
 export function NotFoundScreen() {
-  const navigate = useNavigate();
+  const navigate = useNavigate()
 
   const handleGoHome = () => {
-    navigate({ to: '/' });
-  };
+    navigate({ to: '/' })
+  }
 
   return (
     <div>
@@ -18,5 +18,5 @@ export function NotFoundScreen() {
       <Text>The page you're looking for doesn't exist.</Text>
       <Button onClick={handleGoHome}>Go to Home</Button>
     </div>
-  );
+  )
 }

@@ -1,22 +1,19 @@
-import type { SuiChain } from '@mysten/wallet-standard';
-import { User } from 'oidc-client-ts';
-import { userToJwtResponse } from '#/auth/userToJwtResponse';
-import { resolveExpiresAt } from '#/auth/utils/authStoreUtils';
-import { useDeviceStore } from '#/stores';
-import {
-  getCurrentTenantId,
-  OAuthTenantSessionKey,
-} from '#/stores/tenantStore';
-import { isZkLoginSuiChain, type ZkLoginSuiChain } from '#/types/networks';
-import { createLogger } from '#/utils';
-import { persistEnrichedUser } from './authUserSession';
+import type { SuiChain } from '@mysten/wallet-standard'
+import { User } from 'oidc-client-ts'
+import { userToJwtResponse } from '#/auth/userToJwtResponse'
+import { resolveExpiresAt } from '#/auth/utils/authStoreUtils'
+import { useDeviceStore } from '#/stores'
+import { getCurrentTenantId, OAuthTenantSessionKey } from '#/stores/tenantStore'
+import { isZkLoginSuiChain, type ZkLoginSuiChain } from '#/types/networks'
+import { createLogger } from '#/utils'
+import { persistEnrichedUser } from './authUserSession'
 import {
   type AuthSet,
   type GetUserManagerInstance,
   getErrorMessage,
-} from './authWorkflowUtils';
+} from './authWorkflowUtils'
 
-const log = createLogger();
+const log = createLogger()
 
 export async function initializeWebSession(
   getUserManagerInstance: GetUserManagerInstance,
@@ -27,38 +24,38 @@ export async function initializeWebSession(
    * use silent renew only when a refresh token is present; otherwise return a
    * clean null user so callers can render the logged-out state.
    */
-  const webUserManager = getUserManagerInstance();
-  let webUser = await webUserManager.getUser();
+  const webUserManager = getUserManagerInstance()
+  let webUser = await webUserManager.getUser()
 
-  const webJwt = userToJwtResponse(webUser);
-  const now = Math.floor(Date.now() / 1000);
-  const isExpired = !webJwt || now >= resolveExpiresAt(webJwt);
+  const webJwt = userToJwtResponse(webUser)
+  const now = Math.floor(Date.now() / 1000)
+  const isExpired = !webJwt || now >= resolveExpiresAt(webJwt)
 
   if (!isExpired) {
-    return webUser ?? null;
+    return webUser ?? null
   }
 
   if (!webUser?.refresh_token?.trim()) {
     log.info('Web init: no session or refresh token, not logged in', {
       network,
-    });
-    return null;
+    })
+    return null
   }
 
   try {
-    webUser = await webUserManager.signinSilent();
+    webUser = await webUserManager.signinSilent()
 
     if (!webUser) {
-      return null;
+      return null
     }
 
-    return persistEnrichedUser(new User(webUser), webUserManager);
+    return persistEnrichedUser(new User(webUser), webUserManager)
   } catch (error) {
     log.warn('Web init: silent renew failed, not logged in', {
       network,
       error: error instanceof Error ? error.message : String(error),
-    });
-    return null;
+    })
+    return null
   }
 }
 
@@ -70,18 +67,18 @@ async function ensureDeviceDataForLogin(
    * epoch for the selected zkLogin network. Prepare that device data before
    * leaving the app.
    */
-  const deviceStore = useDeviceStore.getState();
-  const networkData = deviceStore.networkData[network];
+  const deviceStore = useDeviceStore.getState()
+  const networkData = deviceStore.networkData[network]
   const isExpired =
     networkData?.maxEpochTimestampMs != null &&
-    Date.now() >= networkData.maxEpochTimestampMs;
+    Date.now() >= networkData.maxEpochTimestampMs
 
   if (networkData?.nonce && networkData?.maxEpoch && !isExpired) {
-    return;
+    return
   }
 
-  log.info('Initializing device data for network before login', { network });
-  await deviceStore.initializeForChain(network);
+  log.info('Initializing device data for network before login', { network })
+  await deviceStore.initializeForChain(network)
 }
 
 export async function loginWebSession(
@@ -91,22 +88,22 @@ export async function loginWebSession(
 ): Promise<void> {
   // Localnet bypasses zkLogin OAuth, so there is no web redirect to start.
   if (!isZkLoginSuiChain(network)) {
-    log.info('Skipping OAuth redirect for non-zkLogin network', { network });
-    set({ loading: false });
-    return;
+    log.info('Skipping OAuth redirect for non-zkLogin network', { network })
+    set({ loading: false })
+    return
   }
 
   try {
-    await ensureDeviceDataForLogin(network);
+    await ensureDeviceDataForLogin(network)
 
     if (typeof sessionStorage !== 'undefined') {
-      sessionStorage.setItem(OAuthTenantSessionKey, getCurrentTenantId());
+      sessionStorage.setItem(OAuthTenantSessionKey, getCurrentTenantId())
     }
 
-    getUserManagerInstance().signinRedirect();
-    set({ loading: false });
+    getUserManagerInstance().signinRedirect()
+    set({ loading: false })
   } catch (error) {
-    log.error('Login failed (web)', error);
-    set({ loading: false, error: getErrorMessage(error) });
+    log.error('Login failed (web)', error)
+    set({ loading: false, error: getErrorMessage(error) })
   }
 }

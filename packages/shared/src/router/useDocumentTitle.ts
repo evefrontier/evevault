@@ -1,7 +1,7 @@
-import { useRouterState } from '@tanstack/react-router';
-import { useEffect } from 'react';
+import { useRouterState } from '@tanstack/react-router'
+import { useEffect } from 'react'
 
-import type { RouteMetaWithTitle } from './types';
+import type { RouteMetaWithTitle } from './types'
 
 const hasTitle = (meta: unknown): meta is RouteMetaWithTitle => {
   return (
@@ -9,8 +9,8 @@ const hasTitle = (meta: unknown): meta is RouteMetaWithTitle => {
     meta !== null &&
     'title' in meta &&
     typeof (meta as { title?: unknown }).title === 'string'
-  );
-};
+  )
+}
 
 /**
  * Hook to update document title based on route meta
@@ -30,15 +30,15 @@ const hasTitle = (meta: unknown): meta is RouteMetaWithTitle => {
  * ```
  */
 export function useDocumentTitle() {
-  const router = useRouterState();
-  const routeMeta = router.matches[router.matches.length - 1]?.meta;
+  const router = useRouterState()
+  const routeMeta = router.matches[router.matches.length - 1]?.meta
 
   useEffect(() => {
     if (routeMeta && Array.isArray(routeMeta)) {
-      const titleMeta = routeMeta.find(hasTitle);
+      const titleMeta = routeMeta.find(hasTitle)
       if (titleMeta?.title) {
-        document.title = titleMeta.title;
+        document.title = titleMeta.title
       }
     }
-  }, [routeMeta]);
+  }, [routeMeta])
 }

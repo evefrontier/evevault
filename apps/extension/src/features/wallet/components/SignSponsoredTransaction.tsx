@@ -3,75 +3,72 @@ import {
   Heading,
   NetworkSelector,
   Text,
-} from '@evevault/shared/components';
-import { createLogger } from '@evevault/shared/utils';
-import { useWalletSigningContext } from '@evevault/shared/wallet';
-import { useEffect, useState } from 'react';
-import { useSignPopupAuth } from '@/features/wallet/hooks';
-import { SignPopupAuthGate } from './SignPopupAuthGate';
+} from '@evevault/shared/components'
+import { createLogger } from '@evevault/shared/utils'
+import { useWalletSigningContext } from '@evevault/shared/wallet'
+import { useEffect, useState } from 'react'
+import { useSignPopupAuth } from '@/features/wallet/hooks'
+import { SignPopupAuthGate } from './SignPopupAuthGate'
 
-const log = createLogger();
+const log = createLogger()
 
 export type PendingSponsoredAction = {
-  action: string;
-  id?: string;
-  senderTabId?: number;
-  timestamp: number;
-  windowId: number;
-  sponsoredTxB64: string;
-  preparationId: string;
-  chain: string;
-};
+  action: string
+  id?: string
+  senderTabId?: number
+  timestamp: number
+  windowId: number
+  sponsoredTxB64: string
+  preparationId: string
+  chain: string
+}
 
 function SignSponsoredTransaction() {
-  const [pending, setPending] = useState<PendingSponsoredAction | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState<PendingSponsoredAction | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const auth = useSignPopupAuth();
-  const { isLocalnet, sign } = useWalletSigningContext();
+  const auth = useSignPopupAuth()
+  const { isLocalnet, sign } = useWalletSigningContext()
 
   useEffect(() => {
     chrome.storage.local.get('pendingAction').then((data) => {
-      const action = data.pendingAction;
+      const action = data.pendingAction
       if (action?.sponsoredTxB64 != null && action?.preparationId != null) {
-        setPending(action as PendingSponsoredAction);
+        setPending(action as PendingSponsoredAction)
       } else {
-        setError('No pending sponsored transaction found');
+        setError('No pending sponsored transaction found')
       }
-    });
-  }, []);
+    })
+  }, [])
 
   const handleApprove = async () => {
-    if (!pending) return;
+    if (!pending) return
     if (isLocalnet) {
-      setError('Sponsored transactions are not available on localnet.');
-      return;
+      setError('Sponsored transactions are not available on localnet.')
+      return
     }
     if (!auth.user) {
-      setError('Sign in and try again.');
-      return;
+      setError('Sign in and try again.')
+      return
     }
     if (!auth.ephemeralPublicKey) {
-      setError('Device key not found. Unlock the wallet and try again.');
-      return;
+      setError('Device key not found. Unlock the wallet and try again.')
+      return
     }
     if (!auth.maxEpoch) {
-      setError('Max epoch not set. Re-authenticate and try again.');
-      return;
+      setError('Max epoch not set. Re-authenticate and try again.')
+      return
     }
 
     try {
-      setLoading(true);
-      setError(null);
+      setLoading(true)
+      setError(null)
 
       const txbBytes = Uint8Array.from(atob(pending.sponsoredTxB64), (c) =>
         c.charCodeAt(0),
-      );
-      const { signature: zkSignature } = await sign(
-        'TransactionData',
-        txbBytes,
-      );
+      )
+      const { signature: zkSignature } = await sign('TransactionData', txbBytes)
 
       await chrome.storage.local.set({
         transactionResult: {
@@ -80,27 +77,27 @@ function SignSponsoredTransaction() {
           zkSignature,
           preparationId: pending.preparationId,
         },
-      });
-      window.close();
+      })
+      window.close()
     } catch (err) {
-      log.error('Sponsored transaction signing failed', err);
+      log.error('Sponsored transaction signing failed', err)
       const errorMessage =
-        err instanceof Error ? err.message : 'Unknown error occurred';
-      setError(errorMessage);
+        err instanceof Error ? err.message : 'Unknown error occurred'
+      setError(errorMessage)
       await chrome.storage.local.set({
         transactionResult: {
           windowId: pending.windowId,
           status: 'error',
           error: errorMessage,
         },
-      });
+      })
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleReject = async () => {
-    if (!pending) return;
+    if (!pending) return
     try {
       await chrome.storage.local.set({
         transactionResult: {
@@ -108,13 +105,13 @@ function SignSponsoredTransaction() {
           status: 'error',
           error: 'Transaction rejected by user',
         },
-      });
-      window.close();
+      })
+      window.close()
     } catch (err) {
-      log.error('Failed to reject transaction', err);
-      setError('Failed to reject transaction');
+      log.error('Failed to reject transaction', err)
+      setError('Failed to reject transaction')
     }
-  };
+  }
 
   return (
     <SignPopupAuthGate
@@ -172,7 +169,7 @@ function SignSponsoredTransaction() {
         </div>
       )}
     </SignPopupAuthGate>
-  );
+  )
 }
 
-export default SignSponsoredTransaction;
+export default SignSponsoredTransaction

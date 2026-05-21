@@ -1,10 +1,10 @@
-import { SuiGrpcClient } from '@mysten/sui/grpc';
+import { SuiGrpcClient } from '@mysten/sui/grpc'
 import {
   SUI_LOCALNET_CHAIN,
   SUI_TESTNET_CHAIN,
   type SuiChain,
-} from '@mysten/wallet-standard';
-import { NETWORKS } from './networks';
+} from '@mysten/wallet-standard'
+import { NETWORKS } from './networks'
 
 /**
  * Creates a Sui gRPC client for the specified network.
@@ -19,23 +19,23 @@ export const createSuiClient = (
     | 'mainnet'
     | 'testnet'
     | 'devnet'
-    | 'localnet';
+    | 'localnet'
 
   const baseUrl =
     network === SUI_LOCALNET_CHAIN
       ? (() => {
-          const configuredUrl = localnetUrl?.trim();
+          const configuredUrl = localnetUrl?.trim()
           if (!configuredUrl) {
             throw new Error(
               '[createSuiClient] requires a non-empty localnetUrl when using SUI_LOCALNET_CHAIN.',
-            );
+            )
           }
-          return configuredUrl;
+          return configuredUrl
         })()
-      : NETWORKS[chainName].fullnodeUrl;
+      : NETWORKS[chainName].fullnodeUrl
 
   return new SuiGrpcClient({
     network: chainName,
     baseUrl,
-  });
-};
+  })
+}

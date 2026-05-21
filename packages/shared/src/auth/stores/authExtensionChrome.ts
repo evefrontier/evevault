@@ -1,9 +1,9 @@
-import { parseOAuthTokenResponse } from '#/auth/oauthTokenResponse';
-import type { AuthMessage } from '#/types';
-import type { OAuthTokenResponse } from '#/types/authTypes';
+import { parseOAuthTokenResponse } from '#/auth/oauthTokenResponse'
+import type { AuthMessage } from '#/types'
+import type { OAuthTokenResponse } from '#/types/authTypes'
 
 // biome-ignore lint/suspicious/noExplicitAny: chrome is a global object
-declare const chrome: any;
+declare const chrome: any
 
 export function createExtensionAuthListener(
   id: string,
@@ -16,27 +16,27 @@ export function createExtensionAuthListener(
    */
   const authSuccessListener = (message: AuthMessage) => {
     if (message.id !== id) {
-      return;
+      return
     }
 
-    chrome.runtime?.onMessage?.removeListener(authSuccessListener);
+    chrome.runtime?.onMessage?.removeListener(authSuccessListener)
 
     if (message.type === 'auth_success') {
       if (!message.token) {
-        reject(new Error('No token received from auth'));
-        return;
+        reject(new Error('No token received from auth'))
+        return
       }
 
-      resolve(parseOAuthTokenResponse(message.token));
-      return;
+      resolve(parseOAuthTokenResponse(message.token))
+      return
     }
 
     if (message.type === 'auth_error') {
-      reject(message.error);
+      reject(message.error)
     }
-  };
+  }
 
-  return authSuccessListener;
+  return authSuccessListener
 }
 
 export function launchExtensionLogout(logoutUrl: string): void {
@@ -51,11 +51,11 @@ export function launchExtensionLogout(logoutUrl: string): void {
         __from: 'Eve Vault',
         event: 'change',
         payload: { accounts: [] },
-      });
+      })
     },
-  );
+  )
 }
 
 export function getExtensionLogoutRedirectUri(): string {
-  return chrome.identity.getRedirectURL();
+  return chrome.identity.getRedirectURL()
 }

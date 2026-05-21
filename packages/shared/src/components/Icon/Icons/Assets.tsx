@@ -1,4 +1,4 @@
-import type { SVGProps } from 'react';
+import type { SVGProps } from 'react'
 
 const AssetsIcon = ({
   className,
@@ -23,6 +23,6 @@ const AssetsIcon = ({
       fill={color}
     />
   </svg>
-);
+)
 
-export default AssetsIcon;
+export default AssetsIcon

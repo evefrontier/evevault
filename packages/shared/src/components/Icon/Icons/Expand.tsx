@@ -1,4 +1,4 @@
-import type { SVGProps } from 'react';
+import type { SVGProps } from 'react'
 
 const ExpandIcon = ({
   className,
@@ -23,6 +23,6 @@ const ExpandIcon = ({
       fill={color}
     />
   </svg>
-);
+)
 
-export default ExpandIcon;
+export default ExpandIcon

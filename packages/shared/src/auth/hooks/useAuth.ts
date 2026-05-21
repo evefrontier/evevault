@@ -1,4 +1,4 @@
-import { useAuthStore } from '#/auth/stores/authStore';
+import { useAuthStore } from '#/auth/stores/authStore'
 
 export const useAuth = () => {
   const {
@@ -10,7 +10,7 @@ export const useAuth = () => {
     loading,
     error,
     initialize,
-  } = useAuthStore();
+  } = useAuthStore()
 
   return {
     user,
@@ -23,5 +23,5 @@ export const useAuth = () => {
     setUser,
     isAuthenticated: !!user,
     initialize,
-  };
-};
+  }
+}

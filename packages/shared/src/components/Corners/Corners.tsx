@@ -1,5 +1,5 @@
-import type { CSSProperties } from 'react';
-import type { CornersColor, CornersProps } from '#/types';
+import type { CSSProperties } from 'react'
+import type { CornersColor, CornersProps } from '#/types'
 
 const colorMap: Record<CornersColor, string> = {
   quantum: '#ff4700',
@@ -9,7 +9,7 @@ const colorMap: Record<CornersColor, string> = {
   grey: '#d9d9d9',
   error: 'rgb(255, 25, 41)',
   success: '#5ee39c',
-};
+}
 /// Has to be in a position:relative parent to work properly
 export const Corners = ({
   color = 'quantum',
@@ -20,7 +20,7 @@ export const Corners = ({
   bottomOffset,
   transition,
 }: CornersProps) => {
-  const cornerColor = colorMap[color];
+  const cornerColor = colorMap[color]
 
   const baseCornerStyle: CSSProperties = {
     position: 'absolute',
@@ -28,25 +28,25 @@ export const Corners = ({
     height: size,
     zIndex: 1,
     ...(transition && { transition }),
-  };
+  }
 
   const lineStyle: CSSProperties = {
     content: '""',
     position: 'absolute',
     background: cornerColor,
-  };
+  }
 
   const horizontalLine: CSSProperties = {
     ...lineStyle,
     width: size,
     height: thickness,
-  };
+  }
 
   const verticalLine: CSSProperties = {
     ...lineStyle,
     width: thickness,
     height: size,
-  };
+  }
 
   return (
     <>
@@ -96,7 +96,7 @@ export const Corners = ({
         <span style={{ ...verticalLine, right: 0, bottom: 0 }} />
       </span>
     </>
-  );
-};
+  )
+}
 
-export default Corners;
+export default Corners

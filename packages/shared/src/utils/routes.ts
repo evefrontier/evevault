@@ -10,10 +10,10 @@ export const FILE_ROUTE_PATHS = [
   '/wallet/add-token',
   '/wallet/send-token',
   '/wallet/transactions',
-] as const;
+] as const
 
-export type RoutePath = (typeof FILE_ROUTE_PATHS)[number];
-export type NavPath = RoutePath | '/tokens' | '/assets' | '/history';
+export type RoutePath = (typeof FILE_ROUTE_PATHS)[number]
+export type NavPath = RoutePath | '/tokens' | '/assets' | '/history'
 
 /**
  * Extension route paths
@@ -25,7 +25,7 @@ export const EXTENSION_ROUTES = {
   SEND_TOKEN: '/send-token',
   TRANSACTIONS: '/transactions',
   LOCALNET_SETTINGS: '/localnet-settings',
-} as const;
+} as const
 
 /**
  * Web app route paths
@@ -39,7 +39,7 @@ export const WEB_ROUTES = {
   WALLET_ADD_TOKEN: '/wallet/add-token',
   WALLET_SEND_TOKEN: '/wallet/send-token',
   WALLET_TRANSACTIONS: '/wallet/transactions',
-} as const;
+} as const
 
 /** All valid route paths from the router (for web app) */
 export const ROUTE_PATHS: readonly NavPath[] = [
@@ -47,16 +47,16 @@ export const ROUTE_PATHS: readonly NavPath[] = [
   '/tokens',
   '/assets',
   '/history',
-];
+]
 
 /** Navigation items for the sidebar/bottom bar */
 export const NAV_ITEMS: readonly {
-  name: string;
-  path: NavPath;
-  icon: string;
-  label: string;
+  name: string
+  path: NavPath
+  icon: string
+  label: string
 }[] = [
   { name: 'tokens', path: '/wallet', icon: 'Tokens', label: 'Tokens' },
   { name: 'assets', path: '/wallet', icon: 'Assets', label: 'Assets' },
   { name: 'history', path: '/wallet', icon: 'History', label: 'History' },
-] as const;
+] as const

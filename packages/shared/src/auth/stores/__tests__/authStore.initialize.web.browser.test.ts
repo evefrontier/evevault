@@ -1,6 +1,6 @@
-import { User } from 'oidc-client-ts';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { AuthStoreMockHandles } from './authStoreTestMocks';
+import { User } from 'oidc-client-ts'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { AuthStoreMockHandles } from './authStoreTestMocks'
 import {
   makeAdaptersMock,
   makeAuthCleanupMock,
@@ -19,7 +19,7 @@ import {
   makeUserToJwtResponseMock,
   makeVaultServiceMock,
   setupAuthStoreMocks,
-} from './authStoreTestMocks';
+} from './authStoreTestMocks'
 
 const h: AuthStoreMockHandles = vi.hoisted(() => ({
   mockGetUser: vi.fn(),
@@ -43,37 +43,37 @@ const h: AuthStoreMockHandles = vi.hoisted(() => ({
   mockPerformFullCleanup: vi.fn(),
   mockIsExtension: vi.fn(),
   mockDecodeJwt: vi.fn(),
-}));
+}))
 
-vi.mock('#/auth/authConfig', () => makeAuthConfigMock(h));
-vi.mock('#/auth/storageService', () => makeStorageServiceMock(h));
-vi.mock('#/auth/userJwtSync', () => makeUserJwtSyncMock(h));
-vi.mock('#/auth/userToJwtResponse', () => makeUserToJwtResponseMock(h));
-vi.mock('#/auth/utils/authStoreUtils', () => makeAuthStoreUtilsMock(h));
+vi.mock('#/auth/authConfig', () => makeAuthConfigMock(h))
+vi.mock('#/auth/storageService', () => makeStorageServiceMock(h))
+vi.mock('#/auth/userJwtSync', () => makeUserJwtSyncMock(h))
+vi.mock('#/auth/userToJwtResponse', () => makeUserToJwtResponseMock(h))
+vi.mock('#/auth/utils/authStoreUtils', () => makeAuthStoreUtilsMock(h))
 vi.mock('#/auth/getZkLoginAddress', () =>
   makeGetZkLoginAddressMock(h, { includeGetZkLogin: true }),
-);
-vi.mock('#/auth/oauthTokenResponse', () => makeOAuthTokenResponseMock(h));
+)
+vi.mock('#/auth/oauthTokenResponse', () => makeOAuthTokenResponseMock(h))
 vi.mock('#/services/vaultService', () =>
   makeVaultServiceMock(h, { includeEphKey: true }),
-);
-vi.mock('#/stores', () => makeStoresMock(h, { withInitializeForChain: false }));
-vi.mock('#/stores/tenantStore', () => makeTenantStoreMock(h));
-vi.mock('#/utils/environment', () => makeEnvironmentMock(h));
-vi.mock('#/utils/logger', () => makeLoggerMock());
-vi.mock('#/utils/authCleanup', () => makeAuthCleanupMock(h));
-vi.mock('#/utils/tenantConfig', () => makeTenantConfigMock('default'));
-vi.mock('#/adapters', () => makeAdaptersMock());
-vi.mock('jose', () => makeJoseMock(h));
+)
+vi.mock('#/stores', () => makeStoresMock(h, { withInitializeForChain: false }))
+vi.mock('#/stores/tenantStore', () => makeTenantStoreMock(h))
+vi.mock('#/utils/environment', () => makeEnvironmentMock(h))
+vi.mock('#/utils/logger', () => makeLoggerMock())
+vi.mock('#/utils/authCleanup', () => makeAuthCleanupMock(h))
+vi.mock('#/utils/tenantConfig', () => makeTenantConfigMock('default'))
+vi.mock('#/adapters', () => makeAdaptersMock())
+vi.mock('jose', () => makeJoseMock(h))
 
 // ─── import store after mocks ─────────────────────────────────────────────
-import { useAuthStore } from '#/auth/stores/authStore';
-import { makeJwt } from '#/testing';
+import { useAuthStore } from '#/auth/stores/authStore'
+import { makeJwt } from '#/testing'
 
 // ─── helpers ──────────────────────────────────────────────────────────────
 
-const FUTURE = Math.floor(Date.now() / 1000) + 3600;
-const PAST = Math.floor(Date.now() / 1000) - 60;
+const FUTURE = Math.floor(Date.now() / 1000) + 3600
+const PAST = Math.floor(Date.now() / 1000) - 60
 
 function makeStoredJwt(overrides: Record<string, unknown> = {}) {
   return {
@@ -85,7 +85,7 @@ function makeStoredJwt(overrides: Record<string, unknown> = {}) {
     expires_in: 3600,
     expires_at: FUTURE,
     ...overrides,
-  };
+  }
 }
 
 function makeUser(
@@ -100,107 +100,107 @@ function makeUser(
     profile: { sub: 'user-1' } as User['profile'],
     expires_at: FUTURE,
     ...overrides,
-  });
+  })
 }
 
 describe('authStore.initialize() (web path)', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    setupAuthStoreMocks(h, { tenantId: 'default' });
-    useAuthStore.setState({ user: null, loading: false, error: null });
-  });
+    vi.clearAllMocks()
+    setupAuthStoreMocks(h, { tenantId: 'default' })
+    useAuthStore.setState({ user: null, loading: false, error: null })
+  })
 
   it('sets user to webUser when the token is still valid', async () => {
-    const user = makeUser();
-    h.mockGetUser.mockResolvedValue(user);
-    h.mockUserToJwtResponse.mockReturnValue(makeStoredJwt());
-    h.mockResolveExpiresAt.mockReturnValue(FUTURE);
+    const user = makeUser()
+    h.mockGetUser.mockResolvedValue(user)
+    h.mockUserToJwtResponse.mockReturnValue(makeStoredJwt())
+    h.mockResolveExpiresAt.mockReturnValue(FUTURE)
 
-    await useAuthStore.getState().initialize();
+    await useAuthStore.getState().initialize()
 
-    expect(useAuthStore.getState().user).toBe(user);
-    expect(useAuthStore.getState().loading).toBe(false);
-    expect(h.mockSigninSilent).not.toHaveBeenCalled();
-  });
+    expect(useAuthStore.getState().user).toBe(user)
+    expect(useAuthStore.getState().loading).toBe(false)
+    expect(h.mockSigninSilent).not.toHaveBeenCalled()
+  })
 
   describe('when the token is expired', () => {
     beforeEach(() => {
       h.mockUserToJwtResponse.mockReturnValue(
         makeStoredJwt({ expires_at: PAST }),
-      );
-      h.mockResolveExpiresAt.mockReturnValue(PAST);
-    });
+      )
+      h.mockResolveExpiresAt.mockReturnValue(PAST)
+    })
 
     it('sets user to null when there is no refresh token', async () => {
-      h.mockGetUser.mockResolvedValue(makeUser({ refresh_token: '' }));
+      h.mockGetUser.mockResolvedValue(makeUser({ refresh_token: '' }))
 
-      await useAuthStore.getState().initialize();
+      await useAuthStore.getState().initialize()
 
-      expect(useAuthStore.getState().user).toBeNull();
-      expect(useAuthStore.getState().loading).toBe(false);
-      expect(h.mockSigninSilent).not.toHaveBeenCalled();
-    });
+      expect(useAuthStore.getState().user).toBeNull()
+      expect(useAuthStore.getState().loading).toBe(false)
+      expect(h.mockSigninSilent).not.toHaveBeenCalled()
+    })
 
     it('sets user to null when the refresh token is whitespace only', async () => {
-      h.mockGetUser.mockResolvedValue(makeUser({ refresh_token: '   ' }));
+      h.mockGetUser.mockResolvedValue(makeUser({ refresh_token: '   ' }))
 
-      await useAuthStore.getState().initialize();
+      await useAuthStore.getState().initialize()
 
-      expect(useAuthStore.getState().user).toBeNull();
-      expect(h.mockSigninSilent).not.toHaveBeenCalled();
-    });
+      expect(useAuthStore.getState().user).toBeNull()
+      expect(h.mockSigninSilent).not.toHaveBeenCalled()
+    })
 
     it('runs silent renew and sets the refreshed user', async () => {
       const refreshed = makeUser({
         id_token: makeJwt({ sub: 'user-1', iat: 2000, exp: FUTURE }),
-      });
-      h.mockGetUser.mockResolvedValue(makeUser());
-      h.mockSigninSilent.mockResolvedValue(refreshed);
-      h.mockEnrichUser.mockResolvedValue(refreshed);
+      })
+      h.mockGetUser.mockResolvedValue(makeUser())
+      h.mockSigninSilent.mockResolvedValue(refreshed)
+      h.mockEnrichUser.mockResolvedValue(refreshed)
 
-      await useAuthStore.getState().initialize();
+      await useAuthStore.getState().initialize()
 
-      expect(h.mockSigninSilent).toHaveBeenCalledOnce();
+      expect(h.mockSigninSilent).toHaveBeenCalledOnce()
       expect(h.mockEnrichUser).toHaveBeenCalledWith(
         expect.any(User),
         expect.any(Function),
-      );
-      expect(h.mockStoreUser).toHaveBeenCalledWith(refreshed);
-      expect(h.mockSyncPrimaryJwt).toHaveBeenCalledWith(refreshed);
-      expect(useAuthStore.getState().user).toBe(refreshed);
-      expect(useAuthStore.getState().loading).toBe(false);
-    });
+      )
+      expect(h.mockStoreUser).toHaveBeenCalledWith(refreshed)
+      expect(h.mockSyncPrimaryJwt).toHaveBeenCalledWith(refreshed)
+      expect(useAuthStore.getState().user).toBe(refreshed)
+      expect(useAuthStore.getState().loading).toBe(false)
+    })
 
     it('sets user to null when silent renew returns null', async () => {
-      h.mockGetUser.mockResolvedValue(makeUser());
-      h.mockSigninSilent.mockResolvedValue(null);
+      h.mockGetUser.mockResolvedValue(makeUser())
+      h.mockSigninSilent.mockResolvedValue(null)
 
-      await useAuthStore.getState().initialize();
+      await useAuthStore.getState().initialize()
 
-      expect(useAuthStore.getState().user).toBeNull();
-      expect(useAuthStore.getState().loading).toBe(false);
-      expect(h.mockStoreUser).not.toHaveBeenCalled();
-    });
+      expect(useAuthStore.getState().user).toBeNull()
+      expect(useAuthStore.getState().loading).toBe(false)
+      expect(h.mockStoreUser).not.toHaveBeenCalled()
+    })
 
     it('sets user to null when silent renew throws', async () => {
-      h.mockGetUser.mockResolvedValue(makeUser());
-      h.mockSigninSilent.mockRejectedValue(new Error('network error'));
+      h.mockGetUser.mockResolvedValue(makeUser())
+      h.mockSigninSilent.mockRejectedValue(new Error('network error'))
 
-      await useAuthStore.getState().initialize();
+      await useAuthStore.getState().initialize()
 
-      expect(useAuthStore.getState().user).toBeNull();
-      expect(useAuthStore.getState().loading).toBe(false);
-    });
-  });
+      expect(useAuthStore.getState().user).toBeNull()
+      expect(useAuthStore.getState().loading).toBe(false)
+    })
+  })
 
   it('sets user to null when getUser returns null (no JWT to inspect)', async () => {
-    h.mockGetUser.mockResolvedValue(null);
-    h.mockUserToJwtResponse.mockReturnValue(null);
+    h.mockGetUser.mockResolvedValue(null)
+    h.mockUserToJwtResponse.mockReturnValue(null)
 
-    await useAuthStore.getState().initialize();
+    await useAuthStore.getState().initialize()
 
-    expect(useAuthStore.getState().user).toBeNull();
-    expect(useAuthStore.getState().loading).toBe(false);
-    expect(h.mockSigninSilent).not.toHaveBeenCalled();
-  });
-});
+    expect(useAuthStore.getState().user).toBeNull()
+    expect(useAuthStore.getState().loading).toBe(false)
+    expect(h.mockSigninSilent).not.toHaveBeenCalled()
+  })
+})

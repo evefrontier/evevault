@@ -1,4 +1,4 @@
-import type { SVGProps } from 'react';
+import type { SVGProps } from 'react'
 
 const CloseIcon = ({
   className,
@@ -25,6 +25,6 @@ const CloseIcon = ({
       fill={color}
     />
   </svg>
-);
+)
 
-export default CloseIcon;
+export default CloseIcon

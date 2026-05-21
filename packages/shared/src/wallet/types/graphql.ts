@@ -11,26 +11,26 @@
  * Balance change from a GraphQL transaction response
  */
 export interface GraphQLBalanceChange {
-  amount: string | null;
+  amount: string | null
   coinType: {
-    repr: string | null;
-  } | null;
+    repr: string | null
+  } | null
   owner: {
-    address: string | null;
-  } | null;
+    address: string | null
+  } | null
 }
 
 /**
  * Transaction node from a GraphQL response
  */
 export interface GraphQLTransactionNode {
-  digest: string | null;
+  digest: string | null
   effects: {
-    timestamp: string | null;
+    timestamp: string | null
     balanceChanges: {
-      nodes: GraphQLBalanceChange[];
-    } | null;
-  } | null;
+      nodes: GraphQLBalanceChange[]
+    } | null
+  } | null
 }
 
 /**
@@ -40,21 +40,21 @@ export interface TransactionsQueryResponse {
   address: {
     transactions: {
       pageInfo: {
-        hasNextPage: boolean;
-        endCursor: string | null;
-      };
-      nodes: GraphQLTransactionNode[];
-    } | null;
-  } | null;
+        hasNextPage: boolean
+        endCursor: string | null
+      }
+      nodes: GraphQLTransactionNode[]
+    } | null
+  } | null
 }
 
 /**
  * Hook return type for transaction pages
  */
 export interface TransactionPage {
-  transactions: import('#/types/components').Transaction[];
-  nextCursor: string | null;
-  hasNextPage: boolean;
+  transactions: import('#/types/components').Transaction[]
+  nextCursor: string | null
+  hasNextPage: boolean
 }
 
 /**
@@ -63,8 +63,8 @@ export interface TransactionPage {
  */
 export interface LatestCheckpointResponse {
   checkpoint: {
-    sequenceNumber: number | string;
-  } | null;
+    sequenceNumber: number | string
+  } | null
 }
 
 /**
@@ -72,13 +72,13 @@ export interface LatestCheckpointResponse {
  */
 export interface BalanceAndMetadataResponse {
   address: {
-    balance: { totalBalance: string } | null;
-  } | null;
+    balance: { totalBalance: string } | null
+  } | null
   coinMetadata: {
-    decimals: number | null;
-    name: string | null;
-    symbol: string | null;
-    description: string | null;
-    iconUrl: string | null;
-  } | null;
+    decimals: number | null
+    name: string | null
+    symbol: string | null
+    description: string | null
+    iconUrl: string | null
+  } | null
 }

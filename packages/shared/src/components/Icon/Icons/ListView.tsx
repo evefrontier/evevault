@@ -1,4 +1,4 @@
-import type { SVGProps } from 'react';
+import type { SVGProps } from 'react'
 
 const ListViewIcon = ({
   className,
@@ -20,6 +20,6 @@ const ListViewIcon = ({
     <path d="M14 7H2V9H14V7Z" fill={color} />
     <path d="M14 12H2V14H14V12Z" fill={color} />
   </svg>
-);
+)
 
-export default ListViewIcon;
+export default ListViewIcon

@@ -6,22 +6,22 @@
  * Reference: https://docs.sui.io/concepts/data-access/graphql-rpc
  */
 
-import { SUI_TESTNET_CHAIN } from '@mysten/wallet-standard';
-import { useInfiniteQuery } from '@tanstack/react-query';
-import { useMemo } from 'react';
-import { createSuiGraphQLClient } from '#/sui/graphqlClient';
-import { createLogger } from '#/utils';
-import { TRANSACTIONS_QUERY } from '#/wallet/queries/transactions';
+import { SUI_TESTNET_CHAIN } from '@mysten/wallet-standard'
+import { useInfiniteQuery } from '@tanstack/react-query'
+import { useMemo } from 'react'
+import { createSuiGraphQLClient } from '#/sui/graphqlClient'
+import { createLogger } from '#/utils'
+import { TRANSACTIONS_QUERY } from '#/wallet/queries/transactions'
 import type {
   GraphQLTransactionNode,
   TransactionPage,
   TransactionsQueryResponse,
-} from '#/wallet/types/graphql';
-import type { UseTransactionsParams } from '#/wallet/types/hooks';
-import { parseGraphQLTransaction } from '#/wallet/utils/parseTransaction';
+} from '#/wallet/types/graphql'
+import type { UseTransactionsParams } from '#/wallet/types/hooks'
+import { parseGraphQLTransaction } from '#/wallet/utils/parseTransaction'
 
-const log = createLogger();
-const DEFAULT_PAGE_SIZE = 50;
+const log = createLogger()
+const DEFAULT_PAGE_SIZE = 50
 
 /**
  * Hook to fetch transaction history using Sui GraphQL RPC
@@ -41,27 +41,27 @@ export function useTransactionHistory({
   chain,
   pageSize = DEFAULT_PAGE_SIZE,
 }: UseTransactionsParams) {
-  const currentChain = chain || SUI_TESTNET_CHAIN;
+  const currentChain = chain || SUI_TESTNET_CHAIN
 
   const graphqlClient = useMemo(
     () => createSuiGraphQLClient(currentChain),
     [currentChain],
-  );
+  )
 
-  const userAddress = user?.profile?.sui_address as string | undefined;
+  const userAddress = user?.profile?.sui_address as string | undefined
 
   return useInfiniteQuery<TransactionPage>({
     queryKey: ['transactions', 'graphql', userAddress, chain, pageSize],
     queryFn: async ({ pageParam }) => {
       if (!userAddress || !graphqlClient) {
-        throw new Error('Missing user address or client');
+        throw new Error('Missing user address or client')
       }
 
       log.debug('Fetching transactions via GraphQL', {
         address: userAddress,
         chain,
         cursor: pageParam,
-      });
+      })
 
       const result = await graphqlClient.query<TransactionsQueryResponse>({
         query: TRANSACTIONS_QUERY,
@@ -70,23 +70,23 @@ export function useTransactionHistory({
           first: pageSize,
           after: pageParam as string | undefined,
         },
-      });
+      })
 
       if (result.errors && result.errors.length > 0) {
-        const errorMessage = result.errors.map((e) => e.message).join(', ');
-        log.error('GraphQL query errors', { errors: result.errors });
-        throw new Error(`GraphQL query failed: ${errorMessage}`);
+        const errorMessage = result.errors.map((e) => e.message).join(', ')
+        log.error('GraphQL query errors', { errors: result.errors })
+        throw new Error(`GraphQL query failed: ${errorMessage}`)
       }
 
-      const transactionsData = result.data?.address?.transactions;
+      const transactionsData = result.data?.address?.transactions
 
       if (!transactionsData) {
-        log.debug('No transactions found');
+        log.debug('No transactions found')
         return {
           transactions: [],
           nextCursor: null,
           hasNextPage: false,
-        };
+        }
       }
 
       // Parse transactions (one row per digest, with all balance changes aggregated)
@@ -94,24 +94,24 @@ export function useTransactionHistory({
         transactionsData.nodes.map((node: GraphQLTransactionNode) =>
           parseGraphQLTransaction(node, userAddress, graphqlClient),
         ),
-      );
+      )
 
       const transactions = parsed
         .filter(
           (tx): tx is import('#/types/components').Transaction => tx !== null,
         )
-        .sort((a, b) => b.timestamp - a.timestamp);
+        .sort((a, b) => b.timestamp - a.timestamp)
 
       log.debug('Transactions fetched successfully via GraphQL', {
         count: transactions.length,
         hasNextPage: transactionsData.pageInfo.hasNextPage,
-      });
+      })
 
       return {
         transactions,
         nextCursor: transactionsData.pageInfo.endCursor ?? null,
         hasNextPage: transactionsData.pageInfo.hasNextPage,
-      };
+      }
     },
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) =>
@@ -119,5 +119,5 @@ export function useTransactionHistory({
     enabled: !!userAddress && !!chain && !!graphqlClient,
     staleTime: 1000 * 60, // 1 minute
     retry: 2,
-  });
+  })
 }

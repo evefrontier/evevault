@@ -1,8 +1,8 @@
-import type { ReactNode } from 'react';
+import type { ReactNode } from 'react'
 
 interface BackgroundProps {
-  children: ReactNode;
-  bottomOffset?: number;
+  children: ReactNode
+  bottomOffset?: number
 }
 
 const Background = ({ children, bottomOffset = 0 }: BackgroundProps) => {
@@ -19,7 +19,7 @@ const Background = ({ children, bottomOffset = 0 }: BackgroundProps) => {
     >
       {children}
     </div>
-  );
-};
+  )
+}
 
-export default Background;
+export default Background

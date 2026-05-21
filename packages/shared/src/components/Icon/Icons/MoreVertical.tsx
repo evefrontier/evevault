@@ -1,4 +1,4 @@
-import type { SVGProps } from 'react';
+import type { SVGProps } from 'react'
 
 const MoreVerticalIcon = ({
   className,
@@ -20,6 +20,6 @@ const MoreVerticalIcon = ({
     <rect x="7" y="7" width="2" height="2" fill={color} />
     <rect x="7" y="11" width="2" height="2" fill={color} />
   </svg>
-);
+)
 
-export default MoreVerticalIcon;
+export default MoreVerticalIcon

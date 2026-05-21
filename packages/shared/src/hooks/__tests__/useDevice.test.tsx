@@ -1,19 +1,19 @@
-import { SUI_DEVNET_CHAIN, SUI_TESTNET_CHAIN } from '@mysten/wallet-standard';
-import { renderHook } from '@testing-library/react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useDevice } from '#/hooks/useDevice';
+import { SUI_DEVNET_CHAIN, SUI_TESTNET_CHAIN } from '@mysten/wallet-standard'
+import { renderHook } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { useDevice } from '#/hooks/useDevice'
 
 // Mock dependencies
 vi.mock('#/stores/deviceStore', () => ({
   useDeviceStore: vi.fn(),
-}));
+}))
 
 vi.mock('#/stores/contextStore', () => ({
   useContextStore: vi.fn(),
-}));
+}))
 
-import { useContextStore } from '#/stores/contextStore';
-import { useDeviceStore } from '#/stores/deviceStore';
+import { useContextStore } from '#/stores/contextStore'
+import { useDeviceStore } from '#/stores/deviceStore'
 
 describe('useDevice', () => {
   const mockNetworkData = {
@@ -29,7 +29,7 @@ describe('useDevice', () => {
       maxEpochTimestampMs: Date.now() + 7200000, // 2 hours from now
       jwtRandomness: 'testnet-randomness',
     },
-  };
+  }
 
   const mockDeviceStoreState = {
     isLocked: false,
@@ -53,16 +53,16 @@ describe('useDevice', () => {
       maxEpoch: null,
       maxEpochTimestampMs: null,
     },
-  };
+  }
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.clearAllMocks()
 
     // Default mock for network store - devnet
     vi.mocked(useContextStore).mockReturnValue({
       chain: SUI_DEVNET_CHAIN,
       // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
-    } as any);
+    } as any)
 
     // Mock useDeviceStore to handle both direct calls and selector calls
     vi.mocked(useDeviceStore).mockImplementation((selector?: unknown) => {
@@ -70,40 +70,40 @@ describe('useDevice', () => {
         // Selector call - return selector result
         return (selector as (state: typeof mockDeviceStoreState) => unknown)(
           mockDeviceStoreState,
-        );
+        )
       }
       // Direct call - return full state
-      return mockDeviceStoreState;
-    });
-  });
+      return mockDeviceStoreState
+    })
+  })
 
   afterEach(() => {
-    vi.restoreAllMocks();
-  });
+    vi.restoreAllMocks()
+  })
 
   describe('reactive chain subscription', () => {
     it('returns device data for current chain (devnet)', () => {
-      const { result } = renderHook(() => useDevice());
+      const { result } = renderHook(() => useDevice())
 
-      expect(result.current.maxEpoch).toBe(100);
-      expect(result.current.nonce).toBe('devnet-nonce-123');
+      expect(result.current.maxEpoch).toBe(100)
+      expect(result.current.nonce).toBe('devnet-nonce-123')
       expect(result.current.maxEpochTimestampMs).toBe(
         mockNetworkData[SUI_DEVNET_CHAIN].maxEpochTimestampMs,
-      );
-    });
+      )
+    })
 
     it('returns device data for testnet when chain changes', () => {
       // Start with testnet
       vi.mocked(useContextStore).mockReturnValue({
         chain: SUI_TESTNET_CHAIN,
         // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
-      } as any);
+      } as any)
 
-      const { result } = renderHook(() => useDevice());
+      const { result } = renderHook(() => useDevice())
 
-      expect(result.current.maxEpoch).toBe(200);
-      expect(result.current.nonce).toBe('testnet-nonce-456');
-    });
+      expect(result.current.maxEpoch).toBe(200)
+      expect(result.current.nonce).toBe('testnet-nonce-456')
+    })
 
     it('returns null values when networkData is missing for chain', () => {
       // Mock empty network data
@@ -111,39 +111,37 @@ describe('useDevice', () => {
         const emptyState = {
           ...mockDeviceStoreState,
           networkData: {},
-        };
-        if (typeof selector === 'function') {
-          return (selector as (state: typeof emptyState) => unknown)(
-            emptyState,
-          );
         }
-        return emptyState;
-      });
+        if (typeof selector === 'function') {
+          return (selector as (state: typeof emptyState) => unknown)(emptyState)
+        }
+        return emptyState
+      })
 
-      const { result } = renderHook(() => useDevice());
+      const { result } = renderHook(() => useDevice())
 
-      expect(result.current.maxEpoch).toBeNull();
-      expect(result.current.nonce).toBeNull();
-      expect(result.current.maxEpochTimestampMs).toBeNull();
-    });
+      expect(result.current.maxEpoch).toBeNull()
+      expect(result.current.nonce).toBeNull()
+      expect(result.current.maxEpochTimestampMs).toBeNull()
+    })
 
     it('updates when networkData changes', () => {
-      let currentNetworkData = { ...mockNetworkData };
+      let currentNetworkData = { ...mockNetworkData }
 
       vi.mocked(useDeviceStore).mockImplementation((selector?: unknown) => {
         const state = {
           ...mockDeviceStoreState,
           networkData: currentNetworkData,
-        };
-        if (typeof selector === 'function') {
-          return (selector as (selectorState: typeof state) => unknown)(state);
         }
-        return state;
-      });
+        if (typeof selector === 'function') {
+          return (selector as (selectorState: typeof state) => unknown)(state)
+        }
+        return state
+      })
 
-      const { result, rerender } = renderHook(() => useDevice());
+      const { result, rerender } = renderHook(() => useDevice())
 
-      expect(result.current.maxEpoch).toBe(100);
+      expect(result.current.maxEpoch).toBe(100)
 
       // Simulate networkData update
       currentNetworkData = {
@@ -152,14 +150,14 @@ describe('useDevice', () => {
           ...currentNetworkData[SUI_DEVNET_CHAIN],
           maxEpoch: 150,
         },
-      };
+      }
 
       // Trigger rerender to pick up new data
-      rerender();
+      rerender()
 
-      expect(result.current.maxEpoch).toBe(150);
-    });
-  });
+      expect(result.current.maxEpoch).toBe(150)
+    })
+  })
 
   describe('isPinSet computation', () => {
     it('returns true when ephemeralKeyPairSecretKey has iv and data', () => {
@@ -170,65 +168,65 @@ describe('useDevice', () => {
             iv: 'some-iv',
             data: 'some-encrypted-data',
           },
-        };
-        if (typeof selector === 'function') {
-          return (selector as (selectorState: typeof state) => unknown)(state);
         }
-        return state;
-      });
+        if (typeof selector === 'function') {
+          return (selector as (selectorState: typeof state) => unknown)(state)
+        }
+        return state
+      })
 
-      const { result } = renderHook(() => useDevice());
+      const { result } = renderHook(() => useDevice())
 
-      expect(result.current.isPinSet).toBe(true);
-    });
+      expect(result.current.isPinSet).toBe(true)
+    })
 
     it('returns false when ephemeralKeyPairSecretKey is null', () => {
-      const { result } = renderHook(() => useDevice());
+      const { result } = renderHook(() => useDevice())
 
-      expect(result.current.isPinSet).toBe(false);
-    });
+      expect(result.current.isPinSet).toBe(false)
+    })
 
     it('returns false when ephemeralKeyPairSecretKey is missing iv or data', () => {
       vi.mocked(useDeviceStore).mockImplementation((selector?: unknown) => {
         const state = {
           ...mockDeviceStoreState,
           ephemeralKeyPairSecretKey: { iv: 'only-iv' }, // missing data
-        };
-        if (typeof selector === 'function') {
-          return (selector as (selectorState: typeof state) => unknown)(state);
         }
-        return state;
-      });
+        if (typeof selector === 'function') {
+          return (selector as (selectorState: typeof state) => unknown)(state)
+        }
+        return state
+      })
 
-      const { result } = renderHook(() => useDevice());
+      const { result } = renderHook(() => useDevice())
 
-      expect(result.current.isPinSet).toBe(false);
-    });
-  });
+      expect(result.current.isPinSet).toBe(false)
+    })
+  })
 
   describe('returns store functions', () => {
     it('exposes store functions and binds chain-aware actions to the current chain', () => {
-      const { result } = renderHook(() => useDevice());
+      const { result } = renderHook(() => useDevice())
 
-      expect(result.current.lock).toBe(mockDeviceStoreState.lock);
-      expect(result.current.unlock).toBe(mockDeviceStoreState.unlock);
+      expect(result.current.lock).toBe(mockDeviceStoreState.lock)
+      expect(result.current.unlock).toBe(mockDeviceStoreState.unlock)
       expect(result.current.initializeForChain).toBe(
         mockDeviceStoreState.initializeForChain,
-      );
+      )
       expect(result.current.rotateEphemeralKey).toBe(
         mockDeviceStoreState.rotateEphemeralKey,
-      );
+      )
 
-      result.current.initialize('123456');
+      result.current.initialize('123456')
       expect(mockDeviceStoreState.initialize).toHaveBeenCalledWith(
         '123456',
         SUI_DEVNET_CHAIN,
-      );
+      )
 
-      result.current.getZkProof();
+      result.current.getZkProof()
       expect(mockDeviceStoreState.getZkProof).toHaveBeenCalledWith(
         SUI_DEVNET_CHAIN,
-      );
-    });
-  });
-});
+      )
+    })
+  })
+})

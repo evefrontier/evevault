@@ -1,4 +1,4 @@
-import { useWalletSigningContext } from './useWalletSigningContext';
+import { useWalletSigningContext } from './useWalletSigningContext'
 
 /**
  * Returns the effective Sui address for the current network:
@@ -6,5 +6,5 @@ import { useWalletSigningContext } from './useWalletSigningContext';
  * - All other chains: zkLogin address from the authenticated user's profile
  */
 export function useActiveSuiAddress(): string | null {
-  return useWalletSigningContext().senderAddress;
+  return useWalletSigningContext().senderAddress
 }

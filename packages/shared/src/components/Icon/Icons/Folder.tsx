@@ -1,4 +1,4 @@
-import type { SVGProps } from 'react';
+import type { SVGProps } from 'react'
 
 const FolderIcon = ({
   className,
@@ -18,6 +18,6 @@ const FolderIcon = ({
   >
     <path d="M7 3H4L2 5V13H14V5H9L7 3Z" fill={color} />
   </svg>
-);
+)
 
-export default FolderIcon;
+export default FolderIcon

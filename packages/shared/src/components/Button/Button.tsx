@@ -1,8 +1,8 @@
-import type { FC } from 'react';
-import { useEffect, useRef, useState } from 'react';
-import './Button.css';
-import { Corners } from '#/components/Corners';
-import type { ButtonProps } from '#/types';
+import type { FC } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import './Button.css'
+import { Corners } from '#/components/Corners'
+import type { ButtonProps } from '#/types'
 
 export const Button: FC<ButtonProps> = ({
   size = 'medium',
@@ -12,43 +12,43 @@ export const Button: FC<ButtonProps> = ({
   disabled,
   ...props
 }) => {
-  const sizeClass = `button--${size}`;
-  const variantClass = `button--${variant}`;
-  const disabledClass = disabled ? 'button--disabled' : '';
-  const showDecorations = variant === 'primary' || variant === 'secondary';
+  const sizeClass = `button--${size}`
+  const variantClass = `button--${variant}`
+  const disabledClass = disabled ? 'button--disabled' : ''
+  const showDecorations = variant === 'primary' || variant === 'secondary'
 
-  const contentRef = useRef<HTMLSpanElement>(null);
-  const [contentWidth, setContentWidth] = useState<number | undefined>();
+  const contentRef = useRef<HTMLSpanElement>(null)
+  const [contentWidth, setContentWidth] = useState<number | undefined>()
 
   useEffect(() => {
-    let rafId: number | null = null;
+    let rafId: number | null = null
 
     const updateWidth = () => {
       if (contentRef.current) {
-        setContentWidth(contentRef.current.offsetWidth);
+        setContentWidth(contentRef.current.offsetWidth)
       }
-    };
+    }
 
     // Initial measurement
-    updateWidth();
+    updateWidth()
 
     const handleResize = () => {
       // Use requestAnimationFrame for smooth, performant updates
       // This batches resize events and only updates once per frame
       if (rafId !== null) {
-        cancelAnimationFrame(rafId);
+        cancelAnimationFrame(rafId)
       }
-      rafId = requestAnimationFrame(updateWidth);
-    };
+      rafId = requestAnimationFrame(updateWidth)
+    }
 
-    window.addEventListener('resize', handleResize);
+    window.addEventListener('resize', handleResize)
     return () => {
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('resize', handleResize)
       if (rafId !== null) {
-        cancelAnimationFrame(rafId);
+        cancelAnimationFrame(rafId)
       }
-    };
-  }, []);
+    }
+  }, [])
 
   return (
     <button
@@ -81,7 +81,7 @@ export const Button: FC<ButtonProps> = ({
         </>
       )}
     </button>
-  );
-};
+  )
+}
 
-export default Button;
+export default Button

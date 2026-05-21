@@ -1,23 +1,23 @@
-import { User } from 'oidc-client-ts';
+import { User } from 'oidc-client-ts'
 
 /**
  * Options for creating a mock oidc-client-ts User.
  */
 interface CreateMockUserOptions {
   /** Sui address to set in the profile. Defaults to "0x123". */
-  suiAddress?: string;
+  suiAddress?: string
   /** Token expiry in seconds from now. Defaults to 3600 (1 hour). */
-  expiresInSeconds?: number;
+  expiresInSeconds?: number
   /** Additional profile fields to merge into the mock profile. */
-  profileOverrides?: Record<string, unknown>;
+  profileOverrides?: Record<string, unknown>
   /** Override default token values. */
   tokens?: {
-    idToken?: string;
-    accessToken?: string;
-    refreshToken?: string;
-    scope?: string;
-    tokenType?: string;
-  };
+    idToken?: string
+    accessToken?: string
+    refreshToken?: string
+    scope?: string
+    tokenType?: string
+  }
 }
 
 /**
@@ -33,9 +33,9 @@ export const createMockUser = (options: CreateMockUserOptions = {}): User => {
     expiresInSeconds = 3600,
     profileOverrides = {},
     tokens = {},
-  } = options;
+  } = options
 
-  const issuedAt = Math.floor(Date.now() / 1000);
+  const issuedAt = Math.floor(Date.now() / 1000)
 
   return new User({
     id_token: tokens.idToken ?? 'mock-id-token',
@@ -53,5 +53,5 @@ export const createMockUser = (options: CreateMockUserOptions = {}): User => {
       ...profileOverrides,
     },
     expires_at: issuedAt + expiresInSeconds,
-  });
-};
+  })
+}

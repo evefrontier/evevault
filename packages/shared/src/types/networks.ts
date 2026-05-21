@@ -1,26 +1,26 @@
-import { TenantId } from '@evefrontier/dapp-kit/utils';
+import { TenantId } from '@evefrontier/dapp-kit/utils'
 import {
   SUI_DEVNET_CHAIN,
   SUI_LOCALNET_CHAIN,
   SUI_MAINNET_CHAIN,
   SUI_TESTNET_CHAIN,
   type SuiChain,
-} from '@mysten/wallet-standard';
-import { SUI_COIN_TYPE } from '#/utils/constants';
-import { getEveCoinType } from '#/wallet/eveToken';
+} from '@mysten/wallet-standard'
+import { SUI_COIN_TYPE } from '#/utils/constants'
+import { getEveCoinType } from '#/wallet/eveToken'
 
 export function isLocalnetChain(chain: SuiChain | string | null | undefined) {
-  return chain === SUI_LOCALNET_CHAIN;
+  return chain === SUI_LOCALNET_CHAIN
 }
 
 export function isZkLoginChain(chain: SuiChain | string | null | undefined) {
-  return !!chain && !isLocalnetChain(chain);
+  return !!chain && !isLocalnetChain(chain)
 }
 
 export type ZkLoginSuiChain =
   | typeof SUI_DEVNET_CHAIN
   | typeof SUI_TESTNET_CHAIN
-  | typeof SUI_MAINNET_CHAIN;
+  | typeof SUI_MAINNET_CHAIN
 
 export function isZkLoginSuiChain(
   chain: SuiChain | string | null | undefined,
@@ -29,20 +29,20 @@ export function isZkLoginSuiChain(
     chain === SUI_DEVNET_CHAIN ||
     chain === SUI_TESTNET_CHAIN ||
     chain === SUI_MAINNET_CHAIN
-  );
+  )
 }
 
 export interface NetworkOption {
-  chain: SuiChain;
-  label: string;
-  shortLabel: string;
+  chain: SuiChain
+  label: string
+  shortLabel: string
 }
 
 export const AVAILABLE_NETWORKS: NetworkOption[] = [
   { chain: SUI_TESTNET_CHAIN, label: 'Testnet', shortLabel: 'TEST' },
   { chain: SUI_DEVNET_CHAIN, label: 'Devnet', shortLabel: 'DEV' },
   // Mainnet will be added later as a feature flag
-];
+]
 
 /**
  * Returns the network list for the selector.
@@ -57,9 +57,9 @@ export function getAvailableNetworks(
     return [
       ...AVAILABLE_NETWORKS,
       { chain: SUI_LOCALNET_CHAIN, label: 'Localnet', shortLabel: 'LOCAL' },
-    ];
+    ]
   }
-  return AVAILABLE_NETWORKS;
+  return AVAILABLE_NETWORKS
 }
 
 /**
@@ -68,7 +68,7 @@ export function getAvailableNetworks(
  * @returns The display label, or the chain string if not found
  */
 export function getNetworkLabel(chain: SuiChain): string {
-  return AVAILABLE_NETWORKS.find((n) => n.chain === chain)?.label ?? chain;
+  return AVAILABLE_NETWORKS.find((n) => n.chain === chain)?.label ?? chain
 }
 
 /**
@@ -77,14 +77,14 @@ export function getNetworkLabel(chain: SuiChain): string {
  * @returns The NetworkOption if found, undefined otherwise
  */
 export function getNetworkOption(chain: SuiChain): NetworkOption | undefined {
-  return AVAILABLE_NETWORKS.find((n) => n.chain === chain);
+  return AVAILABLE_NETWORKS.find((n) => n.chain === chain)
 }
 
 /** Default token coin types per chain (e.g. SUI + chain-specific tokens like EVE on testnet). Testnet uses stillness tenant's EVE package for static default. */
 export const DEFAULT_TOKENS_BY_CHAIN: Record<string, string[]> = {
   [SUI_TESTNET_CHAIN]: [SUI_COIN_TYPE, getEveCoinType(TenantId.STILLNESS)],
   [SUI_DEVNET_CHAIN]: [SUI_COIN_TYPE],
-};
+}
 
 /**
  * Default token list for a chain. Returns a copy so callers can mutate if needed.
@@ -95,7 +95,7 @@ export function getDefaultTokensForChain(
   tenantId?: TenantId,
 ): string[] {
   if (chain === SUI_TESTNET_CHAIN && tenantId !== undefined) {
-    return [SUI_COIN_TYPE, getEveCoinType(tenantId)];
+    return [SUI_COIN_TYPE, getEveCoinType(tenantId)]
   }
-  return [...(DEFAULT_TOKENS_BY_CHAIN[chain] ?? [SUI_COIN_TYPE])];
+  return [...(DEFAULT_TOKENS_BY_CHAIN[chain] ?? [SUI_COIN_TYPE])]
 }

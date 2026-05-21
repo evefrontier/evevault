@@ -1,8 +1,8 @@
-import type React from 'react';
-import { useEffect, useRef } from 'react';
-import { Corners } from '#/components/Corners';
-import type { DropdownProps } from '#/types';
-import './Dropdown.css';
+import type React from 'react'
+import { useEffect, useRef } from 'react'
+import { Corners } from '#/components/Corners'
+import type { DropdownProps } from '#/types'
+import './Dropdown.css'
 
 /**
  * Simple dropdown menu container with corners/edges styling.
@@ -15,30 +15,30 @@ export const Dropdown: React.FC<DropdownProps> = ({
   triggerRef,
   placement = 'bottom',
 }) => {
-  const menuRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null)
 
   // Close when clicking outside (but not on trigger)
   useEffect(() => {
-    if (!onClickOutside) return;
+    if (!onClickOutside) return
 
     const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node;
-      const isInsideMenu = menuRef.current?.contains(target);
-      const isOnTrigger = triggerRef?.current?.contains(target);
+      const target = event.target as Node
+      const isInsideMenu = menuRef.current?.contains(target)
+      const isOnTrigger = triggerRef?.current?.contains(target)
 
       if (!isInsideMenu && !isOnTrigger) {
-        onClickOutside();
+        onClickOutside()
       }
-    };
+    }
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [onClickOutside, triggerRef]);
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [onClickOutside, triggerRef])
 
-  const placementClass = placement === 'top' ? 'dropdown--placement-top' : '';
+  const placementClass = placement === 'top' ? 'dropdown--placement-top' : ''
   const dropdownClassName = ['dropdown', placementClass, className]
     .filter(Boolean)
-    .join(' ');
+    .join(' ')
 
   return (
     <div className={dropdownClassName} ref={menuRef}>
@@ -47,7 +47,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
       <span className="dropdown__edge dropdown__edge--right" />
       <div className="dropdown__content">{children}</div>
     </div>
-  );
-};
+  )
+}
 
-export default Dropdown;
+export default Dropdown

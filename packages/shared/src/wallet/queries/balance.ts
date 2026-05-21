@@ -8,7 +8,7 @@ export const LATEST_CHECKPOINT_QUERY = `
       sequenceNumber
     }
   }
-`;
+`
 
 /**
  * GraphQL query for fetching address balance and coin metadata in one request.
@@ -29,4 +29,4 @@ export const BALANCE_AND_METADATA_QUERY = `
       iconUrl
     }
   }
-`;
+`

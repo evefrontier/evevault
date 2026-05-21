@@ -1,7 +1,7 @@
-import { type FC, useState } from 'react';
-import type { RadioButtonProps } from '#/types';
-import './style.css';
-import Text from '#/components/Text';
+import { type FC, useState } from 'react'
+import type { RadioButtonProps } from '#/types'
+import './style.css'
+import Text from '#/components/Text'
 
 const RadioButton: FC<RadioButtonProps> = ({
   name,
@@ -14,7 +14,7 @@ const RadioButton: FC<RadioButtonProps> = ({
   containerStyle,
   radioProps,
 }) => {
-  const [isHovered, setIsHovered] = useState(false);
+  const [isHovered, setIsHovered] = useState(false)
   return (
     <label
       className={[
@@ -56,7 +56,7 @@ const RadioButton: FC<RadioButtonProps> = ({
         </Text>
       ) : null}
     </label>
-  );
-};
+  )
+}
 
-export default RadioButton;
+export default RadioButton

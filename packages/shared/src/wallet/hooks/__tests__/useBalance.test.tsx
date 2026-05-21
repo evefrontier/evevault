@@ -1,20 +1,20 @@
-import { SUI_DEVNET_CHAIN, SUI_LOCALNET_CHAIN } from '@mysten/wallet-standard';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { renderHook, waitFor } from '@testing-library/react';
+import { SUI_DEVNET_CHAIN, SUI_LOCALNET_CHAIN } from '@mysten/wallet-standard'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { renderHook, waitFor } from '@testing-library/react'
 
-import type { ReactNode } from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ReactNode } from 'react'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const mockQuery = vi.fn();
-const mockGetBalance = vi.fn();
+const mockQuery = vi.fn()
+const mockGetBalance = vi.fn()
 
 vi.mock('#/sui/graphqlClient', () => ({
   createSuiGraphQLClient: vi.fn(() => ({ query: mockQuery })),
-}));
+}))
 
 vi.mock('#/sui', () => ({
   createSuiClient: vi.fn(() => ({ getBalance: mockGetBalance })),
-}));
+}))
 
 vi.mock('#/utils/logger', () => ({
   createLogger: vi.fn(() => ({
@@ -23,7 +23,7 @@ vi.mock('#/utils/logger', () => ({
     warn: vi.fn(),
     error: vi.fn(),
   })),
-}));
+}))
 
 vi.mock('#/utils', () => ({
   createLogger: vi.fn(() => ({
@@ -40,25 +40,25 @@ vi.mock('#/utils', () => ({
     (balance: string, _decimals: number) => `formatted-${balance}`,
   ),
   formatMistToSui: vi.fn(),
-}));
+}))
 
-import { createMockUser } from '#/testing';
-import { formatMistToSui } from '#/utils';
-import { useBalance } from '#/wallet/hooks/useBalance';
+import { createMockUser } from '#/testing'
+import { formatMistToSui } from '#/utils'
+import { useBalance } from '#/wallet/hooks/useBalance'
 
-const mockedFormatSUI = vi.mocked(formatMistToSui);
+const mockedFormatSUI = vi.mocked(formatMistToSui)
 
 const createWrapper = (queryClient: QueryClient) => {
   return ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  );
-};
+  )
+}
 
 describe('useBalance hook', () => {
   beforeEach(() => {
-    mockQuery.mockClear();
-    mockGetBalance.mockClear();
-  });
+    mockQuery.mockClear()
+    mockGetBalance.mockClear()
+  })
 
   it('returns a formatted SUI balance for the current user', async () => {
     mockQuery
@@ -78,9 +78,9 @@ describe('useBalance hook', () => {
           },
         },
         errors: undefined,
-      });
-    mockedFormatSUI.mockReturnValueOnce('formatted-1000');
-    const user = createMockUser();
+      })
+    mockedFormatSUI.mockReturnValueOnce('formatted-1000')
+    const user = createMockUser()
 
     const queryClient = new QueryClient({
       defaultOptions: {
@@ -88,9 +88,9 @@ describe('useBalance hook', () => {
           retry: false,
         },
       },
-    });
+    })
 
-    const wrapper = createWrapper(queryClient);
+    const wrapper = createWrapper(queryClient)
     const { result, unmount } = renderHook(
       () =>
         useBalance({
@@ -98,13 +98,13 @@ describe('useBalance hook', () => {
           chain: SUI_DEVNET_CHAIN,
         }),
       { wrapper },
-    );
+    )
 
     await waitFor(() => {
-      expect(result.current.isSuccess).toBe(true);
-    });
+      expect(result.current.isSuccess).toBe(true)
+    })
 
-    expect(mockQuery).toHaveBeenCalledTimes(2);
+    expect(mockQuery).toHaveBeenCalledTimes(2)
     expect(mockQuery).toHaveBeenNthCalledWith(
       2,
       expect.objectContaining({
@@ -114,12 +114,12 @@ describe('useBalance hook', () => {
           atCheckpoint: 12345,
         },
       }),
-    );
-    expect(result.current.data?.formattedBalance).toBe('formatted-1000');
+    )
+    expect(result.current.data?.formattedBalance).toBe('formatted-1000')
 
-    unmount();
-    queryClient.clear();
-  });
+    unmount()
+    queryClient.clear()
+  })
 
   it('retries with fresh checkpoint when balance query returns outside consistent range', async () => {
     const successBalanceData = {
@@ -134,19 +134,19 @@ describe('useBalance hook', () => {
         },
       },
       errors: undefined,
-    };
+    }
     const checkpointData = (seq: number) => ({
       data: { checkpoint: { sequenceNumber: seq } },
       errors: undefined,
-    });
+    })
 
     mockQuery
       .mockResolvedValueOnce(checkpointData(100))
       .mockRejectedValueOnce(new Error('Request is outside consistent range'))
       .mockResolvedValueOnce(checkpointData(101))
-      .mockResolvedValueOnce(successBalanceData);
-    mockedFormatSUI.mockReturnValue('formatted-500');
-    const user = createMockUser();
+      .mockResolvedValueOnce(successBalanceData)
+    mockedFormatSUI.mockReturnValue('formatted-500')
+    const user = createMockUser()
 
     const queryClient = new QueryClient({
       defaultOptions: {
@@ -154,9 +154,9 @@ describe('useBalance hook', () => {
           retry: false,
         },
       },
-    });
+    })
 
-    const wrapper = createWrapper(queryClient);
+    const wrapper = createWrapper(queryClient)
     const { result, unmount } = renderHook(
       () =>
         useBalance({
@@ -164,52 +164,52 @@ describe('useBalance hook', () => {
           chain: SUI_DEVNET_CHAIN,
         }),
       { wrapper },
-    );
+    )
 
     await waitFor(() => {
-      expect(result.current.isSuccess).toBe(true);
-    });
+      expect(result.current.isSuccess).toBe(true)
+    })
 
-    expect(mockQuery).toHaveBeenCalledTimes(4);
+    expect(mockQuery).toHaveBeenCalledTimes(4)
     const balanceCalls = mockQuery.mock.calls.filter(
       (call) =>
         call[0]?.variables?.address !== undefined &&
         call[0]?.variables?.coinType !== undefined,
-    );
-    expect(balanceCalls).toHaveLength(2);
-    const firstAtCheckpoint = balanceCalls[0][0].variables?.atCheckpoint;
-    const retryAtCheckpoint = balanceCalls[1][0].variables?.atCheckpoint;
-    expect(firstAtCheckpoint).toBe(100);
-    expect(retryAtCheckpoint).toBe(101);
-    expect(retryAtCheckpoint).not.toBe(firstAtCheckpoint);
-    expect(result.current.data?.formattedBalance).toBe('formatted-500');
+    )
+    expect(balanceCalls).toHaveLength(2)
+    const firstAtCheckpoint = balanceCalls[0][0].variables?.atCheckpoint
+    const retryAtCheckpoint = balanceCalls[1][0].variables?.atCheckpoint
+    expect(firstAtCheckpoint).toBe(100)
+    expect(retryAtCheckpoint).toBe(101)
+    expect(retryAtCheckpoint).not.toBe(firstAtCheckpoint)
+    expect(result.current.data?.formattedBalance).toBe('formatted-500')
 
-    unmount();
-    queryClient.clear();
-  });
-});
+    unmount()
+    queryClient.clear()
+  })
+})
 
 describe('useBalance hook — localnet gRPC path', () => {
   beforeEach(() => {
-    mockGetBalance.mockClear();
-    mockQuery.mockClear();
-  });
+    mockGetBalance.mockClear()
+    mockQuery.mockClear()
+  })
 
   const createWrapper =
     (queryClient: QueryClient) =>
     ({ children }: { children: ReactNode }) => (
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    );
+    )
 
   it('returns formatted SUI balance via gRPC on localnet', async () => {
-    mockGetBalance.mockResolvedValue({ balance: { balance: '2000000000' } });
-    const { formatMistToSui } = await import('#/utils');
-    vi.mocked(formatMistToSui).mockReturnValueOnce('2');
+    mockGetBalance.mockResolvedValue({ balance: { balance: '2000000000' } })
+    const { formatMistToSui } = await import('#/utils')
+    vi.mocked(formatMistToSui).mockReturnValueOnce('2')
 
-    const user = (await import('#/testing')).createMockUser();
+    const user = (await import('#/testing')).createMockUser()
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
-    });
+    })
     const { result, unmount } = renderHook(
       () =>
         useBalance({
@@ -218,24 +218,24 @@ describe('useBalance hook — localnet gRPC path', () => {
           localnetUrl: 'http://localhost:9000',
         }),
       { wrapper: createWrapper(queryClient) },
-    );
+    )
 
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.formattedBalance).toBe('2');
-    expect(result.current.data?.rawBalance).toBe('2000000000');
-    unmount();
-    queryClient.clear();
-  });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(result.current.data?.formattedBalance).toBe('2')
+    expect(result.current.data?.rawBalance).toBe('2000000000')
+    unmount()
+    queryClient.clear()
+  })
 
   it('uses 9-decimal fallback and warns for unknown localnet tokens', async () => {
-    mockGetBalance.mockResolvedValue({ balance: { balance: '5000000000' } });
-    const { createLogger } = await import('#/utils/logger');
-    const logInstance = vi.mocked(createLogger).mock.results[0]?.value;
+    mockGetBalance.mockResolvedValue({ balance: { balance: '5000000000' } })
+    const { createLogger } = await import('#/utils/logger')
+    const logInstance = vi.mocked(createLogger).mock.results[0]?.value
 
-    const user = (await import('#/testing')).createMockUser();
+    const user = (await import('#/testing')).createMockUser()
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
-    });
+    })
     const { result, unmount } = renderHook(
       () =>
         useBalance({
@@ -245,41 +245,41 @@ describe('useBalance hook — localnet gRPC path', () => {
           localnetUrl: 'http://localhost:9000',
         }),
       { wrapper: createWrapper(queryClient) },
-    );
+    )
 
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.formattedBalance).toBe('formatted-5000000000');
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(result.current.data?.formattedBalance).toBe('formatted-5000000000')
     expect(logInstance.warn).toHaveBeenCalledWith(
       expect.stringContaining('no metadata for coin type'),
       expect.objectContaining({ coinType: '0xdeadbeef::token::TOKEN' }),
-    );
-    unmount();
-    queryClient.clear();
-  });
+    )
+    unmount()
+    queryClient.clear()
+  })
 
   it('stays idle when localnet but localnetUrl is missing', async () => {
-    const user = (await import('#/testing')).createMockUser();
+    const user = (await import('#/testing')).createMockUser()
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
-    });
+    })
     const { result, unmount } = renderHook(
       () =>
         useBalance({ user, chain: SUI_LOCALNET_CHAIN, localnetUrl: undefined }),
       { wrapper: createWrapper(queryClient) },
-    );
+    )
 
     // Query should be disabled — never fetching
-    expect(result.current.isFetching).toBe(false);
-    expect(result.current.isSuccess).toBe(false);
-    expect(mockGetBalance).not.toHaveBeenCalled();
-    unmount();
-    queryClient.clear();
-  });
+    expect(result.current.isFetching).toBe(false)
+    expect(result.current.isSuccess).toBe(false)
+    expect(mockGetBalance).not.toHaveBeenCalled()
+    unmount()
+    queryClient.clear()
+  })
 
   it('stays idle when address is missing', async () => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
-    });
+    })
     const { result, unmount } = renderHook(
       () =>
         useBalance({
@@ -288,12 +288,12 @@ describe('useBalance hook — localnet gRPC path', () => {
           localnetUrl: 'http://localhost:9000',
         }),
       { wrapper: createWrapper(queryClient) },
-    );
+    )
 
-    expect(result.current.isFetching).toBe(false);
-    expect(result.current.isSuccess).toBe(false);
-    expect(mockGetBalance).not.toHaveBeenCalled();
-    unmount();
-    queryClient.clear();
-  });
-});
+    expect(result.current.isFetching).toBe(false)
+    expect(result.current.isSuccess).toBe(false)
+    expect(mockGetBalance).not.toHaveBeenCalled()
+    unmount()
+    queryClient.clear()
+  })
+})

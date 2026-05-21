@@ -1,37 +1,37 @@
-import type { TenantId } from '@evefrontier/dapp-kit';
+import type { TenantId } from '@evefrontier/dapp-kit'
 
 export interface TenantConfig {
-  clientId: string;
-  clientSecret: string;
-  serverUrl: string;
-  webOrigin: string;
-  isDev?: boolean;
+  clientId: string
+  clientSecret: string
+  serverUrl: string
+  webOrigin: string
+  isDev?: boolean
 }
 
 export interface TenantState {
-  devMode: boolean;
-  setDevMode: (value: boolean) => void;
-  tenantId: TenantId;
-  setTenantId: (id: TenantId) => Promise<void>;
+  devMode: boolean
+  setDevMode: (value: boolean) => void
+  tenantId: TenantId
+  setTenantId: (id: TenantId) => Promise<void>
 }
 
 export type TenantSelectorPropsBase = {
-  currentTenantId: TenantId;
-  className?: string;
-};
+  currentTenantId: TenantId
+  className?: string
+}
 
 export type TenantSelectorProps =
   | (TenantSelectorPropsBase & {
-      viewOnly: true;
+      viewOnly: true
     })
   | (TenantSelectorPropsBase & {
-      viewOnly?: false;
-      availableTenantIds: TenantId[];
-      onServerChange: (tenantId: TenantId) => void;
-    });
+      viewOnly?: false
+      availableTenantIds: TenantId[]
+      onServerChange: (tenantId: TenantId) => void
+    })
 
 export type TenantSelectorInteractiveProps = TenantSelectorPropsBase & {
-  viewOnly?: false;
-  availableTenantIds: TenantId[];
-  onServerChange: (tenantId: TenantId) => void;
-};
+  viewOnly?: false
+  availableTenantIds: TenantId[]
+  onServerChange: (tenantId: TenantId) => void
+}

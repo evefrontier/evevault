@@ -1,14 +1,14 @@
-import type { PublicKey } from '@mysten/sui/cryptography';
-import { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519';
-import { Secp256r1PublicKey } from '@mysten/sui/keypairs/secp256r1';
-import { useMemo } from 'react';
-import { useContextStore } from '#/stores/contextStore';
-import { useDeviceStore } from '#/stores/deviceStore';
-import { isLocalnetChain, isZkLoginSuiChain } from '#/types/networks';
-import { KEY_FLAG_SECP256R1 } from '#/types/stores';
-import { createLogger } from '#/utils/logger';
+import type { PublicKey } from '@mysten/sui/cryptography'
+import { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519'
+import { Secp256r1PublicKey } from '@mysten/sui/keypairs/secp256r1'
+import { useMemo } from 'react'
+import { useContextStore } from '#/stores/contextStore'
+import { useDeviceStore } from '#/stores/deviceStore'
+import { isLocalnetChain, isZkLoginSuiChain } from '#/types/networks'
+import { KEY_FLAG_SECP256R1 } from '#/types/stores'
+import { createLogger } from '#/utils/logger'
 
-const log = createLogger();
+const log = createLogger()
 
 export const useDevice = () => {
   const {
@@ -25,7 +25,7 @@ export const useDevice = () => {
     getJwtRandomness,
     unlock,
     lock,
-  } = useDeviceStore();
+  } = useDeviceStore()
 
   const isPinSet = useMemo(() => {
     return (
@@ -33,53 +33,53 @@ export const useDevice = () => {
       typeof ephemeralKeyPairSecretKey === 'object' &&
       'iv' in ephemeralKeyPairSecretKey &&
       'data' in ephemeralKeyPairSecretKey
-    );
-  }, [ephemeralKeyPairSecretKey]);
+    )
+  }, [ephemeralKeyPairSecretKey])
 
   // Subscribe to chain changes reactively
-  const { chain: currentChain } = useContextStore();
+  const { chain: currentChain } = useContextStore()
 
   // Subscribe to the entire networkData object to ensure we react to any changes
   // Using a selector that returns the whole networkData ensures we catch updates
   // even when a new chain's data is added
-  const { networkData, localnet } = useDeviceStore();
+  const { networkData, localnet } = useDeviceStore()
 
   // Read device data directly from networkData instead of using getter functions
   // This ensures we react to changes in networkData and don't capture stale values
   const maxEpoch = useMemo(() => {
-    if (isLocalnetChain(currentChain)) return localnet.maxEpoch;
-    if (!isZkLoginSuiChain(currentChain) || !networkData) return null;
-    return networkData[currentChain]?.maxEpoch ?? null;
-  }, [currentChain, networkData, localnet.maxEpoch]);
+    if (isLocalnetChain(currentChain)) return localnet.maxEpoch
+    if (!isZkLoginSuiChain(currentChain) || !networkData) return null
+    return networkData[currentChain]?.maxEpoch ?? null
+  }, [currentChain, networkData, localnet.maxEpoch])
   const maxEpochTimestampMs = useMemo(() => {
-    if (isLocalnetChain(currentChain)) return localnet.maxEpochTimestampMs;
-    if (!isZkLoginSuiChain(currentChain) || !networkData) return null;
-    return networkData[currentChain]?.maxEpochTimestampMs ?? null;
-  }, [currentChain, networkData, localnet.maxEpochTimestampMs]);
+    if (isLocalnetChain(currentChain)) return localnet.maxEpochTimestampMs
+    if (!isZkLoginSuiChain(currentChain) || !networkData) return null
+    return networkData[currentChain]?.maxEpochTimestampMs ?? null
+  }, [currentChain, networkData, localnet.maxEpochTimestampMs])
   const nonce = useMemo(() => {
-    if (isLocalnetChain(currentChain)) return null;
-    if (!isZkLoginSuiChain(currentChain) || !networkData) return null;
-    return networkData[currentChain]?.nonce ?? null;
-  }, [currentChain, networkData]);
+    if (isLocalnetChain(currentChain)) return null
+    if (!isZkLoginSuiChain(currentChain) || !networkData) return null
+    return networkData[currentChain]?.nonce ?? null
+  }, [currentChain, networkData])
 
   // Reconstruct public key from bytes using the correct key type
   const ephemeralPublicKey = useMemo((): PublicKey | null => {
-    if (!ephemeralPublicKeyBytes) return null;
+    if (!ephemeralPublicKeyBytes) return null
 
     try {
-      const keyBytes = new Uint8Array(ephemeralPublicKeyBytes);
+      const keyBytes = new Uint8Array(ephemeralPublicKeyBytes)
 
       // Use the flag to determine key type, default to Ed25519 for extension
       if (ephemeralPublicKeyFlag === KEY_FLAG_SECP256R1) {
-        return new Secp256r1PublicKey(keyBytes);
+        return new Secp256r1PublicKey(keyBytes)
       } else {
-        return new Ed25519PublicKey(keyBytes);
+        return new Ed25519PublicKey(keyBytes)
       }
     } catch (error) {
-      log.error('Failed to reconstruct public key:', error);
-      return null;
+      log.error('Failed to reconstruct public key:', error)
+      return null
     }
-  }, [ephemeralPublicKeyBytes, ephemeralPublicKeyFlag]);
+  }, [ephemeralPublicKeyBytes, ephemeralPublicKeyFlag])
 
   return {
     isLocked,
@@ -99,5 +99,5 @@ export const useDevice = () => {
     getZkProof: () => getZkProofForChain(currentChain),
     unlock,
     lock,
-  };
-};
+  }
+}

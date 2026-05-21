@@ -1,4 +1,4 @@
-import type { SVGProps } from 'react';
+import type { SVGProps } from 'react'
 
 const NetworkIcon = ({
   className,
@@ -33,6 +33,6 @@ const NetworkIcon = ({
     <rect x="9" y="6" width="2" height="2" fill={color} />
     <rect x="9" y="9" width="2" height="2" fill={color} fillOpacity="0.2" />
   </svg>
-);
+)
 
-export default NetworkIcon;
+export default NetworkIcon

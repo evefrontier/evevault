@@ -1,4 +1,4 @@
-import type { SVGProps } from 'react';
+import type { SVGProps } from 'react'
 
 const ChevronArrowUpIcon = ({
   className,
@@ -18,6 +18,6 @@ const ChevronArrowUpIcon = ({
   >
     <path d="M13 10L8 5L3 10" stroke={color} stroke-width="2" />
   </svg>
-);
+)
 
-export default ChevronArrowUpIcon;
+export default ChevronArrowUpIcon

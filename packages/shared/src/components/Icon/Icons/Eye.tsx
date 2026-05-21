@@ -1,4 +1,4 @@
-import type { SVGProps } from 'react';
+import type { SVGProps } from 'react'
 
 const EyeIcon = ({
   className,
@@ -6,7 +6,7 @@ const EyeIcon = ({
   height = 16,
   color = 'var(--neutral)',
 }: SVGProps<SVGSVGElement>) => {
-  console.log('EyeIcon', color);
+  console.log('EyeIcon', color)
   return (
     <svg
       width={width}
@@ -25,7 +25,7 @@ const EyeIcon = ({
       />
       <circle cx="8.20801" cy="8" r="2" fill={color} />
     </svg>
-  );
-};
+  )
+}
 
-export default EyeIcon;
+export default EyeIcon

@@ -1,21 +1,21 @@
-import { Transaction } from '@mysten/sui/transactions';
-import { useCallback, useState } from 'react';
-import { useToast } from '#/components';
-import { useDeviceStore } from '#/stores';
-import { isZkLoginSuiChain } from '#/types/networks';
-import { createLogger } from '#/utils';
-import { useWalletSigningContext } from '#/wallet/hooks/useWalletSigningContext';
-import { useContext } from './useContext';
-import { useDevice } from './useDevice';
+import { Transaction } from '@mysten/sui/transactions'
+import { useCallback, useState } from 'react'
+import { useToast } from '#/components'
+import { useDeviceStore } from '#/stores'
+import { isZkLoginSuiChain } from '#/types/networks'
+import { createLogger } from '#/utils'
+import { useWalletSigningContext } from '#/wallet/hooks/useWalletSigningContext'
+import { useContext } from './useContext'
+import { useDevice } from './useDevice'
 
-const log = createLogger();
+const log = createLogger()
 
 /**
  * Hook for handling test transaction submission
  */
 export function useDevMode() {
-  const { rotateEphemeralKey } = useDevice();
-  const { chain } = useContext();
+  const { rotateEphemeralKey } = useDevice()
+  const { chain } = useContext()
   const {
     isLocalnet,
     isAuthenticated,
@@ -23,64 +23,64 @@ export function useDevMode() {
     suiClient,
     getSenderAddress,
     sign,
-  } = useWalletSigningContext();
-  const { showToast } = useToast();
-  const [txDigest, setTxDigest] = useState<string | null>(null);
+  } = useWalletSigningContext()
+  const { showToast } = useToast()
+  const [txDigest, setTxDigest] = useState<string | null>(null)
 
   const handleTestTransaction = useCallback(async () => {
     try {
-      const senderAddress = await getSenderAddress();
+      const senderAddress = await getSenderAddress()
       if (!senderAddress) {
-        throw new Error('Wallet not ready to sign');
+        throw new Error('Wallet not ready to sign')
       }
 
-      const tx = new Transaction();
-      tx.setSender(senderAddress);
-      const txb = await tx.build({ client: suiClient });
-      const { signature } = await sign('TransactionData', txb);
+      const tx = new Transaction()
+      tx.setSender(senderAddress)
+      const txb = await tx.build({ client: suiClient })
+      const { signature } = await sign('TransactionData', txb)
 
-      log.debug('Signature ready', { length: signature.length });
-      log.debug('Transaction bytes ready', { length: txb.length });
+      log.debug('Signature ready', { length: signature.length })
+      log.debug('Transaction bytes ready', { length: txb.length })
 
       const txDigestResult = await suiClient.core.executeTransaction({
         transaction: new Uint8Array(txb),
         signatures: [signature],
-      });
+      })
 
       if (
         '$kind' in txDigestResult &&
         txDigestResult.$kind === 'FailedTransaction'
       ) {
-        throw new Error('Transaction failed');
+        throw new Error('Transaction failed')
       }
       const txResponse = (
         txDigestResult as { Transaction: { digest?: string | null } }
-      ).Transaction;
-      const digest = txResponse?.digest ?? null;
+      ).Transaction
+      const digest = txResponse?.digest ?? null
 
-      log.info('Transaction executed', { digest });
-      setTxDigest(digest);
-      showToast('Transaction submitted!');
+      log.info('Transaction executed', { digest })
+      setTxDigest(digest)
+      showToast('Transaction submitted!')
     } catch (error) {
-      log.error('Error submitting transaction', error);
-      showToast('Error submitting transaction');
+      log.error('Error submitting transaction', error)
+      showToast('Error submitting transaction')
     }
-  }, [suiClient, getSenderAddress, sign, showToast]);
+  }, [suiClient, getSenderAddress, sign, showToast])
 
   const formatPublicKey = useCallback((bytes: number[] | null | undefined) => {
-    if (!bytes || bytes.length === 0) return null;
+    if (!bytes || bytes.length === 0) return null
     return bytes
       .slice(0, 8)
       .map((byte) => byte.toString(16).padStart(2, '0'))
-      .join('');
-  }, []);
+      .join('')
+  }, [])
 
   const handleRotateEphKey = useCallback(async () => {
-    const beforeState = useDeviceStore.getState();
+    const beforeState = useDeviceStore.getState()
     const beforeChainData = isZkLoginSuiChain(chain)
       ? beforeState.networkData[chain]
-      : null;
-    const beforeKey = formatPublicKey(beforeState.ephemeralPublicKeyBytes);
+      : null
+    const beforeKey = formatPublicKey(beforeState.ephemeralPublicKeyBytes)
 
     log.info('Manual eph key rotation requested', {
       chain,
@@ -88,16 +88,16 @@ export function useDevMode() {
       maxEpoch: beforeChainData?.maxEpoch,
       hasNonce: beforeChainData?.nonce != null,
       hasJwtRandomness: beforeChainData?.jwtRandomness != null,
-    });
+    })
 
     try {
-      await rotateEphemeralKey(chain);
+      await rotateEphemeralKey(chain)
 
-      const afterState = useDeviceStore.getState();
+      const afterState = useDeviceStore.getState()
       const afterChainData = isZkLoginSuiChain(chain)
         ? afterState.networkData[chain]
-        : null;
-      const afterKey = formatPublicKey(afterState.ephemeralPublicKeyBytes);
+        : null
+      const afterKey = formatPublicKey(afterState.ephemeralPublicKeyBytes)
 
       log.info('Manual eph key rotation completed', {
         chain,
@@ -106,16 +106,16 @@ export function useDevMode() {
         maxEpoch: afterChainData?.maxEpoch,
         hasNonce: afterChainData?.nonce != null,
         hasJwtRandomness: afterChainData?.jwtRandomness != null,
-      });
+      })
     } catch (error) {
-      log.error('Manual eph key rotation failed', error);
+      log.error('Manual eph key rotation failed', error)
     }
-  }, [chain, formatPublicKey, rotateEphemeralKey]);
+  }, [chain, formatPublicKey, rotateEphemeralKey])
 
   return {
     handleTestTransaction,
     txDigest,
     handleRotateEphKey,
     isAuthenticated: isLocalnet ? isWalletUnlocked : isAuthenticated,
-  };
+  }
 }

@@ -1,4 +1,4 @@
-import type { SVGProps } from 'react';
+import type { SVGProps } from 'react'
 
 const OpenWindowIcon = ({
   className,
@@ -25,6 +25,6 @@ const OpenWindowIcon = ({
       fill={color}
     />
   </svg>
-);
+)
 
-export default OpenWindowIcon;
+export default OpenWindowIcon

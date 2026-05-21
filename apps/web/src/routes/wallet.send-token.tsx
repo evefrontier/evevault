@@ -1,33 +1,33 @@
-import { SendTokenScreen } from '@evevault/shared';
-import type { SendTokenSearch } from '@evevault/shared/router';
-import { requireAuth } from '@evevault/shared/router';
+import { SendTokenScreen } from '@evevault/shared'
+import type { SendTokenSearch } from '@evevault/shared/router'
+import { requireAuth } from '@evevault/shared/router'
 import {
   createFileRoute,
   redirect,
   useNavigate,
   useSearch,
-} from '@tanstack/react-router';
+} from '@tanstack/react-router'
 
 function SendTokenPage() {
-  const navigate = useNavigate();
-  const { coinType } = useSearch({ from: '/wallet/send-token' });
+  const navigate = useNavigate()
+  const { coinType } = useSearch({ from: '/wallet/send-token' })
 
   const handleCancel = () => {
-    navigate({ to: '/wallet' });
-  };
+    navigate({ to: '/wallet' })
+  }
 
-  return <SendTokenScreen coinType={coinType} onCancel={handleCancel} />;
+  return <SendTokenScreen coinType={coinType} onCancel={handleCancel} />
 }
 
 export const Route = createFileRoute('/wallet/send-token')({
   beforeLoad: () => requireAuth({ preserveRedirectPath: true }),
   component: SendTokenPage,
   validateSearch: (search: Record<string, unknown>): SendTokenSearch => {
-    const coinType = (search.coinType as string) || '';
+    const coinType = (search.coinType as string) || ''
     // Redirect to wallet if coinType is missing
     if (!coinType) {
-      throw redirect({ to: '/wallet' });
+      throw redirect({ to: '/wallet' })
     }
-    return { coinType };
+    return { coinType }
   },
-});
+})

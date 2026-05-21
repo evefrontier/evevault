@@ -1,22 +1,22 @@
-import { SUI_DEVNET_CHAIN } from '@mysten/wallet-standard';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { renderHook, waitFor } from '@testing-library/react';
-import type { ReactNode } from 'react';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { SUI_DEVNET_CHAIN } from '@mysten/wallet-standard'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { renderHook, waitFor } from '@testing-library/react'
+import type { ReactNode } from 'react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const mockGraphQLQuery = vi.fn();
+const mockGraphQLQuery = vi.fn()
 
 // Mock the GraphQL client
 vi.mock('#/sui/graphqlClient', () => ({
   createSuiGraphQLClient: vi.fn(() => ({
     query: mockGraphQLQuery,
   })),
-}));
+}))
 
 // Mock the queries module for TRANSACTIONS_QUERY
 vi.mock('#/wallet/queries/transactions', () => ({
   TRANSACTIONS_QUERY: 'mocked-query',
-}));
+}))
 
 // Mock the types/graphql module
 vi.mock('#/wallet/types/graphql', () => ({
@@ -24,13 +24,13 @@ vi.mock('#/wallet/types/graphql', () => ({
   GraphQLTransactionNode: {},
   TransactionsQueryResponse: {},
   TransactionPage: {},
-}));
+}))
 
 vi.mock('#/utils', () => ({
   formatByDecimals: vi.fn((value: string) => {
     // Simple mock: divide by 10^9 for SUI
-    const num = Number(value) / 1_000_000_000;
-    return num.toString();
+    const num = Number(value) / 1_000_000_000
+    return num.toString()
   }),
   createLogger: vi.fn(() => ({
     debug: vi.fn(),
@@ -42,16 +42,16 @@ vi.mock('#/utils', () => ({
   isExtension: vi.fn(() => false),
   isWeb: vi.fn(() => true),
   isBrowser: vi.fn(() => true),
-}));
+}))
 
-import { createMockUser } from '#/testing';
-import { useTransactionHistory } from '#/wallet/hooks/useTransactionHistory';
+import { createMockUser } from '#/testing'
+import { useTransactionHistory } from '#/wallet/hooks/useTransactionHistory'
 
 const createWrapper = (queryClient: QueryClient) => {
   return ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  );
-};
+  )
+}
 
 const createQueryClient = () =>
   new QueryClient({
@@ -60,7 +60,7 @@ const createQueryClient = () =>
         retry: false,
       },
     },
-  });
+  })
 
 /**
  * Helper to create a mock GraphQL response for transactions
@@ -72,13 +72,13 @@ const createQueryClient = () =>
  */
 function createMockGraphQLResponse(
   transactions: Array<{
-    digest: string;
-    timestamp: string;
+    digest: string
+    timestamp: string
     balanceChanges: Array<{
-      amount: string;
-      coinType: string;
-      ownerAddress: string;
-    }>;
+      amount: string
+      coinType: string
+      ownerAddress: string
+    }>
   }>,
   hasNextPage = false,
   endCursor: string | null = null,
@@ -112,28 +112,28 @@ function createMockGraphQLResponse(
       },
     },
     errors: undefined,
-  };
+  }
 }
 
 describe('useTransactionHistory hook (GraphQL)', () => {
-  let queryClient: QueryClient;
+  let queryClient: QueryClient
 
   beforeEach(() => {
-    vi.clearAllMocks();
-    queryClient = createQueryClient();
-  });
+    vi.clearAllMocks()
+    queryClient = createQueryClient()
+  })
 
   afterEach(() => {
-    queryClient.clear();
-  });
+    queryClient.clear()
+  })
 
   it('returns loading state initially', async () => {
     mockGraphQLQuery.mockImplementation(
       () => new Promise(() => {}), // Never resolves
-    );
+    )
 
-    const user = createMockUser();
-    const wrapper = createWrapper(queryClient);
+    const user = createMockUser()
+    const wrapper = createWrapper(queryClient)
 
     const { result, unmount } = renderHook(
       () =>
@@ -142,13 +142,13 @@ describe('useTransactionHistory hook (GraphQL)', () => {
           chain: SUI_DEVNET_CHAIN,
         }),
       { wrapper },
-    );
+    )
 
-    expect(result.current.isLoading).toBe(true);
-    expect(result.current.data).toBeUndefined();
+    expect(result.current.isLoading).toBe(true)
+    expect(result.current.data).toBeUndefined()
 
-    unmount();
-  });
+    unmount()
+  })
 
   it('returns transactions on success', async () => {
     const mockResponse = createMockGraphQLResponse([
@@ -168,12 +168,12 @@ describe('useTransactionHistory hook (GraphQL)', () => {
           },
         ],
       },
-    ]);
+    ])
 
-    mockGraphQLQuery.mockResolvedValue(mockResponse);
+    mockGraphQLQuery.mockResolvedValue(mockResponse)
 
-    const user = createMockUser();
-    const wrapper = createWrapper(queryClient);
+    const user = createMockUser()
+    const wrapper = createWrapper(queryClient)
 
     const { result, unmount } = renderHook(
       () =>
@@ -182,24 +182,24 @@ describe('useTransactionHistory hook (GraphQL)', () => {
           chain: SUI_DEVNET_CHAIN,
         }),
       { wrapper },
-    );
+    )
 
     await waitFor(() => {
-      expect(result.current.isSuccess).toBe(true);
-    });
+      expect(result.current.isSuccess).toBe(true)
+    })
 
-    expect(result.current.data?.pages).toHaveLength(1);
-    expect(result.current.data?.pages[0].transactions).toHaveLength(1);
+    expect(result.current.data?.pages).toHaveLength(1)
+    expect(result.current.data?.pages[0].transactions).toHaveLength(1)
 
-    const tx = result.current.data?.pages[0].transactions[0];
-    expect(tx?.digest).toBe('tx123');
-    expect(tx?.direction).toBe('sent');
-    expect(tx?.counterparty).toBe('0xrecipient456');
-    expect(tx?.balanceChanges).toHaveLength(1);
-    expect(tx?.balanceChanges[0]?.tokenSymbol).toBe('SUI');
+    const tx = result.current.data?.pages[0].transactions[0]
+    expect(tx?.digest).toBe('tx123')
+    expect(tx?.direction).toBe('sent')
+    expect(tx?.counterparty).toBe('0xrecipient456')
+    expect(tx?.balanceChanges).toHaveLength(1)
+    expect(tx?.balanceChanges[0]?.tokenSymbol).toBe('SUI')
 
-    unmount();
-  });
+    unmount()
+  })
 
   it('identifies received transactions correctly', async () => {
     const mockResponse = createMockGraphQLResponse([
@@ -219,12 +219,12 @@ describe('useTransactionHistory hook (GraphQL)', () => {
           },
         ],
       },
-    ]);
+    ])
 
-    mockGraphQLQuery.mockResolvedValue(mockResponse);
+    mockGraphQLQuery.mockResolvedValue(mockResponse)
 
-    const user = createMockUser();
-    const wrapper = createWrapper(queryClient);
+    const user = createMockUser()
+    const wrapper = createWrapper(queryClient)
 
     const { result, unmount } = renderHook(
       () =>
@@ -233,22 +233,22 @@ describe('useTransactionHistory hook (GraphQL)', () => {
           chain: SUI_DEVNET_CHAIN,
         }),
       { wrapper },
-    );
+    )
 
     await waitFor(() => {
-      expect(result.current.isSuccess).toBe(true);
-    });
+      expect(result.current.isSuccess).toBe(true)
+    })
 
-    const tx = result.current.data?.pages[0].transactions[0];
-    expect(tx?.direction).toBe('received');
-    expect(tx?.counterparty).toBe('0xsender789');
+    const tx = result.current.data?.pages[0].transactions[0]
+    expect(tx?.direction).toBe('received')
+    expect(tx?.counterparty).toBe('0xsender789')
 
-    unmount();
-  });
+    unmount()
+  })
 
   it('derives direction from primary (non-SUI) change when user has multiple balance changes (e.g. incoming token + gas)', async () => {
     const eveCoinType =
-      '0x59d7bb2e0feffb90cb2446fb97c2ce7d4bd24d2fb98939d6cb6c3940110a0de0::EVE::EVE';
+      '0x59d7bb2e0feffb90cb2446fb97c2ce7d4bd24d2fb98939d6cb6c3940110a0de0::EVE::EVE'
     const mockResponse = createMockGraphQLResponse([
       {
         digest: 'tx-multi',
@@ -271,12 +271,12 @@ describe('useTransactionHistory hook (GraphQL)', () => {
           },
         ],
       },
-    ]);
+    ])
 
-    mockGraphQLQuery.mockResolvedValue(mockResponse);
+    mockGraphQLQuery.mockResolvedValue(mockResponse)
 
-    const user = createMockUser();
-    const wrapper = createWrapper(queryClient);
+    const user = createMockUser()
+    const wrapper = createWrapper(queryClient)
 
     const { result, unmount } = renderHook(
       () =>
@@ -285,27 +285,27 @@ describe('useTransactionHistory hook (GraphQL)', () => {
           chain: SUI_DEVNET_CHAIN,
         }),
       { wrapper },
-    );
+    )
 
     await waitFor(() => {
-      expect(result.current.isSuccess).toBe(true);
-    });
+      expect(result.current.isSuccess).toBe(true)
+    })
 
-    const tx = result.current.data?.pages[0].transactions[0];
-    expect(tx?.digest).toBe('tx-multi');
-    expect(tx?.direction).toBe('received');
-    expect(tx?.balanceChanges).toHaveLength(2);
+    const tx = result.current.data?.pages[0].transactions[0]
+    expect(tx?.digest).toBe('tx-multi')
+    expect(tx?.direction).toBe('received')
+    expect(tx?.balanceChanges).toHaveLength(2)
     const eveChange = tx?.balanceChanges?.find(
       (bc) => bc.coinType === eveCoinType,
-    );
+    )
     const suiChange = tx?.balanceChanges?.find(
       (bc) => bc.coinType === '0x2::sui::SUI',
-    );
-    expect(eveChange?.isDebit).toBe(false);
-    expect(suiChange?.isDebit).toBe(true);
+    )
+    expect(eveChange?.isDebit).toBe(false)
+    expect(suiChange?.isDebit).toBe(true)
 
-    unmount();
-  });
+    unmount()
+  })
 
   it('handles GraphQL errors by throwing', async () => {
     // When GraphQL returns errors, the hook throws an error
@@ -314,12 +314,12 @@ describe('useTransactionHistory hook (GraphQL)', () => {
     const mockResponse = {
       data: null,
       errors: [{ message: 'GraphQL Error' }],
-    };
+    }
 
-    mockGraphQLQuery.mockResolvedValue(mockResponse);
+    mockGraphQLQuery.mockResolvedValue(mockResponse)
 
-    const user = createMockUser();
-    const wrapper = createWrapper(queryClient);
+    const user = createMockUser()
+    const wrapper = createWrapper(queryClient)
 
     const { result, unmount } = renderHook(
       () =>
@@ -328,31 +328,31 @@ describe('useTransactionHistory hook (GraphQL)', () => {
           chain: SUI_DEVNET_CHAIN,
         }),
       { wrapper },
-    );
+    )
 
     // Wait for the query to be called (it will retry)
     await waitFor(() => {
-      expect(mockGraphQLQuery).toHaveBeenCalled();
-    });
+      expect(mockGraphQLQuery).toHaveBeenCalled()
+    })
 
     // After first call, query will be in loading/error state (retrying)
     // Just verify the mock was called with errors
-    const call = mockGraphQLQuery.mock.calls[0];
-    expect(call).toBeDefined();
+    const call = mockGraphQLQuery.mock.calls[0]
+    expect(call).toBeDefined()
 
     // The hook received the error response
-    expect(result.current.data).toBeUndefined();
+    expect(result.current.data).toBeUndefined()
 
-    unmount();
-  });
+    unmount()
+  })
 
   it('handles empty transaction list', async () => {
-    const mockResponse = createMockGraphQLResponse([]);
+    const mockResponse = createMockGraphQLResponse([])
 
-    mockGraphQLQuery.mockResolvedValue(mockResponse);
+    mockGraphQLQuery.mockResolvedValue(mockResponse)
 
-    const user = createMockUser();
-    const wrapper = createWrapper(queryClient);
+    const user = createMockUser()
+    const wrapper = createWrapper(queryClient)
 
     const { result, unmount } = renderHook(
       () =>
@@ -361,17 +361,17 @@ describe('useTransactionHistory hook (GraphQL)', () => {
           chain: SUI_DEVNET_CHAIN,
         }),
       { wrapper },
-    );
+    )
 
     await waitFor(() => {
-      expect(result.current.isSuccess).toBe(true);
-    });
+      expect(result.current.isSuccess).toBe(true)
+    })
 
-    expect(result.current.data?.pages[0].transactions).toHaveLength(0);
-    expect(result.current.hasNextPage).toBe(false);
+    expect(result.current.data?.pages[0].transactions).toHaveLength(0)
+    expect(result.current.hasNextPage).toBe(false)
 
-    unmount();
-  });
+    unmount()
+  })
 
   it('supports pagination with hasNextPage', async () => {
     const mockResponse = createMockGraphQLResponse(
@@ -395,12 +395,12 @@ describe('useTransactionHistory hook (GraphQL)', () => {
       ],
       true, // hasNextPage
       'cursor123', // endCursor
-    );
+    )
 
-    mockGraphQLQuery.mockResolvedValue(mockResponse);
+    mockGraphQLQuery.mockResolvedValue(mockResponse)
 
-    const user = createMockUser();
-    const wrapper = createWrapper(queryClient);
+    const user = createMockUser()
+    const wrapper = createWrapper(queryClient)
 
     const { result, unmount } = renderHook(
       () =>
@@ -409,20 +409,20 @@ describe('useTransactionHistory hook (GraphQL)', () => {
           chain: SUI_DEVNET_CHAIN,
         }),
       { wrapper },
-    );
+    )
 
     await waitFor(() => {
-      expect(result.current.isSuccess).toBe(true);
-    });
+      expect(result.current.isSuccess).toBe(true)
+    })
 
-    expect(result.current.hasNextPage).toBe(true);
-    expect(typeof result.current.fetchNextPage).toBe('function');
+    expect(result.current.hasNextPage).toBe(true)
+    expect(typeof result.current.fetchNextPage).toBe('function')
 
-    unmount();
-  });
+    unmount()
+  })
 
   it('is disabled when user is null', async () => {
-    const wrapper = createWrapper(queryClient);
+    const wrapper = createWrapper(queryClient)
 
     const { result, unmount } = renderHook(
       () =>
@@ -431,15 +431,15 @@ describe('useTransactionHistory hook (GraphQL)', () => {
           chain: SUI_DEVNET_CHAIN,
         }),
       { wrapper },
-    );
+    )
 
     // Should not be loading or fetching when disabled
-    expect(result.current.isLoading).toBe(false);
-    expect(result.current.isFetching).toBe(false);
-    expect(mockGraphQLQuery).not.toHaveBeenCalled();
+    expect(result.current.isLoading).toBe(false)
+    expect(result.current.isFetching).toBe(false)
+    expect(mockGraphQLQuery).not.toHaveBeenCalled()
 
-    unmount();
-  });
+    unmount()
+  })
 
   it('handles null address response gracefully', async () => {
     const mockResponse = {
@@ -447,12 +447,12 @@ describe('useTransactionHistory hook (GraphQL)', () => {
         address: null,
       },
       errors: undefined,
-    };
+    }
 
-    mockGraphQLQuery.mockResolvedValue(mockResponse);
+    mockGraphQLQuery.mockResolvedValue(mockResponse)
 
-    const user = createMockUser();
-    const wrapper = createWrapper(queryClient);
+    const user = createMockUser()
+    const wrapper = createWrapper(queryClient)
 
     const { result, unmount } = renderHook(
       () =>
@@ -461,23 +461,23 @@ describe('useTransactionHistory hook (GraphQL)', () => {
           chain: SUI_DEVNET_CHAIN,
         }),
       { wrapper },
-    );
+    )
 
     await waitFor(() => {
-      expect(result.current.isSuccess).toBe(true);
-    });
+      expect(result.current.isSuccess).toBe(true)
+    })
 
-    expect(result.current.data?.pages[0].transactions).toHaveLength(0);
+    expect(result.current.data?.pages[0].transactions).toHaveLength(0)
 
-    unmount();
-  });
+    unmount()
+  })
 
   it('passes correct variables to GraphQL query', async () => {
-    const mockResponse = createMockGraphQLResponse([]);
-    mockGraphQLQuery.mockResolvedValue(mockResponse);
+    const mockResponse = createMockGraphQLResponse([])
+    mockGraphQLQuery.mockResolvedValue(mockResponse)
 
-    const user = createMockUser();
-    const wrapper = createWrapper(queryClient);
+    const user = createMockUser()
+    const wrapper = createWrapper(queryClient)
 
     const { unmount } = renderHook(
       () =>
@@ -487,17 +487,17 @@ describe('useTransactionHistory hook (GraphQL)', () => {
           pageSize: 50,
         }),
       { wrapper },
-    );
+    )
 
     await waitFor(() => {
-      expect(mockGraphQLQuery).toHaveBeenCalled();
-    });
+      expect(mockGraphQLQuery).toHaveBeenCalled()
+    })
 
-    const callArgs = mockGraphQLQuery.mock.calls[0][0];
-    expect(callArgs.variables.address).toBe('0x123');
-    expect(callArgs.variables.first).toBe(50);
-    expect(callArgs.variables.after).toBeUndefined();
+    const callArgs = mockGraphQLQuery.mock.calls[0][0]
+    expect(callArgs.variables.address).toBe('0x123')
+    expect(callArgs.variables.first).toBe(50)
+    expect(callArgs.variables.after).toBeUndefined()
 
-    unmount();
-  });
-});
+    unmount()
+  })
+})

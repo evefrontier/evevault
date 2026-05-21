@@ -1,23 +1,23 @@
-import type React from 'react';
-import { useMemo, useState } from 'react';
-import Button from '#/components/Button';
-import Heading from '#/components/Heading';
-import Icon from '#/components/Icon';
-import { HeaderMobile } from '#/components/Layout';
-import Text from '#/components/Text';
-import { useDeviceStore } from '#/stores/deviceStore';
+import type React from 'react'
+import { useMemo, useState } from 'react'
+import Button from '#/components/Button'
+import Heading from '#/components/Heading'
+import Icon from '#/components/Icon'
+import { HeaderMobile } from '#/components/Layout'
+import Text from '#/components/Text'
+import { useDeviceStore } from '#/stores/deviceStore'
 import type {
   TransactionRowProps,
   TransactionsScreenProps,
-} from '#/types/components';
+} from '#/types/components'
 import {
   formatAddress,
   formatDisplayAmount,
   formatShortDate,
   getSuiscanUrl,
   SUI_COIN_TYPE,
-} from '#/utils';
-import { useActiveSuiAddress, useTransactionHistory } from '#/wallet';
+} from '#/utils'
+import { useActiveSuiAddress, useTransactionHistory } from '#/wallet'
 
 const TransactionRow: React.FC<TransactionRowProps> = ({
   transaction,
@@ -27,25 +27,25 @@ const TransactionRow: React.FC<TransactionRowProps> = ({
   onToggle,
 }) => {
   const { digest, timestamp, counterparty, direction, balanceChanges } =
-    transaction;
+    transaction
 
   const suiscanUrl = getSuiscanUrl(chain, digest, {
     localnetUrl,
-  });
-  const formattedDate = formatShortDate(timestamp);
-  const shortCounterparty = formatAddress(counterparty, 6, 6);
-  const shortDigest = formatAddress(digest, 8, 8);
+  })
+  const formattedDate = formatShortDate(timestamp)
+  const shortCounterparty = formatAddress(counterparty, 6, 6)
+  const shortDigest = formatAddress(digest, 8, 8)
 
   const summaryAmountsRaw =
     balanceChanges.length > 0
       ? balanceChanges
           .map((bc) => `${formatDisplayAmount(bc.amount, 5)} ${bc.tokenSymbol}`)
           .join(', ')
-      : '';
+      : ''
   const summaryAmounts =
     direction === 'sent' && summaryAmountsRaw
       ? `−${summaryAmountsRaw}`
-      : summaryAmountsRaw;
+      : summaryAmountsRaw
 
   const summaryClasses = [
     'flex w-full p-2 items-center justify-between gap-2',
@@ -53,11 +53,11 @@ const TransactionRow: React.FC<TransactionRowProps> = ({
     isExpanded
       ? 'bg-quantum-40 hover:bg-quantum-40'
       : 'bg-transparent hover:bg-quantum-10',
-  ].join(' ');
+  ].join(' ')
 
   const handleViewOnSuiscan = () => {
-    window.open(suiscanUrl, '_blank', 'noopener,noreferrer');
-  };
+    window.open(suiscanUrl, '_blank', 'noopener,noreferrer')
+  }
 
   return (
     <div className="flex flex-col w-full">
@@ -139,19 +139,19 @@ const TransactionRow: React.FC<TransactionRowProps> = ({
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
 export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
   user,
   chain,
   onBack,
 }) => {
-  const [expandedTx, setExpandedTx] = useState<string | null>(null);
+  const [expandedTx, setExpandedTx] = useState<string | null>(null)
   const {
     localnet: { url: localnetUrl },
-  } = useDeviceStore();
-  const senderAddress = useActiveSuiAddress();
+  } = useDeviceStore()
+  const senderAddress = useActiveSuiAddress()
 
   const {
     data,
@@ -164,54 +164,54 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
   } = useTransactionHistory({
     user,
     chain: chain as `sui:${'mainnet' | 'testnet' | 'devnet' | 'localnet'}`,
-  });
+  })
 
   // Flatten all pages into a single array
   const transactions = useMemo(() => {
-    if (!data?.pages) return [];
-    return data.pages.flatMap((page) => page.transactions);
-  }, [data?.pages]);
+    if (!data?.pages) return []
+    return data.pages.flatMap((page) => page.transactions)
+  }, [data?.pages])
 
   const handleToggleExpand = (digest: string) => {
-    setExpandedTx(expandedTx === digest ? null : digest);
-  };
+    setExpandedTx(expandedTx === digest ? null : digest)
+  }
 
   const handleLoadMore = () => {
     if (hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
+      fetchNextPage()
     }
-  };
+  }
 
-  const hasTransactions = transactions.length > 0;
+  const hasTransactions = transactions.length > 0
 
   // Status message structure for better organization
   type StatusMessage = {
-    text: string;
-    color: 'error' | 'grey-neutral';
-  };
+    text: string
+    color: 'error' | 'grey-neutral'
+  }
 
-  const isEmpty = !isLoading && !isError && !hasTransactions;
+  const isEmpty = !isLoading && !isError && !hasTransactions
   const statusMessage: StatusMessage | null = (() => {
     switch (true) {
       case isError:
         return {
           text: error?.message || 'Failed to load transactions',
           color: 'error',
-        };
+        }
       case isLoading:
         return {
           text: 'Loading transactions...',
           color: 'grey-neutral',
-        };
+        }
       case isEmpty:
         return {
           text: 'No transactions found',
           color: 'grey-neutral',
-        };
+        }
       default:
-        return null;
+        return null
     }
-  })();
+  })()
 
   return (
     <div className="flex flex-col gap-4 w-full">
@@ -297,7 +297,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
         )}
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default TransactionsScreen;
+export default TransactionsScreen

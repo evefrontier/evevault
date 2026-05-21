@@ -1,9 +1,9 @@
-import { useAuth } from '@evevault/shared/auth';
-import { useContext, useDevice } from '@evevault/shared/hooks';
-import { createLogger } from '@evevault/shared/utils';
-import { useEffect } from 'react';
+import { useAuth } from '@evevault/shared/auth'
+import { useContext, useDevice } from '@evevault/shared/hooks'
+import { createLogger } from '@evevault/shared/utils'
+import { useEffect } from 'react'
 
-const log = createLogger();
+const log = createLogger()
 
 /**
  * Auth + device state for sign popups. Runs auth init on mount and returns
@@ -11,26 +11,26 @@ const log = createLogger();
  * (user, ephemeralPublicKey, getZkProof, maxEpoch).
  */
 export function useSignPopupAuth() {
-  const device = useDevice();
-  const auth = useAuth();
-  const { chain } = useContext();
+  const device = useDevice()
+  const auth = useAuth()
+  const { chain } = useContext()
 
   useEffect(() => {
-    auth.initialize();
-  }, [auth.initialize]);
+    auth.initialize()
+  }, [auth.initialize])
 
   useEffect(() => {
-    const hasDeviceData = !!device.maxEpoch && !!device.nonce;
+    const hasDeviceData = !!device.maxEpoch && !!device.nonce
     const canInitializeForChain =
-      !device.isLocked && !!device.ephemeralPublicKey && !hasDeviceData;
-    if (!canInitializeForChain) return;
+      !device.isLocked && !!device.ephemeralPublicKey && !hasDeviceData
+    if (!canInitializeForChain) return
 
     void device.initializeForChain(chain).catch((error) => {
       log.warn('Failed to initialize device data for sign popup', {
         chain,
         error,
-      });
-    });
+      })
+    })
   }, [
     chain,
     device.ephemeralPublicKey,
@@ -38,7 +38,7 @@ export function useSignPopupAuth() {
     device.isLocked,
     device.maxEpoch,
     device.nonce,
-  ]);
+  ])
 
   return {
     isLocked: device.isLocked,
@@ -50,5 +50,5 @@ export function useSignPopupAuth() {
     maxEpoch: device.maxEpoch,
     getZkProof: device.getZkProof,
     ephemeralPublicKey: device.ephemeralPublicKey,
-  };
+  }
 }

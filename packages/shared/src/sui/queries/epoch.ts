@@ -6,4 +6,4 @@ export const EPOCH_QUERY = `
       endTimestamp
     }
   }
-`;
+`

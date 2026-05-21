@@ -1,34 +1,34 @@
-import type { SuiChain } from '@mysten/wallet-standard';
-import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
-import { chromeStorageAdapter, localStorageAdapter } from '#/adapters';
-import type { TokenListState } from '#/types';
+import type { SuiChain } from '@mysten/wallet-standard'
+import { create } from 'zustand'
+import { createJSONStorage, persist } from 'zustand/middleware'
+import { chromeStorageAdapter, localStorageAdapter } from '#/adapters'
+import type { TokenListState } from '#/types'
 import {
   DEFAULT_TOKENS_BY_CHAIN,
   getDefaultTokensForChain,
-} from '#/types/networks';
-import { isWeb } from '#/utils/environment';
-import { TOKENLIST_STORAGE_KEY } from '#/utils/storageKeys';
+} from '#/types/networks'
+import { isWeb } from '#/utils/environment'
+import { TOKENLIST_STORAGE_KEY } from '#/utils/storageKeys'
 
-const sanitizeCoinType = (coinType: string) => coinType.trim();
+const sanitizeCoinType = (coinType: string) => coinType.trim()
 
 const initialTokens: Partial<Record<SuiChain, string[]>> = {
   ...DEFAULT_TOKENS_BY_CHAIN,
-};
+}
 
 export const useTokenListStore = create<TokenListState>()(
   persist(
     (set, get) => ({
       tokens: initialTokens,
       addToken: (chain: SuiChain, coinType: string) => {
-        const normalized = sanitizeCoinType(coinType);
+        const normalized = sanitizeCoinType(coinType)
         if (!normalized) {
-          return;
+          return
         }
 
-        const current = get().tokens[chain] ?? getDefaultTokensForChain(chain);
+        const current = get().tokens[chain] ?? getDefaultTokensForChain(chain)
         if (current.includes(normalized)) {
-          return;
+          return
         }
 
         set({
@@ -36,16 +36,16 @@ export const useTokenListStore = create<TokenListState>()(
             ...get().tokens,
             [chain]: [...current, normalized],
           },
-        });
+        })
       },
       removeToken: (chain: SuiChain, coinType: string) => {
-        const current = get().tokens[chain] ?? getDefaultTokensForChain(chain);
+        const current = get().tokens[chain] ?? getDefaultTokensForChain(chain)
         set({
           tokens: {
             ...get().tokens,
             [chain]: current.filter((token) => token !== coinType),
           },
-        });
+        })
       },
       clearTokens: (chain?: SuiChain) => {
         if (chain !== undefined) {
@@ -54,9 +54,9 @@ export const useTokenListStore = create<TokenListState>()(
               ...get().tokens,
               [chain]: [],
             },
-          });
+          })
         } else {
-          set({ tokens: {} });
+          set({ tokens: {} })
         }
       },
     }),
@@ -70,8 +70,8 @@ export const useTokenListStore = create<TokenListState>()(
         const raw = persistedState as
           | { state?: { tokens?: unknown }; tokens?: unknown }
           | null
-          | undefined;
-        const tokens = raw?.state?.tokens ?? raw?.tokens;
+          | undefined
+        const tokens = raw?.state?.tokens ?? raw?.tokens
         // Only use persisted tokens if it's the new format (per-chain record). Old array format is ignored; use defaults.
         if (
           typeof tokens === 'object' &&
@@ -81,10 +81,10 @@ export const useTokenListStore = create<TokenListState>()(
           return {
             ...currentState,
             tokens: tokens as TokenListState['tokens'],
-          };
+          }
         }
-        return currentState;
+        return currentState
       },
     },
   ),
-);
+)

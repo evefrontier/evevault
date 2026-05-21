@@ -1,11 +1,11 @@
-import { KeeperMessageTypes } from '@evevault/shared';
-import type { BackgroundMessage } from '@/lib/background/types';
-import type { KeeperHandler, KeeperSendResponse } from './keeperTypes';
+import { KeeperMessageTypes } from '@evevault/shared'
+import type { BackgroundMessage } from '@/lib/background/types'
+import type { KeeperHandler, KeeperSendResponse } from './keeperTypes'
 import {
   handleLocalnetGetAddress,
   handleLocalnetSetKeypair,
   handleLocalnetSign,
-} from './localnetHandlers';
+} from './localnetHandlers'
 import {
   handleClearEphKey,
   handleCreateKeypair,
@@ -13,12 +13,12 @@ import {
   handleGetPublicKey,
   handleRotateKeypair,
   handleUnlockVault,
-} from './vaultHandlers';
+} from './vaultHandlers'
 import {
   handleClearZkProof,
   handleGetZkProof,
   handleSetZkProof,
-} from './zkProofHandlers';
+} from './zkProofHandlers'
 
 const keeperHandlers: Partial<Record<KeeperMessageTypes, KeeperHandler>> = {
   [KeeperMessageTypes.CREATE_KEYPAIR]: handleCreateKeypair,
@@ -33,7 +33,7 @@ const keeperHandlers: Partial<Record<KeeperMessageTypes, KeeperHandler>> = {
   [KeeperMessageTypes.LOCALNET_SET_KEYPAIR]: handleLocalnetSetKeypair,
   [KeeperMessageTypes.LOCALNET_GET_ADDRESS]: handleLocalnetGetAddress,
   [KeeperMessageTypes.LOCALNET_SIGN]: handleLocalnetSign,
-};
+}
 
 /**
  * Thin router used by keeper.ts. Each handler returns Chrome's listener result:
@@ -44,16 +44,16 @@ export function handleKeeperMessage(
   sendResponse: KeeperSendResponse,
 ): boolean {
   if (message.target !== 'KEEPER') {
-    return false;
+    return false
   }
 
-  const handler = keeperHandlers[message.type as KeeperMessageTypes];
+  const handler = keeperHandlers[message.type as KeeperMessageTypes]
   if (!handler) {
-    sendResponse({ error: 'Unknown message type' });
-    return false;
+    sendResponse({ error: 'Unknown message type' })
+    return false
   }
 
-  return handler(message, sendResponse);
+  return handler(message, sendResponse)
 }
 
-export type { KeeperSendResponse };
+export type { KeeperSendResponse }

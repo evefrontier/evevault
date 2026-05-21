@@ -1,27 +1,27 @@
-import { WalletStandardMessageTypes } from '@evevault/shared';
-import { getApiContext, getJwt, getStoredChain } from '@evevault/shared/auth';
-import { createLogger } from '@evevault/shared/utils';
-import { openPopupWindow } from '@/lib/background/services/popupWindow';
+import { WalletStandardMessageTypes } from '@evevault/shared'
+import { getApiContext, getJwt, getStoredChain } from '@evevault/shared/auth'
+import { createLogger } from '@evevault/shared/utils'
+import { openPopupWindow } from '@/lib/background/services/popupWindow'
 import type {
   EveFrontierSponsoredTransactionMessage,
   SponsoredTxReturn,
-} from '@/lib/background/types';
+} from '@/lib/background/types'
 
-const log = createLogger();
+const log = createLogger()
 
 async function handleSponsoredTransaction(
   message: EveFrontierSponsoredTransactionMessage,
   sender: chrome.runtime.MessageSender,
   _sendResponse: (response?: unknown) => void,
 ): Promise<boolean> {
-  const senderTabId = sender.tab?.id;
-  const { action, assembly, assemblyType, metadata } = message.message;
+  const senderTabId = sender.tab?.id
+  const { action, assembly, assemblyType, metadata } = message.message
 
   try {
-    const chain = await getStoredChain();
-    const jwt = await getJwt();
+    const chain = await getStoredChain()
+    const jwt = await getJwt()
     if (!jwt?.id_token) {
-      const error = 'No valid JWT found. Please re-authenticate.';
+      const error = 'No valid JWT found. Please re-authenticate.'
       if (senderTabId != null) {
         chrome.tabs
           .sendMessage(senderTabId, {
@@ -30,16 +30,16 @@ async function handleSponsoredTransaction(
             id: message.id,
           })
           .catch((err) => {
-            log.error('Failed to send error message to tab', err);
-          });
+            log.error('Failed to send error message to tab', err)
+          })
       } else {
-        log.warn('No sender tab id, cannot send JWT error to page', { error });
+        log.warn('No sender tab id, cannot send JWT error to page', { error })
       }
-      return true;
+      return true
     }
 
     if (!assembly || !assemblyType) {
-      throw new Error(`Assembly not found: ${assembly}, ${assemblyType}`);
+      throw new Error(`Assembly not found: ${assembly}, ${assemblyType}`)
     }
 
     log.info('Eve Frontier sponsored transaction request received', {
@@ -48,20 +48,20 @@ async function handleSponsoredTransaction(
       assemblyType,
       chain,
       metadata,
-    });
+    })
 
     if (metadata) {
       log.info('Sponsored transaction metadata', {
         name: metadata?.name,
         description: metadata?.description,
         url: metadata?.url,
-      });
+      })
     }
 
-    const encodedAssemblyType = encodeURIComponent(assemblyType);
-    const encodedAction = encodeURIComponent(action);
+    const encodedAssemblyType = encodeURIComponent(assemblyType)
+    const encodedAction = encodeURIComponent(action)
 
-    const { apiBaseUrl, tenant } = getApiContext(jwt.id_token);
+    const { apiBaseUrl, tenant } = getApiContext(jwt.id_token)
 
     const response = await fetch(
       `${apiBaseUrl}/transactions/sponsored/${encodedAssemblyType}/${encodedAction}`,
@@ -79,13 +79,13 @@ async function handleSponsoredTransaction(
           Authorization: `Bearer ${jwt.id_token}`,
         },
       },
-    );
+    )
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch txb: ${response.statusText}`);
+      throw new Error(`Failed to fetch txb: ${response.statusText}`)
     }
 
-    const raw = await response.json();
+    const raw = await response.json()
     if (
       raw == null ||
       typeof raw !== 'object' ||
@@ -94,16 +94,16 @@ async function handleSponsoredTransaction(
     ) {
       throw new Error(
         'Sponsored tx API returned invalid shape: expected { bcsDataB64Bytes: string, preparationId: string }',
-      );
+      )
     }
-    const sponsoredTxReturn = raw as SponsoredTxReturn;
+    const sponsoredTxReturn = raw as SponsoredTxReturn
 
     const actionType =
-      WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION;
-    const windowId = await openPopupWindow(actionType);
+      WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION
+    const windowId = await openPopupWindow(actionType)
 
     if (!windowId) {
-      throw new Error('Failed to open sponsored transaction popup');
+      throw new Error('Failed to open sponsored transaction popup')
     }
 
     await chrome.storage.local.set({
@@ -117,26 +117,26 @@ async function handleSponsoredTransaction(
         preparationId: sponsoredTxReturn.preparationId,
         chain,
       },
-    });
+    })
 
-    let timeoutId: ReturnType<typeof setTimeout>;
+    let timeoutId: ReturnType<typeof setTimeout>
     let registeredListener: (changes: {
-      [key: string]: chrome.storage.StorageChange;
-    }) => void;
+      [key: string]: chrome.storage.StorageChange
+    }) => void
 
     const detachSponsoredListener = () => {
-      clearTimeout(timeoutId);
-      chrome.storage.onChanged.removeListener(registeredListener);
-    };
+      clearTimeout(timeoutId)
+      chrome.storage.onChanged.removeListener(registeredListener)
+    }
 
     const coreListener = (changes: {
-      [key: string]: chrome.storage.StorageChange;
+      [key: string]: chrome.storage.StorageChange
     }) => {
-      const result = changes.transactionResult?.newValue;
-      if (!result || result.windowId !== windowId) return;
+      const result = changes.transactionResult?.newValue
+      if (!result || result.windowId !== windowId) return
 
-      detachSponsoredListener();
-      chrome.storage.local.remove(['pendingAction', 'transactionResult']);
+      detachSponsoredListener()
+      chrome.storage.local.remove(['pendingAction', 'transactionResult'])
 
       if (
         result.status === 'signed' &&
@@ -144,7 +144,7 @@ async function handleSponsoredTransaction(
         result.preparationId != null &&
         senderTabId != null
       ) {
-        (async () => {
+        ;(async () => {
           try {
             const executeResponse = await fetch(
               `${apiBaseUrl}/transactions/sponsored/execute`,
@@ -160,39 +160,39 @@ async function handleSponsoredTransaction(
                   Authorization: `Bearer ${jwt.id_token}`,
                 },
               },
-            );
+            )
 
             if (!executeResponse.ok) {
               throw new Error(
                 `Sponsored execute failed: ${executeResponse.status} ${executeResponse.statusText}`,
-              );
+              )
             }
 
             const executeResult = (await executeResponse.json()) as {
-              digest?: string;
-              effects?: string;
-              [key: string]: unknown;
-            };
-            const digest = executeResult.digest ?? '0x0';
-            const effects = executeResult.effects ?? '0x0';
+              digest?: string
+              effects?: string
+              [key: string]: unknown
+            }
+            const digest = executeResult.digest ?? '0x0'
+            const effects = executeResult.effects ?? '0x0'
 
             await chrome.tabs.sendMessage(senderTabId, {
               type: 'sign_success',
               digest,
               effects,
               id: message.id,
-            });
+            })
           } catch (err) {
-            log.error('Sponsored execute failed', err);
+            log.error('Sponsored execute failed', err)
             const errorMessage =
-              err instanceof Error ? err.message : 'Unknown error occurred';
+              err instanceof Error ? err.message : 'Unknown error occurred'
             await chrome.tabs.sendMessage(senderTabId, {
               type: 'sign_sponsored_transaction_error',
               error: errorMessage,
               id: message.id,
-            });
+            })
           }
-        })();
+        })()
       } else if (result.status === 'error' && senderTabId != null) {
         chrome.tabs
           .sendMessage(senderTabId, {
@@ -201,34 +201,34 @@ async function handleSponsoredTransaction(
             id: message.id,
           })
           .catch((err) => {
-            log.error('Failed to send error message to tab', err);
-          });
+            log.error('Failed to send error message to tab', err)
+          })
       }
-    };
+    }
 
     registeredListener = (changes: {
-      [key: string]: chrome.storage.StorageChange;
+      [key: string]: chrome.storage.StorageChange
     }) => {
-      clearTimeout(timeoutId);
-      coreListener(changes);
-    };
+      clearTimeout(timeoutId)
+      coreListener(changes)
+    }
 
     timeoutId = setTimeout(
       () => {
-        detachSponsoredListener();
-        chrome.storage.local.remove(['pendingAction', 'transactionResult']);
-        log.warn('Sponsored transaction approval timed out', { senderTabId });
+        detachSponsoredListener()
+        chrome.storage.local.remove(['pendingAction', 'transactionResult'])
+        log.warn('Sponsored transaction approval timed out', { senderTabId })
       },
       10 * 60 * 1000,
-    );
+    )
 
-    chrome.storage.onChanged.addListener(registeredListener);
+    chrome.storage.onChanged.addListener(registeredListener)
 
-    return true;
+    return true
   } catch (error) {
-    log.error('Transaction signing failed', error);
+    log.error('Transaction signing failed', error)
     const errorMessage =
-      error instanceof Error ? error.message : 'Unknown error occurred';
+      error instanceof Error ? error.message : 'Unknown error occurred'
     if (senderTabId != null) {
       chrome.tabs
         .sendMessage(senderTabId, {
@@ -237,15 +237,15 @@ async function handleSponsoredTransaction(
           id: message.id,
         })
         .catch((err) => {
-          log.error('Failed to send error message to tab', err);
-        });
+          log.error('Failed to send error message to tab', err)
+        })
     } else {
       log.warn('No sender tab id, cannot send error to page', {
         error: errorMessage,
-      });
+      })
     }
-    return true;
+    return true
   }
 }
 
-export { handleSponsoredTransaction };
+export { handleSponsoredTransaction }

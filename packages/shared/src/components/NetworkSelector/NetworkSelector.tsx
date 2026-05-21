@@ -1,16 +1,16 @@
-import { SUI_LOCALNET_CHAIN, type SuiChain } from '@mysten/wallet-standard';
-import type React from 'react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Dropdown } from '#/components/Dropdown';
-import Icon from '#/components/Icon';
-import Text from '#/components/Text';
-import { useContext } from '#/hooks';
-import type { NetworkSelectorProps } from '#/types';
-import { getAvailableNetworks } from '#/types';
-import { createLogger, isExtension } from '#/utils';
-import './NetworkSelector.css';
+import { SUI_LOCALNET_CHAIN, type SuiChain } from '@mysten/wallet-standard'
+import type React from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Dropdown } from '#/components/Dropdown'
+import Icon from '#/components/Icon'
+import Text from '#/components/Text'
+import { useContext } from '#/hooks'
+import type { NetworkSelectorProps } from '#/types'
+import { getAvailableNetworks } from '#/types'
+import { createLogger, isExtension } from '#/utils'
+import './NetworkSelector.css'
 
-const log = createLogger();
+const log = createLogger()
 
 export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
   chain,
@@ -20,53 +20,53 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
   onRequiresReauth,
   onLocalnetSelected,
 }) => {
-  const { setChain, forceSetChain, loading, devMode } = useContext();
+  const { setChain, forceSetChain, loading, devMode } = useContext()
 
-  const [isOpen, setIsOpen] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [isOpen, setIsOpen] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
+  const triggerRef = useRef<HTMLButtonElement>(null)
 
-  const isExtensionContext = isExtension();
+  const isExtensionContext = isExtension()
 
   const availableNetworks = useMemo(
     () => getAvailableNetworks(devMode, isExtensionContext),
     [devMode, isExtensionContext],
-  );
+  )
 
   // If the persisted chain is no longer in availableNetworks (e.g. localnet persisted
   // but dev mode was toggled off), reset to the first available network.
   useEffect(() => {
     if (!availableNetworks.find((n) => n.chain === chain)) {
-      forceSetChain(availableNetworks[0].chain);
+      forceSetChain(availableNetworks[0].chain)
     }
-  }, [availableNetworks, chain, forceSetChain]);
+  }, [availableNetworks, chain, forceSetChain])
 
   const handleNetworkSelect = useCallback(
     async (targetChain: SuiChain) => {
       if (targetChain === chain) {
-        setIsOpen(false);
-        return;
+        setIsOpen(false)
+        return
       }
 
-      setIsOpen(false);
-      setIsProcessing(true);
+      setIsOpen(false)
+      setIsProcessing(true)
 
       try {
-        const result = await setChain(targetChain);
+        const result = await setChain(targetChain)
 
         if (!result.success) {
-          log.error('Failed to switch network');
+          log.error('Failed to switch network')
         } else if (result.requiresReauth) {
-          onNetworkSwitchStart?.(chain, targetChain);
-          onRequiresReauth?.(targetChain);
+          onNetworkSwitchStart?.(chain, targetChain)
+          onRequiresReauth?.(targetChain)
         } else if (targetChain === SUI_LOCALNET_CHAIN && isExtensionContext) {
-          await onLocalnetSelected?.();
+          await onLocalnetSelected?.()
         }
-        setIsProcessing(false);
+        setIsProcessing(false)
       } catch (error) {
-        log.error('Failed to switch network', error);
+        log.error('Failed to switch network', error)
       } finally {
-        setIsProcessing(false);
+        setIsProcessing(false)
       }
     },
     [
@@ -77,15 +77,15 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
       onLocalnetSelected,
       isExtensionContext,
     ],
-  );
+  )
 
   const currentNetwork = useMemo(
     () =>
       availableNetworks.find((n) => n.chain === chain) ?? availableNetworks[0],
     [availableNetworks, chain],
-  );
+  )
 
-  const isDisabled = loading || isProcessing;
+  const isDisabled = loading || isProcessing
 
   return (
     <div
@@ -170,7 +170,7 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
         </Dropdown>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default NetworkSelector;
+export default NetworkSelector

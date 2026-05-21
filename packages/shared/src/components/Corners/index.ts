@@ -1,2 +1,2 @@
-export type { CornersColor, CornersProps } from '#/types';
-export { Corners, default } from './Corners';
+export type { CornersColor, CornersProps } from '#/types'
+export { Corners, default } from './Corners'

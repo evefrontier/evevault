@@ -1,30 +1,30 @@
-import { createLogger } from '@evevault/shared/utils';
-import type { MessageWithId } from '@/lib/background/types';
-import { handleDappLogin } from './auth/dappLogin';
-import { handleExtLogin } from './auth/extLogin';
+import { createLogger } from '@evevault/shared/utils'
+import type { MessageWithId } from '@/lib/background/types'
+import { handleDappLogin } from './auth/dappLogin'
+import { handleExtLogin } from './auth/extLogin'
 import {
   clearPendingAuth,
   getPending,
   getPendingAndClear,
   sendPendingAuthError,
-} from './auth/pendingAuth';
-import { handleWebUnlock } from './auth/webUnlock';
+} from './auth/pendingAuth'
+import { handleWebUnlock } from './auth/webUnlock'
 
-const log = createLogger();
+const log = createLogger()
 
 if (typeof chrome !== 'undefined' && chrome.windows?.onRemoved) {
   chrome.windows.onRemoved.addListener((removedWindowId) => {
-    const pending = getPending();
+    const pending = getPending()
     if (pending?.windowId === removedWindowId) {
-      clearPendingAuth();
-      sendPendingAuthError(pending);
+      clearPendingAuth()
+      sendPendingAuthError(pending)
     }
-  });
+  })
 }
 
 export function checkPendingAuthAfterUnlock(): void {
-  const pending = getPendingAndClear();
-  if (!pending) return;
+  const pending = getPendingAndClear()
+  if (!pending) return
   if (pending.type === 'ext') {
     handleExtLogin(
       {
@@ -35,8 +35,8 @@ export function checkPendingAuthAfterUnlock(): void {
       undefined as unknown as chrome.runtime.MessageSender,
       () => {},
     ).catch((error) => {
-      log.error('Failed to resume extension login after unlock', error);
-    });
+      log.error('Failed to resume extension login after unlock', error)
+    })
   } else if (pending.tabId !== undefined) {
     handleDappLogin(
       {
@@ -48,9 +48,9 @@ export function checkPendingAuthAfterUnlock(): void {
       () => {},
       pending.tabId,
     ).catch((error) => {
-      log.error('Failed to resume dapp login after unlock', error);
-    });
+      log.error('Failed to resume dapp login after unlock', error)
+    })
   }
 }
 
-export { handleDappLogin, handleExtLogin, handleWebUnlock };
+export { handleDappLogin, handleExtLogin, handleWebUnlock }

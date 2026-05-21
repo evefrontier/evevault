@@ -1,52 +1,52 @@
-import { TenantId } from '@evefrontier/dapp-kit/utils';
-import type { TenantConfig } from '#/types';
-import { TENANT_KEYS } from './constants';
-import { isWeb } from './environment';
+import { TenantId } from '@evefrontier/dapp-kit/utils'
+import type { TenantConfig } from '#/types'
+import { TENANT_KEYS } from './constants'
+import { isWeb } from './environment'
 
-export const DEFAULT_TENANT_ID = TenantId.STILLNESS;
+export const DEFAULT_TENANT_ID = TenantId.STILLNESS
 
-const KNOWN_TENANT_IDS: TenantId[] = Object.keys(TENANT_KEYS) as TenantId[];
+const KNOWN_TENANT_IDS: TenantId[] = Object.keys(TENANT_KEYS) as TenantId[]
 
 function normalizeOrigin(url: string): string {
-  return url.replace(/\/$/, '');
+  return url.replace(/\/$/, '')
 }
 
 function isWebProduction(): boolean {
-  if (!isWeb()) return false;
+  if (!isWeb()) return false
   const nodeEnv =
     typeof globalThis !== 'undefined' &&
     (globalThis as { process?: { env?: { NODE_ENV?: string } } }).process?.env
-      ?.NODE_ENV;
+      ?.NODE_ENV
   const importMetaMode =
     typeof import.meta !== 'undefined' &&
-    (import.meta as { env?: { MODE?: string } }).env?.MODE;
-  const mode = nodeEnv ?? importMetaMode;
-  return mode === 'production';
+    (import.meta as { env?: { MODE?: string } }).env?.MODE
+  const mode = nodeEnv ?? importMetaMode
+  return mode === 'production'
 }
 
 function getDefaultConfig(): TenantConfig {
-  return TENANT_KEYS[DEFAULT_TENANT_ID];
+  return TENANT_KEYS[DEFAULT_TENANT_ID]
 }
 
 /**
  * Returns FusionAuth client config for the given tenant.
  */
 export function getTenantConfig(tenantId: TenantId): TenantConfig {
-  const defaultConfig = getDefaultConfig();
+  const defaultConfig = getDefaultConfig()
 
   if (tenantId === DEFAULT_TENANT_ID) {
-    return defaultConfig;
+    return defaultConfig
   }
 
   if (!TENANT_KEYS[tenantId].clientSecret) {
-    throw Error(`Tenant "${tenantId}" has no client secret`);
+    throw Error(`Tenant "${tenantId}" has no client secret`)
   }
 
-  return TENANT_KEYS[tenantId];
+  return TENANT_KEYS[tenantId]
 }
 
 export function getDefaultTenantId(): TenantId {
-  return DEFAULT_TENANT_ID;
+  return DEFAULT_TENANT_ID
 }
 
 /**
@@ -58,24 +58,24 @@ export function getDefaultTenantId(): TenantId {
  * If the URL does not match the server URL for the tenant, the tenant is not included.
  */
 export function getAvailableTenantIds(devMode = false): TenantId[] {
-  const ids: TenantId[] = [DEFAULT_TENANT_ID];
+  const ids: TenantId[] = [DEFAULT_TENANT_ID]
 
   for (const id of KNOWN_TENANT_IDS) {
-    if (id === DEFAULT_TENANT_ID) continue;
-    const clientSecret = TENANT_KEYS[id].clientSecret;
-    if (!clientSecret?.trim()) continue;
-    if (!devMode && TENANT_KEYS[id].isDev) continue;
-    ids.push(id);
+    if (id === DEFAULT_TENANT_ID) continue
+    const clientSecret = TENANT_KEYS[id].clientSecret
+    if (!clientSecret?.trim()) continue
+    if (!devMode && TENANT_KEYS[id].isDev) continue
+    ids.push(id)
   }
 
   if (isWebProduction() && typeof window !== 'undefined') {
-    const origin = normalizeOrigin(window.location.origin);
+    const origin = normalizeOrigin(window.location.origin)
     return ids.filter(
       (id) => normalizeOrigin(TENANT_KEYS[id].webOrigin) === origin,
-    );
+    )
   }
 
-  return ids;
+  return ids
 }
 
 /**
@@ -86,7 +86,7 @@ export function isAvailableTenantId(
   value: string,
   devMode?: boolean,
 ): value is TenantId {
-  return getAvailableTenantIds(devMode ?? false).includes(value as TenantId);
+  return getAvailableTenantIds(devMode ?? false).includes(value as TenantId)
 }
 
 /** Display labels for server (tenant) ids in the UI. "default" shows as "Utopia" (server name). */
@@ -97,7 +97,7 @@ const TENANT_LABELS: Record<TenantId, string> = {
   tesseract: 'Tesseract',
   tetra: 'Tetra',
   tiaki: 'Tiaki',
-};
+}
 
 /**
  * Returns the display label for a tenant id (e.g. "utopia" -> "Utopia").
@@ -107,5 +107,5 @@ export function getTenantLabel(tenantId: TenantId): string {
   return (
     TENANT_LABELS[tenantId as TenantId] ??
     tenantId.charAt(0).toUpperCase() + tenantId.slice(1)
-  );
+  )
 }

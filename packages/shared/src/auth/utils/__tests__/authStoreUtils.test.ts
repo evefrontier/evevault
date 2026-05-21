@@ -1,59 +1,59 @@
-import { UnsecuredJWT } from 'jose';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { JwtResponse } from '#/types/authTypes';
+import { UnsecuredJWT } from 'jose'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { JwtResponse } from '#/types/authTypes'
 
 vi.mock('#/auth/getZkLoginAddress', () => ({
   getZkLoginAddress: vi.fn(),
-}));
+}))
 
 vi.mock('#/auth/storageService', () => ({
   getJwt: vi.fn(),
-}));
+}))
 
 vi.mock('#/auth/stores/authStore', () => ({
   getEnokiApiKey: vi.fn(() => 'test-enoki-key'),
-}));
+}))
 
-import { getZkLoginAddress } from '#/auth/getZkLoginAddress';
-import { getJwt } from '#/auth/storageService';
+import { getZkLoginAddress } from '#/auth/getZkLoginAddress'
+import { getJwt } from '#/auth/storageService'
 import {
   getUserForNetwork,
   isErrorWithMessage,
   resolveExpiresAt,
-} from '#/auth/utils/authStoreUtils';
+} from '#/auth/utils/authStoreUtils'
 
 describe('isErrorWithMessage', () => {
   it('returns true for object with string message', () => {
-    expect(isErrorWithMessage({ message: 'x' })).toBe(true);
-  });
+    expect(isErrorWithMessage({ message: 'x' })).toBe(true)
+  })
 
   it('returns false for null', () => {
-    expect(isErrorWithMessage(null)).toBe(false);
-  });
+    expect(isErrorWithMessage(null)).toBe(false)
+  })
 
   it('returns false when message is not a string', () => {
-    expect(isErrorWithMessage({ message: 1 })).toBe(false);
-  });
+    expect(isErrorWithMessage({ message: 1 })).toBe(false)
+  })
 
   it('returns false when message property is missing', () => {
-    expect(isErrorWithMessage({})).toBe(false);
-  });
-});
+    expect(isErrorWithMessage({})).toBe(false)
+  })
+})
 
 describe('resolveExpiresAt', () => {
   beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date('2025-06-01T12:00:00.000Z'));
-  });
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2025-06-01T12:00:00.000Z'))
+  })
 
   afterEach(() => {
-    vi.useRealTimers();
-  });
+    vi.useRealTimers()
+  })
 
   // JWT with iat=1748779000 but no exp
   const tokenWithIat = new UnsecuredJWT({ sub: 'u1' })
     .setIssuedAt(1748779000)
-    .encode();
+    .encode()
 
   it('uses expires_at when present', () => {
     expect(
@@ -65,8 +65,8 @@ describe('resolveExpiresAt', () => {
         token_type: 'Bearer',
         expires_at: 1_900_000_000,
       }),
-    ).toBe(1_900_000_000);
-  });
+    ).toBe(1_900_000_000)
+  })
 
   it('uses iat + expires_in when expires_at absent', () => {
     expect(
@@ -77,8 +77,8 @@ describe('resolveExpiresAt', () => {
         scope: 's',
         token_type: 'Bearer',
       }),
-    ).toBe(1748779000 + 120);
-  });
+    ).toBe(1748779000 + 120)
+  })
 
   it('falls back to iat when expires_at and expires_in are not usable numbers', () => {
     expect(
@@ -88,25 +88,25 @@ describe('resolveExpiresAt', () => {
         scope: 's',
         token_type: 'Bearer',
       } as JwtResponse),
-    ).toBe(1748779000);
-  });
-});
+    ).toBe(1748779000)
+  })
+})
 
 describe('getUserForNetwork', () => {
   // JWT with iat=1748779000 but no exp
   const tokenWithClaims = new UnsecuredJWT({ sub: 'u1', aud: 'aud1' })
     .setIssuedAt(1748779000)
-    .encode();
+    .encode()
 
   beforeEach(() => {
-    vi.clearAllMocks();
-  });
+    vi.clearAllMocks()
+  })
 
   it('returns null when no JWT for chain', async () => {
-    vi.mocked(getJwt).mockResolvedValue(null);
-    await expect(getUserForNetwork('sui:testnet')).resolves.toBeNull();
-    expect(getZkLoginAddress).not.toHaveBeenCalled();
-  });
+    vi.mocked(getJwt).mockResolvedValue(null)
+    await expect(getUserForNetwork('sui:testnet')).resolves.toBeNull()
+    expect(getZkLoginAddress).not.toHaveBeenCalled()
+  })
 
   it('returns null when JWT has no id_token', async () => {
     vi.mocked(getJwt).mockResolvedValue({
@@ -115,10 +115,10 @@ describe('getUserForNetwork', () => {
       expires_in: 3600,
       scope: 's',
       token_type: 'Bearer',
-    });
-    await expect(getUserForNetwork('sui:testnet')).resolves.toBeNull();
-    expect(getZkLoginAddress).not.toHaveBeenCalled();
-  });
+    })
+    await expect(getUserForNetwork('sui:testnet')).resolves.toBeNull()
+    expect(getZkLoginAddress).not.toHaveBeenCalled()
+  })
 
   it('returns null when zkLogin returns error', async () => {
     vi.mocked(getJwt).mockResolvedValue({
@@ -127,13 +127,13 @@ describe('getUserForNetwork', () => {
       expires_in: 3600,
       scope: 's',
       token_type: 'Bearer',
-    });
+    })
     vi.mocked(getZkLoginAddress).mockResolvedValue({
       data: undefined,
       error: { message: 'enoki failed' },
-    });
-    await expect(getUserForNetwork('sui:testnet')).resolves.toBeNull();
-  });
+    })
+    await expect(getUserForNetwork('sui:testnet')).resolves.toBeNull()
+  })
 
   it('returns null when zkLogin has no data', async () => {
     vi.mocked(getJwt).mockResolvedValue({
@@ -142,13 +142,13 @@ describe('getUserForNetwork', () => {
       expires_in: 3600,
       scope: 's',
       token_type: 'Bearer',
-    });
+    })
     vi.mocked(getZkLoginAddress).mockResolvedValue({
       data: undefined,
       error: undefined,
-    });
-    await expect(getUserForNetwork('sui:testnet')).resolves.toBeNull();
-  });
+    })
+    await expect(getUserForNetwork('sui:testnet')).resolves.toBeNull()
+  })
 
   it('returns User when zkLogin succeeds', async () => {
     vi.mocked(getJwt).mockResolvedValue({
@@ -158,7 +158,7 @@ describe('getUserForNetwork', () => {
       scope: 'openid',
       token_type: 'Bearer',
       expires_at: 2_000_000_000,
-    });
+    })
     vi.mocked(getZkLoginAddress).mockResolvedValue({
       data: {
         address: '0xsui',
@@ -166,13 +166,13 @@ describe('getUserForNetwork', () => {
         publicKey: 'pk',
       },
       error: undefined,
-    });
+    })
 
-    const user = await getUserForNetwork('sui:testnet');
-    expect(user).not.toBeNull();
-    expect(user?.id_token).toBe(tokenWithClaims);
-    expect(user?.profile?.sui_address).toBe('0xsui');
-    expect(user?.profile?.salt).toBe('99');
-    expect(user?.expires_at).toBe(2_000_000_000);
-  });
-});
+    const user = await getUserForNetwork('sui:testnet')
+    expect(user).not.toBeNull()
+    expect(user?.id_token).toBe(tokenWithClaims)
+    expect(user?.profile?.sui_address).toBe('0xsui')
+    expect(user?.profile?.salt).toBe('99')
+    expect(user?.expires_at).toBe(2_000_000_000)
+  })
+})

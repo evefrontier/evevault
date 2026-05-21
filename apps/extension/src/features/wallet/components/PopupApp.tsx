@@ -1,15 +1,15 @@
-import './PopupApp.css';
-import type { TenantId } from '@evefrontier/dapp-kit';
+import './PopupApp.css'
+import type { TenantId } from '@evefrontier/dapp-kit'
 import {
   getAvailableTenantIds,
   getCurrentTenantId,
   switchTenantAndReload,
-} from '@evevault/shared';
+} from '@evevault/shared'
 import {
   redirectToFusionAuthLogout,
   resetVaultOnDevice,
   useAuth,
-} from '@evevault/shared/auth';
+} from '@evevault/shared/auth'
 import {
   Button,
   HeaderMobile,
@@ -18,42 +18,42 @@ import {
   TenantSelector,
   Text,
   TokenListSection,
-} from '@evevault/shared/components';
-import Icon from '@evevault/shared/components/Icon';
-import { useContext, useDevice, useDevMode } from '@evevault/shared/hooks';
-import { LockScreen } from '@evevault/shared/screens';
-import { localnetKeyService } from '@evevault/shared/services/vaultService';
-import { getFaucetUrlForChain } from '@evevault/shared/sui';
+} from '@evevault/shared/components'
+import Icon from '@evevault/shared/components/Icon'
+import { useContext, useDevice, useDevMode } from '@evevault/shared/hooks'
+import { LockScreen } from '@evevault/shared/screens'
+import { localnetKeyService } from '@evevault/shared/services/vaultService'
+import { getFaucetUrlForChain } from '@evevault/shared/sui'
 import {
   createLogger,
   EXTENSION_ROUTES,
   getSuiscanUrl,
-} from '@evevault/shared/utils';
-import { useActiveSuiAddress, useBalance } from '@evevault/shared/wallet';
-import { useNavigate } from '@tanstack/react-router';
-import { useCallback, useMemo } from 'react';
-import { useAppInitialization, useLogin } from '@/features/wallet/hooks';
-import { APP_VERSION } from '@/lib/appVersion';
+} from '@evevault/shared/utils'
+import { useActiveSuiAddress, useBalance } from '@evevault/shared/wallet'
+import { useNavigate } from '@tanstack/react-router'
+import { useCallback, useMemo } from 'react'
+import { useAppInitialization, useLogin } from '@/features/wallet/hooks'
+import { APP_VERSION } from '@/lib/appVersion'
 
-const log = createLogger();
+const log = createLogger()
 
 function App() {
-  const navigate = useNavigate();
-  const { initError, isInitializing } = useAppInitialization();
-  const { devMode, setDevMode } = useContext();
-  const { user, loading: authLoading, error: authError } = useAuth();
+  const navigate = useNavigate()
+  const { initError, isInitializing } = useAppInitialization()
+  const { devMode, setDevMode } = useContext()
+  const { user, loading: authLoading, error: authError } = useAuth()
   const {
     isLocked,
     isPinSet,
     error: deviceError,
     unlock,
     localnetUrl,
-  } = useDevice();
-  const { chain } = useContext();
-  const faucetUrl = getFaucetUrlForChain(chain);
-  const { handleLogin } = useLogin();
-  const { handleTestTransaction, txDigest, handleRotateEphKey } = useDevMode();
-  const activeAddress = useActiveSuiAddress();
+  } = useDevice()
+  const { chain } = useContext()
+  const faucetUrl = getFaucetUrlForChain(chain)
+  const { handleLogin } = useLogin()
+  const { handleTestTransaction, txDigest, handleRotateEphKey } = useDevMode()
+  const activeAddress = useActiveSuiAddress()
 
   // Use TanStack Query for balance fetching
   useBalance({
@@ -61,21 +61,21 @@ function App() {
     chain: chain || null,
     address: activeAddress, // localnet address or zkLogin address
     localnetUrl,
-  });
+  })
 
   const availableTenantIds = useMemo(
     () => getAvailableTenantIds(devMode),
     [devMode],
-  );
-  const tenantId = getCurrentTenantId();
+  )
+  const tenantId = getCurrentTenantId()
 
   const handleDevModeToggle = useCallback(() => {
-    setDevMode(!devMode);
-  }, [devMode, setDevMode]);
+    setDevMode(!devMode)
+  }, [devMode, setDevMode])
 
   const onLoginClick = async () => {
-    await handleLogin();
-  };
+    await handleLogin()
+  }
 
   // Show loading state while initializing
   if (isInitializing) {
@@ -91,7 +91,7 @@ function App() {
           </header>
         </section>
       </div>
-    );
+    )
   }
 
   if (initError) {
@@ -110,7 +110,7 @@ function App() {
           </header>
         </section>
       </div>
-    );
+    )
   }
 
   if (isLocked) {
@@ -119,11 +119,11 @@ function App() {
         isPinSet={isPinSet}
         unlock={unlock}
         onResetComplete={() => {
-          redirectToFusionAuthLogout();
-          navigate({ to: '/' });
+          redirectToFusionAuthLogout()
+          navigate({ to: '/' })
         }}
       />
-    );
+    )
   }
 
   if (!user) {
@@ -152,10 +152,10 @@ function App() {
               type="button"
               onClick={async () => {
                 try {
-                  await resetVaultOnDevice();
-                  navigate({ to: '/' });
+                  await resetVaultOnDevice()
+                  navigate({ to: '/' })
                 } catch (error) {
-                  log.error('Failed to reset vault', error);
+                  log.error('Failed to reset vault', error)
                 }
               }}
               className="text-sm underline text-grey-neutral hover:text-neutral focus:outline-none focus:ring-2 focus:ring-primary rounded"
@@ -177,7 +177,7 @@ function App() {
           />
         </Button>
       </div>
-    );
+    )
   }
 
   // Authenticated view - show nav
@@ -225,21 +225,17 @@ function App() {
         <NetworkSelector
           chain={chain}
           onLocalnetSelected={async () => {
-            const addr = await localnetKeyService
-              .getAddress()
-              .catch(() => null);
+            const addr = await localnetKeyService.getAddress().catch(() => null)
             if (!addr) {
-              log.info(
-                'No localnet keypair found, navigating to settings page',
-              );
-              navigate({ to: EXTENSION_ROUTES.LOCALNET_SETTINGS });
+              log.info('No localnet keypair found, navigating to settings page')
+              navigate({ to: EXTENSION_ROUTES.LOCALNET_SETTINGS })
             }
           }}
           onNetworkSwitchStart={(previousNetwork, targetNetwork) => {
             log.info('Network switch started', {
               previousNetwork,
               targetNetwork,
-            });
+            })
           }}
         />
 
@@ -267,7 +263,7 @@ function App() {
         </Text>
       )}
     </div>
-  );
+  )
 }
 
-export default App;
+export default App
