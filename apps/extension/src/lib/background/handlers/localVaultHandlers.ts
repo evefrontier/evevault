@@ -1,8 +1,8 @@
-import { KeeperMessageTypes } from "@evevault/shared/types";
+import { KeeperMessageTypes } from '@evevault/shared/types';
 
-import type { VaultMessage } from "@/lib/background/types";
-import { writeEncryptedLocalnetKey } from "./localnetDeviceStorage";
-import { sendToKeeper } from "./vaultHandlers";
+import type { VaultMessage } from '@/lib/background/types';
+import { writeEncryptedLocalnetKey } from './localnetDeviceStorage';
+import { sendToKeeper } from './vaultHandlers';
 
 // ─── Localnet dev signing ────────────────────────────────────────────────────
 
@@ -34,7 +34,7 @@ export function _handleLocalnetSetKeypair(
     } catch (error) {
       sendResponse({
         ok: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   })();
@@ -87,13 +87,13 @@ export async function _handleLocalnetSignBytes(
     } else {
       sendResponse({
         ok: false,
-        error: response?.error ?? "localnet sign failed",
+        error: response?.error ?? 'localnet sign failed',
       });
     }
   } catch (error) {
     sendResponse({
       ok: false,
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
   return true;

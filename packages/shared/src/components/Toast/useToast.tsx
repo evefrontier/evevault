@@ -1,13 +1,13 @@
-import type React from "react";
+import type React from 'react';
 import {
   createContext,
   type ReactNode,
   useCallback,
   useContext,
   useState,
-} from "react";
-import type { ToastVariant } from "#/types/components";
-import { Toast } from "./Toast";
+} from 'react';
+import type { ToastVariant } from '#/types/components';
+import { Toast } from './Toast';
 
 type ToastState = {
   title: string;
@@ -22,8 +22,8 @@ function parseToastArgs(
   defaultDuration: number,
   messageOrDuration?: string | number,
   duration?: number,
-): Pick<ToastState, "title" | "message" | "duration"> {
-  if (typeof messageOrDuration === "number") {
+): Pick<ToastState, 'title' | 'message' | 'duration'> {
+  if (typeof messageOrDuration === 'number') {
     return { title, message: undefined, duration: messageOrDuration };
   }
   if (messageOrDuration !== undefined) {
@@ -54,11 +54,11 @@ interface ToastProviderProps {
 }
 
 const initialToastState: ToastState = {
-  title: "",
+  title: '',
   message: undefined,
   isVisible: false,
   duration: 3000,
-  variant: "default",
+  variant: 'default',
 };
 
 export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
@@ -69,7 +69,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
       setToast({
         ...parseToastArgs(title, 3000, messageOrDuration, duration),
         isVisible: true,
-        variant: "default",
+        variant: 'default',
       });
     },
     [],
@@ -80,7 +80,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
       setToast({
         ...parseToastArgs(title, 5000, messageOrDuration, duration),
         isVisible: true,
-        variant: "error",
+        variant: 'error',
       });
     },
     [],
@@ -108,7 +108,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
 export const useToast = (): ToastContextType => {
   const context = useContext(ToastContext);
   if (!context) {
-    throw new Error("useToast must be used within a ToastProvider");
+    throw new Error('useToast must be used within a ToastProvider');
   }
   return context;
 };

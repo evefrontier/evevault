@@ -1,5 +1,5 @@
-import type React from "react";
-import { useMemo } from "react";
+import type React from 'react';
+import { useMemo } from 'react';
 export interface JsonProps {
   value: string;
   className?: string;
@@ -10,7 +10,7 @@ export interface JsonProps {
 
 const Json: React.FC<JsonProps> = ({
   value,
-  className = "",
+  className = '',
   style,
   errorText,
   fallback,
@@ -20,11 +20,11 @@ const Json: React.FC<JsonProps> = ({
     error,
     prettyJson,
   } = useMemo(() => {
-    if (!value || value.trim() === "") {
+    if (!value || value.trim() === '') {
       return {
         parsed: null,
         error: null,
-        prettyJson: "",
+        prettyJson: '',
       };
     }
 
@@ -39,7 +39,7 @@ const Json: React.FC<JsonProps> = ({
     } catch (err) {
       return {
         parsed: null,
-        error: err instanceof Error ? err.message : "Invalid JSON",
+        error: err instanceof Error ? err.message : 'Invalid JSON',
         prettyJson: null,
       };
     }
@@ -47,7 +47,7 @@ const Json: React.FC<JsonProps> = ({
 
   const hasError = !!error || !!errorText;
   const displayText = hasError
-    ? errorText || error || "Invalid JSON"
+    ? errorText || error || 'Invalid JSON'
     : prettyJson;
   const shouldShowFallback = hasError && fallback !== undefined;
 
@@ -66,13 +66,13 @@ const Json: React.FC<JsonProps> = ({
   return (
     <pre
       className={computedClassName}
-      style={{ ...computedStyle, width: "80vw" }}
+      style={{ ...computedStyle, width: '80vw' }}
     >
       <code>{displayText}</code>
     </pre>
   );
 };
 
-Json.displayName = "Json";
+Json.displayName = 'Json';
 
 export default Json;

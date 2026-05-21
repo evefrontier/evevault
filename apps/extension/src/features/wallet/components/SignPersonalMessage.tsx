@@ -3,14 +3,14 @@ import {
   Heading,
   NetworkSelector,
   Text,
-} from "@evevault/shared/components";
-import type { PendingPersonalMessage } from "@evevault/shared/types";
-import { createLogger } from "@evevault/shared/utils";
-import { useWalletSigningContext } from "@evevault/shared/wallet";
-import { SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
-import { useEffect, useState } from "react";
-import { useSignPopupAuth } from "@/features/wallet/hooks";
-import { SignPopupAuthGate } from "./SignPopupAuthGate";
+} from '@evevault/shared/components';
+import type { PendingPersonalMessage } from '@evevault/shared/types';
+import { createLogger } from '@evevault/shared/utils';
+import { useWalletSigningContext } from '@evevault/shared/wallet';
+import { SUI_TESTNET_CHAIN } from '@mysten/wallet-standard';
+import { useEffect, useState } from 'react';
+import { useSignPopupAuth } from '@/features/wallet/hooks';
+import { SignPopupAuthGate } from './SignPopupAuthGate';
 
 const log = createLogger();
 
@@ -37,10 +37,10 @@ function toMessageBytes(
  */
 function decodeMessageBytes(bytes: Uint8Array): string {
   try {
-    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
   } catch (err) {
     log.warn(
-      "Failed to decode message bytes as UTF-8, falling back to byte count",
+      'Failed to decode message bytes as UTF-8, falling back to byte count',
       err,
     );
     return `[binary message, ${bytes.length} bytes]`;
@@ -58,23 +58,23 @@ function SignPersonalMessage() {
 
   useEffect(() => {
     // Retrieve the pending transaction from storage
-    chrome.storage.local.get("pendingAction").then((data) => {
+    chrome.storage.local.get('pendingAction').then((data) => {
       const pending = data.pendingAction;
       if (pending) {
         setPendingMessage(pending);
       } else {
-        setError("No pending message found");
+        setError('No pending message found');
       }
     });
   }, []);
 
   const handleSignPersonalMessage = async () => {
     if (!pendingMessage) {
-      log.error("No pending transaction found");
+      log.error('No pending transaction found');
       return;
     }
     if (!auth.user) {
-      log.error("No user found");
+      log.error('No user found');
       return;
     }
 
@@ -86,10 +86,10 @@ function SignPersonalMessage() {
 
       if (!isLocalnet) {
         if (!auth.ephemeralPublicKey) {
-          throw new Error("Ephemeral public key not found");
+          throw new Error('Ephemeral public key not found');
         }
         if (!auth.maxEpoch) {
-          throw new Error("Max epoch is not set");
+          throw new Error('Max epoch is not set');
         }
       }
 
@@ -97,28 +97,28 @@ function SignPersonalMessage() {
       // to a proper Uint8Array for signing
       const messageBytes = toMessageBytes(message);
 
-      log.debug("Signing personal message", { length: messageBytes.length });
+      log.debug('Signing personal message', { length: messageBytes.length });
 
-      const { bytes, signature } = await sign("PersonalMessage", messageBytes);
+      const { bytes, signature } = await sign('PersonalMessage', messageBytes);
 
       // Store the result in storage so the background handler can pick it up
       await chrome.storage.local.set({
         transactionResult: {
           windowId,
-          status: "signed",
+          status: 'signed',
           bytes,
           signature,
         },
       });
 
-      log.debug("Signed personal message");
+      log.debug('Signed personal message');
 
       // Close the popup window
       window.close();
     } catch (err) {
-      log.error("Transaction signing failed", err);
+      log.error('Transaction signing failed', err);
       const errorMessage =
-        err instanceof Error ? err.message : "Unknown error occurred";
+        err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
 
       // Store error result
@@ -126,7 +126,7 @@ function SignPersonalMessage() {
         await chrome.storage.local.set({
           transactionResult: {
             windowId: pendingMessage.windowId,
-            status: "error",
+            status: 'error',
             error: errorMessage,
           },
         });
@@ -144,16 +144,16 @@ function SignPersonalMessage() {
       await chrome.storage.local.set({
         transactionResult: {
           windowId: pendingMessage.windowId,
-          status: "error",
-          error: "Message signing rejected by user",
+          status: 'error',
+          error: 'Message signing rejected by user',
         },
       });
 
       // Close the popup window
       window.close();
     } catch (err) {
-      log.error("Failed to reject message signing", err);
-      setError("Failed to reject message signing");
+      log.error('Failed to reject message signing', err);
+      setError('Failed to reject message signing');
     }
   };
 
@@ -170,7 +170,7 @@ function SignPersonalMessage() {
       cancelDisabled={auth.loading || !pendingMessage}
     >
       {!pendingMessage ? (
-        <div style={{ padding: "20px" }}>
+        <div style={{ padding: '20px' }}>
           <Text>Loading message...</Text>
           {error && <Text color="error">Error: {error}</Text>}
         </div>
@@ -186,18 +186,18 @@ function SignPersonalMessage() {
             </div>
 
             {error && (
-              <div style={{ marginBottom: "20px" }}>
+              <div style={{ marginBottom: '20px' }}>
                 <Text color="error">Error: {error}</Text>
               </div>
             )}
 
-            <div style={{ display: "flex", gap: "10px" }}>
+            <div style={{ display: 'flex', gap: '10px' }}>
               <Button
                 onClick={handleSignPersonalMessage}
                 disabled={loading}
                 variant="primary"
               >
-                {loading ? "Signing..." : "Approve"}
+                {loading ? 'Signing...' : 'Approve'}
               </Button>
 
               <Button

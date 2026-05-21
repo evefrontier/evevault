@@ -1,15 +1,15 @@
-import type { User } from "oidc-client-ts";
-import { createLogger } from "#/utils";
+import type { User } from 'oidc-client-ts';
+import { createLogger } from '#/utils';
 import {
   buildUserFromOAuthResponse,
   persistEnrichedUser,
-} from "./authUserSession";
+} from './authUserSession';
 import {
   type AuthGet,
   type AuthSet,
   type GetUserManagerInstance,
   getErrorMessage,
-} from "./authWorkflowUtils";
+} from './authWorkflowUtils';
 
 const log = createLogger();
 
@@ -35,10 +35,10 @@ export async function loginExtensionSession(
     set({ user, loading: false });
     return user;
   } catch (error) {
-    log.error("Extension login failed", error);
+    log.error('Extension login failed', error);
     const errorMessage = error instanceof Error ? error.message : String(error);
 
-    if (errorMessage !== "The user did not approve access.") {
+    if (errorMessage !== 'The user did not approve access.') {
       set({ error: getErrorMessage(error) });
     }
 

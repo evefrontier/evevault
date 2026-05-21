@@ -1,21 +1,21 @@
-import type React from "react";
-import { useMemo } from "react";
-import { useAuth } from "#/auth";
+import type React from 'react';
+import { useMemo } from 'react';
+import { useAuth } from '#/auth';
 import {
   type DropdownItem,
   DropdownSelect,
   getIdenticon,
-} from "#/components/Dropdown";
-import Switch from "#/components/Switch";
-import Text from "#/components/Text";
-import { useCopyToClipboard, useDevice } from "#/hooks";
-import type { HeaderMobileProps, IconName } from "#/types";
-import { formatAddress } from "#/utils";
+} from '#/components/Dropdown';
+import Switch from '#/components/Switch';
+import Text from '#/components/Text';
+import { useCopyToClipboard, useDevice } from '#/hooks';
+import type { HeaderMobileProps, IconName } from '#/types';
+import { formatAddress } from '#/utils';
 
 export const HeaderMobile: React.FC<HeaderMobileProps> = ({
   address,
   email,
-  logoSrc = "/images/logo.png",
+  logoSrc = '/images/logo.png',
   identicon = 0,
   onTransactionsClick,
   showDevActions = false,
@@ -36,8 +36,8 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
     // 1. Dev mode toggle (optional) – top of list, row with switch
     if (onDevModeToggle) {
       items.push({
-        label: "Dev mode",
-        icon: "Settings" as IconName,
+        label: 'Dev mode',
+        icon: 'Settings' as IconName,
         onClick: () => {},
         preventCloseOnClick: true,
         customContent: (
@@ -56,8 +56,8 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
     // 2. Sign and submit test (only when dev mode on) – right under Dev mode
     if (showDevActions && onSignSubmitTxClick) {
       items.push({
-        label: "Sign and submit test",
-        icon: "ArrowRight" as IconName,
+        label: 'Sign and submit test',
+        icon: 'ArrowRight' as IconName,
         onClick: onSignSubmitTxClick,
       });
     }
@@ -65,8 +65,8 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
     // 3. Rotate eph key (only when dev mode on)
     if (showDevActions && onRotateEphKeyClick) {
       items.push({
-        label: "Rotate eph key",
-        icon: "Refresh" as IconName,
+        label: 'Rotate eph key',
+        icon: 'Refresh' as IconName,
         onClick: onRotateEphKeyClick,
       });
     }
@@ -74,8 +74,8 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
     // 4. Faucet test SUI (only when dev mode on)
     if (showDevActions && onFaucetTestSuiClick) {
       items.push({
-        label: "Faucet test SUI",
-        icon: "OpenWindow" as IconName,
+        label: 'Faucet test SUI',
+        icon: 'OpenWindow' as IconName,
         onClick: onFaucetTestSuiClick,
       });
     }
@@ -83,39 +83,39 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
     // 5. Localnet Settings (only when dev mode on)
     if (showDevActions && onLocalnetSettingsClick) {
       items.push({
-        label: "Localnet Settings",
-        icon: "Settings" as IconName,
+        label: 'Localnet Settings',
+        icon: 'Settings' as IconName,
         onClick: onLocalnetSettingsClick,
       });
     }
 
     // 6. Copy Address (always)
     items.push({
-      label: "Copy Address",
-      icon: "Copy" as IconName,
+      label: 'Copy Address',
+      icon: 'Copy' as IconName,
       onClick: () => copy(address),
     });
 
     // 7. Transaction History (optional)
     if (onTransactionsClick) {
       items.push({
-        label: "Transaction History",
-        icon: "History" as IconName,
+        label: 'Transaction History',
+        icon: 'History' as IconName,
         onClick: onTransactionsClick,
       });
     }
 
     // 8. Lock Wallet (always)
     items.push({
-      label: "Lock Wallet",
-      icon: "HideEye" as IconName,
+      label: 'Lock Wallet',
+      icon: 'HideEye' as IconName,
       onClick: lock,
     });
 
     // 9. Logout (always)
     items.push({
-      label: "Logout",
-      icon: "Close" as IconName,
+      label: 'Logout',
+      icon: 'Close' as IconName,
       onClick: logout,
     });
 
@@ -123,7 +123,7 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
     if (showDevActions && version) {
       items.push({
         label: `v${version}`,
-        icon: "Info" as IconName,
+        icon: 'Info' as IconName,
         onClick: () => {},
         preventCloseOnClick: true,
       });
@@ -155,7 +155,7 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
           alt="EVE Vault"
           className="w-auto"
           style={{
-            height: "clamp(3rem, calc(5rem - (500px - 100vw) * 0.08), 5rem)",
+            height: 'clamp(3rem, calc(5rem - (500px - 100vw) * 0.08), 5rem)',
           }}
         />
         <DropdownSelect

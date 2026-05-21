@@ -1,11 +1,11 @@
-import type React from "react";
-import { useEffect, useRef } from "react";
-import Button from "#/components/Button";
-import Text from "#/components/Text";
-import "./Modal.css";
-import Heading from "#/components/Heading";
+import type React from 'react';
+import { useEffect, useRef } from 'react';
+import Button from '#/components/Button';
+import Text from '#/components/Text';
+import './Modal.css';
+import Heading from '#/components/Heading';
 
-export type ModalSize = "small" | "medium" | "large" | "full";
+export type ModalSize = 'small' | 'medium' | 'large' | 'full';
 
 export interface ModalProps {
   isOpen: boolean;
@@ -39,9 +39,9 @@ export const Modal: React.FC<ModalProps> = ({
   children,
   primaryAction,
   secondaryAction,
-  className = "",
+  className = '',
   closeOnOverlayClick = true,
-  size = "small",
+  size = 'small',
   fullWidthActions = false,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
@@ -51,24 +51,24 @@ export const Modal: React.FC<ModalProps> = ({
     if (!isOpen || !onClose) return;
 
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
+      if (event.key === 'Escape') {
         onClose();
       }
     };
 
-    document.addEventListener("keydown", handleEscape);
-    return () => document.removeEventListener("keydown", handleEscape);
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen, onClose]);
 
   // Prevent body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = "hidden";
+      document.body.style.overflow = 'hidden';
     } else {
-      document.body.style.overflow = "";
+      document.body.style.overflow = '';
     }
     return () => {
-      document.body.style.overflow = "";
+      document.body.style.overflow = '';
     };
   }, [isOpen]);
 
@@ -86,13 +86,13 @@ export const Modal: React.FC<ModalProps> = ({
 
   const hasActions = primaryAction || secondaryAction;
   const sizeClass = `modal--${size}`;
-  const actionsClass = fullWidthActions ? "modal__actions--full" : "";
+  const actionsClass = fullWidthActions ? 'modal__actions--full' : '';
 
   return (
     <div
       className="modal__overlay"
       onClick={handleOverlayClick}
-      onKeyDown={(e) => e.key === "Escape" && onClose?.()}
+      onKeyDown={(e) => e.key === 'Escape' && onClose?.()}
       role="dialog"
       aria-modal="true"
     >
@@ -111,7 +111,7 @@ export const Modal: React.FC<ModalProps> = ({
               {secondaryAction && (
                 <Button
                   variant="secondary"
-                  size={fullWidthActions ? "fill" : "medium"}
+                  size={fullWidthActions ? 'fill' : 'medium'}
                   onClick={secondaryAction.onClick}
                   disabled={secondaryAction.disabled}
                 >
@@ -121,7 +121,7 @@ export const Modal: React.FC<ModalProps> = ({
               {primaryAction && (
                 <Button
                   variant="primary"
-                  size={fullWidthActions ? "fill" : "medium"}
+                  size={fullWidthActions ? 'fill' : 'medium'}
                   onClick={primaryAction.onClick}
                   isLoading={primaryAction.isLoading}
                   disabled={primaryAction.disabled}

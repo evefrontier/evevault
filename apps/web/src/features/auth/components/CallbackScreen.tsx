@@ -1,21 +1,21 @@
-import { getCurrentTenantId, OAuthTenantSessionKey } from "@evevault/shared";
+import { getCurrentTenantId, OAuthTenantSessionKey } from '@evevault/shared';
 import {
   getUserManager,
   getZkLoginAddress,
   useAuthStore,
-} from "@evevault/shared/auth";
-import { Heading, Text } from "@evevault/shared/components";
-import type { RoutePath } from "@evevault/shared/types";
+} from '@evevault/shared/auth';
+import { Heading, Text } from '@evevault/shared/components';
+import type { RoutePath } from '@evevault/shared/types';
 import {
   createLogger,
   getDevModeEnabled,
   isAvailableTenantId,
   SESSION_STORAGE_REDIRECT_KEY,
-} from "@evevault/shared/utils";
-import { useNavigate, useSearch } from "@tanstack/react-router";
-import { User } from "oidc-client-ts";
-import { useEffect, useState } from "react";
-import { isRoutePath } from "@/lib/routeUtils";
+} from '@evevault/shared/utils';
+import { useNavigate, useSearch } from '@tanstack/react-router';
+import { User } from 'oidc-client-ts';
+import { useEffect, useState } from 'react';
+import { isRoutePath } from '@/lib/routeUtils';
 
 const log = createLogger();
 
@@ -25,7 +25,7 @@ let callbackExchangeStarted = false;
 export const CallbackScreen = () => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  const _search = useSearch({ from: "/callback" });
+  const _search = useSearch({ from: '/callback' });
 
   useEffect(() => {
     if (callbackExchangeStarted) {
@@ -38,11 +38,11 @@ export const CallbackScreen = () => {
         const redirectAfterLogin = sessionStorage.getItem(
           SESSION_STORAGE_REDIRECT_KEY,
         );
-        sessionStorage.removeItem("evevault_redirect_after_login");
+        sessionStorage.removeItem('evevault_redirect_after_login');
         const tenantId =
           sessionStorage.getItem(OAuthTenantSessionKey) ?? getCurrentTenantId();
         sessionStorage.removeItem(OAuthTenantSessionKey);
-        const fallbackRoute: RoutePath = "/wallet";
+        const fallbackRoute: RoutePath = '/wallet';
         const redirectTo = redirectAfterLogin || fallbackRoute;
 
         const devMode = await getDevModeEnabled();
@@ -54,7 +54,7 @@ export const CallbackScreen = () => {
         const user = await userManager.signinRedirectCallback();
 
         if (!user?.id_token) {
-          throw new Error("Failed to authenticate");
+          throw new Error('Failed to authenticate');
         }
 
         // Get zkLogin address
@@ -68,7 +68,7 @@ export const CallbackScreen = () => {
         }
 
         if (!zkLoginResponse.data) {
-          throw new Error("No zkLogin address data received");
+          throw new Error('No zkLogin address data received');
         }
 
         const { salt, address } = zkLoginResponse.data;
@@ -86,16 +86,16 @@ export const CallbackScreen = () => {
         await userManager.storeUser(updatedUser);
         useAuthStore.getState().setUser(updatedUser);
 
-        log.info("FusionAuth callback successful");
+        log.info('FusionAuth callback successful');
         const destination = isRoutePath(redirectTo)
           ? redirectTo
           : fallbackRoute;
         navigate({ to: destination });
       } catch (err) {
-        log.error("OAuth callback error", err);
-        setError(err instanceof Error ? err.message : "Authentication failed");
+        log.error('OAuth callback error', err);
+        setError(err instanceof Error ? err.message : 'Authentication failed');
         setTimeout(() => {
-          navigate({ to: "/" });
+          navigate({ to: '/' });
         }, 3000);
       } finally {
         callbackExchangeStarted = false;

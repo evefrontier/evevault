@@ -1,20 +1,20 @@
-import type { SuiChain } from "@mysten/wallet-standard";
+import type { SuiChain } from '@mysten/wallet-standard';
 
 export const NETWORKS = {
   devnet: {
-    fullnodeUrl: "https://fullnode.devnet.sui.io",
-    faucetUrl: "https://faucet.sui.io/?network=devnet",
+    fullnodeUrl: 'https://fullnode.devnet.sui.io',
+    faucetUrl: 'https://faucet.sui.io/?network=devnet',
   },
   testnet: {
-    fullnodeUrl: "https://fullnode.testnet.sui.io",
-    faucetUrl: "https://faucet.sui.io/?network=testnet",
+    fullnodeUrl: 'https://fullnode.testnet.sui.io',
+    faucetUrl: 'https://faucet.sui.io/?network=testnet',
   },
   mainnet: {
-    fullnodeUrl: "https://fullnode.mainnet.sui.io",
+    fullnodeUrl: 'https://fullnode.mainnet.sui.io',
     faucetUrl: null,
   },
   localnet: {
-    fullnodeUrl: "",
+    fullnodeUrl: '',
     faucetUrl: null,
   },
 } as const;
@@ -28,8 +28,8 @@ type NetworkKey = keyof typeof NETWORKS;
 export function getFaucetUrlForChain(
   chain: SuiChain | null | undefined,
 ): string | null {
-  if (!chain || typeof chain !== "string") return null;
-  const key = chain.replace(/^sui:/, "") as NetworkKey;
+  if (!chain || typeof chain !== 'string') return null;
+  const key = chain.replace(/^sui:/, '') as NetworkKey;
   const config = NETWORKS[key];
   return config?.faucetUrl ?? null;
 }

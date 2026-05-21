@@ -1,10 +1,10 @@
-import type { SponsoredTransactionMetadata } from "@evefrontier/dapp-kit/types";
-import type { OAuthTokenResponse } from "@evevault/shared/types";
+import type { SponsoredTransactionMetadata } from '@evefrontier/dapp-kit/types';
+import type { OAuthTokenResponse } from '@evevault/shared/types';
 import type {
   StandardEventsOnMethod,
   SuiSignAndExecuteTransactionOutput,
   SuiWalletFeatures,
-} from "@mysten/wallet-standard";
+} from '@mysten/wallet-standard';
 
 export type WalletActionMessage = BackgroundMessage & {
   id?: string;
@@ -46,18 +46,18 @@ export type WalletEventListener = Parameters<StandardEventsOnMethod>[1];
 
 export type SignAndExecuteTransactionMessage =
   | {
-      type: "sign_and_execute_transaction_success";
+      type: 'sign_and_execute_transaction_success';
       result: SuiSignAndExecuteTransactionOutput;
     }
   | {
-      type: "sign_and_execute_transaction_error";
+      type: 'sign_and_execute_transaction_error';
       error: string;
     };
 
 /* EveFrontierSponsoredTransactions custom types */
 
 export const EVEFRONTIER_SPONSORED_TRANSACTION =
-  "evefrontier:sponsoredTransaction" as const;
+  'evefrontier:sponsoredTransaction' as const;
 
 export type EveFrontierSponsoredTransactionInput = {
   txAction: string;
@@ -77,7 +77,7 @@ export type EveFrontierSponsoredTransactionMethod = (
 
 export type EveVaultWalletFeatures = SuiWalletFeatures & {
   [EVEFRONTIER_SPONSORED_TRANSACTION]: {
-    version: "1.0.1";
+    version: '1.0.1';
     signSponsoredTransaction: EveFrontierSponsoredTransactionMethod;
   };
 };

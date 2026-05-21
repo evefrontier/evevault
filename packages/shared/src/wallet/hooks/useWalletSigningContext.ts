@@ -1,17 +1,17 @@
-import type { IntentScope } from "@mysten/sui/cryptography";
-import { useCallback, useMemo } from "react";
-import { getUserForNetwork } from "#/auth";
-import { useAuth } from "#/auth/hooks/useAuth";
-import { useDevice } from "#/hooks/useDevice";
-import { useContextStore } from "#/stores/contextStore";
-import { useDeviceStore } from "#/stores/deviceStore";
-import { createSuiClient } from "#/sui";
-import { isLocalnetChain } from "#/types/networks";
-import type { ZkSignAnyParams } from "#/types/wallet";
-import { signForChain } from "#/wallet/signForChain";
-import { useLocalnetAddress } from "./useLocalnetAddress";
+import type { IntentScope } from '@mysten/sui/cryptography';
+import { useCallback, useMemo } from 'react';
+import { getUserForNetwork } from '#/auth';
+import { useAuth } from '#/auth/hooks/useAuth';
+import { useDevice } from '#/hooks/useDevice';
+import { useContextStore } from '#/stores/contextStore';
+import { useDeviceStore } from '#/stores/deviceStore';
+import { createSuiClient } from '#/sui';
+import { isLocalnetChain } from '#/types/networks';
+import type { ZkSignAnyParams } from '#/types/wallet';
+import { signForChain } from '#/wallet/signForChain';
+import { useLocalnetAddress } from './useLocalnetAddress';
 
-export type WalletSigningMode = "localnet" | "zklogin";
+export type WalletSigningMode = 'localnet' | 'zklogin';
 
 export function useWalletSigningContext() {
   const { user } = useAuth();
@@ -54,7 +54,7 @@ export function useWalletSigningContext() {
         user: zkLoginUser,
         getZkProof: isLocalnet
           ? null
-          : (getZkProof as ZkSignAnyParams["getZkProof"]),
+          : (getZkProof as ZkSignAnyParams['getZkProof']),
         localnetAddress,
       });
     },
@@ -68,7 +68,7 @@ export function useWalletSigningContext() {
   return {
     chain,
     localnetUrl,
-    mode: (isLocalnet ? "localnet" : "zklogin") as WalletSigningMode,
+    mode: (isLocalnet ? 'localnet' : 'zklogin') as WalletSigningMode,
     isLocalnet,
     isAuthenticated: !!user,
     isWalletUnlocked,

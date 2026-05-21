@@ -1,10 +1,10 @@
-import type { TenantId } from "@evefrontier/dapp-kit/utils";
-import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
-import { chromeStorageAdapter, localStorageAdapter } from "#/adapters";
-import { getUserManager, redirectToFusionAuthLogout } from "#/auth/authConfig";
-import { clearZkLoginAddressCache } from "#/auth/getZkLoginAddress";
-import { clearAllJwts } from "#/auth/storageService";
+import type { TenantId } from '@evefrontier/dapp-kit/utils';
+import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { chromeStorageAdapter, localStorageAdapter } from '#/adapters';
+import { getUserManager, redirectToFusionAuthLogout } from '#/auth/authConfig';
+import { clearZkLoginAddressCache } from '#/auth/getZkLoginAddress';
+import { clearAllJwts } from '#/auth/storageService';
 import {
   clearAuthSession,
   createExtensionAuthListener,
@@ -15,13 +15,13 @@ import {
   initializeWebSession,
   loginExtensionSession,
   loginWebSession,
-} from "#/auth/stores/authStoreWorkflows";
-import type { AuthState } from "#/auth/types";
-import { zkProofService } from "#/services/vaultService";
-import { useContextStore } from "#/stores";
-import { getCurrentTenantId, setCurrentTenantId } from "#/stores/tenantStore";
-import { createLogger, isExtension, isWeb, performFullCleanup } from "#/utils";
-import { AUTH_STORAGE_KEY } from "#/utils/storageKeys";
+} from '#/auth/stores/authStoreWorkflows';
+import type { AuthState } from '#/auth/types';
+import { zkProofService } from '#/services/vaultService';
+import { useContextStore } from '#/stores';
+import { getCurrentTenantId, setCurrentTenantId } from '#/stores/tenantStore';
+import { createLogger, isExtension, isWeb, performFullCleanup } from '#/utils';
+import { AUTH_STORAGE_KEY } from '#/utils/storageKeys';
 
 // biome-ignore lint/suspicious/noExplicitAny: chrome is a global object
 declare const chrome: any;
@@ -47,7 +47,7 @@ export const useAuthStore = create<AuthState>()(
 
           try {
             const user =
-              isExtension() && typeof chrome !== "undefined"
+              isExtension() && typeof chrome !== 'undefined'
                 ? await initializeExtensionSession(
                     getUserManagerInstance,
                     network,
@@ -56,7 +56,7 @@ export const useAuthStore = create<AuthState>()(
 
             set({ user, loading: false });
           } catch (error) {
-            log.error("Error initializing auth", error);
+            log.error('Error initializing auth', error);
             set({
               user: null,
               loading: false,
@@ -81,7 +81,7 @@ export const useAuthStore = create<AuthState>()(
         extensionLogin: async () => {
           return new Promise((resolve, reject) => {
             if (!isExtension()) {
-              reject(new Error("Extension APIs unavailable in this context"));
+              reject(new Error('Extension APIs unavailable in this context'));
               return;
             }
 
@@ -93,7 +93,7 @@ export const useAuthStore = create<AuthState>()(
             );
             chrome.runtime?.onMessage?.addListener(authSuccessListener);
             chrome.runtime?.sendMessage?.({
-              action: "ext_login",
+              action: 'ext_login',
               id: id,
               tenantId: getCurrentTenantId(),
             });
@@ -104,7 +104,7 @@ export const useAuthStore = create<AuthState>()(
           try {
             await clearAuthSession(set, getUserManagerInstance);
 
-            if (isExtension() && typeof chrome !== "undefined") {
+            if (isExtension() && typeof chrome !== 'undefined') {
               finishExtensionLogout();
             } else {
               // For web, just redirect to home - FusionAuth session can remain
@@ -114,7 +114,7 @@ export const useAuthStore = create<AuthState>()(
               window.location.href = window.location.origin;
             }
           } catch (error) {
-            log.error("Error during logout cleanup", error);
+            log.error('Error during logout cleanup', error);
             set({
               user: null,
               error: getErrorMessage(error),
@@ -140,12 +140,12 @@ export const useAuthStore = create<AuthState>()(
       onRehydrateStorage: () => {
         return async (state, error) => {
           if (error) {
-            log.error("Error rehydrating auth store", error);
+            log.error('Error rehydrating auth store', error);
             return;
           }
 
           if (state) {
-            log.debug("Rehydrated auth store", state);
+            log.debug('Rehydrated auth store', state);
           }
         };
       },
@@ -169,7 +169,7 @@ export async function runTenantSwitchCleanup(
     useAuthStore.getState().setUser(null);
     await zkProofService.clear();
   } catch (error) {
-    log.error("Error during tenant switch cleanup", error);
+    log.error('Error during tenant switch cleanup', error);
   }
 }
 
@@ -186,7 +186,7 @@ export async function switchTenantAndReload(
   await runTenantSwitchCleanup(current);
   await setCurrentTenantId(newTenantId as TenantId);
 
-  if (isWeb() && typeof window !== "undefined") {
+  if (isWeb() && typeof window !== 'undefined') {
     window.location.reload();
   }
 }
@@ -215,6 +215,6 @@ function initializeEventListeners() {
   getUserManager(getCurrentTenantId());
 }
 
-if (typeof window !== "undefined") {
+if (typeof window !== 'undefined') {
   queueMicrotask(initializeEventListeners);
 }

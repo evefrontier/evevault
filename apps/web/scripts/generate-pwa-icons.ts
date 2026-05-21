@@ -4,17 +4,17 @@
  * Run from repo root: bun run apps/web/scripts/generate-pwa-icons.ts
  * Or from apps/web: bun run scripts/generate-pwa-icons.ts
  */
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
-import sharp from "sharp";
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import sharp from 'sharp';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const appsWeb = join(__dirname, "..");
-const repoRoot = join(appsWeb, "../..");
-const webIconDir = join(appsWeb, "public", "icon");
-const extIconDir = join(repoRoot, "apps", "extension", "public", "icon");
-const sourceSvg = join(webIconDir, "logo.svg");
+const appsWeb = join(__dirname, '..');
+const repoRoot = join(appsWeb, '../..');
+const webIconDir = join(appsWeb, 'public', 'icon');
+const extIconDir = join(repoRoot, 'apps', 'extension', 'public', 'icon');
+const sourceSvg = join(webIconDir, 'logo.svg');
 
 const WEB_SIZES = [16, 32, 192, 512] as const;
 const EXT_SIZES = [16, 32, 48, 96, 128] as const;
@@ -48,7 +48,7 @@ async function main() {
     console.log(`Wrote ${outPath}`);
   }
 
-  console.log("Web and extension icons generated.");
+  console.log('Web and extension icons generated.');
 }
 
 main().catch((err) => {

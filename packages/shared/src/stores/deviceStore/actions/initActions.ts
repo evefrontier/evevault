@@ -1,24 +1,24 @@
-import { generateNonce, generateRandomness } from "@mysten/sui/zklogin";
-import type { SuiChain } from "@mysten/wallet-standard";
-import { clearAllZkLoginJwts } from "#/auth/storageService";
-import { ephKeyService, zkProofService } from "#/services/vaultService";
-import { createInitialNetworkData } from "#/stores/deviceStore/constants";
-import { resolveStoredSecretKey } from "#/stores/deviceStore/keyHelpers";
-import { getCurrentEpochFromGraphQL } from "#/sui/graphqlEpoch";
-import { getCurrentEpochFromRpc } from "#/sui/rpcEpoch";
+import { generateNonce, generateRandomness } from '@mysten/sui/zklogin';
+import type { SuiChain } from '@mysten/wallet-standard';
+import { clearAllZkLoginJwts } from '#/auth/storageService';
+import { ephKeyService, zkProofService } from '#/services/vaultService';
+import { createInitialNetworkData } from '#/stores/deviceStore/constants';
+import { resolveStoredSecretKey } from '#/stores/deviceStore/keyHelpers';
+import { getCurrentEpochFromGraphQL } from '#/sui/graphqlEpoch';
+import { getCurrentEpochFromRpc } from '#/sui/rpcEpoch';
 import type {
   DeviceState,
   NetworkDataEntry,
   PersistedDeviceStore,
   PersistedDeviceStoreState,
   StoredSecretKey,
-} from "#/types";
-import { isLocalnetChain, isZkLoginSuiChain } from "#/types/networks";
-import { createWebCryptoPlaceholder } from "#/types/wallet";
-import { isWeb } from "#/utils/environment";
-import { createLogger } from "#/utils/logger";
-import { DEVICE_STORAGE_KEY } from "#/utils/storageKeys";
-import type { GetDeviceState, SetDeviceState } from "./types";
+} from '#/types';
+import { isLocalnetChain, isZkLoginSuiChain } from '#/types/networks';
+import { createWebCryptoPlaceholder } from '#/types/wallet';
+import { isWeb } from '#/utils/environment';
+import { createLogger } from '#/utils/logger';
+import { DEVICE_STORAGE_KEY } from '#/utils/storageKeys';
+import type { GetDeviceState, SetDeviceState } from './types';
 
 const log = createLogger();
 
@@ -37,7 +37,7 @@ export function createInitActions(set: SetDeviceState, get: GetDeviceState) {
   const initializeLocalnetChainData = async () => {
     const localnetUrl = get().localnet.url;
     if (!localnetUrl) {
-      log.warn("Localnet URL not configured, skipping epoch fetch");
+      log.warn('Localnet URL not configured, skipping epoch fetch');
       set({
         localnet: {
           ...get().localnet,
@@ -61,7 +61,7 @@ export function createInitActions(set: SetDeviceState, get: GetDeviceState) {
         error: null,
       });
     } catch (err) {
-      log.error("Failed to fetch localnet epoch", err);
+      log.error('Failed to fetch localnet epoch', err);
       set({
         localnet: {
           ...get().localnet,
@@ -77,7 +77,7 @@ export function createInitActions(set: SetDeviceState, get: GetDeviceState) {
     if (!isZkLoginSuiChain(chain)) return;
     const ephemeralPubkey = get().ephemeralPublicKey;
     if (!ephemeralPubkey) {
-      throw new Error("Ephemeral public key not found");
+      throw new Error('Ephemeral public key not found');
     }
 
     const jwtRandomness = generateRandomness().toString();
@@ -104,7 +104,7 @@ export function createInitActions(set: SetDeviceState, get: GetDeviceState) {
 
       if (!pin || pin.trim().length === 0) {
         set({
-          error: "PIN is required",
+          error: 'PIN is required',
           loading: false,
         });
         return;
@@ -136,7 +136,7 @@ export function createInitActions(set: SetDeviceState, get: GetDeviceState) {
           const hasExistingKeypair = await ephKeyService.hasKeypair();
 
           if (hasExistingKeypair) {
-            log.info("[web] Found existing encrypted keypair in IndexedDB");
+            log.info('[web] Found existing encrypted keypair in IndexedDB');
             const publicKey = await ephKeyService.unlockVault(null, pin);
 
             if (publicKey) {
@@ -158,7 +158,7 @@ export function createInitActions(set: SetDeviceState, get: GetDeviceState) {
             }
           }
 
-          log.info("[web] Creating new Secp256r1 keypair (encrypted with PIN)");
+          log.info('[web] Creating new Secp256r1 keypair (encrypted with PIN)');
           const { publicKey } = await ephKeyService.createEphemeralKeyPair(pin);
 
           set({
@@ -187,7 +187,7 @@ export function createInitActions(set: SetDeviceState, get: GetDeviceState) {
           storedSecretKey &&
           Date.now() < maxEpochTimestampMs
         ) {
-          log.debug("Device store already initialized, skipping re-init");
+          log.debug('Device store already initialized, skipping re-init');
           set({ loading: false });
           return;
         }
@@ -209,14 +209,14 @@ export function createInitActions(set: SetDeviceState, get: GetDeviceState) {
             try {
               let persistedDeviceStoreState: PersistedDeviceStoreState | null =
                 null;
-              if (typeof persistedDeviceStore === "string") {
+              if (typeof persistedDeviceStore === 'string') {
                 persistedDeviceStoreState =
                   (JSON.parse(persistedDeviceStore) as PersistedDeviceStore)
                     .state ?? null;
               } else if (
-                typeof persistedDeviceStore === "object" &&
+                typeof persistedDeviceStore === 'object' &&
                 persistedDeviceStore !== null &&
-                "state" in persistedDeviceStore
+                'state' in persistedDeviceStore
               ) {
                 persistedDeviceStoreState =
                   (persistedDeviceStore as PersistedDeviceStore).state ?? null;
@@ -236,7 +236,7 @@ export function createInitActions(set: SetDeviceState, get: GetDeviceState) {
                 );
 
                 if (jwtRandomness && storedSecretKey) {
-                  log.debug("Rehydrating device store from persisted data");
+                  log.debug('Rehydrating device store from persisted data');
                   set({
                     ephemeralKeyPairSecretKey: storedSecretKey,
                     networkData:
@@ -248,7 +248,7 @@ export function createInitActions(set: SetDeviceState, get: GetDeviceState) {
                 }
               }
             } catch (parseError) {
-              log.error("Error parsing persisted device store", parseError);
+              log.error('Error parsing persisted device store', parseError);
             }
           }
         }
@@ -256,15 +256,15 @@ export function createInitActions(set: SetDeviceState, get: GetDeviceState) {
         const needsNewKeyPair = !storedSecretKey || !ephemeralKeyPairSecretKey;
 
         if (needsNewKeyPair) {
-          log.info("No existing ephemeral key pair found, creating new one");
+          log.info('No existing ephemeral key pair found, creating new one');
           const { hashedSecretKey, publicKey } =
             await ephKeyService.createEphemeralKeyPair(pin);
 
           if (!hashedSecretKey || !publicKey) {
-            throw new Error("Failed to create ephemeral key pair");
+            throw new Error('Failed to create ephemeral key pair');
           }
 
-          log.debug("Created new ephemeral key pair");
+          log.debug('Created new ephemeral key pair');
           set({
             ephemeralPublicKey: publicKey,
             ephemeralPublicKeyBytes: Array.from(publicKey.toRawBytes()),
@@ -272,7 +272,7 @@ export function createInitActions(set: SetDeviceState, get: GetDeviceState) {
             ephemeralKeyPairSecretKey: hashedSecretKey,
           });
         } else {
-          log.info("Existing ephemeral key pair found, unlocking vault");
+          log.info('Existing ephemeral key pair found, unlocking vault');
           await ephKeyService.unlockVault(storedSecretKey, pin);
           const refreshedPublicKey =
             await ephKeyService.getEphemeralPublicKey();
@@ -291,7 +291,7 @@ export function createInitActions(set: SetDeviceState, get: GetDeviceState) {
         const finalPublicKey = get().ephemeralPublicKey;
         if (!finalPublicKey) {
           throw new Error(
-            "Ephemeral public key not available after initialization",
+            'Ephemeral public key not available after initialization',
           );
         }
 
@@ -299,7 +299,7 @@ export function createInitActions(set: SetDeviceState, get: GetDeviceState) {
           ? {
               maxEpoch: get().localnet.maxEpoch,
               maxEpochTimestampMs: get().localnet.maxEpochTimestampMs,
-              nonce: "localnet",
+              nonce: 'localnet',
             }
           : isZkLoginSuiChain(currentChain)
             ? get().networkData[currentChain]
@@ -312,7 +312,7 @@ export function createInitActions(set: SetDeviceState, get: GetDeviceState) {
           !currentDeviceData?.maxEpoch ||
           isExpired
         ) {
-          log.info("Initializing device store for chain", {
+          log.info('Initializing device store for chain', {
             chain: currentChain,
           });
           await get().initializeForChain(currentChain);
@@ -322,16 +322,16 @@ export function createInitActions(set: SetDeviceState, get: GetDeviceState) {
           isLocked: false,
         });
       } catch (error) {
-        log.error("Error handling private key", error);
+        log.error('Error handling private key', error);
         set({
-          error: error instanceof Error ? error.message : "Unknown error",
+          error: error instanceof Error ? error.message : 'Unknown error',
           loading: false,
         });
       }
     },
 
     initializeForChain: async (chain: SuiChain) => {
-      log.info("Generating device data for chain", { chain });
+      log.info('Generating device data for chain', { chain });
 
       if (isLocalnetChain(chain)) {
         await initializeLocalnetChainData();
@@ -342,7 +342,7 @@ export function createInitActions(set: SetDeviceState, get: GetDeviceState) {
     },
 
     rotateEphemeralKey: async (currentChain: SuiChain) => {
-      log.info("Rotating ephemeral key", { currentChain });
+      log.info('Rotating ephemeral key', { currentChain });
 
       // Clear derived state before generating the new key. If rotateEphemeralKeyPair()
       // subsequently fails, JWTs and proofs are already cleared but the key is unchanged;
@@ -368,6 +368,6 @@ export function createInitActions(set: SetDeviceState, get: GetDeviceState) {
     },
   } satisfies Pick<
     DeviceState,
-    "initialize" | "initializeForChain" | "rotateEphemeralKey"
+    'initialize' | 'initializeForChain' | 'rotateEphemeralKey'
   >;
 }

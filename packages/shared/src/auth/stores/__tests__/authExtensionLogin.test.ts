@@ -1,5 +1,5 @@
-import { User, type UserManager } from "oidc-client-ts";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { User, type UserManager } from 'oidc-client-ts';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const h = vi.hoisted(() => ({
   mockStoreUser: vi.fn(),
@@ -8,15 +8,15 @@ const h = vi.hoisted(() => ({
   mockDecodeJwt: vi.fn(),
 }));
 
-vi.mock("#/auth/userJwtSync", () => ({
+vi.mock('#/auth/userJwtSync', () => ({
   enrichUserWithZkLoginIfNeeded: (...args: unknown[]) =>
     h.mockEnrichUser(...args),
   syncPrimaryJwtFromUser: (...args: unknown[]) => h.mockSyncPrimaryJwt(...args),
 }));
-vi.mock("#/auth/utils/authStoreUtils", () => ({
+vi.mock('#/auth/utils/authStoreUtils', () => ({
   resolveExpiresAt: vi.fn(),
 }));
-vi.mock("#/utils", () => ({
+vi.mock('#/utils', () => ({
   createLogger: () => ({
     debug: vi.fn(),
     info: vi.fn(),
@@ -25,22 +25,22 @@ vi.mock("#/utils", () => ({
   }),
   isBrowser: () => true,
 }));
-vi.mock("jose", () => ({
+vi.mock('jose', () => ({
   decodeJwt: (...args: unknown[]) => h.mockDecodeJwt(...args),
 }));
 
-import { loginExtensionSession } from "#/auth/stores/authExtensionLogin";
+import { loginExtensionSession } from '#/auth/stores/authExtensionLogin';
 import type {
   AuthGet,
   AuthSet,
   GetUserManagerInstance,
-} from "#/auth/stores/authWorkflowUtils";
-import type { AuthState } from "#/auth/types";
-import { MOCK_ID_TOKEN_CLAIMS, makeTokenResponse } from "./authStoreTestMocks";
+} from '#/auth/stores/authWorkflowUtils';
+import type { AuthState } from '#/auth/types';
+import { MOCK_ID_TOKEN_CLAIMS, makeTokenResponse } from './authStoreTestMocks';
 
 type AuthSetMock = AuthSet & ReturnType<typeof vi.fn>;
 
-describe("authExtensionLogin()", () => {
+describe('authExtensionLogin()', () => {
   let mockSet: AuthSetMock;
   let mockGet: AuthGet;
   let mockGetUserManager: GetUserManagerInstance;
@@ -63,8 +63,8 @@ describe("authExtensionLogin()", () => {
     vi.clearAllMocks();
   });
 
-  describe("Success path", () => {
-    it("builds user, persists enriched user, sets { user, loading: false }", async () => {
+  describe('Success path', () => {
+    it('builds user, persists enriched user, sets { user, loading: false }', async () => {
       const user = await loginExtensionSession(
         mockGet,
         mockSet,
@@ -84,8 +84,8 @@ describe("authExtensionLogin()", () => {
     });
   });
 
-  describe("Rejection paths", () => {
-    it("resolves undefined or null: sets { loading: false }, returns undefined", async () => {
+  describe('Rejection paths', () => {
+    it('resolves undefined or null: sets { loading: false }, returns undefined', async () => {
       mockExtensionLogin.mockResolvedValue(null);
 
       const user = await loginExtensionSession(
@@ -102,7 +102,7 @@ describe("authExtensionLogin()", () => {
 
     it("rejection with 'The user did not approve access.'", async () => {
       mockExtensionLogin.mockRejectedValue(
-        new Error("The user did not approve access."),
+        new Error('The user did not approve access.'),
       );
 
       const user = await loginExtensionSession(
@@ -121,8 +121,8 @@ describe("authExtensionLogin()", () => {
       expect(h.mockSyncPrimaryJwt).not.toHaveBeenCalled();
     });
 
-    it("rejection with another Error: sets error to that message", async () => {
-      mockExtensionLogin.mockRejectedValue(new Error("Another error"));
+    it('rejection with another Error: sets error to that message', async () => {
+      mockExtensionLogin.mockRejectedValue(new Error('Another error'));
 
       const user = await loginExtensionSession(
         mockGet,
@@ -131,14 +131,14 @@ describe("authExtensionLogin()", () => {
       );
 
       expect(user).toBeUndefined();
-      expect(mockSet).toHaveBeenCalledWith({ error: "Another error" });
+      expect(mockSet).toHaveBeenCalledWith({ error: 'Another error' });
       expect(mockSet).toHaveBeenCalledWith({ loading: false });
       expect(h.mockStoreUser).not.toHaveBeenCalled();
       expect(h.mockSyncPrimaryJwt).not.toHaveBeenCalled();
     });
 
     it("rejection with non-Error: sets error to 'Unknown error'", async () => {
-      mockExtensionLogin.mockRejectedValue("Another error");
+      mockExtensionLogin.mockRejectedValue('Another error');
 
       const user = await loginExtensionSession(
         mockGet,
@@ -147,7 +147,7 @@ describe("authExtensionLogin()", () => {
       );
 
       expect(user).toBeUndefined();
-      expect(mockSet).toHaveBeenCalledWith({ error: "Unknown error" });
+      expect(mockSet).toHaveBeenCalledWith({ error: 'Unknown error' });
       expect(mockSet).toHaveBeenCalledWith({ loading: false });
       expect(h.mockStoreUser).not.toHaveBeenCalled();
       expect(h.mockSyncPrimaryJwt).not.toHaveBeenCalled();

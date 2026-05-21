@@ -6,10 +6,10 @@ import type {
   LoggerFn,
   LogLevel,
   StackFrame,
-} from "./logger.types";
+} from './logger.types';
 
-const LOG_LEVELS: LogLevel[] = ["silent", "error", "warn", "info", "debug"];
-const LOGGER_SOURCE_HINTS = ["logger.ts", "logger.js", "logger.mjs"];
+const LOG_LEVELS: LogLevel[] = ['silent', 'error', 'warn', 'info', 'debug'];
+const LOGGER_SOURCE_HINTS = ['logger.ts', 'logger.js', 'logger.mjs'];
 
 const isLogLevel = (value?: string | null): value is LogLevel => {
   if (!value) {
@@ -21,7 +21,7 @@ const isLogLevel = (value?: string | null): value is LogLevel => {
 
 const getImportMetaEnv = (): Record<string, string> | undefined => {
   try {
-    return typeof import.meta !== "undefined"
+    return typeof import.meta !== 'undefined'
       ? ((
           import.meta as ImportMeta & {
             env?: Record<string, string>;
@@ -62,24 +62,24 @@ const resolveEnvLogLevel = (): LogLevel => {
 
   const envMode = importMetaEnv?.MODE ?? processEnv?.NODE_ENV;
 
-  if (envMode === "production") {
-    return "error";
+  if (envMode === 'production') {
+    return 'error';
   }
 
-  if (envMode === "test") {
-    return "warn";
+  if (envMode === 'test') {
+    return 'warn';
   }
 
-  return "debug";
+  return 'debug';
 };
 
 const normalizeSeparators = (path: string): string => {
-  return path.replace(/\\/g, "/");
+  return path.replace(/\\/g, '/');
 };
 
 const stripOrigin = (path: string): string => {
-  if (typeof window !== "undefined" && window.location?.origin) {
-    return path.replace(window.location.origin, "");
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return path.replace(window.location.origin, '');
   }
 
   return path;
@@ -88,7 +88,7 @@ const stripOrigin = (path: string): string => {
 const stripWorkspaceRoot = (path: string): string => {
   try {
     const globalProcess = getProcessObject();
-    if (globalProcess && typeof globalProcess.cwd === "function") {
+    if (globalProcess && typeof globalProcess.cwd === 'function') {
       const cwd = normalizeSeparators(globalProcess.cwd());
       if (path.startsWith(cwd)) {
         return path.slice(cwd.length);
@@ -102,13 +102,13 @@ const stripWorkspaceRoot = (path: string): string => {
 
 const sanitizeFilePath = (path: string): string => {
   if (!path) {
-    return "";
+    return '';
   }
 
   let cleaned = normalizeSeparators(path);
   cleaned = cleaned.replace(
     /^webpack-internal:\/\/\/|^vite:\/\/|^file:\/\//,
-    "",
+    '',
   );
   cleaned = stripOrigin(cleaned);
   cleaned = stripWorkspaceRoot(cleaned);
@@ -143,13 +143,13 @@ const getCallerFrameFromStack = (stack?: string): StackFrame | undefined => {
     return undefined;
   }
 
-  const lines = stack.split("\n").slice(1);
+  const lines = stack.split('\n').slice(1);
   for (const rawLine of lines) {
     const line = rawLine.trim();
     if (
       !line ||
       LOGGER_SOURCE_HINTS.some((hint) => line.includes(hint)) ||
-      line.includes("node:internal")
+      line.includes('node:internal')
     ) {
       continue;
     }
@@ -169,7 +169,7 @@ const deriveScopeFromPath = (filePath?: string): string | undefined => {
   }
 
   const cleaned = sanitizeFilePath(filePath);
-  const segments = cleaned.split("/").filter(Boolean);
+  const segments = cleaned.split('/').filter(Boolean);
 
   if (segments.length === 0) {
     return undefined;
@@ -180,7 +180,7 @@ const deriveScopeFromPath = (filePath?: string): string | undefined => {
     return undefined;
   }
   const parent = segments.pop();
-  const baseName = fileName.replace(/\.[^.]+$/, "");
+  const baseName = fileName.replace(/\.[^.]+$/, '');
 
   return parent ? `${parent}/${baseName}` : baseName;
 };
@@ -191,9 +191,9 @@ const getLocationLabel = (frame?: StackFrame): string | undefined => {
   }
 
   const cleaned = sanitizeFilePath(frame.filePath);
-  const parts = cleaned.split("/").filter(Boolean);
+  const parts = cleaned.split('/').filter(Boolean);
   const shortPath =
-    parts.length > 2 ? parts.slice(-2).join("/") : parts.join("/") || cleaned;
+    parts.length > 2 ? parts.slice(-2).join('/') : parts.join('/') || cleaned;
 
   if (!shortPath) {
     return undefined;
@@ -268,17 +268,17 @@ export const createLogger = ({
 
       const finalArgs =
         prefixParts.length > 0
-          ? ([prefixParts.join(" "), ...args] as unknown[])
+          ? ([prefixParts.join(' '), ...args] as unknown[])
           : args;
 
       method.apply(console, finalArgs);
     };
 
   return {
-    debug: log("debug", "debug"),
-    info: log("info", "info"),
-    warn: log("warn", "warn"),
-    error: log("error", "error"),
+    debug: log('debug', 'debug'),
+    info: log('info', 'info'),
+    warn: log('warn', 'warn'),
+    error: log('error', 'error'),
     child: (childScope: string) => {
       const nestedScope =
         resolvedScope && resolvedScope.length > 0
@@ -295,4 +295,4 @@ export const createLogger = ({
  */
 export const logger = createLogger();
 
-export type { CreateLoggerOptions, Logger, LogLevel } from "./logger.types";
+export type { CreateLoggerOptions, Logger, LogLevel } from './logger.types';

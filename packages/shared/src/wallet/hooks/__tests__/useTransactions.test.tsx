@@ -1,32 +1,32 @@
-import { SUI_DEVNET_CHAIN } from "@mysten/wallet-standard";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { renderHook, waitFor } from "@testing-library/react";
-import type { ReactNode } from "react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { SUI_DEVNET_CHAIN } from '@mysten/wallet-standard';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { renderHook, waitFor } from '@testing-library/react';
+import type { ReactNode } from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockGraphQLQuery = vi.fn();
 
 // Mock the GraphQL client
-vi.mock("#/sui/graphqlClient", () => ({
+vi.mock('#/sui/graphqlClient', () => ({
   createSuiGraphQLClient: vi.fn(() => ({
     query: mockGraphQLQuery,
   })),
 }));
 
 // Mock the queries module for TRANSACTIONS_QUERY
-vi.mock("#/wallet/queries/transactions", () => ({
-  TRANSACTIONS_QUERY: "mocked-query",
+vi.mock('#/wallet/queries/transactions', () => ({
+  TRANSACTIONS_QUERY: 'mocked-query',
 }));
 
 // Mock the types/graphql module
-vi.mock("#/wallet/types/graphql", () => ({
+vi.mock('#/wallet/types/graphql', () => ({
   GraphQLBalanceChange: {},
   GraphQLTransactionNode: {},
   TransactionsQueryResponse: {},
   TransactionPage: {},
 }));
 
-vi.mock("#/utils", () => ({
+vi.mock('#/utils', () => ({
   formatByDecimals: vi.fn((value: string) => {
     // Simple mock: divide by 10^9 for SUI
     const num = Number(value) / 1_000_000_000;
@@ -38,14 +38,14 @@ vi.mock("#/utils", () => ({
     warn: vi.fn(),
     error: vi.fn(),
   })),
-  SUI_COIN_TYPE: "0x2::sui::SUI",
+  SUI_COIN_TYPE: '0x2::sui::SUI',
   isExtension: vi.fn(() => false),
   isWeb: vi.fn(() => true),
   isBrowser: vi.fn(() => true),
 }));
 
-import { createMockUser } from "#/testing";
-import { useTransactionHistory } from "#/wallet/hooks/useTransactionHistory";
+import { createMockUser } from '#/testing';
+import { useTransactionHistory } from '#/wallet/hooks/useTransactionHistory';
 
 const createWrapper = (queryClient: QueryClient) => {
   return ({ children }: { children: ReactNode }) => (
@@ -115,7 +115,7 @@ function createMockGraphQLResponse(
   };
 }
 
-describe("useTransactionHistory hook (GraphQL)", () => {
+describe('useTransactionHistory hook (GraphQL)', () => {
   let queryClient: QueryClient;
 
   beforeEach(() => {
@@ -127,7 +127,7 @@ describe("useTransactionHistory hook (GraphQL)", () => {
     queryClient.clear();
   });
 
-  it("returns loading state initially", async () => {
+  it('returns loading state initially', async () => {
     mockGraphQLQuery.mockImplementation(
       () => new Promise(() => {}), // Never resolves
     );
@@ -150,21 +150,21 @@ describe("useTransactionHistory hook (GraphQL)", () => {
     unmount();
   });
 
-  it("returns transactions on success", async () => {
+  it('returns transactions on success', async () => {
     const mockResponse = createMockGraphQLResponse([
       {
-        digest: "tx123",
-        timestamp: "2024-01-01T00:00:00.000Z",
+        digest: 'tx123',
+        timestamp: '2024-01-01T00:00:00.000Z',
         balanceChanges: [
           {
-            amount: "-1000000000",
-            coinType: "0x2::sui::SUI",
-            ownerAddress: "0x123",
+            amount: '-1000000000',
+            coinType: '0x2::sui::SUI',
+            ownerAddress: '0x123',
           },
           {
-            amount: "1000000000",
-            coinType: "0x2::sui::SUI",
-            ownerAddress: "0xrecipient456",
+            amount: '1000000000',
+            coinType: '0x2::sui::SUI',
+            ownerAddress: '0xrecipient456',
           },
         ],
       },
@@ -192,30 +192,30 @@ describe("useTransactionHistory hook (GraphQL)", () => {
     expect(result.current.data?.pages[0].transactions).toHaveLength(1);
 
     const tx = result.current.data?.pages[0].transactions[0];
-    expect(tx?.digest).toBe("tx123");
-    expect(tx?.direction).toBe("sent");
-    expect(tx?.counterparty).toBe("0xrecipient456");
+    expect(tx?.digest).toBe('tx123');
+    expect(tx?.direction).toBe('sent');
+    expect(tx?.counterparty).toBe('0xrecipient456');
     expect(tx?.balanceChanges).toHaveLength(1);
-    expect(tx?.balanceChanges[0]?.tokenSymbol).toBe("SUI");
+    expect(tx?.balanceChanges[0]?.tokenSymbol).toBe('SUI');
 
     unmount();
   });
 
-  it("identifies received transactions correctly", async () => {
+  it('identifies received transactions correctly', async () => {
     const mockResponse = createMockGraphQLResponse([
       {
-        digest: "tx456",
-        timestamp: "2024-01-01T00:00:00.000Z",
+        digest: 'tx456',
+        timestamp: '2024-01-01T00:00:00.000Z',
         balanceChanges: [
           {
-            amount: "-2000000000",
-            coinType: "0x2::sui::SUI",
-            ownerAddress: "0xsender789",
+            amount: '-2000000000',
+            coinType: '0x2::sui::SUI',
+            ownerAddress: '0xsender789',
           },
           {
-            amount: "2000000000",
-            coinType: "0x2::sui::SUI",
-            ownerAddress: "0x123", // User receives
+            amount: '2000000000',
+            coinType: '0x2::sui::SUI',
+            ownerAddress: '0x123', // User receives
           },
         ],
       },
@@ -240,34 +240,34 @@ describe("useTransactionHistory hook (GraphQL)", () => {
     });
 
     const tx = result.current.data?.pages[0].transactions[0];
-    expect(tx?.direction).toBe("received");
-    expect(tx?.counterparty).toBe("0xsender789");
+    expect(tx?.direction).toBe('received');
+    expect(tx?.counterparty).toBe('0xsender789');
 
     unmount();
   });
 
-  it("derives direction from primary (non-SUI) change when user has multiple balance changes (e.g. incoming token + gas)", async () => {
+  it('derives direction from primary (non-SUI) change when user has multiple balance changes (e.g. incoming token + gas)', async () => {
     const eveCoinType =
-      "0x59d7bb2e0feffb90cb2446fb97c2ce7d4bd24d2fb98939d6cb6c3940110a0de0::EVE::EVE";
+      '0x59d7bb2e0feffb90cb2446fb97c2ce7d4bd24d2fb98939d6cb6c3940110a0de0::EVE::EVE';
     const mockResponse = createMockGraphQLResponse([
       {
-        digest: "tx-multi",
-        timestamp: "2024-01-01T00:00:00.000Z",
+        digest: 'tx-multi',
+        timestamp: '2024-01-01T00:00:00.000Z',
         balanceChanges: [
           {
-            amount: "-1000000000",
+            amount: '-1000000000',
             coinType: eveCoinType,
-            ownerAddress: "0xsender",
+            ownerAddress: '0xsender',
           },
           {
-            amount: "1000000000",
+            amount: '1000000000',
             coinType: eveCoinType,
-            ownerAddress: "0x123",
+            ownerAddress: '0x123',
           },
           {
-            amount: "-5000000",
-            coinType: "0x2::sui::SUI",
-            ownerAddress: "0x123",
+            amount: '-5000000',
+            coinType: '0x2::sui::SUI',
+            ownerAddress: '0x123',
           },
         ],
       },
@@ -292,14 +292,14 @@ describe("useTransactionHistory hook (GraphQL)", () => {
     });
 
     const tx = result.current.data?.pages[0].transactions[0];
-    expect(tx?.digest).toBe("tx-multi");
-    expect(tx?.direction).toBe("received");
+    expect(tx?.digest).toBe('tx-multi');
+    expect(tx?.direction).toBe('received');
     expect(tx?.balanceChanges).toHaveLength(2);
     const eveChange = tx?.balanceChanges?.find(
       (bc) => bc.coinType === eveCoinType,
     );
     const suiChange = tx?.balanceChanges?.find(
-      (bc) => bc.coinType === "0x2::sui::SUI",
+      (bc) => bc.coinType === '0x2::sui::SUI',
     );
     expect(eveChange?.isDebit).toBe(false);
     expect(suiChange?.isDebit).toBe(true);
@@ -307,13 +307,13 @@ describe("useTransactionHistory hook (GraphQL)", () => {
     unmount();
   });
 
-  it("handles GraphQL errors by throwing", async () => {
+  it('handles GraphQL errors by throwing', async () => {
     // When GraphQL returns errors, the hook throws an error
     // The hook will retry twice before failing (retry: 2)
     // We verify the error is thrown by checking that the query was called
     const mockResponse = {
       data: null,
-      errors: [{ message: "GraphQL Error" }],
+      errors: [{ message: 'GraphQL Error' }],
     };
 
     mockGraphQLQuery.mockResolvedValue(mockResponse);
@@ -346,7 +346,7 @@ describe("useTransactionHistory hook (GraphQL)", () => {
     unmount();
   });
 
-  it("handles empty transaction list", async () => {
+  it('handles empty transaction list', async () => {
     const mockResponse = createMockGraphQLResponse([]);
 
     mockGraphQLQuery.mockResolvedValue(mockResponse);
@@ -373,28 +373,28 @@ describe("useTransactionHistory hook (GraphQL)", () => {
     unmount();
   });
 
-  it("supports pagination with hasNextPage", async () => {
+  it('supports pagination with hasNextPage', async () => {
     const mockResponse = createMockGraphQLResponse(
       [
         {
-          digest: "tx001",
-          timestamp: "2024-01-01T00:00:00.000Z",
+          digest: 'tx001',
+          timestamp: '2024-01-01T00:00:00.000Z',
           balanceChanges: [
             {
-              amount: "-1000000000",
-              coinType: "0x2::sui::SUI",
-              ownerAddress: "0x123",
+              amount: '-1000000000',
+              coinType: '0x2::sui::SUI',
+              ownerAddress: '0x123',
             },
             {
-              amount: "1000000000",
-              coinType: "0x2::sui::SUI",
-              ownerAddress: "0xrecipient",
+              amount: '1000000000',
+              coinType: '0x2::sui::SUI',
+              ownerAddress: '0xrecipient',
             },
           ],
         },
       ],
       true, // hasNextPage
-      "cursor123", // endCursor
+      'cursor123', // endCursor
     );
 
     mockGraphQLQuery.mockResolvedValue(mockResponse);
@@ -416,12 +416,12 @@ describe("useTransactionHistory hook (GraphQL)", () => {
     });
 
     expect(result.current.hasNextPage).toBe(true);
-    expect(typeof result.current.fetchNextPage).toBe("function");
+    expect(typeof result.current.fetchNextPage).toBe('function');
 
     unmount();
   });
 
-  it("is disabled when user is null", async () => {
+  it('is disabled when user is null', async () => {
     const wrapper = createWrapper(queryClient);
 
     const { result, unmount } = renderHook(
@@ -441,7 +441,7 @@ describe("useTransactionHistory hook (GraphQL)", () => {
     unmount();
   });
 
-  it("handles null address response gracefully", async () => {
+  it('handles null address response gracefully', async () => {
     const mockResponse = {
       data: {
         address: null,
@@ -472,7 +472,7 @@ describe("useTransactionHistory hook (GraphQL)", () => {
     unmount();
   });
 
-  it("passes correct variables to GraphQL query", async () => {
+  it('passes correct variables to GraphQL query', async () => {
     const mockResponse = createMockGraphQLResponse([]);
     mockGraphQLQuery.mockResolvedValue(mockResponse);
 
@@ -494,7 +494,7 @@ describe("useTransactionHistory hook (GraphQL)", () => {
     });
 
     const callArgs = mockGraphQLQuery.mock.calls[0][0];
-    expect(callArgs.variables.address).toBe("0x123");
+    expect(callArgs.variables.address).toBe('0x123');
     expect(callArgs.variables.first).toBe(50);
     expect(callArgs.variables.after).toBeUndefined();
 

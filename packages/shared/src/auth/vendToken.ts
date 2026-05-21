@@ -1,12 +1,12 @@
-import type { JwtResponse, OAuthTokenResponse } from "#/types/authTypes";
-import { getApiContext } from "./getApiContext";
+import type { JwtResponse, OAuthTokenResponse } from '#/types/authTypes';
+import { getApiContext } from './getApiContext';
 
 export const vendJwt = async (
-  token: OAuthTokenResponse["id_token"],
+  token: OAuthTokenResponse['id_token'],
   deviceParams: {
     nonce: string;
   },
-): Promise<JwtResponse["id_token"]> => {
+): Promise<JwtResponse['id_token']> => {
   const { apiBaseUrl, tenant } = getApiContext(token);
   const vendUrl = `${apiBaseUrl}/auth/zklogin/vend-jwt`;
 
@@ -15,12 +15,12 @@ export const vendJwt = async (
   };
 
   const response = await fetch(vendUrl, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "X-Tenant": tenant,
-      "Content-Type": "application/json",
+      'X-Tenant': tenant,
+      'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
-      Accept: "application/json",
+      Accept: 'application/json',
     },
     body: JSON.stringify(requestBody),
   });
@@ -32,9 +32,9 @@ export const vendJwt = async (
 
   const result = await response.json();
 
-  if (!result.token || typeof result.token !== "string") {
-    throw new Error("JWT vend failed: no token in response");
+  if (!result.token || typeof result.token !== 'string') {
+    throw new Error('JWT vend failed: no token in response');
   }
 
-  return result.token as JwtResponse["id_token"];
+  return result.token as JwtResponse['id_token'];
 };

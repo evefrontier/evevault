@@ -1,18 +1,18 @@
-import type { SuiGrpcClient } from "@mysten/sui/grpc";
-import { Transaction } from "@mysten/sui/transactions";
-import { isValidSuiAddress } from "@mysten/sui/utils";
-import { useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { SuiGrpcClient } from '@mysten/sui/grpc';
+import { Transaction } from '@mysten/sui/transactions';
+import { isValidSuiAddress } from '@mysten/sui/utils';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   createLogger,
   formatMistToSui,
   GAS_FEE_WARNING_MESSAGE,
   SUI_COIN_TYPE,
   toSmallestUnit,
-} from "#/utils";
-import { isEveCoinType } from "#/wallet/eveToken";
-import { useBalance } from "./useBalance";
-import { useWalletSigningContext } from "./useWalletSigningContext";
+} from '#/utils';
+import { isEveCoinType } from '#/wallet/eveToken';
+import { useBalance } from './useBalance';
+import { useWalletSigningContext } from './useWalletSigningContext';
 
 const log = createLogger();
 
@@ -43,14 +43,14 @@ async function buildTransferTransactionBytes(
       coinType,
     });
     if (coinObjects.length === 0) {
-      throw new Error("No coins found for this token");
+      throw new Error('No coins found for this token');
     }
     const totalBalance = coinObjects.reduce(
       (sum: bigint, coin: CoinWithBalance) => sum + BigInt(coin.balance),
       0n,
     );
     if (totalBalance < amountInSmallestUnit) {
-      throw new Error("Token balance changed during transaction preparation");
+      throw new Error('Token balance changed during transaction preparation');
     }
     const suitableCoin = coinObjects.find(
       (c: CoinWithBalance) => BigInt(c.balance) >= amountInSmallestUnit,
@@ -83,11 +83,11 @@ async function buildTransferTransactionBytes(
 /** SDK simulateTransaction result shape: effects live under Transaction or FailedTransaction. */
 type SimulateResult =
   | {
-      $kind: "Transaction";
+      $kind: 'Transaction';
       Transaction: { effects?: { gasUsed?: GasUsedShape } };
     }
   | {
-      $kind: "FailedTransaction";
+      $kind: 'FailedTransaction';
       FailedTransaction: { effects?: { gasUsed?: GasUsedShape } };
     };
 type GasUsedShape = {
@@ -102,17 +102,17 @@ function parseGasUsedFromSimulation(result: unknown): string | null {
   try {
     const r = result as SimulateResult;
     const effects =
-      r?.$kind === "Transaction"
+      r?.$kind === 'Transaction'
         ? r.Transaction?.effects
-        : r?.$kind === "FailedTransaction"
+        : r?.$kind === 'FailedTransaction'
           ? r.FailedTransaction?.effects
           : undefined;
     const gasUsed = effects?.gasUsed;
     if (!gasUsed) return null;
-    const computation = BigInt(gasUsed.computationCost ?? "0");
-    const storage = BigInt(gasUsed.storageCost ?? "0");
-    const rebate = BigInt(gasUsed.storageRebate ?? "0");
-    const nonRefundable = BigInt(gasUsed.nonRefundableStorageFee ?? "0");
+    const computation = BigInt(gasUsed.computationCost ?? '0');
+    const storage = BigInt(gasUsed.storageCost ?? '0');
+    const rebate = BigInt(gasUsed.storageRebate ?? '0');
+    const nonRefundable = BigInt(gasUsed.nonRefundableStorageFee ?? '0');
     const total = computation + storage - rebate + nonRefundable;
     return total > 0n ? total.toString() : null;
   } catch {
@@ -216,13 +216,13 @@ export function useSendToken({
   });
 
   // Extract balance info
-  const currentBalance = balanceData?.formattedBalance ?? "0";
-  const rawBalance = balanceData?.rawBalance ?? "0";
+  const currentBalance = balanceData?.formattedBalance ?? '0';
+  const rawBalance = balanceData?.rawBalance ?? '0';
   const tokenSymbol =
-    balanceData?.metadata?.symbol ?? (isEveCoinType(coinType) ? "EVE" : "");
+    balanceData?.metadata?.symbol ?? (isEveCoinType(coinType) ? 'EVE' : '');
   const tokenName =
     balanceData?.metadata?.name ??
-    (isEveCoinType(coinType) ? "EVE test token" : "Token");
+    (isEveCoinType(coinType) ? 'EVE test token' : 'Token');
   const decimals = balanceData?.metadata?.decimals ?? 9;
 
   // Validation checks
@@ -233,7 +233,7 @@ export function useSendToken({
 
   // Amount validation
   const isValidAmount = useMemo(() => {
-    if (!amount || amount === "" || amount === "0") return false;
+    if (!amount || amount === '' || amount === '0') return false;
 
     try {
       const amountInSmallestUnit = toSmallestUnit(amount, decimals);
@@ -248,7 +248,7 @@ export function useSendToken({
     }
   }, [amount, rawBalance, decimals]);
 
-  const rawSuiBalance = suiBalanceData?.rawBalance ?? "0";
+  const rawSuiBalance = suiBalanceData?.rawBalance ?? '0';
   const hasZeroSui = !suiBalanceLoading && BigInt(rawSuiBalance) === 0n;
   const hasGas =
     coinType === SUI_COIN_TYPE || (suiBalanceLoading ? false : !hasZeroSui);
@@ -256,14 +256,14 @@ export function useSendToken({
   // Collect validation errors
   const validationErrors = useMemo(() => {
     const errors: string[] = [];
-    if (!isNetworkReady) errors.push("No network selected");
-    if (!isAuthenticated) errors.push("Not authenticated");
-    if (!isWalletUnlocked) errors.push("Wallet not ready");
-    if (!hasBalance) errors.push("Insufficient balance");
-    if (!hasGas) errors.push("No SUI for gas (required for transaction fees)");
+    if (!isNetworkReady) errors.push('No network selected');
+    if (!isAuthenticated) errors.push('Not authenticated');
+    if (!isWalletUnlocked) errors.push('Wallet not ready');
+    if (!hasBalance) errors.push('Insufficient balance');
+    if (!hasGas) errors.push('No SUI for gas (required for transaction fees)');
     if (recipientAddress && !isValidRecipient)
-      errors.push("Invalid Sui address");
-    if (amount && !isValidAmount) errors.push("Invalid amount");
+      errors.push('Invalid Sui address');
+    if (amount && !isValidAmount) errors.push('Invalid amount');
     return errors;
   }, [
     isNetworkReady,
@@ -288,7 +288,7 @@ export function useSendToken({
 
   const suiForGasWarning =
     !suiBalanceLoading && coinType !== SUI_COIN_TYPE && hasZeroSui
-      ? "You have no SUI balance. SUI is required to pay for transaction fees."
+      ? 'You have no SUI balance. SUI is required to pay for transaction fees.'
       : null;
   const showFaucetTestSui = !suiBalanceLoading && hasZeroSui;
 
@@ -346,7 +346,7 @@ export function useSendToken({
           setEstimatedGasFee(formatMistToSui(mist));
         }
       } catch (err) {
-        log.warn("Gas estimation failed", { err });
+        log.warn('Gas estimation failed', { err });
         if (runId === estimateRunIdRef.current) {
           setEstimatedGasFee(null);
         }
@@ -370,7 +370,7 @@ export function useSendToken({
 
   const send = useCallback(async () => {
     if (!canSend) {
-      setError("Cannot send: validation failed");
+      setError('Cannot send: validation failed');
       return;
     }
 
@@ -382,7 +382,7 @@ export function useSendToken({
       const senderAddress = await getSenderAddress();
 
       if (!senderAddress) {
-        throw new Error("Wallet not ready to sign");
+        throw new Error('Wallet not ready to sign');
       }
 
       const amountInSmallestUnit = toSmallestUnit(amount, decimals);
@@ -395,9 +395,9 @@ export function useSendToken({
         suiClient,
       );
 
-      const { bytes, signature } = await sign("TransactionData", txBytes);
+      const { bytes, signature } = await sign('TransactionData', txBytes);
 
-      log.debug("Transaction signed", {
+      log.debug('Transaction signed', {
         bytesLength: bytes.length,
         signatureLength: signature.length,
       });
@@ -408,14 +408,14 @@ export function useSendToken({
       });
 
       // @mysten/sui 2.x: discriminated union Transaction | FailedTransaction
-      if ("$kind" in result && result.$kind === "FailedTransaction") {
-        throw new Error("Transaction failed");
+      if ('$kind' in result && result.$kind === 'FailedTransaction') {
+        throw new Error('Transaction failed');
       }
       const txResponse = (result as { Transaction: { digest?: string | null } })
         .Transaction;
       const digest = txResponse?.digest ?? null;
 
-      log.info("Token transfer executed", {
+      log.info('Token transfer executed', {
         digest,
         coinType,
         amount,
@@ -425,18 +425,18 @@ export function useSendToken({
       setTxDigest(digest);
 
       // Invalidate so token list refetches when user navigates back
-      queryClient.invalidateQueries({ queryKey: ["coin-balance"] });
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ['coin-balance'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
 
       // Refetch in background (type: "all" so inactive queries refresh too); don't block isLoading
       void Promise.all([
         queryClient.refetchQueries({
-          queryKey: ["coin-balance"],
-          type: "all",
+          queryKey: ['coin-balance'],
+          type: 'all',
         }),
         queryClient.refetchQueries({
-          queryKey: ["transactions"],
-          type: "all",
+          queryKey: ['transactions'],
+          type: 'all',
         }),
       ]);
 
@@ -449,18 +449,18 @@ export function useSendToken({
       postTransferRefetchTimerRef.current = setTimeout(() => {
         postTransferRefetchTimerRef.current = null;
         void queryClient.refetchQueries({
-          queryKey: ["coin-balance"],
-          type: "all",
+          queryKey: ['coin-balance'],
+          type: 'all',
         });
         void queryClient.refetchQueries({
-          queryKey: ["transactions"],
-          type: "all",
+          queryKey: ['transactions'],
+          type: 'all',
         });
       }, BALANCE_REFETCH_DELAY_MS);
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : "Failed to send token";
-      log.error("Token transfer failed", err);
+        err instanceof Error ? err.message : 'Failed to send token';
+      log.error('Token transfer failed', err);
       setError(errorMessage);
     } finally {
       setIsLoading(false);

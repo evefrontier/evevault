@@ -1,7 +1,7 @@
-import { Link, useLocation } from "@tanstack/react-router";
-import Icon from "#/components/Icon";
-import Text from "#/components/Text";
-import type { IconName, NavigationBarProps } from "#/types";
+import { Link, useLocation } from '@tanstack/react-router';
+import Icon from '#/components/Icon';
+import Text from '#/components/Text';
+import type { IconName, NavigationBarProps } from '#/types';
 
 export const DEFAULT_TABBAR_HEIGHT = 64;
 
@@ -24,12 +24,12 @@ export default function MobileBottomTabBar({ items }: NavigationBarProps) {
             <Icon
               name={item.icon as IconName}
               size="medium"
-              color={isActive ? "neutral" : "grey-neutral"}
+              color={isActive ? 'neutral' : 'grey-neutral'}
             />
             <Text
               size="small"
               variant="label-semi"
-              color={isActive ? "neutral" : "grey-neutral"}
+              color={isActive ? 'neutral' : 'grey-neutral'}
               className="text-[10px] uppercase tracking-wider"
             >
               {item.label}

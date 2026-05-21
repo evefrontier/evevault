@@ -1,14 +1,14 @@
-import type { ZkProofResponse } from "@evevault/shared";
-import type { SuiChain } from "@mysten/wallet-standard";
-import type { BackgroundMessage } from "@/lib/background/types";
+import type { ZkProofResponse } from '@evevault/shared';
+import type { SuiChain } from '@mysten/wallet-standard';
+import type { BackgroundMessage } from '@/lib/background/types';
 import {
   clearZkProofs,
   enforceExpiry,
   getEphemeralKey,
   getZkProof,
   setZkProof,
-} from "./keeperState";
-import type { KeeperSendResponse } from "./keeperTypes";
+} from './keeperState';
+import type { KeeperSendResponse } from './keeperTypes';
 
 export function handleSetZkProof(
   message: BackgroundMessage,
@@ -18,13 +18,13 @@ export function handleSetZkProof(
 
   if (enforceExpiry() || !getEphemeralKey()) {
     sendResponse({
-      error: "[KEEPER_SET_ZKPROOF] No ephemeral key found, vault LOCKED",
+      error: '[KEEPER_SET_ZKPROOF] No ephemeral key found, vault LOCKED',
     });
     return false;
   }
 
   if (!chain) {
-    sendResponse({ error: "Chain is required" });
+    sendResponse({ error: 'Chain is required' });
     return false;
   }
 
@@ -40,12 +40,12 @@ export function handleGetZkProof(
   const { chain } = message;
 
   if (enforceExpiry() || !getEphemeralKey()) {
-    sendResponse({ error: "LOCKED" });
+    sendResponse({ error: 'LOCKED' });
     return false;
   }
 
   if (!chain) {
-    sendResponse({ error: "Chain is required" });
+    sendResponse({ error: 'Chain is required' });
     return false;
   }
 

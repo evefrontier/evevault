@@ -3,19 +3,19 @@ import {
   Heading,
   NetworkSelector,
   Text,
-} from "@evevault/shared/components";
-import Json from "@evevault/shared/components/Json";
-import type { ParsedTransactionWithDisplay } from "@evevault/shared/types";
+} from '@evevault/shared/components';
+import Json from '@evevault/shared/components/Json';
+import type { ParsedTransactionWithDisplay } from '@evevault/shared/types';
 import {
   buildTx,
   createLogger,
   parseTransactionBytes,
-} from "@evevault/shared/utils";
-import { useWalletSigningContext } from "@evevault/shared/wallet";
-import { Transaction } from "@mysten/sui/transactions";
-import { useEffect, useState } from "react";
-import { useSignPopupAuth } from "@/features/wallet/hooks";
-import { SignPopupAuthGate } from "./SignPopupAuthGate";
+} from '@evevault/shared/utils';
+import { useWalletSigningContext } from '@evevault/shared/wallet';
+import { Transaction } from '@mysten/sui/transactions';
+import { useEffect, useState } from 'react';
+import { useSignPopupAuth } from '@/features/wallet/hooks';
+import { SignPopupAuthGate } from './SignPopupAuthGate';
 
 const log = createLogger();
 
@@ -31,13 +31,13 @@ function SignTransaction() {
 
   useEffect(() => {
     // Retrieve the pending transaction from storage
-    chrome.storage.local.get("pendingAction").then(async (data) => {
+    chrome.storage.local.get('pendingAction').then(async (data) => {
       const pending = data.pendingAction;
       if (pending) {
         // When pending.transaction is present,
         // pending is a valid PendingTransaction.
         if (!pending.transaction) {
-          setError("No transaction found");
+          setError('No transaction found');
           return;
         }
 
@@ -52,18 +52,18 @@ function SignTransaction() {
           displayValue: parsedTx.displayValue,
         });
       } else {
-        setError("No pending transaction found");
+        setError('No pending transaction found');
       }
     });
   }, []);
 
   const handleApprove = async () => {
     if (!pendingTransaction) {
-      log.error("No pending transaction found");
+      log.error('No pending transaction found');
       return;
     }
     if (!auth.user) {
-      log.error("No user found");
+      log.error('No user found');
       return;
     }
 
@@ -77,8 +77,8 @@ function SignTransaction() {
       if (!senderAddress) {
         throw new Error(
           isLocalnet
-            ? "No localnet keypair loaded. Enter your private key in the network selector."
-            : "User address not found",
+            ? 'No localnet keypair loaded. Enter your private key in the network selector.'
+            : 'User address not found',
         );
       }
 
@@ -90,20 +90,20 @@ function SignTransaction() {
 
       if (!isLocalnet) {
         if (!auth.ephemeralPublicKey) {
-          throw new Error("Ephemeral public key not found");
+          throw new Error('Ephemeral public key not found');
         }
         if (!auth.maxEpoch) {
-          throw new Error("Max epoch is not set");
+          throw new Error('Max epoch is not set');
         }
       }
 
-      const { bytes, signature } = await sign("TransactionData", txb);
+      const { bytes, signature } = await sign('TransactionData', txb);
 
       // Store the result in storage so the background handler can pick it up
       await chrome.storage.local.set({
         transactionResult: {
           windowId,
-          status: "signed",
+          status: 'signed',
           bytes,
           signature,
         },
@@ -112,9 +112,9 @@ function SignTransaction() {
       // Close the popup window
       window.close();
     } catch (err) {
-      log.error("Transaction signing failed", err);
+      log.error('Transaction signing failed', err);
       const errorMessage =
-        err instanceof Error ? err.message : "Unknown error occurred";
+        err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
 
       // Store error result
@@ -122,7 +122,7 @@ function SignTransaction() {
         await chrome.storage.local.set({
           transactionResult: {
             windowId: pendingTransaction.windowId,
-            status: "error",
+            status: 'error',
             error: errorMessage,
           },
         });
@@ -140,16 +140,16 @@ function SignTransaction() {
       await chrome.storage.local.set({
         transactionResult: {
           windowId: pendingTransaction.windowId,
-          status: "error",
-          error: "Transaction rejected by user",
+          status: 'error',
+          error: 'Transaction rejected by user',
         },
       });
 
       // Close the popup window
       window.close();
     } catch (err) {
-      log.error("Failed to reject transaction", err);
-      setError("Failed to reject transaction");
+      log.error('Failed to reject transaction', err);
+      setError('Failed to reject transaction');
     }
   };
 
@@ -168,7 +168,7 @@ function SignTransaction() {
       {!pendingTransaction ? (
         <div>
           <p>Loading transaction...</p>
-          {error && <p style={{ color: "red" }}>Error: {error}</p>}
+          {error && <p style={{ color: 'red' }}>Error: {error}</p>}
         </div>
       ) : (
         <div className="flex flex-col items-center justify-between h-full">
@@ -178,23 +178,23 @@ function SignTransaction() {
               <Heading level={2}>Sign Transaction</Heading>
               <Json
                 value={pendingTransaction.displayValue}
-                className={"max-h-24"}
+                className={'max-h-24'}
               />
             </div>
 
             {error && (
-              <div style={{ marginBottom: "20px" }}>
+              <div style={{ marginBottom: '20px' }}>
                 <Text color="error">Error: {error}</Text>
               </div>
             )}
 
-            <div style={{ display: "flex", gap: "10px" }}>
+            <div style={{ display: 'flex', gap: '10px' }}>
               <Button
                 onClick={handleApprove}
                 disabled={loading}
                 variant="primary"
               >
-                {loading ? "Signing..." : "Approve"}
+                {loading ? 'Signing...' : 'Approve'}
               </Button>
 
               <Button

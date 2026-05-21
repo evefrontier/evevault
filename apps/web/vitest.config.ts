@@ -1,21 +1,21 @@
-import path from "node:path";
-import { defineConfig, mergeConfig } from "vitest/config";
-import viteConfig from "./vite.config";
+import path from 'node:path';
+import { defineConfig, mergeConfig } from 'vitest/config';
+import viteConfig from './vite.config';
 
 export default mergeConfig(
   viteConfig,
   defineConfig({
-    envDir: path.resolve(__dirname, "."),
+    envDir: path.resolve(__dirname, '.'),
     test: {
       globals: true,
-      environment: "jsdom",
-      setupFiles: ["../../vitest.setup.ts"],
+      environment: 'jsdom',
+      setupFiles: ['../../vitest.setup.ts'],
       passWithNoTests: true,
       coverage: {
-        provider: "v8",
-        reporter: ["text", "json-summary", "json"],
+        provider: 'v8',
+        reporter: ['text', 'json-summary', 'json'],
         reportOnFailure: true,
-        exclude: ["**/node_modules/**", "**/dist/**", "**/.output/**"],
+        exclude: ['**/node_modules/**', '**/dist/**', '**/.output/**'],
       },
     },
   }),

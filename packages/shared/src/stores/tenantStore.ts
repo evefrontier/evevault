@@ -1,7 +1,7 @@
-import type { TenantId } from "@evefrontier/dapp-kit/utils";
-import { isWeb } from "#/utils/environment";
-import { isAvailableTenantId } from "#/utils/tenantConfig";
-import { getCurrentContextTenantId, useContextStore } from "./contextStore";
+import type { TenantId } from '@evefrontier/dapp-kit/utils';
+import { isWeb } from '#/utils/environment';
+import { isAvailableTenantId } from '#/utils/tenantConfig';
+import { getCurrentContextTenantId, useContextStore } from './contextStore';
 
 export function getCurrentTenantId(): TenantId {
   return getCurrentContextTenantId();
@@ -20,11 +20,11 @@ export async function applyTenantFromUrl(): Promise<{
   changed: boolean;
 }> {
   const current = getCurrentTenantId();
-  if (!isWeb() || typeof window === "undefined") {
+  if (!isWeb() || typeof window === 'undefined') {
     return { tenantId: current, changed: false };
   }
   const params = new URLSearchParams(window.location.search);
-  const fromUrl = params.get("tenant");
+  const fromUrl = params.get('tenant');
   if (!fromUrl || !isAvailableTenantId(fromUrl, true)) {
     return { tenantId: current, changed: false };
   }
@@ -35,4 +35,4 @@ export async function applyTenantFromUrl(): Promise<{
   return { tenantId: fromUrl, changed: true };
 }
 
-export const OAuthTenantSessionKey = "evevault_oauth_tenant";
+export const OAuthTenantSessionKey = 'evevault_oauth_tenant';

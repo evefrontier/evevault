@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { CallbackScreen } from "@/features/auth/components/CallbackScreen";
+import { createFileRoute } from '@tanstack/react-router';
+import { CallbackScreen } from '@/features/auth/components/CallbackScreen';
 
 type CallbackSearch = {
   code?: string;
@@ -7,16 +7,16 @@ type CallbackSearch = {
 };
 
 const getOptionalString = (value: unknown): string | undefined =>
-  typeof value === "string" ? value : undefined;
+  typeof value === 'string' ? value : undefined;
 
 const validateSearch = (search: Record<string, unknown>): CallbackSearch => ({
   code: getOptionalString(search.code),
   error: getOptionalString(search.error),
 });
 
-export const Route = createFileRoute("/callback")({
+export const Route = createFileRoute('/callback')({
   beforeLoad: () => {
-    document.title = "EVE Vault - Authenticating";
+    document.title = 'EVE Vault - Authenticating';
   },
   component: CallbackScreen,
   validateSearch,

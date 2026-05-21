@@ -1,1 +1,1 @@
-export * from "./TokenSection";
+export * from './TokenSection';

@@ -1,7 +1,7 @@
-import { WalletStandardMessageTypes } from "@evevault/shared";
-import { getZkLoginAddress } from "@evevault/shared/auth";
-import { createLogger } from "@evevault/shared/utils";
-import { fromBase64 } from "@mysten/sui/utils";
+import { WalletStandardMessageTypes } from '@evevault/shared';
+import { getZkLoginAddress } from '@evevault/shared/auth';
+import { createLogger } from '@evevault/shared/utils';
+import { fromBase64 } from '@mysten/sui/utils';
 import type {
   IdentifierRecord,
   SignedTransaction,
@@ -18,7 +18,7 @@ import type {
   SuiSignTransactionInput,
   SuiSignTransactionMethod,
   Wallet,
-} from "@mysten/wallet-standard";
+} from '@mysten/wallet-standard';
 import {
   ReadonlyWalletAccount,
   StandardConnect,
@@ -30,24 +30,24 @@ import {
   SuiSignAndExecuteTransaction,
   SuiSignPersonalMessage,
   SuiSignTransaction,
-} from "@mysten/wallet-standard";
+} from '@mysten/wallet-standard';
 import type {
   EveFrontierSponsoredTransactionInput,
   EveFrontierSponsoredTransactionMethod,
   EveFrontierSponsoredTransactionOutput,
   EveVaultWalletFeatures,
   WalletEventListener,
-} from "@/lib/background/types";
-import { EVEFRONTIER_SPONSORED_TRANSACTION } from "@/lib/background/types";
-import { trySettle } from "@/lib/util/timeoutGuard";
+} from '@/lib/background/types';
+import { EVEFRONTIER_SPONSORED_TRANSACTION } from '@/lib/background/types';
+import { trySettle } from '@/lib/util/timeoutGuard';
 
 const log = createLogger();
 
 const APPROVAL_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
 
 export class EveVaultWallet implements Wallet {
-  readonly #version = "1.0.0" as const;
-  readonly #name = "Eve Vault" as const;
+  readonly #version = '1.0.0' as const;
+  readonly #name = 'Eve Vault' as const;
 
   #accounts: ReadonlyWalletAccount[] = [];
   #eventListeners = new Map<string, WalletEventListener[]>();
@@ -61,12 +61,12 @@ export class EveVaultWallet implements Wallet {
     return this.#name;
   }
 
-  get icon(): Wallet["icon"] {
+  get icon(): Wallet['icon'] {
     // You can replace this with your wallet's icon data URL
-    return "data:image/png;base64,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" as `data:image/png;base64,${string}`;
+    return 'data:image/png;base64,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' as `data:image/png;base64,${string}`;
   }
 
-  get chains(): Wallet["chains"] {
+  get chains(): Wallet['chains'] {
     const other =
       this.#currentChain === SUI_TESTNET_CHAIN
         ? SUI_DEVNET_CHAIN
@@ -101,27 +101,27 @@ export class EveVaultWallet implements Wallet {
   get features(): EveVaultWalletFeatures {
     return {
       [StandardConnect]: {
-        version: "1.0.0",
+        version: '1.0.0',
         connect: this.#connect,
       },
       [StandardEvents]: {
-        version: "1.0.0",
+        version: '1.0.0',
         on: this.#on,
       },
       [SuiSignPersonalMessage]: {
-        version: "1.1.0",
+        version: '1.1.0',
         signPersonalMessage: this.#signPersonalMessage,
       },
       [SuiSignTransaction]: {
-        version: "2.0.0",
+        version: '2.0.0',
         signTransaction: this.#signTransaction,
       },
       [SuiSignAndExecuteTransaction]: {
-        version: "2.0.0",
+        version: '2.0.0',
         signAndExecuteTransaction: this.#signAndExecuteTransaction,
       },
       [EVEFRONTIER_SPONSORED_TRANSACTION]: {
-        version: "1.0.1",
+        version: '1.0.1',
         signSponsoredTransaction: this.#signEveFrontierSponsoredTransaction,
       },
     };
@@ -163,7 +163,7 @@ export class EveVaultWallet implements Wallet {
     chains?: SuiChain[];
     features?: Record<string, unknown>;
   }) {
-    const listeners = this.#eventListeners.get("change");
+    const listeners = this.#eventListeners.get('change');
     if (!listeners || listeners.length === 0) return;
 
     // Per Wallet Standard spec: accounts should be all current accounts when accounts change
@@ -180,7 +180,7 @@ export class EveVaultWallet implements Wallet {
       try {
         listener(event);
       } catch (error) {
-        log.error("Error in wallet event listener", error);
+        log.error('Error in wallet event listener', error);
       }
     });
   }
@@ -227,13 +227,13 @@ export class EveVaultWallet implements Wallet {
       const onMsg = async (e: MessageEvent) => {
         const m = e.data || {};
 
-        if (m.__from !== "Eve Vault" || m.id !== id) return;
-        if (m.type === "auth_success") {
+        if (m.__from !== 'Eve Vault' || m.id !== id) return;
+        if (m.type === 'auth_success') {
           if (trySettle(state, onMsg, timeoutId)) {
             try {
               if (m.chain === SUI_LOCALNET_CHAIN) {
                 if (!m.address) {
-                  reject(new Error("Localnet auth_success missing address"));
+                  reject(new Error('Localnet auth_success missing address'));
                   return;
                 }
                 const localnetAccount = new ReadonlyWalletAccount({
@@ -258,7 +258,7 @@ export class EveVaultWallet implements Wallet {
               const result = m.token;
 
               sessionStorage.setItem(
-                "evevault_jwt",
+                'evevault_jwt',
                 JSON.stringify(result.access_token),
               );
 
@@ -274,7 +274,7 @@ export class EveVaultWallet implements Wallet {
 
               if (!zkLoginResponse.data) {
                 reject(
-                  new Error("No data returned from zkLogin address lookup"),
+                  new Error('No data returned from zkLogin address lookup'),
                 );
                 return;
               }
@@ -284,7 +284,7 @@ export class EveVaultWallet implements Wallet {
               if (!trimmedPublicKey) {
                 reject(
                   new Error(
-                    "No public key returned from zkLogin address lookup",
+                    'No public key returned from zkLogin address lookup',
                   ),
                 );
                 return;
@@ -296,7 +296,7 @@ export class EveVaultWallet implements Wallet {
               } catch {
                 reject(
                   new Error(
-                    "Invalid base64 public key returned from zkLogin address lookup",
+                    'Invalid base64 public key returned from zkLogin address lookup',
                   ),
                 );
                 return;
@@ -330,18 +330,18 @@ export class EveVaultWallet implements Wallet {
           }
         } else {
           if (trySettle(state, onMsg, timeoutId)) {
-            reject(new Error(m.error?.message || "Authentication failed"));
+            reject(new Error(m.error?.message || 'Authentication failed'));
           }
         }
       };
 
-      window.addEventListener("message", onMsg);
+      window.addEventListener('message', onMsg);
       const timeoutId = setTimeout(() => {
         if (trySettle(state, onMsg)) {
-          reject(new Error("Connection request timed out"));
+          reject(new Error('Connection request timed out'));
         }
       }, APPROVAL_TIMEOUT_MS);
-      window.postMessage({ __to: "Eve Vault", type: "connect", id }, "*");
+      window.postMessage({ __to: 'Eve Vault', type: 'connect', id }, '*');
     });
   };
 
@@ -355,38 +355,38 @@ export class EveVaultWallet implements Wallet {
       const onMsg = async (e: MessageEvent) => {
         const m = e.data || {};
 
-        if (m.__from !== "Eve Vault" || m.id !== id) return;
+        if (m.__from !== 'Eve Vault' || m.id !== id) return;
 
-        if (m.type === "sign_success") {
+        if (m.type === 'sign_success') {
           if (trySettle(state, onMsg, timeoutId)) {
             resolve({
               bytes: m.bytes,
               signature: m.signature,
             } as SuiSignPersonalMessageOutput);
           }
-        } else if (m.type === "sign_personal_message_error") {
+        } else if (m.type === 'sign_personal_message_error') {
           if (trySettle(state, onMsg, timeoutId)) {
             reject(new Error(m.error));
           }
         }
       };
 
-      window.addEventListener("message", onMsg);
+      window.addEventListener('message', onMsg);
       const timeoutId = setTimeout(() => {
         if (trySettle(state, onMsg)) {
-          reject(new Error("Message signing timed out"));
+          reject(new Error('Message signing timed out'));
         }
       }, APPROVAL_TIMEOUT_MS);
-      log.debug("[SuiWallet] #signPersonalMessage input", input);
+      log.debug('[SuiWallet] #signPersonalMessage input', input);
       window.postMessage(
         {
-          __to: "Eve Vault",
+          __to: 'Eve Vault',
           id,
-          action: "sign_personal_message",
+          action: 'sign_personal_message',
           message: input.message,
           account: input.account,
         },
-        "*",
+        '*',
       );
     });
   };
@@ -403,40 +403,40 @@ export class EveVaultWallet implements Wallet {
       const onMsg = async (e: MessageEvent) => {
         const m = e.data || {};
 
-        if (m.__from !== "Eve Vault" || m.id !== id) return;
-        log.debug("[SuiWallet] #signTransaction message", m);
+        if (m.__from !== 'Eve Vault' || m.id !== id) return;
+        log.debug('[SuiWallet] #signTransaction message', m);
 
-        if (m.type === "sign_success") {
+        if (m.type === 'sign_success') {
           if (trySettle(state, onMsg, timeoutId)) {
             resolve({
               bytes: m.bytes,
               signature: m.signature,
             });
           }
-        } else if (m.type === "sign_transaction_error") {
+        } else if (m.type === 'sign_transaction_error') {
           if (trySettle(state, onMsg, timeoutId)) {
             reject(new Error(m.error));
           }
         }
       };
 
-      window.addEventListener("message", onMsg);
+      window.addEventListener('message', onMsg);
       const timeoutId = setTimeout(() => {
         if (trySettle(state, onMsg)) {
-          reject(new Error("Transaction signing timed out"));
+          reject(new Error('Transaction signing timed out'));
         }
       }, APPROVAL_TIMEOUT_MS);
 
       window.postMessage(
         {
-          __to: "Eve Vault",
+          __to: 'Eve Vault',
           id,
-          action: "sign_transaction",
+          action: 'sign_transaction',
           transaction: tx,
           account: input.account,
           chain: input.chain ?? this.#currentChain,
         },
-        "*",
+        '*',
       );
     });
   };
@@ -453,35 +453,35 @@ export class EveVaultWallet implements Wallet {
 
         const onMsg = (e: MessageEvent) => {
           const m = e.data || {};
-          if (m.__from !== "Eve Vault" || m.id !== id) return;
+          if (m.__from !== 'Eve Vault' || m.id !== id) return;
 
-          if (m.type === "sign_and_execute_transaction_success") {
+          if (m.type === 'sign_and_execute_transaction_success') {
             if (trySettle(state, onMsg, timeoutId)) {
               resolve(m.result);
             }
-          } else if (m.type === "sign_and_execute_transaction_error") {
+          } else if (m.type === 'sign_and_execute_transaction_error') {
             if (trySettle(state, onMsg, timeoutId)) {
               reject(new Error(m.error));
             }
           }
         };
 
-        window.addEventListener("message", onMsg);
+        window.addEventListener('message', onMsg);
         const timeoutId = setTimeout(() => {
           if (trySettle(state, onMsg)) {
-            reject(new Error("Transaction approval timed out"));
+            reject(new Error('Transaction approval timed out'));
           }
         }, APPROVAL_TIMEOUT_MS);
         window.postMessage(
           {
-            __to: "Eve Vault",
+            __to: 'Eve Vault',
             id,
             action: WalletStandardMessageTypes.SIGN_AND_EXECUTE_TRANSACTION,
             transaction: tx,
             account: input.account,
             chain: input.chain ?? this.#currentChain,
           },
-          "*",
+          '*',
         );
       },
     );
@@ -497,31 +497,31 @@ export class EveVaultWallet implements Wallet {
           const onMsg = async (e: MessageEvent) => {
             const m = e.data || {};
 
-            if (m.__from !== "Eve Vault" || m.id !== id) return;
-            log.debug("[SuiWallet] #signSponsoredTransaction message", m);
+            if (m.__from !== 'Eve Vault' || m.id !== id) return;
+            log.debug('[SuiWallet] #signSponsoredTransaction message', m);
 
-            if (m.type === "sign_success") {
+            if (m.type === 'sign_success') {
               if (trySettle(state, onMsg, timeoutId)) {
                 resolve({
                   digest: m.digest,
                   effects: m.effects,
                 });
               }
-            } else if (m.type === "sign_sponsored_transaction_error") {
+            } else if (m.type === 'sign_sponsored_transaction_error') {
               if (trySettle(state, onMsg, timeoutId)) {
                 reject(new Error(m.error));
               }
             }
           };
 
-          window.addEventListener("message", onMsg);
+          window.addEventListener('message', onMsg);
           const timeoutId = setTimeout(() => {
             if (trySettle(state, onMsg)) {
-              reject(new Error("Sponsored transaction timed out"));
+              reject(new Error('Sponsored transaction timed out'));
             }
           }, APPROVAL_TIMEOUT_MS);
           log.debug(
-            "[SuiWallet] #signEveFrontierSponsoredTransaction input",
+            '[SuiWallet] #signEveFrontierSponsoredTransaction input',
             input,
           );
 
@@ -533,7 +533,7 @@ export class EveVaultWallet implements Wallet {
               input.metadata.url != null);
 
           window.postMessage({
-            __to: "Eve Vault",
+            __to: 'Eve Vault',
             id,
             action:
               WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION,

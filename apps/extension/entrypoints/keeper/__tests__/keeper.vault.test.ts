@@ -3,14 +3,14 @@ import {
   encrypt,
   type HashedData,
   KeeperMessageTypes,
-} from "@evevault/shared";
-import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+} from '@evevault/shared';
+import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createKeeperTestContext,
   setupKeeperSuite,
   TEST_PIN,
-} from "./keeperTestUtils";
+} from './keeperTestUtils';
 
 const ctx = createKeeperTestContext();
 const { dispatch, rawDispatch, unlockVault } = ctx;
@@ -18,8 +18,8 @@ setupKeeperSuite(ctx);
 
 // ── CREATE_KEYPAIR ────────────────────────────────────────────────────────────
 
-describe("Keeper CREATE_KEYPAIR handler", () => {
-  it("generates an Ed25519 keypair, encrypts it with PIN, and returns hashedSecretKey + publicKeyBytes", async () => {
+describe('Keeper CREATE_KEYPAIR handler', () => {
+  it('generates an Ed25519 keypair, encrypts it with PIN, and returns hashedSecretKey + publicKeyBytes', async () => {
     const resp = await dispatch({
       type: KeeperMessageTypes.CREATE_KEYPAIR,
       pin: TEST_PIN,
@@ -35,7 +35,7 @@ describe("Keeper CREATE_KEYPAIR handler", () => {
     expect((resp.publicKeyBytes as number[]).length).toBeGreaterThan(0);
   });
 
-  it("stores a decryptable keypair — decrypt returns key bytes that reconstruct to the same public key", async () => {
+  it('stores a decryptable keypair — decrypt returns key bytes that reconstruct to the same public key', async () => {
     const resp = await dispatch({
       type: KeeperMessageTypes.CREATE_KEYPAIR,
       pin: TEST_PIN,
@@ -51,14 +51,14 @@ describe("Keeper CREATE_KEYPAIR handler", () => {
     );
   });
 
-  it("unlocks the vault — GET_PUBLIC_KEY succeeds immediately after CREATE_KEYPAIR", async () => {
+  it('unlocks the vault — GET_PUBLIC_KEY succeeds immediately after CREATE_KEYPAIR', async () => {
     await dispatch({ type: KeeperMessageTypes.CREATE_KEYPAIR, pin: TEST_PIN });
     const pubResp = await dispatch({ type: KeeperMessageTypes.GET_PUBLIC_KEY });
     expect(pubResp.ok).toBe(true);
     expect(Array.isArray(pubResp.publicKeyBytes)).toBe(true);
   });
 
-  it("enables key rotation — ROTATE_KEYPAIR succeeds after CREATE_KEYPAIR (session key was derived)", async () => {
+  it('enables key rotation — ROTATE_KEYPAIR succeeds after CREATE_KEYPAIR (session key was derived)', async () => {
     await dispatch({ type: KeeperMessageTypes.CREATE_KEYPAIR, pin: TEST_PIN });
     const rotateResp = await dispatch({
       type: KeeperMessageTypes.ROTATE_KEYPAIR,
@@ -69,8 +69,8 @@ describe("Keeper CREATE_KEYPAIR handler", () => {
 
 // ── UNLOCK_VAULT ──────────────────────────────────────────────────────────────
 
-describe("Keeper UNLOCK_VAULT handler", () => {
-  it("decrypts the secret key, reconstructs the keypair, and responds { ok: true }", async () => {
+describe('Keeper UNLOCK_VAULT handler', () => {
+  it('decrypts the secret key, reconstructs the keypair, and responds { ok: true }', async () => {
     const keypair = Ed25519Keypair.generate();
     const hashedSecretKey = await encrypt(keypair.getSecretKey(), TEST_PIN);
     const resp = await dispatch({
@@ -82,7 +82,7 @@ describe("Keeper UNLOCK_VAULT handler", () => {
     expect(resp.ok).toBe(true);
   });
 
-  it("GET_PUBLIC_KEY returns the original public key after unlock", async () => {
+  it('GET_PUBLIC_KEY returns the original public key after unlock', async () => {
     const { keypair } = await unlockVault();
     const pubResp = await dispatch({ type: KeeperMessageTypes.GET_PUBLIC_KEY });
 
@@ -92,7 +92,7 @@ describe("Keeper UNLOCK_VAULT handler", () => {
     );
   });
 
-  it("returns a decryption error and leaves vault locked for a wrong PIN", async () => {
+  it('returns a decryption error and leaves vault locked for a wrong PIN', async () => {
     const hashedSecretKey = await encrypt(
       Ed25519Keypair.generate().getSecretKey(),
       TEST_PIN,
@@ -100,18 +100,18 @@ describe("Keeper UNLOCK_VAULT handler", () => {
     const resp = await dispatch({
       type: KeeperMessageTypes.UNLOCK_VAULT,
       hashedSecretKey,
-      pin: "wrong-pin",
+      pin: 'wrong-pin',
     });
 
     expect(resp.ok).toBe(false);
-    expect(String(resp.error)).toContain("[Keeper] Decryption failed");
+    expect(String(resp.error)).toContain('[Keeper] Decryption failed');
 
     const pubResp = await dispatch({ type: KeeperMessageTypes.GET_PUBLIC_KEY });
-    expect(pubResp.error).toBe("LOCKED");
+    expect(pubResp.error).toBe('LOCKED');
   });
 
-  it("returns a keypair reconstruction error when decrypted data is not a valid secret key", async () => {
-    const hashedSecretKey = await encrypt("not-a-secret-key", TEST_PIN);
+  it('returns a keypair reconstruction error when decrypted data is not a valid secret key', async () => {
+    const hashedSecretKey = await encrypt('not-a-secret-key', TEST_PIN);
     const resp = await dispatch({
       type: KeeperMessageTypes.UNLOCK_VAULT,
       hashedSecretKey,
@@ -119,47 +119,47 @@ describe("Keeper UNLOCK_VAULT handler", () => {
     });
 
     expect(resp.ok).toBe(false);
-    expect(String(resp.error)).toContain("[Keeper] Failed to create keypair");
+    expect(String(resp.error)).toContain('[Keeper] Failed to create keypair');
   });
 });
 
 // ── CLEAR_EPHKEY ──────────────────────────────────────────────────────────────
 
-describe("Keeper CLEAR_EPHKEY handler", () => {
+describe('Keeper CLEAR_EPHKEY handler', () => {
   beforeEach(async () => {
     await unlockVault();
   });
 
-  it("responds { ok: true }", async () => {
+  it('responds { ok: true }', async () => {
     const resp = await dispatch({ type: KeeperMessageTypes.CLEAR_EPHKEY });
     expect(resp.ok).toBe(true);
   });
 
-  it("GET_PUBLIC_KEY returns LOCKED after CLEAR_EPHKEY", async () => {
+  it('GET_PUBLIC_KEY returns LOCKED after CLEAR_EPHKEY', async () => {
     const before = await dispatch({ type: KeeperMessageTypes.GET_PUBLIC_KEY });
     expect(before.ok).toBe(true);
 
     await dispatch({ type: KeeperMessageTypes.CLEAR_EPHKEY });
 
     const after = await dispatch({ type: KeeperMessageTypes.GET_PUBLIC_KEY });
-    expect(after.error).toBe("LOCKED");
+    expect(after.error).toBe('LOCKED');
   });
 
-  it("clears sessionDerivedKey — ROTATE_KEYPAIR fails until re-unlocked", async () => {
+  it('clears sessionDerivedKey — ROTATE_KEYPAIR fails until re-unlocked', async () => {
     await dispatch({ type: KeeperMessageTypes.CLEAR_EPHKEY });
 
     const resp = await dispatch({ type: KeeperMessageTypes.ROTATE_KEYPAIR });
     expect(resp.ok).toBe(false);
-    expect(String(resp.error)).toContain("Vault must be unlocked again");
+    expect(String(resp.error)).toContain('Vault must be unlocked again');
   });
 
-  it("does NOT clear zkProofs (CLEAR_ZKPROOF is required for that)", async () => {
+  it('does NOT clear zkProofs (CLEAR_ZKPROOF is required for that)', async () => {
     const proof = {
-      data: { proofPoints: { a: ["1"], b: [["2", "3"]], c: ["4"] } },
+      data: { proofPoints: { a: ['1'], b: [['2', '3']], c: ['4'] } },
     };
     await dispatch({
       type: KeeperMessageTypes.SET_ZKPROOF,
-      chain: "sui:testnet",
+      chain: 'sui:testnet',
       zkProof: proof,
     });
 
@@ -169,13 +169,13 @@ describe("Keeper CLEAR_EPHKEY handler", () => {
     await unlockVault();
     const resp = await dispatch({
       type: KeeperMessageTypes.GET_ZKPROOF,
-      chain: "sui:testnet",
+      chain: 'sui:testnet',
     });
     expect(resp.ok).toBe(true);
     expect(resp.zkProof).toEqual(proof);
   });
 
-  it("clears ephemeralKey, sessionDerivedKey, and localnetKey in one CLEAR_EPHKEY call", async () => {
+  it('clears ephemeralKey, sessionDerivedKey, and localnetKey in one CLEAR_EPHKEY call', async () => {
     // Set a localnet key so we can verify it is cleared alongside the ephemeral key
     const localnetKeypair = Ed25519Keypair.generate();
     const setResp = await dispatch({
@@ -192,14 +192,14 @@ describe("Keeper CLEAR_EPHKEY handler", () => {
 
     // ephemeralKey cleared → GET_PUBLIC_KEY returns LOCKED
     const pubResp = await dispatch({ type: KeeperMessageTypes.GET_PUBLIC_KEY });
-    expect(pubResp.error).toBe("LOCKED");
+    expect(pubResp.error).toBe('LOCKED');
 
     // sessionDerivedKey (and sessionSalt) cleared → ROTATE_KEYPAIR fails
     const rotateResp = await dispatch({
       type: KeeperMessageTypes.ROTATE_KEYPAIR,
     });
     expect(rotateResp.ok).toBe(false);
-    expect(String(rotateResp.error)).toContain("Vault must be unlocked again");
+    expect(String(rotateResp.error)).toContain('Vault must be unlocked again');
 
     // localnetKey cleared → LOCALNET_GET_ADDRESS returns null
     // (_vaultUnlocked and _vaultUnlockExpiry are internal and not directly observable)
@@ -210,9 +210,9 @@ describe("Keeper CLEAR_EPHKEY handler", () => {
     expect(addrAfter.address).toBeNull();
   });
 
-  it("preserves the vault for non-KEEPER targets", async () => {
+  it('preserves the vault for non-KEEPER targets', async () => {
     const { returnValue, sendResponse } = rawDispatch({
-      target: "BACKGROUND",
+      target: 'BACKGROUND',
       type: KeeperMessageTypes.CLEAR_EPHKEY,
     });
 
@@ -227,56 +227,56 @@ describe("Keeper CLEAR_EPHKEY handler", () => {
 
 // ── enforceExpiry ─────────────────────────────────────────────────────────────
 
-describe("Keeper vault expiry (enforceExpiry)", () => {
-  it("GET_PUBLIC_KEY returns LOCKED when the vault has never been unlocked", async () => {
+describe('Keeper vault expiry (enforceExpiry)', () => {
+  it('GET_PUBLIC_KEY returns LOCKED when the vault has never been unlocked', async () => {
     const resp = await dispatch({ type: KeeperMessageTypes.GET_PUBLIC_KEY });
-    expect(resp.error).toBe("LOCKED");
+    expect(resp.error).toBe('LOCKED');
   });
 
-  it("GET_PUBLIC_KEY succeeds when the vault is unlocked and within the expiry window", async () => {
+  it('GET_PUBLIC_KEY succeeds when the vault is unlocked and within the expiry window', async () => {
     await unlockVault();
     const resp = await dispatch({ type: KeeperMessageTypes.GET_PUBLIC_KEY });
     expect(resp.ok).toBe(true);
   });
 
-  it("GET_PUBLIC_KEY returns LOCKED after the 10-minute unlock window elapses", async () => {
+  it('GET_PUBLIC_KEY returns LOCKED after the 10-minute unlock window elapses', async () => {
     await unlockVault();
 
-    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(Date.now() + 11 * 60 * 1000);
 
     const resp = await dispatch({ type: KeeperMessageTypes.GET_PUBLIC_KEY });
-    expect(resp.error).toBe("LOCKED");
+    expect(resp.error).toBe('LOCKED');
   });
 
-  it("enforces expiry atomically — ROTATE_KEYPAIR also fails once time elapses", async () => {
+  it('enforces expiry atomically — ROTATE_KEYPAIR also fails once time elapses', async () => {
     await unlockVault();
 
-    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(Date.now() + 11 * 60 * 1000);
 
     const resp = await dispatch({ type: KeeperMessageTypes.ROTATE_KEYPAIR });
     expect(resp.ok).toBe(false);
-    expect(String(resp.error)).toContain("Vault must be unlocked again");
+    expect(String(resp.error)).toContain('Vault must be unlocked again');
   });
 
-  it("EPH_SIGN returns LOCKED when ephemeralKey and localnetKey are not set", async () => {
+  it('EPH_SIGN returns LOCKED when ephemeralKey and localnetKey are not set', async () => {
     const resp = await dispatch({
       type: KeeperMessageTypes.EPH_SIGN,
       msgBytes: [],
-      scope: "TransactionData",
-      sui_address: "0x1",
+      scope: 'TransactionData',
+      sui_address: '0x1',
     });
-    expect(String(resp.error)).toContain("LOCKED");
+    expect(String(resp.error)).toContain('LOCKED');
   });
 });
 
 // ── message guards ────────────────────────────────────────────────────────────
 
-describe("Keeper message guards", () => {
-  it("ignores messages not targeted to KEEPER (returns false, no sendResponse called)", () => {
+describe('Keeper message guards', () => {
+  it('ignores messages not targeted to KEEPER (returns false, no sendResponse called)', () => {
     const { returnValue, sendResponse } = rawDispatch({
-      target: "BACKGROUND",
+      target: 'BACKGROUND',
       type: KeeperMessageTypes.GET_PUBLIC_KEY,
     });
 
@@ -285,7 +285,7 @@ describe("Keeper message guards", () => {
   });
 
   it("responds with { error: 'Unknown message type' } for unrecognised KEEPER messages", async () => {
-    const resp = await dispatch({ type: "NOT_A_REAL_MESSAGE" });
-    expect(resp).toEqual({ error: "Unknown message type" });
+    const resp = await dispatch({ type: 'NOT_A_REAL_MESSAGE' });
+    expect(resp).toEqual({ error: 'Unknown message type' });
   });
 });

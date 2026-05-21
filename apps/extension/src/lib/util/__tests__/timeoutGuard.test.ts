@@ -1,7 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { trySettle } from "@/lib/util/timeoutGuard";
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { trySettle } from '@/lib/util/timeoutGuard';
 
-describe("trySettle", () => {
+describe('trySettle', () => {
   let state: { settled: boolean };
   let listener: (e: MessageEvent) => void;
   let target: EventTarget;
@@ -20,33 +20,33 @@ describe("trySettle", () => {
     vi.clearAllMocks();
   });
 
-  it("returns true on first call and sets state.settled to true", () => {
+  it('returns true on first call and sets state.settled to true', () => {
     expect(trySettle(state, listener, undefined, target)).toBe(true);
     expect(state.settled).toBe(true);
   });
 
-  it("removes the message listener from the target on first call", () => {
+  it('removes the message listener from the target on first call', () => {
     trySettle(state, listener, undefined, target);
     expect(target.removeEventListener).toHaveBeenCalledOnce();
     expect(target.removeEventListener).toHaveBeenCalledWith(
-      "message",
+      'message',
       listener,
     );
   });
 
-  it("returns false on second call when already settled", () => {
+  it('returns false on second call when already settled', () => {
     trySettle(state, listener, undefined, target);
     expect(trySettle(state, listener, undefined, target)).toBe(false);
   });
 
-  it("does not call removeEventListener again on second call", () => {
+  it('does not call removeEventListener again on second call', () => {
     trySettle(state, listener, undefined, target);
     trySettle(state, listener, undefined, target);
     expect(target.removeEventListener).toHaveBeenCalledOnce();
   });
 
-  it("calls clearTimeout when timeoutId is provided", () => {
-    const clearTimeoutSpy = vi.spyOn(globalThis, "clearTimeout");
+  it('calls clearTimeout when timeoutId is provided', () => {
+    const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout');
     const timeoutId = setTimeout(() => {}, 1000);
     try {
       trySettle(state, listener, timeoutId, target);
@@ -56,8 +56,8 @@ describe("trySettle", () => {
     }
   });
 
-  it("does not call clearTimeout when timeoutId is undefined", () => {
-    const clearTimeoutSpy = vi.spyOn(globalThis, "clearTimeout");
+  it('does not call clearTimeout when timeoutId is undefined', () => {
+    const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout');
     try {
       trySettle(state, listener, undefined, target);
       expect(clearTimeoutSpy).not.toHaveBeenCalled();
@@ -66,11 +66,11 @@ describe("trySettle", () => {
     }
   });
 
-  it("uses window as target when target is not provided", () => {
-    const removeSpy = vi.spyOn(window, "removeEventListener");
+  it('uses window as target when target is not provided', () => {
+    const removeSpy = vi.spyOn(window, 'removeEventListener');
     try {
       trySettle(state, listener);
-      expect(removeSpy).toHaveBeenCalledWith("message", listener);
+      expect(removeSpy).toHaveBeenCalledWith('message', listener);
     } finally {
       removeSpy.mockRestore();
     }

@@ -1,10 +1,10 @@
-import { SUI_DEVNET_CHAIN, SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { SUI_DEVNET_CHAIN, SUI_TESTNET_CHAIN } from '@mysten/wallet-standard';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock dependencies before importing the store
 // Note: vi.mock is hoisted, so we use vi.fn() directly in the mock factory
 // Using workspace alias in test files due to Vite resolution limitations with relative imports
-vi.mock("#/auth", () => ({
+vi.mock('#/auth', () => ({
   hasJwt: vi.fn(),
   useAuthStore: {
     getState: () => ({
@@ -13,12 +13,12 @@ vi.mock("#/auth", () => ({
   },
 }));
 
-vi.mock("#/utils/environment", () => ({
+vi.mock('#/utils/environment', () => ({
   isExtension: vi.fn().mockReturnValue(false),
   isWeb: vi.fn().mockReturnValue(true),
 }));
 
-vi.mock("#/utils/logger", () => ({
+vi.mock('#/utils/logger', () => ({
   createLogger: () => ({
     debug: vi.fn(),
     info: vi.fn(),
@@ -34,7 +34,7 @@ const mockDeviceStoreState = vi.hoisted(() => ({
   isLocked: false,
 }));
 
-vi.mock("#/stores/deviceStore", () => ({
+vi.mock('#/stores/deviceStore', () => ({
   useDeviceStore: {
     getState: () => mockDeviceStoreState,
   },
@@ -42,10 +42,10 @@ vi.mock("#/stores/deviceStore", () => ({
 
 // Import mocked modules after vi.mock calls
 // Using workspace alias in test files due to Vite resolution limitations with relative imports
-import { hasJwt } from "#/auth";
-import { useContextStore } from "#/stores/contextStore";
+import { hasJwt } from '#/auth';
+import { useContextStore } from '#/stores/contextStore';
 
-describe("contextStore", () => {
+describe('contextStore', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockDeviceStoreState.networkData = {};
@@ -64,8 +64,8 @@ describe("contextStore", () => {
     vi.restoreAllMocks();
   });
 
-  describe("checkNetworkSwitch", () => {
-    it("returns requiresReauth: false for same chain", async () => {
+  describe('checkNetworkSwitch', () => {
+    it('returns requiresReauth: false for same chain', async () => {
       useContextStore.setState({ chain: SUI_DEVNET_CHAIN });
 
       const result = await useContextStore
@@ -76,7 +76,7 @@ describe("contextStore", () => {
       expect(hasJwt).not.toHaveBeenCalled();
     });
 
-    it("returns requiresReauth: false when JWT exists for target chain", async () => {
+    it('returns requiresReauth: false when JWT exists for target chain', async () => {
       useContextStore.setState({ chain: SUI_DEVNET_CHAIN });
       vi.mocked(hasJwt).mockResolvedValue(true);
 
@@ -88,7 +88,7 @@ describe("contextStore", () => {
       expect(hasJwt).toHaveBeenCalled();
     });
 
-    it("returns requiresReauth: true when no JWT exists for target chain", async () => {
+    it('returns requiresReauth: true when no JWT exists for target chain', async () => {
       useContextStore.setState({ chain: SUI_DEVNET_CHAIN });
       vi.mocked(hasJwt).mockResolvedValue(false);
 
@@ -101,8 +101,8 @@ describe("contextStore", () => {
     });
   });
 
-  describe("forceSetChain", () => {
-    it("sets chain directly without checking JWT", () => {
+  describe('forceSetChain', () => {
+    it('sets chain directly without checking JWT', () => {
       useContextStore.setState({ chain: SUI_DEVNET_CHAIN });
 
       useContextStore.getState().forceSetChain(SUI_TESTNET_CHAIN);
@@ -111,7 +111,7 @@ describe("contextStore", () => {
       expect(hasJwt).not.toHaveBeenCalled();
     });
 
-    it("does not change chain if already on target chain", () => {
+    it('does not change chain if already on target chain', () => {
       useContextStore.setState({ chain: SUI_TESTNET_CHAIN });
 
       useContextStore.getState().forceSetChain(SUI_TESTNET_CHAIN);
@@ -120,8 +120,8 @@ describe("contextStore", () => {
     });
   });
 
-  describe("setChain", () => {
-    it("returns success without reauth for same chain", async () => {
+  describe('setChain', () => {
+    it('returns success without reauth for same chain', async () => {
       useContextStore.setState({ chain: SUI_DEVNET_CHAIN });
 
       const result = await useContextStore
@@ -132,7 +132,7 @@ describe("contextStore", () => {
       expect(result.requiresReauth).toBe(false);
     });
 
-    it("returns requiresReauth: true when no JWT for target chain", async () => {
+    it('returns requiresReauth: true when no JWT for target chain', async () => {
       useContextStore.setState({ chain: SUI_DEVNET_CHAIN });
       vi.mocked(hasJwt).mockResolvedValue(false);
 
@@ -145,7 +145,7 @@ describe("contextStore", () => {
       expect(useContextStore.getState().chain).toBe(SUI_TESTNET_CHAIN);
     });
 
-    it("pre-initializes device data when switching to network without JWT", async () => {
+    it('pre-initializes device data when switching to network without JWT', async () => {
       useContextStore.setState({ chain: SUI_DEVNET_CHAIN });
       vi.mocked(hasJwt).mockResolvedValue(false);
 
@@ -157,7 +157,7 @@ describe("contextStore", () => {
       );
     });
 
-    it("performs seamless switch when JWT exists", async () => {
+    it('performs seamless switch when JWT exists', async () => {
       useContextStore.setState({ chain: SUI_DEVNET_CHAIN });
       vi.mocked(hasJwt).mockResolvedValue(true);
 
@@ -173,7 +173,7 @@ describe("contextStore", () => {
       );
     });
 
-    it("allows switch and regenerates device data when JWT exists but device data is missing", async () => {
+    it('allows switch and regenerates device data when JWT exists but device data is missing', async () => {
       useContextStore.setState({ chain: SUI_DEVNET_CHAIN });
       vi.mocked(hasJwt).mockResolvedValue(true);
 
@@ -189,12 +189,12 @@ describe("contextStore", () => {
       );
     });
 
-    it("allows switch and regenerates device data when JWT exists but device data is expired", async () => {
+    it('allows switch and regenerates device data when JWT exists but device data is expired', async () => {
       useContextStore.setState({ chain: SUI_DEVNET_CHAIN });
       vi.mocked(hasJwt).mockResolvedValue(true);
       mockDeviceStoreState.networkData = {
         [SUI_TESTNET_CHAIN]: {
-          nonce: "existing-nonce",
+          nonce: 'existing-nonce',
           maxEpoch: 100,
           maxEpochTimestampMs: Date.now() - 10_000, // expired
         },

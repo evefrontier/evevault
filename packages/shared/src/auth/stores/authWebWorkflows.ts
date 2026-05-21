@@ -1,20 +1,20 @@
-import type { SuiChain } from "@mysten/wallet-standard";
-import { User } from "oidc-client-ts";
-import { userToJwtResponse } from "#/auth/userToJwtResponse";
-import { resolveExpiresAt } from "#/auth/utils/authStoreUtils";
-import { useDeviceStore } from "#/stores";
+import type { SuiChain } from '@mysten/wallet-standard';
+import { User } from 'oidc-client-ts';
+import { userToJwtResponse } from '#/auth/userToJwtResponse';
+import { resolveExpiresAt } from '#/auth/utils/authStoreUtils';
+import { useDeviceStore } from '#/stores';
 import {
   getCurrentTenantId,
   OAuthTenantSessionKey,
-} from "#/stores/tenantStore";
-import { isZkLoginSuiChain, type ZkLoginSuiChain } from "#/types/networks";
-import { createLogger } from "#/utils";
-import { persistEnrichedUser } from "./authUserSession";
+} from '#/stores/tenantStore';
+import { isZkLoginSuiChain, type ZkLoginSuiChain } from '#/types/networks';
+import { createLogger } from '#/utils';
+import { persistEnrichedUser } from './authUserSession';
 import {
   type AuthSet,
   type GetUserManagerInstance,
   getErrorMessage,
-} from "./authWorkflowUtils";
+} from './authWorkflowUtils';
 
 const log = createLogger();
 
@@ -39,7 +39,7 @@ export async function initializeWebSession(
   }
 
   if (!webUser?.refresh_token?.trim()) {
-    log.info("Web init: no session or refresh token, not logged in", {
+    log.info('Web init: no session or refresh token, not logged in', {
       network,
     });
     return null;
@@ -54,7 +54,7 @@ export async function initializeWebSession(
 
     return persistEnrichedUser(new User(webUser), webUserManager);
   } catch (error) {
-    log.warn("Web init: silent renew failed, not logged in", {
+    log.warn('Web init: silent renew failed, not logged in', {
       network,
       error: error instanceof Error ? error.message : String(error),
     });
@@ -80,7 +80,7 @@ async function ensureDeviceDataForLogin(
     return;
   }
 
-  log.info("Initializing device data for network before login", { network });
+  log.info('Initializing device data for network before login', { network });
   await deviceStore.initializeForChain(network);
 }
 
@@ -91,7 +91,7 @@ export async function loginWebSession(
 ): Promise<void> {
   // Localnet bypasses zkLogin OAuth, so there is no web redirect to start.
   if (!isZkLoginSuiChain(network)) {
-    log.info("Skipping OAuth redirect for non-zkLogin network", { network });
+    log.info('Skipping OAuth redirect for non-zkLogin network', { network });
     set({ loading: false });
     return;
   }
@@ -99,14 +99,14 @@ export async function loginWebSession(
   try {
     await ensureDeviceDataForLogin(network);
 
-    if (typeof sessionStorage !== "undefined") {
+    if (typeof sessionStorage !== 'undefined') {
       sessionStorage.setItem(OAuthTenantSessionKey, getCurrentTenantId());
     }
 
     getUserManagerInstance().signinRedirect();
     set({ loading: false });
   } catch (error) {
-    log.error("Login failed (web)", error);
+    log.error('Login failed (web)', error);
     set({ loading: false, error: getErrorMessage(error) });
   }
 }

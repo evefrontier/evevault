@@ -1,22 +1,22 @@
-import { SUI_DEVNET_CHAIN, SUI_LOCALNET_CHAIN } from "@mysten/wallet-standard";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { renderHook, waitFor } from "@testing-library/react";
+import { SUI_DEVNET_CHAIN, SUI_LOCALNET_CHAIN } from '@mysten/wallet-standard';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { renderHook, waitFor } from '@testing-library/react';
 
-import type { ReactNode } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { ReactNode } from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockQuery = vi.fn();
 const mockGetBalance = vi.fn();
 
-vi.mock("#/sui/graphqlClient", () => ({
+vi.mock('#/sui/graphqlClient', () => ({
   createSuiGraphQLClient: vi.fn(() => ({ query: mockQuery })),
 }));
 
-vi.mock("#/sui", () => ({
+vi.mock('#/sui', () => ({
   createSuiClient: vi.fn(() => ({ getBalance: mockGetBalance })),
 }));
 
-vi.mock("#/utils/logger", () => ({
+vi.mock('#/utils/logger', () => ({
   createLogger: vi.fn(() => ({
     debug: vi.fn(),
     info: vi.fn(),
@@ -25,7 +25,7 @@ vi.mock("#/utils/logger", () => ({
   })),
 }));
 
-vi.mock("#/utils", () => ({
+vi.mock('#/utils', () => ({
   createLogger: vi.fn(() => ({
     debug: vi.fn(),
     info: vi.fn(),
@@ -35,16 +35,16 @@ vi.mock("#/utils", () => ({
   isExtension: vi.fn(() => false),
   isWeb: vi.fn(() => true),
   isBrowser: vi.fn(() => true),
-  SUI_COIN_TYPE: "0x2::sui::SUI",
+  SUI_COIN_TYPE: '0x2::sui::SUI',
   formatByDecimals: vi.fn(
     (balance: string, _decimals: number) => `formatted-${balance}`,
   ),
   formatMistToSui: vi.fn(),
 }));
 
-import { createMockUser } from "#/testing";
-import { formatMistToSui } from "#/utils";
-import { useBalance } from "#/wallet/hooks/useBalance";
+import { createMockUser } from '#/testing';
+import { formatMistToSui } from '#/utils';
+import { useBalance } from '#/wallet/hooks/useBalance';
 
 const mockedFormatSUI = vi.mocked(formatMistToSui);
 
@@ -54,13 +54,13 @@ const createWrapper = (queryClient: QueryClient) => {
   );
 };
 
-describe("useBalance hook", () => {
+describe('useBalance hook', () => {
   beforeEach(() => {
     mockQuery.mockClear();
     mockGetBalance.mockClear();
   });
 
-  it("returns a formatted SUI balance for the current user", async () => {
+  it('returns a formatted SUI balance for the current user', async () => {
     mockQuery
       .mockResolvedValueOnce({
         data: { checkpoint: { sequenceNumber: 12345 } },
@@ -68,18 +68,18 @@ describe("useBalance hook", () => {
       })
       .mockResolvedValueOnce({
         data: {
-          address: { balance: { totalBalance: "1000" } },
+          address: { balance: { totalBalance: '1000' } },
           coinMetadata: {
             decimals: 9,
-            symbol: "SUI",
-            name: "Sui",
-            description: "Sui Native Token",
+            symbol: 'SUI',
+            name: 'Sui',
+            description: 'Sui Native Token',
             iconUrl: null,
           },
         },
         errors: undefined,
       });
-    mockedFormatSUI.mockReturnValueOnce("formatted-1000");
+    mockedFormatSUI.mockReturnValueOnce('formatted-1000');
     const user = createMockUser();
 
     const queryClient = new QueryClient({
@@ -109,27 +109,27 @@ describe("useBalance hook", () => {
       2,
       expect.objectContaining({
         variables: {
-          address: "0x123",
-          coinType: "0x2::sui::SUI",
+          address: '0x123',
+          coinType: '0x2::sui::SUI',
           atCheckpoint: 12345,
         },
       }),
     );
-    expect(result.current.data?.formattedBalance).toBe("formatted-1000");
+    expect(result.current.data?.formattedBalance).toBe('formatted-1000');
 
     unmount();
     queryClient.clear();
   });
 
-  it("retries with fresh checkpoint when balance query returns outside consistent range", async () => {
+  it('retries with fresh checkpoint when balance query returns outside consistent range', async () => {
     const successBalanceData = {
       data: {
-        address: { balance: { totalBalance: "500" } },
+        address: { balance: { totalBalance: '500' } },
         coinMetadata: {
           decimals: 9,
-          symbol: "SUI",
-          name: "Sui",
-          description: "Sui Native Token",
+          symbol: 'SUI',
+          name: 'Sui',
+          description: 'Sui Native Token',
           iconUrl: null,
         },
       },
@@ -142,10 +142,10 @@ describe("useBalance hook", () => {
 
     mockQuery
       .mockResolvedValueOnce(checkpointData(100))
-      .mockRejectedValueOnce(new Error("Request is outside consistent range"))
+      .mockRejectedValueOnce(new Error('Request is outside consistent range'))
       .mockResolvedValueOnce(checkpointData(101))
       .mockResolvedValueOnce(successBalanceData);
-    mockedFormatSUI.mockReturnValue("formatted-500");
+    mockedFormatSUI.mockReturnValue('formatted-500');
     const user = createMockUser();
 
     const queryClient = new QueryClient({
@@ -182,14 +182,14 @@ describe("useBalance hook", () => {
     expect(firstAtCheckpoint).toBe(100);
     expect(retryAtCheckpoint).toBe(101);
     expect(retryAtCheckpoint).not.toBe(firstAtCheckpoint);
-    expect(result.current.data?.formattedBalance).toBe("formatted-500");
+    expect(result.current.data?.formattedBalance).toBe('formatted-500');
 
     unmount();
     queryClient.clear();
   });
 });
 
-describe("useBalance hook — localnet gRPC path", () => {
+describe('useBalance hook — localnet gRPC path', () => {
   beforeEach(() => {
     mockGetBalance.mockClear();
     mockQuery.mockClear();
@@ -201,12 +201,12 @@ describe("useBalance hook — localnet gRPC path", () => {
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     );
 
-  it("returns formatted SUI balance via gRPC on localnet", async () => {
-    mockGetBalance.mockResolvedValue({ balance: { balance: "2000000000" } });
-    const { formatMistToSui } = await import("#/utils");
-    vi.mocked(formatMistToSui).mockReturnValueOnce("2");
+  it('returns formatted SUI balance via gRPC on localnet', async () => {
+    mockGetBalance.mockResolvedValue({ balance: { balance: '2000000000' } });
+    const { formatMistToSui } = await import('#/utils');
+    vi.mocked(formatMistToSui).mockReturnValueOnce('2');
 
-    const user = (await import("#/testing")).createMockUser();
+    const user = (await import('#/testing')).createMockUser();
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
@@ -215,24 +215,24 @@ describe("useBalance hook — localnet gRPC path", () => {
         useBalance({
           user,
           chain: SUI_LOCALNET_CHAIN,
-          localnetUrl: "http://localhost:9000",
+          localnetUrl: 'http://localhost:9000',
         }),
       { wrapper: createWrapper(queryClient) },
     );
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.formattedBalance).toBe("2");
-    expect(result.current.data?.rawBalance).toBe("2000000000");
+    expect(result.current.data?.formattedBalance).toBe('2');
+    expect(result.current.data?.rawBalance).toBe('2000000000');
     unmount();
     queryClient.clear();
   });
 
-  it("uses 9-decimal fallback and warns for unknown localnet tokens", async () => {
-    mockGetBalance.mockResolvedValue({ balance: { balance: "5000000000" } });
-    const { createLogger } = await import("#/utils/logger");
+  it('uses 9-decimal fallback and warns for unknown localnet tokens', async () => {
+    mockGetBalance.mockResolvedValue({ balance: { balance: '5000000000' } });
+    const { createLogger } = await import('#/utils/logger');
     const logInstance = vi.mocked(createLogger).mock.results[0]?.value;
 
-    const user = (await import("#/testing")).createMockUser();
+    const user = (await import('#/testing')).createMockUser();
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
@@ -241,24 +241,24 @@ describe("useBalance hook — localnet gRPC path", () => {
         useBalance({
           user,
           chain: SUI_LOCALNET_CHAIN,
-          coinType: "0xdeadbeef::token::TOKEN",
-          localnetUrl: "http://localhost:9000",
+          coinType: '0xdeadbeef::token::TOKEN',
+          localnetUrl: 'http://localhost:9000',
         }),
       { wrapper: createWrapper(queryClient) },
     );
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.formattedBalance).toBe("formatted-5000000000");
+    expect(result.current.data?.formattedBalance).toBe('formatted-5000000000');
     expect(logInstance.warn).toHaveBeenCalledWith(
-      expect.stringContaining("no metadata for coin type"),
-      expect.objectContaining({ coinType: "0xdeadbeef::token::TOKEN" }),
+      expect.stringContaining('no metadata for coin type'),
+      expect.objectContaining({ coinType: '0xdeadbeef::token::TOKEN' }),
     );
     unmount();
     queryClient.clear();
   });
 
-  it("stays idle when localnet but localnetUrl is missing", async () => {
-    const user = (await import("#/testing")).createMockUser();
+  it('stays idle when localnet but localnetUrl is missing', async () => {
+    const user = (await import('#/testing')).createMockUser();
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
@@ -276,7 +276,7 @@ describe("useBalance hook — localnet gRPC path", () => {
     queryClient.clear();
   });
 
-  it("stays idle when address is missing", async () => {
+  it('stays idle when address is missing', async () => {
     const queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
     });
@@ -285,7 +285,7 @@ describe("useBalance hook — localnet gRPC path", () => {
         useBalance({
           user: null,
           chain: SUI_LOCALNET_CHAIN,
-          localnetUrl: "http://localhost:9000",
+          localnetUrl: 'http://localhost:9000',
         }),
       { wrapper: createWrapper(queryClient) },
     );

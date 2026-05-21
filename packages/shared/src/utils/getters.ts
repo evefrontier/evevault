@@ -1,9 +1,9 @@
-import type { SuiChain } from "@mysten/wallet-standard";
-import { DEVICE_STORAGE_KEY } from "./storageKeys";
+import type { SuiChain } from '@mysten/wallet-standard';
+import { DEVICE_STORAGE_KEY } from './storageKeys';
 
 export const getDeviceData = async (chain: SuiChain) => {
   // Lazy import to avoid circular dependency: utils → getters → deviceStore → auth → authStore → utils
-  const { useDeviceStore } = await import("#/stores/deviceStore");
+  const { useDeviceStore } = await import('#/stores/deviceStore');
   const deviceStore = useDeviceStore.getState();
 
   const jwtRandomness = deviceStore.getJwtRandomness(chain);

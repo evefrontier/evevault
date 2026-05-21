@@ -12,6 +12,6 @@ export function trySettle(
   if (state.settled) return false;
   state.settled = true;
   if (timeoutId !== undefined) clearTimeout(timeoutId);
-  target.removeEventListener("message", listener as EventListener);
+  target.removeEventListener('message', listener as EventListener);
   return true;
 }

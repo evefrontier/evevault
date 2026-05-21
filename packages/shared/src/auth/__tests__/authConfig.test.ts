@@ -1,5 +1,5 @@
-import { TenantId } from "@evefrontier/dapp-kit";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { TenantId } from '@evefrontier/dapp-kit';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { oidcMocks, logMocks, envMocks } = vi.hoisted(() => {
   const userManagerConstructor = vi.fn();
@@ -15,7 +15,7 @@ const { oidcMocks, logMocks, envMocks } = vi.hoisted(() => {
   };
 });
 
-vi.mock("#/utils/logger", () => ({
+vi.mock('#/utils/logger', () => ({
   createLogger: () => ({
     debug: vi.fn(),
     info: vi.fn(),
@@ -24,7 +24,7 @@ vi.mock("#/utils/logger", () => ({
   }),
 }));
 
-vi.mock("oidc-client-ts", () => {
+vi.mock('oidc-client-ts', () => {
   class UserManager {
     constructor(settings: unknown) {
       oidcMocks.userManagerConstructor(settings);
@@ -45,20 +45,20 @@ vi.mock("oidc-client-ts", () => {
   };
 });
 
-vi.mock("#/utils/tenantConfig", () => ({
+vi.mock('#/utils/tenantConfig', () => ({
   getTenantConfig: () => ({
-    clientId: "client-id",
-    clientSecret: "secret",
-    serverUrl: "https://issuer.example",
+    clientId: 'client-id',
+    clientSecret: 'secret',
+    serverUrl: 'https://issuer.example',
   }),
 }));
 
-vi.mock("#/utils/environment", () => ({
+vi.mock('#/utils/environment', () => ({
   isExtension: () => envMocks.isExtension(),
   isWeb: () => envMocks.isWeb(),
 }));
 
-describe("authConfig UserManager", () => {
+describe('authConfig UserManager', () => {
   beforeEach(() => {
     vi.resetModules();
     envMocks.isExtension.mockReturnValue(false);
@@ -69,8 +69,8 @@ describe("authConfig UserManager", () => {
     vi.clearAllMocks();
   });
 
-  it("passes automaticSilentRenew to UserManager", async () => {
-    const { getUserManager } = await import("#/auth/authConfig");
+  it('passes automaticSilentRenew to UserManager', async () => {
+    const { getUserManager } = await import('#/auth/authConfig');
     getUserManager(TenantId.STILLNESS);
 
     expect(oidcMocks.userManagerConstructor).toHaveBeenCalledOnce();
@@ -81,13 +81,13 @@ describe("authConfig UserManager", () => {
     expect(settings.automaticSilentRenew).toBe(true);
   });
 
-  it("sets automaticSilentRenew to false in extension environment", async () => {
+  it('sets automaticSilentRenew to false in extension environment', async () => {
     envMocks.isExtension.mockReturnValue(true);
     (globalThis as unknown as { chrome: unknown }).chrome = {
-      runtime: { id: "test-ext" },
+      runtime: { id: 'test-ext' },
     };
     try {
-      const { getUserManager } = await import("#/auth/authConfig");
+      const { getUserManager } = await import('#/auth/authConfig');
       getUserManager(TenantId.STILLNESS);
 
       const settings = oidcMocks.userManagerConstructor.mock.calls[0]?.[0] as {
@@ -99,23 +99,23 @@ describe("authConfig UserManager", () => {
     }
   });
 
-  it("logs when silent renew handler is invoked with an error", async () => {
-    const { getUserManager } = await import("#/auth/authConfig");
+  it('logs when silent renew handler is invoked with an error', async () => {
+    const { getUserManager } = await import('#/auth/authConfig');
     getUserManager(TenantId.STILLNESS);
 
     expect(oidcMocks.addSilentRenewError).toHaveBeenCalledOnce();
     const handler = oidcMocks.addSilentRenewError.mock.calls[0]?.[0] as
       | ((error: unknown) => void)
       | undefined;
-    expect(handler).toBeTypeOf("function");
+    expect(handler).toBeTypeOf('function');
 
-    const fakeError = new Error("silent renew failed");
+    const fakeError = new Error('silent renew failed');
     handler?.(fakeError);
 
     expect(logMocks.logError).toHaveBeenCalledWith(
-      "OIDC silent renew error",
+      'OIDC silent renew error',
       expect.objectContaining({
-        tenantId: "stillness",
+        tenantId: 'stillness',
         error: fakeError,
       }),
     );

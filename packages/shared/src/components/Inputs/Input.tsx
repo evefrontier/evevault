@@ -1,21 +1,21 @@
-import type React from "react";
-import { forwardRef, useState } from "react";
-import "./style.css";
-import { Corners } from "#/components/Corners";
-import Text from "#/components/Text";
-import type { InputProps } from "#/types";
+import type React from 'react';
+import { forwardRef, useState } from 'react';
+import './style.css';
+import { Corners } from '#/components/Corners';
+import Text from '#/components/Text';
+import type { InputProps } from '#/types';
 
 const Input: React.FC<InputProps> = forwardRef<HTMLInputElement, InputProps>(
   (
     {
-      size = "base",
+      size = 'base',
       label,
       errorText,
       statusText,
       uppercase = true,
       disabled = false,
       showLabel = true,
-      height = "56px",
+      height = '56px',
       value,
       placeholder,
       className,
@@ -28,12 +28,12 @@ const Input: React.FC<InputProps> = forwardRef<HTMLInputElement, InputProps>(
   ) => {
     const [isFocused, setIsFocused] = useState(false);
 
-    const hasValue = value !== undefined && value !== "";
+    const hasValue = value !== undefined && value !== '';
     const showFloatingLabel = (showLabel && label) || hasValue;
     const labelText = label || placeholder;
     const inputId =
       rest.id ||
-      `input-${label?.toLowerCase().replace(/\s+/g, "-") || "field"}`;
+      `input-${label?.toLowerCase().replace(/\s+/g, '-') || 'field'}`;
 
     const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
       setIsFocused(true);
@@ -46,14 +46,14 @@ const Input: React.FC<InputProps> = forwardRef<HTMLInputElement, InputProps>(
     };
 
     const containerClass = [
-      "input-field",
-      isFocused && "input-field--focused",
-      errorText && "input-field--error",
-      disabled && "input-field--disabled",
+      'input-field',
+      isFocused && 'input-field--focused',
+      errorText && 'input-field--error',
+      disabled && 'input-field--disabled',
       className,
     ]
       .filter(Boolean)
-      .join(" ");
+      .join(' ');
 
     return (
       <div className="input-wrapper" style={style}>
@@ -67,7 +67,7 @@ const Input: React.FC<InputProps> = forwardRef<HTMLInputElement, InputProps>(
           <div className="input-field__content">
             {showFloatingLabel && (
               <label
-                className={`input-field__label ${errorText ? "input-field__label--error" : ""}`}
+                className={`input-field__label ${errorText ? 'input-field__label--error' : ''}`}
                 htmlFor={inputId}
               >
                 {labelText}
@@ -82,7 +82,7 @@ const Input: React.FC<InputProps> = forwardRef<HTMLInputElement, InputProps>(
               disabled={disabled}
               onFocus={handleFocus}
               onBlur={handleBlur}
-              style={{ textTransform: uppercase ? "uppercase" : "none" }}
+              style={{ textTransform: uppercase ? 'uppercase' : 'none' }}
               {...rest}
             />
           </div>
@@ -104,6 +104,6 @@ const Input: React.FC<InputProps> = forwardRef<HTMLInputElement, InputProps>(
   },
 );
 
-Input.displayName = "Input";
+Input.displayName = 'Input';
 
 export default Input;

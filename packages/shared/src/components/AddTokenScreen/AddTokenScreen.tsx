@@ -1,13 +1,13 @@
-import type React from "react";
-import { useState } from "react";
-import Button from "#/components/Button";
-import Heading from "#/components/Heading";
-import { Input } from "#/components/Inputs";
-import Text from "#/components/Text";
-import { useToast } from "#/components/Toast";
-import { useTokenListStore } from "#/stores/tokenListStore";
-import type { AddTokenScreenProps } from "#/types";
-import { isValidCoinTypeFormat } from "#/wallet/utils/coinTypeFormat";
+import type React from 'react';
+import { useState } from 'react';
+import Button from '#/components/Button';
+import Heading from '#/components/Heading';
+import { Input } from '#/components/Inputs';
+import Text from '#/components/Text';
+import { useToast } from '#/components/Toast';
+import { useTokenListStore } from '#/stores/tokenListStore';
+import type { AddTokenScreenProps } from '#/types';
+import { isValidCoinTypeFormat } from '#/wallet/utils/coinTypeFormat';
 
 export const AddTokenScreen: React.FC<AddTokenScreenProps> = ({
   user,
@@ -17,33 +17,33 @@ export const AddTokenScreen: React.FC<AddTokenScreenProps> = ({
 }) => {
   const { addToken } = useTokenListStore();
   const { showToast } = useToast();
-  const [inputValue, setInputValue] = useState("");
+  const [inputValue, setInputValue] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const handleAddToken = () => {
     if (!chain) {
-      showToast("Failed to add token");
+      showToast('Failed to add token');
       return;
     }
     const normalized = inputValue.trim();
     if (!normalized) {
-      setError("Please enter a coin type");
-      showToast("Failed to add token");
+      setError('Please enter a coin type');
+      showToast('Failed to add token');
       return;
     }
 
     if (!isValidCoinTypeFormat(normalized)) {
       setError(
-        "Invalid coin type format. Expected: 0x...::module::COIN or 0x2::Coin<...>",
+        'Invalid coin type format. Expected: 0x...::module::COIN or 0x2::Coin<...>',
       );
-      showToast("Failed to add token");
+      showToast('Failed to add token');
       return;
     }
 
     addToken(chain, normalized);
-    setInputValue("");
+    setInputValue('');
     setError(null);
-    showToast("Token added");
+    showToast('Token added');
 
     if (onSuccess) {
       onSuccess();
@@ -64,7 +64,7 @@ export const AddTokenScreen: React.FC<AddTokenScreenProps> = ({
           Add custom token
         </Heading>
         <Text variant="light" size="large" className="mb-2">
-          Enter the full coin type identifier to track custom token balance.{" "}
+          Enter the full coin type identifier to track custom token balance.{' '}
         </Text>
         <Text variant="light" size="xsmall">
           Make sure you enter the correct coin type. Invalid or malicious tokens

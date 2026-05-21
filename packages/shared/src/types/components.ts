@@ -1,6 +1,6 @@
-import type { TenantId } from "@evefrontier/dapp-kit/utils";
-import type { SuiChain } from "@mysten/wallet-standard";
-import type { User } from "oidc-client-ts";
+import type { TenantId } from '@evefrontier/dapp-kit/utils';
+import type { SuiChain } from '@mysten/wallet-standard';
+import type { User } from 'oidc-client-ts';
 import type {
   ButtonHTMLAttributes,
   CSSProperties,
@@ -8,8 +8,8 @@ import type {
   InputHTMLAttributes,
   ReactNode,
   SVGProps,
-} from "react";
-import type { ThemeToken } from "#/theme/colorTheme";
+} from 'react';
+import type { ThemeToken } from '#/theme/colorTheme';
 
 export interface SwitchProps {
   isChecked: boolean;
@@ -49,8 +49,8 @@ export type BracketsProps = {
   showOnHover?: boolean;
 };
 
-export type ButtonSize = "small" | "medium" | "large" | "fill";
-export type ButtonVariant = "primary" | "secondary" | "text" | "icon";
+export type ButtonSize = 'small' | 'medium' | 'large' | 'fill';
+export type ButtonVariant = 'primary' | 'secondary' | 'text' | 'icon';
 
 export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   size?: ButtonSize;
@@ -70,7 +70,7 @@ export type DuoButtonProps = {
   onPrimaryActionPress?: () => void;
   onSecondaryActionPress?: () => void;
   buttonSize?: ButtonSize;
-  variant?: "primary" | "alert";
+  variant?: 'primary' | 'alert';
   hidePrimaryAction?: boolean;
   hideSecondaryAction?: boolean;
   primaryActionProps?: ButtonProps;
@@ -81,47 +81,47 @@ export type DuoButtonProps = {
 
 // Icons
 const iconNames = [
-  "Add",
-  "ArrowDown",
-  "ArrowDownSlant",
-  "ArrowLeft",
-  "ArrowRight",
-  "ArrowTurnDownRight",
-  "ArrowUpSlant",
-  "Assets",
-  "Browse",
-  "ChevronArrowDown",
-  "ChevronArrowLeft",
-  "ChevronArrowRight",
-  "ChevronArrowUp",
-  "Close",
-  "Copy",
-  "CorporationFolder",
-  "Edit",
-  "EveNet",
-  "Expand",
-  "Eye",
-  "Fitting",
-  "Folder",
-  "HideEye",
-  "History",
-  "ListView",
-  "MoreVertical",
-  "OpenWindow",
-  "Refresh",
-  "Settings",
-  "Network",
-  "Tokens",
+  'Add',
+  'ArrowDown',
+  'ArrowDownSlant',
+  'ArrowLeft',
+  'ArrowRight',
+  'ArrowTurnDownRight',
+  'ArrowUpSlant',
+  'Assets',
+  'Browse',
+  'ChevronArrowDown',
+  'ChevronArrowLeft',
+  'ChevronArrowRight',
+  'ChevronArrowUp',
+  'Close',
+  'Copy',
+  'CorporationFolder',
+  'Edit',
+  'EveNet',
+  'Expand',
+  'Eye',
+  'Fitting',
+  'Folder',
+  'HideEye',
+  'History',
+  'ListView',
+  'MoreVertical',
+  'OpenWindow',
+  'Refresh',
+  'Settings',
+  'Network',
+  'Tokens',
 ] as const;
 export type IconName = (typeof iconNames)[number];
 
 export type BaseIconProps = SVGProps<SVGSVGElement> & {
   name: IconName;
-  size?: "small" | "medium" | "large";
+  size?: 'small' | 'medium' | 'large';
   color?: string;
 };
 
-export type IconWithoutNameProps = Omit<BaseIconProps, "name">;
+export type IconWithoutNameProps = Omit<BaseIconProps, 'name'>;
 
 // main <Icon /> component type
 export type IconComponent = FC<BaseIconProps> & {
@@ -147,10 +147,10 @@ export type CheckBoxProps = {
   children?: React.ReactNode;
 };
 
-export type InputSize = "small" | "base" | "large";
+export type InputSize = 'small' | 'base' | 'large';
 
 export interface InputProps
-  extends Omit<InputHTMLAttributes<HTMLInputElement>, "size"> {
+  extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> {
   size?: InputSize;
   label?: string;
   errorText?: string;
@@ -175,16 +175,16 @@ export type RadioButtonProps = {
 };
 
 export type TextProps = React.HTMLAttributes<HTMLParagraphElement> & {
-  size?: "xsmall" | "small" | "medium" | "large";
+  size?: 'xsmall' | 'small' | 'medium' | 'large';
   variant?:
-    | "light"
-    | "regular"
-    | "bold"
-    | "secondary"
-    | "label"
-    | "label-semi"
-    | "label-medium"
-    | "label-small";
+    | 'light'
+    | 'regular'
+    | 'bold'
+    | 'secondary'
+    | 'label'
+    | 'label-semi'
+    | 'label-medium'
+    | 'label-small';
   color?: ThemeToken;
   style?: React.CSSProperties;
   className?: string;
@@ -220,13 +220,13 @@ export interface HeaderMobileProps {
 }
 
 export type CornersColor =
-  | "quantum"
-  | "quantum-50"
-  | "neutral"
-  | "neutral-50"
-  | "grey"
-  | "error"
-  | "success";
+  | 'quantum'
+  | 'quantum-50'
+  | 'neutral'
+  | 'neutral-50'
+  | 'grey'
+  | 'error'
+  | 'success';
 
 export interface CornersProps {
   color?: CornersColor;
@@ -303,12 +303,12 @@ export interface DropdownProps {
   /** Ref to the trigger element (clicks on trigger won't trigger onClickOutside) */
   triggerRef?: React.RefObject<HTMLElement | null>;
   /** Open menu above trigger (e.g. for extension footer) or below (default) */
-  placement?: "top" | "bottom";
+  placement?: 'top' | 'bottom';
 }
 
 export type HeadingProps = React.HTMLAttributes<HTMLHeadingElement> & {
   level: 1 | 2 | 3 | 4 | 5 | 6;
-  variant?: "regular" | "bold" | "secondary";
+  variant?: 'regular' | 'bold' | 'secondary';
   color?: ThemeToken;
   style?: React.CSSProperties;
   className?: string;
@@ -328,7 +328,7 @@ export interface NavigationBarProps {
   activePath?: string;
 }
 
-export type ToastVariant = "default" | "error";
+export type ToastVariant = 'default' | 'error';
 
 export interface ToastProps {
   title: string;
@@ -356,23 +356,23 @@ export interface ExtendedTokenRowProps extends TokenRowProps {
   localnetUrl?: string;
 }
 
-export type LayoutVariant = "web" | "extension";
+export type LayoutVariant = 'web' | 'extension';
 
 export interface LayoutProps {
   children: React.ReactNode;
   /** Layout variant: "web" (default) for full app, "extension" for browser popup */
   variant?: LayoutVariant;
   showNav?: boolean;
-  navItems?: NavigationBarProps["items"];
+  navItems?: NavigationBarProps['items'];
   /** Extension variant: props for HeaderMobile (required when variant="extension") */
   headerProps?: HeaderMobileProps;
 }
 
 /** Re-exported from utils/routes (single source of truth for route path types). */
-export type { NavPath, RoutePath } from "#/utils/routes";
+export type { NavPath, RoutePath } from '#/utils/routes';
 
 // Transaction History Types
-export type TransactionDirection = "sent" | "received";
+export type TransactionDirection = 'sent' | 'received';
 
 /** Single balance change within a transaction (e.g. EVE transfer or SUI gas) */
 export interface TransactionBalanceChange {

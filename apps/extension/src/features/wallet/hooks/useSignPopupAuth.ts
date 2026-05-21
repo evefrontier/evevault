@@ -1,7 +1,7 @@
-import { useAuth } from "@evevault/shared/auth";
-import { useContext, useDevice } from "@evevault/shared/hooks";
-import { createLogger } from "@evevault/shared/utils";
-import { useEffect } from "react";
+import { useAuth } from '@evevault/shared/auth';
+import { useContext, useDevice } from '@evevault/shared/hooks';
+import { createLogger } from '@evevault/shared/utils';
+import { useEffect } from 'react';
 
 const log = createLogger();
 
@@ -26,7 +26,7 @@ export function useSignPopupAuth() {
     if (!canInitializeForChain) return;
 
     void device.initializeForChain(chain).catch((error) => {
-      log.warn("Failed to initialize device data for sign popup", {
+      log.warn('Failed to initialize device data for sign popup', {
         chain,
         error,
       });

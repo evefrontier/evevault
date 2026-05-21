@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ReactNode } from 'react';
 
 interface BackgroundProps {
   children: ReactNode;
@@ -11,9 +11,9 @@ const Background = ({ children, bottomOffset = 0 }: BackgroundProps) => {
       className="relative h-full w-full min-h-screen flex-1 overflow-hidden"
       style={{
         backgroundImage: `url("/images/evevault-background.png")`,
-        backgroundSize: "cover",
-        backgroundRepeat: "no-repeat",
-        backgroundPosition: "center center",
+        backgroundSize: 'cover',
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'center center',
         paddingBottom: bottomOffset,
       }}
     >

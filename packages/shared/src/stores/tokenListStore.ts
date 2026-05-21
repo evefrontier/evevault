@@ -1,14 +1,14 @@
-import type { SuiChain } from "@mysten/wallet-standard";
-import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
-import { chromeStorageAdapter, localStorageAdapter } from "#/adapters";
-import type { TokenListState } from "#/types";
+import type { SuiChain } from '@mysten/wallet-standard';
+import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { chromeStorageAdapter, localStorageAdapter } from '#/adapters';
+import type { TokenListState } from '#/types';
 import {
   DEFAULT_TOKENS_BY_CHAIN,
   getDefaultTokensForChain,
-} from "#/types/networks";
-import { isWeb } from "#/utils/environment";
-import { TOKENLIST_STORAGE_KEY } from "#/utils/storageKeys";
+} from '#/types/networks';
+import { isWeb } from '#/utils/environment';
+import { TOKENLIST_STORAGE_KEY } from '#/utils/storageKeys';
 
 const sanitizeCoinType = (coinType: string) => coinType.trim();
 
@@ -74,13 +74,13 @@ export const useTokenListStore = create<TokenListState>()(
         const tokens = raw?.state?.tokens ?? raw?.tokens;
         // Only use persisted tokens if it's the new format (per-chain record). Old array format is ignored; use defaults.
         if (
-          typeof tokens === "object" &&
+          typeof tokens === 'object' &&
           tokens !== null &&
           !Array.isArray(tokens)
         ) {
           return {
             ...currentState,
-            tokens: tokens as TokenListState["tokens"],
+            tokens: tokens as TokenListState['tokens'],
           };
         }
         return currentState;

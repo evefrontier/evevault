@@ -1,13 +1,13 @@
-import { createLogger } from "@evevault/shared/utils";
+import { createLogger } from '@evevault/shared/utils';
 import {
   type IdentifierRecord,
   type ReadonlyWalletAccount,
   registerWallet,
   type SuiChain,
-} from "@mysten/wallet-standard";
-import { EveVaultWallet } from "../src/lib/adapters/SuiWallet";
+} from '@mysten/wallet-standard';
+import { EveVaultWallet } from '../src/lib/adapters/SuiWallet';
 
-const WALLET_REGISTRATION_KEY = "__evevault_registered__";
+const WALLET_REGISTRATION_KEY = '__evevault_registered__';
 type EveVaultRegistrationWindow = Window & {
   [WALLET_REGISTRATION_KEY]?: boolean;
 };
@@ -19,7 +19,7 @@ export default defineUnlistedScript(() => {
   setTimeout(async () => {
     const registrationWindow = window as EveVaultRegistrationWindow;
     if (registrationWindow[WALLET_REGISTRATION_KEY]) {
-      log.info("Eve Vault already registered, skipping");
+      log.info('Eve Vault already registered, skipping');
       return;
     } else {
       try {
@@ -28,10 +28,10 @@ export default defineUnlistedScript(() => {
 
         registrationWindow[WALLET_REGISTRATION_KEY] = true;
 
-        log.info("Eve Vault registered successfully");
+        log.info('Eve Vault registered successfully');
 
         // Listen for messages from the extension (chain changes, logout, etc.)
-        window.addEventListener("message", (event) => {
+        window.addEventListener('message', (event) => {
           if (event.source !== window) return;
 
           const data = event.data || {};
@@ -47,7 +47,7 @@ export default defineUnlistedScript(() => {
           } = data.payload || {};
 
           // Handle chain change events from the extension
-          if (data.__from === "Eve Vault" && data.event === "change") {
+          if (data.__from === 'Eve Vault' && data.event === 'change') {
             if (!walletInstance) return;
 
             // Handle chain changes
@@ -75,11 +75,11 @@ export default defineUnlistedScript(() => {
         // Ask the content script for the persisted chain so #currentChain is
         // correct before any dApp attempts to connect.
         window.postMessage(
-          { __to: "Eve Vault", type: "get_current_chain" },
-          "*",
+          { __to: 'Eve Vault', type: 'get_current_chain' },
+          '*',
         );
       } catch (error) {
-        log.error("Failed to register wallet", error);
+        log.error('Failed to register wallet', error);
       }
     }
   }, 100);

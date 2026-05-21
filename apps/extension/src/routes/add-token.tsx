@@ -3,10 +3,10 @@ import {
   HeaderMobile,
   useAuthStore,
   useContext,
-} from "@evevault/shared";
-import { requireAuth } from "@evevault/shared/router";
-import { EXTENSION_ROUTES } from "@evevault/shared/utils";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+} from '@evevault/shared';
+import { requireAuth } from '@evevault/shared/router';
+import { EXTENSION_ROUTES } from '@evevault/shared/utils';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 
 function AddTokenPage() {
   const navigate = useNavigate();
@@ -14,7 +14,7 @@ function AddTokenPage() {
   const { chain } = useContext();
 
   const handleNavigateBack = () => {
-    navigate({ to: "/" });
+    navigate({ to: '/' });
   };
 
   // Note: Layout is provided by popup entrypoint, so we only render content here
@@ -37,7 +37,7 @@ function AddTokenPage() {
   );
 }
 
-export const Route = createFileRoute("/add-token")({
+export const Route = createFileRoute('/add-token')({
   beforeLoad: () => requireAuth(),
   component: AddTokenPage,
 });

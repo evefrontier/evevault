@@ -1,13 +1,13 @@
-import { Button, Heading, Text } from "@evevault/shared/components";
-import Icon from "@evevault/shared/components/Icon";
-import Input from "@evevault/shared/components/Inputs/Input";
-import { localnetKeyService } from "@evevault/shared/services/vaultService";
-import { useContextStore, useDeviceStore } from "@evevault/shared/stores";
-import { createLogger, EXTENSION_ROUTES } from "@evevault/shared/utils";
-import { SUI_PRIVATE_KEY_PREFIX } from "@mysten/sui/cryptography";
-import { SUI_LOCALNET_CHAIN } from "@mysten/wallet-standard";
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { Button, Heading, Text } from '@evevault/shared/components';
+import Icon from '@evevault/shared/components/Icon';
+import Input from '@evevault/shared/components/Inputs/Input';
+import { localnetKeyService } from '@evevault/shared/services/vaultService';
+import { useContextStore, useDeviceStore } from '@evevault/shared/stores';
+import { createLogger, EXTENSION_ROUTES } from '@evevault/shared/utils';
+import { SUI_PRIVATE_KEY_PREFIX } from '@mysten/sui/cryptography';
+import { SUI_LOCALNET_CHAIN } from '@mysten/wallet-standard';
+import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router';
+import { useCallback, useEffect, useState } from 'react';
 
 const log = createLogger();
 
@@ -19,13 +19,13 @@ function LocalnetSettingsPage() {
   } = useDeviceStore();
   const [urlDraft, setUrlDraft] = useState(localnetUrl);
   const [urlStatus, setUrlStatus] = useState<
-    "idle" | "loading" | "ok" | "error"
-  >("idle");
+    'idle' | 'loading' | 'ok' | 'error'
+  >('idle');
 
-  const [privateKeyDraft, setPrivateKeyDraft] = useState("");
+  const [privateKeyDraft, setPrivateKeyDraft] = useState('');
   const [keyStatus, setKeyStatus] = useState<
-    "idle" | "saving" | "ok" | "error"
-  >("idle");
+    'idle' | 'saving' | 'ok' | 'error'
+  >('idle');
   const [keyError, setKeyError] = useState<string | null>(null);
 
   const [address, setAddress] = useState<string | null>(null);
@@ -46,17 +46,17 @@ function LocalnetSettingsPage() {
     try {
       new URL(rpcUrl);
     } catch {
-      throw new Error("Please enter a valid RPC URL");
+      throw new Error('Please enter a valid RPC URL');
     }
     const response = await fetch(rpcUrl, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        jsonrpc: "2.0",
+        jsonrpc: '2.0',
         id: 1,
-        method: "suix_getLatestSuiSystemState",
+        method: 'suix_getLatestSuiSystemState',
         params: [],
       }),
     });
@@ -65,42 +65,42 @@ function LocalnetSettingsPage() {
     }
     const payload: { error?: { message?: string } } = await response.json();
     if (payload.error) {
-      throw new Error(payload.error.message ?? "RPC validation failed");
+      throw new Error(payload.error.message ?? 'RPC validation failed');
     }
   }, []);
 
   const handleUrlSave = useCallback(async () => {
     const trimmed = urlDraft.trim();
     if (!trimmed) return;
-    setUrlStatus("loading");
+    setUrlStatus('loading');
     try {
       await validateLocalnetRpcUrl(trimmed);
       setLocalnetUrl(trimmed);
       await useDeviceStore.getState().initializeForChain(SUI_LOCALNET_CHAIN);
-      setUrlStatus("ok");
+      setUrlStatus('ok');
     } catch (err) {
-      log.warn("Localnet RPC validation failed", err);
-      setUrlStatus("error");
+      log.warn('Localnet RPC validation failed', err);
+      setUrlStatus('error');
     }
   }, [urlDraft, setLocalnetUrl]);
 
   const handleKeySave = useCallback(async () => {
     const trimmed = privateKeyDraft.trim();
     if (!trimmed) {
-      setKeyError("Please enter a private key");
+      setKeyError('Please enter a private key');
       return;
     }
-    setKeyStatus("saving");
+    setKeyStatus('saving');
     setKeyError(null);
     try {
       const { address: newAddress } =
         await localnetKeyService.setKeypairFromPrivateKey(trimmed);
       setAddress(newAddress);
-      setPrivateKeyDraft("");
-      setKeyStatus("ok");
+      setPrivateKeyDraft('');
+      setKeyStatus('ok');
     } catch (err) {
-      setKeyError(err instanceof Error ? err.message : "Invalid key");
-      setKeyStatus("error");
+      setKeyError(err instanceof Error ? err.message : 'Invalid key');
+      setKeyStatus('error');
     }
   }, [privateKeyDraft]);
 
@@ -131,26 +131,26 @@ function LocalnetSettingsPage() {
             value={urlDraft}
             onChange={(e) => {
               setUrlDraft(e.target.value);
-              setUrlStatus("idle");
+              setUrlStatus('idle');
             }}
-            onKeyDown={(e) => e.key === "Enter" && void handleUrlSave()}
+            onKeyDown={(e) => e.key === 'Enter' && void handleUrlSave()}
             placeholder="http://127.0.0.1:9000"
             uppercase={false}
             height="48px"
           />
           <div className="flex items-center justify-between gap-2">
-            {urlStatus === "idle" && <span />}
-            {urlStatus === "loading" && (
+            {urlStatus === 'idle' && <span />}
+            {urlStatus === 'loading' && (
               <Text size="small" color="neutral-50">
                 Connecting…
               </Text>
             )}
-            {urlStatus === "ok" && (
+            {urlStatus === 'ok' && (
               <Text size="small" color="quantum">
                 Connected
               </Text>
             )}
-            {urlStatus === "error" && (
+            {urlStatus === 'error' && (
               <Text size="small" color="error">
                 Connection failed
               </Text>
@@ -158,7 +158,7 @@ function LocalnetSettingsPage() {
             <Button
               size="small"
               onClick={() => void handleUrlSave()}
-              disabled={urlStatus === "loading"}
+              disabled={urlStatus === 'loading'}
             >
               Save URL
             </Button>
@@ -175,10 +175,10 @@ function LocalnetSettingsPage() {
             label="Private key"
             onChange={(e) => {
               setPrivateKeyDraft(e.target.value);
-              setKeyStatus("idle");
+              setKeyStatus('idle');
               setKeyError(null);
             }}
-            onKeyDown={(e) => e.key === "Enter" && void handleKeySave()}
+            onKeyDown={(e) => e.key === 'Enter' && void handleKeySave()}
             placeholder={`${SUI_PRIVATE_KEY_PREFIX}1...`}
             value={privateKeyDraft}
             uppercase={false}
@@ -195,16 +195,16 @@ function LocalnetSettingsPage() {
             </Text>
           )}
           <div className="flex items-center justify-between gap-2">
-            {keyStatus === "ok" && (
+            {keyStatus === 'ok' && (
               <Text size="small" color="quantum">
                 Key loaded
               </Text>
             )}
-            {keyStatus !== "ok" && <span />}
+            {keyStatus !== 'ok' && <span />}
             <Button
               size="small"
               onClick={() => void handleKeySave()}
-              disabled={keyStatus === "saving" || !privateKeyDraft.trim()}
+              disabled={keyStatus === 'saving' || !privateKeyDraft.trim()}
             >
               Load Key
             </Button>
@@ -231,10 +231,10 @@ function LocalnetSettingsPage() {
   );
 }
 
-export const Route = createFileRoute("/localnet-settings")({
+export const Route = createFileRoute('/localnet-settings')({
   beforeLoad: () => {
     const { devMode } = useContextStore.getState();
-    if (!devMode) throw redirect({ to: "/" });
+    if (!devMode) throw redirect({ to: '/' });
   },
   component: LocalnetSettingsPage,
 });

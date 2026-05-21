@@ -1,11 +1,11 @@
-import { type FC, useState } from "react";
-import type { RadioButtonProps } from "#/types";
-import "./style.css";
-import Text from "#/components/Text";
+import { type FC, useState } from 'react';
+import type { RadioButtonProps } from '#/types';
+import './style.css';
+import Text from '#/components/Text';
 
 const RadioButton: FC<RadioButtonProps> = ({
   name,
-  value = "",
+  value = '',
   isChecked,
   text,
   isDisabled,
@@ -18,23 +18,23 @@ const RadioButton: FC<RadioButtonProps> = ({
   return (
     <label
       className={[
-        "radio",
-        absolute ? "radio--absolute" : undefined,
-        isDisabled ? "radio--disabled" : undefined,
+        'radio',
+        absolute ? 'radio--absolute' : undefined,
+        isDisabled ? 'radio--disabled' : undefined,
       ]
         .filter(Boolean)
-        .join(" ")}
+        .join(' ')}
       style={containerStyle}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       <span
         className={[
-          "radio__control",
-          isHovered ? "radio__control--hovered" : undefined,
+          'radio__control',
+          isHovered ? 'radio__control--hovered' : undefined,
         ]
           .filter(Boolean)
-          .join(" ")}
+          .join(' ')}
       >
         <input
           type="radio"

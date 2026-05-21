@@ -1,11 +1,11 @@
-import { useAuthStore } from "@evevault/shared/auth";
-import { createMockUser } from "@evevault/shared/testing";
-import { render, renderHook, screen } from "@testing-library/react";
-import type { ReactNode } from "react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { RouteContextProvider, useRouteContext } from "../routeContext";
+import { useAuthStore } from '@evevault/shared/auth';
+import { createMockUser } from '@evevault/shared/testing';
+import { render, renderHook, screen } from '@testing-library/react';
+import type { ReactNode } from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { RouteContextProvider, useRouteContext } from '../routeContext';
 
-vi.mock("@evevault/shared/auth", () => ({
+vi.mock('@evevault/shared/auth', () => ({
   useAuthStore: vi.fn(),
 }));
 
@@ -27,7 +27,7 @@ const wrapper = ({ children }: { children: ReactNode }) => (
   <RouteContextProvider>{children}</RouteContextProvider>
 );
 
-describe("RouteContextProvider", () => {
+describe('RouteContextProvider', () => {
   beforeEach(() => {
     mockAuthState({ user: null, loading: false });
   });
@@ -36,7 +36,7 @@ describe("RouteContextProvider", () => {
     vi.clearAllMocks();
   });
 
-  it("sets unauthenticated and not loading when there is no user", () => {
+  it('sets unauthenticated and not loading when there is no user', () => {
     const { result } = renderHook(() => useRouteContext(), { wrapper });
 
     expect(result.current).toEqual({
@@ -45,7 +45,7 @@ describe("RouteContextProvider", () => {
     });
   });
 
-  it("sets authenticated and not loading when there is a user", () => {
+  it('sets authenticated and not loading when there is a user', () => {
     mockAuthState({ user: createMockUser(), loading: false });
 
     const { result } = renderHook(() => useRouteContext(), { wrapper });
@@ -56,7 +56,7 @@ describe("RouteContextProvider", () => {
     });
   });
 
-  it("sets unauthenticated and loading when auth is loading without a user", () => {
+  it('sets unauthenticated and loading when auth is loading without a user', () => {
     mockAuthState({ user: null, loading: true });
 
     const { result } = renderHook(() => useRouteContext(), { wrapper });
@@ -67,7 +67,7 @@ describe("RouteContextProvider", () => {
     });
   });
 
-  it("sets authenticated and loading during a refresh with a user", () => {
+  it('sets authenticated and loading during a refresh with a user', () => {
     mockAuthState({ user: createMockUser(), loading: true });
 
     const { result } = renderHook(() => useRouteContext(), { wrapper });
@@ -78,18 +78,18 @@ describe("RouteContextProvider", () => {
     });
   });
 
-  it("renders children without crashing", () => {
+  it('renders children without crashing', () => {
     render(
       <RouteContextProvider>
         <span data-testid="child">Child</span>
       </RouteContextProvider>,
     );
 
-    expect(screen.getByTestId("child")).not.toBeNull();
+    expect(screen.getByTestId('child')).not.toBeNull();
   });
 });
 
-describe("useRouteContext", () => {
+describe('useRouteContext', () => {
   beforeEach(() => {
     mockAuthState({ user: null, loading: false });
   });
@@ -98,13 +98,13 @@ describe("useRouteContext", () => {
     vi.clearAllMocks();
   });
 
-  it("throws when called outside the provider", () => {
+  it('throws when called outside the provider', () => {
     const consoleError = vi
-      .spyOn(console, "error")
+      .spyOn(console, 'error')
       .mockImplementation(() => undefined);
 
     expect(() => renderHook(() => useRouteContext())).toThrow(
-      "useRouteContext must be used within RouteContextProvider",
+      'useRouteContext must be used within RouteContextProvider',
     );
 
     consoleError.mockRestore();

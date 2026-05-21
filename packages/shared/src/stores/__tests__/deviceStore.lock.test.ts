@@ -1,9 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import * as vaultService from "#/services/vaultService";
-import { useDeviceStore } from "#/stores/deviceStore";
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import * as vaultService from '#/services/vaultService';
+import { useDeviceStore } from '#/stores/deviceStore';
 
 // Mock the vault service (unified service that routes to keeper/web)
-vi.mock("#/services/vaultService", () => ({
+vi.mock('#/services/vaultService', () => ({
   ephKeyService: {
     lock: vi.fn(),
     isUnlocked: vi.fn(),
@@ -11,7 +11,7 @@ vi.mock("#/services/vaultService", () => ({
   zkProofService: {},
 }));
 
-describe("deviceStore.lock()", () => {
+describe('deviceStore.lock()', () => {
   beforeEach(() => {
     // Reset store state before each test
     useDeviceStore.setState({
@@ -23,7 +23,7 @@ describe("deviceStore.lock()", () => {
       localnet: {
         encryptedKey: null,
         address: null,
-        url: "http://127.0.0.1:9000",
+        url: 'http://127.0.0.1:9000',
         maxEpoch: null,
         maxEpochTimestampMs: null,
       },
@@ -37,7 +37,7 @@ describe("deviceStore.lock()", () => {
     vi.restoreAllMocks();
   });
 
-  it("calls ephKeyService.lock() and sets isLocked to true", async () => {
+  it('calls ephKeyService.lock() and sets isLocked to true', async () => {
     const mockLock = vi.mocked(vaultService.ephKeyService.lock);
     mockLock.mockResolvedValueOnce(undefined);
 
@@ -47,7 +47,7 @@ describe("deviceStore.lock()", () => {
     expect(useDeviceStore.getState().isLocked).toBe(true);
   });
 
-  it("sets isLocked to true even if already locked", async () => {
+  it('sets isLocked to true even if already locked', async () => {
     useDeviceStore.setState({ isLocked: true });
     const mockLock = vi.mocked(vaultService.ephKeyService.lock);
     mockLock.mockResolvedValueOnce(undefined);
@@ -58,13 +58,13 @@ describe("deviceStore.lock()", () => {
     expect(useDeviceStore.getState().isLocked).toBe(true);
   });
 
-  it("handles error when ephKeyService.lock() fails", async () => {
+  it('handles error when ephKeyService.lock() fails', async () => {
     const mockLock = vi.mocked(vaultService.ephKeyService.lock);
-    const error = new Error("Keeper lock failed");
+    const error = new Error('Keeper lock failed');
     mockLock.mockRejectedValueOnce(error);
 
     await expect(useDeviceStore.getState().lock()).rejects.toThrow(
-      "Keeper lock failed",
+      'Keeper lock failed',
     );
 
     expect(mockLock).toHaveBeenCalledOnce();

@@ -1,9 +1,9 @@
 /** Individual storage keys for use in stores and auth. */
-export const AUTH_STORAGE_KEY = "evevault:auth";
-export const DEVICE_STORAGE_KEY = "evevault:device";
-export const CONTEXT_STORAGE_KEY = "evevault:context";
-export const TOKENLIST_STORAGE_KEY = "evevault:tokenlist";
-export const JWT_STORAGE_KEY = "evevault:jwt";
+export const AUTH_STORAGE_KEY = 'evevault:auth';
+export const DEVICE_STORAGE_KEY = 'evevault:device';
+export const CONTEXT_STORAGE_KEY = 'evevault:context';
+export const TOKENLIST_STORAGE_KEY = 'evevault:tokenlist';
+export const JWT_STORAGE_KEY = 'evevault:jwt';
 
 /** Persist keys used by Zustand and auth (localStorage / chrome.storage.local). Cleared on reset. */
 export const EVEVAULT_STORAGE_KEYS = [
@@ -16,9 +16,9 @@ export const EVEVAULT_STORAGE_KEYS = [
 
 /** Extension-only chrome.storage.local keys cleared on reset (not covered by cleanupExtensionStorage). */
 export const EXTENSION_EXTRA_KEYS = [
-  "pendingAction",
-  "transactionResult",
+  'pendingAction',
+  'transactionResult',
 ] as const;
 
 /** sessionStorage key for post-login redirect path. */
-export const SESSION_STORAGE_REDIRECT_KEY = "evevault_redirect_after_login";
+export const SESSION_STORAGE_REDIRECT_KEY = 'evevault_redirect_after_login';

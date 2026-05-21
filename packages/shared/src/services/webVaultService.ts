@@ -1,16 +1,16 @@
-import { WebCryptoSigner } from "@mysten/signers/webcrypto";
-import type { PublicKey } from "@mysten/sui/cryptography";
-import type { SuiChain } from "@mysten/wallet-standard";
-import type { ZkProofResponse } from "#/types/enoki";
-import { del, get, set } from "#/utils/indexedDbKeyval";
-import { sha256Hex } from "#/utils/keys/sha256";
-import { createLogger } from "#/utils/logger";
+import { WebCryptoSigner } from '@mysten/signers/webcrypto';
+import type { PublicKey } from '@mysten/sui/cryptography';
+import type { SuiChain } from '@mysten/wallet-standard';
+import type { ZkProofResponse } from '#/types/enoki';
+import { del, get, set } from '#/utils/indexedDbKeyval';
+import { sha256Hex } from '#/utils/keys/sha256';
+import { createLogger } from '#/utils/logger';
 
 const log = createLogger();
 
-const KEYPAIR_STORAGE_KEY = "evevault:web-ephemeral-keypair";
-const PIN_HASH_STORAGE_KEY = "evevault:web-pin-hash";
-const ZKPROOF_STORAGE_PREFIX = "evevault:web-zkproof:";
+const KEYPAIR_STORAGE_KEY = 'evevault:web-ephemeral-keypair';
+const PIN_HASH_STORAGE_KEY = 'evevault:web-pin-hash';
+const ZKPROOF_STORAGE_PREFIX = 'evevault:web-zkproof:';
 
 /**
  * Web-specific vault service using WebCryptoSigner (Secp256r1).
@@ -32,7 +32,7 @@ class WebVaultService {
   async initialize(): Promise<void> {
     if (this.initialized) return;
     this.initialized = true;
-    log.debug("[web-vault] Initialized");
+    log.debug('[web-vault] Initialized');
   }
 
   /**
@@ -40,7 +40,7 @@ class WebVaultService {
    */
   async createEphemeralKeyPair(pin: string): Promise<PublicKey> {
     if (!pin || pin.trim().length === 0) {
-      throw new Error("PIN is required to create keypair");
+      throw new Error('PIN is required to create keypair');
     }
 
     // Generate new keypair
@@ -57,7 +57,7 @@ class WebVaultService {
     this.unlockExpiry = Date.now() + 10 * 60 * 1000;
 
     log.info(
-      "[web-vault] Created new Secp256r1 ephemeral keypair (PIN hash stored)",
+      '[web-vault] Created new Secp256r1 ephemeral keypair (PIN hash stored)',
     );
     return this.signer.getPublicKey();
   }
@@ -67,35 +67,35 @@ class WebVaultService {
    */
   async unlock(pin: string, durationMs = 10 * 60 * 1000): Promise<boolean> {
     if (!pin || pin.trim().length === 0) {
-      throw new Error("PIN is required to unlock");
+      throw new Error('PIN is required to unlock');
     }
 
     // If already unlocked with valid signer, just extend the expiry
     if (this.signer && this.unlockExpiry && Date.now() < this.unlockExpiry) {
       this.unlockExpiry = Date.now() + durationMs;
-      log.debug("[web-vault] Vault already unlocked, extended expiry");
+      log.debug('[web-vault] Vault already unlocked, extended expiry');
       return true;
     }
 
     // Verify PIN hash
     const storedPinHash = await get(PIN_HASH_STORAGE_KEY);
     if (!storedPinHash) {
-      log.error("[web-vault] No PIN hash found");
+      log.error('[web-vault] No PIN hash found');
       return false;
     }
 
     const providedPinHash = await sha256Hex(pin);
     if (providedPinHash !== storedPinHash) {
-      log.error("[web-vault] Invalid PIN");
-      throw new Error("Invalid PIN");
+      log.error('[web-vault] Invalid PIN');
+      throw new Error('Invalid PIN');
     }
 
     // Recover keypair from IndexedDB
     try {
       const exported =
-        await get<ReturnType<WebCryptoSigner["export"]>>(KEYPAIR_STORAGE_KEY);
+        await get<ReturnType<WebCryptoSigner['export']>>(KEYPAIR_STORAGE_KEY);
       if (!exported) {
-        log.error("[web-vault] No keypair found in IndexedDB");
+        log.error('[web-vault] No keypair found in IndexedDB');
         return false;
       }
 
@@ -107,8 +107,8 @@ class WebVaultService {
       );
       return true;
     } catch (error) {
-      log.error("[web-vault] Failed to recover keypair:", error);
-      throw new Error("Failed to recover keypair");
+      log.error('[web-vault] Failed to recover keypair:', error);
+      throw new Error('Failed to recover keypair');
     }
   }
 
@@ -141,7 +141,7 @@ class WebVaultService {
   lock(): void {
     this.unlockExpiry = null;
     this.signer = null;
-    log.debug("[web-vault] Vault locked");
+    log.debug('[web-vault] Vault locked');
   }
 
   /**
@@ -149,7 +149,7 @@ class WebVaultService {
    */
   async hasKeypair(): Promise<boolean> {
     const exported =
-      await get<ReturnType<WebCryptoSigner["export"]>>(KEYPAIR_STORAGE_KEY);
+      await get<ReturnType<WebCryptoSigner['export']>>(KEYPAIR_STORAGE_KEY);
     return exported !== null && exported !== undefined;
   }
 
@@ -158,12 +158,12 @@ class WebVaultService {
     this.unlockExpiry = null;
     await del(KEYPAIR_STORAGE_KEY);
     await del(PIN_HASH_STORAGE_KEY);
-    log.info("[web-vault] Cleared keypair and PIN hash");
+    log.info('[web-vault] Cleared keypair and PIN hash');
   }
 
   async rotateEphemeralKeyPair(): Promise<PublicKey> {
     if (!this.isUnlocked()) {
-      throw new Error("Vault must be unlocked again before rotating keypair");
+      throw new Error('Vault must be unlocked again before rotating keypair');
     }
 
     // Generate a new keypair. The PIN hash in IndexedDB is unchanged — the
@@ -175,7 +175,7 @@ class WebVaultService {
     // Only swap the in-memory keypair after successful write
     this.signer = newSigner;
 
-    log.info("[web-vault] Rotated Secp256r1 ephemeral keypair");
+    log.info('[web-vault] Rotated Secp256r1 ephemeral keypair');
     return this.signer.getPublicKey();
   }
 
@@ -184,7 +184,7 @@ class WebVaultService {
     signature: string;
   }> {
     const signer = this.getSigner();
-    if (!signer) throw new Error("Vault is locked or no keypair exists");
+    if (!signer) throw new Error('Vault is locked or no keypair exists');
     return signer.signTransaction(txBytes);
   }
 
@@ -193,13 +193,13 @@ class WebVaultService {
     signature: string;
   }> {
     const signer = this.getSigner();
-    if (!signer) throw new Error("Vault is locked or no keypair exists");
+    if (!signer) throw new Error('Vault is locked or no keypair exists');
     return signer.signPersonalMessage(message);
   }
 
   async sign(data: Uint8Array): Promise<Uint8Array> {
     const signer = this.getSigner();
-    if (!signer) throw new Error("Vault is locked or no keypair exists");
+    if (!signer) throw new Error('Vault is locked or no keypair exists');
     return signer.sign(data);
   }
 
@@ -209,7 +209,7 @@ class WebVaultService {
   async setZkProof(chain: SuiChain, zkProof: ZkProofResponse): Promise<void> {
     const key = `${ZKPROOF_STORAGE_PREFIX}${chain}`;
     await set(key, zkProof);
-    log.debug("[web-vault] zkProof stored for chain", chain);
+    log.debug('[web-vault] zkProof stored for chain', chain);
   }
 
   /**
@@ -227,7 +227,7 @@ class WebVaultService {
   async clearZkProof(chain: SuiChain): Promise<void> {
     const key = `${ZKPROOF_STORAGE_PREFIX}${chain}`;
     await del(key);
-    log.debug("[web-vault] zkProof cleared for chain", chain);
+    log.debug('[web-vault] zkProof cleared for chain', chain);
   }
 }
 

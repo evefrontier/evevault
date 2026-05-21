@@ -1,14 +1,14 @@
-import { createLogger, KeeperMessageTypes } from "@evevault/shared";
-import { ensureOffscreen } from "@/lib/background/services/offscreenService";
-import type { VaultMessage } from "@/lib/background/types";
-import { checkPendingAuthAfterUnlock } from "./authHandlers";
-import { readEncryptedLocalnetKey } from "./localnetDeviceStorage";
+import { createLogger, KeeperMessageTypes } from '@evevault/shared';
+import { ensureOffscreen } from '@/lib/background/services/offscreenService';
+import type { VaultMessage } from '@/lib/background/types';
+import { checkPendingAuthAfterUnlock } from './authHandlers';
+import { readEncryptedLocalnetKey } from './localnetDeviceStorage';
 
 export {
   _handleLocalnetGetAddress,
   _handleLocalnetSetKeypair,
   _handleLocalnetSignBytes,
-} from "./localVaultHandlers";
+} from './localVaultHandlers';
 
 const log = createLogger();
 
@@ -23,13 +23,13 @@ export async function sendToKeeper(message: any, retries = 3): Promise<any> {
   return new Promise((resolve, reject) => {
     const attemptSend = (attempt: number) => {
       chrome.runtime.sendMessage(
-        { ...message, target: "KEEPER" },
+        { ...message, target: 'KEEPER' },
         (response) => {
           if (chrome.runtime.lastError) {
             const error = chrome.runtime.lastError.message;
 
             // If port closed and we have retries left, wait and retry
-            if (error?.includes("port closed") && attempt < retries) {
+            if (error?.includes('port closed') && attempt < retries) {
               log.info(
                 `Keeper not ready yet, retrying... (attempt ${
                   attempt + 1
@@ -66,7 +66,7 @@ export async function handleUnlockVault(
     sendResponse({
       ok: false,
       error:
-        "No secret key provided. Cannot unlock vault without an existing key. Create a new key pair first.",
+        'No secret key provided. Cannot unlock vault without an existing key. Create a new key pair first.',
     });
     return true;
   }
@@ -82,14 +82,14 @@ export async function handleUnlockVault(
       encryptedLocalnetKey,
     });
 
-    log.debug("[VaultHandler] Keeper response:", keeperResponse);
+    log.debug('[VaultHandler] Keeper response:', keeperResponse);
 
     if (keeperResponse?.ok) {
       sendResponse({ ok: true });
       checkPendingAuthAfterUnlock();
     } else {
-      const errorMessage = keeperResponse?.error || "Failed to unlock vault";
-      log.error("[VaultHandler] Unlock failed:", errorMessage);
+      const errorMessage = keeperResponse?.error || 'Failed to unlock vault';
+      log.error('[VaultHandler] Unlock failed:', errorMessage);
       sendResponse({
         ok: false,
         error: errorMessage,
@@ -98,10 +98,10 @@ export async function handleUnlockVault(
 
     return true;
   } catch (error) {
-    log.error("[VaultHandler] Error decrypting secret key:", error);
+    log.error('[VaultHandler] Error decrypting secret key:', error);
     sendResponse({
       ok: false,
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 }
@@ -119,23 +119,23 @@ export async function handleLock(
       type: KeeperMessageTypes.CLEAR_EPHKEY,
     });
 
-    log.info("[VaultHandler] Keeper response:", keeperResponse);
+    log.info('[VaultHandler] Keeper response:', keeperResponse);
 
     if (keeperResponse?.ok) {
       sendResponse({ ok: true });
     } else {
-      const errorMessage = keeperResponse?.error || "Failed to lock vault";
-      log.error("[VaultHandler] Lock failed:", errorMessage);
+      const errorMessage = keeperResponse?.error || 'Failed to lock vault';
+      log.error('[VaultHandler] Lock failed:', errorMessage);
       sendResponse({
         ok: false,
         error: errorMessage,
       });
     }
   } catch (error) {
-    log.error("[VaultHandler] Error locking vault:", error);
+    log.error('[VaultHandler] Error locking vault:', error);
     sendResponse({
       ok: false,
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 
@@ -169,13 +169,13 @@ export function _handleCreateKeypair(
       } else {
         sendResponse({
           ok: false,
-          error: keeperResponse?.error || "Failed to set key in keeper",
+          error: keeperResponse?.error || 'Failed to set key in keeper',
         });
       }
     } catch (error) {
       sendResponse({
         ok: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   })();
@@ -208,13 +208,13 @@ export function _handleRotateKeypair(
           ok: false,
           error:
             keeperResponse?.error ||
-            "Vault must be unlocked again before rotating keypair",
+            'Vault must be unlocked again before rotating keypair',
         });
       }
     } catch (error) {
       sendResponse({
         ok: false,
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
     }
   })();
@@ -242,12 +242,12 @@ export async function _handleGetPublicKey(
       });
     } else {
       sendResponse({
-        error: response?.error || "EVE Vault is LOCKED",
+        error: response?.error || 'EVE Vault is LOCKED',
       });
     }
   } catch (error) {
     sendResponse({
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 
@@ -288,13 +288,13 @@ export async function _handleZkEphSignBytes(
     } else {
       sendResponse({
         ok: false,
-        error: response?.error || "[VaultHandler] Failed to sign bytes",
+        error: response?.error || '[VaultHandler] Failed to sign bytes',
       });
     }
   } catch (error) {
     sendResponse({
       ok: false,
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 
@@ -313,7 +313,7 @@ export async function _handleSetZkProof(
 
   try {
     const response = await sendToKeeper({
-      type: "KEEPER_SET_ZKPROOF",
+      type: 'KEEPER_SET_ZKPROOF',
       chain,
       zkProof,
     });
@@ -323,13 +323,13 @@ export async function _handleSetZkProof(
     } else {
       sendResponse({
         ok: false,
-        error: response?.error || "Failed to set zkProof in keeper",
+        error: response?.error || 'Failed to set zkProof in keeper',
       });
     }
   } catch (error) {
     sendResponse({
       ok: false,
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 
@@ -360,14 +360,14 @@ export async function _handleGetZkProof(
     } else {
       sendResponse({
         ok: false,
-        error: response?.error || "Failed to get zkProof from keeper",
+        error: response?.error || 'Failed to get zkProof from keeper',
         zkProof: null,
       });
     }
   } catch (error) {
     sendResponse({
       ok: false,
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: error instanceof Error ? error.message : 'Unknown error',
       zkProof: null,
     });
   }
@@ -396,14 +396,14 @@ export async function _handleClearZkProof(
     } else {
       sendResponse({
         ok: false,
-        error: response?.error || "Failed to get zkProof from keeper",
+        error: response?.error || 'Failed to get zkProof from keeper',
         zkProof: null,
       });
     }
   } catch (error) {
     sendResponse({
       ok: false,
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: error instanceof Error ? error.message : 'Unknown error',
       zkProof: null,
     });
   }

@@ -1,20 +1,20 @@
-import { SUI_LOCALNET_CHAIN, type SuiChain } from "@mysten/wallet-standard";
-import type React from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Dropdown } from "#/components/Dropdown";
-import Icon from "#/components/Icon";
-import Text from "#/components/Text";
-import { useContext } from "#/hooks";
-import type { NetworkSelectorProps } from "#/types";
-import { getAvailableNetworks } from "#/types";
-import { createLogger, isExtension } from "#/utils";
-import "./NetworkSelector.css";
+import { SUI_LOCALNET_CHAIN, type SuiChain } from '@mysten/wallet-standard';
+import type React from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Dropdown } from '#/components/Dropdown';
+import Icon from '#/components/Icon';
+import Text from '#/components/Text';
+import { useContext } from '#/hooks';
+import type { NetworkSelectorProps } from '#/types';
+import { getAvailableNetworks } from '#/types';
+import { createLogger, isExtension } from '#/utils';
+import './NetworkSelector.css';
 
 const log = createLogger();
 
 export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
   chain,
-  className = "",
+  className = '',
   compact = false,
   onNetworkSwitchStart,
   onRequiresReauth,
@@ -55,7 +55,7 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
         const result = await setChain(targetChain);
 
         if (!result.success) {
-          log.error("Failed to switch network");
+          log.error('Failed to switch network');
         } else if (result.requiresReauth) {
           onNetworkSwitchStart?.(chain, targetChain);
           onRequiresReauth?.(targetChain);
@@ -64,7 +64,7 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
         }
         setIsProcessing(false);
       } catch (error) {
-        log.error("Failed to switch network", error);
+        log.error('Failed to switch network', error);
       } finally {
         setIsProcessing(false);
       }
@@ -90,7 +90,7 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
   return (
     <div
       className={`dropdown-selector ${
-        isExtensionContext ? "dropdown-selector--extension" : ""
+        isExtensionContext ? 'dropdown-selector--extension' : ''
       } ${className}`}
     >
       {compact ? (
@@ -133,7 +133,7 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
             height={16}
             color="neutral"
             className={`dropdown-selector__chevron ${
-              isOpen ? "dropdown-selector__chevron--open" : ""
+              isOpen ? 'dropdown-selector__chevron--open' : ''
             }`}
           />
         </button>
@@ -143,13 +143,13 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
         <Dropdown
           onClickOutside={() => setIsOpen(false)}
           triggerRef={triggerRef}
-          placement={isExtensionContext ? "top" : "bottom"}
+          placement={isExtensionContext ? 'top' : 'bottom'}
         >
           {availableNetworks.map((network) => (
             <button
               key={network.chain}
               className={`dropdown__item ${
-                network.chain === chain ? "dropdown__item--active" : ""
+                network.chain === chain ? 'dropdown__item--active' : ''
               }`}
               onClick={() => handleNetworkSelect(network.chain)}
               disabled={isDisabled}
@@ -157,8 +157,8 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
             >
               <Text
                 size="medium"
-                variant={network.chain === chain ? "bold" : "regular"}
-                color={network.chain === chain ? "quantum" : "neutral"}
+                variant={network.chain === chain ? 'bold' : 'regular'}
+                color={network.chain === chain ? 'quantum' : 'neutral'}
               >
                 {network.label}
               </Text>

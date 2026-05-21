@@ -1,8 +1,8 @@
-import type React from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
-import Icon from "#/components/Icon";
-import type { ToastProps } from "#/types";
-import "./Toast.css";
+import type React from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import Icon from '#/components/Icon';
+import type { ToastProps } from '#/types';
+import './Toast.css';
 
 const EXIT_DELAY_MS = 300;
 
@@ -12,7 +12,7 @@ export const Toast: React.FC<ToastProps> = ({
   isVisible,
   onClose,
   duration = 3000,
-  variant = "default",
+  variant = 'default',
 }) => {
   const [isAnimating, setIsAnimating] = useState(false);
   const autoDismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
@@ -69,18 +69,18 @@ export const Toast: React.FC<ToastProps> = ({
   if (!isVisible && !isAnimating) return null;
 
   const hostVisibility = isAnimating
-    ? "toast-host--visible"
-    : "toast-host--hidden";
-  const isError = variant === "error";
-  const shellMod = isError ? "toast-shell--error" : "toast-shell--default";
+    ? 'toast-host--visible'
+    : 'toast-host--hidden';
+  const isError = variant === 'error';
+  const shellMod = isError ? 'toast-shell--error' : 'toast-shell--default';
   const showMessage = Boolean(message?.trim());
 
   return (
     <div
       className={`toast-host ${hostVisibility}`}
       data-name="Toast"
-      role={isError ? "alert" : "status"}
-      aria-live={isError ? "assertive" : "polite"}
+      role={isError ? 'alert' : 'status'}
+      aria-live={isError ? 'assertive' : 'polite'}
     >
       <div className={`toast-shell ${shellMod}`}>
         <div className="toast-shell__accent" data-name="Line" aria-hidden />

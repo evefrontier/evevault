@@ -1,4 +1,4 @@
-export type LogLevel = "silent" | "error" | "warn" | "info" | "debug";
+export type LogLevel = 'silent' | 'error' | 'warn' | 'info' | 'debug';
 
 export type GlobalProcess = {
   env?: Record<string, string | undefined>;

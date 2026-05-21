@@ -1,7 +1,7 @@
-import type { SuiChain } from "@mysten/wallet-standard";
-import type React from "react";
-import { useCallback, useState } from "react";
-import { resetVaultOnDevice } from "#/auth/resetVaultOnDevice";
+import type { SuiChain } from '@mysten/wallet-standard';
+import type React from 'react';
+import { useCallback, useState } from 'react';
+import { resetVaultOnDevice } from '#/auth/resetVaultOnDevice';
 import {
   Button,
   Heading,
@@ -10,9 +10,9 @@ import {
   NetworkSelector,
   Text,
   useToast,
-} from "#/components";
-import { useContext } from "#/hooks/useContext";
-import { useDevice } from "#/hooks/useDevice";
+} from '#/components';
+import { useContext } from '#/hooks/useContext';
+import { useDevice } from '#/hooks/useDevice';
 
 export default function LockScreen({
   isPinSet,
@@ -25,7 +25,7 @@ export default function LockScreen({
   onResetComplete?: () => void;
 }) {
   const { chain } = useContext();
-  const [pin, setPin] = useState("");
+  const [pin, setPin] = useState('');
   const [pinError, setPinError] = useState<string | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
@@ -33,13 +33,13 @@ export default function LockScreen({
   const { showToast } = useToast();
 
   const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPin(e.target.value.replace(/\D/g, ""));
+    setPin(e.target.value.replace(/\D/g, ''));
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (pin.length !== 6) {
-      setPinError("PIN must be 6 digits long");
+      setPinError('PIN must be 6 digits long');
       return;
     }
     setPinError(null);
@@ -59,17 +59,17 @@ export default function LockScreen({
       const message =
         error instanceof Error && error.message
           ? error.message
-          : "Something went wrong while resetting the vault. Please try again.";
+          : 'Something went wrong while resetting the vault. Please try again.';
       showToast("Couldn't reset vault", message);
     } finally {
       setIsResetting(false);
     }
   }, [onResetComplete, showToast]);
 
-  const title = isPinSet ? "Enter pin" : "Create pin";
+  const title = isPinSet ? 'Enter pin' : 'Create pin';
   const description = isPinSet
-    ? "Enter your 6-digit PIN to open your account"
-    : "Create a 6-digit PIN to secure your account";
+    ? 'Enter your 6-digit PIN to open your account'
+    : 'Create a 6-digit PIN to secure your account';
 
   return (
     <div className="flex flex-col items-center justify-between gap-4 w-full h-full">
@@ -118,7 +118,7 @@ export default function LockScreen({
             }}
             className="text-sm underline text-grey-neutral hover:text-neutral focus:outline-none focus:ring-2 focus:ring-primary rounded"
           >
-            {isPinSet ? "Forgot PIN" : "Reset and try again"}
+            {isPinSet ? 'Forgot PIN' : 'Reset and try again'}
           </button>
         )}
 
@@ -134,12 +134,12 @@ export default function LockScreen({
         title="Reset EVE Vault on this device?"
         className="modal--card"
         secondaryAction={{
-          label: "Cancel",
+          label: 'Cancel',
           onClick: () => setShowResetConfirm(false),
           disabled: isResetting,
         }}
         primaryAction={{
-          label: "Reset",
+          label: 'Reset',
           onClick: handleConfirmReset,
           isLoading: isResetting,
         }}

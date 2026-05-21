@@ -1,1 +1,1 @@
-export { default as LockScreen } from "./Lockscreen";
+export { default as LockScreen } from './Lockscreen';

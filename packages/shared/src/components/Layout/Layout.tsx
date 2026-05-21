@@ -1,16 +1,16 @@
-import type React from "react";
-import { useEffect, useMemo, useState } from "react";
-import Background from "#/components/Background";
-import { useResponsive } from "#/hooks";
-import { spacing } from "#/theme";
-import type { LayoutProps } from "#/types";
+import type React from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import Background from '#/components/Background';
+import { useResponsive } from '#/hooks';
+import { spacing } from '#/theme';
+import type { LayoutProps } from '#/types';
 import {
   calculateResponsivePadding,
   NAV_ITEMS,
   type PaddingConfig,
-} from "#/utils";
-import { HeaderMobile } from "./Header/HeaderMobile";
-import DesktopLeftSideBar from "./NavigationBar/DesktopLeftSideBar";
+} from '#/utils';
+import { HeaderMobile } from './Header/HeaderMobile';
+import DesktopLeftSideBar from './NavigationBar/DesktopLeftSideBar';
 
 /** Padding configuration for responsive layout */
 const PADDING_CONFIG: PaddingConfig = {
@@ -32,13 +32,13 @@ const EXTENSION_CONTENT_GAP = spacing.xxl - spacing.sm;
 
 export const Layout: React.FC<LayoutProps> = ({
   children,
-  variant = "web",
+  variant = 'web',
   showNav: _showNav = true, // Reserved for future mobile nav bar visibility
   headerProps,
 }) => {
   const { width } = useResponsive();
   const [viewportHeight, setViewportHeight] = useState<number>(() => {
-    if (typeof window === "undefined") return 800;
+    if (typeof window === 'undefined') return 800;
     return window.innerHeight;
   });
 
@@ -57,9 +57,9 @@ export const Layout: React.FC<LayoutProps> = ({
       });
     };
 
-    window.addEventListener("resize", handleResize);
+    window.addEventListener('resize', handleResize);
     return () => {
-      window.removeEventListener("resize", handleResize);
+      window.removeEventListener('resize', handleResize);
       if (rafId !== null) {
         cancelAnimationFrame(rafId);
       }
@@ -74,7 +74,7 @@ export const Layout: React.FC<LayoutProps> = ({
   );
 
   // Extension variant: compact layout for browser popup
-  if (variant === "extension") {
+  if (variant === 'extension') {
     const extensionPaddingStyle = {
       paddingTop: EXTENSION_MARGIN.vertical,
       paddingBottom: EXTENSION_MARGIN.vertical,

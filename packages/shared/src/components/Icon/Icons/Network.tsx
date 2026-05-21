@@ -1,10 +1,10 @@
-import type { SVGProps } from "react";
+import type { SVGProps } from 'react';
 
 const NetworkIcon = ({
   className,
   width = 16,
   height = 16,
-  color = "#FF4700",
+  color = '#FF4700',
 }: SVGProps<SVGSVGElement>) => (
   <svg
     width={width}

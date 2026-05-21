@@ -1,13 +1,13 @@
-import { useAuthStore } from "#/auth";
-import { getJwt } from "#/auth/storageService";
-import { resolveVendedIdTokenForZkProof } from "#/auth/zkJwt";
-import { zkProofService } from "#/services/vaultService";
-import type { DeviceState, ZkProofResponse } from "#/types";
-import type { JwtResponse } from "#/types/authTypes";
-import { isLocalnetChain } from "#/types/networks";
-import { createLogger } from "#/utils/logger";
-import { fetchZkProof } from "#/wallet/zkProof";
-import type { GetDeviceState, SetDeviceState } from "./types";
+import { useAuthStore } from '#/auth';
+import { getJwt } from '#/auth/storageService';
+import { resolveVendedIdTokenForZkProof } from '#/auth/zkJwt';
+import { zkProofService } from '#/services/vaultService';
+import type { DeviceState, ZkProofResponse } from '#/types';
+import type { JwtResponse } from '#/types/authTypes';
+import { isLocalnetChain } from '#/types/networks';
+import { createLogger } from '#/utils/logger';
+import { fetchZkProof } from '#/wallet/zkProof';
+import type { GetDeviceState, SetDeviceState } from './types';
 
 const log = createLogger();
 
@@ -15,7 +15,7 @@ export function createProofActions(set: SetDeviceState, get: GetDeviceState) {
   return {
     getZkProof: async (currentChain) => {
       if (isLocalnetChain(currentChain)) {
-        return { error: "zkLogin proofs are not available on localnet" };
+        return { error: 'zkLogin proofs are not available on localnet' };
       }
 
       const maxEpochExpiry = get().getMaxEpochTimestampMs(currentChain);
@@ -24,39 +24,39 @@ export function createProofActions(set: SetDeviceState, get: GetDeviceState) {
         try {
           const zkProof = await zkProofService.getZkProof(currentChain);
           if (zkProof != null && zkProof.error === undefined) {
-            log.info("Max epoch not yet expired, reusing ZK proof from keeper");
-            log.debug("Using cached ZK proof", { zkProof });
+            log.info('Max epoch not yet expired, reusing ZK proof from keeper');
+            log.debug('Using cached ZK proof', { zkProof });
             return zkProof;
           }
         } catch (error) {
           log.warn(
-            "Failed to get zkProof from keeper, will generate new one:",
+            'Failed to get zkProof from keeper, will generate new one:',
             error,
           );
         }
 
-        log.info("No ZK proof found in keeper, proceeding to generate new one");
+        log.info('No ZK proof found in keeper, proceeding to generate new one');
       }
 
       try {
-        log.info("*********** Generating ZK proof ***********");
+        log.info('*********** Generating ZK proof ***********');
 
         const { user } = useAuthStore.getState();
         if (!user?.id_token) {
-          throw new Error("User not authenticated");
+          throw new Error('User not authenticated');
         }
 
         const chain = currentChain;
-        const network = chain.replace("sui:", "") as string;
+        const network = chain.replace('sui:', '') as string;
 
         let nonce = get().getNonce(chain);
         const maxEpochTimestampMs = get().getMaxEpochTimestampMs(chain);
         const isEpochExpired =
           maxEpochTimestampMs == null || Date.now() >= maxEpochTimestampMs;
 
-        if (nonce == null || nonce === "" || isEpochExpired) {
+        if (nonce == null || nonce === '' || isEpochExpired) {
           log.info(
-            "Device nonce missing or epoch expired; rotating ephemeral key",
+            'Device nonce missing or epoch expired; rotating ephemeral key',
             { chain },
           );
           // Rotate the keypair on every epoch boundary for forward secrecy.
@@ -65,7 +65,7 @@ export function createProofActions(set: SetDeviceState, get: GetDeviceState) {
           // rotateEphemeralKey calls initializeForChain internally.
           await get().rotateEphemeralKey(chain);
           nonce = get().getNonce(chain);
-          if (nonce == null || nonce === "") {
+          if (nonce == null || nonce === '') {
             throw new Error(
               `Device nonce missing for ${network} after initialization.`,
             );
@@ -74,7 +74,7 @@ export function createProofActions(set: SetDeviceState, get: GetDeviceState) {
 
         const ephemeralPublicKey = get().ephemeralPublicKey;
         if (!ephemeralPublicKey) {
-          throw new Error("Ephemeral public key not found");
+          throw new Error('Ephemeral public key not found');
         }
 
         const primaryJwt = await getJwt();
@@ -91,7 +91,7 @@ export function createProofActions(set: SetDeviceState, get: GetDeviceState) {
           get().getMaxEpochTimestampMs(chain),
         );
 
-        log.debug("Generating ZK proof for network", { chain, network });
+        log.debug('Generating ZK proof for network', { chain, network });
 
         const networkJwtRandomness = get().getJwtRandomness(chain);
         if (!networkJwtRandomness) {
@@ -102,7 +102,7 @@ export function createProofActions(set: SetDeviceState, get: GetDeviceState) {
 
         const maxEpoch = get().getMaxEpoch(chain);
         if (!maxEpoch) {
-          throw new Error("Max epoch not found for current network");
+          throw new Error('Max epoch not found for current network');
         }
 
         const zkProofResponse: ZkProofResponse = await fetchZkProof({
@@ -117,27 +117,27 @@ export function createProofActions(set: SetDeviceState, get: GetDeviceState) {
         if (zkProofResponse.error === undefined) {
           try {
             await zkProofService.setZkProof(chain, zkProofResponse);
-            log.debug("zkProof stored in keeper");
+            log.debug('zkProof stored in keeper');
           } catch (error) {
-            log.error("Failed to store zkProof in keeper:", error);
+            log.error('Failed to store zkProof in keeper:', error);
           }
           return zkProofResponse;
         }
 
-        log.error("Error generating ZK proof", zkProofResponse.error);
+        log.error('Error generating ZK proof', zkProofResponse.error);
         set({
           error: zkProofResponse.error?.message,
         });
         return zkProofResponse;
       } catch (error) {
-        log.error("Error generating ZK proof", error);
+        log.error('Error generating ZK proof', error);
         set({
-          error: error instanceof Error ? error.message : "Unknown error",
+          error: error instanceof Error ? error.message : 'Unknown error',
         });
         return {
-          error: error instanceof Error ? error.message : "Unknown error",
+          error: error instanceof Error ? error.message : 'Unknown error',
         };
       }
     },
-  } satisfies Pick<DeviceState, "getZkProof">;
+  } satisfies Pick<DeviceState, 'getZkProof'>;
 }

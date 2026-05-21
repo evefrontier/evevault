@@ -1,18 +1,18 @@
-import type { SuiGraphQLClient } from "@mysten/sui/graphql";
+import type { SuiGraphQLClient } from '@mysten/sui/graphql';
 import type {
   Transaction,
   TransactionBalanceChange,
   TransactionDirection,
-} from "#/types/components";
-import { SUI_COIN_TYPE } from "#/utils";
-import { formatByDecimals } from "#/utils/format";
-import { createLogger } from "#/utils/logger";
+} from '#/types/components';
+import { SUI_COIN_TYPE } from '#/utils';
+import { formatByDecimals } from '#/utils/format';
+import { createLogger } from '#/utils/logger';
 import type {
   GraphQLBalanceChange,
   GraphQLTransactionNode,
-} from "#/wallet/types/graphql";
-import { fetchCoinMetadata } from "./coinMetadata";
-import { extractSymbolFromCoinType } from "./formatTransaction";
+} from '#/wallet/types/graphql';
+import { fetchCoinMetadata } from './coinMetadata';
+import { extractSymbolFromCoinType } from './formatTransaction';
 
 const log = createLogger();
 
@@ -22,7 +22,7 @@ function findCounterparty(
   direction: TransactionDirection,
   coinType: string,
 ): string {
-  const isReceived = direction === "received";
+  const isReceived = direction === 'received';
   const oppositeSign = isReceived
     ? (amount: bigint) => amount < 0n
     : (amount: bigint) => amount > 0n;
@@ -37,7 +37,7 @@ function findCounterparty(
   });
   const sameCoin = withOppositeSign.find(sameCoinType);
   const counterpartyChange = sameCoin ?? withOppositeSign[0];
-  return counterpartyChange?.owner?.address ?? "System";
+  return counterpartyChange?.owner?.address ?? 'System';
 }
 
 /**
@@ -84,7 +84,7 @@ export async function parseGraphQLTransaction(
       const metadata = await fetchCoinMetadata(graphqlClient, coinType);
       const decimals = metadata?.decimals ?? 9;
       if (!metadata) {
-        log.warn("Falling back to default decimals for coin type", {
+        log.warn('Falling back to default decimals for coin type', {
           coinType,
           rawAmount: amountAbs.toString(),
           defaultDecimals: decimals,
@@ -113,7 +113,7 @@ export async function parseGraphQLTransaction(
     const primaryAmount =
       primaryUserChange?.amount != null ? BigInt(primaryUserChange.amount) : 0n;
     const direction: TransactionDirection =
-      primaryAmount >= 0n ? "received" : "sent";
+      primaryAmount >= 0n ? 'received' : 'sent';
     const primaryCoinType = primaryUserChange?.coinType?.repr ?? SUI_COIN_TYPE;
     const primary =
       balanceChangeItems.find((bc) => bc.coinType === primaryCoinType) ??
@@ -151,7 +151,7 @@ export async function parseGraphQLTransaction(
     const ownerAddress = bc.owner?.address;
     return ownerAddress?.toLowerCase() !== userAddress.toLowerCase();
   });
-  const counterparty = recipientChange?.owner?.address ?? "System";
+  const counterparty = recipientChange?.owner?.address ?? 'System';
 
   const amountAbs = BigInt(outgoingChange.amount) * -1n;
   const coinType = outgoingChange.coinType?.repr ?? SUI_COIN_TYPE;
@@ -159,7 +159,7 @@ export async function parseGraphQLTransaction(
   const metadata = await fetchCoinMetadata(graphqlClient, coinType);
   const decimals = metadata?.decimals ?? 9;
   if (!metadata) {
-    log.warn("Falling back to default decimals for coin type", {
+    log.warn('Falling back to default decimals for coin type', {
       coinType,
       rawAmount: amountAbs.toString(),
       defaultDecimals: decimals,
@@ -169,7 +169,7 @@ export async function parseGraphQLTransaction(
   return {
     digest,
     timestamp: ts,
-    direction: "sent",
+    direction: 'sent',
     counterparty,
     balanceChanges: [
       {

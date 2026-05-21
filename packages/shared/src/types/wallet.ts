@@ -1,18 +1,18 @@
-import type { PublicKey, Signer } from "@mysten/sui/cryptography";
+import type { PublicKey, Signer } from '@mysten/sui/cryptography';
 import type {
   Ed25519Keypair,
   Ed25519PublicKey,
-} from "@mysten/sui/keypairs/ed25519";
-import type { getZkLoginSignature } from "@mysten/sui/zklogin";
-import type { User } from "oidc-client-ts";
-import type { ZkProofResponse } from "./enoki";
-import type { StoredSecretKey } from "./stores";
+} from '@mysten/sui/keypairs/ed25519';
+import type { getZkLoginSignature } from '@mysten/sui/zklogin';
+import type { User } from 'oidc-client-ts';
+import type { ZkProofResponse } from './enoki';
+import type { StoredSecretKey } from './stores';
 
 // Web crypto placeholder constants - used when the actual key is stored in IndexedDB
 // and managed by WebCryptoSigner (non-extractable)
-export const WEB_CRYPTO_PLACEHOLDER_IV = "web-crypto-signer";
-export const WEB_CRYPTO_PLACEHOLDER_DATA = "non-extractable-key";
-export const WEB_CRYPTO_PLACEHOLDER_SALT = "web-crypto-salt";
+export const WEB_CRYPTO_PLACEHOLDER_IV = 'web-crypto-signer';
+export const WEB_CRYPTO_PLACEHOLDER_DATA = 'non-extractable-key';
+export const WEB_CRYPTO_PLACEHOLDER_SALT = 'web-crypto-salt';
 
 export const createWebCryptoPlaceholder = (): StoredSecretKey => ({
   iv: WEB_CRYPTO_PLACEHOLDER_IV,
@@ -21,8 +21,8 @@ export const createWebCryptoPlaceholder = (): StoredSecretKey => ({
 });
 
 export type PartialZkLoginSignature = Omit<
-  Parameters<typeof getZkLoginSignature>[0]["inputs"],
-  "addressSeed"
+  Parameters<typeof getZkLoginSignature>[0]['inputs'],
+  'addressSeed'
 >;
 
 export interface ZkSignAnyParams {

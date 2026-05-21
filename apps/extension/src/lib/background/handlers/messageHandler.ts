@@ -1,20 +1,20 @@
 import {
   VaultMessageTypes,
   WalletStandardMessageTypes,
-} from "@evevault/shared";
-import { createLogger } from "@evevault/shared/utils";
+} from '@evevault/shared';
+import { createLogger } from '@evevault/shared/utils';
 import type {
   BackgroundMessage,
   EveFrontierSponsoredTransactionMessage,
   WalletActionMessage,
   WebUnlockMessage,
-} from "@/lib/background/types";
+} from '@/lib/background/types';
 import {
   handleDappLogin,
   handleExtLogin,
   handleWebUnlock,
-} from "./authHandlers";
-import { handleSponsoredTransaction } from "./sponsoredTransactionHandler";
+} from './authHandlers';
+import { handleSponsoredTransaction } from './sponsoredTransactionHandler';
 import {
   _handleClearZkProof,
   _handleCreateKeypair,
@@ -28,8 +28,8 @@ import {
   _handleZkEphSignBytes,
   handleLock,
   handleUnlockVault,
-} from "./vaultHandlers";
-import { handleApprovePopup } from "./walletHandlers";
+} from './vaultHandlers';
+import { handleApprovePopup } from './walletHandlers';
 
 const log = createLogger();
 
@@ -42,27 +42,27 @@ export function handleMessage(
   const { action, type } = message;
 
   // Auth handlers
-  if (action === "ext_login") {
+  if (action === 'ext_login') {
     handleExtLogin(message, sender, sendResponse);
     return true;
   }
 
-  if (action === "dapp_login" || type === "connect") {
+  if (action === 'dapp_login' || type === 'connect') {
     void handleDappLogin(message, sender, sendResponse, tabId).catch(
       (error) => {
-        log.error("handleDappLogin failed", error);
+        log.error('handleDappLogin failed', error);
       },
     );
     return true;
   }
 
-  if (action === "web_unlock") {
+  if (action === 'web_unlock') {
     void handleWebUnlock(
       message as WebUnlockMessage,
       sender,
       sendResponse,
     ).catch((error) => {
-      log.error("handleWebUnlock failed", error);
+      log.error('handleWebUnlock failed', error);
     });
     return true;
   }
@@ -154,16 +154,16 @@ export function handleMessage(
 
   // Handle change events
   // Forward chain change events to all tabs
-  if (message.event === "change" && message.payload) {
-    log.info("Broadcasting chain change event", message.payload);
+  if (message.event === 'change' && message.payload) {
+    log.info('Broadcasting chain change event', message.payload);
 
     // Broadcast chain change to all tabs so the wallet can update
     chrome.tabs.query({}, (tabs) => {
       tabs.forEach((tab) => {
         if (tab.id) {
           chrome.tabs.sendMessage(tab.id, {
-            __from: "Eve Vault",
-            event: "change",
+            __from: 'Eve Vault',
+            event: 'change',
             payload: message.payload,
           });
         }
@@ -173,5 +173,5 @@ export function handleMessage(
   }
 
   // Default case
-  log.warn("Unknown background message", message);
+  log.warn('Unknown background message', message);
 }

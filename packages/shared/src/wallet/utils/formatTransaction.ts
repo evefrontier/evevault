@@ -1,8 +1,8 @@
-import type { SuiGraphQLClient } from "@mysten/sui/graphql";
-import { parseStructTag } from "@mysten/sui/utils";
-import { formatByDecimals } from "#/utils/format";
-import { createLogger } from "#/utils/logger";
-import { fetchCoinMetadata } from "./coinMetadata";
+import type { SuiGraphQLClient } from '@mysten/sui/graphql';
+import { parseStructTag } from '@mysten/sui/utils';
+import { formatByDecimals } from '#/utils/format';
+import { createLogger } from '#/utils/logger';
+import { fetchCoinMetadata } from './coinMetadata';
 
 const log = createLogger();
 
@@ -17,7 +17,7 @@ export function extractSymbolFromCoinType(coinType: string): string {
     return struct.name || coinType;
   } catch {
     // Fallback to simple parsing if parseStructTag fails
-    const parts = coinType.split("::");
+    const parts = coinType.split('::');
     return parts[parts.length - 1] || coinType;
   }
 }
@@ -39,7 +39,7 @@ export async function formatTransactionAmount(
     // Fallback to 9 decimals (SUI default) if metadata is unavailable.
     // This may be incorrect for non-SUI tokens, so we log a warning for observability.
     decimals = 9;
-    log.warn("Falling back to default decimals for coin type", {
+    log.warn('Falling back to default decimals for coin type', {
       coinType,
       rawAmount,
       defaultDecimals: decimals,

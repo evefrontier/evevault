@@ -2,10 +2,10 @@ import type {
   PersistedDeviceStore,
   PersistedDeviceStoreState,
   StoredSecretKey,
-} from "@evevault/shared/types";
-import { KeeperMessageTypes } from "@evevault/shared/types";
-import { createLogger, DEVICE_STORAGE_KEY } from "@evevault/shared/utils";
-import { ensureOffscreen } from "@/lib/background/services/offscreenService";
+} from '@evevault/shared/types';
+import { KeeperMessageTypes } from '@evevault/shared/types';
+import { createLogger, DEVICE_STORAGE_KEY } from '@evevault/shared/utils';
+import { ensureOffscreen } from '@/lib/background/services/offscreenService';
 
 const log = createLogger();
 
@@ -15,7 +15,7 @@ const log = createLogger();
  * hasn't rehydrated yet when setState is called.
  */
 export async function getEphemeralKeyPairSecretKeyFromStorage(): Promise<StoredSecretKey | null> {
-  if (typeof chrome === "undefined" || !chrome.storage) {
+  if (typeof chrome === 'undefined' || !chrome.storage) {
     return null;
   }
 
@@ -31,25 +31,25 @@ export async function getEphemeralKeyPairSecretKeyFromStorage(): Promise<StoredS
     }
 
     let persistedState: PersistedDeviceStoreState | null = null;
-    if (typeof stored === "string") {
+    if (typeof stored === 'string') {
       persistedState =
         (JSON.parse(stored) as PersistedDeviceStore).state ?? null;
-    } else if (typeof stored === "object" && "state" in stored) {
+    } else if (typeof stored === 'object' && 'state' in stored) {
       persistedState = (stored as PersistedDeviceStore).state ?? null;
     }
 
     const storedKey = persistedState?.ephemeralKeyPairSecretKey;
     if (
       storedKey &&
-      typeof storedKey === "object" &&
-      "iv" in storedKey &&
-      "data" in storedKey
+      typeof storedKey === 'object' &&
+      'iv' in storedKey &&
+      'data' in storedKey
     ) {
       return storedKey as StoredSecretKey;
     }
   } catch (error) {
     log.warn(
-      "Failed to retrieve ephemeralKeyPairSecretKey from storage",
+      'Failed to retrieve ephemeralKeyPairSecretKey from storage',
       error,
     );
   }
@@ -68,10 +68,10 @@ export async function checkKeeperUnlocked(): Promise<{
     await ensureOffscreen(true);
     return new Promise((resolve) => {
       chrome.runtime.sendMessage(
-        { type: KeeperMessageTypes.GET_PUBLIC_KEY, target: "KEEPER" },
+        { type: KeeperMessageTypes.GET_PUBLIC_KEY, target: 'KEEPER' },
         (response) => {
           if (chrome.runtime.lastError) {
-            log.error("Error checking keeper", chrome.runtime.lastError);
+            log.error('Error checking keeper', chrome.runtime.lastError);
             resolve({ unlocked: false });
             return;
           }
@@ -87,7 +87,7 @@ export async function checkKeeperUnlocked(): Promise<{
       );
     });
   } catch (error) {
-    log.error("Failed to check keeper status", error);
+    log.error('Failed to check keeper status', error);
     return { unlocked: false };
   }
 }

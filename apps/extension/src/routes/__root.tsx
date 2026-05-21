@@ -1,6 +1,6 @@
-import { NotFoundScreen } from "@evevault/shared/components";
-import { useDocumentTitle } from "@evevault/shared/router";
-import { createRootRoute, Outlet } from "@tanstack/react-router";
+import { NotFoundScreen } from '@evevault/shared/components';
+import { useDocumentTitle } from '@evevault/shared/router';
+import { createRootRoute, Outlet } from '@tanstack/react-router';
 
 export const Route = createRootRoute({
   component: RootComponent,

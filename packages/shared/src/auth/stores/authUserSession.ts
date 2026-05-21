@@ -1,13 +1,13 @@
-import { decodeJwt } from "jose";
-import { type IdTokenClaims, User, type UserManager } from "oidc-client-ts";
+import { decodeJwt } from 'jose';
+import { type IdTokenClaims, User, type UserManager } from 'oidc-client-ts';
 import {
   enrichUserWithZkLoginIfNeeded,
   syncPrimaryJwtFromUser,
-} from "#/auth/userJwtSync";
-import { userToJwtResponse } from "#/auth/userToJwtResponse";
-import { resolveExpiresAt } from "#/auth/utils/authStoreUtils";
-import type { JwtResponse, OAuthTokenResponse } from "#/types/authTypes";
-import { getEnokiApiKey } from "./authWorkflowUtils";
+} from '#/auth/userJwtSync';
+import { userToJwtResponse } from '#/auth/userToJwtResponse';
+import { resolveExpiresAt } from '#/auth/utils/authStoreUtils';
+import type { JwtResponse, OAuthTokenResponse } from '#/types/authTypes';
+import { getEnokiApiKey } from './authWorkflowUtils';
 
 export function buildUserFromJwt(jwt: JwtResponse): User {
   // Stored JWTs do not include the full oidc-client-ts User shape.
@@ -16,10 +16,10 @@ export function buildUserFromJwt(jwt: JwtResponse): User {
   return new User({
     id_token: jwt.id_token,
     access_token: jwt.access_token,
-    token_type: jwt.token_type ?? "Bearer",
-    scope: jwt.scope ?? "",
+    token_type: jwt.token_type ?? 'Bearer',
+    scope: jwt.scope ?? '',
     refresh_token: jwt.refresh_token,
-    profile: { ...decodedJwt } as User["profile"],
+    profile: { ...decodedJwt } as User['profile'],
     expires_at: jwt.expires_at,
   });
 }
@@ -36,7 +36,7 @@ export function buildUserFromOAuthResponse(
     token_type: jwtResponse.token_type,
     scope: jwtResponse.scope,
     refresh_token: jwtResponse.refresh_token,
-    profile: { ...(decodedJwt as IdTokenClaims) } as User["profile"],
+    profile: { ...(decodedJwt as IdTokenClaims) } as User['profile'],
     expires_at: decodedJwt.iat + jwtResponse.expires_in,
   });
 }

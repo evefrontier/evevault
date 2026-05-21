@@ -1,15 +1,15 @@
-import { encrypt, encryptWithKey, type HashedData } from "@evevault/shared";
-import { signWithIntent } from "@evevault/shared/wallet";
-import type { IntentScope } from "@mysten/sui/cryptography";
-import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
-import type { BackgroundMessage } from "@/lib/background/types";
+import { encrypt, encryptWithKey, type HashedData } from '@evevault/shared';
+import { signWithIntent } from '@evevault/shared/wallet';
+import type { IntentScope } from '@mysten/sui/cryptography';
+import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
+import type { BackgroundMessage } from '@/lib/background/types';
 import {
   cacheSessionKey,
   decryptVaultSecret,
   getErrorMessage,
   publicKeyBytes,
   restoreUnlockedVault,
-} from "./keeperCrypto";
+} from './keeperCrypto';
 import {
   enforceExpiry,
   getEphemeralKey,
@@ -17,8 +17,8 @@ import {
   keeperReplaceEphemeralKey,
   lockVault,
   unlockVaultWithKeypair,
-} from "./keeperState";
-import type { KeeperSendResponse } from "./keeperTypes";
+} from './keeperState';
+import type { KeeperSendResponse } from './keeperTypes';
 
 export function handleCreateKeypair(
   message: BackgroundMessage,
@@ -60,7 +60,7 @@ export function handleUnlockVault(
     try {
       secretKey = await decryptVaultSecret(hashedSecretKey, pin);
     } catch (error) {
-      console.error("[Keeper] Decryption failed:", error);
+      console.error('[Keeper] Decryption failed:', error);
       lockVault();
       sendResponse({
         ok: false,
@@ -73,7 +73,7 @@ export function handleUnlockVault(
       await restoreUnlockedVault(message, secretKey, hashedSecretKey, pin);
       sendResponse({ ok: true });
     } catch (error) {
-      console.error("[Keeper] Keypair creation failed:", error);
+      console.error('[Keeper] Keypair creation failed:', error);
       lockVault();
       sendResponse({
         ok: false,
@@ -90,7 +90,7 @@ export function handleGetPublicKey(
   sendResponse: KeeperSendResponse,
 ): boolean {
   if (enforceExpiry()) {
-    sendResponse({ error: "LOCKED" });
+    sendResponse({ error: 'LOCKED' });
     return false;
   }
 
@@ -106,7 +106,7 @@ export function handleRotateKeypair(
   if (enforceExpiry() || !sessionKey) {
     sendResponse({
       ok: false,
-      error: "Vault must be unlocked again before rotating keypair",
+      error: 'Vault must be unlocked again before rotating keypair',
     });
     return false;
   }
@@ -142,7 +142,7 @@ export function handleEphSign(
 ): boolean {
   const key = getEphemeralKey();
   if (enforceExpiry() || !key) {
-    sendResponse({ error: "[KEEPER_EPH_SIGN] LOCKED" });
+    sendResponse({ error: '[KEEPER_EPH_SIGN] LOCKED' });
     return false;
   }
 

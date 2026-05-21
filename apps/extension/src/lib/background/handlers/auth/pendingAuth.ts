@@ -1,5 +1,5 @@
-import { createLogger } from "@evevault/shared/utils";
-import { sendAuthError } from "./authHelpers";
+import { createLogger } from '@evevault/shared/utils';
+import { sendAuthError } from './authHelpers';
 
 const log = createLogger();
 
@@ -11,7 +11,7 @@ export const PENDING_AUTH_TIMEOUT_MS = 2 * 60 * 1000;
 
 export interface PendingAuthAfterUnlock {
   id: string;
-  type: "ext" | "dapp";
+  type: 'ext' | 'dapp';
   tabId?: number;
   windowId?: number;
   /** Extra connect request ids for same tab (all get auth_success when unlock completes). */
@@ -33,9 +33,9 @@ export function clearPendingAuth(): void {
 
 export function sendPendingAuthError(pending: PendingAuthAfterUnlock): void {
   const errorPayload = {
-    message: "Vault unlock was cancelled or timed out.",
+    message: 'Vault unlock was cancelled or timed out.',
   };
-  if (pending.type === "ext") {
+  if (pending.type === 'ext') {
     sendAuthError(pending.id, errorPayload);
   } else if (pending.tabId !== undefined) {
     const ids = [pending.id, ...(pending.additionalIds ?? [])];
@@ -43,11 +43,11 @@ export function sendPendingAuthError(pending: PendingAuthAfterUnlock): void {
       chrome.tabs
         .sendMessage(pending.tabId, {
           id,
-          type: "auth_error",
+          type: 'auth_error',
           error: errorPayload,
         })
         .catch((err) => {
-          log.error("Failed to send auth_error to tab", {
+          log.error('Failed to send auth_error to tab', {
             tabId: pending.tabId,
             id,
             err,
@@ -63,7 +63,7 @@ export function sendPendingAuthError(pending: PendingAuthAfterUnlock): void {
  */
 export function addPendingDappId(tabId: number, id: string): boolean {
   if (!pendingAuthAfterUnlock) return false;
-  if (pendingAuthAfterUnlock.type !== "dapp") return false;
+  if (pendingAuthAfterUnlock.type !== 'dapp') return false;
   if (pendingAuthAfterUnlock.tabId !== tabId) return false;
   if (!pendingAuthAfterUnlock.additionalIds) {
     pendingAuthAfterUnlock.additionalIds = [];
@@ -78,7 +78,7 @@ export function addPendingDappId(tabId: number, id: string): boolean {
 
 export function setPendingAuthAfterUnlock(
   id: string,
-  type: "ext" | "dapp",
+  type: 'ext' | 'dapp',
   tabId?: number,
   windowId?: number,
   tenantId?: string,
@@ -114,7 +114,7 @@ export function setPendingAuthWindowId(id: string, windowId: number): void {
   // Guard against races: only update if the pending entry still matches the caller's id.
   if (pending.id !== id) {
     log.warn(
-      "Ignoring windowId update for stale/mismatched pending auth entry",
+      'Ignoring windowId update for stale/mismatched pending auth entry',
       {
         expectedId: id,
         pendingId: pending.id,
@@ -125,7 +125,7 @@ export function setPendingAuthWindowId(id: string, windowId: number): void {
 
   // If a different windowId is already set, treat this as a race and ignore.
   if (pending.windowId !== undefined && pending.windowId !== windowId) {
-    log.warn("Ignoring conflicting windowId update for pending auth entry", {
+    log.warn('Ignoring conflicting windowId update for pending auth entry', {
       pendingId: pending.id,
       existingWindowId: pending.windowId,
       newWindowId: windowId,

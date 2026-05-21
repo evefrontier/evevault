@@ -1,7 +1,7 @@
-import type { BackgroundMessage } from "@/lib/background/types";
-import { enforceExpiry, getSessionKey, localnetState } from "./keeperState";
-import type { KeeperSendResponse } from "./keeperTypes";
-import { localnetGetAddress, localnetSetKeypair, localnetSign } from "./local";
+import type { BackgroundMessage } from '@/lib/background/types';
+import { enforceExpiry, getSessionKey, localnetState } from './keeperState';
+import type { KeeperSendResponse } from './keeperTypes';
+import { localnetGetAddress, localnetSetKeypair, localnetSign } from './local';
 
 export function handleLocalnetSetKeypair(
   message: BackgroundMessage,
@@ -12,7 +12,7 @@ export function handleLocalnetSetKeypair(
   if (enforceExpiry() || !sessionKey) {
     sendResponse({
       ok: false,
-      error: "Vault must be unlocked to store localnet key",
+      error: 'Vault must be unlocked to store localnet key',
     });
     return false;
   }
@@ -41,7 +41,7 @@ export function handleLocalnetSign(
   sendResponse: KeeperSendResponse,
 ): boolean {
   if (enforceExpiry()) {
-    sendResponse({ ok: false, error: "No localnet keypair loaded" });
+    sendResponse({ ok: false, error: 'No localnet keypair loaded' });
     return false;
   }
 
@@ -49,7 +49,7 @@ export function handleLocalnetSign(
   if (!sessionKey) {
     sendResponse({
       ok: false,
-      error: "Vault must be unlocked to sign with localnet key",
+      error: 'Vault must be unlocked to sign with localnet key',
     });
     return false;
   }

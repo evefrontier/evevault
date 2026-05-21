@@ -1,13 +1,13 @@
-import type { SuiChain } from "@mysten/wallet-standard";
-import type { User } from "oidc-client-ts";
-import { getJwt } from "#/auth/storageService";
-import { createLogger } from "#/utils";
+import type { SuiChain } from '@mysten/wallet-standard';
+import type { User } from 'oidc-client-ts';
+import { getJwt } from '#/auth/storageService';
+import { createLogger } from '#/utils';
 import {
   buildUserFromJwt,
   jwtTiming,
   persistEnrichedUser,
-} from "./authUserSession";
-import type { GetUserManagerInstance } from "./authWorkflowUtils";
+} from './authUserSession';
+import type { GetUserManagerInstance } from './authWorkflowUtils';
 
 const log = createLogger();
 
@@ -22,14 +22,14 @@ async function rebuildExtensionUserFromStoredJwt(
   const storedJwt = await getJwt();
 
   if (!storedJwt?.id_token) {
-    log.info("Extension init: no OIDC user or stored JWT, clearing auth", {
+    log.info('Extension init: no OIDC user or stored JWT, clearing auth', {
       network,
     });
     return null;
   }
 
   log.info(
-    "Extension init: no OIDC user in UserManager, rebuilding from stored JWT",
+    'Extension init: no OIDC user in UserManager, rebuilding from stored JWT',
     { network },
   );
   return buildUserFromJwt(storedJwt);
@@ -47,7 +47,7 @@ async function refreshExtensionUserIfExpired(
   }
 
   if (!user.refresh_token?.trim()) {
-    log.info("Extension init: JWT expired, no refresh token; clearing user", {
+    log.info('Extension init: JWT expired, no refresh token; clearing user', {
       network,
       expiresAt: timing.expiresAt,
       now: timing.now,
@@ -55,7 +55,7 @@ async function refreshExtensionUserIfExpired(
     return null;
   }
 
-  log.info("[Extension init] JWT expired, attempting silent renew", {
+  log.info('[Extension init] JWT expired, attempting silent renew', {
     network,
     expiresAt: timing.expiresAt,
     now: timing.now,
@@ -69,7 +69,7 @@ async function refreshExtensionUserIfExpired(
     const refreshedUser = await userManager.signinSilent();
     return validRefreshedExtensionUser(refreshedUser, network);
   } catch (error) {
-    log.error("[Extension init] OIDC silent renew failed", {
+    log.error('[Extension init] OIDC silent renew failed', {
       network,
       error: error instanceof Error ? error.message : String(error),
     });
@@ -82,7 +82,7 @@ function validRefreshedExtensionUser(
   network: SuiChain,
 ): User | null {
   if (!refreshedUser?.id_token) {
-    log.info("[Extension init] silent renew returned no user session", {
+    log.info('[Extension init] silent renew returned no user session', {
       network,
     });
     return null;
@@ -90,7 +90,7 @@ function validRefreshedExtensionUser(
 
   const refreshedTiming = jwtTiming(refreshedUser);
   if (refreshedTiming && refreshedTiming.now >= refreshedTiming.expiresAt) {
-    log.info("[Extension init] JWT still expired after silent renew", {
+    log.info('[Extension init] JWT still expired after silent renew', {
       network,
     });
     return null;

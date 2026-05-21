@@ -1,7 +1,7 @@
-import type { ZkProofResponse } from "@evevault/shared";
-import type { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
-import type { SuiChain } from "@mysten/wallet-standard";
-import type { LocalnetState } from "./local";
+import type { ZkProofResponse } from '@evevault/shared';
+import type { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
+import type { SuiChain } from '@mysten/wallet-standard';
+import type { LocalnetState } from './local';
 
 const VAULT_UNLOCK_MS = 10 * 60 * 1000;
 
@@ -34,9 +34,9 @@ let zkProofs: Partial<Record<SuiChain, ZkProofResponse | null>> =
 
 function emptyZkProofs(): Partial<Record<SuiChain, ZkProofResponse | null>> {
   return {
-    "sui:devnet": null,
-    "sui:testnet": null,
-    "sui:mainnet": null,
+    'sui:devnet': null,
+    'sui:testnet': null,
+    'sui:mainnet': null,
   };
 }
 

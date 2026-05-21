@@ -2,9 +2,9 @@ import {
   applyTenantFromUrl,
   getCurrentTenantId,
   getDefaultTenantId,
-} from "@evevault/shared";
-import { runTenantSwitchCleanup } from "@evevault/shared/auth";
-import { useEffect, useRef } from "react";
+} from '@evevault/shared';
+import { runTenantSwitchCleanup } from '@evevault/shared/auth';
+import { useEffect, useRef } from 'react';
 
 /**
  * Syncs tenant from URL (?tenant=) on load. If the URL tenant differs from

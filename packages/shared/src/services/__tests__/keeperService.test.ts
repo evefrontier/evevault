@@ -1,6 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ephKeyService } from "#/services/keeperService";
-import { VaultMessageTypes } from "#/types/messages";
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { ephKeyService } from '#/services/keeperService';
+import { VaultMessageTypes } from '#/types/messages';
 
 // Mock chrome.runtime.sendMessage
 const mockSendMessage = vi.fn();
@@ -11,13 +11,13 @@ const mockSendMessage = vi.fn();
   // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
 } as any;
 
-describe("ephKeyService.lock()", () => {
+describe('ephKeyService.lock()', () => {
   afterEach(() => {
     vi.clearAllMocks();
     vi.restoreAllMocks();
   });
 
-  it("sends LOCK message to keeper and succeeds when response is ok", async () => {
+  it('sends LOCK message to keeper and succeeds when response is ok', async () => {
     mockSendMessage.mockResolvedValueOnce({ ok: true });
 
     await ephKeyService.lock();
@@ -28,8 +28,8 @@ describe("ephKeyService.lock()", () => {
     });
   });
 
-  it("throws error when keeper response is not ok", async () => {
-    const errorMessage = "Keeper lock failed";
+  it('throws error when keeper response is not ok', async () => {
+    const errorMessage = 'Keeper lock failed';
     mockSendMessage.mockResolvedValueOnce({
       ok: false,
       error: errorMessage,
@@ -42,32 +42,32 @@ describe("ephKeyService.lock()", () => {
     });
   });
 
-  it("throws error when keeper response is undefined", async () => {
+  it('throws error when keeper response is undefined', async () => {
     mockSendMessage.mockResolvedValueOnce(undefined);
 
-    await expect(ephKeyService.lock()).rejects.toThrow("Failed to lock vault");
+    await expect(ephKeyService.lock()).rejects.toThrow('Failed to lock vault');
 
     expect(mockSendMessage).toHaveBeenCalledWith({
       type: VaultMessageTypes.LOCK,
     });
   });
 
-  it("throws error when keeper response has no error message", async () => {
+  it('throws error when keeper response has no error message', async () => {
     mockSendMessage.mockResolvedValueOnce({ ok: false });
 
-    await expect(ephKeyService.lock()).rejects.toThrow("Failed to lock vault");
+    await expect(ephKeyService.lock()).rejects.toThrow('Failed to lock vault');
   });
 });
 
-describe("ephKeyService.rotateEphemeralKeyPair()", () => {
+describe('ephKeyService.rotateEphemeralKeyPair()', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("sends ROTATE_KEYPAIR message and returns refreshed key", async () => {
+  it('sends ROTATE_KEYPAIR message and returns refreshed key', async () => {
     mockSendMessage.mockResolvedValueOnce({
       ok: true,
-      hashedSecretKey: { iv: "iv", data: "data", salt: "salt" },
+      hashedSecretKey: { iv: 'iv', data: 'data', salt: 'salt' },
       publicKeyBytes: new Uint8Array(32).fill(7),
     });
 
@@ -78,9 +78,9 @@ describe("ephKeyService.rotateEphemeralKeyPair()", () => {
       type: VaultMessageTypes.ROTATE_KEYPAIR,
     });
     expect(result.hashedSecretKey).toEqual({
-      iv: "iv",
-      data: "data",
-      salt: "salt",
+      iv: 'iv',
+      data: 'data',
+      salt: 'salt',
     });
     expect(result.publicKey).toBeDefined();
   });

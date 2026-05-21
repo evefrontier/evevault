@@ -1,13 +1,13 @@
-import { SUI_DEVNET_CHAIN, SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { CONTEXT_STORAGE_KEY, JWT_STORAGE_KEY } from "#/utils/storageKeys";
+import { SUI_DEVNET_CHAIN, SUI_TESTNET_CHAIN } from '@mysten/wallet-standard';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { CONTEXT_STORAGE_KEY, JWT_STORAGE_KEY } from '#/utils/storageKeys';
 
-vi.mock("#/utils/environment", () => ({
+vi.mock('#/utils/environment', () => ({
   isExtension: vi.fn(),
   isWeb: vi.fn(),
 }));
 
-vi.mock("#/utils/logger", () => ({
+vi.mock('#/utils/logger', () => ({
   createLogger: () => ({
     debug: vi.fn(),
     info: vi.fn(),
@@ -16,19 +16,19 @@ vi.mock("#/utils/logger", () => ({
   }),
 }));
 
-vi.mock("#/stores/contextStore", () => ({
+vi.mock('#/stores/contextStore', () => ({
   useContext: {
     getState: vi.fn(() => ({ chain: SUI_TESTNET_CHAIN })),
   },
 }));
 
-vi.mock("#/auth/stores/authStore", () => ({
+vi.mock('#/auth/stores/authStore', () => ({
   useAuthStore: {
     getState: vi.fn(() => ({ user: null })),
   },
 }));
 
-vi.mock("#/auth/userToJwtResponse", () => ({
+vi.mock('#/auth/userToJwtResponse', () => ({
   userToJwtResponse: vi.fn(),
 }));
 
@@ -40,24 +40,24 @@ import {
   hasJwt,
   storeJwt,
   storeZkLoginJwtForNetwork,
-} from "#/auth/storageService";
-import { useAuthStore } from "#/auth/stores/authStore";
-import { userToJwtResponse } from "#/auth/userToJwtResponse";
-import { useContext } from "#/stores/contextStore";
-import { isExtension, isWeb } from "#/utils/environment";
+} from '#/auth/storageService';
+import { useAuthStore } from '#/auth/stores/authStore';
+import { userToJwtResponse } from '#/auth/userToJwtResponse';
+import { useContext } from '#/stores/contextStore';
+import { isExtension, isWeb } from '#/utils/environment';
 
 const futureExp = () => Math.floor(Date.now() / 1000) + 86_400;
 
 const baseJwt = () => ({
-  access_token: "at",
-  id_token: "it",
+  access_token: 'at',
+  id_token: 'it',
   expires_in: 3600,
-  scope: "openid",
-  token_type: "Bearer",
+  scope: 'openid',
+  token_type: 'Bearer',
   expires_at: futureExp(),
 });
 
-describe("storageService (web)", () => {
+describe('storageService (web)', () => {
   beforeEach(() => {
     vi.mocked(isExtension).mockReturnValue(false);
     vi.mocked(isWeb).mockReturnValue(true);
@@ -74,12 +74,12 @@ describe("storageService (web)", () => {
     vi.clearAllMocks();
   });
 
-  it("storeJwt is a no-op on web (tokens managed by oidc-client-ts)", async () => {
-    await storeJwt({ ...baseJwt(), refresh_token: "rt" });
+  it('storeJwt is a no-op on web (tokens managed by oidc-client-ts)', async () => {
+    await storeJwt({ ...baseJwt(), refresh_token: 'rt' });
     expect(localStorage.getItem(JWT_STORAGE_KEY)).toBeNull();
   });
 
-  it("getJwt uses OIDC user on web", async () => {
+  it('getJwt uses OIDC user on web', async () => {
     const jwt = baseJwt();
     vi.mocked(userToJwtResponse).mockReturnValue(jwt as never);
     const out = await getJwt();
@@ -87,12 +87,12 @@ describe("storageService (web)", () => {
     expect(userToJwtResponse).toHaveBeenCalled();
   });
 
-  it("getJwt returns null when no OIDC user and no storage", async () => {
+  it('getJwt returns null when no OIDC user and no storage', async () => {
     const out = await getJwt();
     expect(out).toBeNull();
   });
 
-  it("getJwt returns null when no OIDC user even if localStorage has data", async () => {
+  it('getJwt returns null when no OIDC user even if localStorage has data', async () => {
     localStorage.setItem(
       JWT_STORAGE_KEY,
       JSON.stringify({ primary: baseJwt() }),
@@ -100,11 +100,11 @@ describe("storageService (web)", () => {
     await expect(getJwt()).resolves.toBeNull();
   });
 
-  it("hasJwt returns false when no OIDC user", async () => {
+  it('hasJwt returns false when no OIDC user', async () => {
     await expect(hasJwt()).resolves.toBe(false);
   });
 
-  it("hasJwt returns false when OIDC user token is expired", async () => {
+  it('hasJwt returns false when OIDC user token is expired', async () => {
     vi.mocked(userToJwtResponse).mockReturnValue({
       ...baseJwt(),
       expires_at: Math.floor(Date.now() / 1000) - 10,
@@ -112,26 +112,26 @@ describe("storageService (web)", () => {
     await expect(hasJwt()).resolves.toBe(false);
   });
 
-  it("hasJwt returns true when valid OIDC user is present", async () => {
+  it('hasJwt returns true when valid OIDC user is present', async () => {
     vi.mocked(userToJwtResponse).mockReturnValue(baseJwt() as never);
     await expect(hasJwt()).resolves.toBe(true);
   });
 
-  it("storeZkLoginJwtForNetwork is a no-op on web", async () => {
+  it('storeZkLoginJwtForNetwork is a no-op on web', async () => {
     await storeZkLoginJwtForNetwork(
-      { id_token: "zk", expires_at: futureExp() },
+      { id_token: 'zk', expires_at: futureExp() },
       SUI_DEVNET_CHAIN,
     );
     expect(localStorage.getItem(JWT_STORAGE_KEY)).toBeNull();
   });
 
-  it("clearZkLoginJwtForNetwork is a no-op on web when storage is empty", async () => {
+  it('clearZkLoginJwtForNetwork is a no-op on web when storage is empty', async () => {
     await clearZkLoginJwtForNetwork(SUI_TESTNET_CHAIN);
     expect(localStorage.getItem(JWT_STORAGE_KEY)).toBeNull();
   });
 });
 
-describe("storageService (extension chrome.storage.session)", () => {
+describe('storageService (extension chrome.storage.session)', () => {
   const chromeStorageSession = {
     get: vi.fn(),
     set: vi.fn(),
@@ -149,7 +149,7 @@ describe("storageService (extension chrome.storage.session)", () => {
     chromeStorageSession.remove.mockResolvedValue(undefined);
     (globalThis as unknown as { chrome: typeof chrome }).chrome = {
       storage: { session: chromeStorageSession },
-      runtime: { id: "test-extension" },
+      runtime: { id: 'test-extension' },
     } as unknown as typeof chrome;
     vi.mocked(useContext.getState).mockReturnValue({
       chain: SUI_TESTNET_CHAIN,
@@ -161,8 +161,8 @@ describe("storageService (extension chrome.storage.session)", () => {
     delete (globalThis as unknown as { chrome?: unknown }).chrome;
   });
 
-  it("storeJwt writes via chrome.storage.session.set", async () => {
-    await storeJwt({ ...baseJwt(), refresh_token: "rt" });
+  it('storeJwt writes via chrome.storage.session.set', async () => {
+    await storeJwt({ ...baseJwt(), refresh_token: 'rt' });
     expect(chromeStorageSession.set).toHaveBeenCalledWith(
       expect.objectContaining({
         [JWT_STORAGE_KEY]: expect.any(Object),
@@ -170,13 +170,13 @@ describe("storageService (extension chrome.storage.session)", () => {
     );
   });
 
-  it("clearAllJwts calls chrome.storage.session.remove", async () => {
+  it('clearAllJwts calls chrome.storage.session.remove', async () => {
     await clearAllJwts();
     expect(chromeStorageSession.remove).toHaveBeenCalledWith([JWT_STORAGE_KEY]);
   });
 });
 
-describe("getStoredChain", () => {
+describe('getStoredChain', () => {
   const chromeStorage = {
     get: vi.fn(),
   };
@@ -186,7 +186,7 @@ describe("getStoredChain", () => {
     chromeStorage.get.mockResolvedValue({});
     (globalThis as unknown as { chrome: typeof chrome }).chrome = {
       storage: { local: chromeStorage },
-      runtime: { id: "ext" },
+      runtime: { id: 'ext' },
     } as unknown as typeof chrome;
   });
 
@@ -195,13 +195,13 @@ describe("getStoredChain", () => {
     vi.clearAllMocks();
   });
 
-  it("getStoredChain returns default when not extension", async () => {
+  it('getStoredChain returns default when not extension', async () => {
     vi.mocked(isExtension).mockReturnValue(false);
     vi.mocked(isWeb).mockReturnValue(true);
     await expect(getStoredChain()).resolves.toBe(SUI_TESTNET_CHAIN);
   });
 
-  it("getStoredChain reads chain from persisted context store", async () => {
+  it('getStoredChain reads chain from persisted context store', async () => {
     vi.mocked(isExtension).mockReturnValue(true);
     vi.mocked(isWeb).mockReturnValue(false);
     chromeStorage.get.mockResolvedValue({

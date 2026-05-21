@@ -1,5 +1,5 @@
-import { redirect } from "@tanstack/react-router";
-import { useAuthStore } from "#/auth";
+import { redirect } from '@tanstack/react-router';
+import { useAuthStore } from '#/auth';
 
 export interface RequireAuthOptions {
   /** Path to redirect to when not authenticated (default: "/") */
@@ -21,14 +21,14 @@ export interface RequireAuthOptions {
  * beforeLoad: () => requireAuth({ preserveRedirectPath: true })
  */
 export function requireAuth(options: RequireAuthOptions = {}) {
-  const { redirectTo = "/", preserveRedirectPath = false } = options;
+  const { redirectTo = '/', preserveRedirectPath = false } = options;
 
   const { user } = useAuthStore.getState();
 
   if (!user) {
-    if (preserveRedirectPath && typeof window !== "undefined") {
+    if (preserveRedirectPath && typeof window !== 'undefined') {
       const currentPath = window.location.pathname + window.location.search;
-      sessionStorage.setItem("evevault_redirect_after_login", currentPath);
+      sessionStorage.setItem('evevault_redirect_after_login', currentPath);
 
       throw redirect({
         to: redirectTo,

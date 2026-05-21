@@ -1,8 +1,8 @@
-import type React from "react";
-import { useEffect, useRef } from "react";
-import { Corners } from "#/components/Corners";
-import type { DropdownProps } from "#/types";
-import "./Dropdown.css";
+import type React from 'react';
+import { useEffect, useRef } from 'react';
+import { Corners } from '#/components/Corners';
+import type { DropdownProps } from '#/types';
+import './Dropdown.css';
 
 /**
  * Simple dropdown menu container with corners/edges styling.
@@ -10,10 +10,10 @@ import "./Dropdown.css";
  */
 export const Dropdown: React.FC<DropdownProps> = ({
   children,
-  className = "",
+  className = '',
   onClickOutside,
   triggerRef,
-  placement = "bottom",
+  placement = 'bottom',
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -31,14 +31,14 @@ export const Dropdown: React.FC<DropdownProps> = ({
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [onClickOutside, triggerRef]);
 
-  const placementClass = placement === "top" ? "dropdown--placement-top" : "";
-  const dropdownClassName = ["dropdown", placementClass, className]
+  const placementClass = placement === 'top' ? 'dropdown--placement-top' : '';
+  const dropdownClassName = ['dropdown', placementClass, className]
     .filter(Boolean)
-    .join(" ");
+    .join(' ');
 
   return (
     <div className={dropdownClassName} ref={menuRef}>

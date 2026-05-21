@@ -1,21 +1,21 @@
-import type { FC } from "react";
-import { useEffect, useRef, useState } from "react";
-import "./Button.css";
-import { Corners } from "#/components/Corners";
-import type { ButtonProps } from "#/types";
+import type { FC } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import './Button.css';
+import { Corners } from '#/components/Corners';
+import type { ButtonProps } from '#/types';
 
 export const Button: FC<ButtonProps> = ({
-  size = "medium",
-  variant = "primary",
+  size = 'medium',
+  variant = 'primary',
   children,
-  className = "",
+  className = '',
   disabled,
   ...props
 }) => {
   const sizeClass = `button--${size}`;
   const variantClass = `button--${variant}`;
-  const disabledClass = disabled ? "button--disabled" : "";
-  const showDecorations = variant === "primary" || variant === "secondary";
+  const disabledClass = disabled ? 'button--disabled' : '';
+  const showDecorations = variant === 'primary' || variant === 'secondary';
 
   const contentRef = useRef<HTMLSpanElement>(null);
   const [contentWidth, setContentWidth] = useState<number | undefined>();
@@ -41,9 +41,9 @@ export const Button: FC<ButtonProps> = ({
       rafId = requestAnimationFrame(updateWidth);
     };
 
-    window.addEventListener("resize", handleResize);
+    window.addEventListener('resize', handleResize);
     return () => {
-      window.removeEventListener("resize", handleResize);
+      window.removeEventListener('resize', handleResize);
       if (rafId !== null) {
         cancelAnimationFrame(rafId);
       }

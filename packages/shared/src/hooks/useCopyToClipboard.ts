@@ -1,9 +1,9 @@
-import { useToast } from "#/components/Toast";
-import { copyToClipboard } from "#/utils/address";
+import { useToast } from '#/components/Toast';
+import { copyToClipboard } from '#/utils/address';
 
 export function useCopyToClipboard(
-  successMessage: string = "Copied!",
-  errorMessage: string = "Failed to copy",
+  successMessage: string = 'Copied!',
+  errorMessage: string = 'Failed to copy',
   messageDuration: number = 2000,
 ) {
   const { showToast } = useToast();

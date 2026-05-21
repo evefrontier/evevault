@@ -1,5 +1,5 @@
-const DB_NAME = "evevault-web-vault";
-const STORE_NAME = "keyval";
+const DB_NAME = 'evevault-web-vault';
+const STORE_NAME = 'keyval';
 
 const getStore = async (): Promise<IDBObjectStore> => {
   const db = await new Promise<IDBDatabase>((resolve, reject) => {
@@ -11,7 +11,7 @@ const getStore = async (): Promise<IDBObjectStore> => {
     request.onsuccess = () => resolve(request.result);
   });
 
-  return db.transaction(STORE_NAME, "readwrite").objectStore(STORE_NAME);
+  return db.transaction(STORE_NAME, 'readwrite').objectStore(STORE_NAME);
 };
 
 export const get = async <T>(key: string): Promise<T | undefined> => {

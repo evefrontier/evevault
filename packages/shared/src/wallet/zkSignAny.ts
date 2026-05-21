@@ -1,13 +1,13 @@
-import type { IntentScope } from "@mysten/sui/cryptography";
-import { genAddressSeed, getZkLoginSignature } from "@mysten/sui/zklogin";
-import { ephKeyService } from "#/services/vaultService";
-import { useContextStore } from "#/stores/contextStore";
-import { useDeviceStore } from "#/stores/deviceStore";
-import { VaultMessageTypes } from "#/types/messages";
-import type { PartialZkLoginSignature, ZkSignAnyParams } from "#/types/wallet";
-import { isWeb } from "#/utils/environment";
-import { createLogger } from "#/utils/logger";
-import { signWithIntent } from "./signWithIntent";
+import type { IntentScope } from '@mysten/sui/cryptography';
+import { genAddressSeed, getZkLoginSignature } from '@mysten/sui/zklogin';
+import { ephKeyService } from '#/services/vaultService';
+import { useContextStore } from '#/stores/contextStore';
+import { useDeviceStore } from '#/stores/deviceStore';
+import { VaultMessageTypes } from '#/types/messages';
+import type { PartialZkLoginSignature, ZkSignAnyParams } from '#/types/wallet';
+import { isWeb } from '#/utils/environment';
+import { createLogger } from '#/utils/logger';
+import { signWithIntent } from './signWithIntent';
 
 const log = createLogger();
 
@@ -23,31 +23,31 @@ export const zkSignAny = async (
   const { user, getZkProof } = params;
 
   if (user === null) {
-    throw new Error("User not found");
+    throw new Error('User not found');
   }
 
   const ephemeralPublicKey = useDeviceStore.getState().ephemeralPublicKey;
   if (!ephemeralPublicKey) {
-    throw new Error("Ephemeral key pair not found");
+    throw new Error('Ephemeral key pair not found');
   }
 
-  log.info("Getting ZK proof");
+  log.info('Getting ZK proof');
   const zkProof = await getZkProof();
   if (!zkProof || zkProof.error) {
     const errorMsg =
-      typeof zkProof?.error === "string"
+      typeof zkProof?.error === 'string'
         ? zkProof.error
-        : (zkProof?.error?.message ?? "Failed to get ZK proof");
+        : (zkProof?.error?.message ?? 'Failed to get ZK proof');
     throw new Error(errorMsg);
   }
 
   const chain = useContextStore.getState().chain;
   const maxEpoch = useDeviceStore.getState().getMaxEpoch(chain);
-  if (maxEpoch == null || maxEpoch === "") {
-    throw new Error("Max epoch is not set");
+  if (maxEpoch == null || maxEpoch === '') {
+    throw new Error('Max epoch is not set');
   }
 
-  log.info("Requesting ephemeral signature");
+  log.info('Requesting ephemeral signature');
 
   let bytes: string;
   let userSignature: string;
@@ -56,7 +56,7 @@ export const zkSignAny = async (
     // Web: Use WebCryptoSigner directly
     const signer = ephKeyService.getSigner();
     if (!signer) {
-      throw new Error("Vault is locked or no keypair exists");
+      throw new Error('Vault is locked or no keypair exists');
     }
 
     const sui_address = user.profile?.sui_address as string;
@@ -80,12 +80,12 @@ export const zkSignAny = async (
 
     if (!response) {
       throw new Error(
-        "No response from background script. The extension may not be properly initialized.",
+        'No response from background script. The extension may not be properly initialized.',
       );
     }
 
     if (!response.ok || !response.bytes || !response.userSignature) {
-      const errorMessage = response.error || "Failed to sign bytes";
+      const errorMessage = response.error || 'Failed to sign bytes';
       throw new Error(errorMessage);
     }
 
@@ -94,23 +94,23 @@ export const zkSignAny = async (
   }
 
   if (!userSignature) {
-    throw new Error("User signature not found");
+    throw new Error('User signature not found');
   }
 
   const addressSeed = genAddressSeed(
     BigInt(user.profile?.salt as string),
-    "sub",
+    'sub',
     user.profile?.sub as string,
     user.profile?.aud as string,
   ).toString();
 
-  if (!("data" in zkProof) || !zkProof.data) {
-    throw new Error("ZK proof data not found");
+  if (!('data' in zkProof) || !zkProof.data) {
+    throw new Error('ZK proof data not found');
   }
 
   const partialZkLoginSignature = zkProof.data as PartialZkLoginSignature;
 
-  log.info("Combining proof and signature to create zkLogin signature");
+  log.info('Combining proof and signature to create zkLogin signature');
 
   const zkSignature = getZkLoginSignature({
     inputs: {

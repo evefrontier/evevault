@@ -1,20 +1,20 @@
-import type React from "react";
-import { useCallback, useRef, useState } from "react";
-import { Dropdown } from "#/components/Dropdown";
-import Icon from "#/components/Icon";
-import Text from "#/components/Text";
-import { getTenantLabel } from "#/utils/tenantConfig";
-import "./TenantSelector.css";
-import type { TenantId } from "@evefrontier/dapp-kit/utils";
+import type React from 'react';
+import { useCallback, useRef, useState } from 'react';
+import { Dropdown } from '#/components/Dropdown';
+import Icon from '#/components/Icon';
+import Text from '#/components/Text';
+import { getTenantLabel } from '#/utils/tenantConfig';
+import './TenantSelector.css';
+import type { TenantId } from '@evefrontier/dapp-kit/utils';
 import type {
   TenantSelectorInteractiveProps,
   TenantSelectorProps,
   TenantSelectorPropsBase,
-} from "#/types";
+} from '#/types';
 
 const TenantSelectorViewOnly = ({
   currentTenantId,
-  className = "",
+  className = '',
 }: TenantSelectorPropsBase & { viewOnly: true }) => {
   return (
     <div
@@ -34,7 +34,7 @@ const TenantSelectorInteractive = ({
   currentTenantId,
   availableTenantIds,
   onServerChange,
-  className = "",
+  className = '',
 }: TenantSelectorInteractiveProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -77,7 +77,7 @@ const TenantSelectorInteractive = ({
           width={16}
           height={16}
           color="neutral"
-          className={`dropdown-selector__chevron ${isOpen ? "dropdown-selector__chevron--open" : ""}`}
+          className={`dropdown-selector__chevron ${isOpen ? 'dropdown-selector__chevron--open' : ''}`}
         />
       </button>
 
@@ -93,13 +93,13 @@ const TenantSelectorInteractive = ({
               <button
                 key={id}
                 type="button"
-                className={`dropdown__item ${isActive ? "dropdown__item--active" : ""}`}
+                className={`dropdown__item ${isActive ? 'dropdown__item--active' : ''}`}
                 onClick={() => handleSelect(id)}
               >
                 <Text
                   size="medium"
-                  variant={isActive ? "bold" : "regular"}
-                  color={isActive ? "quantum" : "neutral"}
+                  variant={isActive ? 'bold' : 'regular'}
+                  color={isActive ? 'quantum' : 'neutral'}
                 >
                   {getTenantLabel(id)}
                 </Text>

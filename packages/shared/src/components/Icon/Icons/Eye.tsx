@@ -1,12 +1,12 @@
-import type { SVGProps } from "react";
+import type { SVGProps } from 'react';
 
 const EyeIcon = ({
   className,
   width = 16,
   height = 16,
-  color = "var(--neutral)",
+  color = 'var(--neutral)',
 }: SVGProps<SVGSVGElement>) => {
-  console.log("EyeIcon", color);
+  console.log('EyeIcon', color);
   return (
     <svg
       width={width}

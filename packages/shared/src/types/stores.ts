@@ -1,9 +1,9 @@
-import type { PublicKey } from "@mysten/sui/cryptography";
-import type { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
-import type { SuiChain } from "@mysten/wallet-standard";
-import type { ZkProofResponse } from "./enoki";
-import type { ZkLoginSuiChain } from "./networks";
-import type { TenantState } from "./tenant";
+import type { PublicKey } from '@mysten/sui/cryptography';
+import type { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
+import type { SuiChain } from '@mysten/wallet-standard';
+import type { ZkProofResponse } from './enoki';
+import type { ZkLoginSuiChain } from './networks';
+import type { TenantState } from './tenant';
 
 // Key type flag bytes (matches Sui signature scheme flags)
 export const KEY_FLAG_ED25519 = 0x00;

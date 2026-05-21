@@ -1,11 +1,11 @@
-import { KeeperMessageTypes } from "@evevault/shared";
-import type { BackgroundMessage } from "@/lib/background/types";
-import type { KeeperHandler, KeeperSendResponse } from "./keeperTypes";
+import { KeeperMessageTypes } from '@evevault/shared';
+import type { BackgroundMessage } from '@/lib/background/types';
+import type { KeeperHandler, KeeperSendResponse } from './keeperTypes';
 import {
   handleLocalnetGetAddress,
   handleLocalnetSetKeypair,
   handleLocalnetSign,
-} from "./localnetHandlers";
+} from './localnetHandlers';
 import {
   handleClearEphKey,
   handleCreateKeypair,
@@ -13,12 +13,12 @@ import {
   handleGetPublicKey,
   handleRotateKeypair,
   handleUnlockVault,
-} from "./vaultHandlers";
+} from './vaultHandlers';
 import {
   handleClearZkProof,
   handleGetZkProof,
   handleSetZkProof,
-} from "./zkProofHandlers";
+} from './zkProofHandlers';
 
 const keeperHandlers: Partial<Record<KeeperMessageTypes, KeeperHandler>> = {
   [KeeperMessageTypes.CREATE_KEYPAIR]: handleCreateKeypair,
@@ -43,13 +43,13 @@ export function handleKeeperMessage(
   message: BackgroundMessage,
   sendResponse: KeeperSendResponse,
 ): boolean {
-  if (message.target !== "KEEPER") {
+  if (message.target !== 'KEEPER') {
     return false;
   }
 
   const handler = keeperHandlers[message.type as KeeperMessageTypes];
   if (!handler) {
-    sendResponse({ error: "Unknown message type" });
+    sendResponse({ error: 'Unknown message type' });
     return false;
   }
 

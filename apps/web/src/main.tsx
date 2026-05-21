@@ -1,20 +1,20 @@
-import { queryClient } from "@evevault/shared/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { createRouter, RouterProvider } from "@tanstack/react-router";
-import React from "react";
-import ReactDOM from "react-dom/client";
-import { routeTree } from "./routeTree.gen";
-import "@evevault/shared/theme/fonts.css";
-import "@evevault/shared/theme/global.css";
-import { applyTheme } from "@evevault/shared/theme";
-import "./styles/index.css";
-import { Button, ToastProvider } from "@evevault/shared/components";
-import { createLogger } from "@evevault/shared/utils";
+import { queryClient } from '@evevault/shared/queryClient';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { createRouter, RouterProvider } from '@tanstack/react-router';
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { routeTree } from './routeTree.gen';
+import '@evevault/shared/theme/fonts.css';
+import '@evevault/shared/theme/global.css';
+import { applyTheme } from '@evevault/shared/theme';
+import './styles/index.css';
+import { Button, ToastProvider } from '@evevault/shared/components';
+import { createLogger } from '@evevault/shared/utils';
 
 const log = createLogger();
 
 // Apply default theme
-applyTheme("dark");
+applyTheme('dark');
 
 // Error boundary component
 class ErrorBoundary extends React.Component<
@@ -31,17 +31,17 @@ class ErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    log.error("React Error Boundary caught an error", error, errorInfo);
+    log.error('React Error Boundary caught an error', error, errorInfo);
   }
 
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ padding: "20px" }}>
+        <div style={{ padding: '20px' }}>
           <h1>EVE Vault</h1>
-          <div style={{ color: "red" }}>
+          <div style={{ color: 'red' }}>
             <p>Something went wrong:</p>
-            <p>{this.state.error?.message || "Unknown error"}</p>
+            <p>{this.state.error?.message || 'Unknown error'}</p>
             <Button onClick={() => window.location.reload()}>Reload</Button>
           </div>
         </div>
@@ -52,16 +52,16 @@ class ErrorBoundary extends React.Component<
   }
 }
 
-const rootElement = document.getElementById("root");
+const rootElement = document.getElementById('root');
 if (!rootElement) {
-  throw new Error("Root element not found");
+  throw new Error('Root element not found');
 }
 
 // Create router instance
 const router = createRouter({ routeTree });
 
 // Register router for type safety
-declare module "@tanstack/react-router" {
+declare module '@tanstack/react-router' {
   interface Register {
     router: typeof router;
   }
@@ -80,7 +80,7 @@ try {
     </React.StrictMode>,
   );
 } catch (error) {
-  log.error("Failed to render app", error);
+  log.error('Failed to render app', error);
   rootElement.innerHTML = `
     <div style="padding: 20px;">
       <h1>EVE Vault</h1>

@@ -1,9 +1,9 @@
-import type { SuiChain } from "@mysten/wallet-standard";
-import { DEFAULT_EPOCH_DURATION_MS } from "#/utils/constants";
-import { createLogger } from "#/utils/logger";
-import { createSuiGraphQLClient } from "./graphqlClient";
-import { EPOCH_QUERY } from "./queries/epoch";
-import type { EpochQueryResponse } from "./types";
+import type { SuiChain } from '@mysten/wallet-standard';
+import { DEFAULT_EPOCH_DURATION_MS } from '#/utils/constants';
+import { createLogger } from '#/utils/logger';
+import { createSuiGraphQLClient } from './graphqlClient';
+import { EPOCH_QUERY } from './queries/epoch';
+import type { EpochQueryResponse } from './types';
 
 const log = createLogger();
 
@@ -22,13 +22,13 @@ export async function getCurrentEpochFromGraphQL(chain: SuiChain): Promise<{
   });
 
   if (result.errors?.length) {
-    const message = result.errors.map((e) => e.message).join(", ");
+    const message = result.errors.map((e) => e.message).join(', ');
     throw new Error(`GraphQL epoch query failed: ${message}`);
   }
 
   const epoch = result.data?.epoch;
   if (!epoch) {
-    throw new Error("Failed to get epoch data from GraphQL");
+    throw new Error('Failed to get epoch data from GraphQL');
   }
 
   const numericMaxEpoch = Number(epoch.epochId);
@@ -40,7 +40,7 @@ export async function getCurrentEpochFromGraphQL(chain: SuiChain): Promise<{
     : startMs + DEFAULT_EPOCH_DURATION_MS;
 
   if (!epoch.endTimestamp) {
-    log.debug("Epoch endTimestamp missing; using start + 24h fallback", {
+    log.debug('Epoch endTimestamp missing; using start + 24h fallback', {
       chain,
       epochId: numericMaxEpoch,
     });

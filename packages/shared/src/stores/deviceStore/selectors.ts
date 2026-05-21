@@ -1,6 +1,6 @@
-import type { SuiChain } from "@mysten/wallet-standard";
-import type { DeviceState } from "#/types";
-import { isLocalnetChain, isZkLoginSuiChain } from "#/types/networks";
+import type { SuiChain } from '@mysten/wallet-standard';
+import type { DeviceState } from '#/types';
+import { isLocalnetChain, isZkLoginSuiChain } from '#/types/networks';
 
 export function createDeviceSelectors(get: () => DeviceState) {
   return {

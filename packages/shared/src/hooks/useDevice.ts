@@ -1,12 +1,12 @@
-import type { PublicKey } from "@mysten/sui/cryptography";
-import { Ed25519PublicKey } from "@mysten/sui/keypairs/ed25519";
-import { Secp256r1PublicKey } from "@mysten/sui/keypairs/secp256r1";
-import { useMemo } from "react";
-import { useContextStore } from "#/stores/contextStore";
-import { useDeviceStore } from "#/stores/deviceStore";
-import { isLocalnetChain, isZkLoginSuiChain } from "#/types/networks";
-import { KEY_FLAG_SECP256R1 } from "#/types/stores";
-import { createLogger } from "#/utils/logger";
+import type { PublicKey } from '@mysten/sui/cryptography';
+import { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519';
+import { Secp256r1PublicKey } from '@mysten/sui/keypairs/secp256r1';
+import { useMemo } from 'react';
+import { useContextStore } from '#/stores/contextStore';
+import { useDeviceStore } from '#/stores/deviceStore';
+import { isLocalnetChain, isZkLoginSuiChain } from '#/types/networks';
+import { KEY_FLAG_SECP256R1 } from '#/types/stores';
+import { createLogger } from '#/utils/logger';
 
 const log = createLogger();
 
@@ -30,9 +30,9 @@ export const useDevice = () => {
   const isPinSet = useMemo(() => {
     return (
       !!ephemeralKeyPairSecretKey &&
-      typeof ephemeralKeyPairSecretKey === "object" &&
-      "iv" in ephemeralKeyPairSecretKey &&
-      "data" in ephemeralKeyPairSecretKey
+      typeof ephemeralKeyPairSecretKey === 'object' &&
+      'iv' in ephemeralKeyPairSecretKey &&
+      'data' in ephemeralKeyPairSecretKey
     );
   }, [ephemeralKeyPairSecretKey]);
 
@@ -76,7 +76,7 @@ export const useDevice = () => {
         return new Ed25519PublicKey(keyBytes);
       }
     } catch (error) {
-      log.error("Failed to reconstruct public key:", error);
+      log.error('Failed to reconstruct public key:', error);
       return null;
     }
   }, [ephemeralPublicKeyBytes, ephemeralPublicKeyFlag]);

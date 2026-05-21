@@ -1,4 +1,4 @@
-import type { DeviceState } from "#/types";
+import type { DeviceState } from '#/types';
 
 export type SetDeviceState = (
   partial:

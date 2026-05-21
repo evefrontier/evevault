@@ -1,6 +1,6 @@
-import { parseOAuthTokenResponse } from "#/auth/oauthTokenResponse";
-import type { AuthMessage } from "#/types";
-import type { OAuthTokenResponse } from "#/types/authTypes";
+import { parseOAuthTokenResponse } from '#/auth/oauthTokenResponse';
+import type { AuthMessage } from '#/types';
+import type { OAuthTokenResponse } from '#/types/authTypes';
 
 // biome-ignore lint/suspicious/noExplicitAny: chrome is a global object
 declare const chrome: any;
@@ -21,9 +21,9 @@ export function createExtensionAuthListener(
 
     chrome.runtime?.onMessage?.removeListener(authSuccessListener);
 
-    if (message.type === "auth_success") {
+    if (message.type === 'auth_success') {
       if (!message.token) {
-        reject(new Error("No token received from auth"));
+        reject(new Error('No token received from auth'));
         return;
       }
 
@@ -31,7 +31,7 @@ export function createExtensionAuthListener(
       return;
     }
 
-    if (message.type === "auth_error") {
+    if (message.type === 'auth_error') {
       reject(message.error);
     }
   };
@@ -48,8 +48,8 @@ export function launchExtensionLogout(logoutUrl: string): void {
     { url: logoutUrl, interactive: true },
     async () => {
       chrome.runtime.sendMessage({
-        __from: "Eve Vault",
-        event: "change",
+        __from: 'Eve Vault',
+        event: 'change',
         payload: { accounts: [] },
       });
     },

@@ -1,5 +1,5 @@
-import type { HashedData } from "@evevault/shared";
-import { DEVICE_STORAGE_KEY } from "@evevault/shared/utils/storageKeys";
+import type { HashedData } from '@evevault/shared';
+import { DEVICE_STORAGE_KEY } from '@evevault/shared/utils/storageKeys';
 
 type DeviceStorage = {
   state?: {
@@ -14,23 +14,23 @@ type DeviceStorage = {
 function isEncryptedBlob(value: unknown): value is HashedData {
   return (
     !!value &&
-    typeof value === "object" &&
-    "iv" in value &&
-    "data" in value &&
-    "salt" in value
+    typeof value === 'object' &&
+    'iv' in value &&
+    'data' in value &&
+    'salt' in value
   );
 }
 
 function parseDeviceStorage(raw: unknown): DeviceStorage {
   if (!raw) return { state: {}, version: 0 };
-  if (typeof raw === "string") {
+  if (typeof raw === 'string') {
     try {
       return JSON.parse(raw) as DeviceStorage;
     } catch {
       return { state: {}, version: 0 };
     }
   }
-  if (typeof raw === "object") {
+  if (typeof raw === 'object') {
     return raw as DeviceStorage;
   }
   return { state: {}, version: 0 };
