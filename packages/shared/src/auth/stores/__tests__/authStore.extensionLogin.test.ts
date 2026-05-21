@@ -1,7 +1,8 @@
 import { User } from "oidc-client-ts";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AuthStoreMockHandles } from "./authStoreTestMocks";
 import {
+  MOCK_ID_TOKEN_CLAIMS,
   makeAdaptersMock,
   makeAuthConfigMock,
   makeAuthStoreUtilsMock,
@@ -12,6 +13,7 @@ import {
   makeStoresMock,
   makeTenantConfigMock,
   makeTenantStoreMock,
+  makeTokenResponse,
   makeUserJwtSyncMock,
   makeUserToJwtResponseMock,
   makeUtilsMock,
@@ -59,7 +61,6 @@ vi.mock("#/adapters", () => makeAdaptersMock());
 vi.mock("jose", () => makeJoseMock(h));
 
 import { useAuthStore } from "#/auth/stores/authStore";
-import { makeJwt } from "#/testing";
 
 type ChromeMessageListener = (message: {
   id: string;
@@ -68,27 +69,15 @@ type ChromeMessageListener = (message: {
   error?: unknown;
 }) => void;
 
-function makeTokenResponse() {
-  return {
-    id_token: makeJwt({ sub: "user-1", iat: 1000, exp: 4600 }),
-    access_token: "access-token",
-    token_type: "Bearer",
-    scope: "openid",
-    refresh_token: "refresh-token",
-    expires_in: 3600,
-  };
-}
-
 describe("authStore.extensionLogin()", () => {
   const addListener = vi.fn();
   const removeListener = vi.fn();
   const sendMessage = vi.fn();
 
   beforeEach(() => {
-    vi.clearAllMocks();
     setupAuthStoreMocks(h, { isExtension: true });
     h.mockParseOAuthTokenResponse.mockReturnValue(makeTokenResponse());
-    h.mockDecodeJwt.mockReturnValue({ sub: "user-1", iat: 1000, exp: 4600 });
+    h.mockDecodeJwt.mockReturnValue(MOCK_ID_TOKEN_CLAIMS);
     useAuthStore.setState({ user: null, loading: false, error: null });
     vi.stubGlobal("crypto", { randomUUID: vi.fn(() => "uuid-1") });
     vi.stubGlobal("chrome", {
@@ -97,6 +86,10 @@ describe("authStore.extensionLogin()", () => {
         sendMessage,
       },
     });
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
   });
 
   it("sets up a chrome.runtime.onMessage listener with a unique UUID", () => {

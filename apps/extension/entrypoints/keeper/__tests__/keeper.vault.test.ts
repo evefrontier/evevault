@@ -225,9 +225,9 @@ describe("Keeper CLEAR_EPHKEY handler", () => {
   });
 });
 
-// ── checkAndEnforceExpiry ─────────────────────────────────────────────────────
+// ── enforceExpiry ─────────────────────────────────────────────────────────────
 
-describe("Keeper vault expiry (checkAndEnforceExpiry)", () => {
+describe("Keeper vault expiry (enforceExpiry)", () => {
   it("GET_PUBLIC_KEY returns LOCKED when the vault has never been unlocked", async () => {
     const resp = await dispatch({ type: KeeperMessageTypes.GET_PUBLIC_KEY });
     expect(resp.error).toBe("LOCKED");

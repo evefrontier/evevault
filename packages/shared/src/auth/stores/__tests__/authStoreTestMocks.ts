@@ -1,6 +1,8 @@
 import { SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
 import type { Mock } from "vitest";
 import { vi } from "vitest";
+import { makeJwt } from "#/testing";
+import type { OAuthTokenResponse } from "#/types/authTypes";
 
 /**
  * All mock handles shared across authStore test files.
@@ -273,4 +275,22 @@ export function setupAuthStoreMocks(
     iat: 1000,
     exp: Math.floor(Date.now() / 1000) + 3600,
   });
+}
+
+export const MOCK_ID_TOKEN_CLAIMS = {
+  sub: "user-1",
+  iat: 1000,
+  exp: 4600,
+} as const;
+
+export function makeTokenResponse(): OAuthTokenResponse {
+  return {
+    id_token: makeJwt(MOCK_ID_TOKEN_CLAIMS),
+    access_token: "access-token",
+    token_type: "Bearer",
+    scope: "openid",
+    refresh_token: "refresh-token",
+    expires_in: 3600,
+    expires_at: 4600,
+  };
 }
