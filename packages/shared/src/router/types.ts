@@ -3,13 +3,13 @@
  */
 
 export type RouteMetaWithTitle = {
-  title: string;
-};
+  title: string
+}
 
 /**
  * Search params for the send-token route.
  * Used by both web and extension apps.
  */
 export interface SendTokenSearch {
-  coinType: string;
+  coinType: string
 }

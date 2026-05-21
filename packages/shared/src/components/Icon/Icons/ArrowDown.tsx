@@ -1,4 +1,4 @@
-import type { SVGProps } from 'react';
+import type { SVGProps } from 'react'
 
 const ArrowDownIcon = ({
   className,
@@ -21,6 +21,6 @@ const ArrowDownIcon = ({
       fill={color}
     />
   </svg>
-);
+)
 
-export default ArrowDownIcon;
+export default ArrowDownIcon

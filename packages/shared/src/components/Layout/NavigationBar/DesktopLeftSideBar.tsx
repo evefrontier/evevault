@@ -1,11 +1,11 @@
-import { Link, useLocation } from '@tanstack/react-router';
-import { Corners } from '#/components/Corners';
-import Icon from '#/components/Icon';
-import Text from '#/components/Text';
-import type { IconName, NavigationBarProps } from '#/types';
+import { Link, useLocation } from '@tanstack/react-router'
+import { Corners } from '#/components/Corners'
+import Icon from '#/components/Icon'
+import Text from '#/components/Text'
+import type { IconName, NavigationBarProps } from '#/types'
 
 export default function DesktopLeftSideBar({ items }: NavigationBarProps) {
-  const location = useLocation();
+  const location = useLocation()
 
   return (
     <div className="flex h-screen w-56 flex-col bg-[var(--crude)]">
@@ -17,7 +17,7 @@ export default function DesktopLeftSideBar({ items }: NavigationBarProps) {
       {/* Navigation */}
       <nav className="flex flex-1 flex-col gap-2">
         {items.map((item) => {
-          const isActive = location.pathname === item.path;
+          const isActive = location.pathname === item.path
 
           const linkContent = (
             <Link
@@ -42,7 +42,7 @@ export default function DesktopLeftSideBar({ items }: NavigationBarProps) {
                 {item.label}
               </Text>
             </Link>
-          );
+          )
 
           return (
             <div key={item.name} className="relative">
@@ -51,9 +51,9 @@ export default function DesktopLeftSideBar({ items }: NavigationBarProps) {
               )}
               {linkContent}
             </div>
-          );
+          )
         })}
       </nav>
     </div>
-  );
+  )
 }

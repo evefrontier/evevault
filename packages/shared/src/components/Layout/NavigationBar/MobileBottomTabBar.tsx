@@ -1,17 +1,17 @@
-import { Link, useLocation } from '@tanstack/react-router';
-import Icon from '#/components/Icon';
-import Text from '#/components/Text';
-import type { IconName, NavigationBarProps } from '#/types';
+import { Link, useLocation } from '@tanstack/react-router'
+import Icon from '#/components/Icon'
+import Text from '#/components/Text'
+import type { IconName, NavigationBarProps } from '#/types'
 
-export const DEFAULT_TABBAR_HEIGHT = 64;
+export const DEFAULT_TABBAR_HEIGHT = 64
 
 export default function MobileBottomTabBar({ items }: NavigationBarProps) {
-  const location = useLocation();
+  const location = useLocation()
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 flex  items-center justify-around border-t border-[var(--matter-04)] bg-[var(--crude)]">
       {items.map((item) => {
-        const isActive = location.pathname === item.path;
+        const isActive = location.pathname === item.path
 
         return (
           <Link
@@ -35,8 +35,8 @@ export default function MobileBottomTabBar({ items }: NavigationBarProps) {
               {item.label}
             </Text>
           </Link>
-        );
+        )
       })}
     </nav>
-  );
+  )
 }

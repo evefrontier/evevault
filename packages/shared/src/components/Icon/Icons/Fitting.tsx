@@ -1,4 +1,4 @@
-import type { SVGProps } from 'react';
+import type { SVGProps } from 'react'
 
 const FittingIcon = ({
   className,
@@ -24,6 +24,6 @@ const FittingIcon = ({
       fill={color}
     />
   </svg>
-);
+)
 
-export default FittingIcon;
+export default FittingIcon

@@ -1,7 +1,7 @@
-import { type FC, useState } from 'react';
-import type { CheckBoxProps } from '#/types';
-import './style.css';
-import Text from '#/components/Text';
+import { type FC, useState } from 'react'
+import type { CheckBoxProps } from '#/types'
+import './style.css'
+import Text from '#/components/Text'
 
 const Checkbox: FC<CheckBoxProps> = ({
   name,
@@ -13,7 +13,7 @@ const Checkbox: FC<CheckBoxProps> = ({
   checkBoxProps,
   absolute,
 }) => {
-  const [isHovered, setIsHovered] = useState(false);
+  const [isHovered, setIsHovered] = useState(false)
   return (
     <label
       onMouseEnter={() => setIsHovered(true)}
@@ -41,7 +41,7 @@ const Checkbox: FC<CheckBoxProps> = ({
           checked={isChecked}
           name={name}
           onChange={(e) => {
-            onChange?.(e.currentTarget.checked);
+            onChange?.(e.currentTarget.checked)
           }}
           disabled={isDisabled}
           {...checkBoxProps}
@@ -73,7 +73,7 @@ const Checkbox: FC<CheckBoxProps> = ({
         </Text>
       ) : null}
     </label>
-  );
-};
+  )
+}
 
-export default Checkbox;
+export default Checkbox

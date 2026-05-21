@@ -1,13 +1,13 @@
-import { SUI_DEVNET_CHAIN } from '@mysten/wallet-standard';
-import { describe, expect, it, vi } from 'vitest';
-import * as vaultService from '#/services/vaultService';
-import { createLockActions } from '#/stores/deviceStore/actions/lockActions';
+import { SUI_DEVNET_CHAIN } from '@mysten/wallet-standard'
+import { describe, expect, it, vi } from 'vitest'
+import * as vaultService from '#/services/vaultService'
+import { createLockActions } from '#/stores/deviceStore/actions/lockActions'
 import type {
   GetDeviceState,
   SetDeviceState,
-} from '#/stores/deviceStore/actions/types';
-import { createInitialNetworkData } from '#/stores/deviceStore/constants';
-import type { DeviceState } from '#/types';
+} from '#/stores/deviceStore/actions/types'
+import { createInitialNetworkData } from '#/stores/deviceStore/constants'
+import type { DeviceState } from '#/types'
 
 vi.mock('#/services/vaultService', () => ({
   ephKeyService: {
@@ -17,23 +17,23 @@ vi.mock('#/services/vaultService', () => ({
     unlockVault: vi.fn(),
   },
   zkProofService: {},
-}));
+}))
 
 function stubAsync() {
-  return Promise.resolve();
+  return Promise.resolve()
 }
 
 function buildLockHarness() {
-  let state: DeviceState;
+  let state: DeviceState
 
   const set: SetDeviceState = (update) => {
-    const partial = typeof update === 'function' ? update(state) : update;
-    Object.assign(state, partial);
-  };
+    const partial = typeof update === 'function' ? update(state) : update
+    Object.assign(state, partial)
+  }
 
-  const get: GetDeviceState = () => state;
+  const get: GetDeviceState = () => state
 
-  const { lock, unlock, reset } = createLockActions(set, get);
+  const { lock, unlock, reset } = createLockActions(set, get)
 
   state = {
     isLocked: true,
@@ -63,32 +63,32 @@ function buildLockHarness() {
     getNonce: () => null,
     getJwtRandomness: () => null,
     setLocalnetUrl: () => {},
-  };
+  }
 
-  return { state, lock, unlock, reset };
+  return { state, lock, unlock, reset }
 }
 
 describe('createLockActions', () => {
   it('unlock (web path) unlocks without public key when vault returns null', async () => {
-    vi.clearAllMocks();
-    vi.mocked(vaultService.ephKeyService.hasKeypair).mockResolvedValue(true);
-    vi.mocked(vaultService.ephKeyService.unlockVault).mockResolvedValue(null);
+    vi.clearAllMocks()
+    vi.mocked(vaultService.ephKeyService.hasKeypair).mockResolvedValue(true)
+    vi.mocked(vaultService.ephKeyService.unlockVault).mockResolvedValue(null)
 
-    const { unlock, state } = buildLockHarness();
+    const { unlock, state } = buildLockHarness()
 
-    await unlock('123456');
+    await unlock('123456')
 
     expect(vaultService.ephKeyService.unlockVault).toHaveBeenCalledWith(
       null,
       '123456',
-    );
-    expect(state.isLocked).toBe(false);
-    expect(state.error).toBeNull();
-    expect(state.ephemeralPublicKey).toBeNull();
-  });
+    )
+    expect(state.isLocked).toBe(false)
+    expect(state.error).toBeNull()
+    expect(state.ephemeralPublicKey).toBeNull()
+  })
 
   it('reset restores initial network data map', () => {
-    const { reset, state } = buildLockHarness();
+    const { reset, state } = buildLockHarness()
     state.networkData = {
       [SUI_DEVNET_CHAIN]: {
         nonce: 'x',
@@ -96,12 +96,12 @@ describe('createLockActions', () => {
         maxEpochTimestampMs: 1,
         jwtRandomness: 'y',
       },
-    };
+    }
 
-    reset();
+    reset()
 
-    expect(state.networkData).toEqual(createInitialNetworkData());
-    expect(state.isLocked).toBe(true);
-    expect(state.ephemeralKeyPairSecretKey).toBeNull();
-  });
-});
+    expect(state.networkData).toEqual(createInitialNetworkData())
+    expect(state.isLocked).toBe(true)
+    expect(state.ephemeralKeyPairSecretKey).toBeNull()
+  })
+})

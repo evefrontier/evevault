@@ -1,4 +1,4 @@
-import type { SVGProps } from 'react';
+import type { SVGProps } from 'react'
 
 const ArrowTurnDownRightIcon = ({
   className,
@@ -19,6 +19,6 @@ const ArrowTurnDownRightIcon = ({
     <path d="M8 13V5L13 9L8 13Z" fill={color} />
     <path d="M4 4V9H8" stroke={color} stroke-width="2" />
   </svg>
-);
+)
 
-export default ArrowTurnDownRightIcon;
+export default ArrowTurnDownRightIcon

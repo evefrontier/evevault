@@ -1,14 +1,14 @@
-import { encrypt, type HashedData, KeeperMessageTypes } from '@evevault/shared';
-import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
-import { afterEach, beforeAll, expect, vi } from 'vitest';
+import { encrypt, type HashedData, KeeperMessageTypes } from '@evevault/shared'
+import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519'
+import { afterEach, beforeAll, expect, vi } from 'vitest'
 
-export const TEST_PIN = '123456';
+export const TEST_PIN = '123456'
 
 export type KeeperHandler = (
   message: Record<string, unknown>,
   sender: object,
   sendResponse: (response?: unknown) => void,
-) => boolean | unknown;
+) => boolean | unknown
 
 /**
  * Creates test helpers that operate on the keeper message handler.
@@ -28,21 +28,21 @@ export type KeeperHandler = (
  *   });
  */
 export function createKeeperTestContext(): {
-  captureHandler: (fn: KeeperHandler) => void;
-  dispatch: (msg: Record<string, unknown>) => Promise<Record<string, unknown>>;
+  captureHandler: (fn: KeeperHandler) => void
+  dispatch: (msg: Record<string, unknown>) => Promise<Record<string, unknown>>
   rawDispatch: (msg: Record<string, unknown>) => {
-    returnValue: boolean | unknown;
-    sendResponse: ReturnType<typeof vi.fn>;
-  };
+    returnValue: boolean | unknown
+    sendResponse: ReturnType<typeof vi.fn>
+  }
   unlockVault: () => Promise<{
-    keypair: Ed25519Keypair;
-    hashedSecretKey: HashedData;
-  }>;
+    keypair: Ed25519Keypair
+    hashedSecretKey: HashedData
+  }>
 } {
-  let handler!: KeeperHandler;
+  let handler!: KeeperHandler
 
   function captureHandler(fn: KeeperHandler) {
-    handler = fn;
+    handler = fn
   }
 
   /** Send a KEEPER-targeted message and await the sendResponse callback. */
@@ -52,37 +52,37 @@ export function createKeeperTestContext(): {
     return new Promise((resolve) => {
       handler({ target: 'KEEPER', ...msg }, {}, (resp) =>
         resolve((resp ?? {}) as Record<string, unknown>),
-      );
-    });
+      )
+    })
   }
 
   /** Dispatch without the KEEPER target — used to test the routing guard. */
   function rawDispatch(msg: Record<string, unknown>): {
-    returnValue: boolean | unknown;
-    sendResponse: ReturnType<typeof vi.fn>;
+    returnValue: boolean | unknown
+    sendResponse: ReturnType<typeof vi.fn>
   } {
-    const sendResponse = vi.fn();
-    const returnValue = handler(msg, {}, sendResponse);
-    return { returnValue, sendResponse };
+    const sendResponse = vi.fn()
+    const returnValue = handler(msg, {}, sendResponse)
+    return { returnValue, sendResponse }
   }
 
   /** Unlock the vault with a freshly encrypted keypair. */
   async function unlockVault(): Promise<{
-    keypair: Ed25519Keypair;
-    hashedSecretKey: HashedData;
+    keypair: Ed25519Keypair
+    hashedSecretKey: HashedData
   }> {
-    const keypair = Ed25519Keypair.generate();
-    const hashedSecretKey = await encrypt(keypair.getSecretKey(), TEST_PIN);
+    const keypair = Ed25519Keypair.generate()
+    const hashedSecretKey = await encrypt(keypair.getSecretKey(), TEST_PIN)
     const resp = await dispatch({
       type: KeeperMessageTypes.UNLOCK_VAULT,
       hashedSecretKey,
       pin: TEST_PIN,
-    });
-    expect(resp.ok).toBe(true);
-    return { keypair, hashedSecretKey };
+    })
+    expect(resp.ok).toBe(true)
+    return { keypair, hashedSecretKey }
   }
 
-  return { captureHandler, dispatch, rawDispatch, unlockVault };
+  return { captureHandler, dispatch, rawDispatch, unlockVault }
 }
 
 /**
@@ -105,17 +105,17 @@ export function setupKeeperSuite(
         onMessage: { addListener: ctx.captureHandler },
         sendMessage: vi.fn().mockResolvedValue(undefined),
       },
-    });
+    })
     // Dynamic import so the chrome stub is in place when the module registers
     // its listener. This exercises the real message-handler registration.
-    await import('../keeper');
-  });
+    await import('../keeper')
+  })
 
   afterEach(async () => {
-    vi.useRealTimers();
+    vi.useRealTimers()
     // Reset keeper's RAM state so tests don't bleed into each other.
-    await ctx.dispatch({ type: KeeperMessageTypes.CLEAR_EPHKEY });
-    await ctx.dispatch({ type: KeeperMessageTypes.CLEAR_ZKPROOF });
-    vi.clearAllMocks();
-  });
+    await ctx.dispatch({ type: KeeperMessageTypes.CLEAR_EPHKEY })
+    await ctx.dispatch({ type: KeeperMessageTypes.CLEAR_ZKPROOF })
+    vi.clearAllMocks()
+  })
 }

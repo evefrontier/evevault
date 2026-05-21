@@ -1,7 +1,7 @@
-import { WalletStandardMessageTypes } from '@evevault/shared';
-import { getZkLoginAddress } from '@evevault/shared/auth';
-import { createLogger } from '@evevault/shared/utils';
-import { fromBase64 } from '@mysten/sui/utils';
+import { WalletStandardMessageTypes } from '@evevault/shared'
+import { getZkLoginAddress } from '@evevault/shared/auth'
+import { createLogger } from '@evevault/shared/utils'
+import { fromBase64 } from '@mysten/sui/utils'
 import type {
   IdentifierRecord,
   SignedTransaction,
@@ -18,7 +18,7 @@ import type {
   SuiSignTransactionInput,
   SuiSignTransactionMethod,
   Wallet,
-} from '@mysten/wallet-standard';
+} from '@mysten/wallet-standard'
 import {
   ReadonlyWalletAccount,
   StandardConnect,
@@ -30,55 +30,55 @@ import {
   SuiSignAndExecuteTransaction,
   SuiSignPersonalMessage,
   SuiSignTransaction,
-} from '@mysten/wallet-standard';
+} from '@mysten/wallet-standard'
 import type {
   EveFrontierSponsoredTransactionInput,
   EveFrontierSponsoredTransactionMethod,
   EveFrontierSponsoredTransactionOutput,
   EveVaultWalletFeatures,
   WalletEventListener,
-} from '@/lib/background/types';
-import { EVEFRONTIER_SPONSORED_TRANSACTION } from '@/lib/background/types';
-import { trySettle } from '@/lib/util/timeoutGuard';
+} from '@/lib/background/types'
+import { EVEFRONTIER_SPONSORED_TRANSACTION } from '@/lib/background/types'
+import { trySettle } from '@/lib/util/timeoutGuard'
 
-const log = createLogger();
+const log = createLogger()
 
-const APPROVAL_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
+const APPROVAL_TIMEOUT_MS = 2 * 60 * 1000 // 2 minutes
 
 export class EveVaultWallet implements Wallet {
-  readonly #version = '1.0.0' as const;
-  readonly #name = 'Eve Vault' as const;
+  readonly #version = '1.0.0' as const
+  readonly #name = 'Eve Vault' as const
 
-  #accounts: ReadonlyWalletAccount[] = [];
-  #eventListeners = new Map<string, WalletEventListener[]>();
-  #currentChain: SuiChain = SUI_TESTNET_CHAIN;
+  #accounts: ReadonlyWalletAccount[] = []
+  #eventListeners = new Map<string, WalletEventListener[]>()
+  #currentChain: SuiChain = SUI_TESTNET_CHAIN
 
   get version() {
-    return this.#version;
+    return this.#version
   }
 
   get name() {
-    return this.#name;
+    return this.#name
   }
 
   get icon(): Wallet['icon'] {
     // You can replace this with your wallet's icon data URL
-    return 'data:image/png;base64,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' as `data:image/png;base64,${string}`;
+    return 'data:image/png;base64,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' as `data:image/png;base64,${string}`
   }
 
   get chains(): Wallet['chains'] {
     const other =
       this.#currentChain === SUI_TESTNET_CHAIN
         ? SUI_DEVNET_CHAIN
-        : SUI_TESTNET_CHAIN;
-    return [this.#currentChain, other] as `sui:${string}`[];
+        : SUI_TESTNET_CHAIN
+    return [this.#currentChain, other] as `sui:${string}`[]
   }
 
   get accounts() {
     const other =
       this.#currentChain === SUI_TESTNET_CHAIN
         ? SUI_DEVNET_CHAIN
-        : SUI_TESTNET_CHAIN;
+        : SUI_TESTNET_CHAIN
     return this.#accounts.map(
       (walletAccount) =>
         new ReadonlyWalletAccount({
@@ -95,7 +95,7 @@ export class EveVaultWallet implements Wallet {
             EVEFRONTIER_SPONSORED_TRANSACTION,
           ],
         }),
-    );
+    )
   }
 
   get features(): EveVaultWalletFeatures {
@@ -124,7 +124,7 @@ export class EveVaultWallet implements Wallet {
         version: '1.0.1',
         signSponsoredTransaction: this.#signEveFrontierSponsoredTransaction,
       },
-    };
+    }
   }
 
   /**
@@ -133,21 +133,21 @@ export class EveVaultWallet implements Wallet {
    */
   #on: StandardEventsOnMethod = (event, listener) => {
     if (!this.#eventListeners.has(event)) {
-      this.#eventListeners.set(event, []);
+      this.#eventListeners.set(event, [])
     }
-    this.#eventListeners.get(event)?.push(listener);
+    this.#eventListeners.get(event)?.push(listener)
 
     // Return unsubscribe function
     return () => {
-      const listeners = this.#eventListeners.get(event);
+      const listeners = this.#eventListeners.get(event)
       if (listeners) {
-        const index = listeners.indexOf(listener);
+        const index = listeners.indexOf(listener)
         if (index > -1) {
-          listeners.splice(index, 1);
+          listeners.splice(index, 1)
         }
       }
-    };
-  };
+    }
+  }
 
   /**
    * Internal method to emit change events to all registered listeners
@@ -159,12 +159,12 @@ export class EveVaultWallet implements Wallet {
    * - features: Changed features (when features change)
    */
   #emitChangeEvent(properties: {
-    accounts?: ReadonlyWalletAccount[];
-    chains?: SuiChain[];
-    features?: Record<string, unknown>;
+    accounts?: ReadonlyWalletAccount[]
+    chains?: SuiChain[]
+    features?: Record<string, unknown>
   }) {
-    const listeners = this.#eventListeners.get('change');
-    if (!listeners || listeners.length === 0) return;
+    const listeners = this.#eventListeners.get('change')
+    if (!listeners || listeners.length === 0) return
 
     // Per Wallet Standard spec: accounts should be all current accounts when accounts change
     // chains should be the changed chains when chain changes
@@ -173,16 +173,16 @@ export class EveVaultWallet implements Wallet {
       accounts: properties.accounts !== undefined ? this.accounts : [],
       chains: properties.chains || [],
       features: properties.features || {},
-    };
+    }
 
     // Call all registered listeners with the event
     listeners.forEach((listener) => {
       try {
-        listener(event);
+        listener(event)
       } catch (error) {
-        log.error('Error in wallet event listener', error);
+        log.error('Error in wallet event listener', error)
       }
-    });
+    })
   }
 
   /**
@@ -191,14 +191,14 @@ export class EveVaultWallet implements Wallet {
    */
   setChain(chain: SuiChain): void {
     if (this.#currentChain !== chain) {
-      this.#currentChain = chain;
-      this.#emitChangeEvent({ chains: [chain] });
+      this.#currentChain = chain
+      this.#emitChangeEvent({ chains: [chain] })
     }
   }
 
   setFeatures(features: IdentifierRecord<unknown>): void {
     if (features) {
-      this.#emitChangeEvent({ features: features });
+      this.#emitChangeEvent({ features: features })
     }
   }
 
@@ -209,32 +209,32 @@ export class EveVaultWallet implements Wallet {
    */
   disconnect(): void {
     if (this.#accounts.length > 0) {
-      this.#accounts = [];
-      this.#emitChangeEvent({ accounts: [] });
+      this.#accounts = []
+      this.#emitChangeEvent({ accounts: [] })
     }
   }
 
   // Not authenticated, trigger login flow
   #connect: StandardConnectMethod = async (input) => {
     if (input?.silent && this.#accounts.length > 0) {
-      return { accounts: this.accounts };
+      return { accounts: this.accounts }
     }
 
     return new Promise<StandardConnectOutput>((resolve, reject) => {
-      const id = crypto.randomUUID();
-      const state = { settled: false };
+      const id = crypto.randomUUID()
+      const state = { settled: false }
 
       const onMsg = async (e: MessageEvent) => {
-        const m = e.data || {};
+        const m = e.data || {}
 
-        if (m.__from !== 'Eve Vault' || m.id !== id) return;
+        if (m.__from !== 'Eve Vault' || m.id !== id) return
         if (m.type === 'auth_success') {
           if (trySettle(state, onMsg, timeoutId)) {
             try {
               if (m.chain === SUI_LOCALNET_CHAIN) {
                 if (!m.address) {
-                  reject(new Error('Localnet auth_success missing address'));
-                  return;
+                  reject(new Error('Localnet auth_success missing address'))
+                  return
                 }
                 const localnetAccount = new ReadonlyWalletAccount({
                   address: m.address as string,
@@ -248,58 +248,58 @@ export class EveVaultWallet implements Wallet {
                     SuiSignAndExecuteTransaction,
                     EVEFRONTIER_SPONSORED_TRANSACTION,
                   ],
-                });
-                this.#accounts = [localnetAccount];
-                this.#emitChangeEvent({ accounts: this.#accounts });
-                resolve({ accounts: this.accounts });
-                return;
+                })
+                this.#accounts = [localnetAccount]
+                this.#emitChangeEvent({ accounts: this.#accounts })
+                resolve({ accounts: this.accounts })
+                return
               }
 
-              const result = m.token;
+              const result = m.token
 
               sessionStorage.setItem(
                 'evevault_jwt',
                 JSON.stringify(result.access_token),
-              );
+              )
 
               const zkLoginResponse = await getZkLoginAddress({
                 jwt: result.access_token,
                 enokiApiKey: import.meta.env.VITE_ENOKI_API_KEY,
-              });
+              })
 
               if (zkLoginResponse.error) {
-                reject(new Error(zkLoginResponse.error.message));
-                return;
+                reject(new Error(zkLoginResponse.error.message))
+                return
               }
 
               if (!zkLoginResponse.data) {
                 reject(
                   new Error('No data returned from zkLogin address lookup'),
-                );
-                return;
+                )
+                return
               }
 
-              const { address, publicKey: publicKeyB64 } = zkLoginResponse.data;
-              const trimmedPublicKey = publicKeyB64.trim();
+              const { address, publicKey: publicKeyB64 } = zkLoginResponse.data
+              const trimmedPublicKey = publicKeyB64.trim()
               if (!trimmedPublicKey) {
                 reject(
                   new Error(
                     'No public key returned from zkLogin address lookup',
                   ),
-                );
-                return;
+                )
+                return
               }
 
-              let publicKeyBytes: Uint8Array;
+              let publicKeyBytes: Uint8Array
               try {
-                publicKeyBytes = fromBase64(trimmedPublicKey);
+                publicKeyBytes = fromBase64(trimmedPublicKey)
               } catch {
                 reject(
                   new Error(
                     'Invalid base64 public key returned from zkLogin address lookup',
                   ),
-                );
-                return;
+                )
+                return
               }
 
               const newAccount = new ReadonlyWalletAccount({
@@ -319,65 +319,65 @@ export class EveVaultWallet implements Wallet {
                   SuiSignAndExecuteTransaction,
                   EVEFRONTIER_SPONSORED_TRANSACTION,
                 ],
-              });
+              })
 
-              this.#accounts = [newAccount];
-              this.#emitChangeEvent({ accounts: this.#accounts });
-              resolve({ accounts: this.accounts });
+              this.#accounts = [newAccount]
+              this.#emitChangeEvent({ accounts: this.#accounts })
+              resolve({ accounts: this.accounts })
             } catch (err) {
-              reject(err instanceof Error ? err : new Error(String(err)));
+              reject(err instanceof Error ? err : new Error(String(err)))
             }
           }
         } else {
           if (trySettle(state, onMsg, timeoutId)) {
-            reject(new Error(m.error?.message || 'Authentication failed'));
+            reject(new Error(m.error?.message || 'Authentication failed'))
           }
         }
-      };
+      }
 
-      window.addEventListener('message', onMsg);
+      window.addEventListener('message', onMsg)
       const timeoutId = setTimeout(() => {
         if (trySettle(state, onMsg)) {
-          reject(new Error('Connection request timed out'));
+          reject(new Error('Connection request timed out'))
         }
-      }, APPROVAL_TIMEOUT_MS);
-      window.postMessage({ __to: 'Eve Vault', type: 'connect', id }, '*');
-    });
-  };
+      }, APPROVAL_TIMEOUT_MS)
+      window.postMessage({ __to: 'Eve Vault', type: 'connect', id }, '*')
+    })
+  }
 
   #signPersonalMessage: SuiSignPersonalMessageMethod = async (
     input: SuiSignPersonalMessageInput,
   ) => {
     return new Promise<SuiSignPersonalMessageOutput>((resolve, reject) => {
-      const id = crypto.randomUUID();
-      const state = { settled: false };
+      const id = crypto.randomUUID()
+      const state = { settled: false }
 
       const onMsg = async (e: MessageEvent) => {
-        const m = e.data || {};
+        const m = e.data || {}
 
-        if (m.__from !== 'Eve Vault' || m.id !== id) return;
+        if (m.__from !== 'Eve Vault' || m.id !== id) return
 
         if (m.type === 'sign_success') {
           if (trySettle(state, onMsg, timeoutId)) {
             resolve({
               bytes: m.bytes,
               signature: m.signature,
-            } as SuiSignPersonalMessageOutput);
+            } as SuiSignPersonalMessageOutput)
           }
         } else if (m.type === 'sign_personal_message_error') {
           if (trySettle(state, onMsg, timeoutId)) {
-            reject(new Error(m.error));
+            reject(new Error(m.error))
           }
         }
-      };
+      }
 
-      window.addEventListener('message', onMsg);
+      window.addEventListener('message', onMsg)
       const timeoutId = setTimeout(() => {
         if (trySettle(state, onMsg)) {
-          reject(new Error('Message signing timed out'));
+          reject(new Error('Message signing timed out'))
         }
-      }, APPROVAL_TIMEOUT_MS);
-      log.debug('[SuiWallet] #signPersonalMessage input', input);
+      }, APPROVAL_TIMEOUT_MS)
+      log.debug('[SuiWallet] #signPersonalMessage input', input)
       window.postMessage(
         {
           __to: 'Eve Vault',
@@ -387,45 +387,45 @@ export class EveVaultWallet implements Wallet {
           account: input.account,
         },
         '*',
-      );
-    });
-  };
+      )
+    })
+  }
 
   #signTransaction: SuiSignTransactionMethod = async (
     input: SuiSignTransactionInput,
   ) => {
-    const tx = await input.transaction.toJSON();
+    const tx = await input.transaction.toJSON()
 
     return new Promise<SignedTransaction>((resolve, reject) => {
-      const id = crypto.randomUUID();
-      const state = { settled: false };
+      const id = crypto.randomUUID()
+      const state = { settled: false }
 
       const onMsg = async (e: MessageEvent) => {
-        const m = e.data || {};
+        const m = e.data || {}
 
-        if (m.__from !== 'Eve Vault' || m.id !== id) return;
-        log.debug('[SuiWallet] #signTransaction message', m);
+        if (m.__from !== 'Eve Vault' || m.id !== id) return
+        log.debug('[SuiWallet] #signTransaction message', m)
 
         if (m.type === 'sign_success') {
           if (trySettle(state, onMsg, timeoutId)) {
             resolve({
               bytes: m.bytes,
               signature: m.signature,
-            });
+            })
           }
         } else if (m.type === 'sign_transaction_error') {
           if (trySettle(state, onMsg, timeoutId)) {
-            reject(new Error(m.error));
+            reject(new Error(m.error))
           }
         }
-      };
+      }
 
-      window.addEventListener('message', onMsg);
+      window.addEventListener('message', onMsg)
       const timeoutId = setTimeout(() => {
         if (trySettle(state, onMsg)) {
-          reject(new Error('Transaction signing timed out'));
+          reject(new Error('Transaction signing timed out'))
         }
-      }, APPROVAL_TIMEOUT_MS);
+      }, APPROVAL_TIMEOUT_MS)
 
       window.postMessage(
         {
@@ -437,41 +437,41 @@ export class EveVaultWallet implements Wallet {
           chain: input.chain ?? this.#currentChain,
         },
         '*',
-      );
-    });
-  };
+      )
+    })
+  }
 
   #signAndExecuteTransaction: SuiSignAndExecuteTransactionMethod = async (
     input: SuiSignAndExecuteTransactionInput,
   ) => {
-    const tx = await input.transaction.toJSON();
-    const id = crypto.randomUUID();
+    const tx = await input.transaction.toJSON()
+    const id = crypto.randomUUID()
 
     return new Promise<SuiSignAndExecuteTransactionOutput>(
       (resolve, reject) => {
-        const state = { settled: false };
+        const state = { settled: false }
 
         const onMsg = (e: MessageEvent) => {
-          const m = e.data || {};
-          if (m.__from !== 'Eve Vault' || m.id !== id) return;
+          const m = e.data || {}
+          if (m.__from !== 'Eve Vault' || m.id !== id) return
 
           if (m.type === 'sign_and_execute_transaction_success') {
             if (trySettle(state, onMsg, timeoutId)) {
-              resolve(m.result);
+              resolve(m.result)
             }
           } else if (m.type === 'sign_and_execute_transaction_error') {
             if (trySettle(state, onMsg, timeoutId)) {
-              reject(new Error(m.error));
+              reject(new Error(m.error))
             }
           }
-        };
+        }
 
-        window.addEventListener('message', onMsg);
+        window.addEventListener('message', onMsg)
         const timeoutId = setTimeout(() => {
           if (trySettle(state, onMsg)) {
-            reject(new Error('Transaction approval timed out'));
+            reject(new Error('Transaction approval timed out'))
           }
-        }, APPROVAL_TIMEOUT_MS);
+        }, APPROVAL_TIMEOUT_MS)
         window.postMessage(
           {
             __to: 'Eve Vault',
@@ -482,55 +482,55 @@ export class EveVaultWallet implements Wallet {
             chain: input.chain ?? this.#currentChain,
           },
           '*',
-        );
+        )
       },
-    );
-  };
+    )
+  }
 
   #signEveFrontierSponsoredTransaction: EveFrontierSponsoredTransactionMethod =
     async (input: EveFrontierSponsoredTransactionInput) => {
       return new Promise<EveFrontierSponsoredTransactionOutput>(
         (resolve, reject) => {
-          const id = crypto.randomUUID();
-          const state = { settled: false };
+          const id = crypto.randomUUID()
+          const state = { settled: false }
 
           const onMsg = async (e: MessageEvent) => {
-            const m = e.data || {};
+            const m = e.data || {}
 
-            if (m.__from !== 'Eve Vault' || m.id !== id) return;
-            log.debug('[SuiWallet] #signSponsoredTransaction message', m);
+            if (m.__from !== 'Eve Vault' || m.id !== id) return
+            log.debug('[SuiWallet] #signSponsoredTransaction message', m)
 
             if (m.type === 'sign_success') {
               if (trySettle(state, onMsg, timeoutId)) {
                 resolve({
                   digest: m.digest,
                   effects: m.effects,
-                });
+                })
               }
             } else if (m.type === 'sign_sponsored_transaction_error') {
               if (trySettle(state, onMsg, timeoutId)) {
-                reject(new Error(m.error));
+                reject(new Error(m.error))
               }
             }
-          };
+          }
 
-          window.addEventListener('message', onMsg);
+          window.addEventListener('message', onMsg)
           const timeoutId = setTimeout(() => {
             if (trySettle(state, onMsg)) {
-              reject(new Error('Sponsored transaction timed out'));
+              reject(new Error('Sponsored transaction timed out'))
             }
-          }, APPROVAL_TIMEOUT_MS);
+          }, APPROVAL_TIMEOUT_MS)
           log.debug(
             '[SuiWallet] #signEveFrontierSponsoredTransaction input',
             input,
-          );
+          )
 
           // Check if metadata is truthy
           const hasMetadata =
             input.metadata &&
             (input.metadata.name != null ||
               input.metadata.description != null ||
-              input.metadata.url != null);
+              input.metadata.url != null)
 
           window.postMessage({
             __to: 'Eve Vault',
@@ -549,8 +549,8 @@ export class EveVaultWallet implements Wallet {
                 },
               }),
             },
-          });
+          })
         },
-      );
-    };
+      )
+    }
 }

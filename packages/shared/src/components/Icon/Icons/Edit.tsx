@@ -1,4 +1,4 @@
-import type { SVGProps } from 'react';
+import type { SVGProps } from 'react'
 
 const EditIcon = ({
   className,
@@ -22,6 +22,6 @@ const EditIcon = ({
     />
     <path d="M2 2H8L6 4H4V12H12V10L14 8V14H2V2Z" fill={color} />
   </svg>
-);
+)
 
-export default EditIcon;
+export default EditIcon

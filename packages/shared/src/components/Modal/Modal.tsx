@@ -1,34 +1,34 @@
-import type React from 'react';
-import { useEffect, useRef } from 'react';
-import Button from '#/components/Button';
-import Text from '#/components/Text';
-import './Modal.css';
-import Heading from '#/components/Heading';
+import type React from 'react'
+import { useEffect, useRef } from 'react'
+import Button from '#/components/Button'
+import Text from '#/components/Text'
+import './Modal.css'
+import Heading from '#/components/Heading'
 
-export type ModalSize = 'small' | 'medium' | 'large' | 'full';
+export type ModalSize = 'small' | 'medium' | 'large' | 'full'
 
 export interface ModalProps {
-  isOpen: boolean;
-  onClose?: () => void;
-  title?: string;
-  message?: React.ReactNode;
-  children?: React.ReactNode;
+  isOpen: boolean
+  onClose?: () => void
+  title?: string
+  message?: React.ReactNode
+  children?: React.ReactNode
   primaryAction?: {
-    label: string;
-    onClick: () => void;
-    isLoading?: boolean;
-    disabled?: boolean;
-  };
+    label: string
+    onClick: () => void
+    isLoading?: boolean
+    disabled?: boolean
+  }
   secondaryAction?: {
-    label: string;
-    onClick: () => void;
-    disabled?: boolean;
-  };
-  className?: string;
-  closeOnOverlayClick?: boolean;
+    label: string
+    onClick: () => void
+    disabled?: boolean
+  }
+  className?: string
+  closeOnOverlayClick?: boolean
   /** Modal width: small (400px), medium (600px), large (800px), full (90vw) */
-  size?: ModalSize;
-  fullWidthActions?: boolean;
+  size?: ModalSize
+  fullWidthActions?: boolean
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -44,35 +44,35 @@ export const Modal: React.FC<ModalProps> = ({
   size = 'small',
   fullWidthActions = false,
 }) => {
-  const modalRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null)
 
   // Close on Escape key
   useEffect(() => {
-    if (!isOpen || !onClose) return;
+    if (!isOpen || !onClose) return
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        onClose();
+        onClose()
       }
-    };
+    }
 
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [isOpen, onClose]);
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [isOpen, onClose])
 
   // Prevent body scroll when modal is open
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden'
     } else {
-      document.body.style.overflow = '';
+      document.body.style.overflow = ''
     }
     return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isOpen]);
+      document.body.style.overflow = ''
+    }
+  }, [isOpen])
 
-  if (!isOpen) return null;
+  if (!isOpen) return null
 
   const handleOverlayClick = (event: React.MouseEvent) => {
     if (
@@ -80,13 +80,13 @@ export const Modal: React.FC<ModalProps> = ({
       onClose &&
       event.target === event.currentTarget
     ) {
-      onClose();
+      onClose()
     }
-  };
+  }
 
-  const hasActions = primaryAction || secondaryAction;
-  const sizeClass = `modal--${size}`;
-  const actionsClass = fullWidthActions ? 'modal__actions--full' : '';
+  const hasActions = primaryAction || secondaryAction
+  const sizeClass = `modal--${size}`
+  const actionsClass = fullWidthActions ? 'modal__actions--full' : ''
 
   return (
     <div
@@ -134,7 +134,7 @@ export const Modal: React.FC<ModalProps> = ({
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Modal;
+export default Modal

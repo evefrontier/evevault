@@ -1,5 +1,5 @@
-import { SuiGraphQLClient } from '@mysten/sui/graphql';
-import { SUI_TESTNET_CHAIN, type SuiChain } from '@mysten/wallet-standard';
+import { SuiGraphQLClient } from '@mysten/sui/graphql'
+import { SUI_TESTNET_CHAIN, type SuiChain } from '@mysten/wallet-standard'
 
 /**
  * GraphQL Beta endpoint URLs per network
@@ -9,7 +9,7 @@ const GRAPHQL_ENDPOINTS: Record<string, string> = {
   mainnet: 'https://graphql.mainnet.sui.io/graphql',
   testnet: 'https://graphql.testnet.sui.io/graphql',
   devnet: 'https://graphql.devnet.sui.io/graphql',
-};
+}
 
 /**
  * Creates a Sui GraphQL client for the specified network.
@@ -22,12 +22,12 @@ export function createSuiGraphQLClient(
   const chainName = network.replace('sui:', '') as
     | 'mainnet'
     | 'testnet'
-    | 'devnet';
+    | 'devnet'
 
-  const url = GRAPHQL_ENDPOINTS[chainName] || GRAPHQL_ENDPOINTS.devnet;
+  const url = GRAPHQL_ENDPOINTS[chainName] || GRAPHQL_ENDPOINTS.devnet
 
   return new SuiGraphQLClient({
     url,
     network: chainName,
-  });
+  })
 }

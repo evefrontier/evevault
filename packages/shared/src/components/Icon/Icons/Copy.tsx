@@ -1,4 +1,4 @@
-import type { SVGProps } from 'react';
+import type { SVGProps } from 'react'
 
 const CopyIcon = ({
   className,
@@ -25,6 +25,6 @@ const CopyIcon = ({
     <path d="M2 2H4V10H2V2Z" fill={color} />
     <path d="M2 2H10V4H2V2Z" fill={color} />
   </svg>
-);
+)
 
-export default CopyIcon;
+export default CopyIcon

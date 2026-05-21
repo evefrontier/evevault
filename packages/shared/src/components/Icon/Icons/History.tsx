@@ -1,4 +1,4 @@
-import type { SVGProps } from 'react';
+import type { SVGProps } from 'react'
 
 const HistoryIcon = ({
   className,
@@ -23,6 +23,6 @@ const HistoryIcon = ({
       fill={color}
     />
   </svg>
-);
+)
 
-export default HistoryIcon;
+export default HistoryIcon

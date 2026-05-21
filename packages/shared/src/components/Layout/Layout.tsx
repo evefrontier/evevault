@@ -1,16 +1,16 @@
-import type React from 'react';
-import { useEffect, useMemo, useState } from 'react';
-import Background from '#/components/Background';
-import { useResponsive } from '#/hooks';
-import { spacing } from '#/theme';
-import type { LayoutProps } from '#/types';
+import type React from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import Background from '#/components/Background'
+import { useResponsive } from '#/hooks'
+import { spacing } from '#/theme'
+import type { LayoutProps } from '#/types'
 import {
   calculateResponsivePadding,
   NAV_ITEMS,
   type PaddingConfig,
-} from '#/utils';
-import { HeaderMobile } from './Header/HeaderMobile';
-import DesktopLeftSideBar from './NavigationBar/DesktopLeftSideBar';
+} from '#/utils'
+import { HeaderMobile } from './Header/HeaderMobile'
+import DesktopLeftSideBar from './NavigationBar/DesktopLeftSideBar'
 
 /** Padding configuration for responsive layout */
 const PADDING_CONFIG: PaddingConfig = {
@@ -24,11 +24,11 @@ const PADDING_CONFIG: PaddingConfig = {
     topVh: 5, // 5vh
     horizontalVh: 4, // 4vh
   },
-};
+}
 /** Extension popup margins: py-24px (6 * 4px), px-16px (4 * 4px) */
-const EXTENSION_MARGIN = { vertical: spacing.lg, horizontal: spacing.md };
+const EXTENSION_MARGIN = { vertical: spacing.lg, horizontal: spacing.md }
 /** Gap between header and content in extension: 40px (10 * 4px) */
-const EXTENSION_CONTENT_GAP = spacing.xxl - spacing.sm;
+const EXTENSION_CONTENT_GAP = spacing.xxl - spacing.sm
 
 export const Layout: React.FC<LayoutProps> = ({
   children,
@@ -36,42 +36,42 @@ export const Layout: React.FC<LayoutProps> = ({
   showNav: _showNav = true, // Reserved for future mobile nav bar visibility
   headerProps,
 }) => {
-  const { width } = useResponsive();
+  const { width } = useResponsive()
   const [viewportHeight, setViewportHeight] = useState<number>(() => {
-    if (typeof window === 'undefined') return 800;
-    return window.innerHeight;
-  });
+    if (typeof window === 'undefined') return 800
+    return window.innerHeight
+  })
 
   useEffect(() => {
-    let rafId: number | null = null;
+    let rafId: number | null = null
 
     const handleResize = () => {
       // Use requestAnimationFrame for smooth, performant updates
       // This batches resize events and only updates once per frame (~60fps max)
       if (rafId !== null) {
-        cancelAnimationFrame(rafId);
+        cancelAnimationFrame(rafId)
       }
       rafId = requestAnimationFrame(() => {
-        setViewportHeight(window.innerHeight);
-        rafId = null;
-      });
-    };
+        setViewportHeight(window.innerHeight)
+        rafId = null
+      })
+    }
 
-    window.addEventListener('resize', handleResize);
+    window.addEventListener('resize', handleResize)
     return () => {
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('resize', handleResize)
       if (rafId !== null) {
-        cancelAnimationFrame(rafId);
+        cancelAnimationFrame(rafId)
       }
-    };
-  }, []);
+    }
+  }, [])
 
   // Calculate responsive padding that starts from desktop values and scales down smoothly
   // Memoize to avoid recalculating on every render (only recalculates when width/height change)
   const paddingStyle = useMemo(
     () => calculateResponsivePadding(width, viewportHeight, PADDING_CONFIG),
     [width, viewportHeight],
-  );
+  )
 
   // Extension variant: compact layout for browser popup
   if (variant === 'extension') {
@@ -80,7 +80,7 @@ export const Layout: React.FC<LayoutProps> = ({
       paddingBottom: EXTENSION_MARGIN.vertical,
       paddingLeft: EXTENSION_MARGIN.horizontal,
       paddingRight: EXTENSION_MARGIN.horizontal,
-    };
+    }
 
     return (
       <div className="flex h-full min-h-screen w-full flex-col overflow-hidden">
@@ -104,11 +104,11 @@ export const Layout: React.FC<LayoutProps> = ({
           </div>
         </Background>
       </div>
-    );
+    )
   }
 
   /// TODO: add sidebar
-  const showSidebar = false;
+  const showSidebar = false
 
   return (
     <div className="flex h-screen w-full overflow-hidden">
@@ -128,5 +128,5 @@ export const Layout: React.FC<LayoutProps> = ({
         </div>
       </Background>
     </div>
-  );
-};
+  )
+}

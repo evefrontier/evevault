@@ -1,26 +1,26 @@
-import { WalletStandardMessageTypes } from '@evevault/shared';
-import { createLogger } from '@evevault/shared/utils';
-import { openPopupWindow } from '@/lib/background/services/popupWindow';
-import type { WalletActionMessage } from '@/lib/background/types';
+import { WalletStandardMessageTypes } from '@evevault/shared'
+import { createLogger } from '@evevault/shared/utils'
+import { openPopupWindow } from '@/lib/background/services/popupWindow'
+import type { WalletActionMessage } from '@/lib/background/types'
 
-const log = createLogger();
+const log = createLogger()
 
 async function handleApprovePopup(
   message: WalletActionMessage,
   sender: chrome.runtime.MessageSender,
   sendResponse: (response?: unknown) => void,
 ): Promise<boolean> {
-  const { action } = message;
+  const { action } = message
 
   try {
-    log.info('Wallet action request received', { action: message.action });
+    log.info('Wallet action request received', { action: message.action })
 
-    const senderTabId = sender.tab?.id;
+    const senderTabId = sender.tab?.id
 
-    const windowId = await openPopupWindow(action);
+    const windowId = await openPopupWindow(action)
 
     if (!windowId) {
-      throw new Error('Failed to open approval popup');
+      throw new Error('Failed to open approval popup')
     }
 
     await chrome.storage.local.set({
@@ -30,35 +30,35 @@ async function handleApprovePopup(
         senderTabId,
         timestamp: Date.now(),
       },
-    });
+    })
 
     const isSignAndExecute =
-      action === WalletStandardMessageTypes.SIGN_AND_EXECUTE_TRANSACTION;
+      action === WalletStandardMessageTypes.SIGN_AND_EXECUTE_TRANSACTION
 
-    let timeoutId: ReturnType<typeof setTimeout>;
+    let timeoutId: ReturnType<typeof setTimeout>
     let registeredListener: (changes: {
-      [key: string]: chrome.storage.StorageChange;
-    }) => void;
+      [key: string]: chrome.storage.StorageChange
+    }) => void
 
     const detachApprovalListener = () => {
-      clearTimeout(timeoutId);
-      chrome.storage.onChanged.removeListener(registeredListener);
-    };
+      clearTimeout(timeoutId)
+      chrome.storage.onChanged.removeListener(registeredListener)
+    }
 
     const coreListener = (changes: {
-      [key: string]: chrome.storage.StorageChange;
+      [key: string]: chrome.storage.StorageChange
     }) => {
-      const result = changes.transactionResult?.newValue;
+      const result = changes.transactionResult?.newValue
 
       const isSuccess =
-        result?.status === 'signed' || result?.status === 'signed_and_executed';
+        result?.status === 'signed' || result?.status === 'signed_and_executed'
       if (isSuccess && senderTabId) {
         if (isSignAndExecute) {
           const hasRequired =
             result.bytes != null &&
             result.signature != null &&
             result.digest != null &&
-            result.effects != null;
+            result.effects != null
           if (!hasRequired) {
             chrome.tabs
               .sendMessage(senderTabId, {
@@ -67,8 +67,8 @@ async function handleApprovePopup(
                 id: message.id,
               })
               .catch((err) => {
-                log.error('Failed to send sign_and_execute error', err);
-              });
+                log.error('Failed to send sign_and_execute error', err)
+              })
           } else {
             chrome.tabs
               .sendMessage(senderTabId, {
@@ -82,8 +82,8 @@ async function handleApprovePopup(
                 id: message.id,
               })
               .catch((err) => {
-                log.error('Failed to send sign_and_execute success', err);
-              });
+                log.error('Failed to send sign_and_execute success', err)
+              })
           }
         } else {
           chrome.tabs
@@ -94,14 +94,14 @@ async function handleApprovePopup(
               id: message.id,
             })
             .catch((err) => {
-              log.error('Failed to send success message', err);
-            });
+              log.error('Failed to send success message', err)
+            })
         }
 
-        chrome.storage.local.remove(['pendingAction', 'transactionResult']);
-        detachApprovalListener();
+        chrome.storage.local.remove(['pendingAction', 'transactionResult'])
+        detachApprovalListener()
       } else if (result?.status === 'error') {
-        detachApprovalListener();
+        detachApprovalListener()
 
         if (isSignAndExecute && senderTabId) {
           chrome.tabs
@@ -111,22 +111,22 @@ async function handleApprovePopup(
               id: message.id,
             })
             .catch((err) => {
-              log.error('Failed to send sign_and_execute error', err);
-            });
+              log.error('Failed to send sign_and_execute error', err)
+            })
         } else if (typeof senderTabId === 'number') {
-          let errorType: string;
+          let errorType: string
 
           switch (action) {
             case WalletStandardMessageTypes.SIGN_TRANSACTION:
-              errorType = 'sign_transaction_error';
-              break;
+              errorType = 'sign_transaction_error'
+              break
             case WalletStandardMessageTypes.SIGN_PERSONAL_MESSAGE:
-              errorType = 'sign_personal_message_error';
-              break;
+              errorType = 'sign_personal_message_error'
+              break
             default:
-              log.warn('Unknown action', { action });
-              errorType = 'sign_error';
-              break;
+              log.warn('Unknown action', { action })
+              errorType = 'sign_error'
+              break
           }
 
           chrome.tabs
@@ -136,41 +136,41 @@ async function handleApprovePopup(
               id: message.id,
             })
             .catch((err) => {
-              log.error(`Failed to send ${errorType} error`, err);
-            });
+              log.error(`Failed to send ${errorType} error`, err)
+            })
         }
 
-        chrome.storage.local.remove(['pendingAction', 'transactionResult']);
+        chrome.storage.local.remove(['pendingAction', 'transactionResult'])
       }
-    };
+    }
 
     registeredListener = (changes: {
-      [key: string]: chrome.storage.StorageChange;
+      [key: string]: chrome.storage.StorageChange
     }) => {
-      clearTimeout(timeoutId);
-      coreListener(changes);
-    };
+      clearTimeout(timeoutId)
+      coreListener(changes)
+    }
 
     timeoutId = setTimeout(
       () => {
-        detachApprovalListener();
-        chrome.storage.local.remove(['pendingAction', 'transactionResult']);
-        log.warn('Transaction approval timed out', { action, senderTabId });
+        detachApprovalListener()
+        chrome.storage.local.remove(['pendingAction', 'transactionResult'])
+        log.warn('Transaction approval timed out', { action, senderTabId })
       },
       10 * 60 * 1000,
-    );
+    )
 
-    chrome.storage.onChanged.addListener(registeredListener);
+    chrome.storage.onChanged.addListener(registeredListener)
 
-    return true; // Keep message channel open for async response
+    return true // Keep message channel open for async response
   } catch (error) {
-    log.error('Transaction signing failed', error);
+    log.error('Transaction signing failed', error)
     sendResponse({
       type: 'sign_transaction_error',
       error: error instanceof Error ? error.message : 'Unknown error occurred',
-    });
-    return false;
+    })
+    return false
   }
 }
 
-export { handleApprovePopup };
+export { handleApprovePopup }

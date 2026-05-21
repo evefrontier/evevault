@@ -1,65 +1,65 @@
-import type { PublicKey, Signer } from '@mysten/sui/cryptography';
+import type { PublicKey, Signer } from '@mysten/sui/cryptography'
 import type {
   Ed25519Keypair,
   Ed25519PublicKey,
-} from '@mysten/sui/keypairs/ed25519';
-import type { getZkLoginSignature } from '@mysten/sui/zklogin';
-import type { User } from 'oidc-client-ts';
-import type { ZkProofResponse } from './enoki';
-import type { StoredSecretKey } from './stores';
+} from '@mysten/sui/keypairs/ed25519'
+import type { getZkLoginSignature } from '@mysten/sui/zklogin'
+import type { User } from 'oidc-client-ts'
+import type { ZkProofResponse } from './enoki'
+import type { StoredSecretKey } from './stores'
 
 // Web crypto placeholder constants - used when the actual key is stored in IndexedDB
 // and managed by WebCryptoSigner (non-extractable)
-export const WEB_CRYPTO_PLACEHOLDER_IV = 'web-crypto-signer';
-export const WEB_CRYPTO_PLACEHOLDER_DATA = 'non-extractable-key';
-export const WEB_CRYPTO_PLACEHOLDER_SALT = 'web-crypto-salt';
+export const WEB_CRYPTO_PLACEHOLDER_IV = 'web-crypto-signer'
+export const WEB_CRYPTO_PLACEHOLDER_DATA = 'non-extractable-key'
+export const WEB_CRYPTO_PLACEHOLDER_SALT = 'web-crypto-salt'
 
 export const createWebCryptoPlaceholder = (): StoredSecretKey => ({
   iv: WEB_CRYPTO_PLACEHOLDER_IV,
   data: WEB_CRYPTO_PLACEHOLDER_DATA,
   salt: WEB_CRYPTO_PLACEHOLDER_SALT,
-});
+})
 
 export type PartialZkLoginSignature = Omit<
   Parameters<typeof getZkLoginSignature>[0]['inputs'],
   'addressSeed'
->;
+>
 
 export interface ZkSignAnyParams {
-  user: User;
-  getZkProof: () => Promise<ZkProofResponse | { error: string }>;
+  user: User
+  getZkProof: () => Promise<ZkProofResponse | { error: string }>
 }
 
 export interface ZkProofParams {
-  jwtRandomness: string;
-  maxEpoch: string;
-  ephemeralPublicKey: PublicKey;
-  idToken: string;
-  enokiApiKey: string;
-  network?: string; // Optional network parameter (devnet, testnet, mainnet)
+  jwtRandomness: string
+  maxEpoch: string
+  ephemeralPublicKey: PublicKey
+  idToken: string
+  enokiApiKey: string
+  network?: string // Optional network parameter (devnet, testnet, mainnet)
 }
 
 export interface RawSignParams {
-  sui_address: string;
-  keypair: Signer;
+  sui_address: string
+  keypair: Signer
 }
 
 // Legacy types for extension (Ed25519-specific)
 export interface ExtensionZkProofParams {
-  jwtRandomness: string;
-  maxEpoch: string;
-  ephemeralKeyPair: Ed25519Keypair;
-  idToken: string;
-  enokiApiKey: string;
-  network?: string;
+  jwtRandomness: string
+  maxEpoch: string
+  ephemeralKeyPair: Ed25519Keypair
+  idToken: string
+  enokiApiKey: string
+  network?: string
 }
 
 export interface ExtensionEphSignParams {
-  sui_address: string;
-  ephemeralKeyPair: Ed25519Keypair;
+  sui_address: string
+  ephemeralKeyPair: Ed25519Keypair
 }
 
 // Type guard for Ed25519PublicKey
 export const isEd25519PublicKey = (key: PublicKey): key is Ed25519PublicKey => {
-  return key.flag() === 0x00; // Ed25519 flag byte
-};
+  return key.flag() === 0x00 // Ed25519 flag byte
+}

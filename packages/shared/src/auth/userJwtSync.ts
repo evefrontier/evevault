@@ -1,12 +1,12 @@
-import { decodeJwt } from 'jose';
-import { type IdTokenClaims, User } from 'oidc-client-ts';
-import type { OAuthTokenResponse } from '#/types/authTypes';
-import { createLogger } from '#/utils/logger';
-import { getZkLoginAddress } from './getZkLoginAddress';
-import { storeJwt } from './storageService';
-import { userToJwtResponse } from './userToJwtResponse';
+import { decodeJwt } from 'jose'
+import { type IdTokenClaims, User } from 'oidc-client-ts'
+import type { OAuthTokenResponse } from '#/types/authTypes'
+import { createLogger } from '#/utils/logger'
+import { getZkLoginAddress } from './getZkLoginAddress'
+import { storeJwt } from './storageService'
+import { userToJwtResponse } from './userToJwtResponse'
 
-const log = createLogger();
+const log = createLogger()
 
 /**
  * Ensures `profile.sui_address` (and Enoki `salt`) exist by calling Enoki only when
@@ -16,31 +16,31 @@ export async function enrichUserWithZkLoginIfNeeded(
   user: User,
   getEnokiApiKey: () => string,
 ): Promise<User> {
-  const idToken = user.id_token;
+  const idToken = user.id_token
   if (!idToken) {
-    return user;
+    return user
   }
 
-  const sui = user.profile?.sui_address;
+  const sui = user.profile?.sui_address
   if (typeof sui === 'string' && sui.trim()) {
-    return user;
+    return user
   }
 
   const zkLoginResponse = await getZkLoginAddress({
     jwt: idToken,
     enokiApiKey: getEnokiApiKey(),
-  });
+  })
 
   if (zkLoginResponse.error) {
-    throw new Error(zkLoginResponse.error.message);
+    throw new Error(zkLoginResponse.error.message)
   }
 
   if (!zkLoginResponse.data) {
-    throw new Error('No zkLogin address data received');
+    throw new Error('No zkLogin address data received')
   }
 
-  const { salt, address } = zkLoginResponse.data;
-  const decodedJwt = decodeJwt(idToken) as IdTokenClaims;
+  const { salt, address } = zkLoginResponse.data
+  const decodedJwt = decodeJwt(idToken) as IdTokenClaims
 
   return new User({
     ...user,
@@ -52,17 +52,17 @@ export async function enrichUserWithZkLoginIfNeeded(
       sui_address: address,
       salt,
     } as User['profile'],
-  });
+  })
 }
 
 /** Mirrors the canonical OIDC `User` into persisted JWT storage. */
 export async function syncPrimaryJwtFromUser(user: User): Promise<void> {
-  const jwt = userToJwtResponse(user);
+  const jwt = userToJwtResponse(user)
   if (!jwt?.refresh_token?.trim()) {
     log.warn(
       '[syncPrimaryJwtFromUser] no refresh token, skipping evevault:jwt mirror',
-    );
-    return;
+    )
+    return
   }
-  await storeJwt(jwt as OAuthTokenResponse);
+  await storeJwt(jwt as OAuthTokenResponse)
 }

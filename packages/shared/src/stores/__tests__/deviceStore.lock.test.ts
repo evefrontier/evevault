@@ -1,6 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import * as vaultService from '#/services/vaultService';
-import { useDeviceStore } from '#/stores/deviceStore';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import * as vaultService from '#/services/vaultService'
+import { useDeviceStore } from '#/stores/deviceStore'
 
 // Mock the vault service (unified service that routes to keeper/web)
 vi.mock('#/services/vaultService', () => ({
@@ -9,7 +9,7 @@ vi.mock('#/services/vaultService', () => ({
     isUnlocked: vi.fn(),
   },
   zkProofService: {},
-}));
+}))
 
 describe('deviceStore.lock()', () => {
   beforeEach(() => {
@@ -29,46 +29,46 @@ describe('deviceStore.lock()', () => {
       },
       loading: false,
       error: null,
-    });
-  });
+    })
+  })
 
   afterEach(() => {
-    vi.clearAllMocks();
-    vi.restoreAllMocks();
-  });
+    vi.clearAllMocks()
+    vi.restoreAllMocks()
+  })
 
   it('calls ephKeyService.lock() and sets isLocked to true', async () => {
-    const mockLock = vi.mocked(vaultService.ephKeyService.lock);
-    mockLock.mockResolvedValueOnce(undefined);
+    const mockLock = vi.mocked(vaultService.ephKeyService.lock)
+    mockLock.mockResolvedValueOnce(undefined)
 
-    await useDeviceStore.getState().lock();
+    await useDeviceStore.getState().lock()
 
-    expect(mockLock).toHaveBeenCalledOnce();
-    expect(useDeviceStore.getState().isLocked).toBe(true);
-  });
+    expect(mockLock).toHaveBeenCalledOnce()
+    expect(useDeviceStore.getState().isLocked).toBe(true)
+  })
 
   it('sets isLocked to true even if already locked', async () => {
-    useDeviceStore.setState({ isLocked: true });
-    const mockLock = vi.mocked(vaultService.ephKeyService.lock);
-    mockLock.mockResolvedValueOnce(undefined);
+    useDeviceStore.setState({ isLocked: true })
+    const mockLock = vi.mocked(vaultService.ephKeyService.lock)
+    mockLock.mockResolvedValueOnce(undefined)
 
-    await useDeviceStore.getState().lock();
+    await useDeviceStore.getState().lock()
 
-    expect(mockLock).toHaveBeenCalledOnce();
-    expect(useDeviceStore.getState().isLocked).toBe(true);
-  });
+    expect(mockLock).toHaveBeenCalledOnce()
+    expect(useDeviceStore.getState().isLocked).toBe(true)
+  })
 
   it('handles error when ephKeyService.lock() fails', async () => {
-    const mockLock = vi.mocked(vaultService.ephKeyService.lock);
-    const error = new Error('Keeper lock failed');
-    mockLock.mockRejectedValueOnce(error);
+    const mockLock = vi.mocked(vaultService.ephKeyService.lock)
+    const error = new Error('Keeper lock failed')
+    mockLock.mockRejectedValueOnce(error)
 
     await expect(useDeviceStore.getState().lock()).rejects.toThrow(
       'Keeper lock failed',
-    );
+    )
 
-    expect(mockLock).toHaveBeenCalledOnce();
+    expect(mockLock).toHaveBeenCalledOnce()
     // State should not change if lock fails
-    expect(useDeviceStore.getState().isLocked).toBe(false);
-  });
-});
+    expect(useDeviceStore.getState().isLocked).toBe(false)
+  })
+})

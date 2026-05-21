@@ -1,4 +1,4 @@
-import type { SVGProps } from 'react';
+import type { SVGProps } from 'react'
 
 const ArrowUpSlantIcon = ({
   className,
@@ -28,6 +28,6 @@ const ArrowUpSlantIcon = ({
       </clipPath>
     </defs>
   </svg>
-);
+)
 
-export default ArrowUpSlantIcon;
+export default ArrowUpSlantIcon

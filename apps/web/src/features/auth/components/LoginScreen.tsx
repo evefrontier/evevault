@@ -1,25 +1,25 @@
-import type { TenantId } from '@evefrontier/dapp-kit';
-import { LockScreen, switchTenantAndReload } from '@evevault/shared';
-import { redirectToFusionAuthLogout, useAuth } from '@evevault/shared/auth';
-import { Button, Heading, TenantSelector } from '@evevault/shared/components';
-import Icon from '@evevault/shared/components/Icon';
-import { useContext, useDevice } from '@evevault/shared/hooks';
+import type { TenantId } from '@evefrontier/dapp-kit'
+import { LockScreen, switchTenantAndReload } from '@evevault/shared'
+import { redirectToFusionAuthLogout, useAuth } from '@evevault/shared/auth'
+import { Button, Heading, TenantSelector } from '@evevault/shared/components'
+import Icon from '@evevault/shared/components/Icon'
+import { useContext, useDevice } from '@evevault/shared/hooks'
 import {
   getAvailableTenantIds,
   getCurrentTenantId,
-} from '@evevault/shared/stores';
-import { useMemo } from 'react';
+} from '@evevault/shared/stores'
+import { useMemo } from 'react'
 
 export const LoginScreen = () => {
-  const { login, loading } = useAuth();
-  const { isLocked, isPinSet, unlock } = useDevice();
-  const { devMode, setDevMode } = useContext();
+  const { login, loading } = useAuth()
+  const { isLocked, isPinSet, unlock } = useDevice()
+  const { devMode, setDevMode } = useContext()
 
   const availableTenantIds = useMemo(
     () => getAvailableTenantIds(devMode),
     [devMode],
-  );
-  const currentTenantId = getCurrentTenantId();
+  )
+  const currentTenantId = getCurrentTenantId()
 
   // First, check for unencrypted ephemeral key pair
   if (isLocked) {
@@ -29,7 +29,7 @@ export const LoginScreen = () => {
         unlock={unlock}
         onResetComplete={() => redirectToFusionAuthLogout()}
       />
-    );
+    )
   }
 
   return (
@@ -57,11 +57,11 @@ export const LoginScreen = () => {
         size="small"
         className="absolute! bottom-4 right-4"
         onClick={() => {
-          setDevMode(!devMode);
+          setDevMode(!devMode)
         }}
       >
         <Icon name={devMode ? 'Eye' : 'HideEye'} color="#ED4136" size="small" />
       </Button>
     </div>
-  );
-};
+  )
+}

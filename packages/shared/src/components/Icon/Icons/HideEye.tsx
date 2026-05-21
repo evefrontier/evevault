@@ -1,4 +1,4 @@
-import type { SVGProps } from 'react';
+import type { SVGProps } from 'react'
 
 const EyeIcon = ({
   className,
@@ -23,6 +23,6 @@ const EyeIcon = ({
       fill={color}
     />
   </svg>
-);
+)
 
-export default EyeIcon;
+export default EyeIcon

@@ -1,2 +1,2 @@
-export * from './extension';
-export * from './web';
+export * from './extension'
+export * from './web'

@@ -1,5 +1,5 @@
-import { useQueryClient } from '@tanstack/react-query';
-import type React from 'react';
+import { useQueryClient } from '@tanstack/react-query'
+import type React from 'react'
 import {
   type KeyboardEvent,
   useCallback,
@@ -7,26 +7,26 @@ import {
   useMemo,
   useRef,
   useState,
-} from 'react';
-import Button from '#/components/Button';
-import Icon from '#/components/Icon';
-import Text from '#/components/Text';
-import { useToast } from '#/components/Toast';
-import { useContext, useResponsive } from '#/hooks';
-import { useTokenListStore } from '#/stores';
-import type { ExtendedTokenRowProps, TokenListProps } from '#/types';
-import { getDefaultTokensForChain } from '#/types/networks';
-import { createLogger, formatAddress } from '#/utils';
-import { useBalance } from '#/wallet';
-import { getEveCoinType, isEveCoinType } from '#/wallet/eveToken';
-import { getKnownTokenDisplay } from '#/wallet/utils/balanceMetadata';
+} from 'react'
+import Button from '#/components/Button'
+import Icon from '#/components/Icon'
+import Text from '#/components/Text'
+import { useToast } from '#/components/Toast'
+import { useContext, useResponsive } from '#/hooks'
+import { useTokenListStore } from '#/stores'
+import type { ExtendedTokenRowProps, TokenListProps } from '#/types'
+import { getDefaultTokensForChain } from '#/types/networks'
+import { createLogger, formatAddress } from '#/utils'
+import { useBalance } from '#/wallet'
+import { getEveCoinType, isEveCoinType } from '#/wallet/eveToken'
+import { getKnownTokenDisplay } from '#/wallet/utils/balanceMetadata'
 import {
   LoadingDots,
   scrambleBalanceWithFixedFirst,
   scrambleLetters,
-} from './refreshScramble';
+} from './refreshScramble'
 
-const SCRAMBLE_INTERVAL_MS = 200;
+const SCRAMBLE_INTERVAL_MS = 200
 
 const TokenRow: React.FC<ExtendedTokenRowProps> = ({
   coinType,
@@ -47,29 +47,29 @@ const TokenRow: React.FC<ExtendedTokenRowProps> = ({
     coinType,
     address: balanceAddress,
     localnetUrl,
-  });
+  })
 
-  const knownDisplay = getKnownTokenDisplay(coinType);
+  const knownDisplay = getKnownTokenDisplay(coinType)
   const tokenName =
     data?.metadata?.name ||
     data?.metadata?.symbol ||
     knownDisplay?.name ||
-    'Token';
-  const shortAddress = `${coinType.slice(0, 6)}•••${coinType.slice(-4)}`;
-  const balance = isLoading ? '...' : (data?.formattedBalance ?? '0');
-  const symbol = data?.metadata?.symbol || knownDisplay?.symbol || '';
+    'Token'
+  const shortAddress = `${coinType.slice(0, 6)}•••${coinType.slice(-4)}`
+  const balance = isLoading ? '...' : (data?.formattedBalance ?? '0')
+  const symbol = data?.metadata?.symbol || knownDisplay?.symbol || ''
 
   // refreshTick is a prop that drives re-scramble each tick; linter doesn't see it as triggering re-render
   // biome-ignore lint/correctness/useExhaustiveDependencies: refreshTick prop drives re-scramble each 200ms
   const displayBalance = useMemo(
     () => (isRefreshing ? scrambleBalanceWithFixedFirst(balance) : balance),
     [isRefreshing, balance, refreshTick],
-  );
+  )
   // biome-ignore lint/correctness/useExhaustiveDependencies: refreshTick prop drives re-scramble each 200ms
   const displaySymbol = useMemo(
     () => (isRefreshing ? scrambleLetters(symbol) : symbol),
     [isRefreshing, symbol, refreshTick],
-  );
+  )
 
   // Container classes - expands when selected
   const containerClasses = [
@@ -78,22 +78,22 @@ const TokenRow: React.FC<ExtendedTokenRowProps> = ({
     isSelected
       ? 'bg-quantum-40 hover:bg-quantum-40'
       : 'bg-transparent hover:bg-quantum-10',
-  ].join(' ');
+  ].join(' ')
 
   const handleTransferClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
+    e.stopPropagation()
     if (onTransfer) {
-      onTransfer();
+      onTransfer()
     }
-  };
+  }
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.target !== e.currentTarget) return;
+    if (e.target !== e.currentTarget) return
     if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      onSelect();
+      e.preventDefault()
+      onSelect()
     }
-  };
+  }
 
   return (
     // biome-ignore lint/a11y/useSemanticElements: This needs to nest another button
@@ -121,8 +121,8 @@ const TokenRow: React.FC<ExtendedTokenRowProps> = ({
               type="button"
               className="flex items-center justify-center w-4 h-4 p-0 bg-transparent border-none cursor-pointer opacity-70 hover:opacity-100 transition-opacity"
               onClick={(e) => {
-                e.stopPropagation();
-                onCopyAddress(coinType);
+                e.stopPropagation()
+                onCopyAddress(coinType)
               }}
             >
               <Icon name="Copy" size="small" color="grey-neutral" />
@@ -150,12 +150,12 @@ const TokenRow: React.FC<ExtendedTokenRowProps> = ({
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
-const REFRESH_TIMEOUT_MS = 10000;
+const REFRESH_TIMEOUT_MS = 10000
 
-const log = createLogger();
+const log = createLogger()
 
 export const TokenSection: React.FC<
   TokenListProps & { walletAddress?: string }
@@ -168,40 +168,40 @@ export const TokenSection: React.FC<
   balanceAddress,
   localnetUrl,
 }) => {
-  const queryClient = useQueryClient();
-  const { tokens, removeToken } = useTokenListStore();
-  const [selectedToken, setSelectedToken] = useState<string | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [refreshTick, setRefreshTick] = useState(0);
+  const queryClient = useQueryClient()
+  const { tokens, removeToken } = useTokenListStore()
+  const [selectedToken, setSelectedToken] = useState<string | null>(null)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [refreshTick, setRefreshTick] = useState(0)
   const scrambleIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
     null,
-  );
-  const { showToast } = useToast();
-  const { isMobile } = useResponsive();
+  )
+  const { showToast } = useToast()
+  const { isMobile } = useResponsive()
 
   useEffect(() => {
     return () => {
       if (scrambleIntervalRef.current != null) {
-        clearInterval(scrambleIntervalRef.current);
+        clearInterval(scrambleIntervalRef.current)
       }
-    };
-  }, []);
+    }
+  }, [])
 
   const handleRefreshBalances = useCallback(async () => {
-    if (isRefreshing) return;
+    if (isRefreshing) return
     if (scrambleIntervalRef.current != null) {
-      clearInterval(scrambleIntervalRef.current);
-      scrambleIntervalRef.current = null;
+      clearInterval(scrambleIntervalRef.current)
+      scrambleIntervalRef.current = null
     }
-    setIsRefreshing(true);
-    setRefreshTick(0);
+    setIsRefreshing(true)
+    setRefreshTick(0)
     scrambleIntervalRef.current = setInterval(() => {
-      setRefreshTick((t) => t + 1);
-    }, SCRAMBLE_INTERVAL_MS);
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+      setRefreshTick((t) => t + 1)
+    }, SCRAMBLE_INTERVAL_MS)
+    let timeoutId: ReturnType<typeof setTimeout> | null = null
     const timeoutPromise = new Promise<void>((resolve) => {
-      timeoutId = setTimeout(resolve, REFRESH_TIMEOUT_MS);
-    });
+      timeoutId = setTimeout(resolve, REFRESH_TIMEOUT_MS)
+    })
     try {
       await Promise.race([
         Promise.all([
@@ -215,56 +215,56 @@ export const TokenSection: React.FC<
           }),
         ]),
         timeoutPromise,
-      ]);
+      ])
     } catch (err) {
-      log.error('Refresh balances failed', err);
-      showToast('Failed to refresh balances');
+      log.error('Refresh balances failed', err)
+      showToast('Failed to refresh balances')
     } finally {
-      if (timeoutId != null) clearTimeout(timeoutId);
+      if (timeoutId != null) clearTimeout(timeoutId)
       if (scrambleIntervalRef.current != null) {
-        clearInterval(scrambleIntervalRef.current);
-        scrambleIntervalRef.current = null;
+        clearInterval(scrambleIntervalRef.current)
+        scrambleIntervalRef.current = null
       }
-      setIsRefreshing(false);
+      setIsRefreshing(false)
     }
-  }, [queryClient, isRefreshing, showToast]);
+  }, [queryClient, isRefreshing, showToast])
 
-  const { tenantId } = useContext();
-  const currentEveCoinType = getEveCoinType(tenantId);
+  const { tenantId } = useContext()
+  const currentEveCoinType = getEveCoinType(tenantId)
   const tokensForChain = useMemo(() => {
-    if (!chain) return [];
-    const stored = tokens[chain] ?? getDefaultTokensForChain(chain, tenantId);
+    if (!chain) return []
+    const stored = tokens[chain] ?? getDefaultTokensForChain(chain, tenantId)
     const mapped = stored.map((t) =>
       isEveCoinType(t) ? currentEveCoinType : t,
-    );
-    return [...new Set(mapped)];
-  }, [chain, tokens, tenantId, currentEveCoinType]);
+    )
+    return [...new Set(mapped)]
+  }, [chain, tokens, tenantId, currentEveCoinType])
 
   const handleCopyAddress = async (address: string) => {
     try {
       if (typeof navigator === 'undefined' || !navigator.clipboard) {
-        throw new Error('Clipboard unavailable');
+        throw new Error('Clipboard unavailable')
       }
-      await navigator.clipboard.writeText(address);
-      showToast('Copied!');
+      await navigator.clipboard.writeText(address)
+      showToast('Copied!')
     } catch (_e) {
-      showToast('Copy failed');
+      showToast('Copy failed')
     }
-  };
+  }
 
   const handleRemoveToken = () => {
     if (selectedToken && chain) {
-      removeToken(chain, selectedToken);
-      setSelectedToken(null);
+      removeToken(chain, selectedToken)
+      setSelectedToken(null)
     }
-  };
+  }
 
   const handleTransfer = (coinType: string) => {
     if (onSendToken) {
-      onSendToken(coinType);
+      onSendToken(coinType)
     }
-  };
-  const hasTokens = tokensForChain.length > 0;
+  }
+  const hasTokens = tokensForChain.length > 0
 
   return (
     <div className="flex flex-col items-start gap-2 w-full flex-1 min-h-0">
@@ -392,9 +392,9 @@ export const TokenSection: React.FC<
         </Button>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export const TokenListSection = TokenSection;
+export const TokenListSection = TokenSection
 
-export default TokenSection;
+export default TokenSection

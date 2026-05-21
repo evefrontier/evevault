@@ -1,4 +1,4 @@
-import type { SVGProps } from 'react';
+import type { SVGProps } from 'react'
 
 const BrowseIcon = ({
   className,
@@ -24,6 +24,6 @@ const BrowseIcon = ({
     <path d="M8 14.5C12.5 12 12.5 4 8 1.5" stroke={color} />
     <path d="M8 14.5C3.5 12 3.5 4 8 1.5" stroke={color} />
   </svg>
-);
+)
 
-export default BrowseIcon;
+export default BrowseIcon

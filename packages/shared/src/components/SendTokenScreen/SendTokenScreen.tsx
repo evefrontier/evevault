@@ -1,31 +1,31 @@
-import type React from 'react';
-import { useEffect, useState } from 'react';
-import Button from '#/components/Button';
-import Heading from '#/components/Heading';
-import { Input } from '#/components/Inputs';
-import Text from '#/components/Text';
-import { useToast } from '#/components/Toast';
-import { useContext } from '#/hooks/useContext';
-import { useDeviceStore } from '#/stores/deviceStore';
-import { getFaucetUrlForChain } from '#/sui';
-import type { SendTokenScreenProps } from '#/types';
-import { formatAddress, getSuiscanUrl } from '#/utils';
-import { useSendToken } from '#/wallet';
+import type React from 'react'
+import { useEffect, useState } from 'react'
+import Button from '#/components/Button'
+import Heading from '#/components/Heading'
+import { Input } from '#/components/Inputs'
+import Text from '#/components/Text'
+import { useToast } from '#/components/Toast'
+import { useContext } from '#/hooks/useContext'
+import { useDeviceStore } from '#/stores/deviceStore'
+import { getFaucetUrlForChain } from '#/sui'
+import type { SendTokenScreenProps } from '#/types'
+import { formatAddress, getSuiscanUrl } from '#/utils'
+import { useSendToken } from '#/wallet'
 
 export const SendTokenScreen: React.FC<SendTokenScreenProps> = ({
   coinType,
   onCancel,
 }) => {
-  const { showToast } = useToast();
-  const { chain: currentChain } = useContext();
+  const { showToast } = useToast()
+  const { chain: currentChain } = useContext()
   const {
     localnet: { url: localnetUrl },
-  } = useDeviceStore();
-  const [recipientAddress, setRecipientAddress] = useState('');
-  const [amount, setAmount] = useState('');
+  } = useDeviceStore()
+  const [recipientAddress, setRecipientAddress] = useState('')
+  const [amount, setAmount] = useState('')
   // Store the submitted values to show on success screen
-  const [submittedRecipient, setSubmittedRecipient] = useState('');
-  const [submittedAmount, setSubmittedAmount] = useState('');
+  const [submittedRecipient, setSubmittedRecipient] = useState('')
+  const [submittedAmount, setSubmittedAmount] = useState('')
 
   const {
     currentBalance,
@@ -47,45 +47,45 @@ export const SendTokenScreen: React.FC<SendTokenScreenProps> = ({
     coinType,
     recipientAddress,
     amount,
-  });
+  })
 
-  const faucetUrl = getFaucetUrlForChain(currentChain);
+  const faucetUrl = getFaucetUrlForChain(currentChain)
 
   const handleRecipientChange = (
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
-    setRecipientAddress(event.target.value.trim());
-  };
+    setRecipientAddress(event.target.value.trim())
+  }
 
   const handleAmountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value;
+    const value = event.target.value
     // Allow only valid number input
     if (value === '' || /^\d*\.?\d*$/.test(value)) {
-      setAmount(value);
+      setAmount(value)
     }
-  };
+  }
 
   const handleSend = async () => {
     // Store the values before sending so we can show them on success screen
-    setSubmittedRecipient(recipientAddress);
-    setSubmittedAmount(amount);
-    await send();
+    setSubmittedRecipient(recipientAddress)
+    setSubmittedAmount(amount)
+    await send()
     // Don't call onSuccess here - let the success screen show first
-  };
+  }
 
   // Show toast when error occurs
   useEffect(() => {
     if (error) {
-      showToast('Transaction failed');
+      showToast('Transaction failed')
     }
-  }, [error, showToast]);
+  }, [error, showToast])
 
   // Show toast when transaction succeeds
   useEffect(() => {
     if (txDigest) {
-      showToast('Transaction confirmed!');
+      showToast('Transaction confirmed!')
     }
-  }, [txDigest, showToast]);
+  }, [txDigest, showToast])
 
   // Show success/confirmation screen
   if (txDigest) {
@@ -93,13 +93,13 @@ export const SendTokenScreen: React.FC<SendTokenScreenProps> = ({
       ? getSuiscanUrl(currentChain, txDigest, {
           localnetUrl: localnetUrl ?? undefined,
         })
-      : null;
+      : null
 
     const handleViewOnSuiscan = () => {
       if (suiscanUrl) {
-        window.open(suiscanUrl, '_blank', 'noopener,noreferrer');
+        window.open(suiscanUrl, '_blank', 'noopener,noreferrer')
       }
-    };
+    }
 
     return (
       <div className="flex flex-col gap-20">
@@ -149,21 +149,21 @@ export const SendTokenScreen: React.FC<SendTokenScreenProps> = ({
           )}
         </div>
       </div>
-    );
+    )
   }
 
   // Derive input errors for display
   const recipientError =
     recipientAddress && !isValidRecipient
       ? 'Invalid Sui address format'
-      : undefined;
+      : undefined
   const amountError =
-    amount && !isValidAmount ? 'Invalid amount or exceeds balance' : undefined;
+    amount && !isValidAmount ? 'Invalid amount or exceeds balance' : undefined
 
   // Filter validation errors for display (exclude input-specific ones)
   const systemErrors = validationErrors.filter(
     (e) => !e.includes('Invalid Sui address') && !e.includes('Invalid amount'),
-  );
+  )
 
   return (
     <div className="flex flex-col gap-10">
@@ -304,5 +304,5 @@ export const SendTokenScreen: React.FC<SendTokenScreenProps> = ({
         </div>
       </div>
     </div>
-  );
-};
+  )
+}

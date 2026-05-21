@@ -1,6 +1,6 @@
-import type { TenantId } from '@evefrontier/dapp-kit/utils';
-import { HeaderMobile, LockScreen, NetworkSelector } from '@evevault/shared';
-import { switchTenantAndReload, useAuth } from '@evevault/shared/auth';
+import type { TenantId } from '@evefrontier/dapp-kit/utils'
+import { HeaderMobile, LockScreen, NetworkSelector } from '@evevault/shared'
+import { switchTenantAndReload, useAuth } from '@evevault/shared/auth'
 import {
   Background,
   Button,
@@ -8,37 +8,33 @@ import {
   TenantSelector,
   Text,
   TokenListSection,
-} from '@evevault/shared/components';
-import Icon from '@evevault/shared/components/Icon';
-import { useContext, useDevice } from '@evevault/shared/hooks';
+} from '@evevault/shared/components'
+import Icon from '@evevault/shared/components/Icon'
+import { useContext, useDevice } from '@evevault/shared/hooks'
 import {
   getCurrentTenantId,
   getTenantLabel,
   useDeviceStore,
-} from '@evevault/shared/stores';
-import { createSuiClient, getFaucetUrlForChain } from '@evevault/shared/sui';
-import {
-  createLogger,
-  getSuiscanUrl,
-  WEB_ROUTES,
-} from '@evevault/shared/utils';
-import { zkSignAny } from '@evevault/shared/wallet';
-import { Transaction } from '@mysten/sui/transactions';
-import { SUI_TESTNET_CHAIN } from '@mysten/wallet-standard';
-import { useQueryClient } from '@tanstack/react-query';
-import { useNavigate } from '@tanstack/react-router';
-import React, { useCallback, useEffect, useState } from 'react';
-import { APP_VERSION } from '@/lib/appVersion';
+} from '@evevault/shared/stores'
+import { createSuiClient, getFaucetUrlForChain } from '@evevault/shared/sui'
+import { createLogger, getSuiscanUrl, WEB_ROUTES } from '@evevault/shared/utils'
+import { zkSignAny } from '@evevault/shared/wallet'
+import { Transaction } from '@mysten/sui/transactions'
+import { SUI_TESTNET_CHAIN } from '@mysten/wallet-standard'
+import { useQueryClient } from '@tanstack/react-query'
+import { useNavigate } from '@tanstack/react-router'
+import React, { useCallback, useEffect, useState } from 'react'
+import { APP_VERSION } from '@/lib/appVersion'
 
-const log = createLogger();
+const log = createLogger()
 
 export const WalletScreen = () => {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [initError, setInitError] = useState<string | null>(null);
-  const [isInitializing, setIsInitializing] = useState(true);
-  const [txDigest, setTxDigest] = useState<string | null>(null);
-  const { devMode, setDevMode } = useContext();
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const [initError, setInitError] = useState<string | null>(null)
+  const [isInitializing, setIsInitializing] = useState(true)
+  const [txDigest, setTxDigest] = useState<string | null>(null)
+  const { devMode, setDevMode } = useContext()
 
   const {
     user,
@@ -46,7 +42,7 @@ export const WalletScreen = () => {
     initialize: initializeAuth,
     error: authError,
     loading: authLoading,
-  } = useAuth();
+  } = useAuth()
   const {
     isLocked,
     isPinSet,
@@ -56,92 +52,92 @@ export const WalletScreen = () => {
     error: deviceError,
     loading: deviceLoading,
     unlock,
-  } = useDevice();
-  const { chain } = useContext();
-  const faucetUrl = getFaucetUrlForChain(chain);
-  const tenantId = getCurrentTenantId();
+  } = useDevice()
+  const { chain } = useContext()
+  const faucetUrl = getFaucetUrlForChain(chain)
+  const tenantId = getCurrentTenantId()
 
   // Create suiClient with useMemo to recreate when chain changes
   const suiClient = React.useMemo(() => {
     // Defined chain so balance/transactions always use the same network; avoids cross-network errors
-    const currentChain = chain || SUI_TESTNET_CHAIN;
-    log.debug('Creating SuiClient for chain', { chain: currentChain });
-    return createSuiClient(currentChain);
-  }, [chain]);
+    const currentChain = chain || SUI_TESTNET_CHAIN
+    log.debug('Creating SuiClient for chain', { chain: currentChain })
+    return createSuiClient(currentChain)
+  }, [chain])
 
-  const { chain: networkState } = useContext();
+  const { chain: networkState } = useContext()
 
   useEffect(() => {
     const initializeStores = async () => {
       try {
-        log.info('Initializing stores');
-        await initializeAuth();
+        log.info('Initializing stores')
+        await initializeAuth()
 
-        log.debug('Network state after init', networkState);
+        log.debug('Network state after init', networkState)
 
         useDeviceStore.subscribe(async (state, prevState) => {
-          log.debug('Device store changed', { state, prevState });
-        });
+          log.debug('Device store changed', { state, prevState })
+        })
 
-        log.info('Stores initialized successfully');
-        setIsInitializing(false);
+        log.info('Stores initialized successfully')
+        setIsInitializing(false)
       } catch (error) {
-        log.error('Error initializing stores', error);
+        log.error('Error initializing stores', error)
         setInitError(
           error instanceof Error ? error.message : 'Failed to initialize',
-        );
-        setIsInitializing(false);
+        )
+        setIsInitializing(false)
       }
-    };
+    }
 
-    initializeStores();
-  }, [initializeAuth, networkState]);
+    initializeStores()
+  }, [initializeAuth, networkState])
 
   const handleDevModeToggle = useCallback(() => {
-    setDevMode(!devMode);
-  }, [devMode, setDevMode]);
+    setDevMode(!devMode)
+  }, [devMode, setDevMode])
 
   const handleLogin = async () => {
     try {
-      await login();
-      log.info('Login successful');
+      await login()
+      log.info('Login successful')
     } catch (err) {
-      log.error('Login error', err);
+      log.error('Login error', err)
     }
-  };
+  }
 
   const handleSignAndSubmitTx = useCallback(async () => {
-    if (!user || !maxEpoch) return;
+    if (!user || !maxEpoch) return
     if (!ephemeralPublicKey) {
-      throw new Error('[Wallet Screen] Ephemeral public key not found');
+      throw new Error('[Wallet Screen] Ephemeral public key not found')
     }
-    const tx = new Transaction();
-    tx.setSender(user.profile?.sui_address as string);
-    const txb = await tx.build({ client: suiClient });
+    const tx = new Transaction()
+    tx.setSender(user.profile?.sui_address as string)
+    const txb = await tx.build({ client: suiClient })
     const { bytes, zkSignature } = await zkSignAny('TransactionData', txb, {
       user,
       getZkProof,
-    });
-    log.debug('zkSignature ready', { length: zkSignature.length });
-    log.debug('Transaction block bytes ready', { length: bytes.length });
+    })
+    log.debug('zkSignature ready', { length: zkSignature.length })
+    log.debug('Transaction block bytes ready', { length: bytes.length })
     const result = await suiClient.core.executeTransaction({
       transaction: new Uint8Array(txb),
       signatures: [zkSignature],
-    });
+    })
     // @mysten/sui 2.x: discriminated union Transaction | FailedTransaction
     if ('$kind' in result && result.$kind === 'FailedTransaction') {
-      log.error('Transaction execution failed', { result });
-      setTxDigest(null);
-      return;
+      log.error('Transaction execution failed', { result })
+      setTxDigest(null)
+      return
     }
-    const digest = result.Transaction?.digest ?? null;
-    log.info('Transaction executed', { digest });
-    setTxDigest(digest);
+    const digest = result.Transaction?.digest ?? null
+    log.info('Transaction executed', { digest })
+    setTxDigest(digest)
     void Promise.all([
       queryClient.refetchQueries({ queryKey: ['coin-balance'] }),
       queryClient.refetchQueries({ queryKey: ['transactions'] }),
-    ]);
-  }, [user, maxEpoch, ephemeralPublicKey, getZkProof, suiClient, queryClient]);
+    ])
+  }, [user, maxEpoch, ephemeralPublicKey, getZkProof, suiClient, queryClient])
 
   // Show loading state while initializing
   if (isInitializing || authLoading || deviceLoading) {
@@ -156,7 +152,7 @@ export const WalletScreen = () => {
           <Text>Loading...</Text>
         </main>
       </Background>
-    );
+    )
   }
 
   if (initError) {
@@ -172,7 +168,7 @@ export const WalletScreen = () => {
           <Button onClick={() => window.location.reload()}>Reload</Button>
         </main>
       </Background>
-    );
+    )
   }
 
   // First, check for unencrypted ephemeral key pair
@@ -182,10 +178,10 @@ export const WalletScreen = () => {
         isPinSet={isPinSet}
         unlock={unlock}
         onResetComplete={() => {
-          window.location.href = '/';
+          window.location.href = '/'
         }}
       />
-    );
+    )
   }
 
   if (!user) {
@@ -201,7 +197,7 @@ export const WalletScreen = () => {
         </main>
         <TenantSelector currentTenantId={tenantId} viewOnly={true} />
       </Background>
-    );
+    )
   }
 
   return (
@@ -246,7 +242,7 @@ export const WalletScreen = () => {
               log.info('Network switch started', {
                 previousNetwork,
                 targetNetwork,
-              });
+              })
             }}
           />
           <div className="dropdown-selector--inline">
@@ -282,5 +278,5 @@ export const WalletScreen = () => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}

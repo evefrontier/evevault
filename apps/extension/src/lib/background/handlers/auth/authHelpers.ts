@@ -1,34 +1,34 @@
-import { useContextStore } from '@evevault/shared/stores';
-import type { AuthSuccessToken, JwtResponse } from '@evevault/shared/types';
+import { useContextStore } from '@evevault/shared/stores'
+import type { AuthSuccessToken, JwtResponse } from '@evevault/shared/types'
 import {
   CONTEXT_STORAGE_KEY,
   createLogger,
   type Logger,
-} from '@evevault/shared/utils';
-import type { SuiChain } from '@mysten/wallet-standard';
-import { decodeJwt } from 'jose';
-import type { IdTokenClaims } from 'oidc-client-ts';
-import type { MessageWithId } from '@/lib/background/types';
+} from '@evevault/shared/utils'
+import type { SuiChain } from '@mysten/wallet-standard'
+import { decodeJwt } from 'jose'
+import type { IdTokenClaims } from 'oidc-client-ts'
+import type { MessageWithId } from '@/lib/background/types'
 
-const log = createLogger();
+const log = createLogger()
 
 export function buildAuthSuccessToken(jwt: JwtResponse): AuthSuccessToken {
   return {
     ...jwt,
     email: extractEmailFromJwt(jwt),
     userId: extractUserIdFromJwt(jwt),
-  };
+  }
 }
 
 export function ensureMessageId(message: MessageWithId): string {
   if (!message.id) {
-    throw new Error('Message id is required');
+    throw new Error('Message id is required')
   }
-  return message.id;
+  return message.id
 }
 
 export function getCurrentChain(): SuiChain {
-  return useContextStore.getState().chain;
+  return useContextStore.getState().chain
 }
 
 /**
@@ -40,37 +40,37 @@ export async function getCurrentChainFromStorage(): Promise<SuiChain> {
   return new Promise((resolve) => {
     chrome.storage.local.get([CONTEXT_STORAGE_KEY], (result) => {
       try {
-        const stored = result[CONTEXT_STORAGE_KEY];
+        const stored = result[CONTEXT_STORAGE_KEY]
         if (stored) {
           const parsed =
-            typeof stored === 'string' ? JSON.parse(stored) : stored;
+            typeof stored === 'string' ? JSON.parse(stored) : stored
           if (parsed?.state?.chain) {
             log.debug('Read chain from storage', {
               chain: parsed.state.chain,
-            });
-            resolve(parsed.state.chain);
-            return;
+            })
+            resolve(parsed.state.chain)
+            return
           }
         }
       } catch (error) {
-        log.error('Error reading chain from storage', error);
+        log.error('Error reading chain from storage', error)
       }
-      const fallbackChain = getCurrentChain();
+      const fallbackChain = getCurrentChain()
       log.debug('Using fallback chain from Zustand', {
         chain: fallbackChain,
-      });
-      resolve(fallbackChain);
-    });
-  });
+      })
+      resolve(fallbackChain)
+    })
+  })
 }
 
 export function extractAuthCode(responseUrl: string): string | null {
-  return new URL(responseUrl).searchParams.get('code');
+  return new URL(responseUrl).searchParams.get('code')
 }
 
 export function sendAuthSuccess(id: string, jwt: JwtResponse): void {
-  const token = buildAuthSuccessToken(jwt);
-  chrome.runtime.sendMessage({ id, type: 'auth_success', token });
+  const token = buildAuthSuccessToken(jwt)
+  chrome.runtime.sendMessage({ id, type: 'auth_success', token })
 }
 
 export function sendAuthSuccessToTab(
@@ -79,14 +79,14 @@ export function sendAuthSuccessToTab(
   token: AuthSuccessToken,
   opts: { chain: SuiChain; address?: string; logger?: Logger },
 ): void {
-  const { chain, address, logger } = opts;
-  const logErr = logger ?? log;
+  const { chain, address, logger } = opts
+  const logErr = logger ?? log
   for (const id of ids) {
     chrome.tabs
       .sendMessage(tabId, { id, type: 'auth_success', token, chain, address })
       .catch((err) => {
-        logErr.error('Failed to send auth_success to tab', { tabId, id, err });
-      });
+        logErr.error('Failed to send auth_success to tab', { tabId, id, err })
+      })
   }
 }
 
@@ -95,15 +95,15 @@ export function sendAuthError(id: string, error: unknown): void {
     id,
     type: 'auth_error',
     error,
-  });
+  })
 }
 
 export function extractEmailFromJwt(jwt: JwtResponse): string {
-  const decoded = decodeJwt<IdTokenClaims>(jwt.id_token as string);
-  return decoded.email as string;
+  const decoded = decodeJwt<IdTokenClaims>(jwt.id_token as string)
+  return decoded.email as string
 }
 
 export function extractUserIdFromJwt(jwt: JwtResponse): string {
-  const decoded = decodeJwt<IdTokenClaims>(jwt.id_token as string);
-  return decoded.sub as string;
+  const decoded = decodeJwt<IdTokenClaims>(jwt.id_token as string)
+  return decoded.sub as string
 }

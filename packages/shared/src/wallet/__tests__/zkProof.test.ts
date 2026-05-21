@@ -1,14 +1,14 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { ZkProofResponse } from '#/types/enoki';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { ZkProofResponse } from '#/types/enoki'
 
 const { mockGetExtendedEphemeralPublicKey } = vi.hoisted(() => ({
   mockGetExtendedEphemeralPublicKey: vi.fn(),
-}));
+}))
 
 vi.mock('@mysten/sui/zklogin', () => ({
   getExtendedEphemeralPublicKey: (...args: unknown[]) =>
     mockGetExtendedEphemeralPublicKey(...args),
-}));
+}))
 
 vi.mock('#/utils/logger', () => ({
   createLogger: () => ({
@@ -17,12 +17,12 @@ vi.mock('#/utils/logger', () => ({
     warn: vi.fn(),
     error: vi.fn(),
   }),
-}));
+}))
 
-import { makeJwt } from '#/testing';
-import { fetchZkProof } from '#/wallet/zkProof';
+import { makeJwt } from '#/testing'
+import { fetchZkProof } from '#/wallet/zkProof'
 
-const headerBase64 = makeJwt({}).split('.')[0];
+const headerBase64 = makeJwt({}).split('.')[0]
 
 describe('fetchZkProof', () => {
   const proofResponse: ZkProofResponse = {
@@ -40,23 +40,23 @@ describe('fetchZkProof', () => {
       addressSeed: '12345678',
     },
     error: undefined,
-  };
+  }
 
   beforeEach(() => {
-    vi.clearAllMocks();
-    mockGetExtendedEphemeralPublicKey.mockReturnValue('extended-public-key');
-  });
+    vi.clearAllMocks()
+    mockGetExtendedEphemeralPublicKey.mockReturnValue('extended-public-key')
+  })
 
   afterEach(() => {
-    vi.unstubAllGlobals();
-  });
+    vi.unstubAllGlobals()
+  })
 
   it('posts a proof request to Enoki with the expected headers and body', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: vi.fn().mockResolvedValue(proofResponse),
-    });
-    vi.stubGlobal('fetch', fetchMock);
+    })
+    vi.stubGlobal('fetch', fetchMock)
 
     await expect(
       fetchZkProof({
@@ -67,11 +67,11 @@ describe('fetchZkProof', () => {
         enokiApiKey: 'enoki-api-key',
         network: 'testnet',
       }),
-    ).resolves.toBe(proofResponse);
+    ).resolves.toBe(proofResponse)
 
     expect(mockGetExtendedEphemeralPublicKey).toHaveBeenCalledWith(
       'ephemeral-public-key',
-    );
+    )
     expect(fetchMock).toHaveBeenCalledWith(
       'https://api.enoki.mystenlabs.com/v1/zklogin/zkp',
       {
@@ -88,15 +88,15 @@ describe('fetchZkProof', () => {
           randomness: 'randomness',
         }),
       },
-    );
-  });
+    )
+  })
 
   it('defaults network to devnet when omitted', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: vi.fn().mockResolvedValue(proofResponse),
-    });
-    vi.stubGlobal('fetch', fetchMock);
+    })
+    vi.stubGlobal('fetch', fetchMock)
 
     await fetchZkProof({
       jwtRandomness: 'randomness',
@@ -104,13 +104,13 @@ describe('fetchZkProof', () => {
       ephemeralPublicKey: 'ephemeral-public-key' as never,
       idToken: 'id-token',
       enokiApiKey: 'enoki-api-key',
-    });
+    })
 
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toMatchObject({
       network: 'devnet',
       maxEpoch: 9,
-    });
-  });
+    })
+  })
 
   it('passes the network param to the API and returns the corresponding response', async () => {
     const proofsByNetwork: Record<string, ZkProofResponse> = {
@@ -132,18 +132,18 @@ describe('fetchZkProof', () => {
         },
         error: undefined,
       },
-    };
+    }
 
     const fetchMock = vi
       .fn()
       .mockImplementation((_url: string, init: RequestInit) => {
-        const { network } = JSON.parse(init.body as string);
+        const { network } = JSON.parse(init.body as string)
         return Promise.resolve({
           ok: true,
           json: () => Promise.resolve(proofsByNetwork[network]),
-        });
-      });
-    vi.stubGlobal('fetch', fetchMock);
+        })
+      })
+    vi.stubGlobal('fetch', fetchMock)
 
     const baseParams = {
       jwtRandomness: 'randomness',
@@ -151,20 +151,20 @@ describe('fetchZkProof', () => {
       ephemeralPublicKey: 'ephemeral-public-key' as never,
       idToken: 'id-token',
       enokiApiKey: 'enoki-api-key',
-    };
+    }
 
     const testnetResult = await fetchZkProof({
       ...baseParams,
       network: 'testnet',
-    });
+    })
     const mainnetResult = await fetchZkProof({
       ...baseParams,
       network: 'mainnet',
-    });
+    })
 
-    expect(testnetResult).toBe(proofsByNetwork.testnet);
-    expect(mainnetResult).toBe(proofsByNetwork.mainnet);
-  });
+    expect(testnetResult).toBe(proofsByNetwork.testnet)
+    expect(mainnetResult).toBe(proofsByNetwork.mainnet)
+  })
 
   it('throws when Enoki returns a non-OK response with a JSON body', async () => {
     vi.stubGlobal(
@@ -175,7 +175,7 @@ describe('fetchZkProof', () => {
         statusText: 'Bad Request',
         json: vi.fn().mockResolvedValue({ message: 'bad request' }),
       }),
-    );
+    )
 
     await expect(
       fetchZkProof({
@@ -185,8 +185,8 @@ describe('fetchZkProof', () => {
         idToken: 'id-token',
         enokiApiKey: 'enoki-api-key',
       }),
-    ).rejects.toThrow('Failed to fetch ZK proof');
-  });
+    ).rejects.toThrow('Failed to fetch ZK proof')
+  })
 
   it('throws when Enoki returns a non-OK response with a non-JSON body', async () => {
     vi.stubGlobal(
@@ -203,7 +203,7 @@ describe('fetchZkProof', () => {
             ),
           ),
       }),
-    );
+    )
 
     await expect(
       fetchZkProof({
@@ -213,14 +213,14 @@ describe('fetchZkProof', () => {
         idToken: 'id-token',
         enokiApiKey: 'enoki-api-key',
       }),
-    ).rejects.toThrow('Failed to fetch ZK proof');
-  });
+    ).rejects.toThrow('Failed to fetch ZK proof')
+  })
 
   it('re-throws when fetch itself rejects with a network error', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockRejectedValue(new Error('Network failure')),
-    );
+    )
 
     await expect(
       fetchZkProof({
@@ -230,6 +230,6 @@ describe('fetchZkProof', () => {
         idToken: 'id-token',
         enokiApiKey: 'enoki-api-key',
       }),
-    ).rejects.toThrow('Network failure');
-  });
-});
+    ).rejects.toThrow('Network failure')
+  })
+})

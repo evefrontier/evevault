@@ -1,8 +1,8 @@
-import { SUI_TESTNET_CHAIN } from '@mysten/wallet-standard';
-import type { Mock } from 'vitest';
-import { vi } from 'vitest';
-import { makeJwt } from '#/testing';
-import type { OAuthTokenResponse } from '#/types/authTypes';
+import { SUI_TESTNET_CHAIN } from '@mysten/wallet-standard'
+import type { Mock } from 'vitest'
+import { vi } from 'vitest'
+import { makeJwt } from '#/testing'
+import type { OAuthTokenResponse } from '#/types/authTypes'
 
 /**
  * All mock handles shared across authStore test files.
@@ -28,28 +28,28 @@ import type { OAuthTokenResponse } from '#/types/authTypes';
  * ```
  */
 export type AuthStoreMockHandles = {
-  mockIsExtension: Mock;
-  mockDecodeJwt: Mock;
-  mockGetUser: Mock;
-  mockStoreUser: Mock;
-  mockRemoveUser: Mock;
-  mockSigninRedirect: Mock;
-  mockSigninSilent: Mock;
-  mockGetJwt: Mock;
-  mockClearAllJwts: Mock;
-  mockEnrichUser: Mock;
-  mockSyncPrimaryJwt: Mock;
-  mockUserToJwtResponse: Mock;
-  mockResolveExpiresAt: Mock;
-  mockClearZkLoginAddressCache: Mock;
-  mockParseOAuthTokenResponse: Mock;
-  mockZkProofClear: Mock;
-  mockInitializeForChain: Mock;
-  mockDeviceLock: Mock;
-  mockGetCurrentTenantId: Mock;
-  mockSetCurrentTenantId: Mock;
-  mockPerformFullCleanup: Mock;
-};
+  mockIsExtension: Mock
+  mockDecodeJwt: Mock
+  mockGetUser: Mock
+  mockStoreUser: Mock
+  mockRemoveUser: Mock
+  mockSigninRedirect: Mock
+  mockSigninSilent: Mock
+  mockGetJwt: Mock
+  mockClearAllJwts: Mock
+  mockEnrichUser: Mock
+  mockSyncPrimaryJwt: Mock
+  mockUserToJwtResponse: Mock
+  mockResolveExpiresAt: Mock
+  mockClearZkLoginAddressCache: Mock
+  mockParseOAuthTokenResponse: Mock
+  mockZkProofClear: Mock
+  mockInitializeForChain: Mock
+  mockDeviceLock: Mock
+  mockGetCurrentTenantId: Mock
+  mockSetCurrentTenantId: Mock
+  mockPerformFullCleanup: Mock
+}
 
 // ─── vi.mock() factory functions ──────────────────────────────────────────
 // Each returns the mock module object. Use as:
@@ -66,14 +66,14 @@ export function makeAuthConfigMock(h: AuthStoreMockHandles) {
       signinSilent: (...args: unknown[]) => h.mockSigninSilent(...args),
     })),
     redirectToFusionAuthLogout: vi.fn(),
-  };
+  }
 }
 
 export function makeStorageServiceMock(h: AuthStoreMockHandles) {
   return {
     clearAllJwts: (...args: unknown[]) => h.mockClearAllJwts(...args),
     getJwt: (...args: unknown[]) => h.mockGetJwt(...args),
-  };
+  }
 }
 
 export function makeUserJwtSyncMock(h: AuthStoreMockHandles) {
@@ -82,22 +82,22 @@ export function makeUserJwtSyncMock(h: AuthStoreMockHandles) {
       h.mockEnrichUser(...args),
     syncPrimaryJwtFromUser: (...args: unknown[]) =>
       h.mockSyncPrimaryJwt(...args),
-  };
+  }
 }
 
 export function makeUserToJwtResponseMock(h: AuthStoreMockHandles) {
   return {
     userToJwtResponse: (...args: unknown[]) => h.mockUserToJwtResponse(...args),
-  };
+  }
 }
 
 export function makeAuthStoreUtilsMock(h: AuthStoreMockHandles) {
   return {
     resolveExpiresAt: (...args: unknown[]) => h.mockResolveExpiresAt(...args),
-  };
+  }
 }
 
-export type GetZkLoginAddressMockOptions = { includeGetZkLogin?: boolean };
+export type GetZkLoginAddressMockOptions = { includeGetZkLogin?: boolean }
 
 export function makeGetZkLoginAddressMock(
   h: AuthStoreMockHandles,
@@ -107,17 +107,17 @@ export function makeGetZkLoginAddressMock(
     clearZkLoginAddressCache: (...args: unknown[]) =>
       h.mockClearZkLoginAddressCache(...args),
     ...(opts.includeGetZkLogin && { getZkLoginAddress: vi.fn() }),
-  };
+  }
 }
 
 export function makeOAuthTokenResponseMock(h: AuthStoreMockHandles) {
   return {
     parseOAuthTokenResponse: (...args: unknown[]) =>
       h.mockParseOAuthTokenResponse(...args),
-  };
+  }
 }
 
-export type VaultServiceMockOptions = { includeEphKey?: boolean };
+export type VaultServiceMockOptions = { includeEphKey?: boolean }
 
 export function makeVaultServiceMock(
   h: AuthStoreMockHandles,
@@ -130,10 +130,10 @@ export function makeVaultServiceMock(
     ...(opts.includeEphKey && {
       ephKeyService: { lock: vi.fn().mockResolvedValue(undefined) },
     }),
-  };
+  }
 }
 
-export type StoresMockOptions = { withInitializeForChain?: boolean };
+export type StoresMockOptions = { withInitializeForChain?: boolean }
 
 export function makeStoresMock(
   h: AuthStoreMockHandles,
@@ -153,7 +153,7 @@ export function makeStoresMock(
         lock: (...args: unknown[]) => h.mockDeviceLock(...args),
       })),
     },
-  };
+  }
 }
 
 export function makeTenantStoreMock(h: AuthStoreMockHandles) {
@@ -162,7 +162,7 @@ export function makeTenantStoreMock(h: AuthStoreMockHandles) {
     OAuthTenantSessionKey: 'evevault_oauth_tenant',
     setCurrentTenantId: (...args: unknown[]) =>
       h.mockSetCurrentTenantId(...args),
-  };
+  }
 }
 
 /** Mocks `#/utils` barrel — isExtension, isWeb, isBrowser, createLogger, performFullCleanup. */
@@ -179,7 +179,7 @@ export function makeUtilsMock(h: AuthStoreMockHandles) {
     isWeb: () => !h.mockIsExtension(),
     performFullCleanup: (...args: unknown[]) =>
       h.mockPerformFullCleanup(...args),
-  };
+  }
 }
 
 /** Mocks `#/utils/environment` sub-module (used by initialize tests). */
@@ -188,7 +188,7 @@ export function makeEnvironmentMock(h: AuthStoreMockHandles) {
     isExtension: () => h.mockIsExtension(),
     isWeb: () => !h.mockIsExtension(),
     isBrowser: () => true,
-  };
+  }
 }
 
 /** Mocks `#/utils/logger` sub-module (used by initialize tests). */
@@ -200,7 +200,7 @@ export function makeLoggerMock() {
       warn: vi.fn(),
       error: vi.fn(),
     }),
-  };
+  }
 }
 
 /** Mocks `#/utils/authCleanup` sub-module (used by initialize tests). */
@@ -208,13 +208,13 @@ export function makeAuthCleanupMock(h: AuthStoreMockHandles) {
   return {
     performFullCleanup: (...args: unknown[]) =>
       h.mockPerformFullCleanup(...args),
-  };
+  }
 }
 
 export function makeJoseMock(h: AuthStoreMockHandles) {
   return {
     decodeJwt: (...args: unknown[]) => h.mockDecodeJwt(...args),
-  };
+  }
 }
 
 export function makeAdaptersMock() {
@@ -229,59 +229,59 @@ export function makeAdaptersMock() {
       setItem: vi.fn().mockResolvedValue(undefined),
       removeItem: vi.fn().mockResolvedValue(undefined),
     },
-  };
+  }
 }
 
 export function makeTenantConfigMock(
   tenantId = 'stillness',
   config: { serverUrl?: string; clientId?: string } = {},
 ) {
-  const { serverUrl = 'http://localhost', clientId = 'test-client' } = config;
+  const { serverUrl = 'http://localhost', clientId = 'test-client' } = config
   return {
     getTenantConfig: vi.fn(() => ({ serverUrl, clientId })),
     DEFAULT_TENANT_ID: tenantId,
-  };
+  }
 }
 
 export type SetupAuthStoreMocksOptions = {
-  isExtension?: boolean;
-  tenantId?: string;
-};
+  isExtension?: boolean
+  tenantId?: string
+}
 
 /** Call in `beforeEach` (after `vi.clearAllMocks()`) to reset all handles to safe defaults. */
 export function setupAuthStoreMocks(
   h: AuthStoreMockHandles,
   options: SetupAuthStoreMocksOptions = {},
 ) {
-  const { isExtension = false, tenantId = 'stillness' } = options;
-  h.mockIsExtension.mockReturnValue(isExtension);
-  h.mockGetCurrentTenantId.mockReturnValue(tenantId);
-  h.mockGetJwt.mockResolvedValue(null);
-  h.mockClearAllJwts.mockResolvedValue(undefined);
-  h.mockEnrichUser.mockImplementation(async (user: unknown) => user);
-  h.mockSyncPrimaryJwt.mockResolvedValue(undefined);
-  h.mockStoreUser.mockResolvedValue(undefined);
-  h.mockRemoveUser.mockResolvedValue(undefined);
-  h.mockSigninRedirect.mockResolvedValue(undefined);
-  h.mockSigninSilent.mockResolvedValue(undefined);
-  h.mockInitializeForChain.mockResolvedValue(undefined);
-  h.mockDeviceLock.mockResolvedValue(undefined);
-  h.mockClearZkLoginAddressCache.mockResolvedValue(undefined);
-  h.mockZkProofClear.mockResolvedValue(undefined);
-  h.mockPerformFullCleanup.mockResolvedValue(undefined);
-  h.mockSetCurrentTenantId.mockResolvedValue(undefined);
+  const { isExtension = false, tenantId = 'stillness' } = options
+  h.mockIsExtension.mockReturnValue(isExtension)
+  h.mockGetCurrentTenantId.mockReturnValue(tenantId)
+  h.mockGetJwt.mockResolvedValue(null)
+  h.mockClearAllJwts.mockResolvedValue(undefined)
+  h.mockEnrichUser.mockImplementation(async (user: unknown) => user)
+  h.mockSyncPrimaryJwt.mockResolvedValue(undefined)
+  h.mockStoreUser.mockResolvedValue(undefined)
+  h.mockRemoveUser.mockResolvedValue(undefined)
+  h.mockSigninRedirect.mockResolvedValue(undefined)
+  h.mockSigninSilent.mockResolvedValue(undefined)
+  h.mockInitializeForChain.mockResolvedValue(undefined)
+  h.mockDeviceLock.mockResolvedValue(undefined)
+  h.mockClearZkLoginAddressCache.mockResolvedValue(undefined)
+  h.mockZkProofClear.mockResolvedValue(undefined)
+  h.mockPerformFullCleanup.mockResolvedValue(undefined)
+  h.mockSetCurrentTenantId.mockResolvedValue(undefined)
   h.mockDecodeJwt.mockReturnValue({
     sub: 'user-1',
     iat: 1000,
     exp: Math.floor(Date.now() / 1000) + 3600,
-  });
+  })
 }
 
 export const MOCK_ID_TOKEN_CLAIMS = {
   sub: 'user-1',
   iat: 1000,
   exp: 4600,
-} as const;
+} as const
 
 export function makeTokenResponse(): OAuthTokenResponse {
   return {
@@ -292,5 +292,5 @@ export function makeTokenResponse(): OAuthTokenResponse {
     refresh_token: 'refresh-token',
     expires_in: 3600,
     expires_at: 4600,
-  };
+  }
 }

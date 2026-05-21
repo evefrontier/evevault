@@ -1,12 +1,12 @@
-import { existsSync, readFileSync } from 'node:fs';
-import path from 'node:path';
-import { env } from 'node:process';
-import tailwindcss from '@tailwindcss/vite';
-import { tanstackRouter } from '@tanstack/router-plugin/vite';
-import { loadEnv } from 'vite';
-import tsconfigPaths from 'vite-tsconfig-paths';
-import { defineConfig } from 'wxt';
-import { appVersionPlugin } from '../../tools/vite-app-version-plugin';
+import { existsSync, readFileSync } from 'node:fs'
+import path from 'node:path'
+import { env } from 'node:process'
+import tailwindcss from '@tailwindcss/vite'
+import { tanstackRouter } from '@tanstack/router-plugin/vite'
+import { loadEnv } from 'vite'
+import tsconfigPaths from 'vite-tsconfig-paths'
+import { defineConfig } from 'wxt'
+import { appVersionPlugin } from '../../tools/vite-app-version-plugin'
 
 /**
  * Simple logger for this config file only.
@@ -17,48 +17,48 @@ const logger = {
   info: (msg: string, data?: object) =>
     console.log(`[wxt-config] ${msg}`, data ? JSON.stringify(data) : ''),
   warn: (msg: string) => console.warn(`[wxt-config] ${msg}`),
-};
+}
 
 // See https://wxt.dev/api/config.html
 // @ts-expect-error - WXT UserConfig types may not include custom vite plugins
 export default defineConfig(() => {
   // Load env from root directory (monorepo root)
   // When running from apps/extension, __dirname is apps/extension, so go up 2 levels
-  const rootDir = path.resolve(__dirname, '../..');
+  const rootDir = path.resolve(__dirname, '../..')
   // Version comes from extension package.json (updated by Changesets fixed group).
   const extPkg = JSON.parse(
     readFileSync(path.join(__dirname, 'package.json'), 'utf-8'),
-  ) as { version?: string };
-  const version = extPkg.version ?? '0.0.0';
-  const envVars = loadEnv(env?.mode || 'development', rootDir, '');
+  ) as { version?: string }
+  const version = extPkg.version ?? '0.0.0'
+  const envVars = loadEnv(env?.mode || 'development', rootDir, '')
 
   // Debug: Log to verify env loading (remove in production)
   if (process.env.NODE_ENV !== 'production') {
     logger.info('Env vars loaded', {
       hasFusion: !!envVars.VITE_TENANT_UTOPIA_CLIENT_SECRET,
       rootDir,
-    });
+    })
   }
 
   // Determine Chrome path based on OS and set environment variable for chrome-launcher
   // First check if user has set CHROME_PATH environment variable
-  let chromePath: string | undefined = process.env.CHROME_PATH;
+  let chromePath: string | undefined = process.env.CHROME_PATH
 
   if (!chromePath) {
     if (process.platform === 'win32') {
-      chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+      chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
     } else if (process.platform === 'darwin') {
       // macOS Chrome paths (check multiple common locations)
       const macChromePaths = [
         '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
         '/Applications/Google Chrome Dev.app/Contents/MacOS/Google Chrome Dev',
         '/Applications/Chromium.app/Contents/MacOS/Chromium',
-      ];
+      ]
 
       for (const path of macChromePaths) {
         if (existsSync(path)) {
-          chromePath = path;
-          break;
+          chromePath = path
+          break
         }
       }
     }
@@ -66,21 +66,21 @@ export default defineConfig(() => {
 
   // Set environment variable that chrome-launcher will pick up
   if (chromePath && !process.env.CHROME_PATH) {
-    process.env.CHROME_PATH = chromePath;
+    process.env.CHROME_PATH = chromePath
   }
 
   // Log Chrome detection status in development
   if (process.env.NODE_ENV !== 'production') {
     if (chromePath) {
-      logger.info('Chrome found', { chromePath });
+      logger.info('Chrome found', { chromePath })
     } else {
       logger.warn(
         '⚠️  Chrome not found. Extension will be built but not auto-launched.',
-      );
-      logger.warn('   You can manually load it from: .output/chrome-mv3-dev');
+      )
+      logger.warn('   You can manually load it from: .output/chrome-mv3-dev')
       logger.warn(
         '   Or set CHROME_PATH environment variable to your Chrome executable path.',
-      );
+      )
     }
   }
 
@@ -147,5 +147,5 @@ export default defineConfig(() => {
           "script-src 'self'; object-src 'self'; img-src 'self' data: http://localhost:3000",
       },
     },
-  };
-});
+  }
+})

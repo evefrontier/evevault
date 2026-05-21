@@ -1,4 +1,4 @@
-import { useContextStore } from '#/stores/contextStore';
+import { useContextStore } from '#/stores/contextStore'
 
 export const useContext = () => {
   const {
@@ -10,7 +10,7 @@ export const useContext = () => {
     checkNetworkSwitch,
     forceSetChain,
     setChain,
-  } = useContextStore();
+  } = useContextStore()
 
   return {
     tenantId,
@@ -21,5 +21,5 @@ export const useContext = () => {
     checkNetworkSwitch,
     forceSetChain,
     setChain,
-  };
-};
+  }
+}

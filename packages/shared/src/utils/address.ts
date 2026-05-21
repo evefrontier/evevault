@@ -16,13 +16,13 @@ export function formatAddress(
   suffixLength: number = 6,
 ): string {
   if (!address || address.length <= prefixLength + suffixLength) {
-    return address;
+    return address
   }
 
-  const prefix = address.slice(0, prefixLength);
-  const suffix = address.slice(-suffixLength);
+  const prefix = address.slice(0, prefixLength)
+  const suffix = address.slice(-suffixLength)
 
-  return `${prefix}•••${suffix}`;
+  return `${prefix}•••${suffix}`
 }
 
 /**
@@ -34,19 +34,19 @@ export function formatAddress(
  * @example
  * await copyToClipboard("0x1234567890abcdef")
  */
-import { createLogger } from './logger';
+import { createLogger } from './logger'
 
-const log = createLogger();
+const log = createLogger()
 
 export async function copyToClipboard(text: string): Promise<boolean> {
   try {
     if (typeof navigator === 'undefined' || !navigator.clipboard) {
-      throw new Error('Clipboard API not available');
+      throw new Error('Clipboard API not available')
     }
-    await navigator.clipboard.writeText(text);
-    return true;
+    await navigator.clipboard.writeText(text)
+    return true
   } catch (error) {
-    log.error('Failed to copy to clipboard', error);
-    return false;
+    log.error('Failed to copy to clipboard', error)
+    return false
   }
 }

@@ -1,4 +1,4 @@
-import type { SVGProps } from 'react';
+import type { SVGProps } from 'react'
 
 const ArrowLeftIcon = ({
   className,
@@ -21,6 +21,6 @@ const ArrowLeftIcon = ({
       fill={color}
     />
   </svg>
-);
+)
 
-export default ArrowLeftIcon;
+export default ArrowLeftIcon

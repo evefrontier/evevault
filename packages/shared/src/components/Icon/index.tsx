@@ -1,12 +1,12 @@
 // Icon/index.tsx
 
-import type { FC, SVGProps } from 'react';
+import type { FC, SVGProps } from 'react'
 import type {
   BaseIconProps,
   IconComponent,
   IconName,
   IconWithoutNameProps,
-} from '#/types';
+} from '#/types'
 import {
   Add,
   ArrowDown,
@@ -39,7 +39,7 @@ import {
   Refresh,
   Settings,
   Tokens,
-} from './Icons';
+} from './Icons'
 
 const iconMap: Record<IconName, FC<SVGProps<SVGSVGElement>>> = {
   Add,
@@ -73,24 +73,24 @@ const iconMap: Record<IconName, FC<SVGProps<SVGSVGElement>>> = {
   Settings,
   Network,
   Tokens,
-};
+}
 const resolveColor = (c?: string) => {
-  if (!c) return undefined;
-  if (c === 'currentColor') return c;
-  const trimmed = c.trim();
+  if (!c) return undefined
+  if (c === 'currentColor') return c
+  const trimmed = c.trim()
   if (
     trimmed.startsWith('var(') ||
     trimmed.startsWith('#') ||
     trimmed.startsWith('rgb') ||
     trimmed.startsWith('hsl')
   ) {
-    return trimmed;
+    return trimmed
   }
   // allow passing raw CSS var name like "--grey-neutral"
-  if (trimmed.startsWith('--')) return `var(${trimmed})`;
+  if (trimmed.startsWith('--')) return `var(${trimmed})`
   // treat as theme token, e.g. "neutral" => var(--neutral)
-  return `var(--${trimmed})`;
-};
+  return `var(--${trimmed})`
+}
 
 const BaseIcon: FC<BaseIconProps> = ({
   name,
@@ -100,10 +100,10 @@ const BaseIcon: FC<BaseIconProps> = ({
   height,
   ...rest
 }) => {
-  const Svg = iconMap[name];
-  if (!Svg) return null;
+  const Svg = iconMap[name]
+  if (!Svg) return null
   const iconSize =
-    size === 'small' ? '1rem' : size === 'medium' ? '1.5rem' : '2rem';
+    size === 'small' ? '1rem' : size === 'medium' ? '1.5rem' : '2rem'
   return (
     <Svg
       width={width ?? iconSize}
@@ -111,16 +111,16 @@ const BaseIcon: FC<BaseIconProps> = ({
       color={resolveColor(color)}
       {...rest}
     />
-  );
-};
+  )
+}
 
-const Icon = BaseIcon as IconComponent;
+const Icon = BaseIcon as IconComponent
 
 // Attach static components, e.g. Icon.Folder = (props) => <BaseIcon name="Folder" {...props} />
-(Object.keys(iconMap) as IconName[]).forEach((name) => {
+;(Object.keys(iconMap) as IconName[]).forEach((name) => {
   Icon[name] = (props: IconWithoutNameProps) => (
     <BaseIcon {...props} name={name} />
-  );
-});
+  )
+})
 
-export default Icon;
+export default Icon

@@ -1,32 +1,32 @@
-import { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519';
-import { SUI_DEVNET_CHAIN } from '@mysten/wallet-standard';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createProofActions } from '#/stores/deviceStore/actions/proofActions';
+import { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519'
+import { SUI_DEVNET_CHAIN } from '@mysten/wallet-standard'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createProofActions } from '#/stores/deviceStore/actions/proofActions'
 import type {
   GetDeviceState,
   SetDeviceState,
-} from '#/stores/deviceStore/actions/types';
-import type { DeviceState } from '#/types';
-import { isZkLoginSuiChain } from '#/types/networks';
+} from '#/stores/deviceStore/actions/types'
+import type { DeviceState } from '#/types'
+import { isZkLoginSuiChain } from '#/types/networks'
 
-const mockAuthGetState = vi.hoisted(() => vi.fn());
-const hasJwtMock = vi.hoisted(() => vi.fn());
-const getJwtMock = vi.hoisted(() => vi.fn());
-const getZkProofFromKeeperMock = vi.hoisted(() => vi.fn());
-const setZkProofMock = vi.hoisted(() => vi.fn());
-const fetchZkProofMock = vi.hoisted(() => vi.fn());
-const resolveVendedMock = vi.hoisted(() => vi.fn());
+const mockAuthGetState = vi.hoisted(() => vi.fn())
+const hasJwtMock = vi.hoisted(() => vi.fn())
+const getJwtMock = vi.hoisted(() => vi.fn())
+const getZkProofFromKeeperMock = vi.hoisted(() => vi.fn())
+const setZkProofMock = vi.hoisted(() => vi.fn())
+const fetchZkProofMock = vi.hoisted(() => vi.fn())
+const resolveVendedMock = vi.hoisted(() => vi.fn())
 
 vi.mock('#/auth', () => ({
   useAuthStore: {
     getState: mockAuthGetState,
   },
-}));
+}))
 
 vi.mock('#/auth/storageService', () => ({
   hasJwt: (...args: unknown[]) => hasJwtMock(...args),
   getJwt: (...args: unknown[]) => getJwtMock(...args),
-}));
+}))
 
 vi.mock('#/services/vaultService', () => ({
   ephKeyService: {
@@ -43,40 +43,40 @@ vi.mock('#/services/vaultService', () => ({
     setZkProof: (...args: unknown[]) => setZkProofMock(...args),
     clear: vi.fn(),
   },
-}));
+}))
 
 vi.mock('#/wallet/zkProof', () => ({
   fetchZkProof: (...args: unknown[]) => fetchZkProofMock(...args),
-}));
+}))
 
 vi.mock('#/auth/zkJwt', () => ({
   resolveVendedIdTokenForZkProof: (...args: unknown[]) =>
     resolveVendedMock(...args),
-}));
+}))
 
 vi.mock('#/stores/contextStore', () => ({
   useContextStore: {
     getState: () => ({ chain: SUI_DEVNET_CHAIN }),
   },
-}));
+}))
 
 function stubAsync() {
-  return Promise.resolve();
+  return Promise.resolve()
 }
 
 function buildProofHarness(overrides: Partial<DeviceState> = {}) {
-  let state: DeviceState;
+  let state: DeviceState
 
   const set: SetDeviceState = (update) => {
-    const partial = typeof update === 'function' ? update(state) : update;
-    Object.assign(state, partial);
-  };
+    const partial = typeof update === 'function' ? update(state) : update
+    Object.assign(state, partial)
+  }
 
-  const get: GetDeviceState = () => state;
+  const get: GetDeviceState = () => state
 
-  const { getZkProof } = createProofActions(set, get);
+  const { getZkProof } = createProofActions(set, get)
 
-  const pk = new Ed25519PublicKey(new Uint8Array(32).fill(4));
+  const pk = new Ed25519PublicKey(new Uint8Array(32).fill(4))
 
   state = {
     isLocked: false,
@@ -122,35 +122,35 @@ function buildProofHarness(overrides: Partial<DeviceState> = {}) {
       maxEpoch: null,
       maxEpochTimestampMs: null,
     },
-  };
+  }
 
-  return { state, getZkProof };
+  return { state, getZkProof }
 }
 
 describe('createProofActions.getZkProof', () => {
   beforeEach(() => {
-    getZkProofFromKeeperMock.mockResolvedValue(null);
-    setZkProofMock.mockResolvedValue(undefined);
+    getZkProofFromKeeperMock.mockResolvedValue(null)
+    setZkProofMock.mockResolvedValue(undefined)
     mockAuthGetState.mockReturnValue({
       user: { id_token: 'primary.id.token' },
-    } as never);
-    hasJwtMock.mockResolvedValue(true);
+    } as never)
+    hasJwtMock.mockResolvedValue(true)
     getJwtMock.mockResolvedValue({
       id_token: 'stored.primary',
-    } as never);
-    resolveVendedMock.mockResolvedValue('vended.id.token');
+    } as never)
+    resolveVendedMock.mockResolvedValue('vended.id.token')
     fetchZkProofMock.mockResolvedValue({
       data: { inputs: 'mock' } as never,
       error: undefined,
-    });
-  });
+    })
+  })
 
   afterEach(() => {
-    vi.clearAllMocks();
-  });
+    vi.clearAllMocks()
+  })
 
   it('returns error when user is not authenticated', async () => {
-    mockAuthGetState.mockReturnValue({ user: null } as never);
+    mockAuthGetState.mockReturnValue({ user: null } as never)
     const { getZkProof, state } = buildProofHarness({
       networkData: {
         [SUI_DEVNET_CHAIN]: {
@@ -160,13 +160,13 @@ describe('createProofActions.getZkProof', () => {
           jwtRandomness: 'r',
         },
       },
-    });
+    })
 
-    const result = await getZkProof(SUI_DEVNET_CHAIN);
+    const result = await getZkProof(SUI_DEVNET_CHAIN)
 
-    expect(result).toEqual({ error: 'User not authenticated' });
-    expect(state.error).toBe('User not authenticated');
-  });
+    expect(result).toEqual({ error: 'User not authenticated' })
+    expect(state.error).toBe('User not authenticated')
+  })
 
   it('returns error when ephemeral public key is missing', async () => {
     const { getZkProof, state } = buildProofHarness({
@@ -179,16 +179,16 @@ describe('createProofActions.getZkProof', () => {
           jwtRandomness: 'r',
         },
       },
-    });
+    })
 
-    const result = await getZkProof(SUI_DEVNET_CHAIN);
+    const result = await getZkProof(SUI_DEVNET_CHAIN)
 
-    expect(result).toEqual({ error: 'Ephemeral public key not found' });
-    expect(state.error).toBe('Ephemeral public key not found');
-  });
+    expect(result).toEqual({ error: 'Ephemeral public key not found' })
+    expect(state.error).toBe('Ephemeral public key not found')
+  })
 
   it('returns error when no JWT for network', async () => {
-    getJwtMock.mockResolvedValue(null);
+    getJwtMock.mockResolvedValue(null)
     const { getZkProof, state } = buildProofHarness({
       networkData: {
         [SUI_DEVNET_CHAIN]: {
@@ -198,17 +198,17 @@ describe('createProofActions.getZkProof', () => {
           jwtRandomness: 'r',
         },
       },
-    });
+    })
 
-    const result = await getZkProof(SUI_DEVNET_CHAIN);
+    const result = await getZkProof(SUI_DEVNET_CHAIN)
 
     expect(result).toEqual({
       error: 'No valid JWT found for devnet. Please sign in again.',
-    });
+    })
     expect(state.error).toBe(
       'No valid JWT found for devnet. Please sign in again.',
-    );
-  });
+    )
+  })
 
   it('returns error when JWT randomness is missing', async () => {
     const { getZkProof, state } = buildProofHarness({
@@ -220,39 +220,39 @@ describe('createProofActions.getZkProof', () => {
           jwtRandomness: null,
         },
       },
-    });
+    })
 
-    const result = await getZkProof(SUI_DEVNET_CHAIN);
+    const result = await getZkProof(SUI_DEVNET_CHAIN)
 
     expect(result).toEqual({
       error: 'JWT randomness not found for devnet. Please sign in again.',
-    });
+    })
     expect(state.error).toBe(
       'JWT randomness not found for devnet. Please sign in again.',
-    );
-  });
+    )
+  })
 
   it('persists proof and returns response when fetchZkProof succeeds', async () => {
-    const { getZkProof } = buildProofHarness();
+    const { getZkProof } = buildProofHarness()
 
-    const result = await getZkProof(SUI_DEVNET_CHAIN);
+    const result = await getZkProof(SUI_DEVNET_CHAIN)
 
-    expect(resolveVendedMock).toHaveBeenCalled();
+    expect(resolveVendedMock).toHaveBeenCalled()
     expect(fetchZkProofMock).toHaveBeenCalledWith(
       expect.objectContaining({
         idToken: 'vended.id.token',
         jwtRandomness: 'random',
         maxEpoch: '10',
       }),
-    );
+    )
     expect(setZkProofMock).toHaveBeenCalledWith(
       SUI_DEVNET_CHAIN,
       expect.objectContaining({ data: { inputs: 'mock' } }),
-    );
+    )
     expect(result).toEqual(
       expect.objectContaining({ data: { inputs: 'mock' } }),
-    );
-  });
+    )
+  })
 
   it('rotates the eph key before generating proof when epoch is expired', async () => {
     const rotateEphemeralKey = vi.fn().mockImplementation(async () => {
@@ -261,8 +261,8 @@ describe('createProofActions.getZkProof', () => {
         maxEpoch: '22',
         maxEpochTimestampMs: Date.now() + 60_000,
         jwtRandomness: 'rotated-random',
-      };
-    });
+      }
+    })
     const { getZkProof, state } = buildProofHarness({
       rotateEphemeralKey,
       networkData: {
@@ -273,37 +273,37 @@ describe('createProofActions.getZkProof', () => {
           jwtRandomness: 'old-random',
         },
       },
-    });
+    })
 
-    await getZkProof(SUI_DEVNET_CHAIN);
+    await getZkProof(SUI_DEVNET_CHAIN)
 
-    expect(rotateEphemeralKey).toHaveBeenCalledOnce();
+    expect(rotateEphemeralKey).toHaveBeenCalledOnce()
     expect(resolveVendedMock).toHaveBeenCalledWith(
       SUI_DEVNET_CHAIN,
       expect.anything(),
       'rotated-nonce',
       expect.any(Number),
-    );
+    )
     expect(fetchZkProofMock).toHaveBeenCalledWith(
       expect.objectContaining({
         jwtRandomness: 'rotated-random',
         maxEpoch: '22',
       }),
-    );
-  });
+    )
+  })
 
   it('reuses keeper proof when max epoch not expired and keeper returns proof', async () => {
     const cached = {
       data: { cached: true } as never,
       error: undefined as undefined,
-    };
-    getZkProofFromKeeperMock.mockResolvedValue(cached);
+    }
+    getZkProofFromKeeperMock.mockResolvedValue(cached)
 
-    const { getZkProof } = buildProofHarness();
+    const { getZkProof } = buildProofHarness()
 
-    const result = await getZkProof(SUI_DEVNET_CHAIN);
+    const result = await getZkProof(SUI_DEVNET_CHAIN)
 
-    expect(result).toBe(cached);
-    expect(fetchZkProofMock).not.toHaveBeenCalled();
-  });
-});
+    expect(result).toBe(cached)
+    expect(fetchZkProofMock).not.toHaveBeenCalled()
+  })
+})

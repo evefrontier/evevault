@@ -9,9 +9,9 @@ export function trySettle(
   timeoutId?: ReturnType<typeof setTimeout>,
   target: EventTarget = window,
 ): boolean {
-  if (state.settled) return false;
-  state.settled = true;
-  if (timeoutId !== undefined) clearTimeout(timeoutId);
-  target.removeEventListener('message', listener as EventListener);
-  return true;
+  if (state.settled) return false
+  state.settled = true
+  if (timeoutId !== undefined) clearTimeout(timeoutId)
+  target.removeEventListener('message', listener as EventListener)
+  return true
 }

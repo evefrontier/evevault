@@ -1,4 +1,4 @@
-import type { SVGProps } from 'react';
+import type { SVGProps } from 'react'
 
 const TokensIcon = ({
   className,
@@ -23,6 +23,6 @@ const TokensIcon = ({
       fill={color}
     />
   </svg>
-);
+)
 
-export default TokensIcon;
+export default TokensIcon

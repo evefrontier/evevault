@@ -1,4 +1,4 @@
-import type { SVGProps } from 'react';
+import type { SVGProps } from 'react'
 
 const EveNetIcon = ({
   className,
@@ -22,6 +22,6 @@ const EveNetIcon = ({
     <path d="M14 8.93537H2V6.77333H14V8.93537Z" fill={color} />
     <path d="M8.7561 14.2861H7.1561V16H8.7561V14.2861Z" fill={color} />
   </svg>
-);
+)
 
-export default EveNetIcon;
+export default EveNetIcon

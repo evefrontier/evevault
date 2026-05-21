@@ -1,77 +1,77 @@
-import { getCurrentTenantId, OAuthTenantSessionKey } from '@evevault/shared';
+import { getCurrentTenantId, OAuthTenantSessionKey } from '@evevault/shared'
 import {
   getUserManager,
   getZkLoginAddress,
   useAuthStore,
-} from '@evevault/shared/auth';
-import { Heading, Text } from '@evevault/shared/components';
-import type { RoutePath } from '@evevault/shared/types';
+} from '@evevault/shared/auth'
+import { Heading, Text } from '@evevault/shared/components'
+import type { RoutePath } from '@evevault/shared/types'
 import {
   createLogger,
   getDevModeEnabled,
   isAvailableTenantId,
   SESSION_STORAGE_REDIRECT_KEY,
-} from '@evevault/shared/utils';
-import { useNavigate, useSearch } from '@tanstack/react-router';
-import { User } from 'oidc-client-ts';
-import { useEffect, useState } from 'react';
-import { isRoutePath } from '@/lib/routeUtils';
+} from '@evevault/shared/utils'
+import { useNavigate, useSearch } from '@tanstack/react-router'
+import { User } from 'oidc-client-ts'
+import { useEffect, useState } from 'react'
+import { isRoutePath } from '@/lib/routeUtils'
 
-const log = createLogger();
+const log = createLogger()
 
 /** Guard so the OAuth code is only exchanged once (avoids "Invalid Authorization Code" from double-run in Strict Mode or reload). */
-let callbackExchangeStarted = false;
+let callbackExchangeStarted = false
 
 export const CallbackScreen = () => {
-  const [error, setError] = useState<string | null>(null);
-  const navigate = useNavigate();
-  const _search = useSearch({ from: '/callback' });
+  const [error, setError] = useState<string | null>(null)
+  const navigate = useNavigate()
+  const _search = useSearch({ from: '/callback' })
 
   useEffect(() => {
     if (callbackExchangeStarted) {
-      return;
+      return
     }
-    callbackExchangeStarted = true;
+    callbackExchangeStarted = true
 
     const handleCallback = async () => {
       try {
         const redirectAfterLogin = sessionStorage.getItem(
           SESSION_STORAGE_REDIRECT_KEY,
-        );
-        sessionStorage.removeItem('evevault_redirect_after_login');
+        )
+        sessionStorage.removeItem('evevault_redirect_after_login')
         const tenantId =
-          sessionStorage.getItem(OAuthTenantSessionKey) ?? getCurrentTenantId();
-        sessionStorage.removeItem(OAuthTenantSessionKey);
-        const fallbackRoute: RoutePath = '/wallet';
-        const redirectTo = redirectAfterLogin || fallbackRoute;
+          sessionStorage.getItem(OAuthTenantSessionKey) ?? getCurrentTenantId()
+        sessionStorage.removeItem(OAuthTenantSessionKey)
+        const fallbackRoute: RoutePath = '/wallet'
+        const redirectTo = redirectAfterLogin || fallbackRoute
 
-        const devMode = await getDevModeEnabled();
+        const devMode = await getDevModeEnabled()
         // Use oidc-client-ts's built-in PKCE support for the tenant we started login with
         if (!isAvailableTenantId(tenantId, devMode)) {
-          throw new Error(`Invalid tenant id: ${tenantId}`);
+          throw new Error(`Invalid tenant id: ${tenantId}`)
         }
-        const userManager = getUserManager(tenantId);
-        const user = await userManager.signinRedirectCallback();
+        const userManager = getUserManager(tenantId)
+        const user = await userManager.signinRedirectCallback()
 
         if (!user?.id_token) {
-          throw new Error('Failed to authenticate');
+          throw new Error('Failed to authenticate')
         }
 
         // Get zkLogin address
         const zkLoginResponse = await getZkLoginAddress({
           jwt: user.id_token,
           enokiApiKey: import.meta.env.VITE_ENOKI_API_KEY,
-        });
+        })
 
         if (zkLoginResponse.error) {
-          throw new Error(zkLoginResponse.error.message);
+          throw new Error(zkLoginResponse.error.message)
         }
 
         if (!zkLoginResponse.data) {
-          throw new Error('No zkLogin address data received');
+          throw new Error('No zkLogin address data received')
         }
 
-        const { salt, address } = zkLoginResponse.data;
+        const { salt, address } = zkLoginResponse.data
 
         // Update user profile with zkLogin address
         const updatedUser = new User({
@@ -81,29 +81,27 @@ export const CallbackScreen = () => {
             sui_address: address,
             salt,
           },
-        });
+        })
 
-        await userManager.storeUser(updatedUser);
-        useAuthStore.getState().setUser(updatedUser);
+        await userManager.storeUser(updatedUser)
+        useAuthStore.getState().setUser(updatedUser)
 
-        log.info('FusionAuth callback successful');
-        const destination = isRoutePath(redirectTo)
-          ? redirectTo
-          : fallbackRoute;
-        navigate({ to: destination });
+        log.info('FusionAuth callback successful')
+        const destination = isRoutePath(redirectTo) ? redirectTo : fallbackRoute
+        navigate({ to: destination })
       } catch (err) {
-        log.error('OAuth callback error', err);
-        setError(err instanceof Error ? err.message : 'Authentication failed');
+        log.error('OAuth callback error', err)
+        setError(err instanceof Error ? err.message : 'Authentication failed')
         setTimeout(() => {
-          navigate({ to: '/' });
-        }, 3000);
+          navigate({ to: '/' })
+        }, 3000)
       } finally {
-        callbackExchangeStarted = false;
+        callbackExchangeStarted = false
       }
-    };
+    }
 
-    handleCallback();
-  }, [navigate]);
+    handleCallback()
+  }, [navigate])
 
   if (error) {
     return (
@@ -117,7 +115,7 @@ export const CallbackScreen = () => {
           </header>
         </section>
       </div>
-    );
+    )
   }
 
   return (
@@ -132,5 +130,5 @@ export const CallbackScreen = () => {
         </header>
       </section>
     </div>
-  );
-};
+  )
+}

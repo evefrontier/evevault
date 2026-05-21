@@ -1,13 +1,13 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Use string literal to avoid importing @mysten/wallet-standard
-const SUI_DEVNET_CHAIN = 'sui:devnet' as const;
+const SUI_DEVNET_CHAIN = 'sui:devnet' as const
 
 // Mock environment detection - defined inline to avoid hoisting issues
-let mockIsWebValue = true;
+let mockIsWebValue = true
 vi.mock('#/utils/environment', () => ({
   isWeb: () => mockIsWebValue,
-}));
+}))
 
 // Mock webVaultService - defined inline
 vi.mock('./webVaultService', () => ({
@@ -30,7 +30,7 @@ vi.mock('./webVaultService', () => ({
     getZkProof: vi.fn(() => Promise.resolve({ data: { test: true } })),
     clearZkProof: vi.fn(() => Promise.resolve()),
   },
-}));
+}))
 
 // Mock keeperService - defined inline
 vi.mock('./keeperService', () => ({
@@ -60,7 +60,7 @@ vi.mock('./keeperService', () => ({
     getZkProof: vi.fn(() => Promise.resolve({ data: { keeper: true } })),
     clear: vi.fn(() => Promise.resolve()),
   },
-}));
+}))
 
 // Mock wallet types
 vi.mock('#/types/wallet', () => ({
@@ -68,296 +68,296 @@ vi.mock('#/types/wallet', () => ({
     iv: 'web-placeholder',
     data: 'web-placeholder',
   })),
-}));
+}))
 
 import {
   ephKeyService as keeperEphKeyService,
   zkProofService as keeperZkProofService,
-} from './keeperService';
+} from './keeperService'
 // Import after all mocks are set up
-import { ephKeyService, zkProofService } from './vaultService';
-import { webVaultService } from './webVaultService';
+import { ephKeyService, zkProofService } from './vaultService'
+import { webVaultService } from './webVaultService'
 
 describe('ephKeyService routing', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-  });
+    vi.clearAllMocks()
+  })
 
   describe('when isWeb() returns true', () => {
     beforeEach(() => {
-      mockIsWebValue = true;
-    });
+      mockIsWebValue = true
+    })
 
     it('routes initialize to webVaultService', async () => {
-      await ephKeyService.initialize();
+      await ephKeyService.initialize()
 
-      expect(webVaultService.initialize).toHaveBeenCalled();
-    });
+      expect(webVaultService.initialize).toHaveBeenCalled()
+    })
 
     it('routes unlockVault to webVaultService', async () => {
-      const result = await ephKeyService.unlockVault(null, '123456');
+      const result = await ephKeyService.unlockVault(null, '123456')
 
-      expect(webVaultService.initialize).toHaveBeenCalled();
-      expect(webVaultService.hasKeypair).toHaveBeenCalled();
-      expect(webVaultService.unlock).toHaveBeenCalledWith('123456');
-      expect(webVaultService.getPublicKey).toHaveBeenCalled();
-      expect(result).toBeDefined();
-    });
+      expect(webVaultService.initialize).toHaveBeenCalled()
+      expect(webVaultService.hasKeypair).toHaveBeenCalled()
+      expect(webVaultService.unlock).toHaveBeenCalledWith('123456')
+      expect(webVaultService.getPublicKey).toHaveBeenCalled()
+      expect(result).toBeDefined()
+    })
 
     it('throws if no keypair exists when unlocking', async () => {
-      vi.mocked(webVaultService.hasKeypair).mockResolvedValueOnce(false);
+      vi.mocked(webVaultService.hasKeypair).mockResolvedValueOnce(false)
 
       await expect(ephKeyService.unlockVault(null, '123456')).rejects.toThrow(
         'No keypair exists',
-      );
-    });
+      )
+    })
 
     it('throws if PIN is empty when unlocking', async () => {
       await expect(ephKeyService.unlockVault(null, '')).rejects.toThrow(
         'PIN is required to unlock',
-      );
-    });
+      )
+    })
 
     it('routes createEphemeralKeyPair to webVaultService', async () => {
-      const result = await ephKeyService.createEphemeralKeyPair('123456');
+      const result = await ephKeyService.createEphemeralKeyPair('123456')
 
       expect(webVaultService.createEphemeralKeyPair).toHaveBeenCalledWith(
         '123456',
-      );
-      expect(result).toHaveProperty('hashedSecretKey');
-      expect(result).toHaveProperty('publicKey');
+      )
+      expect(result).toHaveProperty('hashedSecretKey')
+      expect(result).toHaveProperty('publicKey')
       // Web uses placeholder for hashedSecretKey
       expect(result.hashedSecretKey).toEqual({
         iv: 'web-placeholder',
         data: 'web-placeholder',
-      });
-    });
+      })
+    })
 
     it('throws if PIN is empty when creating keypair', async () => {
       await expect(ephKeyService.createEphemeralKeyPair('')).rejects.toThrow(
         'PIN is required to create keypair',
-      );
-    });
+      )
+    })
 
     it('routes getEphemeralPublicKey to webVaultService', async () => {
-      const result = await ephKeyService.getEphemeralPublicKey();
+      const result = await ephKeyService.getEphemeralPublicKey()
 
-      expect(webVaultService.initialize).toHaveBeenCalled();
-      expect(webVaultService.getPublicKey).toHaveBeenCalled();
-      expect(result).toBeDefined();
-    });
+      expect(webVaultService.initialize).toHaveBeenCalled()
+      expect(webVaultService.getPublicKey).toHaveBeenCalled()
+      expect(result).toBeDefined()
+    })
 
     it('routes rotateEphemeralKeyPair to webVaultService', async () => {
-      const result = await ephKeyService.rotateEphemeralKeyPair();
+      const result = await ephKeyService.rotateEphemeralKeyPair()
 
-      expect(webVaultService.rotateEphemeralKeyPair).toHaveBeenCalled();
-      expect(result).toHaveProperty('hashedSecretKey');
-      expect(result).toHaveProperty('publicKey');
-    });
+      expect(webVaultService.rotateEphemeralKeyPair).toHaveBeenCalled()
+      expect(result).toHaveProperty('hashedSecretKey')
+      expect(result).toHaveProperty('publicKey')
+    })
 
     it('routes getSigner to webVaultService', () => {
-      const result = ephKeyService.getSigner();
+      const result = ephKeyService.getSigner()
 
-      expect(webVaultService.getSigner).toHaveBeenCalled();
-      expect(result).toBeDefined();
-    });
+      expect(webVaultService.getSigner).toHaveBeenCalled()
+      expect(result).toBeDefined()
+    })
 
     it('routes isUnlocked to webVaultService', () => {
-      const result = ephKeyService.isUnlocked();
+      const result = ephKeyService.isUnlocked()
 
-      expect(webVaultService.isUnlocked).toHaveBeenCalled();
-      expect(result).toBe(true);
-    });
+      expect(webVaultService.isUnlocked).toHaveBeenCalled()
+      expect(result).toBe(true)
+    })
 
     it('routes hasKeypair to webVaultService', async () => {
-      const result = await ephKeyService.hasKeypair();
+      const result = await ephKeyService.hasKeypair()
 
-      expect(webVaultService.initialize).toHaveBeenCalled();
-      expect(webVaultService.hasKeypair).toHaveBeenCalled();
-      expect(result).toBe(true);
-    });
+      expect(webVaultService.initialize).toHaveBeenCalled()
+      expect(webVaultService.hasKeypair).toHaveBeenCalled()
+      expect(result).toBe(true)
+    })
 
     it('routes lock to webVaultService', async () => {
-      await ephKeyService.lock();
+      await ephKeyService.lock()
 
-      expect(webVaultService.lock).toHaveBeenCalled();
-    });
+      expect(webVaultService.lock).toHaveBeenCalled()
+    })
 
     it('routes clear to webVaultService', async () => {
-      await ephKeyService.clear();
+      await ephKeyService.clear()
 
-      expect(webVaultService.clear).toHaveBeenCalled();
-    });
-  });
+      expect(webVaultService.clear).toHaveBeenCalled()
+    })
+  })
 
   describe('when isWeb() returns false (extension)', () => {
     beforeEach(() => {
-      mockIsWebValue = false;
-    });
+      mockIsWebValue = false
+    })
 
     it('routes unlockVault to keeperService', async () => {
-      const hashedKey = { iv: 'test', data: 'encrypted', salt: 'testsalt' };
-      await ephKeyService.unlockVault(hashedKey, '123456');
+      const hashedKey = { iv: 'test', data: 'encrypted', salt: 'testsalt' }
+      await ephKeyService.unlockVault(hashedKey, '123456')
 
       expect(keeperEphKeyService.unlockVault).toHaveBeenCalledWith(
         hashedKey,
         '123456',
-      );
-    });
+      )
+    })
 
     it('routes createEphemeralKeyPair to keeperService', async () => {
-      const result = await ephKeyService.createEphemeralKeyPair('123456');
+      const result = await ephKeyService.createEphemeralKeyPair('123456')
 
       expect(keeperEphKeyService.createEphemeralKeyPair).toHaveBeenCalledWith(
         '123456',
-      );
-      expect(result).toHaveProperty('hashedSecretKey');
-      expect(result).toHaveProperty('publicKey');
-    });
+      )
+      expect(result).toHaveProperty('hashedSecretKey')
+      expect(result).toHaveProperty('publicKey')
+    })
 
     it('routes getEphemeralPublicKey to keeperService', async () => {
-      await ephKeyService.getEphemeralPublicKey();
+      await ephKeyService.getEphemeralPublicKey()
 
-      expect(keeperEphKeyService.getEphemeralPublicKey).toHaveBeenCalled();
-    });
+      expect(keeperEphKeyService.getEphemeralPublicKey).toHaveBeenCalled()
+    })
 
     it('routes rotateEphemeralKeyPair to keeperService', async () => {
-      const result = await ephKeyService.rotateEphemeralKeyPair();
+      const result = await ephKeyService.rotateEphemeralKeyPair()
 
-      expect(keeperEphKeyService.rotateEphemeralKeyPair).toHaveBeenCalled();
-      expect(result).toHaveProperty('hashedSecretKey');
-      expect(result).toHaveProperty('publicKey');
-    });
+      expect(keeperEphKeyService.rotateEphemeralKeyPair).toHaveBeenCalled()
+      expect(result).toHaveProperty('hashedSecretKey')
+      expect(result).toHaveProperty('publicKey')
+    })
 
     it('returns null for getSigner in extension context', () => {
-      const result = ephKeyService.getSigner();
+      const result = ephKeyService.getSigner()
 
       // Extension doesn't expose signer directly
-      expect(result).toBeNull();
-    });
+      expect(result).toBeNull()
+    })
 
     it('returns true for isUnlocked in extension context', () => {
       // Extension assumes unlocked (would need to check with background)
-      const result = ephKeyService.isUnlocked();
-      expect(result).toBe(true);
-    });
+      const result = ephKeyService.isUnlocked()
+      expect(result).toBe(true)
+    })
 
     it('routes hasKeypair check via getEphemeralPublicKey', async () => {
-      await ephKeyService.hasKeypair();
+      await ephKeyService.hasKeypair()
 
-      expect(keeperEphKeyService.getEphemeralPublicKey).toHaveBeenCalled();
-    });
+      expect(keeperEphKeyService.getEphemeralPublicKey).toHaveBeenCalled()
+    })
 
     it('routes lock to keeperService in extension context', async () => {
-      await ephKeyService.lock();
+      await ephKeyService.lock()
 
-      expect(webVaultService.lock).not.toHaveBeenCalled();
-      expect(keeperEphKeyService.lock).toHaveBeenCalled();
-    });
+      expect(webVaultService.lock).not.toHaveBeenCalled()
+      expect(keeperEphKeyService.lock).toHaveBeenCalled()
+    })
 
     it('does not call webVaultService.clear in extension context', async () => {
-      await ephKeyService.clear();
+      await ephKeyService.clear()
 
-      expect(webVaultService.clear).not.toHaveBeenCalled();
-    });
-  });
+      expect(webVaultService.clear).not.toHaveBeenCalled()
+    })
+  })
 
   describe('getEphemeralPublicKeyBytes', () => {
     beforeEach(() => {
-      mockIsWebValue = true;
-    });
+      mockIsWebValue = true
+    })
 
     it('returns byte array from public key', async () => {
-      const result = await ephKeyService.getEphemeralPublicKeyBytes();
+      const result = await ephKeyService.getEphemeralPublicKeyBytes()
 
-      expect(result).toBeInstanceOf(Array);
-      expect(result?.length).toBe(33);
-    });
+      expect(result).toBeInstanceOf(Array)
+      expect(result?.length).toBe(33)
+    })
 
     it('returns null when no public key', async () => {
-      vi.mocked(webVaultService.getPublicKey).mockReturnValueOnce(null);
+      vi.mocked(webVaultService.getPublicKey).mockReturnValueOnce(null)
 
-      const result = await ephKeyService.getEphemeralPublicKeyBytes();
+      const result = await ephKeyService.getEphemeralPublicKeyBytes()
 
-      expect(result).toBeNull();
-    });
-  });
-});
+      expect(result).toBeNull()
+    })
+  })
+})
 
 describe('zkProofService routing', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-  });
+    vi.clearAllMocks()
+  })
 
   describe('when isWeb() returns true', () => {
     beforeEach(() => {
-      mockIsWebValue = true;
-    });
+      mockIsWebValue = true
+    })
 
     it('routes setZkProof to webVaultService', async () => {
-      const mockProof = { data: { test: true }, error: undefined };
+      const mockProof = { data: { test: true }, error: undefined }
       await zkProofService.setZkProof(
         SUI_DEVNET_CHAIN,
         mockProof as unknown as Parameters<typeof zkProofService.setZkProof>[1],
-      );
+      )
 
       expect(webVaultService.setZkProof).toHaveBeenCalledWith(
         SUI_DEVNET_CHAIN,
         mockProof,
-      );
-    });
+      )
+    })
 
     it('routes getZkProof to webVaultService', async () => {
-      const result = await zkProofService.getZkProof(SUI_DEVNET_CHAIN);
+      const result = await zkProofService.getZkProof(SUI_DEVNET_CHAIN)
 
-      expect(webVaultService.getZkProof).toHaveBeenCalledWith(SUI_DEVNET_CHAIN);
-      expect(result).toEqual({ data: { test: true } });
-    });
+      expect(webVaultService.getZkProof).toHaveBeenCalledWith(SUI_DEVNET_CHAIN)
+      expect(result).toEqual({ data: { test: true } })
+    })
 
     it('routes clear to webVaultService.clearZkProof for all chains', async () => {
-      await zkProofService.clear();
+      await zkProofService.clear()
 
-      expect(webVaultService.clearZkProof).toHaveBeenCalledWith('sui:devnet');
-      expect(webVaultService.clearZkProof).toHaveBeenCalledWith('sui:testnet');
-      expect(webVaultService.clearZkProof).toHaveBeenCalledWith('sui:mainnet');
+      expect(webVaultService.clearZkProof).toHaveBeenCalledWith('sui:devnet')
+      expect(webVaultService.clearZkProof).toHaveBeenCalledWith('sui:testnet')
+      expect(webVaultService.clearZkProof).toHaveBeenCalledWith('sui:mainnet')
       expect(webVaultService.clearZkProof).not.toHaveBeenCalledWith(
         'sui:localnet',
-      );
-    });
-  });
+      )
+    })
+  })
 
   describe('when isWeb() returns false (extension)', () => {
     beforeEach(() => {
-      mockIsWebValue = false;
-    });
+      mockIsWebValue = false
+    })
 
     it('routes setZkProof to keeperService', async () => {
-      const mockProof = { data: { test: true }, error: undefined };
+      const mockProof = { data: { test: true }, error: undefined }
       await zkProofService.setZkProof(
         SUI_DEVNET_CHAIN,
         mockProof as unknown as Parameters<typeof zkProofService.setZkProof>[1],
-      );
+      )
 
       expect(keeperZkProofService.setZkProof).toHaveBeenCalledWith(
         SUI_DEVNET_CHAIN,
         mockProof,
-      );
-    });
+      )
+    })
 
     it('routes getZkProof to keeperService', async () => {
-      const result = await zkProofService.getZkProof(SUI_DEVNET_CHAIN);
+      const result = await zkProofService.getZkProof(SUI_DEVNET_CHAIN)
 
       expect(keeperZkProofService.getZkProof).toHaveBeenCalledWith(
         SUI_DEVNET_CHAIN,
-      );
-      expect(result).toEqual({ data: { keeper: true } });
-    });
+      )
+      expect(result).toEqual({ data: { keeper: true } })
+    })
 
     it('routes clear to keeperService', async () => {
-      await zkProofService.clear();
+      await zkProofService.clear()
 
-      expect(keeperZkProofService.clear).toHaveBeenCalled();
-      expect(webVaultService.clearZkProof).not.toHaveBeenCalled();
-    });
-  });
-});
+      expect(keeperZkProofService.clear).toHaveBeenCalled()
+      expect(webVaultService.clearZkProof).not.toHaveBeenCalled()
+    })
+  })
+})

@@ -1,23 +1,23 @@
-import type { StorageAdapter } from '#/types';
+import type { StorageAdapter } from '#/types'
 
 // localStorage adapter for web
 export const localStorageAdapter: StorageAdapter = {
   getItem: async (key: string): Promise<string | null> => {
     if (typeof window === 'undefined' || !window.localStorage) {
-      return null;
+      return null
     }
-    return window.localStorage.getItem(key);
+    return window.localStorage.getItem(key)
   },
   setItem: async (key: string, value: string): Promise<void> => {
     if (typeof window === 'undefined' || !window.localStorage) {
-      return;
+      return
     }
-    window.localStorage.setItem(key, value);
+    window.localStorage.setItem(key, value)
   },
   removeItem: async (key: string): Promise<void> => {
     if (typeof window === 'undefined' || !window.localStorage) {
-      return;
+      return
     }
-    window.localStorage.removeItem(key);
+    window.localStorage.removeItem(key)
   },
-};
+}

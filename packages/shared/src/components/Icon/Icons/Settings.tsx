@@ -1,4 +1,4 @@
-import type { SVGProps } from 'react';
+import type { SVGProps } from 'react'
 
 const SettingsIcon = ({
   className,
@@ -23,6 +23,6 @@ const SettingsIcon = ({
       fill={color}
     />
   </svg>
-);
+)
 
-export default SettingsIcon;
+export default SettingsIcon

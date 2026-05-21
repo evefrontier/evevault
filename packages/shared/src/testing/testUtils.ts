@@ -6,21 +6,21 @@ export function makeJwt(claims: Record<string, unknown>): string {
     btoa(JSON.stringify(obj))
       .replace(/\+/g, '-')
       .replace(/\//g, '_')
-      .replace(/=/g, '');
-  return `${b64url({ alg: 'HS256' })}.${b64url(claims)}.sig`;
+      .replace(/=/g, '')
+  return `${b64url({ alg: 'HS256' })}.${b64url(claims)}.sig`
 }
 
 export function makeJwtWithExp(exp: number): string {
   const header = Buffer.from(
     JSON.stringify({ alg: 'none', typ: 'JWT' }),
-  ).toString('base64url');
-  const payload = Buffer.from(JSON.stringify({ exp })).toString('base64url');
-  return `${header}.${payload}.signature`;
+  ).toString('base64url')
+  const payload = Buffer.from(JSON.stringify({ exp })).toString('base64url')
+  return `${header}.${payload}.signature`
 }
 
 export function setWindowLocation(value: any): void {
   Object.defineProperty(window, 'location', {
     value: value,
     configurable: true,
-  });
+  })
 }

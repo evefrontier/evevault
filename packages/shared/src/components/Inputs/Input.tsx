@@ -1,9 +1,9 @@
-import type React from 'react';
-import { forwardRef, useState } from 'react';
-import './style.css';
-import { Corners } from '#/components/Corners';
-import Text from '#/components/Text';
-import type { InputProps } from '#/types';
+import type React from 'react'
+import { forwardRef, useState } from 'react'
+import './style.css'
+import { Corners } from '#/components/Corners'
+import Text from '#/components/Text'
+import type { InputProps } from '#/types'
 
 const Input: React.FC<InputProps> = forwardRef<HTMLInputElement, InputProps>(
   (
@@ -26,24 +26,23 @@ const Input: React.FC<InputProps> = forwardRef<HTMLInputElement, InputProps>(
     },
     ref,
   ) => {
-    const [isFocused, setIsFocused] = useState(false);
+    const [isFocused, setIsFocused] = useState(false)
 
-    const hasValue = value !== undefined && value !== '';
-    const showFloatingLabel = (showLabel && label) || hasValue;
-    const labelText = label || placeholder;
+    const hasValue = value !== undefined && value !== ''
+    const showFloatingLabel = (showLabel && label) || hasValue
+    const labelText = label || placeholder
     const inputId =
-      rest.id ||
-      `input-${label?.toLowerCase().replace(/\s+/g, '-') || 'field'}`;
+      rest.id || `input-${label?.toLowerCase().replace(/\s+/g, '-') || 'field'}`
 
     const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-      setIsFocused(true);
-      onFocus?.(e);
-    };
+      setIsFocused(true)
+      onFocus?.(e)
+    }
 
     const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-      setIsFocused(false);
-      onBlur?.(e);
-    };
+      setIsFocused(false)
+      onBlur?.(e)
+    }
 
     const containerClass = [
       'input-field',
@@ -53,7 +52,7 @@ const Input: React.FC<InputProps> = forwardRef<HTMLInputElement, InputProps>(
       className,
     ]
       .filter(Boolean)
-      .join(' ');
+      .join(' ')
 
     return (
       <div className="input-wrapper" style={style}>
@@ -100,10 +99,10 @@ const Input: React.FC<InputProps> = forwardRef<HTMLInputElement, InputProps>(
           </Text>
         )}
       </div>
-    );
+    )
   },
-);
+)
 
-Input.displayName = 'Input';
+Input.displayName = 'Input'
 
-export default Input;
+export default Input

@@ -3,49 +3,49 @@ import {
   Heading,
   NetworkSelector,
   Text,
-} from '@evevault/shared/components';
-import Json from '@evevault/shared/components/Json';
-import type { ParsedTransactionWithDisplay } from '@evevault/shared/types';
+} from '@evevault/shared/components'
+import Json from '@evevault/shared/components/Json'
+import type { ParsedTransactionWithDisplay } from '@evevault/shared/types'
 import {
   buildTx,
   createLogger,
   parseTransactionBytes,
-} from '@evevault/shared/utils';
-import { useWalletSigningContext } from '@evevault/shared/wallet';
-import { Transaction } from '@mysten/sui/transactions';
-import { toBase64 } from '@mysten/sui/utils';
-import { useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
-import { useSignPopupAuth } from '@/features/wallet/hooks';
-import { SignPopupAuthGate } from './SignPopupAuthGate';
+} from '@evevault/shared/utils'
+import { useWalletSigningContext } from '@evevault/shared/wallet'
+import { Transaction } from '@mysten/sui/transactions'
+import { toBase64 } from '@mysten/sui/utils'
+import { useQueryClient } from '@tanstack/react-query'
+import { useEffect, useState } from 'react'
+import { useSignPopupAuth } from '@/features/wallet/hooks'
+import { SignPopupAuthGate } from './SignPopupAuthGate'
 
-const log = createLogger();
+const log = createLogger()
 
 function SignAndExecuteTransaction() {
   const { getSenderAddress, isLocalnet, sign, suiClient } =
-    useWalletSigningContext();
+    useWalletSigningContext()
   const [pendingTransaction, setPendingTransaction] =
-    useState<ParsedTransactionWithDisplay | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+    useState<ParsedTransactionWithDisplay | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const auth = useSignPopupAuth();
-  const queryClient = useQueryClient();
+  const auth = useSignPopupAuth()
+  const queryClient = useQueryClient()
 
   useEffect(() => {
     // Retrieve the pending transaction from storage
     chrome.storage.local.get('pendingAction').then(async (data) => {
-      const pending = data.pendingAction;
+      const pending = data.pendingAction
 
       if (pending) {
         // When pending.transaction is present,
         // pending is a valid PendingTransaction.
         if (!pending.transaction) {
-          setError('No transaction found');
-          return;
+          setError('No transaction found')
+          return
         }
 
-        const parsedTx = await parseTransactionBytes(pending.transaction);
+        const parsedTx = await parseTransactionBytes(pending.transaction)
 
         setPendingTransaction({
           ...pending,
@@ -54,36 +54,36 @@ function SignAndExecuteTransaction() {
               ? parsedTx.transactionForSigning
               : pending.transaction,
           displayValue: parsedTx.displayValue,
-        });
+        })
       } else {
-        setError('No pending transaction found');
+        setError('No pending transaction found')
       }
-    });
-  }, []);
+    })
+  }, [])
 
   const handleApprove = async () => {
     if (!pendingTransaction) {
-      log.error('No pending transaction found');
-      return;
+      log.error('No pending transaction found')
+      return
     }
     if (!auth.user) {
-      log.error('No user found');
-      return;
+      log.error('No user found')
+      return
     }
 
     try {
-      setLoading(true);
-      setError(null);
+      setLoading(true)
+      setError(null)
 
-      const { transaction, windowId } = pendingTransaction;
+      const { transaction, windowId } = pendingTransaction
 
-      const senderAddress = await getSenderAddress();
+      const senderAddress = await getSenderAddress()
       if (!senderAddress) {
         throw new Error(
           isLocalnet
             ? 'No localnet keypair loaded. Enter your private key in the network selector.'
             : 'User address not found',
-        );
+        )
       }
 
       // Convert the transaction bytes to a Transaction object
@@ -92,28 +92,28 @@ function SignAndExecuteTransaction() {
         Transaction.from(transaction as string),
         senderAddress,
         suiClient,
-      );
+      )
 
       if (!isLocalnet) {
         if (!auth.ephemeralPublicKey) {
-          throw new Error('Ephemeral public key not found');
+          throw new Error('Ephemeral public key not found')
         }
         if (!auth.maxEpoch) {
-          throw new Error('Max epoch is not set');
+          throw new Error('Max epoch is not set')
         }
       }
 
-      const { bytes, signature } = await sign('TransactionData', txb);
+      const { bytes, signature } = await sign('TransactionData', txb)
 
       // Execute the transaction
       const execResult = await suiClient.executeTransaction({
         transaction: txb,
         signatures: [signature],
         include: { effects: true },
-      });
+      })
 
       if (execResult.$kind === 'FailedTransaction') {
-        const failedTx = execResult.FailedTransaction;
+        const failedTx = execResult.FailedTransaction
         const errorMessage =
           failedTx?.status &&
           typeof failedTx.status === 'object' &&
@@ -122,8 +122,8 @@ function SignAndExecuteTransaction() {
                 (failedTx.status as { error?: { message?: string } }).error
                   ?.message ?? 'Transaction failed',
               )
-            : 'Transaction failed';
-        throw new Error(errorMessage);
+            : 'Transaction failed'
+        throw new Error(errorMessage)
       }
 
       if (
@@ -132,11 +132,11 @@ function SignAndExecuteTransaction() {
       ) {
         throw new Error(
           'Transaction execution result is missing digest or effects',
-        );
+        )
       }
 
-      const digest = execResult.Transaction?.digest;
-      const effects = toBase64(execResult.Transaction.effects.bcs);
+      const digest = execResult.Transaction?.digest
+      const effects = toBase64(execResult.Transaction.effects.bcs)
 
       // Store the result in storage so the background handler can pick it up
       await chrome.storage.local.set({
@@ -148,18 +148,18 @@ function SignAndExecuteTransaction() {
           digest,
           effects,
         },
-      });
+      })
 
       // Invalidate so next time the popup opens it refetches; don't await so close isn't delayed
-      queryClient.invalidateQueries({ queryKey: ['coin-balance'] });
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['coin-balance'] })
+      queryClient.invalidateQueries({ queryKey: ['transactions'] })
 
-      window.close();
+      window.close()
     } catch (err) {
-      log.error('Transaction signing failed', err);
+      log.error('Transaction signing failed', err)
       const errorMessage =
-        err instanceof Error ? err.message : 'Unknown error occurred';
-      setError(errorMessage);
+        err instanceof Error ? err.message : 'Unknown error occurred'
+      setError(errorMessage)
 
       // Store error result
       if (pendingTransaction?.windowId) {
@@ -169,15 +169,15 @@ function SignAndExecuteTransaction() {
             status: 'error',
             error: errorMessage,
           },
-        });
+        })
       }
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleReject = async () => {
-    if (!pendingTransaction) return;
+    if (!pendingTransaction) return
 
     try {
       // Store rejection result
@@ -187,15 +187,15 @@ function SignAndExecuteTransaction() {
           status: 'error',
           error: 'Transaction rejected by user',
         },
-      });
+      })
 
       // Close the popup window
-      window.close();
+      window.close()
     } catch (err) {
-      log.error('Failed to reject transaction', err);
-      setError('Failed to reject transaction');
+      log.error('Failed to reject transaction', err)
+      setError('Failed to reject transaction')
     }
-  };
+  }
 
   return (
     <SignPopupAuthGate
@@ -257,7 +257,7 @@ function SignAndExecuteTransaction() {
         </div>
       )}
     </SignPopupAuthGate>
-  );
+  )
 }
 
-export default SignAndExecuteTransaction;
+export default SignAndExecuteTransaction

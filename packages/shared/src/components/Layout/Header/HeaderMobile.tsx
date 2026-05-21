@@ -1,16 +1,16 @@
-import type React from 'react';
-import { useMemo } from 'react';
-import { useAuth } from '#/auth';
+import type React from 'react'
+import { useMemo } from 'react'
+import { useAuth } from '#/auth'
 import {
   type DropdownItem,
   DropdownSelect,
   getIdenticon,
-} from '#/components/Dropdown';
-import Switch from '#/components/Switch';
-import Text from '#/components/Text';
-import { useCopyToClipboard, useDevice } from '#/hooks';
-import type { HeaderMobileProps, IconName } from '#/types';
-import { formatAddress } from '#/utils';
+} from '#/components/Dropdown'
+import Switch from '#/components/Switch'
+import Text from '#/components/Text'
+import { useCopyToClipboard, useDevice } from '#/hooks'
+import type { HeaderMobileProps, IconName } from '#/types'
+import { formatAddress } from '#/utils'
 
 export const HeaderMobile: React.FC<HeaderMobileProps> = ({
   address,
@@ -26,12 +26,12 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
   onLocalnetSettingsClick,
   version,
 }) => {
-  const { copy } = useCopyToClipboard();
-  const { lock } = useDevice();
-  const { logout } = useAuth();
+  const { copy } = useCopyToClipboard()
+  const { lock } = useDevice()
+  const { logout } = useAuth()
 
   const dropdownItems: DropdownItem[] = useMemo(() => {
-    const items: DropdownItem[] = [];
+    const items: DropdownItem[] = []
 
     // 1. Dev mode toggle (optional) – top of list, row with switch
     if (onDevModeToggle) {
@@ -50,7 +50,7 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
             />
           </>
         ),
-      });
+      })
     }
 
     // 2. Sign and submit test (only when dev mode on) – right under Dev mode
@@ -59,7 +59,7 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
         label: 'Sign and submit test',
         icon: 'ArrowRight' as IconName,
         onClick: onSignSubmitTxClick,
-      });
+      })
     }
 
     // 3. Rotate eph key (only when dev mode on)
@@ -68,7 +68,7 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
         label: 'Rotate eph key',
         icon: 'Refresh' as IconName,
         onClick: onRotateEphKeyClick,
-      });
+      })
     }
 
     // 4. Faucet test SUI (only when dev mode on)
@@ -77,7 +77,7 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
         label: 'Faucet test SUI',
         icon: 'OpenWindow' as IconName,
         onClick: onFaucetTestSuiClick,
-      });
+      })
     }
 
     // 5. Localnet Settings (only when dev mode on)
@@ -86,7 +86,7 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
         label: 'Localnet Settings',
         icon: 'Settings' as IconName,
         onClick: onLocalnetSettingsClick,
-      });
+      })
     }
 
     // 6. Copy Address (always)
@@ -94,7 +94,7 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
       label: 'Copy Address',
       icon: 'Copy' as IconName,
       onClick: () => copy(address),
-    });
+    })
 
     // 7. Transaction History (optional)
     if (onTransactionsClick) {
@@ -102,7 +102,7 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
         label: 'Transaction History',
         icon: 'History' as IconName,
         onClick: onTransactionsClick,
-      });
+      })
     }
 
     // 8. Lock Wallet (always)
@@ -110,14 +110,14 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
       label: 'Lock Wallet',
       icon: 'HideEye' as IconName,
       onClick: lock,
-    });
+    })
 
     // 9. Logout (always)
     items.push({
       label: 'Logout',
       icon: 'Close' as IconName,
       onClick: logout,
-    });
+    })
 
     // 10. App version (dev only, display-only)
     if (showDevActions && version) {
@@ -126,10 +126,10 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
         icon: 'Info' as IconName,
         onClick: () => {},
         preventCloseOnClick: true,
-      });
+      })
     }
 
-    return items;
+    return items
   }, [
     onTransactionsClick,
     showDevActions,
@@ -143,9 +143,9 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
     lock,
     logout,
     version,
-  ]);
+  ])
 
-  const displayText = email || formatAddress(address);
+  const displayText = email || formatAddress(address)
 
   return (
     <header className="flex flex-col w-full">
@@ -165,7 +165,7 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
         />
       </div>
     </header>
-  );
-};
+  )
+}
 
-export default HeaderMobile;
+export default HeaderMobile

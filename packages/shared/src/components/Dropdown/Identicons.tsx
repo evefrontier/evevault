@@ -1,4 +1,4 @@
-import type { FC } from 'react';
+import type { FC } from 'react'
 
 export const Identicon1: FC = () => (
   <svg
@@ -82,7 +82,7 @@ export const Identicon1: FC = () => (
     <rect x="25" y="17" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
     <rect x="25" y="25" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
   </svg>
-);
+)
 
 export const Identicon2: FC = () => (
   <svg
@@ -166,7 +166,7 @@ export const Identicon2: FC = () => (
     <rect x="25" y="9" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
     <rect x="25" y="25" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
   </svg>
-);
+)
 
 export const Identicon3: FC = () => (
   <svg
@@ -250,7 +250,7 @@ export const Identicon3: FC = () => (
     <rect x="25" y="9" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
     <rect x="25" y="25" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
   </svg>
-);
+)
 
 export const Identicon4: FC = () => (
   <svg
@@ -334,7 +334,7 @@ export const Identicon4: FC = () => (
     <rect x="25" y="17" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
     <rect x="25" y="25" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
   </svg>
-);
+)
 
 // Map to get identicon by number
 export const IDENTICONS = [
@@ -342,9 +342,9 @@ export const IDENTICONS = [
   Identicon2,
   Identicon3,
   Identicon4,
-] as const;
+] as const
 
 export const getIdenticon = (index: number) => {
-  const Icon = IDENTICONS[index % IDENTICONS.length];
-  return <Icon />;
-};
+  const Icon = IDENTICONS[index % IDENTICONS.length]
+  return <Icon />
+}

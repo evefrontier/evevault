@@ -1,19 +1,19 @@
-import { Button, Heading, Text } from '@evevault/shared/components';
-import { LockScreen } from '@evevault/shared/screens';
-import type { User } from 'oidc-client-ts';
-import type { ReactNode } from 'react';
+import { Button, Heading, Text } from '@evevault/shared/components'
+import { LockScreen } from '@evevault/shared/screens'
+import type { User } from 'oidc-client-ts'
+import type { ReactNode } from 'react'
 
 export interface SignPopupAuthGateProps {
-  isLocked: boolean;
-  isPinSet: boolean;
-  unlock: (pin: string) => Promise<void>;
-  user: User | null;
-  loading: boolean;
-  login: () => Promise<User | undefined>;
-  title: string;
-  onCancel: () => void;
-  cancelDisabled?: boolean;
-  children: ReactNode;
+  isLocked: boolean
+  isPinSet: boolean
+  unlock: (pin: string) => Promise<void>
+  user: User | null
+  loading: boolean
+  login: () => Promise<User | undefined>
+  title: string
+  onCancel: () => void
+  cancelDisabled?: boolean
+  children: ReactNode
 }
 
 /**
@@ -33,7 +33,7 @@ export function SignPopupAuthGate({
   children,
 }: SignPopupAuthGateProps) {
   if (isLocked) {
-    return <LockScreen isPinSet={isPinSet} unlock={unlock} />;
+    return <LockScreen isPinSet={isPinSet} unlock={unlock} />
   }
 
   if (!user) {
@@ -55,8 +55,8 @@ export function SignPopupAuthGate({
           </Button>
         </div>
       </div>
-    );
+    )
   }
 
-  return <>{children}</>;
+  return <>{children}</>
 }

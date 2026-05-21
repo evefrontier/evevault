@@ -1,11 +1,11 @@
-import React from 'react';
-import type { HeadingProps } from '#/types';
+import React from 'react'
+import type { HeadingProps } from '#/types'
 
 const variantClasses: Record<string, string> = {
   regular: 'font-normal',
   bold: 'font-bold',
   secondary: 'font-normal',
-};
+}
 
 export const Heading: React.FC<HeadingProps> = ({
   level,
@@ -16,10 +16,9 @@ export const Heading: React.FC<HeadingProps> = ({
   style,
   ...rest
 }) => {
-  const tagName = `h${level}` as keyof HTMLElementTagNameMap;
+  const tagName = `h${level}` as keyof HTMLElementTagNameMap
 
-  const computedClassName =
-    `m-0 ${variantClasses[variant]} ${className}`.trim();
+  const computedClassName = `m-0 ${variantClasses[variant]} ${className}`.trim()
 
   const computedStyle: React.CSSProperties = {
     color: color ? `var(--${color})` : undefined,
@@ -27,7 +26,7 @@ export const Heading: React.FC<HeadingProps> = ({
       fontFamily: '"M42_FLIGHT 721", monospace',
     }),
     ...style,
-  };
+  }
 
   return React.createElement(
     tagName,
@@ -37,7 +36,7 @@ export const Heading: React.FC<HeadingProps> = ({
       ...rest,
     },
     children,
-  );
-};
+  )
+}
 
-export default Heading;
+export default Heading

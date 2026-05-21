@@ -11,21 +11,21 @@
  * formatByDecimals("1234567890", 9) // Returns "1.23456789"
  */
 export function formatByDecimals(amount: string, decimals: number): string {
-  const divisor = 10n ** BigInt(decimals);
-  const value = BigInt(amount);
-  const integer = value / divisor;
-  const fraction = value % divisor;
+  const divisor = 10n ** BigInt(decimals)
+  const value = BigInt(amount)
+  const integer = value / divisor
+  const fraction = value % divisor
 
   if (fraction === 0n) {
-    return integer.toString();
+    return integer.toString()
   }
 
   const fractionStr = fraction
     .toString()
     .padStart(decimals, '0')
-    .replace(/0+$/, '');
+    .replace(/0+$/, '')
 
-  return `${integer.toString()}.${fractionStr}`;
+  return `${integer.toString()}.${fractionStr}`
 }
 
 /**
@@ -44,24 +44,23 @@ export function formatByDecimals(amount: string, decimals: number): string {
  * toSmallestUnit(".5", 9) // Returns 500000000n
  */
 export function toSmallestUnit(amount: string, decimals: number): bigint {
-  if (!amount || amount === '.') return 0n;
+  if (!amount || amount === '.') return 0n
 
-  const [whole = '0', fraction = ''] = amount.split('.');
+  const [whole = '0', fraction = ''] = amount.split('.')
 
   if (fraction.length > decimals) {
     throw new Error(
       `Amount has too many decimal places. Maximum allowed is ${decimals}.`,
-    );
+    )
   }
 
-  const paddedFraction = fraction.padEnd(decimals, '0');
-  const combined =
-    (whole === '0' || whole === '' ? '' : whole) + paddedFraction;
-  return BigInt(combined === '' ? '0' : combined);
+  const paddedFraction = fraction.padEnd(decimals, '0')
+  const combined = (whole === '0' || whole === '' ? '' : whole) + paddedFraction
+  return BigInt(combined === '' ? '0' : combined)
 }
 
 /** SUI decimals (1 SUI = 10^9 MIST). */
-const SUI_DECIMALS = 9;
+const SUI_DECIMALS = 9
 
 /**
  * Formats MIST (Sui smallest unit) as human-readable SUI string.
@@ -69,8 +68,8 @@ const SUI_DECIMALS = 9;
  * @returns Formatted SUI amount, e.g. "0.001"
  */
 export function formatMistToSui(mist: string | bigint): string {
-  const s = typeof mist === 'bigint' ? mist.toString() : mist;
-  return formatByDecimals(s, SUI_DECIMALS);
+  const s = typeof mist === 'bigint' ? mist.toString() : mist
+  return formatByDecimals(s, SUI_DECIMALS)
 }
 
 /**
@@ -87,7 +86,7 @@ export function formatMistToSui(mist: string | bigint): string {
  * formatDisplayAmount("1000000") // Returns "1,000,000"
  */
 export function formatDisplayAmount(value: string, maxDecimals = 5): string {
-  const num = Number.parseFloat(value);
+  const num = Number.parseFloat(value)
 
   if (Number.isNaN(num)) {
     // Log a warning so invalid numeric usage is visible during development
@@ -96,15 +95,15 @@ export function formatDisplayAmount(value: string, maxDecimals = 5): string {
     console.warn(
       '[formatDisplayAmount] Received non-numeric value, returning placeholder:',
       value,
-    );
-    return '—';
+    )
+    return '—'
   }
 
   // Use Intl.NumberFormat for locale-aware formatting
   return new Intl.NumberFormat(undefined, {
     minimumFractionDigits: 0,
     maximumFractionDigits: maxDecimals,
-  }).format(num);
+  }).format(num)
 }
 
 /**
@@ -122,12 +121,12 @@ export function formatDisplayAmount(value: string, maxDecimals = 5): string {
  * formatShortDate(Date.now()) // Returns current date in locale format
  */
 export function formatShortDate(timestamp: number): string {
-  const date = new Date(timestamp);
+  const date = new Date(timestamp)
 
   // Use Intl.DateTimeFormat with browser's default locale for regional formatting
   return new Intl.DateTimeFormat(undefined, {
     year: '2-digit',
     month: '2-digit',
     day: '2-digit',
-  }).format(date);
+  }).format(date)
 }

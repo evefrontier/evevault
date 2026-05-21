@@ -1,1 +1,1 @@
-export { TenantSelector } from './TenantSelector';
+export { TenantSelector } from './TenantSelector'
