@@ -86,22 +86,24 @@ describe("Build user from JWT", () => {
       expect(user.scope).toBe("");
     });
 
-    it("computes expires_at from iat + expires_in", () => {
-      // buildUserFromOAuthResponse derives expires_at = decodedJwt.iat + expires_in
-      // h.mockDecodeJwt returns { iat: 1000 }, makeJwtResponse has expires_in: 3600
+    it("ignores response expires_at and computes expires_at from iat + expires_in", () => {
       const oauthResponse: OAuthTokenResponse = {
         ...makeJwtResponse(),
+        refresh_token: "refresh-token",
+        // Deliberately different from decoded iat (1000) + expires_in (3600)
+        // to prove buildUserFromOAuthResponse ignores response expires_at.
         expires_at: 9999,
       };
 
       const user = buildUserFromOAuthResponse(oauthResponse);
 
-      expect(user.expires_at).toBe(1000 + 3600);
+      // mockDecodeJwt supplies iat: 1000, makeJwtResponse supplies expires_in: 3600
+      // => computed expires_at is 4600.
+      expect(user.expires_at).toBe(4600);
     });
 
     it("returns { expiresAt, now } when a JWT snapshot exists", () => {
       const user = buildUserFromJwt(makeJwtResponse());
-
       const result = jwtTiming(user);
 
       expect(result).toEqual({ expiresAt: 4600, now: expect.any(Number) });
@@ -114,7 +116,11 @@ describe("Build user from JWT", () => {
         access_token: "enriched-access",
         token_type: "Bearer",
         scope: "openid",
-        profile: { sub: "user-1" } as unknown as User["profile"],
+        profile: {
+          sub: "user-1",
+          sui_address: "0xenriched",
+          salt: "mock-salt",
+        } as unknown as User["profile"],
       });
       h.mockEnrichUser.mockResolvedValue(enrichedUser);
 
@@ -130,10 +136,14 @@ describe("Build user from JWT", () => {
   });
 
   describe("Rejection paths", () => {
-    it("returns null when userToJwtResponse() returns null", () => {
+    it("jwtTiming returns null when userToJwtResponse() returns null", () => {
       h.mockUserToJwtResponse.mockReturnValue(null);
+
+      // Create a real user but no JWT snapshot to test jwtTiming's null return.
       const user = buildUserFromJwt(makeJwtResponse());
 
+      // Without a JWT snapshot, expiry timing is unavailable,
+      // so jwtTiming returns null.
       expect(jwtTiming(user)).toBeNull();
     });
   });

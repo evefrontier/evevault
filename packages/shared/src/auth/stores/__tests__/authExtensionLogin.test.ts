@@ -1,4 +1,4 @@
-import { User } from "oidc-client-ts";
+import { User, type UserManager } from "oidc-client-ts";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const h = vi.hoisted(() => ({
@@ -30,38 +30,33 @@ vi.mock("jose", () => ({
 }));
 
 import { loginExtensionSession } from "#/auth/stores/authExtensionLogin";
-import { makeJwt } from "#/testing";
-import type { OAuthTokenResponse } from "#/types/authTypes";
+import type {
+  AuthGet,
+  AuthSet,
+  GetUserManagerInstance,
+} from "#/auth/stores/authWorkflowUtils";
+import type { AuthState } from "#/auth/types";
+import { makeTokenResponse } from "./authStoreTestMocks";
 
-function makeTokenResponse(): OAuthTokenResponse {
-  return {
-    id_token: makeJwt({ sub: "user-1", iat: 1000, exp: 4600 }),
-    access_token: "access-token",
-    token_type: "Bearer",
-    scope: "openid",
-    refresh_token: "refresh-token",
-    expires_in: 3600,
-    expires_at: 4600,
-  };
-}
+type AuthSetMock = AuthSet & ReturnType<typeof vi.fn>;
 
 describe("authExtensionLogin()", () => {
-  let mockSet: ReturnType<typeof vi.fn>;
-  let mockGet: ReturnType<typeof vi.fn>;
-  let mockGetUserManager: ReturnType<typeof vi.fn>;
+  let mockSet: AuthSetMock;
+  let mockGet: AuthGet;
+  let mockGetUserManager: GetUserManagerInstance;
+  let mockExtensionLogin: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     h.mockStoreUser.mockResolvedValue(undefined);
     h.mockEnrichUser.mockImplementation(async (user: unknown) => user);
     h.mockSyncPrimaryJwt.mockResolvedValue(undefined);
     h.mockDecodeJwt.mockReturnValue({ sub: "user-1", iat: 1000, exp: 4600 });
-    mockSet = vi.fn();
-    mockGetUserManager = vi
-      .fn()
-      .mockReturnValue({ storeUser: h.mockStoreUser });
-    mockGet = vi.fn().mockReturnValue({
-      extensionLogin: vi.fn().mockResolvedValue(makeTokenResponse()),
-    });
+    mockSet = vi.fn() as AuthSetMock;
+    mockGetUserManager = () =>
+      ({ storeUser: h.mockStoreUser }) as unknown as UserManager;
+    mockExtensionLogin = vi.fn().mockResolvedValue(makeTokenResponse());
+    mockGet = () =>
+      ({ extensionLogin: mockExtensionLogin }) as unknown as AuthState;
   });
 
   afterEach(() => {
@@ -91,9 +86,7 @@ describe("authExtensionLogin()", () => {
 
   describe("Rejection paths", () => {
     it("resolves undefined or null: sets { loading: false }, returns undefined", async () => {
-      mockGet.mockReturnValue({
-        extensionLogin: vi.fn().mockResolvedValue(null),
-      });
+      mockExtensionLogin.mockResolvedValue(null);
 
       const user = await loginExtensionSession(
         mockGet,
@@ -107,12 +100,10 @@ describe("authExtensionLogin()", () => {
       expect(h.mockSyncPrimaryJwt).not.toHaveBeenCalled();
     });
 
-    it("rejection with 'The user did not approve access.': no error state, only loading false", async () => {
-      mockGet.mockReturnValue({
-        extensionLogin: vi
-          .fn()
-          .mockRejectedValue(new Error("The user did not approve access.")),
-      });
+    it("rejection with 'The user did not approve access.'", async () => {
+      mockExtensionLogin.mockRejectedValue(
+        new Error("The user did not approve access."),
+      );
 
       const user = await loginExtensionSession(
         mockGet,
@@ -120,6 +111,7 @@ describe("authExtensionLogin()", () => {
         mockGetUserManager,
       );
 
+      // No error state, only loading false.
       expect(user).toBeUndefined();
       expect(mockSet).toHaveBeenCalledWith({ loading: false });
       expect(mockSet).not.toHaveBeenCalledWith(
@@ -130,9 +122,7 @@ describe("authExtensionLogin()", () => {
     });
 
     it("rejection with another Error: sets error to that message", async () => {
-      mockGet.mockReturnValue({
-        extensionLogin: vi.fn().mockRejectedValue(new Error("Another error")),
-      });
+      mockExtensionLogin.mockRejectedValue(new Error("Another error"));
 
       const user = await loginExtensionSession(
         mockGet,
@@ -148,9 +138,7 @@ describe("authExtensionLogin()", () => {
     });
 
     it("rejection with non-Error: sets error to 'Unknown error'", async () => {
-      mockGet.mockReturnValue({
-        extensionLogin: vi.fn().mockRejectedValue("Another error"),
-      });
+      mockExtensionLogin.mockRejectedValue("Another error");
 
       const user = await loginExtensionSession(
         mockGet,

@@ -23,6 +23,7 @@ describe("getEnokiApiKey", () => {
   });
 
   it("getEnokiApiKey() when isBrowser() is true and env exists", () => {
+    mockIsBrowser.mockReturnValue(true);
     vi.stubEnv("VITE_ENOKI_API_KEY", "test-enoki-key");
     expect(getEnokiApiKey()).toBe("test-enoki-key");
   });
@@ -41,8 +42,8 @@ describe("getEnokiApiKey", () => {
 });
 
 describe("getErrorMessage", () => {
-  it("getErrorMessage(new Error('x')) === 'x'", () => {
-    expect(getErrorMessage(new Error("x"))).toBe("x");
+  it("getErrorMessage(new Error('New Error')) === 'New Error'", () => {
+    expect(getErrorMessage(new Error("New Error"))).toBe("New Error");
   });
 
   it("getErrorMessage('x') === 'Unknown error'", () => {
