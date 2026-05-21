@@ -1,6 +1,12 @@
 #!/usr/bin/env sh
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-nvm use 22 --silent
+nvm use 25 --silent
+export TURBO_UI=false
 export PATH="$HOME/.bun/bin:$PATH"
-bun run test:run
+# GHSA-3v7f-55p6-f55p / GHSA-c2c7-rcm5-vvqj: picomatch 2.3.1 nested inside micromatch/anymatch/readdirp.
+# A global override to 2.3.2 would break fdir (requires picomatch ^3||^4). Dev-only, no runtime exposure.
+# GHSA-vpq2-c234-7xj6: @tootallnate/once 2.x in teeny-request > http-proxy-agent@5. Upgrading to 3.x
+# is a breaking change for that package. Dev-only, no runtime exposure.
+bun audit --ignore=GHSA-3v7f-55p6-f55p --ignore=GHSA-c2c7-rcm5-vvqj --ignore=GHSA-vpq2-c234-7xj6
+NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--no-experimental-webstorage" bun run test:run

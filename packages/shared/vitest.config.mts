@@ -23,11 +23,7 @@ export default defineConfig({
   },
   test: {
     exclude: ["**/node_modules/**", "**/dist/**"],
-    server: {
-      deps: {
-        inline: [/@evevault\/shared/],
-      },
-    },
+
     coverage: {
       provider: "v8",
       reporter: ["text", "json-summary", "json"],
