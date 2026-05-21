@@ -1,25 +1,25 @@
-import { SUI_PRIVATE_KEY_PREFIX } from "@mysten/sui/cryptography";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { SUI_PRIVATE_KEY_PREFIX } from '@mysten/sui/cryptography';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   _handleLocalnetGetAddress,
   _handleLocalnetSetKeypair,
   _handleLocalnetSignBytes,
-} from "@/lib/background/handlers/localVaultHandlers";
-import type { VaultMessage } from "@/lib/background/types";
+} from '@/lib/background/handlers/localVaultHandlers';
+import type { VaultMessage } from '@/lib/background/types';
 
 const { mockSendToKeeper } = vi.hoisted(() => ({
   mockSendToKeeper: vi.fn(),
 }));
 
-vi.mock("@/lib/background/handlers/vaultHandlers", () => ({
+vi.mock('@/lib/background/handlers/vaultHandlers', () => ({
   sendToKeeper: mockSendToKeeper,
 }));
 
-vi.mock("@evevault/shared/types", () => ({
+vi.mock('@evevault/shared/types', () => ({
   KeeperMessageTypes: {
-    LOCALNET_SET_KEYPAIR: "LOCALNET_SET_KEYPAIR",
-    LOCALNET_GET_ADDRESS: "LOCALNET_GET_ADDRESS",
-    LOCALNET_SIGN: "LOCALNET_SIGN",
+    LOCALNET_SET_KEYPAIR: 'LOCALNET_SET_KEYPAIR',
+    LOCALNET_GET_ADDRESS: 'LOCALNET_GET_ADDRESS',
+    LOCALNET_SIGN: 'LOCALNET_SIGN',
   },
 }));
 
@@ -27,7 +27,7 @@ const mockSender = {} as chrome.runtime.MessageSender;
 
 function makeMessage(overrides: Partial<VaultMessage> = {}): VaultMessage {
   return {
-    type: "LOCALNET_SET_KEYPAIR",
+    type: 'LOCALNET_SET_KEYPAIR',
     ...overrides,
   } as unknown as VaultMessage;
 }
@@ -44,7 +44,7 @@ function installChromeMock() {
   } as unknown as typeof chrome;
 }
 
-describe("_handleLocalnetSetKeypair", () => {
+describe('_handleLocalnetSetKeypair', () => {
   beforeEach(() => {
     installChromeMock();
     mockSendToKeeper.mockReset();
@@ -54,11 +54,11 @@ describe("_handleLocalnetSetKeypair", () => {
     vi.restoreAllMocks();
   });
 
-  it("persists encrypted key blob and calls sendResponse when keeper returns ok", async () => {
-    const encryptedKey = { iv: "aaa", data: "bbb", salt: "ccc" };
+  it('persists encrypted key blob and calls sendResponse when keeper returns ok', async () => {
+    const encryptedKey = { iv: 'aaa', data: 'bbb', salt: 'ccc' };
     mockSendToKeeper.mockResolvedValue({
       ok: true,
-      address: "0xabc",
+      address: '0xabc',
       encryptedKey,
     });
     const sendResponse = vi.fn();
@@ -72,15 +72,15 @@ describe("_handleLocalnetSetKeypair", () => {
     await new Promise((r) => setTimeout(r, 0));
 
     expect(mockSendToKeeper).toHaveBeenCalledWith({
-      type: "LOCALNET_SET_KEYPAIR",
+      type: 'LOCALNET_SET_KEYPAIR',
       privateKey: `${SUI_PRIVATE_KEY_PREFIX}1abc`,
     });
     expect(chrome.storage.local.set).toHaveBeenCalledWith({
-      "evevault:device": JSON.stringify({
+      'evevault:device': JSON.stringify({
         state: {
           localnet: {
             encryptedKey: JSON.stringify(encryptedKey),
-            address: "0xabc",
+            address: '0xabc',
           },
         },
         version: 0,
@@ -89,16 +89,16 @@ describe("_handleLocalnetSetKeypair", () => {
     expect(chrome.storage.local.remove).not.toHaveBeenCalled();
     expect(sendResponse).toHaveBeenCalledWith({
       ok: true,
-      address: "0xabc",
+      address: '0xabc',
       error: undefined,
     });
   });
 
-  it("does not persist key when keeper returns an error", async () => {
-    mockSendToKeeper.mockResolvedValue({ ok: false, error: "Invalid key" });
+  it('does not persist key when keeper returns an error', async () => {
+    mockSendToKeeper.mockResolvedValue({ ok: false, error: 'Invalid key' });
     const sendResponse = vi.fn();
     const message = makeMessage({
-      privateKey: "badkey",
+      privateKey: 'badkey',
     } as Partial<VaultMessage>);
 
     _handleLocalnetSetKeypair(message, mockSender, sendResponse);
@@ -108,12 +108,12 @@ describe("_handleLocalnetSetKeypair", () => {
     expect(sendResponse).toHaveBeenCalledWith({
       ok: false,
       address: undefined,
-      error: "Invalid key",
+      error: 'Invalid key',
     });
   });
 
-  it("calls sendResponse with error when sendToKeeper throws", async () => {
-    mockSendToKeeper.mockRejectedValue(new Error("Keeper unavailable"));
+  it('calls sendResponse with error when sendToKeeper throws', async () => {
+    mockSendToKeeper.mockRejectedValue(new Error('Keeper unavailable'));
     const sendResponse = vi.fn();
     const message = makeMessage({
       privateKey: `${SUI_PRIVATE_KEY_PREFIX}1abc`,
@@ -125,15 +125,15 @@ describe("_handleLocalnetSetKeypair", () => {
     expect(chrome.storage.local.set).not.toHaveBeenCalled();
     expect(sendResponse).toHaveBeenCalledWith({
       ok: false,
-      error: "Keeper unavailable",
+      error: 'Keeper unavailable',
     });
   });
 
-  it("always stores the localnet key as an encrypted object, never a plain string", async () => {
-    const encryptedKey = { iv: "aaa", data: "bbb", salt: "ccc" };
+  it('always stores the localnet key as an encrypted object, never a plain string', async () => {
+    const encryptedKey = { iv: 'aaa', data: 'bbb', salt: 'ccc' };
     mockSendToKeeper.mockResolvedValue({
       ok: true,
-      address: "0xabc",
+      address: '0xabc',
       encryptedKey,
     });
 
@@ -148,14 +148,14 @@ describe("_handleLocalnetSetKeypair", () => {
 
     const [[stored]] = (chrome.storage.local.set as ReturnType<typeof vi.fn>)
       .mock.calls;
-    const storedValue = JSON.parse(stored["evevault:device"]).state.localnet
+    const storedValue = JSON.parse(stored['evevault:device']).state.localnet
       .encryptedKey;
-    expect(typeof storedValue).toBe("string");
-    expect(JSON.parse(storedValue)).toHaveProperty("data");
+    expect(typeof storedValue).toBe('string');
+    expect(JSON.parse(storedValue)).toHaveProperty('data');
   });
 
-  it("returns true (async channel indicator)", () => {
-    mockSendToKeeper.mockResolvedValue({ ok: true, address: "0xabc" });
+  it('returns true (async channel indicator)', () => {
+    mockSendToKeeper.mockResolvedValue({ ok: true, address: '0xabc' });
     const result = _handleLocalnetSetKeypair(
       makeMessage(),
       mockSender,
@@ -165,22 +165,22 @@ describe("_handleLocalnetSetKeypair", () => {
   });
 });
 
-describe("_handleLocalnetGetAddress", () => {
+describe('_handleLocalnetGetAddress', () => {
   beforeEach(() => {
     installChromeMock();
     mockSendToKeeper.mockReset();
   });
 
-  it("calls sendResponse with keeper address on success", async () => {
-    mockSendToKeeper.mockResolvedValue({ ok: true, address: "0xdef" });
+  it('calls sendResponse with keeper address on success', async () => {
+    mockSendToKeeper.mockResolvedValue({ ok: true, address: '0xdef' });
     const sendResponse = vi.fn();
 
     await _handleLocalnetGetAddress(makeMessage(), mockSender, sendResponse);
 
-    expect(sendResponse).toHaveBeenCalledWith({ ok: true, address: "0xdef" });
+    expect(sendResponse).toHaveBeenCalledWith({ ok: true, address: '0xdef' });
   });
 
-  it("calls sendResponse with null address when no keypair loaded", async () => {
+  it('calls sendResponse with null address when no keypair loaded', async () => {
     mockSendToKeeper.mockResolvedValue({ ok: true, address: null });
     const sendResponse = vi.fn();
 
@@ -189,8 +189,8 @@ describe("_handleLocalnetGetAddress", () => {
     expect(sendResponse).toHaveBeenCalledWith({ ok: true, address: null });
   });
 
-  it("calls sendResponse with error shape when sendToKeeper throws", async () => {
-    mockSendToKeeper.mockRejectedValue(new Error("Keeper error"));
+  it('calls sendResponse with error shape when sendToKeeper throws', async () => {
+    mockSendToKeeper.mockRejectedValue(new Error('Keeper error'));
     const sendResponse = vi.fn();
 
     await _handleLocalnetGetAddress(makeMessage(), mockSender, sendResponse);
@@ -199,44 +199,44 @@ describe("_handleLocalnetGetAddress", () => {
   });
 });
 
-describe("_handleLocalnetSignBytes", () => {
+describe('_handleLocalnetSignBytes', () => {
   beforeEach(() => {
     installChromeMock();
     mockSendToKeeper.mockReset();
   });
 
-  it("calls sendResponse with bytes and signature on success", async () => {
+  it('calls sendResponse with bytes and signature on success', async () => {
     mockSendToKeeper.mockResolvedValue({
       ok: true,
-      bytes: "base64bytes",
-      signature: "base64sig",
+      bytes: 'base64bytes',
+      signature: 'base64sig',
     });
     const sendResponse = vi.fn();
     const message = makeMessage({
       msgBytes: [1, 2, 3],
-      scope: "TransactionData",
-      suiAddress: "0xabc",
+      scope: 'TransactionData',
+      suiAddress: '0xabc',
     } as Partial<VaultMessage>);
 
     await _handleLocalnetSignBytes(message, mockSender, sendResponse);
 
     expect(sendResponse).toHaveBeenCalledWith({
       ok: true,
-      bytes: "base64bytes",
-      signature: "base64sig",
+      bytes: 'base64bytes',
+      signature: 'base64sig',
     });
   });
 
-  it("converts Uint8Array msgBytes to plain array before sending to keeper", async () => {
+  it('converts Uint8Array msgBytes to plain array before sending to keeper', async () => {
     mockSendToKeeper.mockResolvedValue({
       ok: true,
-      bytes: "b",
-      signature: "s",
+      bytes: 'b',
+      signature: 's',
     });
     const message = makeMessage({
       msgBytes: new Uint8Array([10, 20, 30]) as unknown as number[],
-      scope: "TransactionData",
-      suiAddress: "0xabc",
+      scope: 'TransactionData',
+      suiAddress: '0xabc',
     } as Partial<VaultMessage>);
 
     await _handleLocalnetSignBytes(message, mockSender, vi.fn());
@@ -245,40 +245,40 @@ describe("_handleLocalnetSignBytes", () => {
     expect(calledWith.msgBytes).toEqual([10, 20, 30]);
   });
 
-  it("calls sendResponse with error when keeper returns ok: false", async () => {
+  it('calls sendResponse with error when keeper returns ok: false', async () => {
     mockSendToKeeper.mockResolvedValue({
       ok: false,
-      error: "No keypair loaded",
+      error: 'No keypair loaded',
     });
     const sendResponse = vi.fn();
     const message = makeMessage({
       msgBytes: [1, 2, 3],
-      scope: "TransactionData",
-      suiAddress: "0xabc",
+      scope: 'TransactionData',
+      suiAddress: '0xabc',
     } as Partial<VaultMessage>);
 
     await _handleLocalnetSignBytes(message, mockSender, sendResponse);
 
     expect(sendResponse).toHaveBeenCalledWith({
       ok: false,
-      error: "No keypair loaded",
+      error: 'No keypair loaded',
     });
   });
 
-  it("calls sendResponse with error when sendToKeeper throws", async () => {
-    mockSendToKeeper.mockRejectedValue(new Error("Keeper crashed"));
+  it('calls sendResponse with error when sendToKeeper throws', async () => {
+    mockSendToKeeper.mockRejectedValue(new Error('Keeper crashed'));
     const sendResponse = vi.fn();
     const message = makeMessage({
       msgBytes: [1, 2, 3],
-      scope: "TransactionData",
-      suiAddress: "0xabc",
+      scope: 'TransactionData',
+      suiAddress: '0xabc',
     } as Partial<VaultMessage>);
 
     await _handleLocalnetSignBytes(message, mockSender, sendResponse);
 
     expect(sendResponse).toHaveBeenCalledWith({
       ok: false,
-      error: "Keeper crashed",
+      error: 'Keeper crashed',
     });
   });
 });

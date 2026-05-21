@@ -1,2 +1,2 @@
-export type { HeaderMobileProps } from "#/types";
-export { default, HeaderMobile } from "./HeaderMobile";
+export type { HeaderMobileProps } from '#/types';
+export { default, HeaderMobile } from './HeaderMobile';

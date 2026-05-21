@@ -1,1 +1,1 @@
-export { default, NetworkSelector } from "./NetworkSelector";
+export { default, NetworkSelector } from './NetworkSelector';

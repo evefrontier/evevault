@@ -1,5 +1,5 @@
-import { renderHook } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { renderHook } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
   mockLogin,
@@ -17,13 +17,13 @@ const {
   mockUseAuthStore: vi.fn(),
 }));
 
-vi.mock("#/auth/stores/authStore", () => ({
+vi.mock('#/auth/stores/authStore', () => ({
   useAuthStore: () => mockUseAuthStore(),
 }));
 
-import { useAuth } from "#/auth/hooks/useAuth";
+import { useAuth } from '#/auth/hooks/useAuth';
 
-describe("useAuth", () => {
+describe('useAuth', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUseAuthStore.mockReturnValue({
@@ -38,9 +38,9 @@ describe("useAuth", () => {
     });
   });
 
-  it("sets isAuthenticated to true when user is non-null", () => {
+  it('sets isAuthenticated to true when user is non-null', () => {
     mockUseAuthStore.mockReturnValue({
-      user: { id_token: "token" },
+      user: { id_token: 'token' },
       loading: false,
       error: null,
       login: mockLogin,
@@ -55,13 +55,13 @@ describe("useAuth", () => {
     expect(result.current.isAuthenticated).toBe(true);
   });
 
-  it("sets isAuthenticated to false when user is null", () => {
+  it('sets isAuthenticated to false when user is null', () => {
     const { result } = renderHook(() => useAuth());
 
     expect(result.current.isAuthenticated).toBe(false);
   });
 
-  it("exposes the auth store public API", () => {
+  it('exposes the auth store public API', () => {
     const { result } = renderHook(() => useAuth());
 
     expect(result.current.login).toBe(mockLogin);

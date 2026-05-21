@@ -1,5 +1,5 @@
-import { Transaction } from "@mysten/sui/transactions";
-import { fromBase64, toBase64 } from "@mysten/sui/utils";
+import { Transaction } from '@mysten/sui/transactions';
+import { fromBase64, toBase64 } from '@mysten/sui/utils';
 
 /** Matches comma-separated decimal bytes (e.g. "0,0,2,0,32,...") with optional whitespace around commas */
 const COMMA_SEPARATED_BYTES = /^\d+(\s*,\s*\d+)*$/;
@@ -14,7 +14,7 @@ export type ParseTransactionBytesResult = {
 async function bytesToDisplayJson(bytes: Uint8Array): Promise<string> {
   const tx = Transaction.from(bytes);
   const json = await tx.toJSON();
-  const parsed = (typeof json === "string" ? JSON.parse(json) : json) as Record<
+  const parsed = (typeof json === 'string' ? JSON.parse(json) : json) as Record<
     string,
     unknown
   >;
@@ -33,7 +33,7 @@ export async function parseTransactionBytes(
   transaction: string | Record<string, unknown>,
 ): Promise<ParseTransactionBytesResult> {
   // Handle object input (e.g., Transaction.toJSON() result)
-  if (typeof transaction !== "string") {
+  if (typeof transaction !== 'string') {
     const jsonString = JSON.stringify(transaction);
     const displayValue = JSON.stringify(transaction, null, 2);
 
@@ -51,7 +51,7 @@ export async function parseTransactionBytes(
   if (COMMA_SEPARATED_BYTES.test(trimmed)) {
     try {
       // Parse each byte and validate range
-      const parsedBytes = trimmed.split(",").map((s) => {
+      const parsedBytes = trimmed.split(',').map((s) => {
         const num = Number(s.trim());
         // Validate that the value is a finite integer in the 0-255 range
         if (

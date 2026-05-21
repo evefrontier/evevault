@@ -1,1 +1,1 @@
-export { SendTokenScreen } from "./SendTokenScreen";
+export { SendTokenScreen } from './SendTokenScreen';

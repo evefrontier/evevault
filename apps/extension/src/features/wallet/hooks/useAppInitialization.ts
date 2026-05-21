@@ -1,7 +1,7 @@
-import { useAuth } from "@evevault/shared/auth";
-import { useDeviceStore } from "@evevault/shared/stores/deviceStore";
-import { createLogger, DEVICE_STORAGE_KEY } from "@evevault/shared/utils";
-import { useEffect, useState } from "react";
+import { useAuth } from '@evevault/shared/auth';
+import { useDeviceStore } from '@evevault/shared/stores/deviceStore';
+import { createLogger, DEVICE_STORAGE_KEY } from '@evevault/shared/utils';
+import { useEffect, useState } from 'react';
 
 const log = createLogger();
 
@@ -20,11 +20,11 @@ export function useAppInitialization() {
       if (
         state.isLocked &&
         !prevState.isLocked &&
-        typeof chrome !== "undefined" &&
+        typeof chrome !== 'undefined' &&
         chrome.runtime?.sendMessage
       ) {
         chrome.runtime.sendMessage({
-          event: "change",
+          event: 'change',
           payload: { accounts: [] },
         });
       }
@@ -37,24 +37,24 @@ export function useAppInitialization() {
 
     const initializeStores = async () => {
       try {
-        log.info("Initializing stores");
+        log.info('Initializing stores');
         await initializeAuth();
 
         // Subscribe to device store changes for debugging
         unsubscribe = useDeviceStore.subscribe(async (state, prevState) => {
-          log.debug("Device store changed", { state, prevState });
+          log.debug('Device store changed', { state, prevState });
           const storageSnapshot = await chrome.storage.local.get([
             DEVICE_STORAGE_KEY,
           ]);
-          log.debug("Storage after change", storageSnapshot);
+          log.debug('Storage after change', storageSnapshot);
         });
 
-        log.info("Auth & network stores initialized successfully");
+        log.info('Auth & network stores initialized successfully');
         setIsInitializing(false);
       } catch (error) {
-        log.error("Error initializing stores", error);
+        log.error('Error initializing stores', error);
         setInitError(
-          error instanceof Error ? error.message : "Failed to initialize",
+          error instanceof Error ? error.message : 'Failed to initialize',
         );
         setIsInitializing(false);
       }

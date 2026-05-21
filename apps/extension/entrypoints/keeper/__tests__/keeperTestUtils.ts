@@ -1,8 +1,8 @@
-import { encrypt, type HashedData, KeeperMessageTypes } from "@evevault/shared";
-import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
-import { afterEach, beforeAll, expect, vi } from "vitest";
+import { encrypt, type HashedData, KeeperMessageTypes } from '@evevault/shared';
+import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
+import { afterEach, beforeAll, expect, vi } from 'vitest';
 
-export const TEST_PIN = "123456";
+export const TEST_PIN = '123456';
 
 export type KeeperHandler = (
   message: Record<string, unknown>,
@@ -50,7 +50,7 @@ export function createKeeperTestContext(): {
     msg: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     return new Promise((resolve) => {
-      handler({ target: "KEEPER", ...msg }, {}, (resp) =>
+      handler({ target: 'KEEPER', ...msg }, {}, (resp) =>
         resolve((resp ?? {}) as Record<string, unknown>),
       );
     });
@@ -100,7 +100,7 @@ export function setupKeeperSuite(
   beforeAll(async () => {
     // chrome must exist before keeper.ts loads because it calls
     // chrome.runtime.onMessage.addListener() at module scope.
-    vi.stubGlobal("chrome", {
+    vi.stubGlobal('chrome', {
       runtime: {
         onMessage: { addListener: ctx.captureHandler },
         sendMessage: vi.fn().mockResolvedValue(undefined),
@@ -108,7 +108,7 @@ export function setupKeeperSuite(
     });
     // Dynamic import so the chrome stub is in place when the module registers
     // its listener. This exercises the real message-handler registration.
-    await import("../keeper");
+    await import('../keeper');
   });
 
   afterEach(async () => {

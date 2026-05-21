@@ -1,4 +1,4 @@
-import { User } from "oidc-client-ts";
+import { User } from 'oidc-client-ts';
 
 /**
  * Options for creating a mock oidc-client-ts User.
@@ -29,7 +29,7 @@ interface CreateMockUserOptions {
  */
 export const createMockUser = (options: CreateMockUserOptions = {}): User => {
   const {
-    suiAddress = "0x123",
+    suiAddress = '0x123',
     expiresInSeconds = 3600,
     profileOverrides = {},
     tokens = {},
@@ -38,15 +38,15 @@ export const createMockUser = (options: CreateMockUserOptions = {}): User => {
   const issuedAt = Math.floor(Date.now() / 1000);
 
   return new User({
-    id_token: tokens.idToken ?? "mock-id-token",
-    access_token: tokens.accessToken ?? "mock-access-token",
+    id_token: tokens.idToken ?? 'mock-id-token',
+    access_token: tokens.accessToken ?? 'mock-access-token',
     refresh_token: tokens.refreshToken,
-    token_type: tokens.tokenType ?? "Bearer",
-    scope: tokens.scope ?? "openid profile",
+    token_type: tokens.tokenType ?? 'Bearer',
+    scope: tokens.scope ?? 'openid profile',
     profile: {
-      sub: "mock-subject",
-      aud: "mock-audience",
-      iss: "https://auth.example.com",
+      sub: 'mock-subject',
+      aud: 'mock-audience',
+      iss: 'https://auth.example.com',
       exp: issuedAt + expiresInSeconds,
       iat: issuedAt,
       sui_address: suiAddress,

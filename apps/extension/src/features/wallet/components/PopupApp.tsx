@@ -1,15 +1,15 @@
-import "./PopupApp.css";
-import type { TenantId } from "@evefrontier/dapp-kit";
+import './PopupApp.css';
+import type { TenantId } from '@evefrontier/dapp-kit';
 import {
   getAvailableTenantIds,
   getCurrentTenantId,
   switchTenantAndReload,
-} from "@evevault/shared";
+} from '@evevault/shared';
 import {
   redirectToFusionAuthLogout,
   resetVaultOnDevice,
   useAuth,
-} from "@evevault/shared/auth";
+} from '@evevault/shared/auth';
 import {
   Button,
   HeaderMobile,
@@ -18,22 +18,22 @@ import {
   TenantSelector,
   Text,
   TokenListSection,
-} from "@evevault/shared/components";
-import Icon from "@evevault/shared/components/Icon";
-import { useContext, useDevice, useDevMode } from "@evevault/shared/hooks";
-import { LockScreen } from "@evevault/shared/screens";
-import { localnetKeyService } from "@evevault/shared/services/vaultService";
-import { getFaucetUrlForChain } from "@evevault/shared/sui";
+} from '@evevault/shared/components';
+import Icon from '@evevault/shared/components/Icon';
+import { useContext, useDevice, useDevMode } from '@evevault/shared/hooks';
+import { LockScreen } from '@evevault/shared/screens';
+import { localnetKeyService } from '@evevault/shared/services/vaultService';
+import { getFaucetUrlForChain } from '@evevault/shared/sui';
 import {
   createLogger,
   EXTENSION_ROUTES,
   getSuiscanUrl,
-} from "@evevault/shared/utils";
-import { useActiveSuiAddress, useBalance } from "@evevault/shared/wallet";
-import { useNavigate } from "@tanstack/react-router";
-import { useCallback, useMemo } from "react";
-import { useAppInitialization, useLogin } from "@/features/wallet/hooks";
-import { APP_VERSION } from "@/lib/appVersion";
+} from '@evevault/shared/utils';
+import { useActiveSuiAddress, useBalance } from '@evevault/shared/wallet';
+import { useNavigate } from '@tanstack/react-router';
+import { useCallback, useMemo } from 'react';
+import { useAppInitialization, useLogin } from '@/features/wallet/hooks';
+import { APP_VERSION } from '@/lib/appVersion';
 
 const log = createLogger();
 
@@ -120,7 +120,7 @@ function App() {
         unlock={unlock}
         onResetComplete={() => {
           redirectToFusionAuthLogout();
-          navigate({ to: "/" });
+          navigate({ to: '/' });
         }}
       />
     );
@@ -137,7 +137,7 @@ function App() {
           </header>
           <div className="w-full max-w-[300px]">
             <Button size="fill" onClick={onLoginClick} disabled={authLoading}>
-              {authLoading ? "Loading..." : "Login"}
+              {authLoading ? 'Loading...' : 'Login'}
             </Button>
           </div>
           <TenantSelector
@@ -153,9 +153,9 @@ function App() {
               onClick={async () => {
                 try {
                   await resetVaultOnDevice();
-                  navigate({ to: "/" });
+                  navigate({ to: '/' });
                 } catch (error) {
-                  log.error("Failed to reset vault", error);
+                  log.error('Failed to reset vault', error);
                 }
               }}
               className="text-sm underline text-grey-neutral hover:text-neutral focus:outline-none focus:ring-2 focus:ring-primary rounded"
@@ -171,7 +171,7 @@ function App() {
           onClick={handleDevModeToggle}
         >
           <Icon
-            name={devMode ? "Eye" : "HideEye"}
+            name={devMode ? 'Eye' : 'HideEye'}
             color="#ED4136"
             size="small"
           />
@@ -185,8 +185,8 @@ function App() {
     <div className="flex flex-col  h-full">
       {/* Header with logo and dropdown */}
       <HeaderMobile
-        address={activeAddress ?? ""}
-        email={user?.profile?.email ?? ""}
+        address={activeAddress ?? ''}
+        email={user?.profile?.email ?? ''}
         onTransactionsClick={() =>
           navigate({ to: EXTENSION_ROUTES.TRANSACTIONS })
         }
@@ -196,7 +196,7 @@ function App() {
         onRotateEphKeyClick={devMode ? handleRotateEphKey : undefined}
         onFaucetTestSuiClick={
           devMode && faucetUrl
-            ? () => window.open(faucetUrl, "_blank", "noopener,noreferrer")
+            ? () => window.open(faucetUrl, '_blank', 'noopener,noreferrer')
             : undefined
         }
         onLocalnetSettingsClick={
@@ -211,12 +211,12 @@ function App() {
       <TokenListSection
         user={user}
         chain={chain || null}
-        walletAddress={activeAddress ?? ""}
+        walletAddress={activeAddress ?? ''}
         balanceAddress={activeAddress}
         localnetUrl={localnetUrl}
-        onAddToken={() => navigate({ to: "/add-token" })}
+        onAddToken={() => navigate({ to: '/add-token' })}
         onSendToken={(coinType) =>
-          navigate({ to: "/send-token", search: { coinType } })
+          navigate({ to: '/send-token', search: { coinType } })
         }
       />
 
@@ -230,13 +230,13 @@ function App() {
               .catch(() => null);
             if (!addr) {
               log.info(
-                "No localnet keypair found, navigating to settings page",
+                'No localnet keypair found, navigating to settings page',
               );
               navigate({ to: EXTENSION_ROUTES.LOCALNET_SETTINGS });
             }
           }}
           onNetworkSwitchStart={(previousNetwork, targetNetwork) => {
-            log.info("Network switch started", {
+            log.info('Network switch started', {
               previousNetwork,
               targetNetwork,
             });
@@ -250,14 +250,14 @@ function App() {
       {deviceError && <Text color="error">DeviceError: {deviceError}</Text>}
       {txDigest && (
         <Text>
-          Transaction digest:{" "}
+          Transaction digest:{' '}
           <a
             href={
               chain
                 ? getSuiscanUrl(chain, txDigest, {
                     localnetUrl: localnetUrl ?? undefined,
                   })
-                : "#"
+                : '#'
             }
             target="_blank"
             rel="noopener noreferrer"

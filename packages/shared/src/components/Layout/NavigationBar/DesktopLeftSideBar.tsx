@@ -1,8 +1,8 @@
-import { Link, useLocation } from "@tanstack/react-router";
-import { Corners } from "#/components/Corners";
-import Icon from "#/components/Icon";
-import Text from "#/components/Text";
-import type { IconName, NavigationBarProps } from "#/types";
+import { Link, useLocation } from '@tanstack/react-router';
+import { Corners } from '#/components/Corners';
+import Icon from '#/components/Icon';
+import Text from '#/components/Text';
+import type { IconName, NavigationBarProps } from '#/types';
 
 export default function DesktopLeftSideBar({ items }: NavigationBarProps) {
   const location = useLocation();
@@ -24,19 +24,19 @@ export default function DesktopLeftSideBar({ items }: NavigationBarProps) {
               to={item.path}
               className={`flex w-full items-center gap-4 px-10 py-6 transition-colors ${
                 isActive
-                  ? "bg-[var(--quantum-50)]"
-                  : "hover:bg-[var(--quantum-10)]"
+                  ? 'bg-[var(--quantum-50)]'
+                  : 'hover:bg-[var(--quantum-10)]'
               }`}
-              aria-current={isActive ? "page" : undefined}
+              aria-current={isActive ? 'page' : undefined}
             >
               <Icon
                 name={item.icon as IconName}
                 size="medium"
-                color={isActive ? "neutral" : "matter-06"}
+                color={isActive ? 'neutral' : 'matter-06'}
               />
               <Text
                 variant="label-semi"
-                color={isActive ? "neutral" : "matter-06"}
+                color={isActive ? 'neutral' : 'matter-06'}
                 className="uppercase"
               >
                 {item.label}

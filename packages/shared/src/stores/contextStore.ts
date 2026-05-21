@@ -1,22 +1,22 @@
-import type { TenantId } from "@evefrontier/dapp-kit/utils";
-import { SUI_TESTNET_CHAIN, type SuiChain } from "@mysten/wallet-standard";
-import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
-import { chromeStorageAdapter, localStorageAdapter } from "#/adapters";
-import type { ContextState, NetworkSwitchResult } from "#/types";
-import { isLocalnetChain, isZkLoginSuiChain } from "#/types/networks";
-import { createLogger, isExtension, isWeb } from "#/utils";
-import { CONTEXT_STORAGE_KEY } from "#/utils/storageKeys";
+import type { TenantId } from '@evefrontier/dapp-kit/utils';
+import { SUI_TESTNET_CHAIN, type SuiChain } from '@mysten/wallet-standard';
+import { create } from 'zustand';
+import { createJSONStorage, persist } from 'zustand/middleware';
+import { chromeStorageAdapter, localStorageAdapter } from '#/adapters';
+import type { ContextState, NetworkSwitchResult } from '#/types';
+import { isLocalnetChain, isZkLoginSuiChain } from '#/types/networks';
+import { createLogger, isExtension, isWeb } from '#/utils';
+import { CONTEXT_STORAGE_KEY } from '#/utils/storageKeys';
 import {
   getAvailableTenantIds,
   isAvailableTenantId,
-} from "#/utils/tenantConfig";
+} from '#/utils/tenantConfig';
 
 // Store dependency direction is intentional: contextStore may coordinate with
 // deviceStore during network switches, but deviceStore must not import contextStore.
 const log = createLogger();
 
-const INITIAL_TENANT_ID = "stillness" as TenantId;
+const INITIAL_TENANT_ID = 'stillness' as TenantId;
 
 type PersistedContextState = Partial<{
   tenantId: TenantId;
@@ -40,7 +40,7 @@ function parsePersistedState<TState>(raw: string | null): TState | null {
 }
 
 function getInitialStateFromLocalStorage(): PersistedContextState {
-  if (!isWeb() || typeof window === "undefined" || !window.localStorage) {
+  if (!isWeb() || typeof window === 'undefined' || !window.localStorage) {
     return {};
   }
 
@@ -77,7 +77,7 @@ export const useContextStore = create<ContextState>()(
           return { requiresReauth: false };
         }
 
-        const { hasJwt } = await import("#/auth");
+        const { hasJwt } = await import('#/auth');
         const jwtExists = await hasJwt();
         return { requiresReauth: !jwtExists };
       },
@@ -85,7 +85,7 @@ export const useContextStore = create<ContextState>()(
       forceSetChain: (chain: SuiChain) => {
         const currentChain = get().chain;
         if (currentChain !== chain) {
-          log.info("Force setting chain (for logout-based switch)", {
+          log.info('Force setting chain (for logout-based switch)', {
             from: currentChain,
             to: chain,
           });
@@ -101,19 +101,19 @@ export const useContextStore = create<ContextState>()(
 
           if (isExtension()) {
             chrome.runtime?.sendMessage?.({
-              __from: "Eve Vault",
-              event: "change",
+              __from: 'Eve Vault',
+              event: 'change',
               payload: { chains: [chain] },
             });
           }
 
-          log.info("Switched to localnet");
+          log.info('Switched to localnet');
           return { success: true, requiresReauth: false };
         };
 
         const switchToZkLoginChain = async (): Promise<NetworkSwitchResult> => {
-          const { hasJwt, useAuthStore } = await import("#/auth");
-          const { useDeviceStore } = await import("#/stores/deviceStore");
+          const { hasJwt, useAuthStore } = await import('#/auth');
+          const { useDeviceStore } = await import('#/stores/deviceStore');
           const jwtExists = await hasJwt();
 
           set({ chain, loading: true });
@@ -123,7 +123,7 @@ export const useContextStore = create<ContextState>()(
               await useAuthStore.getState().initialize();
             } catch (error) {
               log.error(
-                "Failed to initialize auth store after network switch",
+                'Failed to initialize auth store after network switch',
                 error,
               );
             }
@@ -132,13 +132,13 @@ export const useContextStore = create<ContextState>()(
               await useDeviceStore.getState().initializeForChain(chain);
             } catch (error) {
               log.warn(
-                "Could not pre-initialize device data for chain during network switch",
+                'Could not pre-initialize device data for chain during network switch',
                 { chain, error },
               );
             }
 
             set({ loading: false });
-            log.info("Switched to zkLogin chain (re-authentication required)", {
+            log.info('Switched to zkLogin chain (re-authentication required)', {
               chain,
             });
             return { success: true, requiresReauth: true };
@@ -147,8 +147,8 @@ export const useContextStore = create<ContextState>()(
           try {
             if (isExtension()) {
               chrome.runtime?.sendMessage?.({
-                __from: "Eve Vault",
-                event: "change",
+                __from: 'Eve Vault',
+                event: 'change',
                 payload: { chains: [chain] },
               });
             }
@@ -167,10 +167,10 @@ export const useContextStore = create<ContextState>()(
             }
 
             set({ loading: false });
-            log.info("Successfully switched to zkLogin chain", { chain });
+            log.info('Successfully switched to zkLogin chain', { chain });
             return { success: true, requiresReauth: false };
           } catch (error) {
-            log.error("Failed to complete network switch", error);
+            log.error('Failed to complete network switch', error);
             set({ loading: false });
             set({ chain: currentChain });
             return { success: false, requiresReauth: false };
@@ -181,7 +181,7 @@ export const useContextStore = create<ContextState>()(
           return { success: true, requiresReauth: false };
         }
 
-        log.info("Setting chain", { from: currentChain, to: chain });
+        log.info('Setting chain', { from: currentChain, to: chain });
 
         if (isLocalnetChain(chain)) {
           return switchToLocalnetChain();
@@ -204,7 +204,7 @@ export const useContextStore = create<ContextState>()(
   ),
 );
 
-if (typeof chrome !== "undefined" && chrome.storage && !isWeb()) {
+if (typeof chrome !== 'undefined' && chrome.storage && !isWeb()) {
   const storage = chrome.storage as {
     onChanged?: {
       addListener: (
@@ -214,7 +214,7 @@ if (typeof chrome !== "undefined" && chrome.storage && !isWeb()) {
   };
   storage.onChanged?.addListener(
     (changes: Record<string, unknown>, areaName: string) => {
-      if (areaName === "local" && changes[CONTEXT_STORAGE_KEY]) {
+      if (areaName === 'local' && changes[CONTEXT_STORAGE_KEY]) {
         void useContextStore.persist.rehydrate();
       }
     },

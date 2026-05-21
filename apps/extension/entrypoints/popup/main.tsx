@@ -1,26 +1,26 @@
-import { WalletActions } from "@evevault/shared";
-import { Layout, ToastProvider } from "@evevault/shared/components";
-import { queryClient } from "@evevault/shared/queryClient";
-import { applyTheme } from "@evevault/shared/theme";
-import { createLogger } from "@evevault/shared/utils";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { WalletActions } from '@evevault/shared';
+import { Layout, ToastProvider } from '@evevault/shared/components';
+import { queryClient } from '@evevault/shared/queryClient';
+import { applyTheme } from '@evevault/shared/theme';
+import { createLogger } from '@evevault/shared/utils';
+import { QueryClientProvider } from '@tanstack/react-query';
 import {
   createHashHistory,
   createRouter,
   RouterProvider,
-} from "@tanstack/react-router";
-import React from "react";
-import ReactDOM from "react-dom/client";
-import SignAndExecuteTransaction from "@/features/wallet/components/SignExecuteTransaction";
-import SignPersonalMessage from "@/features/wallet/components/SignPersonalMessage";
-import SignTransaction from "@/features/wallet/components/SignTransaction";
-import { routeTree } from "@/routeTree.gen";
-import "../style.css";
+} from '@tanstack/react-router';
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import SignAndExecuteTransaction from '@/features/wallet/components/SignExecuteTransaction';
+import SignPersonalMessage from '@/features/wallet/components/SignPersonalMessage';
+import SignTransaction from '@/features/wallet/components/SignTransaction';
+import { routeTree } from '@/routeTree.gen';
+import '../style.css';
 
 const log = createLogger();
 
 // Apply default theme
-applyTheme("dark");
+applyTheme('dark');
 
 // Create hash history for extension (required for chrome-extension:// URLs)
 const hashHistory = createHashHistory();
@@ -33,8 +33,8 @@ const router = createRouter({
 
 function getComponent() {
   const path = window.location.pathname;
-  const htmlFile = path.split("/").pop() || "";
-  const action = htmlFile.split(".")[0];
+  const htmlFile = path.split('/').pop() || '';
+  const action = htmlFile.split('.')[0];
 
   switch (action) {
     case WalletActions.SIGN_PERSONAL_MESSAGE:
@@ -49,15 +49,15 @@ function getComponent() {
 }
 
 // Register router for type safety
-declare module "@tanstack/react-router" {
+declare module '@tanstack/react-router' {
   interface Register {
     router: typeof router;
   }
 }
 
-const rootElement = document.getElementById("root");
+const rootElement = document.getElementById('root');
 if (!rootElement) {
-  throw new Error("Root element not found");
+  throw new Error('Root element not found');
 }
 
 try {
@@ -73,7 +73,7 @@ try {
     </React.StrictMode>,
   );
 } catch (error) {
-  log.error("Failed to render popup entrypoint", error);
+  log.error('Failed to render popup entrypoint', error);
   rootElement.innerHTML = `
     <div style="padding: 20px;">
       <h1>EVE Vault</h1>

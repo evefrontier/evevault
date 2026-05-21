@@ -1,7 +1,7 @@
-import type { TenantId } from "@evefrontier/dapp-kit/utils";
-import type { OAuthTokenResponse } from "#/types";
-import { getTenantConfig } from "#/utils/tenantConfig";
-import { parseOAuthTokenResponse } from "./oauthTokenResponse";
+import type { TenantId } from '@evefrontier/dapp-kit/utils';
+import type { OAuthTokenResponse } from '#/types';
+import { getTenantConfig } from '#/utils/tenantConfig';
+import { parseOAuthTokenResponse } from './oauthTokenResponse';
 
 export async function exchangeCodeForToken(
   code: string,
@@ -9,10 +9,10 @@ export async function exchangeCodeForToken(
   tenantId: TenantId,
 ): Promise<OAuthTokenResponse> {
   const { clientId, clientSecret, serverUrl } = getTenantConfig(tenantId);
-  const tokenUrl = `${serverUrl.replace(/\/$/, "")}/oauth2/token`;
+  const tokenUrl = `${serverUrl.replace(/\/$/, '')}/oauth2/token`;
 
   const requestBody = {
-    grant_type: "authorization_code",
+    grant_type: 'authorization_code',
     client_id: clientId,
     client_secret: clientSecret,
     code,
@@ -20,10 +20,10 @@ export async function exchangeCodeForToken(
   };
 
   const response = await fetch(tokenUrl, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      Accept: "application/json",
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Accept: 'application/json',
     },
     body: new URLSearchParams(requestBody),
   });

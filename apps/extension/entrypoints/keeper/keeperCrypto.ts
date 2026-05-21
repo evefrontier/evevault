@@ -1,14 +1,14 @@
-import { decrypt, deriveAesKey, type HashedData } from "@evevault/shared";
-import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
-import type { BackgroundMessage } from "@/lib/background/types";
+import { decrypt, deriveAesKey, type HashedData } from '@evevault/shared';
+import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
+import type { BackgroundMessage } from '@/lib/background/types';
 import {
   localnetState,
   setSessionKey,
   unlockVaultWithKeypair,
-} from "./keeperState";
+} from './keeperState';
 
 export function getErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "Unknown error";
+  return error instanceof Error ? error.message : 'Unknown error';
 }
 
 export function publicKeyBytes(keypair: Ed25519Keypair | null): number[] {
@@ -24,7 +24,7 @@ async function deriveSessionKey(
   hashedSecretKey: HashedData,
 ): Promise<{ derivedKey: CryptoKey; salt: string }> {
   const derivedKey = await deriveAesKey(pin, saltBytesFrom(hashedSecretKey), [
-    "encrypt",
+    'encrypt',
   ]);
   return { derivedKey, salt: hashedSecretKey.salt };
 }
@@ -51,8 +51,8 @@ export async function restoreLocalnetKeyIfPresent(
 
   if (
     !encLocalnet ||
-    typeof encLocalnet !== "object" ||
-    !("data" in encLocalnet)
+    typeof encLocalnet !== 'object' ||
+    !('data' in encLocalnet)
   ) {
     return;
   }

@@ -1,6 +1,6 @@
-export { useContext } from "./useContext";
-export { useCopyToClipboard } from "./useCopyToClipboard";
-export { useDevice } from "./useDevice";
-export { useDevMode } from "./useDevMode";
-export type { ResponsiveState } from "./useResponsive";
-export { BREAKPOINTS, useResponsive } from "./useResponsive";
+export { useContext } from './useContext';
+export { useCopyToClipboard } from './useCopyToClipboard';
+export { useDevice } from './useDevice';
+export { useDevMode } from './useDevMode';
+export type { ResponsiveState } from './useResponsive';
+export { BREAKPOINTS, useResponsive } from './useResponsive';

@@ -6,19 +6,19 @@
  * Reference: https://docs.sui.io/concepts/data-access/graphql-rpc
  */
 
-import { SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
-import { useInfiniteQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
-import { createSuiGraphQLClient } from "#/sui/graphqlClient";
-import { createLogger } from "#/utils";
-import { TRANSACTIONS_QUERY } from "#/wallet/queries/transactions";
+import { SUI_TESTNET_CHAIN } from '@mysten/wallet-standard';
+import { useInfiniteQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
+import { createSuiGraphQLClient } from '#/sui/graphqlClient';
+import { createLogger } from '#/utils';
+import { TRANSACTIONS_QUERY } from '#/wallet/queries/transactions';
 import type {
   GraphQLTransactionNode,
   TransactionPage,
   TransactionsQueryResponse,
-} from "#/wallet/types/graphql";
-import type { UseTransactionsParams } from "#/wallet/types/hooks";
-import { parseGraphQLTransaction } from "#/wallet/utils/parseTransaction";
+} from '#/wallet/types/graphql';
+import type { UseTransactionsParams } from '#/wallet/types/hooks';
+import { parseGraphQLTransaction } from '#/wallet/utils/parseTransaction';
 
 const log = createLogger();
 const DEFAULT_PAGE_SIZE = 50;
@@ -51,13 +51,13 @@ export function useTransactionHistory({
   const userAddress = user?.profile?.sui_address as string | undefined;
 
   return useInfiniteQuery<TransactionPage>({
-    queryKey: ["transactions", "graphql", userAddress, chain, pageSize],
+    queryKey: ['transactions', 'graphql', userAddress, chain, pageSize],
     queryFn: async ({ pageParam }) => {
       if (!userAddress || !graphqlClient) {
-        throw new Error("Missing user address or client");
+        throw new Error('Missing user address or client');
       }
 
-      log.debug("Fetching transactions via GraphQL", {
+      log.debug('Fetching transactions via GraphQL', {
         address: userAddress,
         chain,
         cursor: pageParam,
@@ -73,15 +73,15 @@ export function useTransactionHistory({
       });
 
       if (result.errors && result.errors.length > 0) {
-        const errorMessage = result.errors.map((e) => e.message).join(", ");
-        log.error("GraphQL query errors", { errors: result.errors });
+        const errorMessage = result.errors.map((e) => e.message).join(', ');
+        log.error('GraphQL query errors', { errors: result.errors });
         throw new Error(`GraphQL query failed: ${errorMessage}`);
       }
 
       const transactionsData = result.data?.address?.transactions;
 
       if (!transactionsData) {
-        log.debug("No transactions found");
+        log.debug('No transactions found');
         return {
           transactions: [],
           nextCursor: null,
@@ -98,11 +98,11 @@ export function useTransactionHistory({
 
       const transactions = parsed
         .filter(
-          (tx): tx is import("#/types/components").Transaction => tx !== null,
+          (tx): tx is import('#/types/components').Transaction => tx !== null,
         )
         .sort((a, b) => b.timestamp - a.timestamp);
 
-      log.debug("Transactions fetched successfully via GraphQL", {
+      log.debug('Transactions fetched successfully via GraphQL', {
         count: transactions.length,
         hasNextPage: transactionsData.pageInfo.hasNextPage,
       });

@@ -1,5 +1,5 @@
-import type { SuiChain } from "@mysten/wallet-standard";
-import type { User } from "oidc-client-ts";
+import type { SuiChain } from '@mysten/wallet-standard';
+import type { User } from 'oidc-client-ts';
 
 /**
  * Cache entry for coin metadata with expiry timestamp

@@ -1,7 +1,7 @@
-import { WalletStandardMessageTypes } from "@evevault/shared";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { handleApprovePopup } from "@/lib/background/handlers/walletHandlers";
-import type { WalletActionMessage } from "@/lib/background/types";
+import { WalletStandardMessageTypes } from '@evevault/shared';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { handleApprovePopup } from '@/lib/background/handlers/walletHandlers';
+import type { WalletActionMessage } from '@/lib/background/types';
 
 const { mockOpenPopupWindow, logMethods } = vi.hoisted(() => ({
   mockOpenPopupWindow: vi.fn(),
@@ -13,13 +13,13 @@ const { mockOpenPopupWindow, logMethods } = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("@/lib/background/services/popupWindow", () => ({
+vi.mock('@/lib/background/services/popupWindow', () => ({
   openPopupWindow: (action: string) => mockOpenPopupWindow(action),
 }));
 
-vi.mock("@evevault/shared/utils", async (importOriginal) => {
+vi.mock('@evevault/shared/utils', async (importOriginal) => {
   const actual =
-    await importOriginal<typeof import("@evevault/shared/utils")>();
+    await importOriginal<typeof import('@evevault/shared/utils')>();
   return {
     ...actual,
     createLogger: () => logMethods,
@@ -57,7 +57,7 @@ function installChromeMock(
   } as unknown as typeof chrome;
 }
 
-describe("handleApprovePopup", () => {
+describe('handleApprovePopup', () => {
   let storageListeners: Array<
     (changes: { [key: string]: chrome.storage.StorageChange }) => void
   >;
@@ -86,13 +86,13 @@ describe("handleApprovePopup", () => {
     );
     const wrapped = storageListeners[storageListeners.length - 1];
     if (!wrapped) {
-      throw new Error("expected storage onChanged listener to be registered");
+      throw new Error('expected storage onChanged listener to be registered');
     }
     return wrapped;
   }
 
-  describe("when opening the popup fails", () => {
-    it("calls sendResponse with sign_transaction_error when windowId is falsy", async () => {
+  describe('when opening the popup fails', () => {
+    it('calls sendResponse with sign_transaction_error when windowId is falsy', async () => {
       mockOpenPopupWindow.mockResolvedValue(undefined as unknown as number);
       const sendResponse = vi.fn();
 
@@ -104,14 +104,14 @@ describe("handleApprovePopup", () => {
 
       expect(result).toBe(false);
       expect(sendResponse).toHaveBeenCalledWith({
-        type: "sign_transaction_error",
-        error: "Failed to open approval popup",
+        type: 'sign_transaction_error',
+        error: 'Failed to open approval popup',
       });
       expect(logMethods.error).toHaveBeenCalled();
     });
 
-    it("calls sendResponse with Error message when openPopupWindow throws an Error", async () => {
-      mockOpenPopupWindow.mockRejectedValue(new Error("popup crashed"));
+    it('calls sendResponse with Error message when openPopupWindow throws an Error', async () => {
+      mockOpenPopupWindow.mockRejectedValue(new Error('popup crashed'));
       const sendResponse = vi.fn();
 
       const result = await handleApprovePopup(
@@ -122,13 +122,13 @@ describe("handleApprovePopup", () => {
 
       expect(result).toBe(false);
       expect(sendResponse).toHaveBeenCalledWith({
-        type: "sign_transaction_error",
-        error: "popup crashed",
+        type: 'sign_transaction_error',
+        error: 'popup crashed',
       });
     });
 
-    it("calls sendResponse with a generic message when openPopupWindow throws a non-Error", async () => {
-      mockOpenPopupWindow.mockRejectedValue("boom");
+    it('calls sendResponse with a generic message when openPopupWindow throws a non-Error', async () => {
+      mockOpenPopupWindow.mockRejectedValue('boom');
       const sendResponse = vi.fn();
 
       await handleApprovePopup(
@@ -138,17 +138,17 @@ describe("handleApprovePopup", () => {
       );
 
       expect(sendResponse).toHaveBeenCalledWith({
-        type: "sign_transaction_error",
-        error: "Unknown error occurred",
+        type: 'sign_transaction_error',
+        error: 'Unknown error occurred',
       });
     });
   });
 
-  describe("on transactionResult success", () => {
-    it("sends sign_success for SIGN_TRANSACTION when status is signed", async () => {
+  describe('on transactionResult success', () => {
+    it('sends sign_success for SIGN_TRANSACTION when status is signed', async () => {
       const wrapped = await getWrappedListener(
         {
-          id: "s1",
+          id: 's1',
           action: WalletStandardMessageTypes.SIGN_TRANSACTION,
         },
         { tab: { id: 42 } },
@@ -157,29 +157,29 @@ describe("handleApprovePopup", () => {
       wrapped({
         transactionResult: {
           newValue: {
-            status: "signed",
+            status: 'signed',
             bytes: new Uint8Array([1, 2]),
-            signature: "sig-bytes",
+            signature: 'sig-bytes',
           },
         },
       });
 
       expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(42, {
-        type: "sign_success",
+        type: 'sign_success',
         bytes: new Uint8Array([1, 2]),
-        signature: "sig-bytes",
-        id: "s1",
+        signature: 'sig-bytes',
+        id: 's1',
       });
       expect(chrome.storage.local.remove).toHaveBeenCalledWith([
-        "pendingAction",
-        "transactionResult",
+        'pendingAction',
+        'transactionResult',
       ]);
     });
 
-    it("sends sign_and_execute_transaction_success when all required fields are present", async () => {
+    it('sends sign_and_execute_transaction_success when all required fields are present', async () => {
       const wrapped = await getWrappedListener(
         {
-          id: "s2",
+          id: 's2',
           action: WalletStandardMessageTypes.SIGN_AND_EXECUTE_TRANSACTION,
         },
         { tab: { id: 7 } },
@@ -188,31 +188,31 @@ describe("handleApprovePopup", () => {
       wrapped({
         transactionResult: {
           newValue: {
-            status: "signed_and_executed",
+            status: 'signed_and_executed',
             bytes: new Uint8Array([9]),
-            signature: "sig",
-            digest: "dg",
-            effects: "fx",
+            signature: 'sig',
+            digest: 'dg',
+            effects: 'fx',
           },
         },
       });
 
       expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(7, {
-        type: "sign_and_execute_transaction_success",
+        type: 'sign_and_execute_transaction_success',
         result: {
           bytes: new Uint8Array([9]),
-          signature: "sig",
-          digest: "dg",
-          effects: "fx",
+          signature: 'sig',
+          digest: 'dg',
+          effects: 'fx',
         },
-        id: "s2",
+        id: 's2',
       });
     });
 
-    it("sends sign_and_execute_transaction_error when digest or effects are missing", async () => {
+    it('sends sign_and_execute_transaction_error when digest or effects are missing', async () => {
       const wrapped = await getWrappedListener(
         {
-          id: "s3",
+          id: 's3',
           action: WalletStandardMessageTypes.SIGN_AND_EXECUTE_TRANSACTION,
         },
         { tab: { id: 7 } },
@@ -221,28 +221,28 @@ describe("handleApprovePopup", () => {
       wrapped({
         transactionResult: {
           newValue: {
-            status: "signed_and_executed",
+            status: 'signed_and_executed',
             bytes: new Uint8Array([1]),
-            signature: "sig",
+            signature: 'sig',
           },
         },
       });
 
       expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(7, {
-        type: "sign_and_execute_transaction_error",
-        error: "Missing bytes or signature in transaction result",
-        id: "s3",
+        type: 'sign_and_execute_transaction_error',
+        error: 'Missing bytes or signature in transaction result',
+        id: 's3',
       });
     });
 
-    it("logs when tabs.sendMessage rejects on sign_success", async () => {
-      const sendMessage = vi.fn(() => Promise.reject(new Error("tab gone")));
+    it('logs when tabs.sendMessage rejects on sign_success', async () => {
+      const sendMessage = vi.fn(() => Promise.reject(new Error('tab gone')));
       installChromeMock(storageListeners, sendMessage);
       mockOpenPopupWindow.mockResolvedValue(99);
 
       const wrapped = await getWrappedListener(
         {
-          id: "s4",
+          id: 's4',
           action: WalletStandardMessageTypes.SIGN_TRANSACTION,
         },
         { tab: { id: 1 } },
@@ -251,29 +251,29 @@ describe("handleApprovePopup", () => {
       wrapped({
         transactionResult: {
           newValue: {
-            status: "signed",
+            status: 'signed',
             bytes: new Uint8Array([1]),
-            signature: "sig",
+            signature: 'sig',
           },
         },
       });
 
       await vi.waitFor(() => {
         expect(logMethods.error).toHaveBeenCalledWith(
-          "Failed to send success message",
+          'Failed to send success message',
           expect.any(Error),
         );
       });
     });
 
-    it("logs when tabs.sendMessage rejects for incomplete sign-and-execute result", async () => {
-      const sendMessage = vi.fn(() => Promise.reject(new Error("tab gone")));
+    it('logs when tabs.sendMessage rejects for incomplete sign-and-execute result', async () => {
+      const sendMessage = vi.fn(() => Promise.reject(new Error('tab gone')));
       installChromeMock(storageListeners, sendMessage);
       mockOpenPopupWindow.mockResolvedValue(99);
 
       const wrapped = await getWrappedListener(
         {
-          id: "s5",
+          id: 's5',
           action: WalletStandardMessageTypes.SIGN_AND_EXECUTE_TRANSACTION,
         },
         { tab: { id: 3 } },
@@ -282,29 +282,29 @@ describe("handleApprovePopup", () => {
       wrapped({
         transactionResult: {
           newValue: {
-            status: "signed_and_executed",
+            status: 'signed_and_executed',
             bytes: new Uint8Array([1]),
-            signature: "sig",
+            signature: 'sig',
           },
         },
       });
 
       await vi.waitFor(() => {
         expect(logMethods.error).toHaveBeenCalledWith(
-          "Failed to send sign_and_execute error",
+          'Failed to send sign_and_execute error',
           expect.any(Error),
         );
       });
     });
 
-    it("logs when tabs.sendMessage rejects for sign-and-execute success", async () => {
-      const sendMessage = vi.fn(() => Promise.reject(new Error("tab gone")));
+    it('logs when tabs.sendMessage rejects for sign-and-execute success', async () => {
+      const sendMessage = vi.fn(() => Promise.reject(new Error('tab gone')));
       installChromeMock(storageListeners, sendMessage);
       mockOpenPopupWindow.mockResolvedValue(99);
 
       const wrapped = await getWrappedListener(
         {
-          id: "s6",
+          id: 's6',
           action: WalletStandardMessageTypes.SIGN_AND_EXECUTE_TRANSACTION,
         },
         { tab: { id: 3 } },
@@ -313,59 +313,59 @@ describe("handleApprovePopup", () => {
       wrapped({
         transactionResult: {
           newValue: {
-            status: "signed_and_executed",
+            status: 'signed_and_executed',
             bytes: new Uint8Array([1]),
-            signature: "sig",
-            digest: "d",
-            effects: "e",
+            signature: 'sig',
+            digest: 'd',
+            effects: 'e',
           },
         },
       });
 
       await vi.waitFor(() => {
         expect(logMethods.error).toHaveBeenCalledWith(
-          "Failed to send sign_and_execute success",
+          'Failed to send sign_and_execute success',
           expect.any(Error),
         );
       });
     });
   });
 
-  describe("on transactionResult error", () => {
+  describe('on transactionResult error', () => {
     async function fireTransactionError(
       message: WalletActionMessage,
       sender: { tab?: { id?: number } } = { tab: { id: 42 } },
-      errorText = "User said no",
+      errorText = 'User said no',
     ) {
       const wrapped = await getWrappedListener(message, sender);
       wrapped({
         transactionResult: {
           newValue: {
-            status: "error",
+            status: 'error',
             error: errorText,
           },
         },
       });
     }
 
-    it("maps SIGN_TRANSACTION to sign_transaction_error", async () => {
+    it('maps SIGN_TRANSACTION to sign_transaction_error', async () => {
       await fireTransactionError({
-        id: "req-1",
+        id: 'req-1',
         action: WalletStandardMessageTypes.SIGN_TRANSACTION,
       });
 
       expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(42, {
-        type: "sign_transaction_error",
-        error: "User said no",
-        id: "req-1",
+        type: 'sign_transaction_error',
+        error: 'User said no',
+        id: 'req-1',
       });
       expect(logMethods.warn).not.toHaveBeenCalled();
     });
 
-    it("removeListener is called with the same handler reference as addListener", async () => {
+    it('removeListener is called with the same handler reference as addListener', async () => {
       const wrapped = await getWrappedListener(
         {
-          id: "req-remove-pair",
+          id: 'req-remove-pair',
           action: WalletStandardMessageTypes.SIGN_TRANSACTION,
         },
         { tab: { id: 42 } },
@@ -374,14 +374,14 @@ describe("handleApprovePopup", () => {
       expect(storageListeners).toHaveLength(1);
       const registered = storageListeners[0];
       if (!registered) {
-        throw new Error("expected registered storage listener");
+        throw new Error('expected registered storage listener');
       }
 
       wrapped({
         transactionResult: {
           newValue: {
-            status: "error",
-            error: "User said no",
+            status: 'error',
+            error: 'User said no',
           },
         },
       });
@@ -391,54 +391,54 @@ describe("handleApprovePopup", () => {
       );
     });
 
-    it("maps SIGN_PERSONAL_MESSAGE to sign_personal_message_error", async () => {
+    it('maps SIGN_PERSONAL_MESSAGE to sign_personal_message_error', async () => {
       await fireTransactionError({
-        id: "req-2",
+        id: 'req-2',
         action: WalletStandardMessageTypes.SIGN_PERSONAL_MESSAGE,
       });
 
       expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(42, {
-        type: "sign_personal_message_error",
-        error: "User said no",
-        id: "req-2",
+        type: 'sign_personal_message_error',
+        error: 'User said no',
+        id: 'req-2',
       });
       expect(logMethods.warn).not.toHaveBeenCalled();
     });
 
-    it("maps unknown action to sign_error and logs a warning", async () => {
+    it('maps unknown action to sign_error and logs a warning', async () => {
       await fireTransactionError({
-        id: "req-3",
-        action: "unknown_wallet_action_for_test",
+        id: 'req-3',
+        action: 'unknown_wallet_action_for_test',
       });
 
       expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(42, {
-        type: "sign_error",
-        error: "User said no",
-        id: "req-3",
+        type: 'sign_error',
+        error: 'User said no',
+        id: 'req-3',
       });
-      expect(logMethods.warn).toHaveBeenCalledWith("Unknown action", {
-        action: "unknown_wallet_action_for_test",
+      expect(logMethods.warn).toHaveBeenCalledWith('Unknown action', {
+        action: 'unknown_wallet_action_for_test',
       });
     });
 
-    it("uses sign_and_execute_transaction_error for SIGN_AND_EXECUTE_TRANSACTION", async () => {
+    it('uses sign_and_execute_transaction_error for SIGN_AND_EXECUTE_TRANSACTION', async () => {
       await fireTransactionError({
-        id: "req-4",
+        id: 'req-4',
         action: WalletStandardMessageTypes.SIGN_AND_EXECUTE_TRANSACTION,
       });
 
       expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(42, {
-        type: "sign_and_execute_transaction_error",
-        error: "User said no",
-        id: "req-4",
+        type: 'sign_and_execute_transaction_error',
+        error: 'User said no',
+        id: 'req-4',
       });
       expect(logMethods.warn).not.toHaveBeenCalled();
     });
 
-    it("does not call tabs.sendMessage when sender has no tab id (non-execute error)", async () => {
+    it('does not call tabs.sendMessage when sender has no tab id (non-execute error)', async () => {
       await fireTransactionError(
         {
-          id: "req-5",
+          id: 'req-5',
           action: WalletStandardMessageTypes.SIGN_TRANSACTION,
         },
         {},
@@ -447,10 +447,10 @@ describe("handleApprovePopup", () => {
       expect(chrome.tabs.sendMessage).not.toHaveBeenCalled();
     });
 
-    it("does not call tabs.sendMessage when sender has no tab id (sign-and-execute error)", async () => {
+    it('does not call tabs.sendMessage when sender has no tab id (sign-and-execute error)', async () => {
       await fireTransactionError(
         {
-          id: "req-6",
+          id: 'req-6',
           action: WalletStandardMessageTypes.SIGN_AND_EXECUTE_TRANSACTION,
         },
         {},
@@ -459,45 +459,45 @@ describe("handleApprovePopup", () => {
       expect(chrome.tabs.sendMessage).not.toHaveBeenCalled();
     });
 
-    it("logs when tabs.sendMessage rejects for mapped error type", async () => {
-      const sendMessage = vi.fn(() => Promise.reject(new Error("tab gone")));
+    it('logs when tabs.sendMessage rejects for mapped error type', async () => {
+      const sendMessage = vi.fn(() => Promise.reject(new Error('tab gone')));
       installChromeMock(storageListeners, sendMessage);
       mockOpenPopupWindow.mockResolvedValue(99);
 
       await fireTransactionError({
-        id: "req-7",
+        id: 'req-7',
         action: WalletStandardMessageTypes.SIGN_TRANSACTION,
       });
 
       await vi.waitFor(() => {
         expect(logMethods.error).toHaveBeenCalledWith(
-          "Failed to send sign_transaction_error error",
+          'Failed to send sign_transaction_error error',
           expect.any(Error),
         );
       });
     });
 
-    it("logs when tabs.sendMessage rejects for sign-and-execute error result", async () => {
-      const sendMessage = vi.fn(() => Promise.reject(new Error("tab gone")));
+    it('logs when tabs.sendMessage rejects for sign-and-execute error result', async () => {
+      const sendMessage = vi.fn(() => Promise.reject(new Error('tab gone')));
       installChromeMock(storageListeners, sendMessage);
       mockOpenPopupWindow.mockResolvedValue(99);
 
       await fireTransactionError({
-        id: "req-8",
+        id: 'req-8',
         action: WalletStandardMessageTypes.SIGN_AND_EXECUTE_TRANSACTION,
       });
 
       await vi.waitFor(() => {
         expect(logMethods.error).toHaveBeenCalledWith(
-          "Failed to send sign_and_execute error",
+          'Failed to send sign_and_execute error',
           expect.any(Error),
         );
       });
     });
   });
 
-  describe("when storage change is irrelevant", () => {
-    it("does nothing when transactionResult is absent", async () => {
+  describe('when storage change is irrelevant', () => {
+    it('does nothing when transactionResult is absent', async () => {
       const wrapped = await getWrappedListener(
         { action: WalletStandardMessageTypes.SIGN_TRANSACTION },
         { tab: { id: 1 } },
@@ -509,7 +509,7 @@ describe("handleApprovePopup", () => {
       expect(chrome.storage.local.remove).not.toHaveBeenCalled();
     });
 
-    it("does nothing on success when sender has no tab id", async () => {
+    it('does nothing on success when sender has no tab id', async () => {
       const wrapped = await getWrappedListener(
         { action: WalletStandardMessageTypes.SIGN_TRANSACTION },
         {},
@@ -518,9 +518,9 @@ describe("handleApprovePopup", () => {
       wrapped({
         transactionResult: {
           newValue: {
-            status: "signed",
+            status: 'signed',
             bytes: new Uint8Array([1]),
-            signature: "sig",
+            signature: 'sig',
           },
         },
       });
@@ -530,8 +530,8 @@ describe("handleApprovePopup", () => {
     });
   });
 
-  describe("approval timeout", () => {
-    it("removes pending storage and logs after 10 minutes", async () => {
+  describe('approval timeout', () => {
+    it('removes pending storage and logs after 10 minutes', async () => {
       vi.useFakeTimers();
 
       await handleApprovePopup(
@@ -545,19 +545,19 @@ describe("handleApprovePopup", () => {
       await vi.advanceTimersByTimeAsync(10 * 60 * 1000);
 
       expect(logMethods.warn).toHaveBeenCalledWith(
-        "Transaction approval timed out",
+        'Transaction approval timed out',
         {
           action: WalletStandardMessageTypes.SIGN_TRANSACTION,
           senderTabId: 5,
         },
       );
       expect(chrome.storage.local.remove).toHaveBeenCalledWith([
-        "pendingAction",
-        "transactionResult",
+        'pendingAction',
+        'transactionResult',
       ]);
     });
 
-    it("clears the timeout when a storage result arrives", async () => {
+    it('clears the timeout when a storage result arrives', async () => {
       vi.useFakeTimers();
 
       const wrapped = await getWrappedListener(
@@ -568,9 +568,9 @@ describe("handleApprovePopup", () => {
       wrapped({
         transactionResult: {
           newValue: {
-            status: "signed",
+            status: 'signed',
             bytes: new Uint8Array([1]),
-            signature: "s",
+            signature: 's',
           },
         },
       });
@@ -578,7 +578,7 @@ describe("handleApprovePopup", () => {
       await vi.advanceTimersByTimeAsync(10 * 60 * 1000);
 
       expect(logMethods.warn).not.toHaveBeenCalledWith(
-        "Transaction approval timed out",
+        'Transaction approval timed out',
         expect.anything(),
       );
     });

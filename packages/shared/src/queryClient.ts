@@ -1,4 +1,4 @@
-import { QueryClient } from "@tanstack/react-query";
+import { QueryClient } from '@tanstack/react-query';
 
 export const queryClient = new QueryClient({
   defaultOptions: {
@@ -17,7 +17,7 @@ export const queryClient = new QueryClient({
       // Avoid retry storms if RPC nodes misbehave
       retry: (failureCount, error) => {
         // retry less aggressively for blockchain RPC failures
-        if (error?.message?.includes("rate limit")) return false;
+        if (error?.message?.includes('rate limit')) return false;
         return failureCount < 1; // retry ONCE
       },
 

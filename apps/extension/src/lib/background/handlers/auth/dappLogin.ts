@@ -1,33 +1,33 @@
-import { storeJwt } from "@evevault/shared";
-import { exchangeCodeForToken, getJwt } from "@evevault/shared/auth";
+import { storeJwt } from '@evevault/shared';
+import { exchangeCodeForToken, getJwt } from '@evevault/shared/auth';
 import {
   getTenantConfig,
   useContextStore,
   useDeviceStore,
-} from "@evevault/shared/stores";
-import { getCurrentTenantId } from "@evevault/shared/stores/tenantStore";
+} from '@evevault/shared/stores';
+import { getCurrentTenantId } from '@evevault/shared/stores/tenantStore';
 import {
   isLocalnetChain,
   isZkLoginSuiChain,
   KeeperMessageTypes,
-} from "@evevault/shared/types";
-import { createLogger } from "@evevault/shared/utils";
-import { Ed25519PublicKey } from "@mysten/sui/keypairs/ed25519";
-import { decodeJwt } from "jose";
-import type { IdTokenClaims } from "oidc-client-ts";
-import { getAuthUrl } from "@/lib/background/services/oauthService";
-import { openPopupWindow } from "@/lib/background/services/popupWindow";
-import type { MessageWithId } from "@/lib/background/types";
-import { sendToKeeper } from "../vaultHandlers";
+} from '@evevault/shared/types';
+import { createLogger } from '@evevault/shared/utils';
+import { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519';
+import { decodeJwt } from 'jose';
+import type { IdTokenClaims } from 'oidc-client-ts';
+import { getAuthUrl } from '@/lib/background/services/oauthService';
+import { openPopupWindow } from '@/lib/background/services/popupWindow';
+import type { MessageWithId } from '@/lib/background/types';
+import { sendToKeeper } from '../vaultHandlers';
 import {
   ensureMessageId,
   getCurrentChain,
   sendAuthSuccessToTab,
-} from "./authHelpers";
+} from './authHelpers';
 import {
   checkKeeperUnlocked,
   getEphemeralKeyPairSecretKeyFromStorage,
-} from "./keeperHelpers";
+} from './keeperHelpers';
 import {
   addPendingDappId,
   clearPendingAuth,
@@ -35,7 +35,7 @@ import {
   KEEPER_RETRY_DELAY_MS,
   setPendingAuthAfterUnlock,
   setPendingAuthWindowId,
-} from "./pendingAuth";
+} from './pendingAuth';
 
 const log = createLogger();
 
@@ -60,9 +60,9 @@ export async function handleDappLogin(
   const deviceStore = useDeviceStore.getState();
   const hasDeviceData = !!(
     deviceStore.ephemeralKeyPairSecretKey &&
-    typeof deviceStore.ephemeralKeyPairSecretKey === "object" &&
-    "iv" in deviceStore.ephemeralKeyPairSecretKey &&
-    "data" in deviceStore.ephemeralKeyPairSecretKey
+    typeof deviceStore.ephemeralKeyPairSecretKey === 'object' &&
+    'iv' in deviceStore.ephemeralKeyPairSecretKey &&
+    'data' in deviceStore.ephemeralKeyPairSecretKey
   );
 
   let keeperStatus = await checkKeeperUnlocked();
@@ -79,19 +79,19 @@ export async function handleDappLogin(
     }
 
     if (!keeperStatus.unlocked) {
-      log.error("Cannot login: vault not set up or locked", {
+      log.error('Cannot login: vault not set up or locked', {
         chain,
         hasDeviceData,
       });
 
-      if (typeof tabId === "number") {
+      if (typeof tabId === 'number') {
         const pending = getPending();
         if (
-          pending?.type === "dapp" &&
+          pending?.type === 'dapp' &&
           pending.tabId === tabId &&
           addPendingDappId(tabId, id)
         ) {
-          log.debug("Connect deduplicated for tab", { tabId, id });
+          log.debug('Connect deduplicated for tab', { tabId, id });
           return;
         }
       }
@@ -100,20 +100,20 @@ export async function handleDappLogin(
       if (hasDeviceData) {
         // Set pending before opening popup so concurrent auto-connect/connect
         // requests can dedupe against this in-flight unlock flow.
-        setPendingAuthAfterUnlock(id, "dapp", tabId);
+        setPendingAuthAfterUnlock(id, 'dapp', tabId);
       }
 
-      const windowId = await openPopupWindow("popup");
+      const windowId = await openPopupWindow('popup');
       if (windowId === undefined) {
-        log.warn("Failed to open vault popup window");
+        log.warn('Failed to open vault popup window');
         if (hasDeviceData) {
           clearPendingAuth();
-          if (typeof tabId === "number") {
+          if (typeof tabId === 'number') {
             chrome.tabs.sendMessage(tabId, {
               id,
-              type: "auth_error",
+              type: 'auth_error',
               error: {
-                message: "Failed to open vault window. Please try again.",
+                message: 'Failed to open vault window. Please try again.',
               },
             });
           }
@@ -128,11 +128,11 @@ export async function handleDappLogin(
       }
 
       const errorMessage =
-        "Please set up or unlock the vault in the window we opened, then try again.";
-      if (typeof tabId === "number") {
+        'Please set up or unlock the vault in the window we opened, then try again.';
+      if (typeof tabId === 'number') {
         chrome.tabs.sendMessage(tabId, {
           id,
-          type: "auth_error",
+          type: 'auth_error',
           error: { message: errorMessage, vaultOpened: true },
         });
       }
@@ -144,7 +144,7 @@ export async function handleDappLogin(
     !deviceStore.ephemeralPublicKey &&
     keeperStatus.publicKeyBytes?.length > 0
   ) {
-    log.info("Syncing ephemeral public key from keeper to deviceStore", {
+    log.info('Syncing ephemeral public key from keeper to deviceStore', {
       chain,
     });
     try {
@@ -162,15 +162,15 @@ export async function handleDappLogin(
         ephemeralKeyPairSecretKey: secretKeyToPreserve,
         isLocked: false,
       });
-      log.debug("Successfully synced ephemeral public key to deviceStore");
+      log.debug('Successfully synced ephemeral public key to deviceStore');
     } catch (error) {
-      log.error("Failed to sync public key from keeper", error);
-      if (typeof tabId === "number") {
+      log.error('Failed to sync public key from keeper', error);
+      if (typeof tabId === 'number') {
         chrome.tabs.sendMessage(tabId, {
           id,
-          type: "auth_error",
+          type: 'auth_error',
           error: {
-            message: "Failed to sync vault state. Please try unlocking again.",
+            message: 'Failed to sync vault state. Please try unlocking again.',
           },
         });
       }
@@ -180,30 +180,30 @@ export async function handleDappLogin(
 
   const deviceWithPublicKey = useDeviceStore.getState();
   if (!deviceWithPublicKey.ephemeralPublicKey && !isLocalnetChain(chain)) {
-    log.error("Keeper is unlocked but no public key bytes available", {
+    log.error('Keeper is unlocked but no public key bytes available', {
       chain,
     });
-    if (typeof tabId === "number") {
+    if (typeof tabId === 'number') {
       chrome.tabs.sendMessage(tabId, {
         id,
-        type: "auth_error",
+        type: 'auth_error',
         error: {
           message:
-            "Vault state is inconsistent. Please unlock the vault again.",
+            'Vault state is inconsistent. Please unlock the vault again.',
         },
       });
     }
     return;
   }
 
-  if (typeof tabId === "number") {
+  if (typeof tabId === 'number') {
     const existingJwt = await getJwt();
     if (existingJwt?.id_token) {
       const decodedJwt = decodeJwt<IdTokenClaims>(
         existingJwt.id_token as string,
       );
       log.debug(
-        "Connect: already connected, sending auth_success without OIDC",
+        'Connect: already connected, sending auth_success without OIDC',
       );
       const token = {
         ...existingJwt,
@@ -217,7 +217,7 @@ export async function handleDappLogin(
         });
 
         log.debug(
-          "Connect: localnet, sending auth_success with localnet address",
+          'Connect: localnet, sending auth_success with localnet address',
         );
 
         if (response?.ok && response?.address) {
@@ -228,8 +228,8 @@ export async function handleDappLogin(
         } else {
           chrome.tabs.sendMessage(tabId, {
             id,
-            type: "auth_error",
-            error: { message: "Could not retrieve localnet address" },
+            type: 'auth_error',
+            error: { message: 'Could not retrieve localnet address' },
           });
         }
         return;
@@ -247,12 +247,12 @@ export async function handleDappLogin(
     try {
       await useDeviceStore.getState().initializeForChain(chain);
     } catch (error) {
-      log.error("Failed to initialize device data for chain", { chain, error });
-      if (typeof tabId === "number") {
+      log.error('Failed to initialize device data for chain', { chain, error });
+      if (typeof tabId === 'number') {
         chrome.tabs.sendMessage(tabId, {
           id,
-          type: "auth_error",
-          error: { message: "Could not prepare sign-in. Please try again." },
+          type: 'auth_error',
+          error: { message: 'Could not prepare sign-in. Please try again.' },
         });
       }
       return;
@@ -260,11 +260,11 @@ export async function handleDappLogin(
     nonce = useDeviceStore.getState().networkData[chain]?.nonce;
   }
   if (!nonce) {
-    if (typeof tabId === "number") {
+    if (typeof tabId === 'number') {
       chrome.tabs.sendMessage(tabId, {
         id,
-        type: "auth_error",
-        error: { message: "Could not prepare sign-in. Please try again." },
+        type: 'auth_error',
+        error: { message: 'Could not prepare sign-in. Please try again.' },
       });
     }
     return;
@@ -275,10 +275,10 @@ export async function handleDappLogin(
     nonce,
   });
 
-  authUrl.searchParams.set("response_type", "code");
-  authUrl.searchParams.set("client_id", clientId);
-  authUrl.searchParams.set("redirect_uri", chromeRedirectUri);
-  authUrl.searchParams.set("scope", "openid profile email offline_access");
+  authUrl.searchParams.set('response_type', 'code');
+  authUrl.searchParams.set('client_id', clientId);
+  authUrl.searchParams.set('redirect_uri', chromeRedirectUri);
+  authUrl.searchParams.set('scope', 'openid profile email offline_access');
 
   chrome.identity.launchWebAuthFlow(
     {
@@ -290,29 +290,29 @@ export async function handleDappLogin(
         chrome.runtime.sendMessage({
           id,
           auth_success: false,
-          error: chrome.runtime.lastError?.message || "responseUrl not found",
+          error: chrome.runtime.lastError?.message || 'responseUrl not found',
         });
         chrome.runtime.sendMessage({
           id,
-          type: "auth_error",
+          type: 'auth_error',
           error: chrome.runtime.lastError,
         });
         return;
       }
 
       const urlParams = new URL(responseUrl).searchParams;
-      const authCode = urlParams.get("code");
+      const authCode = urlParams.get('code');
 
       if (!authCode) {
         chrome.runtime.sendMessage({
           id,
           auth_success: false,
-          error: "Authorization code not found in response.",
+          error: 'Authorization code not found in response.',
         });
         return;
       }
 
-      log.debug("Auth code received");
+      log.debug('Auth code received');
 
       const tenantId = getCurrentTenantId();
 
@@ -323,7 +323,7 @@ export async function handleDappLogin(
           );
           await storeJwt(jwtResponse);
 
-          if (typeof tabId === "number") {
+          if (typeof tabId === 'number') {
             const token = {
               ...jwtResponse,
               email: decodedJwt.email,
@@ -348,7 +348,7 @@ export async function handleDappLogin(
           }
         })
         .catch((error) => {
-          log.error("Token exchange failed", error);
+          log.error('Token exchange failed', error);
           chrome.runtime.sendMessage({
             auth_success: false,
             error: error,

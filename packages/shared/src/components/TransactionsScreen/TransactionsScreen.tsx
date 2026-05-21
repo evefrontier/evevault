@@ -1,23 +1,23 @@
-import type React from "react";
-import { useMemo, useState } from "react";
-import Button from "#/components/Button";
-import Heading from "#/components/Heading";
-import Icon from "#/components/Icon";
-import { HeaderMobile } from "#/components/Layout";
-import Text from "#/components/Text";
-import { useDeviceStore } from "#/stores/deviceStore";
+import type React from 'react';
+import { useMemo, useState } from 'react';
+import Button from '#/components/Button';
+import Heading from '#/components/Heading';
+import Icon from '#/components/Icon';
+import { HeaderMobile } from '#/components/Layout';
+import Text from '#/components/Text';
+import { useDeviceStore } from '#/stores/deviceStore';
 import type {
   TransactionRowProps,
   TransactionsScreenProps,
-} from "#/types/components";
+} from '#/types/components';
 import {
   formatAddress,
   formatDisplayAmount,
   formatShortDate,
   getSuiscanUrl,
   SUI_COIN_TYPE,
-} from "#/utils";
-import { useActiveSuiAddress, useTransactionHistory } from "#/wallet";
+} from '#/utils';
+import { useActiveSuiAddress, useTransactionHistory } from '#/wallet';
 
 const TransactionRow: React.FC<TransactionRowProps> = ({
   transaction,
@@ -40,23 +40,23 @@ const TransactionRow: React.FC<TransactionRowProps> = ({
     balanceChanges.length > 0
       ? balanceChanges
           .map((bc) => `${formatDisplayAmount(bc.amount, 5)} ${bc.tokenSymbol}`)
-          .join(", ")
-      : "";
+          .join(', ')
+      : '';
   const summaryAmounts =
-    direction === "sent" && summaryAmountsRaw
+    direction === 'sent' && summaryAmountsRaw
       ? `−${summaryAmountsRaw}`
       : summaryAmountsRaw;
 
   const summaryClasses = [
-    "flex w-full p-2 items-center justify-between gap-2",
-    "border-none cursor-pointer text-left transition-colors",
+    'flex w-full p-2 items-center justify-between gap-2',
+    'border-none cursor-pointer text-left transition-colors',
     isExpanded
-      ? "bg-quantum-40 hover:bg-quantum-40"
-      : "bg-transparent hover:bg-quantum-10",
-  ].join(" ");
+      ? 'bg-quantum-40 hover:bg-quantum-40'
+      : 'bg-transparent hover:bg-quantum-10',
+  ].join(' ');
 
   const handleViewOnSuiscan = () => {
-    window.open(suiscanUrl, "_blank", "noopener,noreferrer");
+    window.open(suiscanUrl, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -75,7 +75,7 @@ const TransactionRow: React.FC<TransactionRowProps> = ({
           </div>
           <div className="flex items-center gap-1 min-w-0">
             <Icon
-              name={direction === "sent" ? "ArrowRight" : "ArrowLeft"}
+              name={direction === 'sent' ? 'ArrowRight' : 'ArrowLeft'}
               size="small"
               color="neutral-50"
               aria-hidden
@@ -96,7 +96,7 @@ const TransactionRow: React.FC<TransactionRowProps> = ({
       {isExpanded && (
         <div
           className={`flex items-start justify-between w-full px-2 pb-2 gap-4 ${
-            isExpanded ? "bg-quantum-40" : ""
+            isExpanded ? 'bg-quantum-40' : ''
           }`}
         >
           <div className="flex flex-col gap-1 min-w-0">
@@ -107,7 +107,7 @@ const TransactionRow: React.FC<TransactionRowProps> = ({
               >
                 {bc.tokenName ? (
                   <Text variant="light" size="xsmall" color="neutral-50">
-                    {bc.coinType === SUI_COIN_TYPE ? "Gas" : "Token"}:{" "}
+                    {bc.coinType === SUI_COIN_TYPE ? 'Gas' : 'Token'}:{' '}
                     {bc.tokenName}
                   </Text>
                 ) : null}
@@ -163,7 +163,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
     isFetchingNextPage,
   } = useTransactionHistory({
     user,
-    chain: chain as `sui:${"mainnet" | "testnet" | "devnet" | "localnet"}`,
+    chain: chain as `sui:${'mainnet' | 'testnet' | 'devnet' | 'localnet'}`,
   });
 
   // Flatten all pages into a single array
@@ -187,7 +187,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
   // Status message structure for better organization
   type StatusMessage = {
     text: string;
-    color: "error" | "grey-neutral";
+    color: 'error' | 'grey-neutral';
   };
 
   const isEmpty = !isLoading && !isError && !hasTransactions;
@@ -195,18 +195,18 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
     switch (true) {
       case isError:
         return {
-          text: error?.message || "Failed to load transactions",
-          color: "error",
+          text: error?.message || 'Failed to load transactions',
+          color: 'error',
         };
       case isLoading:
         return {
-          text: "Loading transactions...",
-          color: "grey-neutral",
+          text: 'Loading transactions...',
+          color: 'grey-neutral',
         };
       case isEmpty:
         return {
-          text: "No transactions found",
-          color: "grey-neutral",
+          text: 'No transactions found',
+          color: 'grey-neutral',
         };
       default:
         return null;
@@ -291,7 +291,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
               onClick={handleLoadMore}
               isLoading={isFetchingNextPage}
             >
-              {isFetchingNextPage ? "Loading..." : "Load more"}
+              {isFetchingNextPage ? 'Loading...' : 'Load more'}
             </Button>
           </div>
         )}

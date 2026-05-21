@@ -1,16 +1,16 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { ZkProofResponse } from "#/types/enoki";
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ZkProofResponse } from '#/types/enoki';
 
 const { mockGetExtendedEphemeralPublicKey } = vi.hoisted(() => ({
   mockGetExtendedEphemeralPublicKey: vi.fn(),
 }));
 
-vi.mock("@mysten/sui/zklogin", () => ({
+vi.mock('@mysten/sui/zklogin', () => ({
   getExtendedEphemeralPublicKey: (...args: unknown[]) =>
     mockGetExtendedEphemeralPublicKey(...args),
 }));
 
-vi.mock("#/utils/logger", () => ({
+vi.mock('#/utils/logger', () => ({
   createLogger: () => ({
     debug: vi.fn(),
     info: vi.fn(),
@@ -19,116 +19,116 @@ vi.mock("#/utils/logger", () => ({
   }),
 }));
 
-import { makeJwt } from "#/testing";
-import { fetchZkProof } from "#/wallet/zkProof";
+import { makeJwt } from '#/testing';
+import { fetchZkProof } from '#/wallet/zkProof';
 
-const headerBase64 = makeJwt({}).split(".")[0];
+const headerBase64 = makeJwt({}).split('.')[0];
 
-describe("fetchZkProof", () => {
+describe('fetchZkProof', () => {
   const proofResponse: ZkProofResponse = {
     data: {
       proofPoints: {
-        a: ["1", "2"],
+        a: ['1', '2'],
         b: [
-          ["3", "4"],
-          ["5", "6"],
+          ['3', '4'],
+          ['5', '6'],
         ],
-        c: ["7", "8"],
+        c: ['7', '8'],
       },
-      issBase64Details: { value: "aXNz", indexMod4: 1 },
+      issBase64Details: { value: 'aXNz', indexMod4: 1 },
       headerBase64: headerBase64,
-      addressSeed: "12345678",
+      addressSeed: '12345678',
     },
     error: undefined,
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockGetExtendedEphemeralPublicKey.mockReturnValue("extended-public-key");
+    mockGetExtendedEphemeralPublicKey.mockReturnValue('extended-public-key');
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  it("posts a proof request to Enoki with the expected headers and body", async () => {
+  it('posts a proof request to Enoki with the expected headers and body', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: vi.fn().mockResolvedValue(proofResponse),
     });
-    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal('fetch', fetchMock);
 
     await expect(
       fetchZkProof({
-        jwtRandomness: "randomness",
-        maxEpoch: "12",
-        ephemeralPublicKey: "ephemeral-public-key" as never,
-        idToken: "id-token",
-        enokiApiKey: "enoki-api-key",
-        network: "testnet",
+        jwtRandomness: 'randomness',
+        maxEpoch: '12',
+        ephemeralPublicKey: 'ephemeral-public-key' as never,
+        idToken: 'id-token',
+        enokiApiKey: 'enoki-api-key',
+        network: 'testnet',
       }),
     ).resolves.toBe(proofResponse);
 
     expect(mockGetExtendedEphemeralPublicKey).toHaveBeenCalledWith(
-      "ephemeral-public-key",
+      'ephemeral-public-key',
     );
     expect(fetchMock).toHaveBeenCalledWith(
-      "https://api.enoki.mystenlabs.com/v1/zklogin/zkp",
+      'https://api.enoki.mystenlabs.com/v1/zklogin/zkp',
       {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
-          Authorization: "enoki-api-key",
-          "zklogin-jwt": "id-token",
+          'Content-Type': 'application/json',
+          Authorization: 'enoki-api-key',
+          'zklogin-jwt': 'id-token',
         },
         body: JSON.stringify({
-          network: "testnet",
-          ephemeralPublicKey: "extended-public-key",
+          network: 'testnet',
+          ephemeralPublicKey: 'extended-public-key',
           maxEpoch: 12,
-          randomness: "randomness",
+          randomness: 'randomness',
         }),
       },
     );
   });
 
-  it("defaults network to devnet when omitted", async () => {
+  it('defaults network to devnet when omitted', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: vi.fn().mockResolvedValue(proofResponse),
     });
-    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal('fetch', fetchMock);
 
     await fetchZkProof({
-      jwtRandomness: "randomness",
-      maxEpoch: "9",
-      ephemeralPublicKey: "ephemeral-public-key" as never,
-      idToken: "id-token",
-      enokiApiKey: "enoki-api-key",
+      jwtRandomness: 'randomness',
+      maxEpoch: '9',
+      ephemeralPublicKey: 'ephemeral-public-key' as never,
+      idToken: 'id-token',
+      enokiApiKey: 'enoki-api-key',
     });
 
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toMatchObject({
-      network: "devnet",
+      network: 'devnet',
       maxEpoch: 9,
     });
   });
 
-  it("passes the network param to the API and returns the corresponding response", async () => {
+  it('passes the network param to the API and returns the corresponding response', async () => {
     const proofsByNetwork: Record<string, ZkProofResponse> = {
       testnet: {
         data: {
-          proofPoints: { a: ["testnet-a"], b: [], c: [] },
-          issBase64Details: { value: "aXNz", indexMod4: 1 },
+          proofPoints: { a: ['testnet-a'], b: [], c: [] },
+          issBase64Details: { value: 'aXNz', indexMod4: 1 },
           headerBase64: headerBase64,
-          addressSeed: "11111111",
+          addressSeed: '11111111',
         },
         error: undefined,
       },
       mainnet: {
         data: {
-          proofPoints: { a: ["mainnet-a"], b: [], c: [] },
-          issBase64Details: { value: "aXNz", indexMod4: 1 },
+          proofPoints: { a: ['mainnet-a'], b: [], c: [] },
+          issBase64Details: { value: 'aXNz', indexMod4: 1 },
           headerBase64: headerBase64,
-          addressSeed: "22222222",
+          addressSeed: '22222222',
         },
         error: undefined,
       },
@@ -143,63 +143,63 @@ describe("fetchZkProof", () => {
           json: () => Promise.resolve(proofsByNetwork[network]),
         });
       });
-    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal('fetch', fetchMock);
 
     const baseParams = {
-      jwtRandomness: "randomness",
-      maxEpoch: "12",
-      ephemeralPublicKey: "ephemeral-public-key" as never,
-      idToken: "id-token",
-      enokiApiKey: "enoki-api-key",
+      jwtRandomness: 'randomness',
+      maxEpoch: '12',
+      ephemeralPublicKey: 'ephemeral-public-key' as never,
+      idToken: 'id-token',
+      enokiApiKey: 'enoki-api-key',
     };
 
     const testnetResult = await fetchZkProof({
       ...baseParams,
-      network: "testnet",
+      network: 'testnet',
     });
     const mainnetResult = await fetchZkProof({
       ...baseParams,
-      network: "mainnet",
+      network: 'mainnet',
     });
 
     expect(testnetResult).toBe(proofsByNetwork.testnet);
     expect(mainnetResult).toBe(proofsByNetwork.mainnet);
   });
 
-  it("throws when Enoki returns a non-OK response with a JSON body", async () => {
+  it('throws when Enoki returns a non-OK response with a JSON body', async () => {
     vi.stubGlobal(
-      "fetch",
+      'fetch',
       vi.fn().mockResolvedValue({
         ok: false,
         status: 400,
-        statusText: "Bad Request",
-        json: vi.fn().mockResolvedValue({ message: "bad request" }),
+        statusText: 'Bad Request',
+        json: vi.fn().mockResolvedValue({ message: 'bad request' }),
       }),
     );
 
     await expect(
       fetchZkProof({
-        jwtRandomness: "randomness",
-        maxEpoch: "12",
-        ephemeralPublicKey: "ephemeral-public-key" as never,
-        idToken: "id-token",
-        enokiApiKey: "enoki-api-key",
+        jwtRandomness: 'randomness',
+        maxEpoch: '12',
+        ephemeralPublicKey: 'ephemeral-public-key' as never,
+        idToken: 'id-token',
+        enokiApiKey: 'enoki-api-key',
       }),
-    ).rejects.toThrow("Failed to fetch ZK proof");
+    ).rejects.toThrow('Failed to fetch ZK proof');
   });
 
-  it("throws when Enoki returns a non-OK response with a non-JSON body", async () => {
+  it('throws when Enoki returns a non-OK response with a non-JSON body', async () => {
     vi.stubGlobal(
-      "fetch",
+      'fetch',
       vi.fn().mockResolvedValue({
         ok: false,
         status: 500,
-        statusText: "Server Error",
+        statusText: 'Server Error',
         json: vi
           .fn()
           .mockRejectedValue(
             new SyntaxError(
-              "Unexpected token '<', \"<html>\" is not valid JSON",
+              'Unexpected token \'<\', "<html>" is not valid JSON',
             ),
           ),
       }),
@@ -207,29 +207,29 @@ describe("fetchZkProof", () => {
 
     await expect(
       fetchZkProof({
-        jwtRandomness: "randomness",
-        maxEpoch: "12",
-        ephemeralPublicKey: "ephemeral-public-key" as never,
-        idToken: "id-token",
-        enokiApiKey: "enoki-api-key",
+        jwtRandomness: 'randomness',
+        maxEpoch: '12',
+        ephemeralPublicKey: 'ephemeral-public-key' as never,
+        idToken: 'id-token',
+        enokiApiKey: 'enoki-api-key',
       }),
-    ).rejects.toThrow("Failed to fetch ZK proof");
+    ).rejects.toThrow('Failed to fetch ZK proof');
   });
 
-  it("re-throws when fetch itself rejects with a network error", async () => {
+  it('re-throws when fetch itself rejects with a network error', async () => {
     vi.stubGlobal(
-      "fetch",
-      vi.fn().mockRejectedValue(new Error("Network failure")),
+      'fetch',
+      vi.fn().mockRejectedValue(new Error('Network failure')),
     );
 
     await expect(
       fetchZkProof({
-        jwtRandomness: "randomness",
-        maxEpoch: "12",
-        ephemeralPublicKey: "ephemeral-public-key" as never,
-        idToken: "id-token",
-        enokiApiKey: "enoki-api-key",
+        jwtRandomness: 'randomness',
+        maxEpoch: '12',
+        ephemeralPublicKey: 'ephemeral-public-key' as never,
+        idToken: 'id-token',
+        enokiApiKey: 'enoki-api-key',
       }),
-    ).rejects.toThrow("Network failure");
+    ).rejects.toThrow('Network failure');
   });
 });

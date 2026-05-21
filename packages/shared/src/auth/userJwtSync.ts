@@ -1,10 +1,10 @@
-import { decodeJwt } from "jose";
-import { type IdTokenClaims, User } from "oidc-client-ts";
-import type { OAuthTokenResponse } from "#/types/authTypes";
-import { createLogger } from "#/utils/logger";
-import { getZkLoginAddress } from "./getZkLoginAddress";
-import { storeJwt } from "./storageService";
-import { userToJwtResponse } from "./userToJwtResponse";
+import { decodeJwt } from 'jose';
+import { type IdTokenClaims, User } from 'oidc-client-ts';
+import type { OAuthTokenResponse } from '#/types/authTypes';
+import { createLogger } from '#/utils/logger';
+import { getZkLoginAddress } from './getZkLoginAddress';
+import { storeJwt } from './storageService';
+import { userToJwtResponse } from './userToJwtResponse';
 
 const log = createLogger();
 
@@ -22,7 +22,7 @@ export async function enrichUserWithZkLoginIfNeeded(
   }
 
   const sui = user.profile?.sui_address;
-  if (typeof sui === "string" && sui.trim()) {
+  if (typeof sui === 'string' && sui.trim()) {
     return user;
   }
 
@@ -36,7 +36,7 @@ export async function enrichUserWithZkLoginIfNeeded(
   }
 
   if (!zkLoginResponse.data) {
-    throw new Error("No zkLogin address data received");
+    throw new Error('No zkLogin address data received');
   }
 
   const { salt, address } = zkLoginResponse.data;
@@ -45,13 +45,13 @@ export async function enrichUserWithZkLoginIfNeeded(
   return new User({
     ...user,
     profile: {
-      ...(typeof user.profile === "object" && user.profile !== null
+      ...(typeof user.profile === 'object' && user.profile !== null
         ? user.profile
         : {}),
       ...decodedJwt,
       sui_address: address,
       salt,
-    } as User["profile"],
+    } as User['profile'],
   });
 }
 
@@ -60,7 +60,7 @@ export async function syncPrimaryJwtFromUser(user: User): Promise<void> {
   const jwt = userToJwtResponse(user);
   if (!jwt?.refresh_token?.trim()) {
     log.warn(
-      "[syncPrimaryJwtFromUser] no refresh token, skipping evevault:jwt mirror",
+      '[syncPrimaryJwtFromUser] no refresh token, skipping evevault:jwt mirror',
     );
     return;
   }

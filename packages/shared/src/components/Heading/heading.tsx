@@ -1,17 +1,17 @@
-import React from "react";
-import type { HeadingProps } from "#/types";
+import React from 'react';
+import type { HeadingProps } from '#/types';
 
 const variantClasses: Record<string, string> = {
-  regular: "font-normal",
-  bold: "font-bold",
-  secondary: "font-normal",
+  regular: 'font-normal',
+  bold: 'font-bold',
+  secondary: 'font-normal',
 };
 
 export const Heading: React.FC<HeadingProps> = ({
   level,
-  variant = "regular",
-  color = "neutral",
-  className = "",
+  variant = 'regular',
+  color = 'neutral',
+  className = '',
   children,
   style,
   ...rest
@@ -23,7 +23,7 @@ export const Heading: React.FC<HeadingProps> = ({
 
   const computedStyle: React.CSSProperties = {
     color: color ? `var(--${color})` : undefined,
-    ...(variant === "secondary" && {
+    ...(variant === 'secondary' && {
       fontFamily: '"M42_FLIGHT 721", monospace',
     }),
     ...style,

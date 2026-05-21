@@ -1,17 +1,17 @@
-import type React from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
-import "./DropdownSelect.css";
-import { Corners } from "#/components/Corners";
-import Icon from "#/components/Icon";
-import Text from "#/components/Text";
-import { useResponsive } from "#/hooks";
-import type { DropdownItem, DropdownSelectProps } from "#/types";
-import { getIdenticon } from "./Identicons";
+import type React from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import './DropdownSelect.css';
+import { Corners } from '#/components/Corners';
+import Icon from '#/components/Icon';
+import Text from '#/components/Text';
+import { useResponsive } from '#/hooks';
+import type { DropdownItem, DropdownSelectProps } from '#/types';
+import { getIdenticon } from './Identicons';
 
 export const DropdownSelect: React.FC<DropdownSelectProps> = ({
   items,
   trigger,
-  className = "",
+  className = '',
   identicon = 0,
   children,
   isOpen: controlledIsOpen,
@@ -52,8 +52,8 @@ export const DropdownSelect: React.FC<DropdownSelectProps> = ({
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [setIsOpen]);
 
   // Measure menu height when open
@@ -72,13 +72,13 @@ export const DropdownSelect: React.FC<DropdownSelectProps> = ({
 
   return (
     <div
-      className={`dropdown-select ${isOpen ? "dropdown-select--open" : ""} ${className}`}
+      className={`dropdown-select ${isOpen ? 'dropdown-select--open' : ''} ${className}`}
       ref={dropdownRef}
-      style={{ "--menu-height": `${menuHeight}px` } as React.CSSProperties}
+      style={{ '--menu-height': `${menuHeight}px` } as React.CSSProperties}
     >
       <button
         type="button"
-        className={`dropdown-select__trigger ${showIconOnly ? "dropdown-select__trigger--icon-only" : ""}`}
+        className={`dropdown-select__trigger ${showIconOnly ? 'dropdown-select__trigger--icon-only' : ''}`}
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
         aria-haspopup="true"
@@ -92,7 +92,7 @@ export const DropdownSelect: React.FC<DropdownSelectProps> = ({
             )}
           </div>
           <span
-            className={`dropdown-select__arrow ${isOpen ? "dropdown-select__arrow--open" : ""}`}
+            className={`dropdown-select__arrow ${isOpen ? 'dropdown-select__arrow--open' : ''}`}
           >
             <Icon name="ChevronArrowDown" size="small" color="quantum" />
           </span>
@@ -103,7 +103,7 @@ export const DropdownSelect: React.FC<DropdownSelectProps> = ({
           size={5}
           thickness={1}
           bottomOffset={isOpen && !showIconOnly ? menuHeight + 3 : 0}
-          transition={showIconOnly ? undefined : "bottom 0.3s ease"}
+          transition={showIconOnly ? undefined : 'bottom 0.3s ease'}
         />
 
         {/* Edge lines */}
@@ -119,7 +119,7 @@ export const DropdownSelect: React.FC<DropdownSelectProps> = ({
                 key={item.label}
                 className="dropdown-select__item"
                 onClick={() => handleItemClick(item)}
-                onKeyDown={(e) => e.key === "Enter" && handleItemClick(item)}
+                onKeyDown={(e) => e.key === 'Enter' && handleItemClick(item)}
                 role="menuitem"
                 tabIndex={0}
               >

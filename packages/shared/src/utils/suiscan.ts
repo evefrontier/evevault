@@ -1,4 +1,4 @@
-import { isLocalnetChain } from "#/types/networks";
+import { isLocalnetChain } from '#/types/networks';
 
 /**
  * Generates a Suiscan URL for a transaction.
@@ -12,6 +12,6 @@ export function getSuiscanUrl(
   if (isLocalnetChain(chain) && opts?.localnetUrl) {
     return `https://custom.suiscan.xyz/custom/tx/${txDigest}?network=${encodeURIComponent(opts.localnetUrl)}`;
   }
-  const network = chain.replace("sui:", "");
+  const network = chain.replace('sui:', '');
   return `https://suiscan.xyz/${network}/tx/${txDigest}`;
 }

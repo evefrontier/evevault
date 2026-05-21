@@ -3,33 +3,33 @@ import {
   isLocalnetChain,
   SendTokenScreen,
   useAuthStore,
-} from "@evevault/shared";
-import type { SendTokenSearch } from "@evevault/shared/router";
-import { localnetKeyService } from "@evevault/shared/services/keeperService";
-import { useContextStore } from "@evevault/shared/stores";
-import { EXTENSION_ROUTES } from "@evevault/shared/utils";
-import { useActiveSuiAddress } from "@evevault/shared/wallet";
+} from '@evevault/shared';
+import type { SendTokenSearch } from '@evevault/shared/router';
+import { localnetKeyService } from '@evevault/shared/services/keeperService';
+import { useContextStore } from '@evevault/shared/stores';
+import { EXTENSION_ROUTES } from '@evevault/shared/utils';
+import { useActiveSuiAddress } from '@evevault/shared/wallet';
 import {
   createFileRoute,
   redirect,
   useNavigate,
   useSearch,
-} from "@tanstack/react-router";
+} from '@tanstack/react-router';
 
 function SendTokenPage() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const activeAddress = useActiveSuiAddress();
-  const { coinType } = useSearch({ from: "/send-token" });
+  const { coinType } = useSearch({ from: '/send-token' });
 
   const handleNavigateBack = () => {
-    navigate({ to: "/" });
+    navigate({ to: '/' });
   };
 
   return (
     <div className="flex flex-col gap-10">
       <HeaderMobile
-        email={user?.profile?.email ?? ""}
+        email={user?.profile?.email ?? ''}
         address={activeAddress ?? (user?.profile?.sui_address as string)}
         onTransactionsClick={() =>
           navigate({ to: EXTENSION_ROUTES.TRANSACTIONS })
@@ -40,7 +40,7 @@ function SendTokenPage() {
   );
 }
 
-export const Route = createFileRoute("/send-token")({
+export const Route = createFileRoute('/send-token')({
   beforeLoad: async () => {
     const { user } = useAuthStore.getState();
     const { chain } = useContextStore.getState();
@@ -54,15 +54,15 @@ export const Route = createFileRoute("/send-token")({
     }
 
     if (!user) {
-      throw redirect({ to: "/" });
+      throw redirect({ to: '/' });
     }
   },
   component: SendTokenPage,
   validateSearch: (search: Record<string, unknown>): SendTokenSearch => {
-    const coinType = (search.coinType as string) || "";
+    const coinType = (search.coinType as string) || '';
     // Redirect to home if coinType is missing
     if (!coinType) {
-      throw redirect({ to: "/" });
+      throw redirect({ to: '/' });
     }
     return { coinType };
   },

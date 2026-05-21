@@ -1,9 +1,9 @@
 /// <reference types="chrome"/>
 /// <reference types="vite/client" />
 
-import { handleMessage } from "../src/lib/background/handlers/messageHandler";
-import { handlePortConnection } from "../src/lib/background/handlers/portHandlers";
-import { ensureOffscreen } from "../src/lib/background/services/offscreenService";
+import { handleMessage } from '../src/lib/background/handlers/messageHandler';
+import { handlePortConnection } from '../src/lib/background/handlers/portHandlers';
+import { ensureOffscreen } from '../src/lib/background/services/offscreenService';
 
 // @ts-expect-error
 export default defineBackground(() => {

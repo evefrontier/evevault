@@ -34,19 +34,19 @@ export function formatAddress(
  * @example
  * await copyToClipboard("0x1234567890abcdef")
  */
-import { createLogger } from "./logger";
+import { createLogger } from './logger';
 
 const log = createLogger();
 
 export async function copyToClipboard(text: string): Promise<boolean> {
   try {
-    if (typeof navigator === "undefined" || !navigator.clipboard) {
-      throw new Error("Clipboard API not available");
+    if (typeof navigator === 'undefined' || !navigator.clipboard) {
+      throw new Error('Clipboard API not available');
     }
     await navigator.clipboard.writeText(text);
     return true;
   } catch (error) {
-    log.error("Failed to copy to clipboard", error);
+    log.error('Failed to copy to clipboard', error);
     return false;
   }
 }

@@ -1,13 +1,13 @@
-import type { PublicKey } from "@mysten/sui/cryptography";
-import { ephKeyService } from "#/services/vaultService";
+import type { PublicKey } from '@mysten/sui/cryptography';
+import { ephKeyService } from '#/services/vaultService';
 import {
   createEmptyLocalnetDeviceData,
   createInitialNetworkData,
-} from "#/stores/deviceStore/constants";
-import type { DeviceState } from "#/types";
-import { isWeb } from "#/utils/environment";
-import { createLogger } from "#/utils/logger";
-import type { GetDeviceState, SetDeviceState } from "./types";
+} from '#/stores/deviceStore/constants';
+import type { DeviceState } from '#/types';
+import { isWeb } from '#/utils/environment';
+import { createLogger } from '#/utils/logger';
+import type { GetDeviceState, SetDeviceState } from './types';
 
 const log = createLogger();
 
@@ -37,14 +37,14 @@ export function createLockActions(set: SetDeviceState, get: GetDeviceState) {
         const storedKey = get().ephemeralKeyPairSecretKey;
 
         if (!pin || pin.trim().length === 0) {
-          set({ error: "PIN is required" });
+          set({ error: 'PIN is required' });
           return;
         }
 
         if (isWeb()) {
           const hasKeypair = await ephKeyService.hasKeypair();
           if (!hasKeypair) {
-            set({ error: "No keypair available" });
+            set({ error: 'No keypair available' });
             return;
           }
           const publicKey = await ephKeyService.unlockVault(null, pin);
@@ -53,16 +53,16 @@ export function createLockActions(set: SetDeviceState, get: GetDeviceState) {
         }
 
         if (!storedKey) {
-          set({ error: "No secret key available" });
+          set({ error: 'No secret key available' });
           return;
         }
 
         const publicKey = await ephKeyService.unlockVault(storedKey, pin);
         setUnlockedState(publicKey);
       } catch (error) {
-        log.error("Error decrypting secret key", error);
+        log.error('Error decrypting secret key', error);
         set({
-          error: error instanceof Error ? error.message : "Unknown error",
+          error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
     },
@@ -80,5 +80,5 @@ export function createLockActions(set: SetDeviceState, get: GetDeviceState) {
         error: null,
       });
     },
-  } satisfies Pick<DeviceState, "lock" | "unlock" | "reset">;
+  } satisfies Pick<DeviceState, 'lock' | 'unlock' | 'reset'>;
 }

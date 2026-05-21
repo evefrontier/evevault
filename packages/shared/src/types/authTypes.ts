@@ -1,4 +1,4 @@
-import type { User } from "oidc-client-ts";
+import type { User } from 'oidc-client-ts';
 
 /** JWT and user authentication response from OAuth/OIDC provider (includes OIDC user profile fields via Partial<User>) */
 export interface JwtResponse extends Partial<User> {

@@ -1,4 +1,4 @@
-import type { ChromeInstance } from "./browser";
+import type { ChromeInstance } from './browser';
 
 type ChromeGlobal = typeof globalThis extends { chrome: infer T }
   ? T

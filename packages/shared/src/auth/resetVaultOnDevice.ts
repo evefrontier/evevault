@@ -1,40 +1,40 @@
-import { TenantId } from "@evefrontier/dapp-kit/utils";
+import { TenantId } from '@evefrontier/dapp-kit/utils';
 import {
   SUI_DEVNET_CHAIN,
   SUI_MAINNET_CHAIN,
   SUI_TESTNET_CHAIN,
-} from "@mysten/wallet-standard";
-import { ephKeyService, zkProofService } from "#/services/vaultService";
-import { useContextStore } from "#/stores";
+} from '@mysten/wallet-standard';
+import { ephKeyService, zkProofService } from '#/services/vaultService';
+import { useContextStore } from '#/stores';
 import {
   createEmptyLocalnetDeviceData,
   createEmptyNetworkDataEntry,
   useDeviceStore,
-} from "#/stores/deviceStore";
-import { getCurrentTenantId } from "#/stores/tenantStore";
-import { useTokenListStore } from "#/stores/tokenListStore";
-import type { NetworkDataMap } from "#/types";
-import { DEFAULT_TOKENS_BY_CHAIN } from "#/types/networks";
+} from '#/stores/deviceStore';
+import { getCurrentTenantId } from '#/stores/tenantStore';
+import { useTokenListStore } from '#/stores/tokenListStore';
+import type { NetworkDataMap } from '#/types';
+import { DEFAULT_TOKENS_BY_CHAIN } from '#/types/networks';
 import {
   cleanupExtensionStorage,
   cleanupOidcStorage,
-} from "#/utils/authCleanup";
-import { isExtension, isWeb } from "#/utils/environment";
-import { createLogger } from "#/utils/logger";
+} from '#/utils/authCleanup';
+import { isExtension, isWeb } from '#/utils/environment';
+import { createLogger } from '#/utils/logger';
 import {
   EVEVAULT_STORAGE_KEYS,
   EXTENSION_EXTRA_KEYS,
   SESSION_STORAGE_REDIRECT_KEY,
-} from "#/utils/storageKeys";
-import { getUserManager } from "./authConfig";
-import { clearZkLoginAddressCache } from "./getZkLoginAddress";
-import { clearAllJwts } from "./storageService";
-import { useAuthStore } from "./stores/authStore";
+} from '#/utils/storageKeys';
+import { getUserManager } from './authConfig';
+import { clearZkLoginAddressCache } from './getZkLoginAddress';
+import { clearAllJwts } from './storageService';
+import { useAuthStore } from './stores/authStore';
 
 const log = createLogger();
 
 async function clearWebStorage(): Promise<void> {
-  if (typeof window === "undefined") return;
+  if (typeof window === 'undefined') return;
 
   for (const key of EVEVAULT_STORAGE_KEYS) {
     window.localStorage.removeItem(key);
@@ -42,18 +42,18 @@ async function clearWebStorage(): Promise<void> {
   cleanupOidcStorage();
   window.sessionStorage.removeItem(SESSION_STORAGE_REDIRECT_KEY);
   log.info(
-    "[resetVaultOnDevice] Cleared web localStorage, sessionStorage, and OIDC",
+    '[resetVaultOnDevice] Cleared web localStorage, sessionStorage, and OIDC',
   );
 }
 
 async function clearExtensionStorage(): Promise<void> {
   await cleanupExtensionStorage();
-  if (typeof chrome !== "undefined" && chrome.storage?.local) {
+  if (typeof chrome !== 'undefined' && chrome.storage?.local) {
     await new Promise<void>((resolve) => {
       chrome.storage.local.remove([...EXTENSION_EXTRA_KEYS], () => resolve());
     });
     log.info(
-      "[resetVaultOnDevice] Cleared extension pendingAction/transactionResult",
+      '[resetVaultOnDevice] Cleared extension pendingAction/transactionResult',
     );
   }
 }
@@ -94,7 +94,7 @@ function resetStoresToInitial(): void {
     tokens: { ...DEFAULT_TOKENS_BY_CHAIN },
   });
 
-  log.info("[resetVaultOnDevice] Reset in-memory stores to initial state");
+  log.info('[resetVaultOnDevice] Reset in-memory stores to initial state');
 }
 
 /**
@@ -103,7 +103,7 @@ function resetStoresToInitial(): void {
  * redirect to `/` after this so the user sees the Create PIN screen.
  */
 export async function resetVaultOnDevice(): Promise<void> {
-  log.info("[resetVaultOnDevice] Starting full device reset");
+  log.info('[resetVaultOnDevice] Starting full device reset');
 
   try {
     await zkProofService.clear();
@@ -127,9 +127,9 @@ export async function resetVaultOnDevice(): Promise<void> {
     clearZkLoginAddressCache();
     resetStoresToInitial();
 
-    log.info("[resetVaultOnDevice] Full device reset complete");
+    log.info('[resetVaultOnDevice] Full device reset complete');
   } catch (error) {
-    log.error("[resetVaultOnDevice] Reset failed", error);
+    log.error('[resetVaultOnDevice] Reset failed', error);
     throw error;
   }
 }

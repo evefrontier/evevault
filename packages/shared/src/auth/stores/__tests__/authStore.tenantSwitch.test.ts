@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { AuthStoreMockHandles } from "./authStoreTestMocks";
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { AuthStoreMockHandles } from './authStoreTestMocks';
 import {
   makeAdaptersMock,
   makeAuthConfigMock,
@@ -16,7 +16,7 @@ import {
   makeUtilsMock,
   makeVaultServiceMock,
   setupAuthStoreMocks,
-} from "./authStoreTestMocks";
+} from './authStoreTestMocks';
 
 const h: AuthStoreMockHandles = vi.hoisted(() => ({
   mockGetUser: vi.fn(),
@@ -42,32 +42,32 @@ const h: AuthStoreMockHandles = vi.hoisted(() => ({
   mockDecodeJwt: vi.fn(),
 }));
 
-vi.mock("#/auth/authConfig", () => makeAuthConfigMock(h));
-vi.mock("#/auth/storageService", () => makeStorageServiceMock(h));
-vi.mock("#/auth/userJwtSync", () => makeUserJwtSyncMock(h));
-vi.mock("#/auth/userToJwtResponse", () => makeUserToJwtResponseMock(h));
-vi.mock("#/auth/utils/authStoreUtils", () => makeAuthStoreUtilsMock(h));
-vi.mock("#/auth/getZkLoginAddress", () => makeGetZkLoginAddressMock(h));
-vi.mock("#/auth/oauthTokenResponse", () => makeOAuthTokenResponseMock(h));
-vi.mock("#/services/vaultService", () => makeVaultServiceMock(h));
-vi.mock("#/stores", () => makeStoresMock(h));
-vi.mock("#/stores/tenantStore", () => makeTenantStoreMock(h));
-vi.mock("#/utils", () => makeUtilsMock(h));
-vi.mock("#/utils/tenantConfig", () => makeTenantConfigMock());
-vi.mock("#/adapters", () => makeAdaptersMock());
-vi.mock("jose", () => makeJoseMock(h));
+vi.mock('#/auth/authConfig', () => makeAuthConfigMock(h));
+vi.mock('#/auth/storageService', () => makeStorageServiceMock(h));
+vi.mock('#/auth/userJwtSync', () => makeUserJwtSyncMock(h));
+vi.mock('#/auth/userToJwtResponse', () => makeUserToJwtResponseMock(h));
+vi.mock('#/auth/utils/authStoreUtils', () => makeAuthStoreUtilsMock(h));
+vi.mock('#/auth/getZkLoginAddress', () => makeGetZkLoginAddressMock(h));
+vi.mock('#/auth/oauthTokenResponse', () => makeOAuthTokenResponseMock(h));
+vi.mock('#/services/vaultService', () => makeVaultServiceMock(h));
+vi.mock('#/stores', () => makeStoresMock(h));
+vi.mock('#/stores/tenantStore', () => makeTenantStoreMock(h));
+vi.mock('#/utils', () => makeUtilsMock(h));
+vi.mock('#/utils/tenantConfig', () => makeTenantConfigMock());
+vi.mock('#/adapters', () => makeAdaptersMock());
+vi.mock('jose', () => makeJoseMock(h));
 
 import {
   runTenantSwitchCleanup,
   switchTenantAndReload,
   useAuthStore,
-} from "#/auth/stores/authStore";
-import { setWindowLocation } from "#/testing";
+} from '#/auth/stores/authStore';
+import { setWindowLocation } from '#/testing';
 
-describe("tenant switch auth cleanup", () => {
+describe('tenant switch auth cleanup', () => {
   beforeEach(() => {
     setupAuthStoreMocks(h);
-    useAuthStore.setState({ user: { id_token: "token" } as never });
+    useAuthStore.setState({ user: { id_token: 'token' } as never });
   });
 
   afterEach(() => {
@@ -76,8 +76,8 @@ describe("tenant switch auth cleanup", () => {
 
   const originalLocation = window.location;
 
-  it("runTenantSwitchCleanup clears JWTs, removes OIDC user, and clears zkLogin address cache", async () => {
-    await runTenantSwitchCleanup("stillness" as never);
+  it('runTenantSwitchCleanup clears JWTs, removes OIDC user, and clears zkLogin address cache', async () => {
+    await runTenantSwitchCleanup('stillness' as never);
     expect(h.mockRemoveUser).toHaveBeenCalledOnce();
     expect(h.mockPerformFullCleanup).toHaveBeenCalledOnce();
     expect(h.mockClearAllJwts).toHaveBeenCalledOnce();
@@ -86,33 +86,33 @@ describe("tenant switch auth cleanup", () => {
     expect(useAuthStore.getState().user).toBeNull();
   });
 
-  it("runTenantSwitchCleanup does not lock the vault", async () => {
-    await runTenantSwitchCleanup("stillness" as never);
+  it('runTenantSwitchCleanup does not lock the vault', async () => {
+    await runTenantSwitchCleanup('stillness' as never);
 
     expect(h.mockDeviceLock).not.toHaveBeenCalled();
   });
 
-  it("switchTenantAndReload updates currentTenantId then reloads the page", async () => {
+  it('switchTenantAndReload updates currentTenantId then reloads the page', async () => {
     const reload = vi.fn();
     setWindowLocation({ reload });
 
     try {
-      await switchTenantAndReload("tauceti" as never);
+      await switchTenantAndReload('tauceti' as never);
 
-      expect(h.mockSetCurrentTenantId).toHaveBeenCalledWith("tauceti");
+      expect(h.mockSetCurrentTenantId).toHaveBeenCalledWith('tauceti');
       expect(reload).toHaveBeenCalledOnce();
     } finally {
       setWindowLocation(originalLocation);
     }
   });
 
-  it("switchTenantAndReload is a no-op when the new tenant ID matches the current one", async () => {
+  it('switchTenantAndReload is a no-op when the new tenant ID matches the current one', async () => {
     const reload = vi.fn();
     setWindowLocation({ reload });
 
     try {
       // mockGetCurrentTenantId returns "stillness" and we pass "stillness" — early return
-      await switchTenantAndReload("stillness" as never);
+      await switchTenantAndReload('stillness' as never);
 
       expect(h.mockSetCurrentTenantId).not.toHaveBeenCalled();
       expect(reload).not.toHaveBeenCalled();
@@ -121,11 +121,11 @@ describe("tenant switch auth cleanup", () => {
     }
   });
 
-  it("runTenantSwitchCleanup does not throw when a cleanup step rejects (error is caught internally)", async () => {
-    h.mockClearAllJwts.mockRejectedValue(new Error("storage unavailable"));
+  it('runTenantSwitchCleanup does not throw when a cleanup step rejects (error is caught internally)', async () => {
+    h.mockClearAllJwts.mockRejectedValue(new Error('storage unavailable'));
 
     await expect(
-      runTenantSwitchCleanup("stillness" as never),
+      runTenantSwitchCleanup('stillness' as never),
     ).resolves.toBeUndefined();
   });
 });

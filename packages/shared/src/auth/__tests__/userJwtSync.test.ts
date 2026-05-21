@@ -1,20 +1,20 @@
-import { User } from "oidc-client-ts";
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { makeJwt } from "#/testing";
+import { User } from 'oidc-client-ts';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { makeJwt } from '#/testing';
 
 const mockGetZkLoginAddress = vi.fn();
 const mockStoreJwt = vi.fn();
 const mockWarn = vi.fn();
 
-vi.mock("#/auth/getZkLoginAddress", () => ({
+vi.mock('#/auth/getZkLoginAddress', () => ({
   getZkLoginAddress: (...args: unknown[]) => mockGetZkLoginAddress(...args),
 }));
 
-vi.mock("#/auth/storageService", () => ({
+vi.mock('#/auth/storageService', () => ({
   storeJwt: (...args: unknown[]) => mockStoreJwt(...args),
 }));
 
-vi.mock("#/utils/logger", () => ({
+vi.mock('#/utils/logger', () => ({
   createLogger: () => ({
     debug: vi.fn(),
     info: vi.fn(),
@@ -24,112 +24,112 @@ vi.mock("#/utils/logger", () => ({
 }));
 function baseUser(overrides: Partial<ConstructorParameters<typeof User>[0]>) {
   return new User({
-    id_token: makeJwt({ sub: "user-1", exp: 4_000_000_000 }),
-    access_token: "access",
-    token_type: "Bearer",
-    scope: "openid",
-    refresh_token: "refresh-1",
-    profile: { sub: "user-1" } as User["profile"],
+    id_token: makeJwt({ sub: 'user-1', exp: 4_000_000_000 }),
+    access_token: 'access',
+    token_type: 'Bearer',
+    scope: 'openid',
+    refresh_token: 'refresh-1',
+    profile: { sub: 'user-1' } as User['profile'],
     expires_at: Math.floor(Date.now() / 1000) + 3600,
     ...overrides,
   });
 }
 
-describe("enrichUserWithZkLoginIfNeeded", () => {
+describe('enrichUserWithZkLoginIfNeeded', () => {
   afterEach(() => {
     vi.clearAllMocks();
   });
 
-  it("returns the same user when id_token is missing", async () => {
+  it('returns the same user when id_token is missing', async () => {
     const { enrichUserWithZkLoginIfNeeded } = await import(
-      "#/auth/userJwtSync"
+      '#/auth/userJwtSync'
     );
     const user = baseUser({ id_token: undefined });
 
-    const out = await enrichUserWithZkLoginIfNeeded(user, () => "enoki-key");
+    const out = await enrichUserWithZkLoginIfNeeded(user, () => 'enoki-key');
 
     expect(out).toBe(user);
     expect(mockGetZkLoginAddress).not.toHaveBeenCalled();
   });
 
-  it("returns the same user when profile.sui_address is already set", async () => {
+  it('returns the same user when profile.sui_address is already set', async () => {
     const { enrichUserWithZkLoginIfNeeded } = await import(
-      "#/auth/userJwtSync"
+      '#/auth/userJwtSync'
     );
     const user = baseUser({
       profile: {
-        sub: "user-1",
-        sui_address: "0xsui",
-      } as unknown as User["profile"],
+        sub: 'user-1',
+        sui_address: '0xsui',
+      } as unknown as User['profile'],
     });
 
-    const out = await enrichUserWithZkLoginIfNeeded(user, () => "enoki-key");
+    const out = await enrichUserWithZkLoginIfNeeded(user, () => 'enoki-key');
 
     expect(out).toBe(user);
     expect(mockGetZkLoginAddress).not.toHaveBeenCalled();
   });
 
-  it("calls Enoki and merges sui_address and salt when sui_address is missing", async () => {
+  it('calls Enoki and merges sui_address and salt when sui_address is missing', async () => {
     const { enrichUserWithZkLoginIfNeeded } = await import(
-      "#/auth/userJwtSync"
+      '#/auth/userJwtSync'
     );
     mockGetZkLoginAddress.mockResolvedValue({
-      data: { address: "0xenoki", salt: "salt-99" },
+      data: { address: '0xenoki', salt: 'salt-99' },
       error: undefined,
     });
 
     const user = baseUser({
-      profile: { sub: "user-1" } as User["profile"],
+      profile: { sub: 'user-1' } as User['profile'],
     });
 
-    const out = await enrichUserWithZkLoginIfNeeded(user, () => "enoki-key");
+    const out = await enrichUserWithZkLoginIfNeeded(user, () => 'enoki-key');
 
     expect(mockGetZkLoginAddress).toHaveBeenCalledWith({
       jwt: user.id_token,
-      enokiApiKey: "enoki-key",
+      enokiApiKey: 'enoki-key',
     });
     expect(out).not.toBe(user);
-    expect(out.profile?.sui_address).toBe("0xenoki");
-    expect(out.profile?.salt).toBe("salt-99");
+    expect(out.profile?.sui_address).toBe('0xenoki');
+    expect(out.profile?.salt).toBe('salt-99');
   });
 
-  it("throws when Enoki returns an error", async () => {
+  it('throws when Enoki returns an error', async () => {
     const { enrichUserWithZkLoginIfNeeded } = await import(
-      "#/auth/userJwtSync"
+      '#/auth/userJwtSync'
     );
     mockGetZkLoginAddress.mockResolvedValue({
       data: undefined,
-      error: { message: "Enoki down" },
+      error: { message: 'Enoki down' },
     });
 
     const user = baseUser({});
 
     await expect(
-      enrichUserWithZkLoginIfNeeded(user, () => "k"),
-    ).rejects.toThrow("Enoki down");
+      enrichUserWithZkLoginIfNeeded(user, () => 'k'),
+    ).rejects.toThrow('Enoki down');
   });
 });
 
-describe("syncPrimaryJwtFromUser", () => {
+describe('syncPrimaryJwtFromUser', () => {
   afterEach(() => {
     vi.clearAllMocks();
   });
 
-  it("warns and skips storeJwt when refresh_token is missing", async () => {
-    const { syncPrimaryJwtFromUser } = await import("#/auth/userJwtSync");
+  it('warns and skips storeJwt when refresh_token is missing', async () => {
+    const { syncPrimaryJwtFromUser } = await import('#/auth/userJwtSync');
     const user = baseUser({ refresh_token: undefined });
 
     await syncPrimaryJwtFromUser(user);
 
     expect(mockWarn).toHaveBeenCalledWith(
-      "[syncPrimaryJwtFromUser] no refresh token, skipping evevault:jwt mirror",
+      '[syncPrimaryJwtFromUser] no refresh token, skipping evevault:jwt mirror',
     );
     expect(mockStoreJwt).not.toHaveBeenCalled();
   });
 
-  it("warns and skips storeJwt when refresh_token is blank", async () => {
-    const { syncPrimaryJwtFromUser } = await import("#/auth/userJwtSync");
-    const user = baseUser({ refresh_token: "   " });
+  it('warns and skips storeJwt when refresh_token is blank', async () => {
+    const { syncPrimaryJwtFromUser } = await import('#/auth/userJwtSync');
+    const user = baseUser({ refresh_token: '   ' });
 
     await syncPrimaryJwtFromUser(user);
 
@@ -137,8 +137,8 @@ describe("syncPrimaryJwtFromUser", () => {
     expect(mockStoreJwt).not.toHaveBeenCalled();
   });
 
-  it("calls storeJwt with OAuth payload when refresh_token is present", async () => {
-    const { syncPrimaryJwtFromUser } = await import("#/auth/userJwtSync");
+  it('calls storeJwt with OAuth payload when refresh_token is present', async () => {
+    const { syncPrimaryJwtFromUser } = await import('#/auth/userJwtSync');
     const user = baseUser({});
 
     await syncPrimaryJwtFromUser(user);
@@ -148,8 +148,8 @@ describe("syncPrimaryJwtFromUser", () => {
     const [jwtArg] = mockStoreJwt.mock.calls[0] ?? [];
     expect(jwtArg).toMatchObject({
       id_token: user.id_token,
-      access_token: "access",
-      refresh_token: "refresh-1",
+      access_token: 'access',
+      refresh_token: 'refresh-1',
     });
   });
 });

@@ -1,7 +1,7 @@
-import { chromeStorageAdapter } from "#/adapters/extension";
-import { localStorageAdapter } from "#/adapters/web";
-import { isWeb } from "./environment";
-import { CONTEXT_STORAGE_KEY } from "./storageKeys";
+import { chromeStorageAdapter } from '#/adapters/extension';
+import { localStorageAdapter } from '#/adapters/web';
+import { isWeb } from './environment';
+import { CONTEXT_STORAGE_KEY } from './storageKeys';
 
 function getStorage() {
   return isWeb() ? localStorageAdapter : chromeStorageAdapter;

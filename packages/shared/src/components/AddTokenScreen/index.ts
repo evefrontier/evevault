@@ -1,1 +1,1 @@
-export { AddTokenScreen } from "./AddTokenScreen";
+export { AddTokenScreen } from './AddTokenScreen';

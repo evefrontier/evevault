@@ -1,7 +1,7 @@
-import { WalletStandardMessageTypes } from "@evevault/shared";
-import { createLogger } from "@evevault/shared/utils";
-import { openPopupWindow } from "@/lib/background/services/popupWindow";
-import type { WalletActionMessage } from "@/lib/background/types";
+import { WalletStandardMessageTypes } from '@evevault/shared';
+import { createLogger } from '@evevault/shared/utils';
+import { openPopupWindow } from '@/lib/background/services/popupWindow';
+import type { WalletActionMessage } from '@/lib/background/types';
 
 const log = createLogger();
 
@@ -13,14 +13,14 @@ async function handleApprovePopup(
   const { action } = message;
 
   try {
-    log.info("Wallet action request received", { action: message.action });
+    log.info('Wallet action request received', { action: message.action });
 
     const senderTabId = sender.tab?.id;
 
     const windowId = await openPopupWindow(action);
 
     if (!windowId) {
-      throw new Error("Failed to open approval popup");
+      throw new Error('Failed to open approval popup');
     }
 
     await chrome.storage.local.set({
@@ -51,7 +51,7 @@ async function handleApprovePopup(
       const result = changes.transactionResult?.newValue;
 
       const isSuccess =
-        result?.status === "signed" || result?.status === "signed_and_executed";
+        result?.status === 'signed' || result?.status === 'signed_and_executed';
       if (isSuccess && senderTabId) {
         if (isSignAndExecute) {
           const hasRequired =
@@ -62,17 +62,17 @@ async function handleApprovePopup(
           if (!hasRequired) {
             chrome.tabs
               .sendMessage(senderTabId, {
-                type: "sign_and_execute_transaction_error",
-                error: "Missing bytes or signature in transaction result",
+                type: 'sign_and_execute_transaction_error',
+                error: 'Missing bytes or signature in transaction result',
                 id: message.id,
               })
               .catch((err) => {
-                log.error("Failed to send sign_and_execute error", err);
+                log.error('Failed to send sign_and_execute error', err);
               });
           } else {
             chrome.tabs
               .sendMessage(senderTabId, {
-                type: "sign_and_execute_transaction_success",
+                type: 'sign_and_execute_transaction_success',
                 result: {
                   bytes: result.bytes,
                   signature: result.signature,
@@ -82,50 +82,50 @@ async function handleApprovePopup(
                 id: message.id,
               })
               .catch((err) => {
-                log.error("Failed to send sign_and_execute success", err);
+                log.error('Failed to send sign_and_execute success', err);
               });
           }
         } else {
           chrome.tabs
             .sendMessage(senderTabId, {
-              type: "sign_success",
+              type: 'sign_success',
               bytes: result.bytes,
               signature: result.signature,
               id: message.id,
             })
             .catch((err) => {
-              log.error("Failed to send success message", err);
+              log.error('Failed to send success message', err);
             });
         }
 
-        chrome.storage.local.remove(["pendingAction", "transactionResult"]);
+        chrome.storage.local.remove(['pendingAction', 'transactionResult']);
         detachApprovalListener();
-      } else if (result?.status === "error") {
+      } else if (result?.status === 'error') {
         detachApprovalListener();
 
         if (isSignAndExecute && senderTabId) {
           chrome.tabs
             .sendMessage(senderTabId, {
-              type: "sign_and_execute_transaction_error",
+              type: 'sign_and_execute_transaction_error',
               error: result.error,
               id: message.id,
             })
             .catch((err) => {
-              log.error("Failed to send sign_and_execute error", err);
+              log.error('Failed to send sign_and_execute error', err);
             });
-        } else if (typeof senderTabId === "number") {
+        } else if (typeof senderTabId === 'number') {
           let errorType: string;
 
           switch (action) {
             case WalletStandardMessageTypes.SIGN_TRANSACTION:
-              errorType = "sign_transaction_error";
+              errorType = 'sign_transaction_error';
               break;
             case WalletStandardMessageTypes.SIGN_PERSONAL_MESSAGE:
-              errorType = "sign_personal_message_error";
+              errorType = 'sign_personal_message_error';
               break;
             default:
-              log.warn("Unknown action", { action });
-              errorType = "sign_error";
+              log.warn('Unknown action', { action });
+              errorType = 'sign_error';
               break;
           }
 
@@ -140,7 +140,7 @@ async function handleApprovePopup(
             });
         }
 
-        chrome.storage.local.remove(["pendingAction", "transactionResult"]);
+        chrome.storage.local.remove(['pendingAction', 'transactionResult']);
       }
     };
 
@@ -154,8 +154,8 @@ async function handleApprovePopup(
     timeoutId = setTimeout(
       () => {
         detachApprovalListener();
-        chrome.storage.local.remove(["pendingAction", "transactionResult"]);
-        log.warn("Transaction approval timed out", { action, senderTabId });
+        chrome.storage.local.remove(['pendingAction', 'transactionResult']);
+        log.warn('Transaction approval timed out', { action, senderTabId });
       },
       10 * 60 * 1000,
     );
@@ -164,10 +164,10 @@ async function handleApprovePopup(
 
     return true; // Keep message channel open for async response
   } catch (error) {
-    log.error("Transaction signing failed", error);
+    log.error('Transaction signing failed', error);
     sendResponse({
-      type: "sign_transaction_error",
-      error: error instanceof Error ? error.message : "Unknown error occurred",
+      type: 'sign_transaction_error',
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
     });
     return false;
   }

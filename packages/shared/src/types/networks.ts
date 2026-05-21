@@ -1,13 +1,13 @@
-import { TenantId } from "@evefrontier/dapp-kit/utils";
+import { TenantId } from '@evefrontier/dapp-kit/utils';
 import {
   SUI_DEVNET_CHAIN,
   SUI_LOCALNET_CHAIN,
   SUI_MAINNET_CHAIN,
   SUI_TESTNET_CHAIN,
   type SuiChain,
-} from "@mysten/wallet-standard";
-import { SUI_COIN_TYPE } from "#/utils/constants";
-import { getEveCoinType } from "#/wallet/eveToken";
+} from '@mysten/wallet-standard';
+import { SUI_COIN_TYPE } from '#/utils/constants';
+import { getEveCoinType } from '#/wallet/eveToken';
 
 export function isLocalnetChain(chain: SuiChain | string | null | undefined) {
   return chain === SUI_LOCALNET_CHAIN;
@@ -39,8 +39,8 @@ export interface NetworkOption {
 }
 
 export const AVAILABLE_NETWORKS: NetworkOption[] = [
-  { chain: SUI_TESTNET_CHAIN, label: "Testnet", shortLabel: "TEST" },
-  { chain: SUI_DEVNET_CHAIN, label: "Devnet", shortLabel: "DEV" },
+  { chain: SUI_TESTNET_CHAIN, label: 'Testnet', shortLabel: 'TEST' },
+  { chain: SUI_DEVNET_CHAIN, label: 'Devnet', shortLabel: 'DEV' },
   // Mainnet will be added later as a feature flag
 ];
 
@@ -56,7 +56,7 @@ export function getAvailableNetworks(
   if (devMode && isExt) {
     return [
       ...AVAILABLE_NETWORKS,
-      { chain: SUI_LOCALNET_CHAIN, label: "Localnet", shortLabel: "LOCAL" },
+      { chain: SUI_LOCALNET_CHAIN, label: 'Localnet', shortLabel: 'LOCAL' },
     ];
   }
   return AVAILABLE_NETWORKS;

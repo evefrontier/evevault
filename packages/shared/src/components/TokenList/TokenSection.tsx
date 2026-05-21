@@ -1,5 +1,5 @@
-import { useQueryClient } from "@tanstack/react-query";
-import type React from "react";
+import { useQueryClient } from '@tanstack/react-query';
+import type React from 'react';
 import {
   type KeyboardEvent,
   useCallback,
@@ -7,24 +7,24 @@ import {
   useMemo,
   useRef,
   useState,
-} from "react";
-import Button from "#/components/Button";
-import Icon from "#/components/Icon";
-import Text from "#/components/Text";
-import { useToast } from "#/components/Toast";
-import { useContext, useResponsive } from "#/hooks";
-import { useTokenListStore } from "#/stores";
-import type { ExtendedTokenRowProps, TokenListProps } from "#/types";
-import { getDefaultTokensForChain } from "#/types/networks";
-import { createLogger, formatAddress } from "#/utils";
-import { useBalance } from "#/wallet";
-import { getEveCoinType, isEveCoinType } from "#/wallet/eveToken";
-import { getKnownTokenDisplay } from "#/wallet/utils/balanceMetadata";
+} from 'react';
+import Button from '#/components/Button';
+import Icon from '#/components/Icon';
+import Text from '#/components/Text';
+import { useToast } from '#/components/Toast';
+import { useContext, useResponsive } from '#/hooks';
+import { useTokenListStore } from '#/stores';
+import type { ExtendedTokenRowProps, TokenListProps } from '#/types';
+import { getDefaultTokensForChain } from '#/types/networks';
+import { createLogger, formatAddress } from '#/utils';
+import { useBalance } from '#/wallet';
+import { getEveCoinType, isEveCoinType } from '#/wallet/eveToken';
+import { getKnownTokenDisplay } from '#/wallet/utils/balanceMetadata';
 import {
   LoadingDots,
   scrambleBalanceWithFixedFirst,
   scrambleLetters,
-} from "./refreshScramble";
+} from './refreshScramble';
 
 const SCRAMBLE_INTERVAL_MS = 200;
 
@@ -54,10 +54,10 @@ const TokenRow: React.FC<ExtendedTokenRowProps> = ({
     data?.metadata?.name ||
     data?.metadata?.symbol ||
     knownDisplay?.name ||
-    "Token";
+    'Token';
   const shortAddress = `${coinType.slice(0, 6)}•••${coinType.slice(-4)}`;
-  const balance = isLoading ? "..." : (data?.formattedBalance ?? "0");
-  const symbol = data?.metadata?.symbol || knownDisplay?.symbol || "";
+  const balance = isLoading ? '...' : (data?.formattedBalance ?? '0');
+  const symbol = data?.metadata?.symbol || knownDisplay?.symbol || '';
 
   // refreshTick is a prop that drives re-scramble each tick; linter doesn't see it as triggering re-render
   // biome-ignore lint/correctness/useExhaustiveDependencies: refreshTick prop drives re-scramble each 200ms
@@ -73,12 +73,12 @@ const TokenRow: React.FC<ExtendedTokenRowProps> = ({
 
   // Container classes - expands when selected
   const containerClasses = [
-    "flex flex-col w-full p-2 gap-4",
-    "border-none cursor-pointer text-left transition-colors",
+    'flex flex-col w-full p-2 gap-4',
+    'border-none cursor-pointer text-left transition-colors',
     isSelected
-      ? "bg-quantum-40 hover:bg-quantum-40"
-      : "bg-transparent hover:bg-quantum-10",
-  ].join(" ");
+      ? 'bg-quantum-40 hover:bg-quantum-40'
+      : 'bg-transparent hover:bg-quantum-10',
+  ].join(' ');
 
   const handleTransferClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -89,7 +89,7 @@ const TokenRow: React.FC<ExtendedTokenRowProps> = ({
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.target !== e.currentTarget) return;
-    if (e.key === "Enter" || e.key === " ") {
+    if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       onSelect();
     }
@@ -206,19 +206,19 @@ export const TokenSection: React.FC<
       await Promise.race([
         Promise.all([
           queryClient.refetchQueries({
-            queryKey: ["coin-balance"],
-            type: "all",
+            queryKey: ['coin-balance'],
+            type: 'all',
           }),
           queryClient.refetchQueries({
-            queryKey: ["transactions"],
-            type: "all",
+            queryKey: ['transactions'],
+            type: 'all',
           }),
         ]),
         timeoutPromise,
       ]);
     } catch (err) {
-      log.error("Refresh balances failed", err);
-      showToast("Failed to refresh balances");
+      log.error('Refresh balances failed', err);
+      showToast('Failed to refresh balances');
     } finally {
       if (timeoutId != null) clearTimeout(timeoutId);
       if (scrambleIntervalRef.current != null) {
@@ -242,13 +242,13 @@ export const TokenSection: React.FC<
 
   const handleCopyAddress = async (address: string) => {
     try {
-      if (typeof navigator === "undefined" || !navigator.clipboard) {
-        throw new Error("Clipboard unavailable");
+      if (typeof navigator === 'undefined' || !navigator.clipboard) {
+        throw new Error('Clipboard unavailable');
       }
       await navigator.clipboard.writeText(address);
-      showToast("Copied!");
+      showToast('Copied!');
     } catch (_e) {
-      showToast("Copy failed");
+      showToast('Copy failed');
     }
   };
 
@@ -293,8 +293,8 @@ export const TokenSection: React.FC<
 
       {/* Token List */}
       <div
-        className={`flex flex-col items-start p-4 px-2 gap-3 w-full bg-crude-dark border border-quantum-60 overflow-hidden ${isMobile ? "" : "flex-1 min-h-[300px]"}`}
-        style={isMobile ? { height: "207px", flexShrink: 0 } : undefined}
+        className={`flex flex-col items-start p-4 px-2 gap-3 w-full bg-crude-dark border border-quantum-60 overflow-hidden ${isMobile ? '' : 'flex-1 min-h-[300px]'}`}
+        style={isMobile ? { height: '207px', flexShrink: 0 } : undefined}
       >
         {/* Labels Row */}
         <div className="flex justify-between items-start gap-2 w-full flex-shrink-0">
@@ -337,7 +337,7 @@ export const TokenSection: React.FC<
               width={12}
               height={12}
               color="grey-neutral"
-              className={`flex-shrink-0 -mt-1 ${isRefreshing ? "animate-spin" : ""}`}
+              className={`flex-shrink-0 -mt-1 ${isRefreshing ? 'animate-spin' : ''}`}
             />
           </button>
         </div>

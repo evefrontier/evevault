@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { AuthStoreMockHandles } from "./authStoreTestMocks";
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { AuthStoreMockHandles } from './authStoreTestMocks';
 import {
   makeAdaptersMock,
   makeAuthConfigMock,
@@ -16,7 +16,7 @@ import {
   makeUtilsMock,
   makeVaultServiceMock,
   setupAuthStoreMocks,
-} from "./authStoreTestMocks";
+} from './authStoreTestMocks';
 
 const h: AuthStoreMockHandles = vi.hoisted(() => ({
   mockGetUser: vi.fn(),
@@ -42,24 +42,24 @@ const h: AuthStoreMockHandles = vi.hoisted(() => ({
   mockDecodeJwt: vi.fn(),
 }));
 
-vi.mock("#/auth/authConfig", () => makeAuthConfigMock(h));
-vi.mock("#/auth/storageService", () => makeStorageServiceMock(h));
-vi.mock("#/auth/userJwtSync", () => makeUserJwtSyncMock(h));
-vi.mock("#/auth/userToJwtResponse", () => makeUserToJwtResponseMock(h));
-vi.mock("#/auth/utils/authStoreUtils", () => makeAuthStoreUtilsMock(h));
-vi.mock("#/auth/getZkLoginAddress", () => makeGetZkLoginAddressMock(h));
-vi.mock("#/auth/oauthTokenResponse", () => makeOAuthTokenResponseMock(h));
-vi.mock("#/services/vaultService", () => makeVaultServiceMock(h));
-vi.mock("#/stores", () => makeStoresMock(h));
-vi.mock("#/stores/tenantStore", () => makeTenantStoreMock(h));
-vi.mock("#/utils", () => makeUtilsMock(h));
-vi.mock("#/utils/tenantConfig", () => makeTenantConfigMock());
-vi.mock("#/adapters", () => makeAdaptersMock());
-vi.mock("jose", () => makeJoseMock(h));
+vi.mock('#/auth/authConfig', () => makeAuthConfigMock(h));
+vi.mock('#/auth/storageService', () => makeStorageServiceMock(h));
+vi.mock('#/auth/userJwtSync', () => makeUserJwtSyncMock(h));
+vi.mock('#/auth/userToJwtResponse', () => makeUserToJwtResponseMock(h));
+vi.mock('#/auth/utils/authStoreUtils', () => makeAuthStoreUtilsMock(h));
+vi.mock('#/auth/getZkLoginAddress', () => makeGetZkLoginAddressMock(h));
+vi.mock('#/auth/oauthTokenResponse', () => makeOAuthTokenResponseMock(h));
+vi.mock('#/services/vaultService', () => makeVaultServiceMock(h));
+vi.mock('#/stores', () => makeStoresMock(h));
+vi.mock('#/stores/tenantStore', () => makeTenantStoreMock(h));
+vi.mock('#/utils', () => makeUtilsMock(h));
+vi.mock('#/utils/tenantConfig', () => makeTenantConfigMock());
+vi.mock('#/adapters', () => makeAdaptersMock());
+vi.mock('jose', () => makeJoseMock(h));
 
-import { useAuthStore, waitForAuthHydration } from "#/auth/stores/authStore";
+import { useAuthStore, waitForAuthHydration } from '#/auth/stores/authStore';
 
-describe("waitForAuthHydration", () => {
+describe('waitForAuthHydration', () => {
   const originalHasHydrated = useAuthStore.persist.hasHydrated;
   const originalOnFinishHydration = useAuthStore.persist.onFinishHydration;
   const originalRehydrate = useAuthStore.persist.rehydrate;
@@ -75,7 +75,7 @@ describe("waitForAuthHydration", () => {
     vi.clearAllMocks();
   });
 
-  it("resolves immediately when the store is already hydrated", async () => {
+  it('resolves immediately when the store is already hydrated', async () => {
     const onFinishHydration = vi.fn();
     useAuthStore.persist.hasHydrated = vi.fn(() => true);
     useAuthStore.persist.onFinishHydration = onFinishHydration;
@@ -85,7 +85,7 @@ describe("waitForAuthHydration", () => {
     expect(onFinishHydration).not.toHaveBeenCalled();
   });
 
-  it("waits for the onFinishHydration event when not yet hydrated", async () => {
+  it('waits for the onFinishHydration event when not yet hydrated', async () => {
     const unsub = vi.fn();
     let finishHydration: (() => void) | undefined;
     useAuthStore.persist.hasHydrated = vi.fn(() => false);

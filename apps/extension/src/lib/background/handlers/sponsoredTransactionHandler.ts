@@ -1,11 +1,11 @@
-import { WalletStandardMessageTypes } from "@evevault/shared";
-import { getApiContext, getJwt, getStoredChain } from "@evevault/shared/auth";
-import { createLogger } from "@evevault/shared/utils";
-import { openPopupWindow } from "@/lib/background/services/popupWindow";
+import { WalletStandardMessageTypes } from '@evevault/shared';
+import { getApiContext, getJwt, getStoredChain } from '@evevault/shared/auth';
+import { createLogger } from '@evevault/shared/utils';
+import { openPopupWindow } from '@/lib/background/services/popupWindow';
 import type {
   EveFrontierSponsoredTransactionMessage,
   SponsoredTxReturn,
-} from "@/lib/background/types";
+} from '@/lib/background/types';
 
 const log = createLogger();
 
@@ -21,19 +21,19 @@ async function handleSponsoredTransaction(
     const chain = await getStoredChain();
     const jwt = await getJwt();
     if (!jwt?.id_token) {
-      const error = "No valid JWT found. Please re-authenticate.";
+      const error = 'No valid JWT found. Please re-authenticate.';
       if (senderTabId != null) {
         chrome.tabs
           .sendMessage(senderTabId, {
-            type: "sign_sponsored_transaction_error",
+            type: 'sign_sponsored_transaction_error',
             error,
             id: message.id,
           })
           .catch((err) => {
-            log.error("Failed to send error message to tab", err);
+            log.error('Failed to send error message to tab', err);
           });
       } else {
-        log.warn("No sender tab id, cannot send JWT error to page", { error });
+        log.warn('No sender tab id, cannot send JWT error to page', { error });
       }
       return true;
     }
@@ -42,7 +42,7 @@ async function handleSponsoredTransaction(
       throw new Error(`Assembly not found: ${assembly}, ${assemblyType}`);
     }
 
-    log.info("Eve Frontier sponsored transaction request received", {
+    log.info('Eve Frontier sponsored transaction request received', {
       action,
       assembly,
       assemblyType,
@@ -51,7 +51,7 @@ async function handleSponsoredTransaction(
     });
 
     if (metadata) {
-      log.info("Sponsored transaction metadata", {
+      log.info('Sponsored transaction metadata', {
         name: metadata?.name,
         description: metadata?.description,
         url: metadata?.url,
@@ -66,7 +66,7 @@ async function handleSponsoredTransaction(
     const response = await fetch(
       `${apiBaseUrl}/transactions/sponsored/${encodedAssemblyType}/${encodedAction}`,
       {
-        method: "POST",
+        method: 'POST',
         body: JSON.stringify({
           assemblyId: assembly,
           name: metadata?.name,
@@ -74,8 +74,8 @@ async function handleSponsoredTransaction(
           url: metadata?.url,
         }),
         headers: {
-          "X-Tenant": tenant,
-          "Content-Type": "application/json",
+          'X-Tenant': tenant,
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${jwt.id_token}`,
         },
       },
@@ -88,12 +88,12 @@ async function handleSponsoredTransaction(
     const raw = await response.json();
     if (
       raw == null ||
-      typeof raw !== "object" ||
-      typeof raw.bcsDataB64Bytes !== "string" ||
-      typeof raw.preparationId !== "string"
+      typeof raw !== 'object' ||
+      typeof raw.bcsDataB64Bytes !== 'string' ||
+      typeof raw.preparationId !== 'string'
     ) {
       throw new Error(
-        "Sponsored tx API returned invalid shape: expected { bcsDataB64Bytes: string, preparationId: string }",
+        'Sponsored tx API returned invalid shape: expected { bcsDataB64Bytes: string, preparationId: string }',
       );
     }
     const sponsoredTxReturn = raw as SponsoredTxReturn;
@@ -103,7 +103,7 @@ async function handleSponsoredTransaction(
     const windowId = await openPopupWindow(actionType);
 
     if (!windowId) {
-      throw new Error("Failed to open sponsored transaction popup");
+      throw new Error('Failed to open sponsored transaction popup');
     }
 
     await chrome.storage.local.set({
@@ -136,10 +136,10 @@ async function handleSponsoredTransaction(
       if (!result || result.windowId !== windowId) return;
 
       detachSponsoredListener();
-      chrome.storage.local.remove(["pendingAction", "transactionResult"]);
+      chrome.storage.local.remove(['pendingAction', 'transactionResult']);
 
       if (
-        result.status === "signed" &&
+        result.status === 'signed' &&
         result.zkSignature != null &&
         result.preparationId != null &&
         senderTabId != null
@@ -149,14 +149,14 @@ async function handleSponsoredTransaction(
             const executeResponse = await fetch(
               `${apiBaseUrl}/transactions/sponsored/execute`,
               {
-                method: "POST",
+                method: 'POST',
                 body: JSON.stringify({
                   preparationId: result.preparationId,
                   userSignatureB64Bytes: result.zkSignature,
                 }),
                 headers: {
-                  "X-Tenant": tenant,
-                  "Content-Type": "application/json",
+                  'X-Tenant': tenant,
+                  'Content-Type': 'application/json',
                   Authorization: `Bearer ${jwt.id_token}`,
                 },
               },
@@ -173,35 +173,35 @@ async function handleSponsoredTransaction(
               effects?: string;
               [key: string]: unknown;
             };
-            const digest = executeResult.digest ?? "0x0";
-            const effects = executeResult.effects ?? "0x0";
+            const digest = executeResult.digest ?? '0x0';
+            const effects = executeResult.effects ?? '0x0';
 
             await chrome.tabs.sendMessage(senderTabId, {
-              type: "sign_success",
+              type: 'sign_success',
               digest,
               effects,
               id: message.id,
             });
           } catch (err) {
-            log.error("Sponsored execute failed", err);
+            log.error('Sponsored execute failed', err);
             const errorMessage =
-              err instanceof Error ? err.message : "Unknown error occurred";
+              err instanceof Error ? err.message : 'Unknown error occurred';
             await chrome.tabs.sendMessage(senderTabId, {
-              type: "sign_sponsored_transaction_error",
+              type: 'sign_sponsored_transaction_error',
               error: errorMessage,
               id: message.id,
             });
           }
         })();
-      } else if (result.status === "error" && senderTabId != null) {
+      } else if (result.status === 'error' && senderTabId != null) {
         chrome.tabs
           .sendMessage(senderTabId, {
-            type: "sign_sponsored_transaction_error",
-            error: result.error ?? "Transaction rejected or failed",
+            type: 'sign_sponsored_transaction_error',
+            error: result.error ?? 'Transaction rejected or failed',
             id: message.id,
           })
           .catch((err) => {
-            log.error("Failed to send error message to tab", err);
+            log.error('Failed to send error message to tab', err);
           });
       }
     };
@@ -216,8 +216,8 @@ async function handleSponsoredTransaction(
     timeoutId = setTimeout(
       () => {
         detachSponsoredListener();
-        chrome.storage.local.remove(["pendingAction", "transactionResult"]);
-        log.warn("Sponsored transaction approval timed out", { senderTabId });
+        chrome.storage.local.remove(['pendingAction', 'transactionResult']);
+        log.warn('Sponsored transaction approval timed out', { senderTabId });
       },
       10 * 60 * 1000,
     );
@@ -226,21 +226,21 @@ async function handleSponsoredTransaction(
 
     return true;
   } catch (error) {
-    log.error("Transaction signing failed", error);
+    log.error('Transaction signing failed', error);
     const errorMessage =
-      error instanceof Error ? error.message : "Unknown error occurred";
+      error instanceof Error ? error.message : 'Unknown error occurred';
     if (senderTabId != null) {
       chrome.tabs
         .sendMessage(senderTabId, {
-          type: "sign_sponsored_transaction_error",
+          type: 'sign_sponsored_transaction_error',
           error: errorMessage,
           id: message.id,
         })
         .catch((err) => {
-          log.error("Failed to send error message to tab", err);
+          log.error('Failed to send error message to tab', err);
         });
     } else {
-      log.warn("No sender tab id, cannot send error to page", {
+      log.warn('No sender tab id, cannot send error to page', {
         error: errorMessage,
       });
     }

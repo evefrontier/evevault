@@ -1,7 +1,7 @@
-import { Ed25519PublicKey } from "@mysten/sui/keypairs/ed25519";
-import { SUI_DEVNET_CHAIN } from "@mysten/wallet-standard";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { useContextStore } from "#/stores/contextStore";
+import { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519';
+import { SUI_DEVNET_CHAIN } from '@mysten/wallet-standard';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { useContextStore } from '#/stores/contextStore';
 
 const fetchZkProofMock = vi.fn();
 const vendJwtMock = vi.fn();
@@ -12,15 +12,15 @@ const getJwtMock = vi.fn();
 const getZkProofFromKeeperMock = vi.fn();
 const setZkProofInKeeperMock = vi.fn();
 
-vi.mock("#/wallet/zkProof", () => ({
+vi.mock('#/wallet/zkProof', () => ({
   fetchZkProof: (...args: unknown[]) => fetchZkProofMock(...args),
 }));
 
-vi.mock("#/auth/vendToken", () => ({
+vi.mock('#/auth/vendToken', () => ({
   vendJwt: (...args: unknown[]) => vendJwtMock(...args),
 }));
 
-vi.mock("#/auth/storageService", () => ({
+vi.mock('#/auth/storageService', () => ({
   getZkLoginJwtForNetwork: (...args: unknown[]) =>
     getZkLoginJwtForNetworkMock(...args),
   storeZkLoginJwtForNetwork: (...args: unknown[]) =>
@@ -29,7 +29,7 @@ vi.mock("#/auth/storageService", () => ({
   getJwt: (...args: unknown[]) => getJwtMock(...args),
 }));
 
-vi.mock("#/services/vaultService", () => ({
+vi.mock('#/services/vaultService', () => ({
   ephKeyService: {
     initialize: vi.fn(),
     hasKeypair: vi.fn(),
@@ -45,18 +45,18 @@ vi.mock("#/services/vaultService", () => ({
   },
 }));
 
-vi.mock("#/auth", () => ({
+vi.mock('#/auth', () => ({
   useAuthStore: {
     getState: () => ({
-      user: { id_token: "header.payload.signature" },
+      user: { id_token: 'header.payload.signature' },
     }),
   },
 }));
 
-import { useDeviceStore } from "#/stores/deviceStore";
-import { makeJwtWithExp } from "#/testing";
+import { useDeviceStore } from '#/stores/deviceStore';
+import { makeJwtWithExp } from '#/testing';
 
-describe("deviceStore.getZkProof with expired stored zkLogin JWT", () => {
+describe('deviceStore.getZkProof with expired stored zkLogin JWT', () => {
   beforeEach(() => {
     useContextStore.setState({ chain: SUI_DEVNET_CHAIN });
 
@@ -68,10 +68,10 @@ describe("deviceStore.getZkProof with expired stored zkLogin JWT", () => {
       ephemeralPublicKeyFlag: publicKey.flag(),
       networkData: {
         [SUI_DEVNET_CHAIN]: {
-          nonce: "device-nonce",
-          maxEpoch: "123",
+          nonce: 'device-nonce',
+          maxEpoch: '123',
           maxEpochTimestampMs: Date.now() + 60_000,
-          jwtRandomness: "randomness",
+          jwtRandomness: 'randomness',
         },
       },
       error: null,
@@ -80,10 +80,10 @@ describe("deviceStore.getZkProof with expired stored zkLogin JWT", () => {
 
     hasJwtMock.mockResolvedValue(true);
     getJwtMock.mockResolvedValue({
-      id_token: "primary.jwt.token",
-      access_token: "primary.jwt.token",
-      token_type: "Bearer",
-      scope: "openid profile email",
+      id_token: 'primary.jwt.token',
+      access_token: 'primary.jwt.token',
+      token_type: 'Bearer',
+      scope: 'openid profile email',
       expires_in: 3600,
     });
     getZkProofFromKeeperMock.mockResolvedValue(null);
@@ -108,16 +108,16 @@ describe("deviceStore.getZkProof with expired stored zkLogin JWT", () => {
     vi.restoreAllMocks();
   });
 
-  it("re-vends from primary JWT and uses new token for proof", async () => {
+  it('re-vends from primary JWT and uses new token for proof', async () => {
     await useDeviceStore.getState().getZkProof(SUI_DEVNET_CHAIN);
 
     expect(vendJwtMock).toHaveBeenCalledOnce();
-    expect(vendJwtMock).toHaveBeenCalledWith("primary.jwt.token", {
-      nonce: "device-nonce",
+    expect(vendJwtMock).toHaveBeenCalledWith('primary.jwt.token', {
+      nonce: 'device-nonce',
     });
 
     const freshToken = vendJwtMock.mock.results[0]?.value;
-    await expect(freshToken).resolves.toBeTypeOf("string");
+    await expect(freshToken).resolves.toBeTypeOf('string');
     const resolvedToken = await freshToken;
 
     expect(fetchZkProofMock).toHaveBeenCalledOnce();

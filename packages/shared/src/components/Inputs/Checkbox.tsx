@@ -1,7 +1,7 @@
-import { type FC, useState } from "react";
-import type { CheckBoxProps } from "#/types";
-import "./style.css";
-import Text from "#/components/Text";
+import { type FC, useState } from 'react';
+import type { CheckBoxProps } from '#/types';
+import './style.css';
+import Text from '#/components/Text';
 
 const Checkbox: FC<CheckBoxProps> = ({
   name,
@@ -19,21 +19,21 @@ const Checkbox: FC<CheckBoxProps> = ({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       className={[
-        "checkbox",
-        absolute && "checkbox--absolute",
-        isDisabled && "checkbox--disabled",
+        'checkbox',
+        absolute && 'checkbox--absolute',
+        isDisabled && 'checkbox--disabled',
       ]
         .filter(Boolean)
-        .join(" ")}
+        .join(' ')}
       style={containerStyle}
     >
       <span
         className={[
-          "checkbox__control",
-          isHovered && "checkbox__control--hovered",
+          'checkbox__control',
+          isHovered && 'checkbox__control--hovered',
         ]
           .filter(Boolean)
-          .join(" ")}
+          .join(' ')}
       >
         <input
           type="checkbox"

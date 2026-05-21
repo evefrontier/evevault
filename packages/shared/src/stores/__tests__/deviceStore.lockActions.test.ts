@@ -1,15 +1,15 @@
-import { SUI_DEVNET_CHAIN } from "@mysten/wallet-standard";
-import { describe, expect, it, vi } from "vitest";
-import * as vaultService from "#/services/vaultService";
-import { createLockActions } from "#/stores/deviceStore/actions/lockActions";
+import { SUI_DEVNET_CHAIN } from '@mysten/wallet-standard';
+import { describe, expect, it, vi } from 'vitest';
+import * as vaultService from '#/services/vaultService';
+import { createLockActions } from '#/stores/deviceStore/actions/lockActions';
 import type {
   GetDeviceState,
   SetDeviceState,
-} from "#/stores/deviceStore/actions/types";
-import { createInitialNetworkData } from "#/stores/deviceStore/constants";
-import type { DeviceState } from "#/types";
+} from '#/stores/deviceStore/actions/types';
+import { createInitialNetworkData } from '#/stores/deviceStore/constants';
+import type { DeviceState } from '#/types';
 
-vi.mock("#/services/vaultService", () => ({
+vi.mock('#/services/vaultService', () => ({
   ephKeyService: {
     lock: vi.fn(),
     isUnlocked: vi.fn(),
@@ -27,7 +27,7 @@ function buildLockHarness() {
   let state: DeviceState;
 
   const set: SetDeviceState = (update) => {
-    const partial = typeof update === "function" ? update(state) : update;
+    const partial = typeof update === 'function' ? update(state) : update;
     Object.assign(state, partial);
   };
 
@@ -40,12 +40,12 @@ function buildLockHarness() {
     ephemeralPublicKey: null,
     ephemeralPublicKeyBytes: null,
     ephemeralPublicKeyFlag: null,
-    ephemeralKeyPairSecretKey: { iv: "i", data: "d", salt: "s" },
+    ephemeralKeyPairSecretKey: { iv: 'i', data: 'd', salt: 's' },
     networkData: {},
     localnet: {
       encryptedKey: null,
       address: null,
-      url: "http://127.0.0.1:9000",
+      url: 'http://127.0.0.1:9000',
       maxEpoch: null,
       maxEpochTimestampMs: null,
     },
@@ -54,7 +54,7 @@ function buildLockHarness() {
     initialize: stubAsync,
     initializeForChain: stubAsync,
     rotateEphemeralKey: stubAsync,
-    getZkProof: async () => ({ error: "stub" }),
+    getZkProof: async () => ({ error: 'stub' }),
     lock,
     unlock,
     reset,
@@ -68,33 +68,33 @@ function buildLockHarness() {
   return { state, lock, unlock, reset };
 }
 
-describe("createLockActions", () => {
-  it("unlock (web path) unlocks without public key when vault returns null", async () => {
+describe('createLockActions', () => {
+  it('unlock (web path) unlocks without public key when vault returns null', async () => {
     vi.clearAllMocks();
     vi.mocked(vaultService.ephKeyService.hasKeypair).mockResolvedValue(true);
     vi.mocked(vaultService.ephKeyService.unlockVault).mockResolvedValue(null);
 
     const { unlock, state } = buildLockHarness();
 
-    await unlock("123456");
+    await unlock('123456');
 
     expect(vaultService.ephKeyService.unlockVault).toHaveBeenCalledWith(
       null,
-      "123456",
+      '123456',
     );
     expect(state.isLocked).toBe(false);
     expect(state.error).toBeNull();
     expect(state.ephemeralPublicKey).toBeNull();
   });
 
-  it("reset restores initial network data map", () => {
+  it('reset restores initial network data map', () => {
     const { reset, state } = buildLockHarness();
     state.networkData = {
       [SUI_DEVNET_CHAIN]: {
-        nonce: "x",
-        maxEpoch: "1",
+        nonce: 'x',
+        maxEpoch: '1',
         maxEpochTimestampMs: 1,
-        jwtRandomness: "y",
+        jwtRandomness: 'y',
       },
     };
 

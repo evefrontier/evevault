@@ -1,13 +1,13 @@
-import type { SuiChain } from "@mysten/wallet-standard";
-import { decodeJwt } from "jose";
-import type { IdTokenClaims } from "oidc-client-ts";
+import type { SuiChain } from '@mysten/wallet-standard';
+import { decodeJwt } from 'jose';
+import type { IdTokenClaims } from 'oidc-client-ts';
 import {
   getZkLoginJwtForNetwork,
   storeZkLoginJwtForNetwork,
-} from "#/auth/storageService";
-import { vendJwt } from "#/auth/vendToken";
-import type { JwtResponse } from "#/types/authTypes";
-import { createLogger } from "#/utils/logger";
+} from '#/auth/storageService';
+import { vendJwt } from '#/auth/vendToken';
+import type { JwtResponse } from '#/types/authTypes';
+import { createLogger } from '#/utils/logger';
 
 const log = createLogger();
 
@@ -39,16 +39,16 @@ export async function resolveVendedIdTokenForZkProof(
       }
 
       const reasons: string[] = [];
-      if (!isJwtValid) reasons.push("jwt_expired");
-      if (!nonceMatches) reasons.push("nonce_mismatch");
-      if (!isEpochValid) reasons.push("epoch_expired_or_missing");
-      log.info("Re-vending zkLogin JWT due to stale reuse candidate", {
+      if (!isJwtValid) reasons.push('jwt_expired');
+      if (!nonceMatches) reasons.push('nonce_mismatch');
+      if (!isEpochValid) reasons.push('epoch_expired_or_missing');
+      log.info('Re-vending zkLogin JWT due to stale reuse candidate', {
         chain,
         reasons,
         maxEpochTimestampMs,
       });
     } catch {
-      log.info("Re-vending zkLogin JWT due to decode failure", { chain });
+      log.info('Re-vending zkLogin JWT due to decode failure', { chain });
     }
   }
 

@@ -1,6 +1,6 @@
 // Global types for Enoki API responses
 
-import type { ZkLoginSignatureInputs } from "@mysten/sui/zklogin";
+import type { ZkLoginSignatureInputs } from '@mysten/sui/zklogin';
 
 export interface EnokiError {
   message: string;

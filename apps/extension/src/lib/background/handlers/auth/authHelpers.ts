@@ -1,14 +1,14 @@
-import { useContextStore } from "@evevault/shared/stores";
-import type { AuthSuccessToken, JwtResponse } from "@evevault/shared/types";
+import { useContextStore } from '@evevault/shared/stores';
+import type { AuthSuccessToken, JwtResponse } from '@evevault/shared/types';
 import {
   CONTEXT_STORAGE_KEY,
   createLogger,
   type Logger,
-} from "@evevault/shared/utils";
-import type { SuiChain } from "@mysten/wallet-standard";
-import { decodeJwt } from "jose";
-import type { IdTokenClaims } from "oidc-client-ts";
-import type { MessageWithId } from "@/lib/background/types";
+} from '@evevault/shared/utils';
+import type { SuiChain } from '@mysten/wallet-standard';
+import { decodeJwt } from 'jose';
+import type { IdTokenClaims } from 'oidc-client-ts';
+import type { MessageWithId } from '@/lib/background/types';
 
 const log = createLogger();
 
@@ -22,7 +22,7 @@ export function buildAuthSuccessToken(jwt: JwtResponse): AuthSuccessToken {
 
 export function ensureMessageId(message: MessageWithId): string {
   if (!message.id) {
-    throw new Error("Message id is required");
+    throw new Error('Message id is required');
   }
   return message.id;
 }
@@ -43,9 +43,9 @@ export async function getCurrentChainFromStorage(): Promise<SuiChain> {
         const stored = result[CONTEXT_STORAGE_KEY];
         if (stored) {
           const parsed =
-            typeof stored === "string" ? JSON.parse(stored) : stored;
+            typeof stored === 'string' ? JSON.parse(stored) : stored;
           if (parsed?.state?.chain) {
-            log.debug("Read chain from storage", {
+            log.debug('Read chain from storage', {
               chain: parsed.state.chain,
             });
             resolve(parsed.state.chain);
@@ -53,10 +53,10 @@ export async function getCurrentChainFromStorage(): Promise<SuiChain> {
           }
         }
       } catch (error) {
-        log.error("Error reading chain from storage", error);
+        log.error('Error reading chain from storage', error);
       }
       const fallbackChain = useContext.getState().chain;
-      log.debug("Using fallback chain from Zustand", {
+      log.debug('Using fallback chain from Zustand', {
         chain: fallbackChain,
       });
       resolve(fallbackChain);
@@ -65,12 +65,12 @@ export async function getCurrentChainFromStorage(): Promise<SuiChain> {
 }
 
 export function extractAuthCode(responseUrl: string): string | null {
-  return new URL(responseUrl).searchParams.get("code");
+  return new URL(responseUrl).searchParams.get('code');
 }
 
 export function sendAuthSuccess(id: string, jwt: JwtResponse): void {
   const token = buildAuthSuccessToken(jwt);
-  chrome.runtime.sendMessage({ id, type: "auth_success", token });
+  chrome.runtime.sendMessage({ id, type: 'auth_success', token });
 }
 
 export function sendAuthSuccessToTab(
@@ -83,9 +83,9 @@ export function sendAuthSuccessToTab(
   const logErr = logger ?? log;
   for (const id of ids) {
     chrome.tabs
-      .sendMessage(tabId, { id, type: "auth_success", token, chain, address })
+      .sendMessage(tabId, { id, type: 'auth_success', token, chain, address })
       .catch((err) => {
-        logErr.error("Failed to send auth_success to tab", { tabId, id, err });
+        logErr.error('Failed to send auth_success to tab', { tabId, id, err });
       });
   }
 }
@@ -93,7 +93,7 @@ export function sendAuthSuccessToTab(
 export function sendAuthError(id: string, error: unknown): void {
   chrome.runtime.sendMessage({
     id,
-    type: "auth_error",
+    type: 'auth_error',
     error,
   });
 }

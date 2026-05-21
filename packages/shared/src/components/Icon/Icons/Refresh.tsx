@@ -1,10 +1,10 @@
-import type { SVGProps } from "react";
+import type { SVGProps } from 'react';
 
 const RefreshIcon = ({
   className,
   width = 16,
   height = 16,
-  color = "var(--neutral)",
+  color = 'var(--neutral)',
 }: SVGProps<SVGSVGElement>) => (
   <svg
     width={width}
@@ -18,7 +18,7 @@ const RefreshIcon = ({
   >
     <mask
       id="mask0_6589_63973"
-      style={{ maskType: "alpha" }}
+      style={{ maskType: 'alpha' }}
       maskUnits="userSpaceOnUse"
       x={0}
       y={0}

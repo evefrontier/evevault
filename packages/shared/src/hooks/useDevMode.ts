@@ -1,12 +1,12 @@
-import { Transaction } from "@mysten/sui/transactions";
-import { useCallback, useState } from "react";
-import { useToast } from "#/components";
-import { useDeviceStore } from "#/stores";
-import { isZkLoginSuiChain } from "#/types/networks";
-import { createLogger } from "#/utils";
-import { useWalletSigningContext } from "#/wallet/hooks/useWalletSigningContext";
-import { useContext } from "./useContext";
-import { useDevice } from "./useDevice";
+import { Transaction } from '@mysten/sui/transactions';
+import { useCallback, useState } from 'react';
+import { useToast } from '#/components';
+import { useDeviceStore } from '#/stores';
+import { isZkLoginSuiChain } from '#/types/networks';
+import { createLogger } from '#/utils';
+import { useWalletSigningContext } from '#/wallet/hooks/useWalletSigningContext';
+import { useContext } from './useContext';
+import { useDevice } from './useDevice';
 
 const log = createLogger();
 
@@ -31,16 +31,16 @@ export function useDevMode() {
     try {
       const senderAddress = await getSenderAddress();
       if (!senderAddress) {
-        throw new Error("Wallet not ready to sign");
+        throw new Error('Wallet not ready to sign');
       }
 
       const tx = new Transaction();
       tx.setSender(senderAddress);
       const txb = await tx.build({ client: suiClient });
-      const { signature } = await sign("TransactionData", txb);
+      const { signature } = await sign('TransactionData', txb);
 
-      log.debug("Signature ready", { length: signature.length });
-      log.debug("Transaction bytes ready", { length: txb.length });
+      log.debug('Signature ready', { length: signature.length });
+      log.debug('Transaction bytes ready', { length: txb.length });
 
       const txDigestResult = await suiClient.core.executeTransaction({
         transaction: new Uint8Array(txb),
@@ -48,22 +48,22 @@ export function useDevMode() {
       });
 
       if (
-        "$kind" in txDigestResult &&
-        txDigestResult.$kind === "FailedTransaction"
+        '$kind' in txDigestResult &&
+        txDigestResult.$kind === 'FailedTransaction'
       ) {
-        throw new Error("Transaction failed");
+        throw new Error('Transaction failed');
       }
       const txResponse = (
         txDigestResult as { Transaction: { digest?: string | null } }
       ).Transaction;
       const digest = txResponse?.digest ?? null;
 
-      log.info("Transaction executed", { digest });
+      log.info('Transaction executed', { digest });
       setTxDigest(digest);
-      showToast("Transaction submitted!");
+      showToast('Transaction submitted!');
     } catch (error) {
-      log.error("Error submitting transaction", error);
-      showToast("Error submitting transaction");
+      log.error('Error submitting transaction', error);
+      showToast('Error submitting transaction');
     }
   }, [suiClient, getSenderAddress, sign, showToast]);
 
@@ -71,8 +71,8 @@ export function useDevMode() {
     if (!bytes || bytes.length === 0) return null;
     return bytes
       .slice(0, 8)
-      .map((byte) => byte.toString(16).padStart(2, "0"))
-      .join("");
+      .map((byte) => byte.toString(16).padStart(2, '0'))
+      .join('');
   }, []);
 
   const handleRotateEphKey = useCallback(async () => {
@@ -82,7 +82,7 @@ export function useDevMode() {
       : null;
     const beforeKey = formatPublicKey(beforeState.ephemeralPublicKeyBytes);
 
-    log.info("Manual eph key rotation requested", {
+    log.info('Manual eph key rotation requested', {
       chain,
       beforeKey,
       maxEpoch: beforeChainData?.maxEpoch,
@@ -99,7 +99,7 @@ export function useDevMode() {
         : null;
       const afterKey = formatPublicKey(afterState.ephemeralPublicKeyBytes);
 
-      log.info("Manual eph key rotation completed", {
+      log.info('Manual eph key rotation completed', {
         chain,
         beforeKey,
         afterKey,
@@ -108,7 +108,7 @@ export function useDevMode() {
         hasJwtRandomness: afterChainData?.jwtRandomness != null,
       });
     } catch (error) {
-      log.error("Manual eph key rotation failed", error);
+      log.error('Manual eph key rotation failed', error);
     }
   }, [chain, formatPublicKey, rotateEphemeralKey]);
 

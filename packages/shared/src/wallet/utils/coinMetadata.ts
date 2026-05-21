@@ -1,11 +1,11 @@
-import type { SuiGraphQLClient } from "@mysten/sui/graphql";
-import { SUI_COIN_TYPE } from "#/utils";
-import { createLogger } from "#/utils/logger";
+import type { SuiGraphQLClient } from '@mysten/sui/graphql';
+import { SUI_COIN_TYPE } from '#/utils';
+import { createLogger } from '#/utils/logger';
 import type {
   CoinMetadataQueryResponse,
   CoinMetadataResult,
-} from "#/wallet/types/coinMetadata";
-import type { CacheEntry } from "#/wallet/types/hooks";
+} from '#/wallet/types/coinMetadata';
+import type { CacheEntry } from '#/wallet/types/hooks';
 
 const log = createLogger();
 const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes cache expiry
@@ -58,9 +58,9 @@ export async function fetchCoinMetadata(
     if (coinType === SUI_COIN_TYPE) {
       const metadata: CoinMetadataResult = {
         decimals: 9,
-        symbol: "SUI",
-        name: "Sui",
-        description: "Sui Native Token",
+        symbol: 'SUI',
+        name: 'Sui',
+        description: 'Sui Native Token',
         iconUrl: null,
       };
       coinMetadataCache.set(coinType, {
@@ -76,7 +76,7 @@ export async function fetchCoinMetadata(
     });
 
     if (result.errors?.length) {
-      log.warn("GraphQL coinMetadata errors", {
+      log.warn('GraphQL coinMetadata errors', {
         coinType,
         errors: result.errors.map((e) => e.message),
       });
@@ -85,7 +85,7 @@ export async function fetchCoinMetadata(
 
     const node = result.data?.coinMetadata;
     if (!node || node.decimals == null || node.symbol == null) {
-      log.warn("No metadata found for coin type", { coinType });
+      log.warn('No metadata found for coin type', { coinType });
       return null;
     }
 
@@ -100,7 +100,7 @@ export async function fetchCoinMetadata(
     coinMetadataCache.set(coinType, { data: meta, timestamp: Date.now() });
     return meta;
   } catch (error) {
-    log.error("Failed to fetch coin metadata", { coinType, error });
+    log.error('Failed to fetch coin metadata', { coinType, error });
     return null;
   }
 }

@@ -1,6 +1,6 @@
-import { AddTokenScreen, useAuthStore, useContext } from "@evevault/shared";
-import { requireAuth } from "@evevault/shared/router";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { AddTokenScreen, useAuthStore, useContext } from '@evevault/shared';
+import { requireAuth } from '@evevault/shared/router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 
 function AddTokenPage() {
   const navigate = useNavigate();
@@ -8,7 +8,7 @@ function AddTokenPage() {
   const { chain } = useContext();
 
   const handleSuccess = () => {
-    navigate({ to: "/wallet" });
+    navigate({ to: '/wallet' });
   };
 
   return (
@@ -16,12 +16,12 @@ function AddTokenPage() {
       user={user}
       chain={chain || null}
       onSuccess={handleSuccess}
-      onCancel={() => navigate({ to: "/wallet" })}
+      onCancel={() => navigate({ to: '/wallet' })}
     />
   );
 }
 
-export const Route = createFileRoute("/wallet/add-token")({
+export const Route = createFileRoute('/wallet/add-token')({
   beforeLoad: () => requireAuth({ preserveRedirectPath: true }),
   component: AddTokenPage,
 });

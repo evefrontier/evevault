@@ -1,4 +1,4 @@
-import { useWalletSigningContext } from "./useWalletSigningContext";
+import { useWalletSigningContext } from './useWalletSigningContext';
 
 /**
  * Returns the effective Sui address for the current network:

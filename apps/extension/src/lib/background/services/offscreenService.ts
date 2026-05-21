@@ -1,13 +1,13 @@
 /// <reference types="chrome"/>
 
-import { createLogger } from "@evevault/shared/utils";
+import { createLogger } from '@evevault/shared/utils';
 
 const log = createLogger();
 
 let keeperReady = false;
 const keeperReadyPromise = new Promise<void>((resolve) => {
   chrome.runtime.onMessage.addListener((message) => {
-    if (message.type === "KEEPER_READY") {
+    if (message.type === 'KEEPER_READY') {
       keeperReady = true;
       resolve();
     }
@@ -25,11 +25,11 @@ export async function ensureOffscreen(waitForReady = false): Promise<void> {
     const hasDoc = await chrome.offscreen.hasDocument();
     if (!hasDoc) {
       await chrome.offscreen.createDocument({
-        url: "keeper.html",
-        reasons: ["LOCAL_STORAGE", "DOM_SCRAPING"],
-        justification: "Hold ephemeral key in RAM only.",
+        url: 'keeper.html',
+        reasons: ['LOCAL_STORAGE', 'DOM_SCRAPING'],
+        justification: 'Hold ephemeral key in RAM only.',
       });
-      log.info("Keeper offscreen document created");
+      log.info('Keeper offscreen document created');
 
       if (waitForReady) {
         // Wait for keeper to signal it's ready (with timeout)
@@ -37,21 +37,21 @@ export async function ensureOffscreen(waitForReady = false): Promise<void> {
           keeperReadyPromise,
           new Promise((_, reject) =>
             setTimeout(
-              () => reject(new Error("Keeper initialization timeout")),
+              () => reject(new Error('Keeper initialization timeout')),
               2000,
             ),
           ),
         ]);
       }
     } else {
-      log.debug("Keeper offscreen document exists");
+      log.debug('Keeper offscreen document exists');
 
       if (waitForReady && !keeperReady) {
         keeperReady = true;
       }
     }
   } catch (error) {
-    log.error("Failed to ensure offscreen document", error);
+    log.error('Failed to ensure offscreen document', error);
     if (waitForReady) {
       throw error;
     }

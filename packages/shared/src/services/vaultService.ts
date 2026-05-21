@@ -1,15 +1,15 @@
-import type { PublicKey, Signer } from "@mysten/sui/cryptography";
-import type { SuiChain } from "@mysten/wallet-standard";
-import type { ZkProofResponse } from "#/types/enoki";
-import type { StoredSecretKey } from "#/types/stores";
-import { createWebCryptoPlaceholder } from "#/types/wallet";
-import { isWeb } from "#/utils/environment";
+import type { PublicKey, Signer } from '@mysten/sui/cryptography';
+import type { SuiChain } from '@mysten/wallet-standard';
+import type { ZkProofResponse } from '#/types/enoki';
+import type { StoredSecretKey } from '#/types/stores';
+import { createWebCryptoPlaceholder } from '#/types/wallet';
+import { isWeb } from '#/utils/environment';
 import {
   ephKeyService as keeperEphKeyService,
   localnetKeyService as keeperLocalnetKeyService,
   zkProofService as keeperZkProofService,
-} from "./keeperService";
-import { webVaultService } from "./webVaultService";
+} from './keeperService';
+import { webVaultService } from './webVaultService';
 
 /**
  * Unified vault service that routes to the appropriate implementation:
@@ -36,7 +36,7 @@ export const ephKeyService = {
   ): Promise<PublicKey | null> {
     if (isWeb()) {
       if (!password || password.trim().length === 0) {
-        throw new Error("PIN is required to unlock");
+        throw new Error('PIN is required to unlock');
       }
 
       await webVaultService.initialize();
@@ -44,13 +44,13 @@ export const ephKeyService = {
       const hasKeypair = await webVaultService.hasKeypair();
       if (!hasKeypair) {
         throw new Error(
-          "No keypair exists. Use createEphemeralKeyPair() to create one first.",
+          'No keypair exists. Use createEphemeralKeyPair() to create one first.',
         );
       }
 
       const success = await webVaultService.unlock(password);
       if (!success) {
-        throw new Error("Failed to unlock vault");
+        throw new Error('Failed to unlock vault');
       }
       return webVaultService.getPublicKey();
     }
@@ -68,7 +68,7 @@ export const ephKeyService = {
   }> {
     if (isWeb()) {
       if (!password || password.trim().length === 0) {
-        throw new Error("PIN is required to create keypair");
+        throw new Error('PIN is required to create keypair');
       }
 
       const publicKey = await webVaultService.createEphemeralKeyPair(password);
@@ -217,9 +217,9 @@ export const zkProofService = {
   async clear(): Promise<void> {
     if (isWeb()) {
       // Web: clear zkProofs from in-memory/IndexedDB storage
-      await webVaultService.clearZkProof("sui:devnet" as SuiChain);
-      await webVaultService.clearZkProof("sui:testnet" as SuiChain);
-      await webVaultService.clearZkProof("sui:mainnet" as SuiChain);
+      await webVaultService.clearZkProof('sui:devnet' as SuiChain);
+      await webVaultService.clearZkProof('sui:testnet' as SuiChain);
+      await webVaultService.clearZkProof('sui:mainnet' as SuiChain);
       return;
     }
 
@@ -236,12 +236,12 @@ export const localnetKeyService = {
   async setKeypairFromPrivateKey(
     privateKey: string,
   ): Promise<{ address: string }> {
-    if (isWeb()) throw new Error("localnetKeyService is extension-only");
+    if (isWeb()) throw new Error('localnetKeyService is extension-only');
     return keeperLocalnetKeyService.setKeypairFromPrivateKey(privateKey);
   },
 
   async getAddress(): Promise<string | null> {
-    if (isWeb()) throw new Error("localnetKeyService is extension-only");
+    if (isWeb()) throw new Error('localnetKeyService is extension-only');
     return keeperLocalnetKeyService.getAddress();
   },
 };

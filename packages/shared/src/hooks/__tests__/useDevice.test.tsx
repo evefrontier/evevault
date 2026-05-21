@@ -1,33 +1,33 @@
-import { SUI_DEVNET_CHAIN, SUI_TESTNET_CHAIN } from "@mysten/wallet-standard";
-import { renderHook } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { useDevice } from "#/hooks/useDevice";
+import { SUI_DEVNET_CHAIN, SUI_TESTNET_CHAIN } from '@mysten/wallet-standard';
+import { renderHook } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { useDevice } from '#/hooks/useDevice';
 
 // Mock dependencies
-vi.mock("#/stores/deviceStore", () => ({
+vi.mock('#/stores/deviceStore', () => ({
   useDeviceStore: vi.fn(),
 }));
 
-vi.mock("#/stores/contextStore", () => ({
+vi.mock('#/stores/contextStore', () => ({
   useContextStore: vi.fn(),
 }));
 
-import { useContextStore } from "#/stores/contextStore";
-import { useDeviceStore } from "#/stores/deviceStore";
+import { useContextStore } from '#/stores/contextStore';
+import { useDeviceStore } from '#/stores/deviceStore';
 
-describe("useDevice", () => {
+describe('useDevice', () => {
   const mockNetworkData = {
     [SUI_DEVNET_CHAIN]: {
-      nonce: "devnet-nonce-123",
+      nonce: 'devnet-nonce-123',
       maxEpoch: 100,
       maxEpochTimestampMs: Date.now() + 3600000, // 1 hour from now
-      jwtRandomness: "devnet-randomness",
+      jwtRandomness: 'devnet-randomness',
     },
     [SUI_TESTNET_CHAIN]: {
-      nonce: "testnet-nonce-456",
+      nonce: 'testnet-nonce-456',
       maxEpoch: 200,
       maxEpochTimestampMs: Date.now() + 7200000, // 2 hours from now
-      jwtRandomness: "testnet-randomness",
+      jwtRandomness: 'testnet-randomness',
     },
   };
 
@@ -49,7 +49,7 @@ describe("useDevice", () => {
     localnet: {
       encryptedKey: null,
       address: null,
-      url: "",
+      url: '',
       maxEpoch: null,
       maxEpochTimestampMs: null,
     },
@@ -66,7 +66,7 @@ describe("useDevice", () => {
 
     // Mock useDeviceStore to handle both direct calls and selector calls
     vi.mocked(useDeviceStore).mockImplementation((selector?: unknown) => {
-      if (typeof selector === "function") {
+      if (typeof selector === 'function') {
         // Selector call - return selector result
         return (selector as (state: typeof mockDeviceStoreState) => unknown)(
           mockDeviceStoreState,
@@ -81,18 +81,18 @@ describe("useDevice", () => {
     vi.restoreAllMocks();
   });
 
-  describe("reactive chain subscription", () => {
-    it("returns device data for current chain (devnet)", () => {
+  describe('reactive chain subscription', () => {
+    it('returns device data for current chain (devnet)', () => {
       const { result } = renderHook(() => useDevice());
 
       expect(result.current.maxEpoch).toBe(100);
-      expect(result.current.nonce).toBe("devnet-nonce-123");
+      expect(result.current.nonce).toBe('devnet-nonce-123');
       expect(result.current.maxEpochTimestampMs).toBe(
         mockNetworkData[SUI_DEVNET_CHAIN].maxEpochTimestampMs,
       );
     });
 
-    it("returns device data for testnet when chain changes", () => {
+    it('returns device data for testnet when chain changes', () => {
       // Start with testnet
       vi.mocked(useContextStore).mockReturnValue({
         chain: SUI_TESTNET_CHAIN,
@@ -102,17 +102,17 @@ describe("useDevice", () => {
       const { result } = renderHook(() => useDevice());
 
       expect(result.current.maxEpoch).toBe(200);
-      expect(result.current.nonce).toBe("testnet-nonce-456");
+      expect(result.current.nonce).toBe('testnet-nonce-456');
     });
 
-    it("returns null values when networkData is missing for chain", () => {
+    it('returns null values when networkData is missing for chain', () => {
       // Mock empty network data
       vi.mocked(useDeviceStore).mockImplementation((selector?: unknown) => {
         const emptyState = {
           ...mockDeviceStoreState,
           networkData: {},
         };
-        if (typeof selector === "function") {
+        if (typeof selector === 'function') {
           return (selector as (state: typeof emptyState) => unknown)(
             emptyState,
           );
@@ -127,7 +127,7 @@ describe("useDevice", () => {
       expect(result.current.maxEpochTimestampMs).toBeNull();
     });
 
-    it("updates when networkData changes", () => {
+    it('updates when networkData changes', () => {
       let currentNetworkData = { ...mockNetworkData };
 
       vi.mocked(useDeviceStore).mockImplementation((selector?: unknown) => {
@@ -135,7 +135,7 @@ describe("useDevice", () => {
           ...mockDeviceStoreState,
           networkData: currentNetworkData,
         };
-        if (typeof selector === "function") {
+        if (typeof selector === 'function') {
           return (selector as (selectorState: typeof state) => unknown)(state);
         }
         return state;
@@ -161,17 +161,17 @@ describe("useDevice", () => {
     });
   });
 
-  describe("isPinSet computation", () => {
-    it("returns true when ephemeralKeyPairSecretKey has iv and data", () => {
+  describe('isPinSet computation', () => {
+    it('returns true when ephemeralKeyPairSecretKey has iv and data', () => {
       vi.mocked(useDeviceStore).mockImplementation((selector?: unknown) => {
         const state = {
           ...mockDeviceStoreState,
           ephemeralKeyPairSecretKey: {
-            iv: "some-iv",
-            data: "some-encrypted-data",
+            iv: 'some-iv',
+            data: 'some-encrypted-data',
           },
         };
-        if (typeof selector === "function") {
+        if (typeof selector === 'function') {
           return (selector as (selectorState: typeof state) => unknown)(state);
         }
         return state;
@@ -182,19 +182,19 @@ describe("useDevice", () => {
       expect(result.current.isPinSet).toBe(true);
     });
 
-    it("returns false when ephemeralKeyPairSecretKey is null", () => {
+    it('returns false when ephemeralKeyPairSecretKey is null', () => {
       const { result } = renderHook(() => useDevice());
 
       expect(result.current.isPinSet).toBe(false);
     });
 
-    it("returns false when ephemeralKeyPairSecretKey is missing iv or data", () => {
+    it('returns false when ephemeralKeyPairSecretKey is missing iv or data', () => {
       vi.mocked(useDeviceStore).mockImplementation((selector?: unknown) => {
         const state = {
           ...mockDeviceStoreState,
-          ephemeralKeyPairSecretKey: { iv: "only-iv" }, // missing data
+          ephemeralKeyPairSecretKey: { iv: 'only-iv' }, // missing data
         };
-        if (typeof selector === "function") {
+        if (typeof selector === 'function') {
           return (selector as (selectorState: typeof state) => unknown)(state);
         }
         return state;
@@ -206,8 +206,8 @@ describe("useDevice", () => {
     });
   });
 
-  describe("returns store functions", () => {
-    it("exposes store functions and binds chain-aware actions to the current chain", () => {
+  describe('returns store functions', () => {
+    it('exposes store functions and binds chain-aware actions to the current chain', () => {
       const { result } = renderHook(() => useDevice());
 
       expect(result.current.lock).toBe(mockDeviceStoreState.lock);
@@ -219,9 +219,9 @@ describe("useDevice", () => {
         mockDeviceStoreState.rotateEphemeralKey,
       );
 
-      result.current.initialize("123456");
+      result.current.initialize('123456');
       expect(mockDeviceStoreState.initialize).toHaveBeenCalledWith(
-        "123456",
+        '123456',
         SUI_DEVNET_CHAIN,
       );
 

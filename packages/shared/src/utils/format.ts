@@ -22,8 +22,8 @@ export function formatByDecimals(amount: string, decimals: number): string {
 
   const fractionStr = fraction
     .toString()
-    .padStart(decimals, "0")
-    .replace(/0+$/, "");
+    .padStart(decimals, '0')
+    .replace(/0+$/, '');
 
   return `${integer.toString()}.${fractionStr}`;
 }
@@ -44,9 +44,9 @@ export function formatByDecimals(amount: string, decimals: number): string {
  * toSmallestUnit(".5", 9) // Returns 500000000n
  */
 export function toSmallestUnit(amount: string, decimals: number): bigint {
-  if (!amount || amount === ".") return 0n;
+  if (!amount || amount === '.') return 0n;
 
-  const [whole = "0", fraction = ""] = amount.split(".");
+  const [whole = '0', fraction = ''] = amount.split('.');
 
   if (fraction.length > decimals) {
     throw new Error(
@@ -54,10 +54,10 @@ export function toSmallestUnit(amount: string, decimals: number): bigint {
     );
   }
 
-  const paddedFraction = fraction.padEnd(decimals, "0");
+  const paddedFraction = fraction.padEnd(decimals, '0');
   const combined =
-    (whole === "0" || whole === "" ? "" : whole) + paddedFraction;
-  return BigInt(combined === "" ? "0" : combined);
+    (whole === '0' || whole === '' ? '' : whole) + paddedFraction;
+  return BigInt(combined === '' ? '0' : combined);
 }
 
 /** SUI decimals (1 SUI = 10^9 MIST). */
@@ -69,7 +69,7 @@ const SUI_DECIMALS = 9;
  * @returns Formatted SUI amount, e.g. "0.001"
  */
 export function formatMistToSui(mist: string | bigint): string {
-  const s = typeof mist === "bigint" ? mist.toString() : mist;
+  const s = typeof mist === 'bigint' ? mist.toString() : mist;
   return formatByDecimals(s, SUI_DECIMALS);
 }
 
@@ -94,10 +94,10 @@ export function formatDisplayAmount(value: string, maxDecimals = 5): string {
     // while returning a clear non-numeric placeholder for the UI.
     // eslint-disable-next-line no-console
     console.warn(
-      "[formatDisplayAmount] Received non-numeric value, returning placeholder:",
+      '[formatDisplayAmount] Received non-numeric value, returning placeholder:',
       value,
     );
-    return "—";
+    return '—';
   }
 
   // Use Intl.NumberFormat for locale-aware formatting
@@ -126,8 +126,8 @@ export function formatShortDate(timestamp: number): string {
 
   // Use Intl.DateTimeFormat with browser's default locale for regional formatting
   return new Intl.DateTimeFormat(undefined, {
-    year: "2-digit",
-    month: "2-digit",
-    day: "2-digit",
+    year: '2-digit',
+    month: '2-digit',
+    day: '2-digit',
   }).format(date);
 }

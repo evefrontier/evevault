@@ -1,5 +1,5 @@
-import { Background, Button, Heading, Text } from "@evevault/shared/components";
-import type { ErrorComponentProps } from "@tanstack/react-router";
+import { Background, Button, Heading, Text } from '@evevault/shared/components';
+import type { ErrorComponentProps } from '@tanstack/react-router';
 
 /**
  * Route-level error boundary component
@@ -8,7 +8,7 @@ import type { ErrorComponentProps } from "@tanstack/react-router";
 export function RouteErrorBoundary({ error, reset }: ErrorComponentProps) {
   const handleReset = () => {
     reset();
-    window.location.href = "/";
+    window.location.href = '/';
   };
 
   return (
@@ -22,9 +22,9 @@ export function RouteErrorBoundary({ error, reset }: ErrorComponentProps) {
             <Text color="error">
               {error instanceof Error
                 ? error.message
-                : "An unexpected error occurred"}
+                : 'An unexpected error occurred'}
             </Text>
-            <div style={{ marginTop: "16px", display: "flex", gap: "8px" }}>
+            <div style={{ marginTop: '16px', display: 'flex', gap: '8px' }}>
               <Button onClick={handleReset}>Go Home</Button>
               <Button
                 onClick={() => window.location.reload()}

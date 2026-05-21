@@ -3,12 +3,12 @@ import {
   Heading,
   NetworkSelector,
   Text,
-} from "@evevault/shared/components";
-import { createLogger } from "@evevault/shared/utils";
-import { useWalletSigningContext } from "@evevault/shared/wallet";
-import { useEffect, useState } from "react";
-import { useSignPopupAuth } from "@/features/wallet/hooks";
-import { SignPopupAuthGate } from "./SignPopupAuthGate";
+} from '@evevault/shared/components';
+import { createLogger } from '@evevault/shared/utils';
+import { useWalletSigningContext } from '@evevault/shared/wallet';
+import { useEffect, useState } from 'react';
+import { useSignPopupAuth } from '@/features/wallet/hooks';
+import { SignPopupAuthGate } from './SignPopupAuthGate';
 
 const log = createLogger();
 
@@ -32,12 +32,12 @@ function SignSponsoredTransaction() {
   const { isLocalnet, sign } = useWalletSigningContext();
 
   useEffect(() => {
-    chrome.storage.local.get("pendingAction").then((data) => {
+    chrome.storage.local.get('pendingAction').then((data) => {
       const action = data.pendingAction;
       if (action?.sponsoredTxB64 != null && action?.preparationId != null) {
         setPending(action as PendingSponsoredAction);
       } else {
-        setError("No pending sponsored transaction found");
+        setError('No pending sponsored transaction found');
       }
     });
   }, []);
@@ -45,19 +45,19 @@ function SignSponsoredTransaction() {
   const handleApprove = async () => {
     if (!pending) return;
     if (isLocalnet) {
-      setError("Sponsored transactions are not available on localnet.");
+      setError('Sponsored transactions are not available on localnet.');
       return;
     }
     if (!auth.user) {
-      setError("Sign in and try again.");
+      setError('Sign in and try again.');
       return;
     }
     if (!auth.ephemeralPublicKey) {
-      setError("Device key not found. Unlock the wallet and try again.");
+      setError('Device key not found. Unlock the wallet and try again.');
       return;
     }
     if (!auth.maxEpoch) {
-      setError("Max epoch not set. Re-authenticate and try again.");
+      setError('Max epoch not set. Re-authenticate and try again.');
       return;
     }
 
@@ -69,28 +69,28 @@ function SignSponsoredTransaction() {
         c.charCodeAt(0),
       );
       const { signature: zkSignature } = await sign(
-        "TransactionData",
+        'TransactionData',
         txbBytes,
       );
 
       await chrome.storage.local.set({
         transactionResult: {
           windowId: pending.windowId,
-          status: "signed",
+          status: 'signed',
           zkSignature,
           preparationId: pending.preparationId,
         },
       });
       window.close();
     } catch (err) {
-      log.error("Sponsored transaction signing failed", err);
+      log.error('Sponsored transaction signing failed', err);
       const errorMessage =
-        err instanceof Error ? err.message : "Unknown error occurred";
+        err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
       await chrome.storage.local.set({
         transactionResult: {
           windowId: pending.windowId,
-          status: "error",
+          status: 'error',
           error: errorMessage,
         },
       });
@@ -105,14 +105,14 @@ function SignSponsoredTransaction() {
       await chrome.storage.local.set({
         transactionResult: {
           windowId: pending.windowId,
-          status: "error",
-          error: "Transaction rejected by user",
+          status: 'error',
+          error: 'Transaction rejected by user',
         },
       });
       window.close();
     } catch (err) {
-      log.error("Failed to reject transaction", err);
-      setError("Failed to reject transaction");
+      log.error('Failed to reject transaction', err);
+      setError('Failed to reject transaction');
     }
   };
 
@@ -131,7 +131,7 @@ function SignSponsoredTransaction() {
       {!pending ? (
         <div>
           <p>Loading...</p>
-          {error && <p style={{ color: "red" }}>{error}</p>}
+          {error && <p style={{ color: 'red' }}>{error}</p>}
         </div>
       ) : (
         <div className="flex flex-col items-center justify-between h-full">
@@ -143,18 +143,18 @@ function SignSponsoredTransaction() {
             </div>
 
             {error && (
-              <div style={{ marginBottom: "20px" }}>
+              <div style={{ marginBottom: '20px' }}>
                 <Text color="error">Error: {error}</Text>
               </div>
             )}
 
-            <div style={{ display: "flex", gap: "10px" }}>
+            <div style={{ display: 'flex', gap: '10px' }}>
               <Button
                 onClick={handleApprove}
                 disabled={loading}
                 variant="primary"
               >
-                {loading ? "Signing..." : "Approve"}
+                {loading ? 'Signing...' : 'Approve'}
               </Button>
               <Button
                 onClick={handleReject}

@@ -1,21 +1,21 @@
-import type { CSSProperties } from "react";
-import type { CornersColor, CornersProps } from "#/types";
+import type { CSSProperties } from 'react';
+import type { CornersColor, CornersProps } from '#/types';
 
 const colorMap: Record<CornersColor, string> = {
-  quantum: "#ff4700",
-  "quantum-50": "rgba(255, 71, 0, 0.5)",
-  neutral: "rgba(255, 255, 214, 1)",
-  "neutral-50": "rgba(255, 255, 214, 0.5)",
-  grey: "#d9d9d9",
-  error: "rgb(255, 25, 41)",
-  success: "#5ee39c",
+  quantum: '#ff4700',
+  'quantum-50': 'rgba(255, 71, 0, 0.5)',
+  neutral: 'rgba(255, 255, 214, 1)',
+  'neutral-50': 'rgba(255, 255, 214, 0.5)',
+  grey: '#d9d9d9',
+  error: 'rgb(255, 25, 41)',
+  success: '#5ee39c',
 };
 /// Has to be in a position:relative parent to work properly
 export const Corners = ({
-  color = "quantum",
+  color = 'quantum',
   size = 5,
   thickness = 1,
-  className = "",
+  className = '',
   style,
   bottomOffset,
   transition,
@@ -23,7 +23,7 @@ export const Corners = ({
   const cornerColor = colorMap[color];
 
   const baseCornerStyle: CSSProperties = {
-    position: "absolute",
+    position: 'absolute',
     width: size,
     height: size,
     zIndex: 1,
@@ -32,7 +32,7 @@ export const Corners = ({
 
   const lineStyle: CSSProperties = {
     content: '""',
-    position: "absolute",
+    position: 'absolute',
     background: cornerColor,
   };
 

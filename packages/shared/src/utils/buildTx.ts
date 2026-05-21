@@ -1,5 +1,5 @@
-import type { SuiGrpcClient } from "@mysten/sui/grpc";
-import type { Transaction } from "@mysten/sui/transactions";
+import type { SuiGrpcClient } from '@mysten/sui/grpc';
+import type { Transaction } from '@mysten/sui/transactions';
 
 // Sets the sender of the tx using useWalletSigningContext
 // Then builds the transaction bytes

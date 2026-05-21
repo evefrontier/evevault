@@ -1,5 +1,5 @@
-import type { ZkLoginAddressResponse } from "#/types/enoki";
-import type { GetZkLoginAddressParams } from "./types";
+import type { ZkLoginAddressResponse } from '#/types/enoki';
+import type { GetZkLoginAddressParams } from './types';
 
 const cache = new Map<string, ZkLoginAddressResponse>();
 
@@ -26,11 +26,11 @@ export async function getZkLoginAddress(
 
   const { jwt, enokiApiKey } = params;
 
-  const response = await fetch("https://api.enoki.mystenlabs.com/v1/zklogin", {
-    method: "GET",
+  const response = await fetch('https://api.enoki.mystenlabs.com/v1/zklogin', {
+    method: 'GET',
     headers: {
       Authorization: enokiApiKey,
-      "zklogin-jwt": jwt,
+      'zklogin-jwt': jwt,
     },
   });
 

@@ -1,8 +1,8 @@
-import { encryptWithKey, signWithIntent } from "@evevault/shared";
-import type { IntentScope } from "@mysten/sui/cryptography";
-import { SUI_PRIVATE_KEY_PREFIX } from "@mysten/sui/cryptography";
-import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
-import type { BackgroundMessage } from "@/lib/background/types";
+import { encryptWithKey, signWithIntent } from '@evevault/shared';
+import type { IntentScope } from '@mysten/sui/cryptography';
+import { SUI_PRIVATE_KEY_PREFIX } from '@mysten/sui/cryptography';
+import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
+import type { BackgroundMessage } from '@/lib/background/types';
 
 type LocalnetState = {
   localnetKey: Ed25519Keypair | null;
@@ -17,19 +17,19 @@ const localnetSetKeypair = async (
 ) => {
   const { privateKey } = message as { privateKey?: string };
   if (!privateKey) {
-    sendResponse({ ok: false, error: "privateKey required" });
+    sendResponse({ ok: false, error: 'privateKey required' });
     return;
   }
   if (!sessionDerivedKey || !sessionSalt) {
     sendResponse({
       ok: false,
-      error: "Vault must be unlocked to store localnet key",
+      error: 'Vault must be unlocked to store localnet key',
     });
     return;
   }
   try {
     if (!privateKey.startsWith(`${SUI_PRIVATE_KEY_PREFIX}1`)) {
-      throw new Error("Invalid private key");
+      throw new Error('Invalid private key');
     }
     localnetState.localnetKey = Ed25519Keypair.fromSecretKey(privateKey);
     const address = localnetState.localnetKey.getPublicKey().toSuiAddress();
@@ -44,7 +44,7 @@ const localnetSetKeypair = async (
   } catch (error) {
     sendResponse({
       ok: false,
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 };
@@ -79,7 +79,7 @@ const localnetSign = async (
 ) => {
   const key = state.localnetKey;
   if (!key) {
-    sendResponse({ ok: false, error: "No localnet keypair loaded" });
+    sendResponse({ ok: false, error: 'No localnet keypair loaded' });
     return;
   }
 
@@ -104,7 +104,7 @@ const localnetSign = async (
   } catch (error) {
     sendResponse({
       ok: false,
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 };

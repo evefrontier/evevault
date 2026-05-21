@@ -1,4 +1,4 @@
-import { createLogger } from "@evevault/shared/utils";
+import { createLogger } from '@evevault/shared/utils';
 
 const log = createLogger();
 
@@ -15,7 +15,7 @@ export async function openPopupWindow(
 
     const window = await chrome.windows.create({
       url: popupUrl,
-      type: "popup",
+      type: 'popup',
       width: 500,
       height: 500,
       focused: true,
@@ -23,7 +23,7 @@ export async function openPopupWindow(
 
     return window.id;
   } catch (error) {
-    log.error("Failed to open popup", error);
+    log.error('Failed to open popup', error);
     return undefined;
   }
 }

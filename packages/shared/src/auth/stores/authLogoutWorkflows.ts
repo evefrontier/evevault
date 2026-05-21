@@ -1,16 +1,16 @@
-import type { TenantId } from "@evefrontier/dapp-kit/utils";
-import { clearZkLoginAddressCache } from "#/auth/getZkLoginAddress";
-import { clearAllJwts } from "#/auth/storageService";
-import { zkProofService } from "#/services/vaultService";
-import { useDeviceStore } from "#/stores";
-import { getCurrentTenantId } from "#/stores/tenantStore";
-import { performFullCleanup } from "#/utils";
-import { getTenantConfig } from "#/utils/tenantConfig";
+import type { TenantId } from '@evefrontier/dapp-kit/utils';
+import { clearZkLoginAddressCache } from '#/auth/getZkLoginAddress';
+import { clearAllJwts } from '#/auth/storageService';
+import { zkProofService } from '#/services/vaultService';
+import { useDeviceStore } from '#/stores';
+import { getCurrentTenantId } from '#/stores/tenantStore';
+import { performFullCleanup } from '#/utils';
+import { getTenantConfig } from '#/utils/tenantConfig';
 import {
   getExtensionLogoutRedirectUri,
   launchExtensionLogout,
-} from "./authExtensionWorkflows";
-import type { AuthSet, GetUserManagerInstance } from "./authWorkflowUtils";
+} from './authExtensionWorkflows';
+import type { AuthSet, GetUserManagerInstance } from './authWorkflowUtils';
 
 export async function clearAuthSession(
   set: AuthSet,
@@ -33,10 +33,10 @@ function buildLogoutUrl(tenant: TenantId, redirectUri: string): string {
   // Construct directly to avoid relying on OIDC discovery during logout.
   const tenantConfig = getTenantConfig(tenant);
   const logoutUrl = new URL(
-    `${tenantConfig.serverUrl.replace(/\/$/, "")}/oauth2/logout`,
+    `${tenantConfig.serverUrl.replace(/\/$/, '')}/oauth2/logout`,
   );
-  logoutUrl.searchParams.set("client_id", tenantConfig.clientId);
-  logoutUrl.searchParams.set("post_logout_redirect_uri", redirectUri);
+  logoutUrl.searchParams.set('client_id', tenantConfig.clientId);
+  logoutUrl.searchParams.set('post_logout_redirect_uri', redirectUri);
   return logoutUrl.toString();
 }
 

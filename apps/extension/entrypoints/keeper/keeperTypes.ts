@@ -1,4 +1,4 @@
-import type { BackgroundMessage } from "@/lib/background/types";
+import type { BackgroundMessage } from '@/lib/background/types';
 
 export type KeeperSendResponse = (response?: unknown) => void;
 export type KeeperHandler = (

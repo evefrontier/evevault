@@ -1,27 +1,27 @@
-import { TenantId } from "@evefrontier/dapp-kit/utils";
-import type { TenantConfig } from "#/types";
-import { TENANT_KEYS } from "./constants";
-import { isWeb } from "./environment";
+import { TenantId } from '@evefrontier/dapp-kit/utils';
+import type { TenantConfig } from '#/types';
+import { TENANT_KEYS } from './constants';
+import { isWeb } from './environment';
 
 export const DEFAULT_TENANT_ID = TenantId.STILLNESS;
 
 const KNOWN_TENANT_IDS: TenantId[] = Object.keys(TENANT_KEYS) as TenantId[];
 
 function normalizeOrigin(url: string): string {
-  return url.replace(/\/$/, "");
+  return url.replace(/\/$/, '');
 }
 
 function isWebProduction(): boolean {
   if (!isWeb()) return false;
   const nodeEnv =
-    typeof globalThis !== "undefined" &&
+    typeof globalThis !== 'undefined' &&
     (globalThis as { process?: { env?: { NODE_ENV?: string } } }).process?.env
       ?.NODE_ENV;
   const importMetaMode =
-    typeof import.meta !== "undefined" &&
+    typeof import.meta !== 'undefined' &&
     (import.meta as { env?: { MODE?: string } }).env?.MODE;
   const mode = nodeEnv ?? importMetaMode;
-  return mode === "production";
+  return mode === 'production';
 }
 
 function getDefaultConfig(): TenantConfig {
@@ -68,7 +68,7 @@ export function getAvailableTenantIds(devMode = false): TenantId[] {
     ids.push(id);
   }
 
-  if (isWebProduction() && typeof window !== "undefined") {
+  if (isWebProduction() && typeof window !== 'undefined') {
     const origin = normalizeOrigin(window.location.origin);
     return ids.filter(
       (id) => normalizeOrigin(TENANT_KEYS[id].webOrigin) === origin,
@@ -91,12 +91,12 @@ export function isAvailableTenantId(
 
 /** Display labels for server (tenant) ids in the UI. "default" shows as "Utopia" (server name). */
 const TENANT_LABELS: Record<TenantId, string> = {
-  stillness: "Stillness",
-  utopia: "Utopia",
-  tauceti: "Tauceti",
-  tesseract: "Tesseract",
-  tetra: "Tetra",
-  tiaki: "Tiaki",
+  stillness: 'Stillness',
+  utopia: 'Utopia',
+  tauceti: 'Tauceti',
+  tesseract: 'Tesseract',
+  tetra: 'Tetra',
+  tiaki: 'Tiaki',
 };
 
 /**

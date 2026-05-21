@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from 'react';
 
 /**
  * Breakpoints for responsive design
@@ -38,7 +38,7 @@ export interface ResponsiveState {
  */
 export function useResponsive(): ResponsiveState {
   const [state, setState] = useState<ResponsiveState>(() => {
-    if (typeof window === "undefined") {
+    if (typeof window === 'undefined') {
       return { isMobile: false, isTablet: false, isDesktop: true, width: 1200 };
     }
     return getResponsiveState(window.innerWidth);
@@ -59,9 +59,9 @@ export function useResponsive(): ResponsiveState {
       });
     };
 
-    window.addEventListener("resize", handleResize);
+    window.addEventListener('resize', handleResize);
     return () => {
-      window.removeEventListener("resize", handleResize);
+      window.removeEventListener('resize', handleResize);
       if (rafId !== null) {
         cancelAnimationFrame(rafId);
       }
@@ -73,7 +73,7 @@ export function useResponsive(): ResponsiveState {
 
 function getResponsiveState(width: number | undefined): ResponsiveState {
   // Guard against undefined/NaN (e.g. window exists but innerWidth is unavailable)
-  width = typeof width === "number" && !Number.isNaN(width) ? width : 1200;
+  width = typeof width === 'number' && !Number.isNaN(width) ? width : 1200;
   const isMobile = width < BREAKPOINTS.mobile;
   const isTablet = width >= BREAKPOINTS.mobile && width < BREAKPOINTS.tablet;
   const isDesktop = width >= BREAKPOINTS.tablet;

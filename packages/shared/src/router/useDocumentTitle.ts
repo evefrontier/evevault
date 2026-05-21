@@ -1,14 +1,14 @@
-import { useRouterState } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useRouterState } from '@tanstack/react-router';
+import { useEffect } from 'react';
 
-import type { RouteMetaWithTitle } from "./types";
+import type { RouteMetaWithTitle } from './types';
 
 const hasTitle = (meta: unknown): meta is RouteMetaWithTitle => {
   return (
-    typeof meta === "object" &&
+    typeof meta === 'object' &&
     meta !== null &&
-    "title" in meta &&
-    typeof (meta as { title?: unknown }).title === "string"
+    'title' in meta &&
+    typeof (meta as { title?: unknown }).title === 'string'
   );
 };
 

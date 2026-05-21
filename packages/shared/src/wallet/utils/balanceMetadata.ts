@@ -1,20 +1,20 @@
-import { SUI_COIN_TYPE } from "#/utils";
-import { isEveCoinType } from "#/wallet/eveToken";
-import type { BalanceMetadata } from "#/wallet/types/hooks";
+import { SUI_COIN_TYPE } from '#/utils';
+import { isEveCoinType } from '#/wallet/eveToken';
+import type { BalanceMetadata } from '#/wallet/types/hooks';
 
 export const DEFAULT_SUI_METADATA: BalanceMetadata = {
   decimals: 9,
-  symbol: "SUI",
-  name: "Sui",
-  description: "Sui Native Token",
+  symbol: 'SUI',
+  name: 'Sui',
+  description: 'Sui Native Token',
   iconUrl: null,
 };
 
 export const DEFAULT_EVE_TESTNET_METADATA: BalanceMetadata = {
   decimals: 9,
-  symbol: "EVE",
-  name: "EVE test token",
-  description: "EVE test token on testnet",
+  symbol: 'EVE',
+  name: 'EVE test token',
+  description: 'EVE test token on testnet',
   iconUrl: null,
 };
 
