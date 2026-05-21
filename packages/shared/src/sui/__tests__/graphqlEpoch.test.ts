@@ -1,5 +1,5 @@
 import { SUI_TESTNET_CHAIN } from '@mysten/wallet-standard'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DEFAULT_EPOCH_DURATION_MS } from '#/utils/constants'
 
 const mockQuery = vi.fn()
@@ -23,7 +23,7 @@ describe('getCurrentEpochFromGraphQL', () => {
   const startTimestamp = '2026-05-08T00:00:00.000Z'
   const endTimestamp = '2026-05-09T00:00:00.000Z'
 
-  beforeEach(() => {
+  afterEach(() => {
     vi.clearAllMocks()
   })
 

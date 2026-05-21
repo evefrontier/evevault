@@ -1,5 +1,5 @@
 import type { User } from 'oidc-client-ts'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('#/stores/deviceStore', () => ({
   useDeviceStore: {
@@ -41,7 +41,6 @@ const minimalUser = {
 
 describe('zkSignAny error branches', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     vi.mocked(isWeb).mockReturnValue(true)
     vi.mocked(useDeviceStore.getState).mockReturnValue({
       ephemeralPublicKey: { toRawBytes: () => new Uint8Array([1]) },
@@ -50,6 +49,10 @@ describe('zkSignAny error branches', () => {
     vi.mocked(useContextStore.getState).mockReturnValue({
       chain: 'sui:testnet',
     } as never)
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
   })
 
   it('throws when user is null', async () => {

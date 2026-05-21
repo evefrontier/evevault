@@ -47,7 +47,6 @@ import { useContextStore } from '#/stores/contextStore'
 
 describe('contextStore', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockDeviceStoreState.networkData = {}
 
     // Reset store state
@@ -61,7 +60,7 @@ describe('contextStore', () => {
   })
 
   afterEach(() => {
-    vi.restoreAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('checkNetworkSwitch', () => {

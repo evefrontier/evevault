@@ -4,7 +4,7 @@ import {
   SUI_MAINNET_CHAIN,
   SUI_TESTNET_CHAIN,
 } from '@mysten/wallet-standard'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { NETWORKS } from '#/sui/networks'
 
 const { mockSuiGrpcClient } = vi.hoisted(() => ({
@@ -18,7 +18,7 @@ vi.mock('@mysten/sui/grpc', () => ({
 import { createSuiClient } from '#/sui/suiClient'
 
 describe('createSuiClient', () => {
-  beforeEach(() => {
+  afterEach(() => {
     vi.clearAllMocks()
   })
 

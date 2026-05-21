@@ -292,5 +292,5 @@ export function makeTokenResponse(): OAuthTokenResponse {
     refresh_token: 'refresh-token',
     expires_in: 3600,
     expires_at: 4600,
-  }
+  } as OAuthTokenResponse
 }

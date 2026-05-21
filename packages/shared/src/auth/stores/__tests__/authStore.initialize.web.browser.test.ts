@@ -1,5 +1,5 @@
 import { User } from 'oidc-client-ts'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AuthStoreMockHandles } from './authStoreTestMocks'
 import {
   makeAdaptersMock,
@@ -105,9 +105,12 @@ function makeUser(
 
 describe('authStore.initialize() (web path)', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     setupAuthStoreMocks(h, { tenantId: 'default' })
     useAuthStore.setState({ user: null, loading: false, error: null })
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
   })
 
   it('sets user to webUser when the token is still valid', async () => {

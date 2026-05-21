@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ephKeyService } from '#/services/keeperService'
 import { VaultMessageTypes } from '#/types/messages'
 
@@ -14,7 +14,6 @@ const mockSendMessage = vi.fn()
 describe('ephKeyService.lock()', () => {
   afterEach(() => {
     vi.clearAllMocks()
-    vi.restoreAllMocks()
   })
 
   it('sends LOCK message to keeper and succeeds when response is ok', async () => {
@@ -60,7 +59,7 @@ describe('ephKeyService.lock()', () => {
 })
 
 describe('ephKeyService.rotateEphemeralKeyPair()', () => {
-  beforeEach(() => {
+  afterEach(() => {
     vi.clearAllMocks()
   })
 

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { handleUnlockVault } from '@/lib/background/handlers/vaultHandlers'
 import type { VaultMessage } from '@/lib/background/types'
 
@@ -45,7 +45,7 @@ function stubKeeperBridge(
           version: 0,
         })
       : undefined
-  globalThis.chrome = {
+  vi.stubGlobal('chrome', {
     storage: {
       local: {
         get: vi
@@ -63,7 +63,7 @@ function stubKeeperBridge(
       }),
       lastError: undefined,
     },
-  } as unknown as typeof chrome
+  } as unknown as typeof chrome)
 }
 
 function captureKeeperMessage(): Record<string, unknown> | undefined {
@@ -73,12 +73,9 @@ function captureKeeperMessage(): Record<string, unknown> | undefined {
 }
 
 describe('handleUnlockVault — localnet key forwarding', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
   afterEach(() => {
-    vi.restoreAllMocks()
+    vi.clearAllMocks()
+    vi.unstubAllGlobals()
   })
 
   it('passes encrypted blob to keeper when storage contains a valid HashedData object', async () => {

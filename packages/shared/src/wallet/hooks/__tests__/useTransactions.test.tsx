@@ -119,11 +119,11 @@ describe('useTransactionHistory hook (GraphQL)', () => {
   let queryClient: QueryClient
 
   beforeEach(() => {
-    vi.clearAllMocks()
     queryClient = createQueryClient()
   })
 
   afterEach(() => {
+    vi.clearAllMocks()
     queryClient.clear()
   })
 

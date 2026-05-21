@@ -56,8 +56,6 @@ describe('useDevice', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
-
     // Default mock for network store - devnet
     vi.mocked(useContextStore).mockReturnValue({
       chain: SUI_DEVNET_CHAIN,
@@ -78,7 +76,7 @@ describe('useDevice', () => {
   })
 
   afterEach(() => {
-    vi.restoreAllMocks()
+    vi.clearAllMocks()
   })
 
   describe('reactive chain subscription', () => {

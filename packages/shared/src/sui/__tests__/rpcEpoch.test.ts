@@ -1,5 +1,5 @@
 import { SUI_LOCALNET_CHAIN } from '@mysten/wallet-standard'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DEFAULT_EPOCH_DURATION_MS } from '#/utils/constants'
 
 const mockGetEpoch = vi.fn()
@@ -25,7 +25,7 @@ vi.mock('#/utils/logger', () => ({
 import { getCurrentEpochFromRpc } from '#/sui/rpcEpoch'
 
 describe('getCurrentEpochFromRpc', () => {
-  beforeEach(() => {
+  afterEach(() => {
     vi.clearAllMocks()
   })
 

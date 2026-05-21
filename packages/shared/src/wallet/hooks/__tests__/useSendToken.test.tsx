@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { act } from 'react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Mock dependencies before imports
 // Using workspace aliases in test files due to Vite resolution limitations with relative imports
@@ -119,8 +119,6 @@ describe('useSendToken', () => {
   const mockUser = createMockUser({ suiAddress: VALID_SUI_ADDRESS })
 
   beforeEach(() => {
-    vi.clearAllMocks()
-
     mockGetUserForNetwork.mockResolvedValue(mockUser)
 
     // Default mock implementations
@@ -203,6 +201,10 @@ describe('useSendToken', () => {
       isLocalnet: false,
       // biome-ignore lint/suspicious/noExplicitAny: Test mocking requires any type
     } as any)
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
   })
 
   describe('address validation', () => {
@@ -681,6 +683,10 @@ describe('useSendToken', () => {
       })
     })
 
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
     it('invalidates and refetches balance and transaction queries after successful send', async () => {
       vi.useFakeTimers()
       const queryClient = new QueryClient()
@@ -724,8 +730,6 @@ describe('useSendToken', () => {
 
       unmount()
       vi.clearAllTimers()
-      invalidateSpy.mockRestore()
-      refetchSpy.mockRestore()
       queryClient.clear()
       vi.useRealTimers()
     })
@@ -760,7 +764,6 @@ describe('useSendToken', () => {
 
       unmount()
       vi.clearAllTimers()
-      refetchSpy.mockRestore()
       queryClient.clear()
       vi.useRealTimers()
     })

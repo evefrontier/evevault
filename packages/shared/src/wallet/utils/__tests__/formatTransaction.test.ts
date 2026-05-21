@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const {
   mockFetchCoinMetadata,
@@ -40,8 +40,11 @@ import {
 
 describe('extractSymbolFromCoinType', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockParseStructTag.mockReturnValue({ name: 'TOKEN' })
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
   })
 
   it('extracts symbol using parseStructTag', () => {
@@ -80,10 +83,13 @@ describe('formatTransactionAmount', () => {
   const graphqlClient = { query: vi.fn() }
 
   beforeEach(() => {
-    vi.clearAllMocks()
     mockFormatByDecimals.mockImplementation(
       (rawAmount: string, decimals: number) => `${rawAmount}:${decimals}`,
     )
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
   })
 
   it('formats using decimals from fetched coin metadata', async () => {
