@@ -55,7 +55,7 @@ export async function getCurrentChainFromStorage(): Promise<SuiChain> {
       } catch (error) {
         log.error('Error reading chain from storage', error);
       }
-      const fallbackChain = useContext.getState().chain;
+      const fallbackChain = getCurrentChain();
       log.debug('Using fallback chain from Zustand', {
         chain: fallbackChain,
       });
