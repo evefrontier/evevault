@@ -11,11 +11,11 @@ import {
   restoreUnlockedVault,
 } from "./keeperCrypto";
 import {
-  checkAndEnforceExpiry,
+  enforceExpiry,
   getEphemeralKey,
   getSessionKey,
+  keeperReplaceEphemeralKey,
   lockVault,
-  replaceEphemeralKey,
   unlockVaultWithKeypair,
 } from "./keeperState";
 import type { KeeperSendResponse } from "./keeperTypes";
@@ -26,13 +26,13 @@ export function handleCreateKeypair(
 ): boolean {
   const pin = message.pin as string;
   const keypair = Ed25519Keypair.generate();
-  unlockVaultWithKeypair(keypair);
 
   // Chrome keeps the response channel open only when the listener returns true.
   (async () => {
     try {
       const hashedSecretKey = await encrypt(keypair.getSecretKey(), pin);
       await cacheSessionKey(pin, hashedSecretKey);
+      unlockVaultWithKeypair(keypair);
 
       sendResponse({
         ok: true,
@@ -40,6 +40,7 @@ export function handleCreateKeypair(
         publicKeyBytes: publicKeyBytes(keypair),
       });
     } catch (error) {
+      lockVault();
       sendResponse({ ok: false, error: getErrorMessage(error) });
     }
   })();
@@ -60,6 +61,7 @@ export function handleUnlockVault(
       secretKey = await decryptVaultSecret(hashedSecretKey, pin);
     } catch (error) {
       console.error("[Keeper] Decryption failed:", error);
+      lockVault();
       sendResponse({
         ok: false,
         error: `[Keeper] Decryption failed: ${getErrorMessage(error)}`,
@@ -72,6 +74,7 @@ export function handleUnlockVault(
       sendResponse({ ok: true });
     } catch (error) {
       console.error("[Keeper] Keypair creation failed:", error);
+      lockVault();
       sendResponse({
         ok: false,
         error: `[Keeper] Failed to create keypair: ${getErrorMessage(error)}`,
@@ -86,7 +89,7 @@ export function handleGetPublicKey(
   _message: BackgroundMessage,
   sendResponse: KeeperSendResponse,
 ): boolean {
-  if (checkAndEnforceExpiry()) {
+  if (enforceExpiry()) {
     sendResponse({ error: "LOCKED" });
     return false;
   }
@@ -100,7 +103,7 @@ export function handleRotateKeypair(
   sendResponse: KeeperSendResponse,
 ): boolean {
   const sessionKey = getSessionKey();
-  if (checkAndEnforceExpiry() || !sessionKey) {
+  if (enforceExpiry() || !sessionKey) {
     sendResponse({
       ok: false,
       error: "Vault must be unlocked again before rotating keypair",
@@ -118,7 +121,7 @@ export function handleRotateKeypair(
       );
 
       // Swap only after encryption succeeds so storage and RAM never diverge.
-      replaceEphemeralKey(newKeypair);
+      keeperReplaceEphemeralKey(newKeypair);
 
       sendResponse({
         ok: true,
@@ -138,7 +141,7 @@ export function handleEphSign(
   sendResponse: KeeperSendResponse,
 ): boolean {
   const key = getEphemeralKey();
-  if (checkAndEnforceExpiry() || !key) {
+  if (enforceExpiry() || !key) {
     sendResponse({ error: "[KEEPER_EPH_SIGN] LOCKED" });
     return false;
   }

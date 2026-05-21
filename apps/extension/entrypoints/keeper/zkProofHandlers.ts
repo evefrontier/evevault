@@ -3,6 +3,7 @@ import type { SuiChain } from "@mysten/wallet-standard";
 import type { BackgroundMessage } from "@/lib/background/types";
 import {
   clearZkProofs,
+  enforceExpiry,
   getEphemeralKey,
   getZkProof,
   setZkProof,
@@ -15,7 +16,7 @@ export function handleSetZkProof(
 ): boolean {
   const { chain, zkProof } = message;
 
-  if (!getEphemeralKey()) {
+  if (enforceExpiry() || !getEphemeralKey()) {
     sendResponse({
       error: "[KEEPER_SET_ZKPROOF] No ephemeral key found, vault LOCKED",
     });
@@ -38,7 +39,7 @@ export function handleGetZkProof(
 ): boolean {
   const { chain } = message;
 
-  if (!getEphemeralKey()) {
+  if (enforceExpiry() || !getEphemeralKey()) {
     sendResponse({ error: "LOCKED" });
     return false;
   }

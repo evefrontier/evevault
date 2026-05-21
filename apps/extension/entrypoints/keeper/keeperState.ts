@@ -56,9 +56,9 @@ export function unlockVaultWithKeypair(keypair: Ed25519Keypair): void {
   _vaultUnlockExpiry = Date.now() + VAULT_UNLOCK_MS;
 }
 
-export function replaceEphemeralKey(keypair: Ed25519Keypair): void {
+export function keeperReplaceEphemeralKey(keypair: Ed25519Keypair): void {
+  // Preserve the original unlock expiry while swapping the rotated key.
   ephemeralKey = keypair;
-  _vaultUnlocked = true;
 }
 
 export function getEphemeralKey(): Ed25519Keypair | null {
@@ -81,7 +81,7 @@ export function getSessionKey(): {
   return { derivedKey: sessionDerivedKey, salt: sessionSalt };
 }
 
-export function checkAndEnforceExpiry(): boolean {
+export function enforceExpiry(): boolean {
   if (!ephemeralKey && !localnetState.localnetKey) {
     return true; // Already locked
   }
