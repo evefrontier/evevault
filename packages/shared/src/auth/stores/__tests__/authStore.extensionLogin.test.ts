@@ -2,6 +2,7 @@ import { User } from 'oidc-client-ts'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AuthStoreMockHandles } from './authStoreTestMocks'
 import {
+  MOCK_ID_TOKEN_CLAIMS,
   makeAdaptersMock,
   makeAuthConfigMock,
   makeAuthStoreUtilsMock,
@@ -76,7 +77,7 @@ describe('authStore.extensionLogin()', () => {
   beforeEach(() => {
     setupAuthStoreMocks(h, { isExtension: true })
     h.mockParseOAuthTokenResponse.mockReturnValue(makeTokenResponse())
-    h.mockDecodeJwt.mockReturnValue({ sub: 'user-1', iat: 1000, exp: 4600 })
+    h.mockDecodeJwt.mockReturnValue(MOCK_ID_TOKEN_CLAIMS)
     useAuthStore.setState({ user: null, loading: false, error: null })
     vi.stubGlobal('crypto', { randomUUID: vi.fn(() => 'uuid-1') })
     vi.stubGlobal('chrome', {
