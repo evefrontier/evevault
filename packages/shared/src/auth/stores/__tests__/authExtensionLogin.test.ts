@@ -36,7 +36,7 @@ import type {
   GetUserManagerInstance,
 } from '#/auth/stores/authWorkflowUtils'
 import type { AuthState } from '#/auth/types'
-import { MOCK_ID_TOKEN_CLAIMS, makeTokenResponse } from './authStoreTestMocks'
+import { makeTokenResponse } from './authStoreTestMocks'
 
 type AuthSetMock = AuthSet & ReturnType<typeof vi.fn>
 
@@ -50,7 +50,7 @@ describe('authExtensionLogin()', () => {
     h.mockStoreUser.mockResolvedValue(undefined)
     h.mockEnrichUser.mockImplementation(async (user: unknown) => user)
     h.mockSyncPrimaryJwt.mockResolvedValue(undefined)
-    h.mockDecodeJwt.mockReturnValue(MOCK_ID_TOKEN_CLAIMS)
+    h.mockDecodeJwt.mockReturnValue({ sub: 'user-1', iat: 1000, exp: 4600 })
     mockSet = vi.fn() as AuthSetMock
     mockGetUserManager = () =>
       ({ storeUser: h.mockStoreUser }) as unknown as UserManager

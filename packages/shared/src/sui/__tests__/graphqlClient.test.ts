@@ -4,7 +4,7 @@ import {
   SUI_TESTNET_CHAIN,
   type SuiChain,
 } from '@mysten/wallet-standard'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const { mockSuiGraphQLClient } = vi.hoisted(() => ({
   mockSuiGraphQLClient: vi.fn(),
@@ -17,7 +17,7 @@ vi.mock('@mysten/sui/graphql', () => ({
 import { createSuiGraphQLClient } from '#/sui/graphqlClient'
 
 describe('createSuiGraphQLClient', () => {
-  beforeEach(() => {
+  afterEach(() => {
     vi.clearAllMocks()
   })
 

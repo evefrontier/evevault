@@ -14,17 +14,17 @@ describe('vendJwt', () => {
   const tenant = 'frontier-tenant'
 
   beforeEach(() => {
-    vi.clearAllMocks()
     getApiContextMock.mockReturnValue({
       apiBaseUrl: apiBase,
       tenant,
       decoded: {},
     })
-    globalThis.fetch = vi.fn()
+    vi.stubGlobal('fetch', vi.fn())
   })
 
   afterEach(() => {
-    vi.restoreAllMocks()
+    vi.clearAllMocks()
+    vi.unstubAllGlobals()
   })
 
   it('POSTs nonce to vend URL with tenant and bearer token', async () => {

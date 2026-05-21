@@ -122,7 +122,6 @@ describe('WebVaultService', () => {
   beforeEach(() => {
     // Clear the mock store before each test
     mockStore.clear()
-    vi.clearAllMocks()
     // Reset mockSetFn call history
     mockSetFn.mockClear()
     mockGetFn.mockClear()
@@ -130,6 +129,7 @@ describe('WebVaultService', () => {
   })
 
   afterEach(async () => {
+    vi.clearAllMocks()
     // Clean up after each test
     await webVaultService.clear()
   })

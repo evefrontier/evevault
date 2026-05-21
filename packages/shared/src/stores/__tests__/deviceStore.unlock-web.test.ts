@@ -23,7 +23,6 @@ import { useDeviceStore } from '#/stores/deviceStore'
 
 describe('deviceStore.unlock (web / jsdom path)', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     useDeviceStore.setState({
       isLocked: true,
       ephemeralPublicKey: null,
@@ -37,7 +36,7 @@ describe('deviceStore.unlock (web / jsdom path)', () => {
   })
 
   afterEach(() => {
-    vi.restoreAllMocks()
+    vi.clearAllMocks()
   })
 
   it('sets error when PIN is empty', async () => {

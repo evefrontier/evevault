@@ -98,7 +98,7 @@ describe('getUserForNetwork', () => {
     .setIssuedAt(1748779000)
     .encode()
 
-  beforeEach(() => {
+  afterEach(() => {
     vi.clearAllMocks()
   })
 

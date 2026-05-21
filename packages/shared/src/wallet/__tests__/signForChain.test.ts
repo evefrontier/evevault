@@ -1,5 +1,5 @@
 import type { User } from 'oidc-client-ts'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('#/wallet/zkSignAny', () => ({
   zkSignAny: vi.fn(),
@@ -127,7 +127,7 @@ describe('signForChain — localnet path', () => {
 })
 
 describe('signForChain — zkLogin path', () => {
-  beforeEach(() => {
+  afterEach(() => {
     vi.clearAllMocks()
   })
 

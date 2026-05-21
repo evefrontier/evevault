@@ -277,15 +277,9 @@ export function setupAuthStoreMocks(
   })
 }
 
-export const MOCK_ID_TOKEN_CLAIMS = {
-  sub: 'user-1',
-  iat: 1000,
-  exp: 4600,
-} as const
-
 export function makeTokenResponse(): OAuthTokenResponse {
   return {
-    id_token: makeJwt(MOCK_ID_TOKEN_CLAIMS),
+    id_token: makeJwt({ sub: 'user-1', iat: 1000, exp: 4600 }),
     access_token: 'access-token',
     token_type: 'Bearer',
     scope: 'openid',

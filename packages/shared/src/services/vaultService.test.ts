@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Use string literal to avoid importing @mysten/wallet-standard
 const SUI_DEVNET_CHAIN = 'sui:devnet' as const
@@ -79,7 +79,7 @@ import { ephKeyService, zkProofService } from './vaultService'
 import { webVaultService } from './webVaultService'
 
 describe('ephKeyService routing', () => {
-  beforeEach(() => {
+  afterEach(() => {
     vi.clearAllMocks()
   })
 
@@ -285,7 +285,7 @@ describe('ephKeyService routing', () => {
 })
 
 describe('zkProofService routing', () => {
-  beforeEach(() => {
+  afterEach(() => {
     vi.clearAllMocks()
   })
 

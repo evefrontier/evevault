@@ -106,7 +106,6 @@ describe('authStore.initialize() (extension path)', () => {
   let originalChrome: unknown
 
   beforeEach(() => {
-    vi.clearAllMocks()
     setupAuthStoreMocks(h, { isExtension: true, tenantId: 'default' })
     h.mockDecodeJwt.mockReturnValue({
       sub: 'user-1',
@@ -124,6 +123,7 @@ describe('authStore.initialize() (extension path)', () => {
   })
 
   afterEach(() => {
+    vi.clearAllMocks()
     ;(globalThis as unknown as { chrome: unknown }).chrome = originalChrome
   })
 

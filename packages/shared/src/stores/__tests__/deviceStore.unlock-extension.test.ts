@@ -29,7 +29,6 @@ import { useDeviceStore } from '#/stores/deviceStore'
 
 describe('deviceStore.unlock (extension path, isWeb false)', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     useDeviceStore.setState({
       isLocked: true,
       ephemeralPublicKey: null,
@@ -43,7 +42,7 @@ describe('deviceStore.unlock (extension path, isWeb false)', () => {
   })
 
   afterEach(() => {
-    vi.restoreAllMocks()
+    vi.clearAllMocks()
   })
 
   it('sets error when no stored secret key', async () => {

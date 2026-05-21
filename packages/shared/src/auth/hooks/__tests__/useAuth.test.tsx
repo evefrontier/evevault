@@ -1,5 +1,5 @@
 import { renderHook } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const {
   mockLogin,
@@ -25,7 +25,6 @@ import { useAuth } from '#/auth/hooks/useAuth'
 
 describe('useAuth', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
     mockUseAuthStore.mockReturnValue({
       user: null,
       loading: false,
@@ -36,6 +35,10 @@ describe('useAuth', () => {
       setUser: mockSetUser,
       initialize: mockInitialize,
     })
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
   })
 
   it('sets isAuthenticated to true when user is non-null', () => {

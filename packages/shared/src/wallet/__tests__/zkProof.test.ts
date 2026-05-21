@@ -43,11 +43,11 @@ describe('fetchZkProof', () => {
   }
 
   beforeEach(() => {
-    vi.clearAllMocks()
     mockGetExtendedEphemeralPublicKey.mockReturnValue('extended-public-key')
   })
 
   afterEach(() => {
+    vi.clearAllMocks()
     vi.unstubAllGlobals()
   })
 

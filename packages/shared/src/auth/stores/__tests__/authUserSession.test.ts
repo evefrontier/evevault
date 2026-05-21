@@ -36,11 +36,10 @@ import {
 } from '#/auth/stores/authUserSession'
 import { makeJwt } from '#/testing'
 import type { JwtResponse, OAuthTokenResponse } from '#/types/authTypes'
-import { MOCK_ID_TOKEN_CLAIMS } from './authStoreTestMocks'
 
 function makeJwtResponse(overrides: Partial<JwtResponse> = {}): JwtResponse {
   return {
-    id_token: makeJwt(MOCK_ID_TOKEN_CLAIMS),
+    id_token: makeJwt({ sub: 'user-1', iat: 1000, exp: 4600 }),
     access_token: 'access-token',
     token_type: 'Bearer',
     scope: 'openid',
@@ -57,7 +56,7 @@ describe('Build user from JWT', () => {
     h.mockStoreUser.mockResolvedValue(undefined)
     h.mockEnrichUser.mockImplementation(async (user: unknown) => user)
     h.mockSyncPrimaryJwt.mockResolvedValue(undefined)
-    h.mockDecodeJwt.mockReturnValue(MOCK_ID_TOKEN_CLAIMS)
+    h.mockDecodeJwt.mockReturnValue({ sub: 'user-1', iat: 1000, exp: 4600 })
     h.mockUserToJwtResponse.mockReturnValue(makeJwtResponse())
     h.mockResolveExpiresAt.mockReturnValue(4600)
     mockUserManager = { storeUser: h.mockStoreUser }

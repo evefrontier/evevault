@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const { mockCopyToClipboard, mockShowToast } = vi.hoisted(() => ({
   mockCopyToClipboard: vi.fn(),
@@ -17,7 +17,7 @@ vi.mock('#/components/Toast', () => ({
 import { useCopyToClipboard } from '#/hooks/useCopyToClipboard'
 
 describe('useCopyToClipboard', () => {
-  beforeEach(() => {
+  afterEach(() => {
     vi.clearAllMocks()
   })
 
