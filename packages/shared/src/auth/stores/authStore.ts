@@ -51,10 +51,48 @@ export const useAuthStore = create<AuthState>()(
                 ? await initializeExtensionSession(
                     getUserManagerInstance,
                     network,
+<<<<<<< complexity
                   )
                 : await initializeWebSession(getUserManagerInstance, network);
 
             set({ user, loading: false });
+=======
+                  },
+                );
+                set({ user: null, loading: false });
+                return;
+              }
+              try {
+                webUser = await webUserManager.signinSilent();
+
+                if (webUser != null) {
+                  webUser = await enrichUserWithZkLoginIfNeeded(
+                    new User(webUser),
+                    getEnokiApiKey,
+                  );
+                  await getUserManagerInstance().storeUser(webUser);
+                  await syncPrimaryJwtFromUser(webUser);
+                  set({ user: webUser, loading: false });
+                  return;
+                } else {
+                  set({ user: null, loading: false });
+                  return;
+                }
+              } catch (silentErr) {
+                log.warn("Web init: silent renew failed, not logged in", {
+                  network,
+                  error:
+                    silentErr instanceof Error
+                      ? silentErr.message
+                      : String(silentErr),
+                });
+                set({ user: null, loading: false });
+                return;
+              }
+            }
+
+            set({ user: webUser ?? null, loading: false });
+>>>>>>> main
           } catch (error) {
             log.error("Error initializing auth", error);
             set({
