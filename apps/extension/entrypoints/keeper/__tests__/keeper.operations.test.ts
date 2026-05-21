@@ -19,16 +19,23 @@ import {
   TEST_PIN,
 } from "./keeperTestUtils";
 
-const { mockEncryptWithKey, mockSignWithIntent } = vi.hoisted(() => ({
-  mockEncryptWithKey: vi.fn(),
-  mockSignWithIntent: vi.fn(),
-}));
+const { mockEncrypt, mockEncryptWithKey, mockSignWithIntent } = vi.hoisted(
+  () => ({
+    mockEncrypt: vi.fn(),
+    mockEncryptWithKey: vi.fn(),
+    mockSignWithIntent: vi.fn(),
+  }),
+);
 
-// Mock only the exports that need per-test control. Everything else e.g.
-// UNLOCK_VAULT / CLEAR_EPHKEY / etc. uses real crypto.
+// Mock only the exports that need per-test control. Everything else uses real
+// crypto.
 vi.mock("@evevault/shared", async (importActual) => {
   const actual = await importActual<typeof import("@evevault/shared")>();
-  return { ...actual, encryptWithKey: mockEncryptWithKey };
+  return {
+    ...actual,
+    encrypt: mockEncrypt,
+    encryptWithKey: mockEncryptWithKey,
+  };
 });
 
 vi.mock("@evevault/shared/wallet", () => ({
@@ -40,6 +47,32 @@ vi.mock("@evevault/shared/wallet", () => ({
 const ctx = createKeeperTestContext();
 const { dispatch, rawDispatch, unlockVault } = ctx;
 setupKeeperSuite(ctx);
+
+beforeEach(async () => {
+  const actual =
+    await vi.importActual<typeof import("@evevault/shared")>(
+      "@evevault/shared",
+    );
+  mockEncrypt.mockImplementation(actual.encrypt);
+});
+
+// ── CREATE_KEYPAIR rollback ──────────────────────────────────────────────────
+
+describe("Keeper CREATE_KEYPAIR rollback", () => {
+  it("leaves the vault locked when key encryption fails", async () => {
+    mockEncrypt.mockRejectedValueOnce(new Error("encrypt failed"));
+
+    const resp = await dispatch({
+      type: KeeperMessageTypes.CREATE_KEYPAIR,
+      pin: TEST_PIN,
+    });
+    expect(resp.ok).toBe(false);
+    expect(resp.error).toBe("encrypt failed");
+
+    const pubResp = await dispatch({ type: KeeperMessageTypes.GET_PUBLIC_KEY });
+    expect(pubResp.error).toBe("LOCKED");
+  });
+});
 
 // ── ROTATE_KEYPAIR ────────────────────────────────────────────────────────────
 
@@ -77,7 +110,6 @@ describe("Keeper ROTATE_KEYPAIR handler", () => {
     expect(newAddress).not.toBe(
       Buffer.from(original.getPublicKey().toRawBytes()).toString("hex"),
     );
-    expect(newAddress).not.toBe(originalAddress);
   });
 
   it("only swaps the in-memory key after encryption succeeds", async () => {
@@ -233,6 +265,21 @@ describe("Keeper zkProof handlers", () => {
     );
   });
 
+  it("SET_ZKPROOF rejects after the unlock window elapses", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(Date.now() + 11 * 60 * 1000);
+
+    const resp = await dispatch({
+      type: KeeperMessageTypes.SET_ZKPROOF,
+      chain: SUI_TESTNET_CHAIN,
+      zkProof: proof,
+    });
+
+    expect(resp.error).toBe(
+      "[KEEPER_SET_ZKPROOF] No ephemeral key found, vault LOCKED",
+    );
+  });
+
   it("SET_ZKPROOF rejects when chain is missing", async () => {
     const resp = await dispatch({
       type: KeeperMessageTypes.SET_ZKPROOF,
@@ -267,6 +314,24 @@ describe("Keeper zkProof handlers", () => {
 
   it("GET_ZKPROOF rejects when the vault is locked", async () => {
     await dispatch({ type: KeeperMessageTypes.CLEAR_EPHKEY });
+
+    const resp = await dispatch({
+      type: KeeperMessageTypes.GET_ZKPROOF,
+      chain: SUI_TESTNET_CHAIN as SuiChain,
+    });
+
+    expect(resp.error).toBe("LOCKED");
+  });
+
+  it("GET_ZKPROOF rejects after the unlock window elapses", async () => {
+    await dispatch({
+      type: KeeperMessageTypes.SET_ZKPROOF,
+      chain: SUI_TESTNET_CHAIN as SuiChain,
+      zkProof: proof,
+    });
+
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(Date.now() + 11 * 60 * 1000);
 
     const resp = await dispatch({
       type: KeeperMessageTypes.GET_ZKPROOF,
@@ -401,6 +466,59 @@ describe("Keeper LOCALNET_SET_KEYPAIR handler", () => {
     expect(resp.error).toBe("Vault must be unlocked to store localnet key");
   });
 
+  it("after expiry, LOCALNET_SET_KEYPAIR fails until vault is unlocked again", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(Date.now() + 11 * 60 * 1000);
+
+    const resp = await dispatch({
+      type: KeeperMessageTypes.LOCALNET_SET_KEYPAIR,
+      privateKey: Ed25519Keypair.generate().getSecretKey(),
+    });
+
+    expect(resp.ok).toBe(false);
+    expect(resp.error).toBe("Vault must be unlocked to store localnet key");
+  });
+
+  it("after expiry, LOCALNET_GET_ADDRESS clears and hides a loaded key", async () => {
+    const keypair = Ed25519Keypair.generate();
+    await dispatch({
+      type: KeeperMessageTypes.LOCALNET_SET_KEYPAIR,
+      privateKey: keypair.getSecretKey(),
+    });
+
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(Date.now() + 11 * 60 * 1000);
+
+    const resp = await dispatch({
+      type: KeeperMessageTypes.LOCALNET_GET_ADDRESS,
+    });
+
+    expect(resp.ok).toBe(true);
+    expect(resp.address).toBeNull();
+  });
+
+  it("after expiry, LOCALNET_SIGN rejects a loaded key", async () => {
+    const keypair = Ed25519Keypair.generate();
+    await dispatch({
+      type: KeeperMessageTypes.LOCALNET_SET_KEYPAIR,
+      privateKey: keypair.getSecretKey(),
+    });
+
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(Date.now() + 11 * 60 * 1000);
+
+    const resp = await dispatch({
+      type: KeeperMessageTypes.LOCALNET_SIGN,
+      msgBytes: [1],
+      scope: "TransactionData",
+      suiAddress: keypair.getPublicKey().toSuiAddress(),
+    });
+
+    expect(resp.ok).toBe(false);
+    expect(resp.error).toBe("No localnet keypair loaded");
+    expect(mockSignWithIntent).not.toHaveBeenCalled();
+  });
+
   it("returns error when privateKey is missing", async () => {
     const resp = await dispatch({
       type: KeeperMessageTypes.LOCALNET_SET_KEYPAIR,
@@ -506,15 +624,11 @@ describe("Keeper UNLOCK_VAULT — localnet key restoration", () => {
     });
 
     // The ephemeral key unlock itself may fail (wrong PIN), but localnet key should be null
-    if (resp.ok) {
-      const addrResp = await dispatch({
-        type: KeeperMessageTypes.LOCALNET_GET_ADDRESS,
-      });
-      expect(addrResp.address).toBeNull();
-    } else {
-      // Unlock failed entirely — acceptable, key definitely not set
-      expect(resp.ok).toBe(false);
-    }
+    expect(resp.ok).toBe(true);
+    const addrResp = await dispatch({
+      type: KeeperMessageTypes.LOCALNET_GET_ADDRESS,
+    });
+    expect(addrResp.address).toBeNull();
   });
 
   it("ignores a plain string (old unencrypted format) — no 'data' property", async () => {

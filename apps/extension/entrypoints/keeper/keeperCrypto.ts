@@ -19,14 +19,22 @@ function saltBytesFrom(hashedSecretKey: HashedData): Uint8Array {
   return Uint8Array.from(atob(hashedSecretKey.salt), (c) => c.charCodeAt(0));
 }
 
+async function deriveSessionKey(
+  pin: string,
+  hashedSecretKey: HashedData,
+): Promise<{ derivedKey: CryptoKey; salt: string }> {
+  const derivedKey = await deriveAesKey(pin, saltBytesFrom(hashedSecretKey), [
+    "encrypt",
+  ]);
+  return { derivedKey, salt: hashedSecretKey.salt };
+}
+
 export async function cacheSessionKey(
   pin: string,
   hashedSecretKey: HashedData,
 ): Promise<void> {
-  const derivedKey = await deriveAesKey(pin, saltBytesFrom(hashedSecretKey), [
-    "encrypt",
-  ]);
-  setSessionKey(derivedKey, hashedSecretKey.salt);
+  const sessionKey = await deriveSessionKey(pin, hashedSecretKey);
+  setSessionKey(sessionKey.derivedKey, sessionKey.salt);
 }
 
 export async function restoreLocalnetKeyIfPresent(
@@ -70,8 +78,11 @@ export async function restoreUnlockedVault(
   hashedSecretKey: HashedData,
   pin: string,
 ): Promise<void> {
-  // Keep these operations together so unlock state and rotation state match.
-  unlockVaultWithKeypair(Ed25519Keypair.fromSecretKey(secretKey));
-  await cacheSessionKey(pin, hashedSecretKey);
+  const keypair = Ed25519Keypair.fromSecretKey(secretKey);
+  const sessionKey = await deriveSessionKey(pin, hashedSecretKey);
+
+  // Commit unlock state only after all required crypto setup has succeeded.
+  setSessionKey(sessionKey.derivedKey, sessionKey.salt);
+  unlockVaultWithKeypair(keypair);
   await restoreLocalnetKeyIfPresent(message, pin);
 }
