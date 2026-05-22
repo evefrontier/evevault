@@ -34,9 +34,9 @@ const mockProcessSignature = vi.fn()
 vi.mock('@evefrontier/wallet-core/crypto', () => {
   return {
     isPartialZKLoginSignature: vi.fn(() => true),
-    ZKProofHandler: function MockZKProofHandler() {
-      this.applyZKProof = mockApplyZKProof
-      this.processSignature = mockProcessSignature
+    ZKProofHandler: class {
+      applyZKProof = mockApplyZKProof
+      processSignature = mockProcessSignature
     },
   }
 })
@@ -154,7 +154,7 @@ describe('zkSignAny success path', () => {
         user: userNoSalt,
         getZkProof: vi.fn().mockResolvedValue({ data: validProofData }),
       }),
-    ).rejects.toThrow('Missing required zkLogin profile fields: salt')
+    ).rejects.toThrow('Missing required zkLogin profile field: salt')
   })
 
   it('throws when sub and aud are missing from user profile', async () => {
@@ -167,6 +167,6 @@ describe('zkSignAny success path', () => {
         user: userNoSubAud,
         getZkProof: vi.fn().mockResolvedValue({ data: validProofData }),
       }),
-    ).rejects.toThrow('Missing required zkLogin profile fields: sub, aud')
+    ).rejects.toThrow('Missing required zkLogin profile field: sub')
   })
 })

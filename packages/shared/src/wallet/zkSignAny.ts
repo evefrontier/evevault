@@ -107,11 +107,17 @@ export const zkSignAny = async (
   const salt = user.profile?.salt
   const sub = user.profile?.sub
   const aud = user.profile?.aud
-  if (!salt || !sub || !aud) {
-    const missing = [!salt && 'salt', !sub && 'sub', !aud && 'aud']
-      .filter(Boolean)
-      .join(', ')
-    throw new Error(`Missing required zkLogin profile fields: ${missing}`)
+
+  if (typeof salt !== 'string' || salt.trim() === '') {
+    throw new Error('Missing required zkLogin profile field: salt')
+  }
+
+  if (typeof sub !== 'string' || sub.trim() === '') {
+    throw new Error('Missing required zkLogin profile field: sub')
+  }
+
+  if (typeof aud !== 'string' || aud.trim() === '') {
+    throw new Error('Missing required zkLogin profile field: aud')
   }
 
   log.info('Combining proof and signature to create zkLogin signature')
