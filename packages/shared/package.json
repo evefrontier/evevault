@@ -97,6 +97,7 @@
     "test:coverage": "vitest run --config ./vitest.config.mts --coverage"
   },
   "dependencies": {
+    "@evefrontier/wallet-core": "file:../../../wallet-core/evefrontier-wallet-core-0.0.1.tgz",
     "@mysten/signers": "^0.6.2"
   },
   "peerDependencies": {

@@ -110,4 +110,4 @@ const localnetSign = async (
 }
 
 export type { LocalnetState }
-export { localnetSetKeypair, localnetGetAddress, localnetSign }
+export { localnetGetAddress, localnetSetKeypair, localnetSign }

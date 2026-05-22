@@ -3,7 +3,6 @@ import type {
   Ed25519Keypair,
   Ed25519PublicKey,
 } from '@mysten/sui/keypairs/ed25519'
-import type { getZkLoginSignature } from '@mysten/sui/zklogin'
 import type { User } from 'oidc-client-ts'
 import type { ZkProofResponse } from './enoki'
 import type { StoredSecretKey } from './stores'
@@ -19,11 +18,6 @@ export const createWebCryptoPlaceholder = (): StoredSecretKey => ({
   data: WEB_CRYPTO_PLACEHOLDER_DATA,
   salt: WEB_CRYPTO_PLACEHOLDER_SALT,
 })
-
-export type PartialZkLoginSignature = Omit<
-  Parameters<typeof getZkLoginSignature>[0]['inputs'],
-  'addressSeed'
->
 
 export interface ZkSignAnyParams {
   user: User
