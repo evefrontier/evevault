@@ -97,11 +97,11 @@
     "test:coverage": "vitest run --config ./vitest.config.mts --coverage"
   },
   "dependencies": {
-    "@mysten/signers": "^0.6.2"
+    "@mysten/signers": "^1.0.5"
   },
   "peerDependencies": {
-    "@mysten/sui": "^2.16.2",
-    "@mysten/wallet-standard": "^0.16.14",
+    "@mysten/sui": "^2.17.0",
+    "@mysten/wallet-standard": "^0.20.3",
     "@tanstack/react-query": "^5.96.2",
     "@tanstack/react-router": "^1.135.2",
     "@types/react": "^19.1.9",
