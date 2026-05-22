@@ -104,15 +104,25 @@ export const zkSignAny = async (
     throw new Error('ZK proof data not found or invalid')
   }
 
+  const salt = user.profile?.salt
+  const sub = user.profile?.sub
+  const aud = user.profile?.aud
+  if (!salt || !sub || !aud) {
+    const missing = [!salt && 'salt', !sub && 'sub', !aud && 'aud']
+      .filter(Boolean)
+      .join(', ')
+    throw new Error(`Missing required zkLogin profile fields: ${missing}`)
+  }
+
   log.info('Combining proof and signature to create zkLogin signature')
 
   const zkProofHandler = new ZKProofHandler()
   zkProofHandler.applyZKProof({
     maxEpoch: parseInt(maxEpoch, 10),
     partialZkLoginSignature: zkProof.data,
-    userSalt: user.profile?.salt as string,
-    tokenClaimSub: user.profile?.sub as string,
-    tokenClaimAud: user.profile?.aud as string,
+    userSalt: salt,
+    tokenClaimSub: sub,
+    tokenClaimAud: aud,
   })
   const { signature: zkSignature } = zkProofHandler.processSignature({
     signature: userSignature,
