@@ -1,3 +1,10 @@
+import {
+  EVEFRONTIER_SPONSORED_TRANSACTION,
+  type EveVaultWalletFeatures,
+  type SponsoredTransactionInput,
+  type SponsoredTransactionMethod,
+  type SponsoredTransactionOutput,
+} from '@evefrontier/wallet-core/wallet-standard-extensions'
 import { WalletStandardMessageTypes } from '@evevault/shared'
 import { getZkLoginAddress } from '@evevault/shared/auth'
 import { createLogger } from '@evevault/shared/utils'
@@ -31,14 +38,7 @@ import {
   SuiSignPersonalMessage,
   SuiSignTransaction,
 } from '@mysten/wallet-standard'
-import type {
-  EveFrontierSponsoredTransactionInput,
-  EveFrontierSponsoredTransactionMethod,
-  EveFrontierSponsoredTransactionOutput,
-  EveVaultWalletFeatures,
-  WalletEventListener,
-} from '@/lib/background/types'
-import { EVEFRONTIER_SPONSORED_TRANSACTION } from '@/lib/background/types'
+import type { WalletEventListener } from '@/lib/background/types'
 import { trySettle } from '@/lib/util/timeoutGuard'
 
 const log = createLogger()
@@ -487,70 +487,66 @@ export class EveVaultWallet implements Wallet {
     )
   }
 
-  #signEveFrontierSponsoredTransaction: EveFrontierSponsoredTransactionMethod =
-    async (input: EveFrontierSponsoredTransactionInput) => {
-      return new Promise<EveFrontierSponsoredTransactionOutput>(
-        (resolve, reject) => {
-          const id = crypto.randomUUID()
-          const state = { settled: false }
+  #signEveFrontierSponsoredTransaction: SponsoredTransactionMethod = async (
+    input: SponsoredTransactionInput,
+  ) => {
+    return new Promise<SponsoredTransactionOutput>((resolve, reject) => {
+      const id = crypto.randomUUID()
+      const state = { settled: false }
 
-          const onMsg = async (e: MessageEvent) => {
-            const m = e.data || {}
+      const onMsg = async (e: MessageEvent) => {
+        const m = e.data || {}
 
-            if (m.__from !== 'Eve Vault' || m.id !== id) return
-            log.debug('[SuiWallet] #signSponsoredTransaction message', m)
+        if (m.__from !== 'Eve Vault' || m.id !== id) return
+        log.debug('[SuiWallet] #signSponsoredTransaction message', m)
 
-            if (m.type === 'sign_success') {
-              if (trySettle(state, onMsg, timeoutId)) {
-                resolve({
-                  digest: m.digest,
-                  effects: m.effects,
-                })
-              }
-            } else if (m.type === 'sign_sponsored_transaction_error') {
-              if (trySettle(state, onMsg, timeoutId)) {
-                reject(new Error(m.error))
-              }
-            }
+        if (m.type === 'sign_success') {
+          if (trySettle(state, onMsg, timeoutId)) {
+            resolve({
+              digest: m.digest,
+              effects: m.effects,
+            })
           }
+        } else if (m.type === 'sign_sponsored_transaction_error') {
+          if (trySettle(state, onMsg, timeoutId)) {
+            reject(new Error(m.error))
+          }
+        }
+      }
 
-          window.addEventListener('message', onMsg)
-          const timeoutId = setTimeout(() => {
-            if (trySettle(state, onMsg)) {
-              reject(new Error('Sponsored transaction timed out'))
-            }
-          }, APPROVAL_TIMEOUT_MS)
-          log.debug(
-            '[SuiWallet] #signEveFrontierSponsoredTransaction input',
-            input,
-          )
+      window.addEventListener('message', onMsg)
+      const timeoutId = setTimeout(() => {
+        if (trySettle(state, onMsg)) {
+          reject(new Error('Sponsored transaction timed out'))
+        }
+      }, APPROVAL_TIMEOUT_MS)
+      log.debug('[SuiWallet] #signEveFrontierSponsoredTransaction input', input)
 
-          // Check if metadata is truthy
-          const hasMetadata =
-            input.metadata &&
-            (input.metadata.name != null ||
-              input.metadata.description != null ||
-              input.metadata.url != null)
+      // Check if metadata is truthy
+      const hasMetadata =
+        input.metadata &&
+        (input.metadata.name != null ||
+          input.metadata.description != null ||
+          input.metadata.url != null)
 
-          window.postMessage({
-            __to: 'Eve Vault',
-            id,
-            action:
-              WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION,
-            message: {
-              action: input.txAction,
-              assembly: input.assembly,
-              assemblyType: input.assemblyType,
-              ...(hasMetadata && {
-                metadata: {
-                  name: input.metadata?.name,
-                  description: input.metadata?.description,
-                  url: input.metadata?.url,
-                },
-              }),
+      window.postMessage({
+        __to: 'Eve Vault',
+        id,
+        action:
+          WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION,
+        message: {
+          action: input.txAction,
+          assembly: input.assembly,
+          assemblyType: input.assemblyType,
+          ...(hasMetadata && {
+            metadata: {
+              name: input.metadata?.name,
+              description: input.metadata?.description,
+              url: input.metadata?.url,
             },
-          })
+          }),
         },
-      )
-    }
+      })
+    })
+  }
 }
