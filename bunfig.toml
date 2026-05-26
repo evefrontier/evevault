@@ -4,3 +4,4 @@ minimumReleaseAge = 129600
 
 [install.scopes]
 "@evefrontier" = { url = "https://npm.pkg.github.com/", token = "$GITHUB_TOKEN" }
+

@@ -17,6 +17,7 @@ jobs:
     environment: build
     permissions:
       contents: read
+      packages: read
     env:
       VITE_TENANT_STILLNESS_CLIENT_SECRET: ${{ secrets.VITE_TENANT_STILLNESS_CLIENT_SECRET }}
       VITE_TENANT_UTOPIA_CLIENT_SECRET: ${{ secrets.VITE_TENANT_UTOPIA_CLIENT_SECRET }}
