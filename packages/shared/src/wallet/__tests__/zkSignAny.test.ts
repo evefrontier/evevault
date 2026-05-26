@@ -96,6 +96,15 @@ const earlyGuardTests = () => {
     ).rejects.toThrow('Ephemeral key pair not found')
   })
 
+  it('throws when getZkProof returns null', async () => {
+    await expect(
+      zkSignAny('PersonalMessage', new Uint8Array([1]), {
+        user: minimalUser,
+        getZkProof: vi.fn().mockResolvedValue(null),
+      }),
+    ).rejects.toThrow('Failed to get ZK proof')
+  })
+
   it('throws when getZkProof rejects', async () => {
     await expect(
       zkSignAny('PersonalMessage', new Uint8Array([1]), {
