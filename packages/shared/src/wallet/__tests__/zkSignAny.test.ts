@@ -72,9 +72,90 @@ const makeDeviceState = (
     ...overrides,
   }) as unknown as DeviceState
 
+/** Guards that fire before the isWeb() branch — verified in both path contexts. */
+const earlyGuardTests = () => {
+  it('throws when user is null', async () => {
+    await expect(
+      zkSignAny('PersonalMessage', new Uint8Array([1]), {
+        user: null,
+        getZkProof: vi.fn(),
+      }),
+    ).rejects.toThrow('User not found')
+  })
+
+  it('throws when ephemeralPublicKey is null', async () => {
+    vi.mocked(useDeviceStore.getState).mockReturnValue(
+      makeDeviceState({ ephemeralPublicKey: null }),
+    )
+
+    await expect(
+      zkSignAny('PersonalMessage', new Uint8Array([1]), {
+        user: minimalUser,
+        getZkProof: vi.fn(),
+      }),
+    ).rejects.toThrow('Ephemeral key pair not found')
+  })
+
+  it('throws when getZkProof rejects', async () => {
+    await expect(
+      zkSignAny('PersonalMessage', new Uint8Array([1]), {
+        user: minimalUser,
+        getZkProof: vi.fn().mockRejectedValue(new Error('network error')),
+      }),
+    ).rejects.toThrow('network error')
+  })
+
+  it('throws with string error message from getZkProof', async () => {
+    await expect(
+      zkSignAny('PersonalMessage', new Uint8Array([1]), {
+        user: minimalUser,
+        getZkProof: vi
+          .fn()
+          .mockResolvedValue({ error: 'proof generation failed' }),
+      }),
+    ).rejects.toThrow('proof generation failed')
+  })
+
+  it('throws with error object message from getZkProof', async () => {
+    await expect(
+      zkSignAny('PersonalMessage', new Uint8Array([1]), {
+        user: minimalUser,
+        getZkProof: vi
+          .fn()
+          .mockResolvedValue({ error: { message: 'upstream failure' } }),
+      }),
+    ).rejects.toThrow('upstream failure')
+  })
+
+  it('throws when maxEpoch is null', async () => {
+    vi.mocked(useDeviceStore.getState).mockReturnValue(
+      makeDeviceState({ getMaxEpoch: () => null }),
+    )
+
+    await expect(
+      zkSignAny('PersonalMessage', new Uint8Array([1]), {
+        user: minimalUser,
+        getZkProof: vi.fn().mockResolvedValue({ data: validProofData }),
+      }),
+    ).rejects.toThrow('Max epoch is not set')
+  })
+
+  it('throws when maxEpoch is an empty string', async () => {
+    vi.mocked(useDeviceStore.getState).mockReturnValue(
+      makeDeviceState({ getMaxEpoch: () => '' }),
+    )
+
+    await expect(
+      zkSignAny('PersonalMessage', new Uint8Array([1]), {
+        user: minimalUser,
+        getZkProof: vi.fn().mockResolvedValue({ data: validProofData }),
+      }),
+    ).rejects.toThrow('Max epoch is not set')
+  })
+}
+
 describe('zkSignAny', () => {
   beforeEach(() => {
-    vi.mocked(isWeb).mockReturnValue(true)
     vi.mocked(useDeviceStore.getState).mockReturnValue(makeDeviceState())
     vi.mocked(useContextStore.getState).mockReturnValue({
       chain: 'sui:testnet',
@@ -94,88 +175,13 @@ describe('zkSignAny', () => {
     vi.clearAllMocks()
   })
 
-  describe('early guards', () => {
-    it('throws when user is null', async () => {
-      await expect(
-        zkSignAny('PersonalMessage', new Uint8Array([1]), {
-          user: null,
-          getZkProof: vi.fn(),
-        }),
-      ).rejects.toThrow('User not found')
-    })
-
-    it('throws when ephemeralPublicKey is null', async () => {
-      vi.mocked(useDeviceStore.getState).mockReturnValue(
-        makeDeviceState({ ephemeralPublicKey: null }),
-      )
-
-      await expect(
-        zkSignAny('PersonalMessage', new Uint8Array([1]), {
-          user: minimalUser,
-          getZkProof: vi.fn(),
-        }),
-      ).rejects.toThrow('Ephemeral key pair not found')
-    })
-
-    it('throws when getZkProof rejects', async () => {
-      await expect(
-        zkSignAny('PersonalMessage', new Uint8Array([1]), {
-          user: minimalUser,
-          getZkProof: vi.fn().mockRejectedValue(new Error('network error')),
-        }),
-      ).rejects.toThrow('network error')
-    })
-
-    it('throws with string error message from getZkProof', async () => {
-      await expect(
-        zkSignAny('PersonalMessage', new Uint8Array([1]), {
-          user: minimalUser,
-          getZkProof: vi
-            .fn()
-            .mockResolvedValue({ error: 'proof generation failed' }),
-        }),
-      ).rejects.toThrow('proof generation failed')
-    })
-
-    it('throws with error object message from getZkProof', async () => {
-      await expect(
-        zkSignAny('PersonalMessage', new Uint8Array([1]), {
-          user: minimalUser,
-          getZkProof: vi
-            .fn()
-            .mockResolvedValue({ error: { message: 'upstream failure' } }),
-        }),
-      ).rejects.toThrow('upstream failure')
-    })
-
-    it('throws when maxEpoch is null', async () => {
-      vi.mocked(useDeviceStore.getState).mockReturnValue(
-        makeDeviceState({ getMaxEpoch: () => null }),
-      )
-
-      await expect(
-        zkSignAny('PersonalMessage', new Uint8Array([1]), {
-          user: minimalUser,
-          getZkProof: vi.fn().mockResolvedValue({ data: validProofData }),
-        }),
-      ).rejects.toThrow('Max epoch is not set')
-    })
-
-    it('throws when maxEpoch is an empty string', async () => {
-      vi.mocked(useDeviceStore.getState).mockReturnValue(
-        makeDeviceState({ getMaxEpoch: () => '' }),
-      )
-
-      await expect(
-        zkSignAny('PersonalMessage', new Uint8Array([1]), {
-          user: minimalUser,
-          getZkProof: vi.fn().mockResolvedValue({ data: validProofData }),
-        }),
-      ).rejects.toThrow('Max epoch is not set')
-    })
-  })
-
   describe('web path', () => {
+    beforeEach(() => {
+      vi.mocked(isWeb).mockReturnValue(true)
+    })
+
+    earlyGuardTests()
+
     it('returns zkSignature and bytes on success', async () => {
       const result = await zkSignAny('PersonalMessage', new Uint8Array([1]), {
         user: minimalUser,
@@ -292,6 +298,8 @@ describe('zkSignAny', () => {
         runtime: { sendMessage: mockSendMessage },
       })
     })
+
+    earlyGuardTests()
 
     it('returns zkSignature and bytes on success', async () => {
       mockSendMessage.mockResolvedValue({
