@@ -1,4 +1,4 @@
-import type { SponsoredTransactionMetadata } from '@evefrontier/dapp-kit/types'
+import type { SponsoredTransactionMetadata } from '@evefrontier/wallet-core/wallet-standard-extensions'
 import type { OAuthTokenResponse } from '@evevault/shared/types'
 import type {
   StandardEventsOnMethod,

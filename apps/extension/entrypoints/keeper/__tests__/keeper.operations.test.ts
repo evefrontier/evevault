@@ -86,7 +86,6 @@ describe('Keeper ROTATE_KEYPAIR handler', () => {
 
   it('generates a new keypair and encrypts it using the cached session key', async () => {
     const { keypair: original } = await unlockVault()
-    const originalAddress = original.getPublicKey().toSuiAddress()
 
     const rotateResp = await dispatch({
       type: KeeperMessageTypes.ROTATE_KEYPAIR,
