@@ -154,6 +154,68 @@ const earlyGuardTests = () => {
   })
 }
 
+/** Guards that fire after signing but before returning — verified in both path contexts. */
+const postSigningGuardTests = () => {
+  it('throws when zkProof has no data property', async () => {
+    await expect(
+      zkSignAny('PersonalMessage', new Uint8Array([1]), {
+        user: minimalUser,
+        getZkProof: vi.fn().mockResolvedValue({ someOtherField: 'x' }),
+      }),
+    ).rejects.toThrow('ZK proof data not found or invalid')
+  })
+
+  it('throws when zkProof.data fails isPartialZKLoginSignature check', async () => {
+    vi.mocked(isPartialZKLoginSignature).mockReturnValue(false)
+
+    await expect(
+      zkSignAny('PersonalMessage', new Uint8Array([1]), {
+        user: minimalUser,
+        getZkProof: vi.fn().mockResolvedValue({ data: { bad: 'data' } }),
+      }),
+    ).rejects.toThrow('ZK proof data not found or invalid')
+  })
+
+  it('throws when salt is missing from user profile', async () => {
+    const user = {
+      profile: { sui_address: '0xabc', sub: 'sub', aud: 'aud' },
+    } as unknown as User
+
+    await expect(
+      zkSignAny('PersonalMessage', new Uint8Array([1]), {
+        user,
+        getZkProof: vi.fn().mockResolvedValue({ data: validProofData }),
+      }),
+    ).rejects.toThrow('Missing required zkLogin profile field: salt')
+  })
+
+  it('throws when sub is missing from user profile', async () => {
+    const user = {
+      profile: { sui_address: '0xabc', salt: 'salt', aud: 'aud' },
+    } as unknown as User
+
+    await expect(
+      zkSignAny('PersonalMessage', new Uint8Array([1]), {
+        user,
+        getZkProof: vi.fn().mockResolvedValue({ data: validProofData }),
+      }),
+    ).rejects.toThrow('Missing required zkLogin profile field: sub')
+  })
+
+  it('throws when aud is missing from user profile', async () => {
+    const user = {
+      profile: { sui_address: '0xabc', salt: 'salt', sub: 'sub' },
+    } as unknown as User
+
+    await expect(
+      zkSignAny('PersonalMessage', new Uint8Array([1]), {
+        user,
+        getZkProof: vi.fn().mockResolvedValue({ data: validProofData }),
+      }),
+    ).rejects.toThrow('Missing required zkLogin profile field: aud')
+  })
+}
+
 describe('zkSignAny', () => {
   beforeEach(() => {
     vi.mocked(useDeviceStore.getState).mockReturnValue(makeDeviceState())
@@ -182,17 +244,8 @@ describe('zkSignAny', () => {
 
     earlyGuardTests()
 
-    it('returns zkSignature and bytes on success', async () => {
+    it('applies the ZK proof and returns the combined signature and bytes', async () => {
       const result = await zkSignAny('PersonalMessage', new Uint8Array([1]), {
-        user: minimalUser,
-        getZkProof: vi.fn().mockResolvedValue({ data: validProofData }),
-      })
-
-      expect(result).toEqual({ bytes: 'b64bytes', zkSignature: 'zkSig123' })
-    })
-
-    it('calls applyZKProof with correct inputs including parsed maxEpoch', async () => {
-      await zkSignAny('PersonalMessage', new Uint8Array([1]), {
         user: minimalUser,
         getZkProof: vi.fn().mockResolvedValue({ data: validProofData }),
       })
@@ -204,18 +257,11 @@ describe('zkSignAny', () => {
         tokenClaimSub: 'user-sub',
         tokenClaimAud: 'user-aud',
       })
-    })
-
-    it('calls processSignature with ephemeral signature and bytes', async () => {
-      await zkSignAny('PersonalMessage', new Uint8Array([1]), {
-        user: minimalUser,
-        getZkProof: vi.fn().mockResolvedValue({ data: validProofData }),
-      })
-
       expect(mockProcessSignature).toHaveBeenCalledWith({
         signature: 'ephSig',
         bytes: 'b64bytes',
       })
+      expect(result).toEqual({ bytes: 'b64bytes', zkSignature: 'zkSig123' })
     })
 
     it('throws when vault is locked (no signer)', async () => {
@@ -229,64 +275,7 @@ describe('zkSignAny', () => {
       ).rejects.toThrow('Vault is locked or no keypair exists')
     })
 
-    it('throws when zkProof has no data property', async () => {
-      await expect(
-        zkSignAny('PersonalMessage', new Uint8Array([1]), {
-          user: minimalUser,
-          getZkProof: vi.fn().mockResolvedValue({ someOtherField: 'x' }),
-        }),
-      ).rejects.toThrow('ZK proof data not found or invalid')
-    })
-
-    it('throws when zkProof.data fails isPartialZKLoginSignature check', async () => {
-      vi.mocked(isPartialZKLoginSignature).mockReturnValue(false)
-
-      await expect(
-        zkSignAny('PersonalMessage', new Uint8Array([1]), {
-          user: minimalUser,
-          getZkProof: vi.fn().mockResolvedValue({ data: { bad: 'data' } }),
-        }),
-      ).rejects.toThrow('ZK proof data not found or invalid')
-    })
-
-    it('throws when salt is missing from user profile', async () => {
-      const user = {
-        profile: { sui_address: '0xabc', sub: 'sub', aud: 'aud' },
-      } as unknown as User
-
-      await expect(
-        zkSignAny('PersonalMessage', new Uint8Array([1]), {
-          user,
-          getZkProof: vi.fn().mockResolvedValue({ data: validProofData }),
-        }),
-      ).rejects.toThrow('Missing required zkLogin profile field: salt')
-    })
-
-    it('throws when sub is missing from user profile', async () => {
-      const user = {
-        profile: { sui_address: '0xabc', salt: 'salt', aud: 'aud' },
-      } as unknown as User
-
-      await expect(
-        zkSignAny('PersonalMessage', new Uint8Array([1]), {
-          user,
-          getZkProof: vi.fn().mockResolvedValue({ data: validProofData }),
-        }),
-      ).rejects.toThrow('Missing required zkLogin profile field: sub')
-    })
-
-    it('throws when aud is missing from user profile', async () => {
-      const user = {
-        profile: { sui_address: '0xabc', salt: 'salt', sub: 'sub' },
-      } as unknown as User
-
-      await expect(
-        zkSignAny('PersonalMessage', new Uint8Array([1]), {
-          user,
-          getZkProof: vi.fn().mockResolvedValue({ data: validProofData }),
-        }),
-      ).rejects.toThrow('Missing required zkLogin profile field: aud')
-    })
+    postSigningGuardTests()
   })
 
   describe('extension path', () => {
@@ -297,11 +286,19 @@ describe('zkSignAny', () => {
       vi.stubGlobal('chrome', {
         runtime: { sendMessage: mockSendMessage },
       })
+      // Default happy-path response so post-signing guard tests can reach the validation code
+      mockSendMessage.mockResolvedValue({
+        ok: true,
+        bytes: 'extBytes',
+        userSignature: 'extSig',
+      })
     })
 
     earlyGuardTests()
 
-    it('returns zkSignature and bytes on success', async () => {
+    postSigningGuardTests()
+
+    it('applies the ZK proof and returns the combined signature and bytes', async () => {
       mockSendMessage.mockResolvedValue({
         ok: true,
         bytes: 'extBytes',
@@ -313,11 +310,18 @@ describe('zkSignAny', () => {
         getZkProof: vi.fn().mockResolvedValue({ data: validProofData }),
       })
 
-      expect(result).toEqual({ bytes: 'extBytes', zkSignature: 'zkSig123' })
+      expect(mockApplyZKProof).toHaveBeenCalledWith({
+        maxEpoch: 5,
+        partialZkLoginSignature: validProofData,
+        userSalt: 'user-salt',
+        tokenClaimSub: 'user-sub',
+        tokenClaimAud: 'user-aud',
+      })
       expect(mockProcessSignature).toHaveBeenCalledWith({
         signature: 'extSig',
         bytes: 'extBytes',
       })
+      expect(result).toEqual({ bytes: 'extBytes', zkSignature: 'zkSig123' })
     })
 
     it('throws when background script returns no response', async () => {
