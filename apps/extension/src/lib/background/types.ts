@@ -1,9 +1,8 @@
-import type { SponsoredTransactionMetadata } from '@evefrontier/dapp-kit/types'
+import type { SponsoredTransactionMetadata } from '@evefrontier/wallet-core/wallet-standard-extensions'
 import type { OAuthTokenResponse } from '@evevault/shared/types'
 import type {
   StandardEventsOnMethod,
   SuiSignAndExecuteTransactionOutput,
-  SuiWalletFeatures,
 } from '@mysten/wallet-standard'
 
 export type WalletActionMessage = BackgroundMessage & {
@@ -55,32 +54,6 @@ export type SignAndExecuteTransactionMessage =
     }
 
 /* EveFrontierSponsoredTransactions custom types */
-
-export const EVEFRONTIER_SPONSORED_TRANSACTION =
-  'evefrontier:sponsoredTransaction' as const
-
-export type EveFrontierSponsoredTransactionInput = {
-  txAction: string
-  assembly: string
-  assemblyType: string
-  metadata?: SponsoredTransactionMetadata
-}
-
-export type EveFrontierSponsoredTransactionOutput = {
-  digest: string
-  effects: string
-}
-
-export type EveFrontierSponsoredTransactionMethod = (
-  input: EveFrontierSponsoredTransactionInput,
-) => Promise<EveFrontierSponsoredTransactionOutput>
-
-export type EveVaultWalletFeatures = SuiWalletFeatures & {
-  [EVEFRONTIER_SPONSORED_TRANSACTION]: {
-    version: '1.0.1'
-    signSponsoredTransaction: EveFrontierSponsoredTransactionMethod
-  }
-}
 
 export type SponsoredTxReturn = {
   bcsDataB64Bytes: string

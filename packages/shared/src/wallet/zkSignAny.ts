@@ -1,10 +1,13 @@
+import {
+  isPartialZKLoginSignature,
+  ZKProofHandler,
+} from '@evefrontier/wallet-core/crypto'
 import type { IntentScope } from '@mysten/sui/cryptography'
-import { genAddressSeed, getZkLoginSignature } from '@mysten/sui/zklogin'
 import { ephKeyService } from '#/services/vaultService'
 import { useContextStore } from '#/stores/contextStore'
 import { useDeviceStore } from '#/stores/deviceStore'
 import { VaultMessageTypes } from '#/types/messages'
-import type { PartialZkLoginSignature, ZkSignAnyParams } from '#/types/wallet'
+import type { ZkSignAnyParams } from '#/types/wallet'
 import { isWeb } from '#/utils/environment'
 import { createLogger } from '#/utils/logger'
 import { signWithIntent } from './signWithIntent'
@@ -97,28 +100,39 @@ export const zkSignAny = async (
     throw new Error('User signature not found')
   }
 
-  const addressSeed = genAddressSeed(
-    BigInt(user.profile?.salt as string),
-    'sub',
-    user.profile?.sub as string,
-    user.profile?.aud as string,
-  ).toString()
-
-  if (!('data' in zkProof) || !zkProof.data) {
-    throw new Error('ZK proof data not found')
+  if (!('data' in zkProof) || !isPartialZKLoginSignature(zkProof.data)) {
+    throw new Error('ZK proof data not found or invalid')
   }
 
-  const partialZkLoginSignature = zkProof.data as PartialZkLoginSignature
+  const salt = user.profile?.salt
+  const sub = user.profile?.sub
+  const aud = user.profile?.aud
+
+  if (typeof salt !== 'string' || salt.trim() === '') {
+    throw new Error('Missing required zkLogin profile field: salt')
+  }
+
+  if (typeof sub !== 'string' || sub.trim() === '') {
+    throw new Error('Missing required zkLogin profile field: sub')
+  }
+
+  if (typeof aud !== 'string' || aud.trim() === '') {
+    throw new Error('Missing required zkLogin profile field: aud')
+  }
 
   log.info('Combining proof and signature to create zkLogin signature')
 
-  const zkSignature = getZkLoginSignature({
-    inputs: {
-      ...partialZkLoginSignature,
-      addressSeed,
-    },
-    maxEpoch,
-    userSignature,
+  const zkProofHandler = new ZKProofHandler()
+  zkProofHandler.applyZKProof({
+    maxEpoch: parseInt(maxEpoch, 10),
+    partialZkLoginSignature: zkProof.data,
+    userSalt: salt,
+    tokenClaimSub: sub,
+    tokenClaimAud: aud,
+  })
+  const { signature: zkSignature } = zkProofHandler.processSignature({
+    signature: userSignature,
+    bytes,
   })
 
   return { bytes, zkSignature }
