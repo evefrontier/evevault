@@ -31,10 +31,10 @@ jobs:
           bun-version-file: "package.json"
 
       - name: Install dependencies
-        timeout-minutes: 2
+        timeout-minutes: 5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: bun install --frozen-lockfile --ignore-scripts
+        run: bun install --frozen-lockfile --ignore-scripts --verbose
 
       - name: Prepare extension
         timeout-minutes: 1
