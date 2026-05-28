@@ -4,7 +4,21 @@ import { playwright } from '@vitest/browser-playwright'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { defineConfig } from 'vitest/config'
 
+const viteEnvDefine = {
+  'import.meta.env.MODE': JSON.stringify('test'),
+  'import.meta.env.VITE_LOG_LEVEL': JSON.stringify('warn'),
+}
+
+const inlineDappKit = {
+  server: {
+    deps: {
+      inline: ['@evefrontier/dapp-kit'],
+    },
+  },
+}
+
 export default defineConfig({
+  define: viteEnvDefine,
   plugins: [
     react(),
     tsconfigPaths({
@@ -42,6 +56,7 @@ export default defineConfig({
           environment: 'node',
           globals: true,
           setupFiles: ['../../vitest.setup.ts'],
+          ...inlineDappKit,
         },
       },
       {
@@ -57,6 +72,7 @@ export default defineConfig({
           environment: 'jsdom',
           globals: true,
           setupFiles: ['../../vitest.setup.ts'],
+          ...inlineDappKit,
         },
       },
       {
@@ -65,6 +81,7 @@ export default defineConfig({
           include: ['src/**/*.browser.test.{ts,tsx}'],
           globals: true,
           setupFiles: ['../../vitest.setup.ts'],
+          ...inlineDappKit,
           browser: {
             enabled: true,
             provider: playwright(),
