@@ -3,6 +3,10 @@ import tsconfigPaths from 'vite-tsconfig-paths'
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
+  define: {
+    'import.meta.env.MODE': JSON.stringify('test'),
+    'import.meta.env.VITE_LOG_LEVEL': JSON.stringify('warn'),
+  },
   plugins: [
     react(),
     tsconfigPaths({
@@ -14,6 +18,11 @@ export default defineConfig({
     environment: 'jsdom',
     include: ['src/**/*.test.{ts,tsx}', 'entrypoints/**/*.test.{ts,tsx}'],
     setupFiles: ['../../vitest.setup.ts'],
+    server: {
+      deps: {
+        inline: ['@evefrontier/dapp-kit'],
+      },
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json-summary', 'json'],
