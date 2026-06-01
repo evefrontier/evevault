@@ -1,9 +1,6 @@
 import { TenantId } from '@evefrontier/dapp-kit'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import {
-  getAuthRequest,
-  getAuthUrl,
-} from '@/lib/background/services/oauthService'
+import { getAuthRequest } from '@/lib/background/services/oauthService'
 
 const { getTenantConfigMock } = vi.hoisted(() => ({
   getTenantConfigMock: vi.fn(),
@@ -13,7 +10,7 @@ vi.mock('@evevault/shared', () => ({
   getTenantConfig: getTenantConfigMock,
 }))
 
-describe('getAuthUrl', () => {
+describe('getAuthRequest', () => {
   beforeEach(() => {
     getTenantConfigMock.mockReturnValue({
       clientId: 'test-client-id',
@@ -33,8 +30,8 @@ describe('getAuthUrl', () => {
     vi.clearAllMocks()
   })
 
-  it('includes nonce when provided', () => {
-    const authUrl = getAuthUrl({
+  it('builds a well-formed auth URL with nonce and PKCE', async () => {
+    const { authUrl, codeVerifier } = await getAuthRequest({
       tenantId: TenantId.STILLNESS,
       nonce: 'test-nonce',
     })
@@ -49,14 +46,6 @@ describe('getAuthUrl', () => {
       'openid profile email offline_access',
     )
     expect(authUrl.searchParams.get('nonce')).toBe('test-nonce')
-  })
-
-  it('adds PKCE parameters for extension auth requests', async () => {
-    const { authUrl, codeVerifier } = await getAuthRequest({
-      tenantId: TenantId.STILLNESS,
-      nonce: 'test-nonce',
-    })
-
     expect(codeVerifier).toMatch(/^[A-Za-z0-9_-]+$/)
     expect(authUrl.searchParams.get('code_challenge')).toMatch(
       /^[A-Za-z0-9_-]+$/,

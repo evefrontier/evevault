@@ -1,11 +1,6 @@
 import { storeJwt } from '@evevault/shared'
 import { exchangeCodeForToken, getJwt } from '@evevault/shared/auth'
-import {
-  getTenantConfig,
-  useContextStore,
-  useDeviceStore,
-} from '@evevault/shared/stores'
-import { getCurrentTenantId } from '@evevault/shared/stores/tenantStore'
+import { useContextStore, useDeviceStore } from '@evevault/shared/stores'
 import {
   isLocalnetChain,
   isZkLoginSuiChain,
@@ -52,7 +47,6 @@ export async function handleDappLogin(
 
   const tenant = useContextStore.getState().tenantId
 
-  const clientId = getTenantConfig(tenant).clientId
   const chromeRedirectUri = chrome.identity.getRedirectURL()
 
   const chain = getCurrentChain()
@@ -271,17 +265,12 @@ export async function handleDappLogin(
     nonce,
   })
 
-  authUrl.searchParams.set('response_type', 'code')
-  authUrl.searchParams.set('client_id', clientId)
-  authUrl.searchParams.set('redirect_uri', chromeRedirectUri)
-  authUrl.searchParams.set('scope', 'openid profile email offline_access')
-
   chrome.identity.launchWebAuthFlow(
     {
       url: authUrl.toString(),
       interactive: true,
     },
-    (responseUrl) => {
+    async (responseUrl) => {
       if (chrome.runtime.lastError || !responseUrl) {
         chrome.runtime.sendMessage({
           id,
@@ -310,48 +299,49 @@ export async function handleDappLogin(
 
       log.debug('Auth code received')
 
-      const tenantId = getCurrentTenantId()
+      try {
+        const jwtResponse = await exchangeCodeForToken(
+          authCode,
+          chromeRedirectUri,
+          tenant,
+          { codeVerifier },
+        )
+        const decodedJwt = decodeJwt<IdTokenClaims>(
+          jwtResponse.id_token as string,
+        )
+        await storeJwt(jwtResponse)
 
-      exchangeCodeForToken(authCode, chromeRedirectUri, tenantId, {
-        codeVerifier,
-      })
-        .then(async (jwtResponse) => {
-          const decodedJwt = decodeJwt<IdTokenClaims>(
-            jwtResponse.id_token as string,
-          )
-          await storeJwt(jwtResponse)
-
-          if (typeof tabId === 'number') {
-            const token = {
-              ...jwtResponse,
-              email: decodedJwt.email,
-              userId: decodedJwt.sub,
-            }
-
-            if (isLocalnetChain(chain)) {
-              const addrResponse = await sendToKeeper({
-                type: KeeperMessageTypes.LOCALNET_GET_ADDRESS,
-              })
-              sendAuthSuccessToTab(tabId, [id, ...additionalIds], token, {
-                chain,
-                address: addrResponse?.address,
-                logger: log,
-              })
-            } else {
-              sendAuthSuccessToTab(tabId, [id, ...additionalIds], token, {
-                chain,
-                logger: log,
-              })
-            }
+        if (typeof tabId === 'number') {
+          const token = {
+            ...jwtResponse,
+            email: decodedJwt.email,
+            userId: decodedJwt.sub,
           }
+
+          if (isLocalnetChain(chain)) {
+            const addrResponse = await sendToKeeper({
+              type: KeeperMessageTypes.LOCALNET_GET_ADDRESS,
+            })
+            sendAuthSuccessToTab(tabId, [id, ...additionalIds], token, {
+              chain,
+              address: addrResponse?.address,
+              logger: log,
+            })
+          } else {
+            sendAuthSuccessToTab(tabId, [id, ...additionalIds], token, {
+              chain,
+              logger: log,
+            })
+          }
+        }
+      } catch (error) {
+        log.error('Token exchange failed', error)
+        chrome.runtime.sendMessage({
+          id,
+          auth_success: false,
+          error: error,
         })
-        .catch((error) => {
-          log.error('Token exchange failed', error)
-          chrome.runtime.sendMessage({
-            auth_success: false,
-            error: error,
-          })
-        })
+      }
     },
   )
 }

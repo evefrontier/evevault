@@ -1,13 +1,10 @@
 import type { TenantId } from '@evefrontier/dapp-kit'
 import { getTenantConfig } from '@evevault/shared'
+import { sha256 } from '@evevault/shared/utils'
 
 function base64UrlEncode(bytes: ArrayBuffer | Uint8Array): string {
   const input = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes)
-  let binary = ''
-  for (const byte of input) {
-    binary += String.fromCharCode(byte)
-  }
-  return btoa(binary)
+  return btoa(String.fromCharCode(...input))
     .replaceAll('+', '-')
     .replaceAll('/', '_')
     .replaceAll('=', '')
@@ -20,10 +17,7 @@ async function createPkcePair(): Promise<{
   const randomBytes = new Uint8Array(32)
   crypto.getRandomValues(randomBytes)
   const codeVerifier = base64UrlEncode(randomBytes)
-  const challengeBytes = await crypto.subtle.digest(
-    'SHA-256',
-    new TextEncoder().encode(codeVerifier),
-  )
+  const challengeBytes = await sha256(codeVerifier)
 
   return {
     codeVerifier,
@@ -69,4 +63,4 @@ async function getAuthRequest(params: { tenantId: TenantId; nonce: string }) {
   }
 }
 
-export { getAuthRequest, getAuthUrl }
+export { getAuthRequest }
