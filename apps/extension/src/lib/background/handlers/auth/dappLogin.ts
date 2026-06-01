@@ -15,7 +15,7 @@ import { createLogger } from '@evevault/shared/utils'
 import { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519'
 import { decodeJwt } from 'jose'
 import type { IdTokenClaims } from 'oidc-client-ts'
-import { getAuthUrl } from '@/lib/background/services/oauthService'
+import { getAuthRequest } from '@/lib/background/services/oauthService'
 import { openPopupWindow } from '@/lib/background/services/popupWindow'
 import type { MessageWithId } from '@/lib/background/types'
 import { sendToKeeper } from '../vaultHandlers'
@@ -266,7 +266,7 @@ export async function handleDappLogin(
     return
   }
 
-  const authUrl = getAuthUrl({
+  const { authUrl, codeVerifier } = await getAuthRequest({
     tenantId: tenant,
     nonce,
   })
@@ -312,7 +312,9 @@ export async function handleDappLogin(
 
       const tenantId = getCurrentTenantId()
 
-      exchangeCodeForToken(authCode, chromeRedirectUri, tenantId)
+      exchangeCodeForToken(authCode, chromeRedirectUri, tenantId, {
+        codeVerifier,
+      })
         .then(async (jwtResponse) => {
           const decodedJwt = decodeJwt<IdTokenClaims>(
             jwtResponse.id_token as string,

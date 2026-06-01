@@ -2,7 +2,6 @@ import type { TenantId } from '@evefrontier/dapp-kit'
 
 export interface TenantConfig {
   clientId: string
-  clientSecret: string
   serverUrl: string
   webOrigin: string
   isDev?: boolean

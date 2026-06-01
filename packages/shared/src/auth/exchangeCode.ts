@@ -7,16 +7,17 @@ export async function exchangeCodeForToken(
   code: string,
   redirectUri: string,
   tenantId: TenantId,
+  options: { codeVerifier: string },
 ): Promise<OAuthTokenResponse> {
-  const { clientId, clientSecret, serverUrl } = getTenantConfig(tenantId)
+  const { clientId, serverUrl } = getTenantConfig(tenantId)
   const tokenUrl = `${serverUrl.replace(/\/$/, '')}/oauth2/token`
 
-  const requestBody = {
+  const requestBody: Record<string, string> = {
     grant_type: 'authorization_code',
     client_id: clientId,
-    client_secret: clientSecret,
     code,
     redirect_uri: redirectUri,
+    code_verifier: options.codeVerifier,
   }
 
   const response = await fetch(tokenUrl, {

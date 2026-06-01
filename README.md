@@ -36,7 +36,7 @@ For detailed technical information, see the [Architecture Documentation](https:/
 
 - Node.js 22+
 - [Bun](https://bun.sh/) (package manager used in this repo)
-- FusionAuth application with client credentials (per-tenant secrets in env)
+- FusionAuth public OAuth application with PKCE enabled
 - Enoki API key (zkLogin address derivation)
 
 ## Quick Start
@@ -49,16 +49,10 @@ bun install
 
 ### 2. Environment configuration
 
-Create a `.env` at the **repository root** (WXT loads env from the monorepo root). Use the tenant secret names that match `packages/shared/src/utils/constants.ts` (Stillness, Utopia, and additional test tenants as needed):
+Create a `.env` at the **repository root** (WXT loads env from the monorepo root). OAuth client IDs and tenant URLs are configured in `packages/shared/src/utils/constants.ts`.
 
 ```env
-# FusionAuth — set secrets for each tenant you enable
-VITE_TENANT_STILLNESS_CLIENT_SECRET=
-VITE_TENANT_UTOPIA_CLIENT_SECRET=
-VITE_TENANT_TAUCETI_CLIENT_SECRET=
-VITE_TENANT_TESSERACT_CLIENT_SECRET=
-VITE_TENANT_TETRA_CLIENT_SECRET=
-VITE_TENANT_TIAKI_CLIENT_SECRET=
+# FusionAuth
 VITE_FUSIONAUTH_REDIRECT_URI=
 
 # Enoki
@@ -72,7 +66,8 @@ EXTENSION_ID=
 
 1. FusionAuth admin → Applications → your app → OAuth
 2. Add redirect URI: `https://<your-extension-id>.chromiumapp.org/` (extension flow)
-3. Enable scopes: `openid`, `profile`, `email`
+3. Configure the application as a public OAuth client using authorization code + PKCE
+4. Enable scopes: `openid`, `profile`, `email`
 
 ### 4. Start development
 

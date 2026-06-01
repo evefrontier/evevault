@@ -38,8 +38,8 @@ export function getTenantConfig(tenantId: TenantId): TenantConfig {
     return defaultConfig
   }
 
-  if (!TENANT_KEYS[tenantId].clientSecret) {
-    throw Error(`Tenant "${tenantId}" has no client secret`)
+  if (!TENANT_KEYS[tenantId].clientId) {
+    throw Error(`Tenant "${tenantId}" has no client id`)
   }
 
   return TENANT_KEYS[tenantId]
@@ -51,8 +51,8 @@ export function getDefaultTenantId(): TenantId {
 
 /**
  * Returns tenant ids that have config: always the default tenant, plus others that have
- * client secret set. When isDev is false (production), tenants marked isDev: true are
- * excluded; when isDev is true, all tenants with client secret are included.
+ * a public client id. When isDev is false (production), tenants marked isDev: true are
+ * excluded; when isDev is true, all tenants with public client ids are included.
  *
  * When deployed to web production, this will also check to ensure that the URL matches the server URL for the tenant.
  * If the URL does not match the server URL for the tenant, the tenant is not included.
@@ -62,8 +62,8 @@ export function getAvailableTenantIds(devMode = false): TenantId[] {
 
   for (const id of KNOWN_TENANT_IDS) {
     if (id === DEFAULT_TENANT_ID) continue
-    const clientSecret = TENANT_KEYS[id].clientSecret
-    if (!clientSecret?.trim()) continue
+    const clientId = TENANT_KEYS[id].clientId
+    if (!clientId?.trim()) continue
     if (!devMode && TENANT_KEYS[id].isDev) continue
     ids.push(id)
   }

@@ -48,7 +48,6 @@ vi.mock('oidc-client-ts', () => {
 vi.mock('#/utils/tenantConfig', () => ({
   getTenantConfig: () => ({
     clientId: 'client-id',
-    clientSecret: 'secret',
     serverUrl: 'https://issuer.example',
   }),
 }))
@@ -79,6 +78,17 @@ describe('authConfig UserManager', () => {
     }
 
     expect(settings.automaticSilentRenew).toBe(true)
+  })
+
+  it('does not pass a client secret for public OAuth clients', async () => {
+    const { getUserManager } = await import('#/auth/authConfig')
+    getUserManager(TenantId.STILLNESS)
+
+    const settings = oidcMocks.userManagerConstructor.mock.calls[0]?.[0] as {
+      client_secret?: string
+    }
+
+    expect(settings.client_secret).toBeUndefined()
   })
 
   it('sets automaticSilentRenew to false in extension environment', async () => {

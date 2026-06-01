@@ -35,7 +35,7 @@ export default defineConfig(() => {
   // Debug: Log to verify env loading (remove in production)
   if (process.env.NODE_ENV !== 'production') {
     logger.info('Env vars loaded', {
-      hasFusion: !!envVars.VITE_TENANT_UTOPIA_CLIENT_SECRET,
+      hasFusionAuthRedirectUri: !!envVars.VITE_FUSIONAUTH_REDIRECT_URI,
       rootDir,
     })
   }

@@ -71,11 +71,10 @@ const getOrigin = () => {
 }
 
 function buildUserManagerSettings(tenantId: TenantId): UserManagerSettings {
-  const { clientId, clientSecret, serverUrl } = getTenantConfig(tenantId)
+  const { clientId, serverUrl } = getTenantConfig(tenantId)
   return {
     authority: serverUrl,
     client_id: clientId,
-    client_secret: clientSecret,
     redirect_uri: getRedirectUri(),
     post_logout_redirect_uri: getOrigin(),
     response_type: 'code',
