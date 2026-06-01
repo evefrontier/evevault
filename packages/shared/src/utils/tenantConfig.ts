@@ -32,17 +32,7 @@ function getDefaultConfig(): TenantConfig {
  * Returns FusionAuth client config for the given tenant.
  */
 export function getTenantConfig(tenantId: TenantId): TenantConfig {
-  const defaultConfig = getDefaultConfig()
-
-  if (tenantId === DEFAULT_TENANT_ID) {
-    return defaultConfig
-  }
-
-  if (!TENANT_KEYS[tenantId].clientId) {
-    throw Error(`Tenant "${tenantId}" has no client id`)
-  }
-
-  return TENANT_KEYS[tenantId]
+  return TENANT_KEYS[tenantId] ?? TENANT_KEYS[DEFAULT_TENANT_ID]
 }
 
 export function getDefaultTenantId(): TenantId {
@@ -50,20 +40,17 @@ export function getDefaultTenantId(): TenantId {
 }
 
 /**
- * Returns tenant ids that have config: always the default tenant, plus others that have
- * a public client id. When isDev is false (production), tenants marked isDev: true are
- * excluded; when isDev is true, all tenants with public client ids are included.
+ * Returns available tenant ids. Always includes the default tenant. Dev-only tenants
+ * (isDev: true) are excluded unless devMode is true.
  *
- * When deployed to web production, this will also check to ensure that the URL matches the server URL for the tenant.
- * If the URL does not match the server URL for the tenant, the tenant is not included.
+ * When deployed to web production, also filters by URL: only the tenant whose
+ * webOrigin matches window.location.origin is included.
  */
 export function getAvailableTenantIds(devMode = false): TenantId[] {
   const ids: TenantId[] = [DEFAULT_TENANT_ID]
 
   for (const id of KNOWN_TENANT_IDS) {
     if (id === DEFAULT_TENANT_ID) continue
-    const clientId = TENANT_KEYS[id].clientId
-    if (!clientId?.trim()) continue
     if (!devMode && TENANT_KEYS[id].isDev) continue
     ids.push(id)
   }
