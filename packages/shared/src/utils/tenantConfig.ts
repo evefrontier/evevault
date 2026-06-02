@@ -1,4 +1,4 @@
-import { TenantId } from '@evefrontier/dapp-kit/utils'
+import { TenantId } from '@evefrontier/wallet-core/definitions'
 import type { TenantConfig } from '#/types'
 import { TENANT_KEYS } from './constants'
 import { isWeb } from './environment'

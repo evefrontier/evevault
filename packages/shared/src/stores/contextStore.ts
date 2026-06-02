@@ -1,4 +1,4 @@
-import type { TenantId } from '@evefrontier/dapp-kit/utils'
+import type { TenantId } from '@evefrontier/wallet-core/definitions'
 import { SUI_TESTNET_CHAIN, type SuiChain } from '@mysten/wallet-standard'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'

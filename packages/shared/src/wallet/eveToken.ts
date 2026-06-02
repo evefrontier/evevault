@@ -1,8 +1,6 @@
-import type { TenantId } from '@evefrontier/dapp-kit/utils'
-import {
-  EVE_PACKAGE_ID_BY_TENANT,
-  getEveCoinType,
-} from '@evefrontier/dapp-kit/utils'
+import type { TenantId } from '@evefrontier/wallet-core/definitions'
+import { getEveCoinType } from '@evefrontier/wallet-core/definitions'
+import { EVE_PACKAGE_ID_BY_TENANT } from '@evefrontier/wallet-core/utils'
 
 export { getEveCoinType }
 

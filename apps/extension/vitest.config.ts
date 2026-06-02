@@ -20,7 +20,7 @@ export default defineConfig({
     setupFiles: ['../../vitest.setup.ts'],
     server: {
       deps: {
-        inline: ['@evefrontier/dapp-kit'],
+        inline: ['@evefrontier/dapp-kit', '@evefrontier/wallet-core'],
       },
     },
     coverage: {

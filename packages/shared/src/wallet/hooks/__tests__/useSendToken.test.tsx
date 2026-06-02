@@ -83,7 +83,7 @@ vi.mock('@mysten/sui/transactions', () => {
   }
 })
 
-import { TenantId } from '@evefrontier/dapp-kit'
+import { TenantId } from '@evefrontier/wallet-core/definitions'
 // Import after mocks
 // Using workspace aliases in test files due to Vite resolution limitations with relative imports
 import { getUserForNetwork, useAuth } from '#/auth'

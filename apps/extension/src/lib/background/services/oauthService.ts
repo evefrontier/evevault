@@ -1,4 +1,4 @@
-import type { TenantId } from '@evefrontier/dapp-kit'
+import type { TenantId } from '@evefrontier/wallet-core/definitions'
 import { getTenantConfig } from '@evevault/shared'
 import { sha256 } from '@evevault/shared/utils'
 

@@ -1,4 +1,4 @@
-import type { TenantId } from '@evefrontier/dapp-kit/utils'
+import type { TenantId } from '@evefrontier/wallet-core/definitions'
 import {
   UserManager,
   type UserManagerSettings,

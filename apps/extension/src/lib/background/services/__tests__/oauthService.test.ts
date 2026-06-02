@@ -1,4 +1,4 @@
-import { TenantId } from '@evefrontier/dapp-kit'
+import { TenantId } from '@evefrontier/wallet-core/definitions'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getAuthRequest } from '@/lib/background/services/oauthService'
 

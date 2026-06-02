@@ -30,13 +30,6 @@ jobs:
         with:
           bun-version-file: "package.json"
 
-      - name: Verify GitHub Packages auth
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          curl -si -H "Authorization: Bearer $GITHUB_TOKEN" \
-            "https://npm.pkg.github.com/@evefrontier%2fdapp-kit" | head -5
-
       - name: Install dependencies
         timeout-minutes: 2
         env:

@@ -1,4 +1,4 @@
-import { TenantId } from '@evefrontier/dapp-kit/utils'
+import { TenantId } from '@evefrontier/wallet-core/definitions'
 import {
   SUI_DEVNET_CHAIN,
   SUI_LOCALNET_CHAIN,

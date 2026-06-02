@@ -40,8 +40,7 @@
     ]
   },
   "dependencies": {
-    "@evefrontier/dapp-kit": "^0.1.10",
-    "@evefrontier/wallet-core": "0.0.1-alpha.4",
+    "@evefrontier/wallet-core": "0.0.1-alpha.6",
     "@mysten/sui": "^2.17.0",
     "@mysten/wallet-standard": "^0.20.3",
     "jose": "6.0.12",

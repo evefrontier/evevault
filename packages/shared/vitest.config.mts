@@ -12,7 +12,7 @@ const viteEnvDefine = {
 const inlineDappKit = {
   server: {
     deps: {
-      inline: ['@evefrontier/dapp-kit'],
+      inline: ['@evefrontier/dapp-kit', '@evefrontier/wallet-core'],
     },
   },
 }

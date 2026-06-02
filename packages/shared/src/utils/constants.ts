@@ -1,4 +1,4 @@
-import type { TenantId } from '@evefrontier/dapp-kit/utils'
+import type { TenantId } from '@evefrontier/wallet-core/definitions'
 import type { TenantConfig } from '#/types'
 
 export const FULLNODE_URL = 'https://fullnode.devnet.sui.io'

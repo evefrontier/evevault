@@ -1,4 +1,4 @@
-import type { TenantId } from '@evefrontier/dapp-kit'
+import type { TenantId } from '@evefrontier/wallet-core/definitions'
 import { LockScreen, switchTenantAndReload } from '@evevault/shared'
 import { redirectToFusionAuthLogout, useAuth } from '@evevault/shared/auth'
 import { Button, Heading, TenantSelector } from '@evevault/shared/components'
