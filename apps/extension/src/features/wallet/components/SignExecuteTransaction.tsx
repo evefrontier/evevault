@@ -1,144 +1,56 @@
-import {
-  Button,
-  Heading,
-  NetworkSelector,
-  Text,
-} from '@evevault/shared/components'
 import Json from '@evevault/shared/components/Json'
-import type { ParsedTransactionWithDisplay } from '@evevault/shared/types'
-import {
-  buildTx,
-  createLogger,
-  parseTransactionBytes,
-} from '@evevault/shared/utils'
+import { createLogger } from '@evevault/shared/utils'
 import { useWalletSigningContext } from '@evevault/shared/wallet'
-import { Transaction } from '@mysten/sui/transactions'
-import { toBase64 } from '@mysten/sui/utils'
 import { useQueryClient } from '@tanstack/react-query'
-import { useEffect, useState } from 'react'
-import { useSignPopupAuth } from '@/features/wallet/hooks'
-import { SignPopupAuthGate } from './SignPopupAuthGate'
+import { usePendingTransaction } from '@/features/wallet/hooks'
+import { prepareAndSignTransaction } from '@/features/wallet/transactionSigning'
+import { parseExecResult } from './parseExecResult'
+import { SignRequestView } from './SignRequestView'
 
 const log = createLogger()
 
 function SignAndExecuteTransaction() {
   const { getSenderAddress, isLocalnet, sign, suiClient } =
     useWalletSigningContext()
-  const [pendingTransaction, setPendingTransaction] =
-    useState<ParsedTransactionWithDisplay | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const auth = useSignPopupAuth()
+  const {
+    pendingTransaction,
+    loading,
+    setLoading,
+    error,
+    setError,
+    auth,
+    handleReject,
+    storeErrorResult,
+  } = usePendingTransaction()
   const queryClient = useQueryClient()
-
-  useEffect(() => {
-    // Retrieve the pending transaction from storage
-    chrome.storage.local.get('pendingAction').then(async (data) => {
-      const pending = data.pendingAction
-
-      if (pending) {
-        // When pending.transaction is present,
-        // pending is a valid PendingTransaction.
-        if (!pending.transaction) {
-          setError('No transaction found')
-          return
-        }
-
-        const parsedTx = await parseTransactionBytes(pending.transaction)
-
-        setPendingTransaction({
-          ...pending,
-          transaction:
-            parsedTx.transactionForSigning != null
-              ? parsedTx.transactionForSigning
-              : pending.transaction,
-          displayValue: parsedTx.displayValue,
-        })
-      } else {
-        setError('No pending transaction found')
-      }
-    })
-  }, [])
 
   const handleApprove = async () => {
     if (!pendingTransaction) {
       log.error('No pending transaction found')
       return
     }
-    if (!auth.user) {
-      log.error('No user found')
-      return
-    }
-
     try {
       setLoading(true)
       setError(null)
 
-      const { transaction, windowId } = pendingTransaction
+      const { bytes, signature, txb, windowId } =
+        await prepareAndSignTransaction({
+          pendingTransaction,
+          auth,
+          getSenderAddress,
+          isLocalnet,
+          sign,
+          suiClient,
+        })
 
-      const senderAddress = await getSenderAddress()
-      if (!senderAddress) {
-        throw new Error(
-          isLocalnet
-            ? 'No localnet keypair loaded. Enter your private key in the network selector.'
-            : 'User address not found',
-        )
-      }
-
-      // Convert the transaction bytes to a Transaction object
-      // And set the sender to the user's address
-      const txb = await buildTx(
-        Transaction.from(transaction as string),
-        senderAddress,
-        suiClient,
-      )
-
-      if (!isLocalnet) {
-        if (!auth.ephemeralPublicKey) {
-          throw new Error('Ephemeral public key not found')
-        }
-        if (!auth.maxEpoch) {
-          throw new Error('Max epoch is not set')
-        }
-      }
-
-      const { bytes, signature } = await sign('TransactionData', txb)
-
-      // Execute the transaction
       const execResult = await suiClient.executeTransaction({
         transaction: txb,
         signatures: [signature],
         include: { effects: true },
       })
 
-      if (execResult.$kind === 'FailedTransaction') {
-        const failedTx = execResult.FailedTransaction
-        const errorMessage =
-          failedTx?.status &&
-          typeof failedTx.status === 'object' &&
-          'error' in failedTx.status
-            ? String(
-                (failedTx.status as { error?: { message?: string } }).error
-                  ?.message ?? 'Transaction failed',
-              )
-            : 'Transaction failed'
-        throw new Error(errorMessage)
-      }
+      const { digest, effects } = parseExecResult(execResult)
 
-      if (
-        !execResult.Transaction?.digest ||
-        execResult.Transaction.effects?.bcs == null
-      ) {
-        throw new Error(
-          'Transaction execution result is missing digest or effects',
-        )
-      }
-
-      const digest = execResult.Transaction?.digest
-      const effects = toBase64(execResult.Transaction.effects.bcs)
-
-      // Store the result in storage so the background handler can pick it up
       await chrome.storage.local.set({
         transactionResult: {
           windowId,
@@ -150,7 +62,7 @@ function SignAndExecuteTransaction() {
         },
       })
 
-      // Invalidate so next time the popup opens it refetches; don't await so close isn't delayed
+      // Don't await so close isn't delayed
       queryClient.invalidateQueries({ queryKey: ['coin-balance'] })
       queryClient.invalidateQueries({ queryKey: ['transactions'] })
 
@@ -160,103 +72,28 @@ function SignAndExecuteTransaction() {
       const errorMessage =
         err instanceof Error ? err.message : 'Unknown error occurred'
       setError(errorMessage)
-
-      // Store error result
-      if (pendingTransaction?.windowId) {
-        await chrome.storage.local.set({
-          transactionResult: {
-            windowId: pendingTransaction.windowId,
-            status: 'error',
-            error: errorMessage,
-          },
-        })
-      }
+      await storeErrorResult(errorMessage)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleReject = async () => {
-    if (!pendingTransaction) return
-
-    try {
-      // Store rejection result
-      await chrome.storage.local.set({
-        transactionResult: {
-          windowId: pendingTransaction.windowId,
-          status: 'error',
-          error: 'Transaction rejected by user',
-        },
-      })
-
-      // Close the popup window
-      window.close()
-    } catch (err) {
-      log.error('Failed to reject transaction', err)
-      setError('Failed to reject transaction')
-    }
-  }
-
   return (
-    <SignPopupAuthGate
-      isLocked={auth.isLocked}
-      isPinSet={auth.isPinSet}
-      unlock={auth.unlock}
-      user={auth.user}
-      loading={auth.loading}
-      login={auth.login}
+    <SignRequestView
+      auth={auth}
       title="Sign and Execute Transaction"
-      onCancel={handleReject}
-      cancelDisabled={auth.loading || !pendingTransaction}
+      hasPending={!!pendingTransaction}
+      loading={loading}
+      error={error}
+      loadingMessage="Loading transaction..."
+      chain={pendingTransaction?.chain}
+      onApprove={handleApprove}
+      onReject={handleReject}
     >
-      {!pendingTransaction ? (
-        <div style={{ padding: '20px' }}>
-          <Text>Loading transaction...</Text>
-          {error && <Text color="error">Error: {error}</Text>}
-        </div>
-      ) : (
-        <div style={{ padding: '20px' }}>
-          <div className="flex flex-col items-center justify-center gap-10">
-            <img src="/images/logo.png" alt="EVE Vault" className="h-20 " />
-            <div className="flex flex-col items-center justify-center gap-4">
-              <Heading level={2}>Sign and Execute Transaction</Heading>
-              <Json
-                value={pendingTransaction.displayValue}
-                className={'max-h-24'}
-              />
-            </div>
-
-            {error && (
-              <div style={{ marginBottom: '20px' }}>
-                <Text color="error">Error: {error}</Text>
-              </div>
-            )}
-
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <Button
-                onClick={handleApprove}
-                disabled={loading}
-                variant="primary"
-              >
-                {loading ? 'Signing...' : 'Approve'}
-              </Button>
-
-              <Button
-                onClick={handleReject}
-                disabled={loading}
-                variant="secondary"
-              >
-                Reject
-              </Button>
-            </div>
-          </div>
-          <NetworkSelector
-            className="justify-start w-full items-end"
-            chain={pendingTransaction.chain}
-          />
-        </div>
+      {pendingTransaction && (
+        <Json value={pendingTransaction.displayValue} className="max-h-24" />
       )}
-    </SignPopupAuthGate>
+    </SignRequestView>
   )
 }
 
