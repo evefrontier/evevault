@@ -339,7 +339,7 @@ export async function handleDappLogin(
         chrome.runtime.sendMessage({
           id,
           auth_success: false,
-          error: error,
+          error: error instanceof Error ? error.message : String(error),
         })
       }
     },

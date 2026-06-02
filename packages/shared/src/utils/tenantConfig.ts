@@ -40,11 +40,10 @@ export function getDefaultTenantId(): TenantId {
 }
 
 /**
- * Returns available tenant ids. Always includes the default tenant. Dev-only tenants
- * (isDev: true) are excluded unless devMode is true.
- *
- * When deployed to web production, also filters by URL: only the tenant whose
- * webOrigin matches window.location.origin is included.
+ * Returns available tenant ids. Dev-only tenants (isDev: true) are excluded unless
+ * devMode is true. The default tenant is included before URL filtering, but in web
+ * production mode all tenants (including the default) are filtered to only those whose
+ * webOrigin matches window.location.origin.
  */
 export function getAvailableTenantIds(devMode = false): TenantId[] {
   const ids: TenantId[] = [DEFAULT_TENANT_ID]
