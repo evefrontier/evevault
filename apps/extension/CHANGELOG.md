@@ -1,5 +1,12 @@
 # @evevault/extension
 
+## 0.0.10
+
+### Patch Changes
+
+- stability fixes
+  - @evevault/shared@0.0.10
+
 ## 0.0.9
 
 ### Patch Changes

@@ -17,7 +17,7 @@ export default mergeConfig(
       passWithNoTests: true,
       server: {
         deps: {
-          inline: ['@evefrontier/dapp-kit'],
+          inline: ['@evefrontier/wallet-core'],
         },
       },
       coverage: {

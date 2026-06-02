@@ -1,11 +1,6 @@
 import { storeJwt } from '@evevault/shared'
 import { exchangeCodeForToken, getJwt } from '@evevault/shared/auth'
-import {
-  getTenantConfig,
-  useContextStore,
-  useDeviceStore,
-} from '@evevault/shared/stores'
-import { getCurrentTenantId } from '@evevault/shared/stores/tenantStore'
+import { useContextStore, useDeviceStore } from '@evevault/shared/stores'
 import {
   isLocalnetChain,
   isZkLoginSuiChain,
@@ -15,7 +10,7 @@ import { createLogger } from '@evevault/shared/utils'
 import { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519'
 import { decodeJwt } from 'jose'
 import type { IdTokenClaims } from 'oidc-client-ts'
-import { getAuthUrl } from '@/lib/background/services/oauthService'
+import { getAuthRequest } from '@/lib/background/services/oauthService'
 import { openPopupWindow } from '@/lib/background/services/popupWindow'
 import type { MessageWithId } from '@/lib/background/types'
 import { sendToKeeper } from '../vaultHandlers'
@@ -52,7 +47,6 @@ export async function handleDappLogin(
 
   const tenant = useContextStore.getState().tenantId
 
-  const clientId = getTenantConfig(tenant).clientId
   const chromeRedirectUri = chrome.identity.getRedirectURL()
 
   const chain = getCurrentChain()
@@ -266,22 +260,17 @@ export async function handleDappLogin(
     return
   }
 
-  const authUrl = getAuthUrl({
+  const { authUrl, codeVerifier } = await getAuthRequest({
     tenantId: tenant,
     nonce,
   })
-
-  authUrl.searchParams.set('response_type', 'code')
-  authUrl.searchParams.set('client_id', clientId)
-  authUrl.searchParams.set('redirect_uri', chromeRedirectUri)
-  authUrl.searchParams.set('scope', 'openid profile email offline_access')
 
   chrome.identity.launchWebAuthFlow(
     {
       url: authUrl.toString(),
       interactive: true,
     },
-    (responseUrl) => {
+    async (responseUrl) => {
       if (chrome.runtime.lastError || !responseUrl) {
         chrome.runtime.sendMessage({
           id,
@@ -310,46 +299,49 @@ export async function handleDappLogin(
 
       log.debug('Auth code received')
 
-      const tenantId = getCurrentTenantId()
+      try {
+        const jwtResponse = await exchangeCodeForToken(
+          authCode,
+          chromeRedirectUri,
+          tenant,
+          { codeVerifier },
+        )
+        const decodedJwt = decodeJwt<IdTokenClaims>(
+          jwtResponse.id_token as string,
+        )
+        await storeJwt(jwtResponse)
 
-      exchangeCodeForToken(authCode, chromeRedirectUri, tenantId)
-        .then(async (jwtResponse) => {
-          const decodedJwt = decodeJwt<IdTokenClaims>(
-            jwtResponse.id_token as string,
-          )
-          await storeJwt(jwtResponse)
-
-          if (typeof tabId === 'number') {
-            const token = {
-              ...jwtResponse,
-              email: decodedJwt.email,
-              userId: decodedJwt.sub,
-            }
-
-            if (isLocalnetChain(chain)) {
-              const addrResponse = await sendToKeeper({
-                type: KeeperMessageTypes.LOCALNET_GET_ADDRESS,
-              })
-              sendAuthSuccessToTab(tabId, [id, ...additionalIds], token, {
-                chain,
-                address: addrResponse?.address,
-                logger: log,
-              })
-            } else {
-              sendAuthSuccessToTab(tabId, [id, ...additionalIds], token, {
-                chain,
-                logger: log,
-              })
-            }
+        if (typeof tabId === 'number') {
+          const token = {
+            ...jwtResponse,
+            email: decodedJwt.email,
+            userId: decodedJwt.sub,
           }
+
+          if (isLocalnetChain(chain)) {
+            const addrResponse = await sendToKeeper({
+              type: KeeperMessageTypes.LOCALNET_GET_ADDRESS,
+            })
+            sendAuthSuccessToTab(tabId, [id, ...additionalIds], token, {
+              chain,
+              address: addrResponse?.address,
+              logger: log,
+            })
+          } else {
+            sendAuthSuccessToTab(tabId, [id, ...additionalIds], token, {
+              chain,
+              logger: log,
+            })
+          }
+        }
+      } catch (error) {
+        log.error('Token exchange failed', error)
+        chrome.runtime.sendMessage({
+          id,
+          auth_success: false,
+          error: error instanceof Error ? error.message : String(error),
         })
-        .catch((error) => {
-          log.error('Token exchange failed', error)
-          chrome.runtime.sendMessage({
-            auth_success: false,
-            error: error,
-          })
-        })
+      }
     },
   )
 }

@@ -1,4 +1,4 @@
-import type { TenantId } from '@evefrontier/dapp-kit/utils'
+import type { TenantId } from '@evefrontier/wallet-core/definitions'
 import {
   UserManager,
   type UserManagerSettings,
@@ -71,11 +71,10 @@ const getOrigin = () => {
 }
 
 function buildUserManagerSettings(tenantId: TenantId): UserManagerSettings {
-  const { clientId, clientSecret, serverUrl } = getTenantConfig(tenantId)
+  const { clientId, serverUrl } = getTenantConfig(tenantId)
   return {
     authority: serverUrl,
     client_id: clientId,
-    client_secret: clientSecret,
     redirect_uri: getRedirectUri(),
     post_logout_redirect_uri: getOrigin(),
     response_type: 'code',

@@ -9,40 +9,34 @@ vi.mock('#/utils/constants', () => ({
   TENANT_KEYS: {
     stillness: {
       clientId: 'stillness-client',
-      clientSecret: 'secret',
       serverUrl: 'https://auth.evefrontier.com',
       webOrigin: 'https://evevault.evefrontier.com',
     },
     utopia: {
       clientId: 'utopia-client',
-      clientSecret: 'secret',
       serverUrl: 'https://test.auth.evefrontier.com',
       webOrigin: 'https://uat.evevault.evefrontier.com',
     },
     tauceti: {
       clientId: 'tauceti-client',
-      clientSecret: 'secret',
       serverUrl: 'https://test.auth.evefrontier.com',
       webOrigin: 'https://test.evevault.evefrontier.com',
       isDev: true,
     },
     tesseract: {
       clientId: 'tesseract-client',
-      clientSecret: 'secret',
       serverUrl: 'https://test.auth.evefrontier.com',
       webOrigin: 'https://test.evevault.evefrontier.com',
       isDev: true,
     },
     tetra: {
       clientId: 'tetra-client',
-      clientSecret: 'secret',
       serverUrl: 'https://test.auth.evefrontier.com',
       webOrigin: 'https://test.evevault.evefrontier.com',
       isDev: true,
     },
     tiaki: {
       clientId: 'tiaki-client',
-      clientSecret: 'secret',
       serverUrl: 'https://test.auth.evefrontier.com',
       webOrigin: 'https://test.evevault.evefrontier.com',
       isDev: true,
@@ -69,14 +63,14 @@ describe('getAvailableTenantIds', () => {
   })
 
   describe('when outside web-production context (no URL filter)', () => {
-    it('returns default tenant plus tenants with client secret when isWeb is false', () => {
+    it('returns default tenant plus non-dev tenants when isWeb is false', () => {
       vi.mocked(isWeb).mockReturnValue(false)
       const ids = getAvailableTenantIds(false)
       expect(ids).toContain(getDefaultTenantId())
       expect(ids.length).toBeGreaterThan(1)
     })
 
-    it('returns default tenant plus tenants with client secret when devMode is true', () => {
+    it('returns all tenants including dev tenants when devMode is true', () => {
       vi.mocked(isWeb).mockReturnValue(true)
       process.env.NODE_ENV = 'development'
       const ids = getAvailableTenantIds(true)

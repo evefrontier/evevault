@@ -1,8 +1,7 @@
-import type { TenantId } from '@evefrontier/dapp-kit'
+import type { TenantId } from '@evefrontier/wallet-core/definitions'
 
 export interface TenantConfig {
   clientId: string
-  clientSecret: string
   serverUrl: string
   webOrigin: string
   isDev?: boolean

@@ -31,11 +31,13 @@ export default defineConfig(() => {
   ) as { version?: string }
   const version = extPkg.version ?? '0.0.0'
   const envVars = loadEnv(env?.mode || 'development', rootDir, '')
+  const includeExtensionKey =
+    process.env.WXT_WEBSTORE_BUILD !== 'true' && !!envVars.EXTENSION_ID
 
   // Debug: Log to verify env loading (remove in production)
   if (process.env.NODE_ENV !== 'production') {
     logger.info('Env vars loaded', {
-      hasFusion: !!envVars.VITE_TENANT_UTOPIA_CLIENT_SECRET,
+      hasFusionAuthRedirectUri: !!envVars.VITE_FUSIONAUTH_REDIRECT_URI,
       rootDir,
     })
   }
@@ -118,17 +120,11 @@ export default defineConfig(() => {
       },
     }),
     manifest: {
-      key: envVars.EXTENSION_ID,
+      ...(includeExtensionKey ? { key: envVars.EXTENSION_ID } : {}),
       name: 'EVE Vault',
       version,
       description: 'EVE Vault for EVE Frontier with ZKLogin',
-      permissions: [
-        'identity',
-        'identity.email',
-        'storage',
-        'scripting',
-        'offscreen',
-      ],
+      permissions: ['identity', 'storage', 'offscreen'],
       action: {
         default_popup: 'popup.html',
       },

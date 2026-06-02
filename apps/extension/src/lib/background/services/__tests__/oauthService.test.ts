@@ -1,5 +1,8 @@
+import { TenantId } from '@evefrontier/wallet-core/definitions'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { getAuthUrl } from '@/lib/background/services/oauthService'
+import { getAuthRequest } from '@/lib/background/services/oauthService'
+
+const BASE64URL = /^[A-Za-z0-9_-]+$/
 
 const { getTenantConfigMock } = vi.hoisted(() => ({
   getTenantConfigMock: vi.fn(),
@@ -9,7 +12,7 @@ vi.mock('@evevault/shared', () => ({
   getTenantConfig: getTenantConfigMock,
 }))
 
-describe('getAuthUrl', () => {
+describe('getAuthRequest', () => {
   beforeEach(() => {
     getTenantConfigMock.mockReturnValue({
       clientId: 'test-client-id',
@@ -29,9 +32,9 @@ describe('getAuthUrl', () => {
     vi.clearAllMocks()
   })
 
-  it('includes nonce when provided', () => {
-    const authUrl = getAuthUrl({
-      tenantId: 'stillness',
+  it('builds a well-formed auth URL with nonce and PKCE', async () => {
+    const { authUrl, codeVerifier } = await getAuthRequest({
+      tenantId: TenantId.STILLNESS,
       nonce: 'test-nonce',
     })
 
@@ -45,5 +48,8 @@ describe('getAuthUrl', () => {
       'openid profile email offline_access',
     )
     expect(authUrl.searchParams.get('nonce')).toBe('test-nonce')
+    expect(codeVerifier).toMatch(BASE64URL)
+    expect(authUrl.searchParams.get('code_challenge')).toMatch(BASE64URL)
+    expect(authUrl.searchParams.get('code_challenge_method')).toBe('S256')
   })
 })

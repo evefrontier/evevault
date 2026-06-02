@@ -1,4 +1,4 @@
-import { TenantId } from '@evefrontier/dapp-kit/utils'
+import { TenantId } from '@evefrontier/wallet-core/definitions'
 import type { TenantConfig } from '#/types'
 import { TENANT_KEYS } from './constants'
 import { isWeb } from './environment'
@@ -32,17 +32,7 @@ function getDefaultConfig(): TenantConfig {
  * Returns FusionAuth client config for the given tenant.
  */
 export function getTenantConfig(tenantId: TenantId): TenantConfig {
-  const defaultConfig = getDefaultConfig()
-
-  if (tenantId === DEFAULT_TENANT_ID) {
-    return defaultConfig
-  }
-
-  if (!TENANT_KEYS[tenantId].clientSecret) {
-    throw Error(`Tenant "${tenantId}" has no client secret`)
-  }
-
-  return TENANT_KEYS[tenantId]
+  return TENANT_KEYS[tenantId] ?? TENANT_KEYS[DEFAULT_TENANT_ID]
 }
 
 export function getDefaultTenantId(): TenantId {
@@ -50,20 +40,16 @@ export function getDefaultTenantId(): TenantId {
 }
 
 /**
- * Returns tenant ids that have config: always the default tenant, plus others that have
- * client secret set. When isDev is false (production), tenants marked isDev: true are
- * excluded; when isDev is true, all tenants with client secret are included.
- *
- * When deployed to web production, this will also check to ensure that the URL matches the server URL for the tenant.
- * If the URL does not match the server URL for the tenant, the tenant is not included.
+ * Returns available tenant ids. Dev-only tenants (isDev: true) are excluded unless
+ * devMode is true. The default tenant is included before URL filtering, but in web
+ * production mode all tenants (including the default) are filtered to only those whose
+ * webOrigin matches window.location.origin.
  */
 export function getAvailableTenantIds(devMode = false): TenantId[] {
   const ids: TenantId[] = [DEFAULT_TENANT_ID]
 
   for (const id of KNOWN_TENANT_IDS) {
     if (id === DEFAULT_TENANT_ID) continue
-    const clientSecret = TENANT_KEYS[id].clientSecret
-    if (!clientSecret?.trim()) continue
     if (!devMode && TENANT_KEYS[id].isDev) continue
     ids.push(id)
   }

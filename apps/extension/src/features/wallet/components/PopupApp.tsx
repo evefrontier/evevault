@@ -1,5 +1,5 @@
 import './PopupApp.css'
-import type { TenantId } from '@evefrontier/dapp-kit'
+import type { TenantId } from '@evefrontier/wallet-core/definitions'
 import {
   getAvailableTenantIds,
   getCurrentTenantId,

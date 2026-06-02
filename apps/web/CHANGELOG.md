@@ -1,5 +1,11 @@
 # @evevault/web
 
+## 0.0.10
+
+### Patch Changes
+
+- @evevault/shared@0.0.10
+
 ## 0.0.9
 
 ### Patch Changes
