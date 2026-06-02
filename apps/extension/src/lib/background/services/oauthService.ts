@@ -1,14 +1,7 @@
 import type { TenantId } from '@evefrontier/wallet-core/definitions'
 import { getTenantConfig } from '@evevault/shared'
 import { sha256 } from '@evevault/shared/utils'
-
-function base64UrlEncode(bytes: ArrayBuffer | Uint8Array): string {
-  const input = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes)
-  return btoa(String.fromCharCode(...input))
-    .replaceAll('+', '-')
-    .replaceAll('/', '_')
-    .replaceAll('=', '')
-}
+import { base64UrlEncode } from '@/lib/util/b64UrlEncode'
 
 async function createPkcePair(): Promise<{
   codeVerifier: string

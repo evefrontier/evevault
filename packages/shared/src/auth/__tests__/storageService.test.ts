@@ -17,7 +17,7 @@ vi.mock('#/utils/logger', () => ({
 }))
 
 vi.mock('#/stores/contextStore', () => ({
-  useContext: {
+  useContextStore: {
     getState: vi.fn(() => ({ chain: SUI_TESTNET_CHAIN })),
   },
 }))
@@ -43,7 +43,7 @@ import {
 } from '#/auth/storageService'
 import { useAuthStore } from '#/auth/stores/authStore'
 import { userToJwtResponse } from '#/auth/userToJwtResponse'
-import { useContext } from '#/stores/contextStore'
+import { useContextStore } from '#/stores/contextStore'
 import { isExtension, isWeb } from '#/utils/environment'
 
 const futureExp = () => Math.floor(Date.now() / 1000) + 86_400
@@ -64,7 +64,7 @@ describe('storageService (web)', () => {
     localStorage.clear()
     vi.mocked(useAuthStore.getState).mockReturnValue({ user: null } as never)
     vi.mocked(userToJwtResponse).mockReturnValue(null)
-    vi.mocked(useContext.getState).mockReturnValue({
+    vi.mocked(useContextStore.getState).mockReturnValue({
       chain: SUI_TESTNET_CHAIN,
     } as never)
   })
@@ -151,7 +151,7 @@ describe('storageService (extension chrome.storage.session)', () => {
       storage: { session: chromeStorageSession },
       runtime: { id: 'test-extension' },
     } as unknown as typeof chrome
-    vi.mocked(useContext.getState).mockReturnValue({
+    vi.mocked(useContextStore.getState).mockReturnValue({
       chain: SUI_TESTNET_CHAIN,
     } as never)
   })

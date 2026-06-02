@@ -30,14 +30,6 @@ export interface TokenListProps {
   onSendToken?: (coinType: string) => void
 }
 
-export interface TokenRowProps {
-  coinType: string
-  user: User | null
-  chain: SuiChain | null
-  balanceAddress?: string | null
-  localnetUrl?: string
-}
-
 export type BracketsProps = {
   color?: ThemeToken
   spacing?: number // px
