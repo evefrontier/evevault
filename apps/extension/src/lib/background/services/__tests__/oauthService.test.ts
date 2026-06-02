@@ -2,6 +2,8 @@ import { TenantId } from '@evefrontier/wallet-core/definitions'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getAuthRequest } from '@/lib/background/services/oauthService'
 
+const BASE64URL = /^[A-Za-z0-9_-]+$/
+
 const { getTenantConfigMock } = vi.hoisted(() => ({
   getTenantConfigMock: vi.fn(),
 }))
@@ -46,10 +48,8 @@ describe('getAuthRequest', () => {
       'openid profile email offline_access',
     )
     expect(authUrl.searchParams.get('nonce')).toBe('test-nonce')
-    expect(codeVerifier).toMatch(/^[A-Za-z0-9_-]+$/)
-    expect(authUrl.searchParams.get('code_challenge')).toMatch(
-      /^[A-Za-z0-9_-]+$/,
-    )
+    expect(codeVerifier).toMatch(BASE64URL)
+    expect(authUrl.searchParams.get('code_challenge')).toMatch(BASE64URL)
     expect(authUrl.searchParams.get('code_challenge_method')).toBe('S256')
   })
 })
