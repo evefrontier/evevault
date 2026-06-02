@@ -30,8 +30,15 @@ jobs:
         with:
           bun-version-file: "package.json"
 
+      - name: Verify GitHub Packages auth
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl -sf -H "Authorization: Bearer $GITHUB_TOKEN" \
+            "https://npm.pkg.github.com/@evefrontier%2fdapp-kit" | jq .name
+
       - name: Install dependencies
-        timeout-minutes: 5
+        timeout-minutes: 2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bun install --frozen-lockfile --ignore-scripts
