@@ -1,0 +1,97 @@
+import type { PublicKey } from '@mysten/sui/cryptography'
+import { ephKeyService } from '#/services/vaultService'
+import {
+  createEmptyLocalnetDeviceData,
+  createInitialNetworkData,
+} from '#/stores/deviceStore/constants'
+import { isWeb } from '#/utils/environment'
+import { createLogger } from '#/utils/logger'
+import type { GetDeviceState, SetDeviceState } from './types'
+
+const log = createLogger()
+
+export const lockDevice = async (set: SetDeviceState) => {
+  await ephKeyService.lock()
+  set({ isLocked: true })
+}
+
+export const unlockDevice = async (
+  pin: string,
+  set: SetDeviceState,
+  get: GetDeviceState,
+) => {
+  try {
+    await unlockDeviceForPlatform(pin, set, get)
+  } catch (error) {
+    log.error('Error decrypting secret key', error)
+    set({ error: error instanceof Error ? error.message : 'Unknown error' })
+  }
+}
+
+export const resetDevice = (set: SetDeviceState) => {
+  set({
+    isLocked: true,
+    ephemeralPublicKey: null,
+    ephemeralPublicKeyBytes: null,
+    ephemeralPublicKeyFlag: null,
+    ephemeralKeyPairSecretKey: null,
+    networkData: createInitialNetworkData(),
+    localnet: createEmptyLocalnetDeviceData(),
+    loading: false,
+    error: null,
+  })
+}
+
+const unlockDeviceForPlatform = async (
+  pin: string,
+  set: SetDeviceState,
+  get: GetDeviceState,
+) => {
+  if (!pin.trim()) {
+    set({ error: 'PIN is required' })
+    return
+  }
+
+  const publicKey = isWeb()
+    ? await unlockWebDevice(pin, set)
+    : await unlockExtensionDevice(pin, set, get)
+  setUnlockedState(set, publicKey)
+}
+
+const unlockWebDevice = async (pin: string, set: SetDeviceState) => {
+  const hasKeypair = await ephKeyService.hasKeypair()
+  if (!hasKeypair) {
+    set({ error: 'No keypair available' })
+    return null
+  }
+
+  return ephKeyService.unlockVault(null, pin)
+}
+
+const unlockExtensionDevice = async (
+  pin: string,
+  set: SetDeviceState,
+  get: GetDeviceState,
+) => {
+  const storedKey = get().ephemeralKeyPairSecretKey
+  if (!storedKey) {
+    set({ error: 'No secret key available' })
+    return null
+  }
+
+  return ephKeyService.unlockVault(storedKey, pin)
+}
+
+const setUnlockedState = (set: SetDeviceState, publicKey: PublicKey | null) => {
+  set(
+    publicKey
+      ? {
+          isLocked: false,
+          error: null,
+          ephemeralPublicKey: publicKey,
+          ephemeralPublicKeyBytes: Array.from(publicKey.toRawBytes()),
+          ephemeralPublicKeyFlag: publicKey.flag(),
+        }
+      : { isLocked: false, error: null },
+  )
+}

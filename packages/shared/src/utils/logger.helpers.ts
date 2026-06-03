@@ -217,8 +217,8 @@ const pathSegments = (filePath: string): string[] => {
 }
 
 const scopeFromSegments = (segments: string[]): string | undefined => {
-  const fileName = segments.at(-1)
-  const parent = segments.at(-2)
+  const fileName = segments[segments.length - 1]
+  const parent = segments[segments.length - 2]
   const baseName = fileName?.replace(/\.[^.]+$/, '')
   return baseName && parent ? `${parent}/${baseName}` : baseName
 }
