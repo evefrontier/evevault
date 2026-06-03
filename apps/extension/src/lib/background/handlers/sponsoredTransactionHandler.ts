@@ -9,6 +9,94 @@ import type {
 
 const log = createLogger()
 
+// Sends a sign_sponsored_transaction_error to the originating tab, or logs a
+// warning if there's no tab to send to (e.g. request came from a background context).
+function sendSponsoredError(
+  senderTabId: number | undefined,
+  messageId: string,
+  error: string,
+): void {
+  if (senderTabId != null) {
+    chrome.tabs
+      .sendMessage(senderTabId, {
+        type: 'sign_sponsored_transaction_error',
+        error,
+        id: messageId,
+      })
+      .catch((err) => {
+        log.error('Failed to send error message to tab', err)
+      })
+  } else {
+    log.warn('No sender tab id, cannot send error to page', { error })
+  }
+}
+
+// Options for executeSponsoredTx — bundles the API context and the signed result
+// so the function signature stays below qlty's parameter count threshold.
+type ExecuteSponsoredTxOptions = {
+  apiBaseUrl: string
+  tenant: string
+  idToken: string
+  preparationId: string
+  zkSignature: string
+  senderTabId: number
+  messageId: string
+}
+
+// POSTs the signed sponsored transaction to the backend execute endpoint and
+// forwards the digest/effects back to the originating tab on success.
+async function executeSponsoredTx({
+  apiBaseUrl,
+  tenant,
+  idToken,
+  preparationId,
+  zkSignature,
+  senderTabId,
+  messageId,
+}: ExecuteSponsoredTxOptions): Promise<void> {
+  try {
+    const response = await fetch(
+      `${apiBaseUrl}/transactions/sponsored/execute`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          preparationId,
+          userSignatureB64Bytes: zkSignature,
+        }),
+        headers: {
+          'X-Tenant': tenant,
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${idToken}`,
+        },
+      },
+    )
+
+    if (!response.ok) {
+      throw new Error(
+        `Sponsored execute failed: ${response.status} ${response.statusText}`,
+      )
+    }
+
+    const result = (await response.json()) as {
+      digest?: string
+      effects?: string
+    }
+    await chrome.tabs.sendMessage(senderTabId, {
+      type: 'sign_success',
+      digest: result.digest ?? '0x0',
+      effects: result.effects ?? '0x0',
+      id: messageId,
+    })
+  } catch (err) {
+    log.error('Sponsored execute failed', err)
+    await chrome.tabs.sendMessage(senderTabId, {
+      type: 'sign_sponsored_transaction_error',
+      error: err instanceof Error ? err.message : 'Unknown error occurred',
+      id: messageId,
+    })
+  }
+}
+
 async function handleSponsoredTransaction(
   message: EveFrontierSponsoredTransactionMessage,
   sender: chrome.runtime.MessageSender,
@@ -21,20 +109,11 @@ async function handleSponsoredTransaction(
     const chain = await getStoredChain()
     const jwt = await getJwt()
     if (!jwt?.id_token) {
-      const error = 'No valid JWT found. Please re-authenticate.'
-      if (senderTabId != null) {
-        chrome.tabs
-          .sendMessage(senderTabId, {
-            type: 'sign_sponsored_transaction_error',
-            error,
-            id: message.id,
-          })
-          .catch((err) => {
-            log.error('Failed to send error message to tab', err)
-          })
-      } else {
-        log.warn('No sender tab id, cannot send JWT error to page', { error })
-      }
+      sendSponsoredError(
+        senderTabId,
+        message.id,
+        'No valid JWT found. Please re-authenticate.',
+      )
       return true
     }
 
@@ -60,7 +139,6 @@ async function handleSponsoredTransaction(
 
     const encodedAssemblyType = encodeURIComponent(assemblyType)
     const encodedAction = encodeURIComponent(action)
-
     const { apiBaseUrl, tenant } = getApiContext(jwt.id_token)
 
     const response = await fetch(
@@ -144,65 +222,21 @@ async function handleSponsoredTransaction(
         result.preparationId != null &&
         senderTabId != null
       ) {
-        ;(async () => {
-          try {
-            const executeResponse = await fetch(
-              `${apiBaseUrl}/transactions/sponsored/execute`,
-              {
-                method: 'POST',
-                body: JSON.stringify({
-                  preparationId: result.preparationId,
-                  userSignatureB64Bytes: result.zkSignature,
-                }),
-                headers: {
-                  'X-Tenant': tenant,
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${jwt.id_token}`,
-                },
-              },
-            )
-
-            if (!executeResponse.ok) {
-              throw new Error(
-                `Sponsored execute failed: ${executeResponse.status} ${executeResponse.statusText}`,
-              )
-            }
-
-            const executeResult = (await executeResponse.json()) as {
-              digest?: string
-              effects?: string
-              [key: string]: unknown
-            }
-            const digest = executeResult.digest ?? '0x0'
-            const effects = executeResult.effects ?? '0x0'
-
-            await chrome.tabs.sendMessage(senderTabId, {
-              type: 'sign_success',
-              digest,
-              effects,
-              id: message.id,
-            })
-          } catch (err) {
-            log.error('Sponsored execute failed', err)
-            const errorMessage =
-              err instanceof Error ? err.message : 'Unknown error occurred'
-            await chrome.tabs.sendMessage(senderTabId, {
-              type: 'sign_sponsored_transaction_error',
-              error: errorMessage,
-              id: message.id,
-            })
-          }
-        })()
+        void executeSponsoredTx({
+          apiBaseUrl,
+          tenant,
+          idToken: jwt.id_token,
+          preparationId: result.preparationId,
+          zkSignature: result.zkSignature,
+          senderTabId,
+          messageId: message.id,
+        })
       } else if (result.status === 'error' && senderTabId != null) {
-        chrome.tabs
-          .sendMessage(senderTabId, {
-            type: 'sign_sponsored_transaction_error',
-            error: result.error ?? 'Transaction rejected or failed',
-            id: message.id,
-          })
-          .catch((err) => {
-            log.error('Failed to send error message to tab', err)
-          })
+        sendSponsoredError(
+          senderTabId,
+          message.id,
+          result.error ?? 'Transaction rejected or failed',
+        )
       }
     }
 
@@ -227,23 +261,11 @@ async function handleSponsoredTransaction(
     return true
   } catch (error) {
     log.error('Transaction signing failed', error)
-    const errorMessage =
-      error instanceof Error ? error.message : 'Unknown error occurred'
-    if (senderTabId != null) {
-      chrome.tabs
-        .sendMessage(senderTabId, {
-          type: 'sign_sponsored_transaction_error',
-          error: errorMessage,
-          id: message.id,
-        })
-        .catch((err) => {
-          log.error('Failed to send error message to tab', err)
-        })
-    } else {
-      log.warn('No sender tab id, cannot send error to page', {
-        error: errorMessage,
-      })
-    }
+    sendSponsoredError(
+      senderTabId,
+      message.id,
+      error instanceof Error ? error.message : 'Unknown error occurred',
+    )
     return true
   }
 }

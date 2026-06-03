@@ -3,7 +3,6 @@ import {
   type EveVaultWalletFeatures,
   type SponsoredTransactionInput,
   type SponsoredTransactionMethod,
-  type SponsoredTransactionOutput,
 } from '@evefrontier/wallet-core/wallet-standard-extensions'
 import { WalletStandardMessageTypes } from '@evevault/shared'
 import { getZkLoginAddress } from '@evevault/shared/auth'
@@ -11,7 +10,6 @@ import { createLogger } from '@evevault/shared/utils'
 import { fromBase64 } from '@mysten/sui/utils'
 import type {
   IdentifierRecord,
-  SignedTransaction,
   StandardConnectMethod,
   StandardConnectOutput,
   StandardEventsOnMethod,
@@ -45,6 +43,57 @@ const log = createLogger()
 
 const APPROVAL_TIMEOUT_MS = 2 * 60 * 1000 // 2 minutes
 
+const WALLET_FEATURES = [
+  StandardConnect,
+  StandardDisconnect,
+  SuiSignPersonalMessage,
+  SuiSignTransaction,
+  SuiSignAndExecuteTransaction,
+  EVEFRONTIER_SPONSORED_TRANSACTION,
+] as const
+
+// Options for waitForVaultMessage — separates the protocol details (message types,
+// outbound payload) from the resolution logic (how to map the success response).
+type VaultMessageOpts<T> = {
+  id: string
+  successType: string
+  errorType: string
+  outbound: Record<string, unknown>
+  mapSuccess: (m: Record<string, unknown>) => T
+  timeoutMessage: string
+}
+
+// Posts a message to the injected content script and resolves/rejects based on
+// the first matching response. Cleans up the listener and timeout on settlement.
+function waitForVaultMessage<T>({
+  id,
+  successType,
+  errorType,
+  outbound,
+  mapSuccess,
+  timeoutMessage,
+}: VaultMessageOpts<T>): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const state = { settled: false }
+    let timeoutId: ReturnType<typeof setTimeout> | undefined
+
+    function onMsg(e: MessageEvent) {
+      const m: Record<string, unknown> = e.data || {}
+      if (m.__from !== 'Eve Vault' || m.id !== id) return
+      if (m.type === successType && trySettle(state, onMsg, timeoutId))
+        resolve(mapSuccess(m))
+      else if (m.type === errorType && trySettle(state, onMsg, timeoutId))
+        reject(new Error(m.error as string))
+    }
+
+    window.addEventListener('message', onMsg)
+    timeoutId = setTimeout(() => {
+      if (trySettle(state, onMsg)) reject(new Error(timeoutMessage))
+    }, APPROVAL_TIMEOUT_MS)
+    window.postMessage(outbound, '*')
+  })
+}
+
 export class EveVaultWallet implements Wallet {
   readonly #version = '1.0.0' as const
   readonly #name = 'Eve Vault' as const
@@ -67,33 +116,18 @@ export class EveVaultWallet implements Wallet {
   }
 
   get chains(): Wallet['chains'] {
-    const other =
-      this.#currentChain === SUI_TESTNET_CHAIN
-        ? SUI_DEVNET_CHAIN
-        : SUI_TESTNET_CHAIN
-    return [this.#currentChain, other] as `sui:${string}`[]
+    return [this.#currentChain, this.#getOtherChain()] as `sui:${string}`[]
   }
 
   get accounts() {
-    const other =
-      this.#currentChain === SUI_TESTNET_CHAIN
-        ? SUI_DEVNET_CHAIN
-        : SUI_TESTNET_CHAIN
     return this.#accounts.map(
       (walletAccount) =>
         new ReadonlyWalletAccount({
           address: walletAccount.address,
           publicKey: walletAccount.publicKey,
-          chains: [this.#currentChain, other],
+          chains: [this.#currentChain, this.#getOtherChain()],
           // The features that this account supports. This can be a subset of the wallet's supported features.
-          features: [
-            StandardConnect,
-            StandardDisconnect,
-            SuiSignPersonalMessage,
-            SuiSignTransaction,
-            SuiSignAndExecuteTransaction,
-            EVEFRONTIER_SPONSORED_TRANSACTION,
-          ],
+          features: [...WALLET_FEATURES],
         }),
     )
   }
@@ -132,20 +166,15 @@ export class EveVaultWallet implements Wallet {
    * dApps call this via: wallet.features['standard:events'].on('change', callback)
    */
   #on: StandardEventsOnMethod = (event, listener) => {
-    if (!this.#eventListeners.has(event)) {
-      this.#eventListeners.set(event, [])
-    }
-    this.#eventListeners.get(event)?.push(listener)
+    const list = this.#eventListeners.get(event) ?? []
+    list.push(listener)
+    this.#eventListeners.set(event, list)
 
-    // Return unsubscribe function
     return () => {
       const listeners = this.#eventListeners.get(event)
-      if (listeners) {
-        const index = listeners.indexOf(listener)
-        if (index > -1) {
-          listeners.splice(index, 1)
-        }
-      }
+      if (!listeners) return
+      const index = listeners.indexOf(listener)
+      if (index > -1) listeners.splice(index, 1)
     }
   }
 
@@ -183,6 +212,88 @@ export class EveVaultWallet implements Wallet {
         log.error('Error in wallet event listener', error)
       }
     })
+  }
+
+  #getOtherChain(): SuiChain {
+    return this.#currentChain === SUI_TESTNET_CHAIN
+      ? SUI_DEVNET_CHAIN
+      : SUI_TESTNET_CHAIN
+  }
+
+  async #resolveAuthSuccess(
+    m: Record<string, unknown>,
+    resolve: (value: StandardConnectOutput) => void,
+    reject: (reason?: unknown) => void,
+  ): Promise<void> {
+    try {
+      if (m.chain === SUI_LOCALNET_CHAIN) {
+        if (!m.address) {
+          reject(new Error('Localnet auth_success missing address'))
+          return
+        }
+        const localnetAccount = new ReadonlyWalletAccount({
+          address: m.address as string,
+          publicKey: new Uint8Array(0),
+          chains: [SUI_LOCALNET_CHAIN],
+          features: [...WALLET_FEATURES],
+        })
+        this.#accounts = [localnetAccount]
+        this.#emitChangeEvent({ accounts: this.#accounts })
+        resolve({ accounts: this.accounts })
+        return
+      }
+
+      const result = m.token as { access_token: string }
+      sessionStorage.setItem(
+        'evevault_jwt',
+        JSON.stringify(result.access_token),
+      )
+
+      const zkLoginResponse = await getZkLoginAddress({
+        jwt: result.access_token,
+        enokiApiKey: import.meta.env.VITE_ENOKI_API_KEY,
+      })
+
+      if (zkLoginResponse.error) {
+        reject(new Error(zkLoginResponse.error.message))
+        return
+      }
+      if (!zkLoginResponse.data) {
+        reject(new Error('No data returned from zkLogin address lookup'))
+        return
+      }
+
+      const { address, publicKey: publicKeyB64 } = zkLoginResponse.data
+      const trimmedPublicKey = publicKeyB64.trim()
+      if (!trimmedPublicKey) {
+        reject(new Error('No public key returned from zkLogin address lookup'))
+        return
+      }
+
+      let publicKeyBytes: Uint8Array
+      try {
+        publicKeyBytes = fromBase64(trimmedPublicKey)
+      } catch {
+        reject(
+          new Error(
+            'Invalid base64 public key returned from zkLogin address lookup',
+          ),
+        )
+        return
+      }
+
+      const newAccount = new ReadonlyWalletAccount({
+        address,
+        publicKey: publicKeyBytes,
+        chains: [this.#currentChain, this.#getOtherChain()],
+        features: [...WALLET_FEATURES],
+      })
+      this.#accounts = [newAccount]
+      this.#emitChangeEvent({ accounts: this.#accounts })
+      resolve({ accounts: this.accounts })
+    } catch (err) {
+      reject(err instanceof Error ? err : new Error(String(err)))
+    }
   }
 
   /**
@@ -223,120 +334,26 @@ export class EveVaultWallet implements Wallet {
     return new Promise<StandardConnectOutput>((resolve, reject) => {
       const id = crypto.randomUUID()
       const state = { settled: false }
+      let timeoutId: ReturnType<typeof setTimeout> | undefined
 
       const onMsg = async (e: MessageEvent) => {
-        const m = e.data || {}
-
+        const m: Record<string, unknown> = e.data || {}
         if (m.__from !== 'Eve Vault' || m.id !== id) return
-        if (m.type === 'auth_success') {
-          if (trySettle(state, onMsg, timeoutId)) {
-            try {
-              if (m.chain === SUI_LOCALNET_CHAIN) {
-                if (!m.address) {
-                  reject(new Error('Localnet auth_success missing address'))
-                  return
-                }
-                const localnetAccount = new ReadonlyWalletAccount({
-                  address: m.address as string,
-                  publicKey: new Uint8Array(0),
-                  chains: [SUI_LOCALNET_CHAIN],
-                  features: [
-                    StandardConnect,
-                    StandardDisconnect,
-                    SuiSignPersonalMessage,
-                    SuiSignTransaction,
-                    SuiSignAndExecuteTransaction,
-                    EVEFRONTIER_SPONSORED_TRANSACTION,
-                  ],
-                })
-                this.#accounts = [localnetAccount]
-                this.#emitChangeEvent({ accounts: this.#accounts })
-                resolve({ accounts: this.accounts })
-                return
-              }
-
-              const result = m.token
-
-              sessionStorage.setItem(
-                'evevault_jwt',
-                JSON.stringify(result.access_token),
-              )
-
-              const zkLoginResponse = await getZkLoginAddress({
-                jwt: result.access_token,
-                enokiApiKey: import.meta.env.VITE_ENOKI_API_KEY,
-              })
-
-              if (zkLoginResponse.error) {
-                reject(new Error(zkLoginResponse.error.message))
-                return
-              }
-
-              if (!zkLoginResponse.data) {
-                reject(
-                  new Error('No data returned from zkLogin address lookup'),
-                )
-                return
-              }
-
-              const { address, publicKey: publicKeyB64 } = zkLoginResponse.data
-              const trimmedPublicKey = publicKeyB64.trim()
-              if (!trimmedPublicKey) {
-                reject(
-                  new Error(
-                    'No public key returned from zkLogin address lookup',
-                  ),
-                )
-                return
-              }
-
-              let publicKeyBytes: Uint8Array
-              try {
-                publicKeyBytes = fromBase64(trimmedPublicKey)
-              } catch {
-                reject(
-                  new Error(
-                    'Invalid base64 public key returned from zkLogin address lookup',
-                  ),
-                )
-                return
-              }
-
-              const newAccount = new ReadonlyWalletAccount({
-                address,
-                publicKey: publicKeyBytes,
-                chains: [
-                  this.#currentChain,
-                  this.#currentChain === SUI_TESTNET_CHAIN
-                    ? SUI_DEVNET_CHAIN
-                    : SUI_TESTNET_CHAIN,
-                ],
-                features: [
-                  StandardConnect,
-                  StandardDisconnect,
-                  SuiSignPersonalMessage,
-                  SuiSignTransaction,
-                  SuiSignAndExecuteTransaction,
-                  EVEFRONTIER_SPONSORED_TRANSACTION,
-                ],
-              })
-
-              this.#accounts = [newAccount]
-              this.#emitChangeEvent({ accounts: this.#accounts })
-              resolve({ accounts: this.accounts })
-            } catch (err) {
-              reject(err instanceof Error ? err : new Error(String(err)))
-            }
-          }
-        } else {
-          if (trySettle(state, onMsg, timeoutId)) {
-            reject(new Error(m.error?.message || 'Authentication failed'))
-          }
+        if (trySettle(state, onMsg, timeoutId)) {
+          if (m.type === 'auth_success')
+            await this.#resolveAuthSuccess(m, resolve, reject)
+          else
+            reject(
+              new Error(
+                (m.error as { message?: string })?.message ||
+                  'Authentication failed',
+              ),
+            )
         }
       }
 
       window.addEventListener('message', onMsg)
-      const timeoutId = setTimeout(() => {
+      timeoutId = setTimeout(() => {
         if (trySettle(state, onMsg)) {
           reject(new Error('Connection request timed out'))
         }
@@ -348,46 +365,25 @@ export class EveVaultWallet implements Wallet {
   #signPersonalMessage: SuiSignPersonalMessageMethod = async (
     input: SuiSignPersonalMessageInput,
   ) => {
-    return new Promise<SuiSignPersonalMessageOutput>((resolve, reject) => {
-      const id = crypto.randomUUID()
-      const state = { settled: false }
-
-      const onMsg = async (e: MessageEvent) => {
-        const m = e.data || {}
-
-        if (m.__from !== 'Eve Vault' || m.id !== id) return
-
-        if (m.type === 'sign_success') {
-          if (trySettle(state, onMsg, timeoutId)) {
-            resolve({
-              bytes: m.bytes,
-              signature: m.signature,
-            } as SuiSignPersonalMessageOutput)
-          }
-        } else if (m.type === 'sign_personal_message_error') {
-          if (trySettle(state, onMsg, timeoutId)) {
-            reject(new Error(m.error))
-          }
-        }
-      }
-
-      window.addEventListener('message', onMsg)
-      const timeoutId = setTimeout(() => {
-        if (trySettle(state, onMsg)) {
-          reject(new Error('Message signing timed out'))
-        }
-      }, APPROVAL_TIMEOUT_MS)
-      log.debug('[SuiWallet] #signPersonalMessage input', input)
-      window.postMessage(
-        {
-          __to: 'Eve Vault',
-          id,
-          action: 'sign_personal_message',
-          message: input.message,
-          account: input.account,
-        },
-        '*',
-      )
+    const id = crypto.randomUUID()
+    log.debug('[SuiWallet] #signPersonalMessage input', input)
+    return waitForVaultMessage({
+      id,
+      successType: 'sign_success',
+      errorType: 'sign_personal_message_error',
+      outbound: {
+        __to: 'Eve Vault',
+        id,
+        action: 'sign_personal_message',
+        message: input.message,
+        account: input.account,
+      },
+      mapSuccess: (m) =>
+        ({
+          bytes: m.bytes,
+          signature: m.signature,
+        }) as SuiSignPersonalMessageOutput,
+      timeoutMessage: 'Message signing timed out',
     })
   }
 
@@ -395,49 +391,25 @@ export class EveVaultWallet implements Wallet {
     input: SuiSignTransactionInput,
   ) => {
     const tx = await input.transaction.toJSON()
-
-    return new Promise<SignedTransaction>((resolve, reject) => {
-      const id = crypto.randomUUID()
-      const state = { settled: false }
-
-      const onMsg = async (e: MessageEvent) => {
-        const m = e.data || {}
-
-        if (m.__from !== 'Eve Vault' || m.id !== id) return
-        log.debug('[SuiWallet] #signTransaction message', m)
-
-        if (m.type === 'sign_success') {
-          if (trySettle(state, onMsg, timeoutId)) {
-            resolve({
-              bytes: m.bytes,
-              signature: m.signature,
-            })
-          }
-        } else if (m.type === 'sign_transaction_error') {
-          if (trySettle(state, onMsg, timeoutId)) {
-            reject(new Error(m.error))
-          }
-        }
-      }
-
-      window.addEventListener('message', onMsg)
-      const timeoutId = setTimeout(() => {
-        if (trySettle(state, onMsg)) {
-          reject(new Error('Transaction signing timed out'))
-        }
-      }, APPROVAL_TIMEOUT_MS)
-
-      window.postMessage(
-        {
-          __to: 'Eve Vault',
-          id,
-          action: 'sign_transaction',
-          transaction: tx,
-          account: input.account,
-          chain: input.chain ?? this.#currentChain,
-        },
-        '*',
-      )
+    const id = crypto.randomUUID()
+    log.debug('[SuiWallet] #signTransaction outbound')
+    return waitForVaultMessage({
+      id,
+      successType: 'sign_success',
+      errorType: 'sign_transaction_error',
+      outbound: {
+        __to: 'Eve Vault',
+        id,
+        action: 'sign_transaction',
+        transaction: tx,
+        account: input.account,
+        chain: input.chain ?? this.#currentChain,
+      },
+      mapSuccess: (m) => ({
+        bytes: m.bytes as string,
+        signature: m.signature as string,
+      }),
+      timeoutMessage: 'Transaction signing timed out',
     })
   }
 
@@ -446,90 +418,38 @@ export class EveVaultWallet implements Wallet {
   ) => {
     const tx = await input.transaction.toJSON()
     const id = crypto.randomUUID()
-
-    return new Promise<SuiSignAndExecuteTransactionOutput>(
-      (resolve, reject) => {
-        const state = { settled: false }
-
-        const onMsg = (e: MessageEvent) => {
-          const m = e.data || {}
-          if (m.__from !== 'Eve Vault' || m.id !== id) return
-
-          if (m.type === 'sign_and_execute_transaction_success') {
-            if (trySettle(state, onMsg, timeoutId)) {
-              resolve(m.result)
-            }
-          } else if (m.type === 'sign_and_execute_transaction_error') {
-            if (trySettle(state, onMsg, timeoutId)) {
-              reject(new Error(m.error))
-            }
-          }
-        }
-
-        window.addEventListener('message', onMsg)
-        const timeoutId = setTimeout(() => {
-          if (trySettle(state, onMsg)) {
-            reject(new Error('Transaction approval timed out'))
-          }
-        }, APPROVAL_TIMEOUT_MS)
-        window.postMessage(
-          {
-            __to: 'Eve Vault',
-            id,
-            action: WalletStandardMessageTypes.SIGN_AND_EXECUTE_TRANSACTION,
-            transaction: tx,
-            account: input.account,
-            chain: input.chain ?? this.#currentChain,
-          },
-          '*',
-        )
+    return waitForVaultMessage({
+      id,
+      successType: 'sign_and_execute_transaction_success',
+      errorType: 'sign_and_execute_transaction_error',
+      outbound: {
+        __to: 'Eve Vault',
+        id,
+        action: WalletStandardMessageTypes.SIGN_AND_EXECUTE_TRANSACTION,
+        transaction: tx,
+        account: input.account,
+        chain: input.chain ?? this.#currentChain,
       },
-    )
+      mapSuccess: (m) => m.result as SuiSignAndExecuteTransactionOutput,
+      timeoutMessage: 'Transaction approval timed out',
+    })
   }
 
   #signEveFrontierSponsoredTransaction: SponsoredTransactionMethod = async (
     input: SponsoredTransactionInput,
   ) => {
-    return new Promise<SponsoredTransactionOutput>((resolve, reject) => {
-      const id = crypto.randomUUID()
-      const state = { settled: false }
-
-      const onMsg = async (e: MessageEvent) => {
-        const m = e.data || {}
-
-        if (m.__from !== 'Eve Vault' || m.id !== id) return
-        log.debug('[SuiWallet] #signSponsoredTransaction message', m)
-
-        if (m.type === 'sign_success') {
-          if (trySettle(state, onMsg, timeoutId)) {
-            resolve({
-              digest: m.digest,
-              effects: m.effects,
-            })
-          }
-        } else if (m.type === 'sign_sponsored_transaction_error') {
-          if (trySettle(state, onMsg, timeoutId)) {
-            reject(new Error(m.error))
-          }
-        }
-      }
-
-      window.addEventListener('message', onMsg)
-      const timeoutId = setTimeout(() => {
-        if (trySettle(state, onMsg)) {
-          reject(new Error('Sponsored transaction timed out'))
-        }
-      }, APPROVAL_TIMEOUT_MS)
-      log.debug('[SuiWallet] #signEveFrontierSponsoredTransaction input', input)
-
-      // Check if metadata is truthy
-      const hasMetadata =
-        input.metadata &&
-        (input.metadata.name != null ||
-          input.metadata.description != null ||
-          input.metadata.url != null)
-
-      window.postMessage({
+    const id = crypto.randomUUID()
+    log.debug('[SuiWallet] #signEveFrontierSponsoredTransaction input', input)
+    const hasMetadata =
+      input.metadata &&
+      (input.metadata.name != null ||
+        input.metadata.description != null ||
+        input.metadata.url != null)
+    return waitForVaultMessage({
+      id,
+      successType: 'sign_success',
+      errorType: 'sign_sponsored_transaction_error',
+      outbound: {
         __to: 'Eve Vault',
         id,
         action:
@@ -546,7 +466,12 @@ export class EveVaultWallet implements Wallet {
             },
           }),
         },
-      })
+      },
+      mapSuccess: (m) => ({
+        digest: m.digest as string,
+        effects: m.effects as string,
+      }),
+      timeoutMessage: 'Sponsored transaction timed out',
     })
   }
 }
