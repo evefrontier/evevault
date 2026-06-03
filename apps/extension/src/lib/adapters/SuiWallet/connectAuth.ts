@@ -11,6 +11,8 @@ type AuthToken = {
   access_token: string
 }
 
+export const AUTH_SESSION_JWT_KEY = 'evevault_jwt'
+
 function getAuthToken(message: Record<string, unknown>): AuthToken {
   const token = message.token as AuthToken | undefined
   if (!token?.access_token) {
@@ -37,7 +39,10 @@ async function buildZkLoginAccount(
   chains: SuiChain[],
 ) {
   const token = getAuthToken(message)
-  sessionStorage.setItem('evevault_jwt', JSON.stringify(token.access_token))
+  sessionStorage.setItem(
+    AUTH_SESSION_JWT_KEY,
+    JSON.stringify(token.access_token),
+  )
 
   const zkLoginResponse = await getZkLoginAddress({
     jwt: token.access_token,

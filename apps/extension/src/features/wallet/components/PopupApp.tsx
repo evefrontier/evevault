@@ -142,12 +142,8 @@ function App() {
           switchTenantAndReload(tenantId as TenantId)
         }
         onResetVault={async () => {
-          try {
-            await resetVaultOnDevice()
-            navigate({ to: '/' })
-          } catch (error) {
-            log.error('Failed to reset vault', error)
-          }
+          await resetVaultOnDevice()
+          navigate({ to: '/' })
         }}
         onDevModeToggle={handleDevModeToggle}
       />
@@ -160,6 +156,7 @@ function App() {
       chain={chain}
       activeAddress={activeAddress}
       localnetUrl={localnetUrl}
+      tenantId={tenantId}
       devMode={devMode}
       faucetUrl={faucetUrl}
       authError={authError}

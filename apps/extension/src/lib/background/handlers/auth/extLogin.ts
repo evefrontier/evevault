@@ -25,11 +25,15 @@ import {
 import { KEEPER_RETRY_DELAY_MS, setPendingAuthAfterUnlock } from './pendingAuth'
 
 const log = createLogger()
-const KEEPER_RETRY_DELAYS_MS = [KEEPER_RETRY_DELAY_MS, 300] as const
+const KEEPER_RETRY_DELAY_MULTIPLIERS = [1, 3] as const
+const KEEPER_RETRY_DELAYS_MS = KEEPER_RETRY_DELAY_MULTIPLIERS.map(
+  (multiplier) => KEEPER_RETRY_DELAY_MS * multiplier,
+)
 
 type KeeperStatus = Awaited<ReturnType<typeof checkKeeperUnlocked>>
 type CurrentChain = ReturnType<typeof getCurrentChain>
 type StoredChain = Awaited<ReturnType<typeof getCurrentChainFromStorage>>
+type PublicKeySyncResult = 'ready' | 'synced' | 'missing' | 'failed'
 
 function resolveTenantId(message: MessageWithId): TenantId {
   if (
@@ -107,11 +111,10 @@ async function syncPublicKeyFromKeeper({
   id: string
   initialChain: CurrentChain
   keeperStatus: KeeperStatus
-}): Promise<boolean> {
+}): Promise<PublicKeySyncResult> {
   const deviceStore = useDeviceStore.getState()
-  if (deviceStore.ephemeralPublicKey || !keeperStatus.publicKeyBytes) {
-    return true
-  }
+  if (deviceStore.ephemeralPublicKey) return 'ready'
+  if (!keeperStatus.publicKeyBytes) return 'missing'
 
   log.info('Syncing ephemeral public key from keeper to deviceStore', {
     chain: initialChain,
@@ -133,13 +136,13 @@ async function syncPublicKeyFromKeeper({
       isLocked: false,
     })
     log.debug('Successfully synced ephemeral public key to deviceStore')
-    return true
+    return 'synced'
   } catch (error) {
     log.error('Failed to sync public key from keeper', error)
     sendAuthError(id, {
       message: 'Failed to sync vault state. Please try unlocking again.',
     })
-    return false
+    return 'failed'
   }
 }
 
@@ -298,7 +301,12 @@ export async function handleExtLogin(
     initialChain,
     keeperStatus,
   })
-  if (!didSync || !ensureDevicePublicKey(id, initialChain)) return
+  if (didSync === 'failed') return
+  if (didSync === 'missing') {
+    ensureDevicePublicKey(id, initialChain)
+    return
+  }
+  if (!ensureDevicePublicKey(id, initialChain)) return
 
   const currentChain = await getCurrentChainFromStorage()
   const nonce = await getNonceForChain(id, currentChain)

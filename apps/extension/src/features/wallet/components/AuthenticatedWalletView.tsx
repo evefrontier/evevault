@@ -1,4 +1,4 @@
-import { getCurrentTenantId } from '@evevault/shared'
+import type { TenantId } from '@evefrontier/wallet-core/definitions'
 import {
   HeaderMobile,
   NetworkSelector,
@@ -21,7 +21,7 @@ function TransactionDigestLink({
   localnetUrl?: string
 }) {
   const href = getSuiscanUrl(chain, txDigest, {
-    localnetUrl: localnetUrl ?? undefined,
+    localnetUrl,
   })
 
   return (
@@ -39,6 +39,7 @@ export function AuthenticatedWalletView({
   chain,
   activeAddress,
   localnetUrl,
+  tenantId,
   devMode,
   faucetUrl,
   authError,
@@ -58,6 +59,7 @@ export function AuthenticatedWalletView({
   chain: SuiChain
   activeAddress: string | null | undefined
   localnetUrl?: string
+  tenantId: TenantId
   devMode: boolean
   faucetUrl?: string | null
   authError: string | null
@@ -78,7 +80,7 @@ export function AuthenticatedWalletView({
     : undefined
 
   return (
-    <div className="flex flex-col  h-full">
+    <div className="flex flex-col h-full">
       <HeaderMobile
         address={activeAddress ?? ''}
         email={user.profile?.email ?? ''}
@@ -109,10 +111,7 @@ export function AuthenticatedWalletView({
           onNetworkSwitchStart={onNetworkSwitchStart}
         />
 
-        <TenantSelector
-          currentTenantId={getCurrentTenantId()}
-          viewOnly={true}
-        />
+        <TenantSelector currentTenantId={tenantId} viewOnly={true} />
       </div>
 
       {authError && <Text color="error">AuthError: {authError}</Text>}

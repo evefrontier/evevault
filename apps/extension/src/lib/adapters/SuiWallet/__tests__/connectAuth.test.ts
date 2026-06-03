@@ -5,7 +5,10 @@ import {
   SUI_TESTNET_CHAIN,
 } from '@mysten/wallet-standard'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { getAccountsFromAuthSuccess } from '../connectAuth'
+import {
+  AUTH_SESSION_JWT_KEY,
+  getAccountsFromAuthSuccess,
+} from '../connectAuth'
 
 vi.mock('@evevault/shared/auth', () => ({
   getZkLoginAddress: vi.fn(),
@@ -60,12 +63,21 @@ describe('getAccountsFromAuthSuccess', () => {
     expect(account.address).toBe('0xzk')
     expect(account.chains).toEqual([SUI_TESTNET_CHAIN, SUI_DEVNET_CHAIN])
     expect(account.publicKey).toEqual(new Uint8Array([1, 2, 3]))
-    expect(sessionStorage.getItem('evevault_jwt')).toBe('"jwt-token"')
+    expect(sessionStorage.getItem(AUTH_SESSION_JWT_KEY)).toBe('"jwt-token"')
   })
 
   it('throws when the auth response does not include an access token', async () => {
     await expect(
       getAccountsFromAuthSuccess({}, [SUI_TESTNET_CHAIN, SUI_DEVNET_CHAIN]),
+    ).rejects.toThrow('Authentication response missing access token')
+  })
+
+  it('throws when the auth response includes an empty access token', async () => {
+    await expect(
+      getAccountsFromAuthSuccess({ token: { access_token: '' } }, [
+        SUI_TESTNET_CHAIN,
+        SUI_DEVNET_CHAIN,
+      ]),
     ).rejects.toThrow('Authentication response missing access token')
   })
 

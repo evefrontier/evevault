@@ -236,6 +236,65 @@ describe('handleExtLogin', () => {
     expect(mockGetAuthRequest).not.toHaveBeenCalled()
   })
 
+  it('syncs public key bytes from keeper before starting OAuth', async () => {
+    const publicKeyBytes = Array.from({ length: 32 }, (_, index) => index + 1)
+    const storedSecretKey = { iv: 'iv', data: 'data' }
+    mockCheckKeeperUnlocked.mockResolvedValue({
+      unlocked: true,
+      publicKeyBytes,
+    })
+    mocks.getEphemeralKeyPairSecretKeyFromStorage.mockResolvedValue(
+      storedSecretKey,
+    )
+    mocks.deviceState.networkData = {
+      'sui:testnet': { nonce: 'nonce-value' },
+    }
+
+    await handleExtLogin(
+      makeMessage(),
+      {} as chrome.runtime.MessageSender,
+      vi.fn(),
+    )
+
+    await vi.waitFor(() => {
+      expect(mockSendAuthSuccess).toHaveBeenCalledWith('message-id', {
+        id_token: 'id-token',
+      })
+    })
+    expect(mockUseDeviceStore.setState).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ephemeralPublicKeyBytes: publicKeyBytes,
+        ephemeralKeyPairSecretKey: storedSecretKey,
+        isLocked: false,
+      }),
+    )
+    expect(mockGetAuthRequest).toHaveBeenCalledWith({
+      tenantId: 'tenant-default',
+      nonce: 'nonce-value',
+    })
+  })
+
+  it('sends an auth error when keeper public key bytes cannot be synced', async () => {
+    mockCheckKeeperUnlocked.mockResolvedValue({
+      unlocked: true,
+      publicKeyBytes: [1, 2, 3],
+    })
+    mocks.deviceState.networkData = {
+      'sui:testnet': { nonce: 'nonce-value' },
+    }
+
+    await handleExtLogin(
+      makeMessage(),
+      {} as chrome.runtime.MessageSender,
+      vi.fn(),
+    )
+
+    expect(mockSendAuthError).toHaveBeenCalledWith('message-id', {
+      message: 'Failed to sync vault state. Please try unlocking again.',
+    })
+    expect(mockGetAuthRequest).not.toHaveBeenCalled()
+  })
+
   it('uses an explicitly available tenant and completes OAuth successfully', async () => {
     mocks.isAvailableTenantId.mockReturnValue(true)
     mocks.deviceState.ephemeralPublicKey = { existing: true }

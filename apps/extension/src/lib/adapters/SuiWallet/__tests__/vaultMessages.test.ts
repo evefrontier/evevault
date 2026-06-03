@@ -83,6 +83,54 @@ describe('waitForVaultMessage', () => {
     await expect(promise).rejects.toThrow('rejected')
   })
 
+  it('uses the message from structured error responses', async () => {
+    const promise = waitForVaultMessage({
+      id: 'request-structured-error',
+      successType: 'ok',
+      errorType: 'error',
+      outbound: { __to: 'Eve Vault', id: 'request-structured-error' },
+      mapSuccess: (message) => message,
+      timeoutMessage: 'timed out',
+    })
+
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        data: {
+          __from: 'Eve Vault',
+          id: 'request-structured-error',
+          type: 'error',
+          error: { message: 'structured rejection' },
+        },
+      }),
+    )
+
+    await expect(promise).rejects.toThrow('structured rejection')
+  })
+
+  it('uses a fallback message when error responses have no message', async () => {
+    const promise = waitForVaultMessage({
+      id: 'request-empty-error',
+      successType: 'ok',
+      errorType: 'error',
+      outbound: { __to: 'Eve Vault', id: 'request-empty-error' },
+      mapSuccess: (message) => message,
+      timeoutMessage: 'timed out',
+    })
+
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        data: {
+          __from: 'Eve Vault',
+          id: 'request-empty-error',
+          type: 'error',
+          error: {},
+        },
+      }),
+    )
+
+    await expect(promise).rejects.toThrow('Request failed')
+  })
+
   it('rejects when no matching response arrives before the timeout', async () => {
     vi.useFakeTimers()
     const promise = waitForVaultMessage({
