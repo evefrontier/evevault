@@ -55,14 +55,19 @@ const unlockDeviceForPlatform = async (
   const publicKey = isWeb()
     ? await unlockWebDevice(pin, set)
     : await unlockExtensionDevice(pin, set, get)
+  if (publicKey === undefined) return
+
   setUnlockedState(set, publicKey)
 }
 
-const unlockWebDevice = async (pin: string, set: SetDeviceState) => {
+const unlockWebDevice = async (
+  pin: string,
+  set: SetDeviceState,
+): Promise<PublicKey | null | undefined> => {
   const hasKeypair = await ephKeyService.hasKeypair()
   if (!hasKeypair) {
     set({ error: 'No keypair available' })
-    return null
+    return undefined
   }
 
   return ephKeyService.unlockVault(null, pin)
@@ -72,11 +77,11 @@ const unlockExtensionDevice = async (
   pin: string,
   set: SetDeviceState,
   get: GetDeviceState,
-) => {
+): Promise<PublicKey | null | undefined> => {
   const storedKey = get().ephemeralKeyPairSecretKey
   if (!storedKey) {
     set({ error: 'No secret key available' })
-    return null
+    return undefined
   }
 
   return ephKeyService.unlockVault(storedKey, pin)
