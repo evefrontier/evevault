@@ -3,6 +3,7 @@ import { createLogger } from '@evevault/shared/utils'
 import type {
   BackgroundMessage,
   EveFrontierSponsoredTransactionMessage,
+  VaultMessage,
   WalletActionMessage,
   WebUnlockMessage,
 } from '@/lib/background/types'
@@ -30,6 +31,79 @@ import { handleApprovePopup } from './walletHandlers'
 
 const log = createLogger()
 
+type MsgSender = chrome.runtime.MessageSender
+type SendResponse = (response?: unknown) => void
+
+// Auth action handlers. 'connect' is keyed by message.type rather than action
+// because the wallet-standard connect message arrives with type='connect', not action='connect'.
+const AUTH_HANDLERS: Partial<
+  Record<
+    string,
+    (
+      m: BackgroundMessage,
+      s: MsgSender,
+      sr: SendResponse,
+      tabId?: number,
+    ) => void
+  >
+> = {
+  ext_login: (m, s, sr) => handleExtLogin(m, s, sr),
+  dapp_login: (m, s, sr, tabId) =>
+    void handleDappLogin(m, s, sr, tabId).catch((e) =>
+      log.error('handleDappLogin failed', e),
+    ),
+  connect: (m, s, sr, tabId) =>
+    void handleDappLogin(m, s, sr, tabId).catch((e) =>
+      log.error('handleDappLogin failed', e),
+    ),
+  web_unlock: (m, s, sr) =>
+    void handleWebUnlock(m as WebUnlockMessage, s, sr).catch((e) =>
+      log.error('handleWebUnlock failed', e),
+    ),
+}
+
+// Wallet Standard action handlers — all keyed by the action field of the message.
+const WALLET_ACTION_HANDLERS: Partial<
+  Record<
+    string,
+    (m: BackgroundMessage, s: MsgSender, sr: SendResponse) => unknown
+  >
+> = {
+  [WalletStandardMessageTypes.SIGN_PERSONAL_MESSAGE]: (m, s, sr) =>
+    handleApprovePopup(m as WalletActionMessage, s, sr),
+  [WalletStandardMessageTypes.SIGN_TRANSACTION]: (m, s, sr) =>
+    handleApprovePopup(m as WalletActionMessage, s, sr),
+  [WalletStandardMessageTypes.SIGN_AND_EXECUTE_TRANSACTION]: (m, s, sr) =>
+    handleApprovePopup(m as WalletActionMessage, s, sr),
+  [WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION]: (
+    m,
+    s,
+    sr,
+  ) =>
+    handleSponsoredTransaction(
+      m as EveFrontierSponsoredTransactionMessage,
+      s,
+      sr,
+    ),
+}
+
+// Vault message type handlers.
+type VaultHandler = (m: VaultMessage, s: MsgSender, sr: SendResponse) => unknown
+const VAULT_HANDLERS: Partial<Record<string, VaultHandler>> = {
+  [VaultMessageTypes.UNLOCK_VAULT]: handleUnlockVault,
+  [VaultMessageTypes.LOCK]: handleLock,
+  [VaultMessageTypes.CREATE_KEYPAIR]: _handleCreateKeypair,
+  [VaultMessageTypes.ROTATE_KEYPAIR]: _handleRotateKeypair,
+  [VaultMessageTypes.GET_PUBLIC_KEY]: _handleGetPublicKey,
+  [VaultMessageTypes.ZK_EPH_SIGN_BYTES]: _handleZkEphSignBytes,
+  [VaultMessageTypes.SET_ZKPROOF]: _handleSetZkProof,
+  [VaultMessageTypes.GET_ZKPROOF]: _handleGetZkProof,
+  [VaultMessageTypes.CLEAR_ZKPROOF]: _handleClearZkProof,
+  [VaultMessageTypes.LOCALNET_SET_KEYPAIR]: _handleLocalnetSetKeypair,
+  [VaultMessageTypes.LOCALNET_GET_ADDRESS]: _handleLocalnetGetAddress,
+  [VaultMessageTypes.LOCALNET_SIGN_BYTES]: _handleLocalnetSignBytes,
+}
+
 export function handleMessage(
   message: BackgroundMessage,
   sender: chrome.runtime.MessageSender,
@@ -38,123 +112,23 @@ export function handleMessage(
   const tabId = sender.tab?.id
   const { action, type } = message
 
-  // Auth handlers
-  if (action === 'ext_login') {
-    handleExtLogin(message, sender, sendResponse)
+  const authHandler = AUTH_HANDLERS[action ?? ''] ?? AUTH_HANDLERS[type ?? '']
+  if (authHandler) {
+    authHandler(message, sender, sendResponse, tabId)
     return true
   }
 
-  if (action === 'dapp_login' || type === 'connect') {
-    void handleDappLogin(message, sender, sendResponse, tabId).catch(
-      (error) => {
-        log.error('handleDappLogin failed', error)
-      },
-    )
+  const walletHandler = WALLET_ACTION_HANDLERS[action ?? '']
+  if (walletHandler) return walletHandler(message, sender, sendResponse)
+
+  const vaultHandler = VAULT_HANDLERS[type ?? '']
+  if (vaultHandler) {
+    vaultHandler(message as VaultMessage, sender, sendResponse)
     return true
   }
 
-  if (action === 'web_unlock') {
-    void handleWebUnlock(
-      message as WebUnlockMessage,
-      sender,
-      sendResponse,
-    ).catch((error) => {
-      log.error('handleWebUnlock failed', error)
-    })
-    return true
-  }
-
-  // Wallet Standard handlers
-  if (
-    action === WalletStandardMessageTypes.SIGN_PERSONAL_MESSAGE ||
-    action === WalletStandardMessageTypes.SIGN_TRANSACTION ||
-    action === WalletStandardMessageTypes.SIGN_AND_EXECUTE_TRANSACTION
-  ) {
-    return handleApprovePopup(
-      message as WalletActionMessage,
-      sender,
-      sendResponse,
-    )
-  }
-
-  if (
-    action === WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION
-  ) {
-    return handleSponsoredTransaction(
-      message as EveFrontierSponsoredTransactionMessage,
-      sender,
-      sendResponse,
-    )
-  }
-
-  // Vault handlers
-  if (message.type === VaultMessageTypes.UNLOCK_VAULT) {
-    handleUnlockVault(message, sender, sendResponse)
-    return true
-  }
-
-  if (message.type === VaultMessageTypes.LOCK) {
-    handleLock(message, sender, sendResponse)
-    return true
-  }
-
-  if (message.type === VaultMessageTypes.CREATE_KEYPAIR) {
-    _handleCreateKeypair(message, sender, sendResponse)
-    return true
-  }
-
-  if (message.type === VaultMessageTypes.ROTATE_KEYPAIR) {
-    _handleRotateKeypair(message, sender, sendResponse)
-    return true
-  }
-
-  if (message.type === VaultMessageTypes.GET_PUBLIC_KEY) {
-    _handleGetPublicKey(message, sender, sendResponse)
-    return true
-  }
-
-  if (message.type === VaultMessageTypes.ZK_EPH_SIGN_BYTES) {
-    _handleZkEphSignBytes(message, sender, sendResponse)
-    return true
-  }
-
-  if (message.type === VaultMessageTypes.SET_ZKPROOF) {
-    _handleSetZkProof(message, sender, sendResponse)
-    return true
-  }
-
-  if (message.type === VaultMessageTypes.GET_ZKPROOF) {
-    _handleGetZkProof(message, sender, sendResponse)
-    return true
-  }
-
-  if (message.type === VaultMessageTypes.CLEAR_ZKPROOF) {
-    _handleClearZkProof(message, sender, sendResponse)
-    return true
-  }
-
-  // Localnet dev signing
-  if (message.type === VaultMessageTypes.LOCALNET_SET_KEYPAIR) {
-    _handleLocalnetSetKeypair(message, sender, sendResponse)
-    return true
-  }
-
-  if (message.type === VaultMessageTypes.LOCALNET_GET_ADDRESS) {
-    void _handleLocalnetGetAddress(message, sender, sendResponse)
-    return true
-  }
-
-  if (message.type === VaultMessageTypes.LOCALNET_SIGN_BYTES) {
-    void _handleLocalnetSignBytes(message, sender, sendResponse)
-    return true
-  }
-
-  // Handle change events
-  // Forward chain change events to all tabs
   if (message.event === 'change' && message.payload) {
     log.info('Broadcasting chain change event', message.payload)
-
-    // Broadcast chain change to all tabs so the wallet can update
     chrome.tabs.query({}, (tabs) => {
       tabs.forEach((tab) => {
         if (tab.id) {
@@ -169,6 +143,5 @@ export function handleMessage(
     return
   }
 
-  // Default case
   log.warn('Unknown background message', message)
 }

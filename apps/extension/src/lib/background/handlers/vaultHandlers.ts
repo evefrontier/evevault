@@ -51,6 +51,25 @@ export async function sendToKeeper(message: any, retries = 3): Promise<any> {
   })
 }
 
+// Higher-level wrapper over sendToKeeper: maps the keeper response to a
+// sendResponse payload and catches errors. sendToKeeper handles transport
+// (retries, offscreen); this handles the handler contract (ok/error shape).
+async function forwardToKeeper(
+  sendResponse: (r?: unknown) => void,
+  message: Record<string, unknown>,
+  mapResponse: (r: Record<string, unknown>) => unknown,
+): Promise<boolean> {
+  try {
+    sendResponse(mapResponse((await sendToKeeper(message)) ?? {}))
+  } catch (error) {
+    sendResponse({
+      ok: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    })
+  }
+  return true
+}
+
 /**
  * Handles UNLOCK_VAULT message - decrypts and loads the ephemeral key into keeper
  */
@@ -109,164 +128,92 @@ export async function handleUnlockVault(
 /**
  * Handles LOCK message - locks the vault and clears the ephemeral key and zkProofs
  */
-export async function handleLock(
+export function handleLock(
   _message: VaultMessage,
   _sender: chrome.runtime.MessageSender,
   sendResponse: (response?: unknown) => void,
-): Promise<boolean | undefined> {
-  try {
-    const keeperResponse = await sendToKeeper({
-      type: KeeperMessageTypes.CLEAR_EPHKEY,
-    })
-
-    log.info('[VaultHandler] Keeper response:', keeperResponse)
-
-    if (keeperResponse?.ok) {
-      sendResponse({ ok: true })
-    } else {
-      const errorMessage = keeperResponse?.error || 'Failed to lock vault'
-      log.error('[VaultHandler] Lock failed:', errorMessage)
-      sendResponse({
-        ok: false,
-        error: errorMessage,
-      })
-    }
-  } catch (error) {
-    log.error('[VaultHandler] Error locking vault:', error)
-    sendResponse({
-      ok: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    })
-  }
-
-  return true
+): Promise<boolean> {
+  return forwardToKeeper(
+    sendResponse,
+    { type: KeeperMessageTypes.CLEAR_EPHKEY },
+    (r) =>
+      r?.ok
+        ? { ok: true }
+        : { ok: false, error: r?.error || 'Failed to lock vault' },
+  )
 }
 
-/**
- * Handles CREATE_KEYPAIR message - generates a new ephemeral key pair
- */
 export function _handleCreateKeypair(
   message: VaultMessage,
   _sender: chrome.runtime.MessageSender,
   sendResponse: (response?: unknown) => void,
-): boolean {
+): Promise<boolean> {
   const { pin } = message
-
-  // Start async operation but return true immediately to keep channel open
-  ;(async () => {
-    try {
-      const keeperResponse = await sendToKeeper({
-        type: KeeperMessageTypes.CREATE_KEYPAIR,
-        pin,
-      })
-
-      if (keeperResponse?.ok) {
-        sendResponse({
-          ok: true,
-          hashedSecretKey: keeperResponse.hashedSecretKey,
-          publicKeyBytes: keeperResponse.publicKeyBytes,
-        })
-      } else {
-        sendResponse({
-          ok: false,
-          error: keeperResponse?.error || 'Failed to set key in keeper',
-        })
-      }
-    } catch (error) {
-      sendResponse({
-        ok: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      })
-    }
-  })()
-
-  return true // Return synchronously to keep channel open
+  return forwardToKeeper(
+    sendResponse,
+    { type: KeeperMessageTypes.CREATE_KEYPAIR, pin },
+    (r) =>
+      r?.ok
+        ? {
+            ok: true,
+            hashedSecretKey: r.hashedSecretKey,
+            publicKeyBytes: r.publicKeyBytes,
+          }
+        : { ok: false, error: r?.error || 'Failed to set key in keeper' },
+  )
 }
 
-/**
- * Handles ROTATE_KEYPAIR message - rotates the ephemeral key pair using the active keeper session
- */
 export function _handleRotateKeypair(
   _message: VaultMessage,
   _sender: chrome.runtime.MessageSender,
   sendResponse: (response?: unknown) => void,
-): boolean {
-  ;(async () => {
-    try {
-      const keeperResponse = await sendToKeeper({
-        type: KeeperMessageTypes.ROTATE_KEYPAIR,
-      })
-
-      if (keeperResponse?.ok) {
-        sendResponse({
-          ok: true,
-          hashedSecretKey: keeperResponse.hashedSecretKey,
-          publicKeyBytes: keeperResponse.publicKeyBytes,
-        })
-      } else {
-        sendResponse({
-          ok: false,
-          error:
-            keeperResponse?.error ||
-            'Vault must be unlocked again before rotating keypair',
-        })
-      }
-    } catch (error) {
-      sendResponse({
-        ok: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      })
-    }
-  })()
-
-  return true
+): Promise<boolean> {
+  return forwardToKeeper(
+    sendResponse,
+    { type: KeeperMessageTypes.ROTATE_KEYPAIR },
+    (r) =>
+      r?.ok
+        ? {
+            ok: true,
+            hashedSecretKey: r.hashedSecretKey,
+            publicKeyBytes: r.publicKeyBytes,
+          }
+        : {
+            ok: false,
+            error:
+              r?.error ||
+              'Vault must be unlocked again before rotating keypair',
+          },
+  )
 }
 
 /**
  * Handles GET_PUBLIC_KEY message - returns the current ephemeral public key from keeper
  */
-export async function _handleGetPublicKey(
+export function _handleGetPublicKey(
   _message: VaultMessage,
   _sender: chrome.runtime.MessageSender,
   sendResponse: (response?: unknown) => void,
 ): Promise<boolean> {
-  try {
-    const response = await sendToKeeper({
-      type: KeeperMessageTypes.GET_PUBLIC_KEY,
-    })
-
-    if (response?.ok && response?.publicKeyBytes) {
-      sendResponse({
-        ok: true,
-        publicKeyBytes: response.publicKeyBytes,
-      })
-    } else {
-      sendResponse({
-        error: response?.error || 'EVE Vault is LOCKED',
-      })
-    }
-  } catch (error) {
-    sendResponse({
-      error: error instanceof Error ? error.message : 'Unknown error',
-    })
-  }
-
-  return true
+  return forwardToKeeper(
+    sendResponse,
+    { type: KeeperMessageTypes.GET_PUBLIC_KEY },
+    (r) =>
+      r?.ok && r?.publicKeyBytes
+        ? { ok: true, publicKeyBytes: r.publicKeyBytes }
+        : { ok: false, error: r?.error || 'EVE Vault is LOCKED' },
+  )
 }
 
-/**
- * Handles ZK_EPH_SIGN_BYTES message - signs bytes with the ephemeral key from keeper
- */
-export async function _handleZkEphSignBytes(
+export function _handleZkEphSignBytes(
   message: VaultMessage,
   _sender: chrome.runtime.MessageSender,
   sendResponse: (response?: unknown) => void,
 ): Promise<boolean> {
   const { msgBytes, scope, sui_address } = message
-
-  try {
-    // Forward the signing request to the keeper
-    const response = await sendToKeeper({
+  return forwardToKeeper(
+    sendResponse,
+    {
       type: KeeperMessageTypes.EPH_SIGN,
       msgBytes: Array.isArray(msgBytes)
         ? msgBytes
@@ -277,136 +224,77 @@ export async function _handleZkEphSignBytes(
           ),
       scope,
       sui_address,
-    })
-
-    if (response?.ok && response?.bytes && response?.userSignature) {
-      sendResponse({
-        ok: true,
-        bytes: response.bytes,
-        userSignature: response.userSignature,
-      })
-    } else {
-      sendResponse({
-        ok: false,
-        error: response?.error || '[VaultHandler] Failed to sign bytes',
-      })
-    }
-  } catch (error) {
-    sendResponse({
-      ok: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    })
-  }
-
-  return true
+    },
+    (r) =>
+      r?.ok && r?.bytes && r?.userSignature
+        ? { ok: true, bytes: r.bytes, userSignature: r.userSignature }
+        : {
+            ok: false,
+            error: r?.error || '[VaultHandler] Failed to sign bytes',
+          },
+  )
 }
 
 /**
  * Handles SET_ZKPROOF message - stores zkProof in keeper for a specific chain
  */
-export async function _handleSetZkProof(
+export function _handleSetZkProof(
   message: VaultMessage,
   _sender: chrome.runtime.MessageSender,
   sendResponse: (response?: unknown) => void,
 ): Promise<boolean> {
   const { chain, zkProof } = message
-
-  try {
-    const response = await sendToKeeper({
-      type: 'KEEPER_SET_ZKPROOF',
-      chain,
-      zkProof,
-    })
-
-    if (response?.ok) {
-      sendResponse({ ok: true })
-    } else {
-      sendResponse({
-        ok: false,
-        error: response?.error || 'Failed to set zkProof in keeper',
-      })
-    }
-  } catch (error) {
-    sendResponse({
-      ok: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    })
-  }
-
-  return true
+  return forwardToKeeper(
+    sendResponse,
+    { type: 'KEEPER_SET_ZKPROOF', chain, zkProof },
+    (r) =>
+      r?.ok
+        ? { ok: true }
+        : { ok: false, error: r?.error || 'Failed to set zkProof in keeper' },
+  )
 }
 
 /**
  * Handles GET_ZKPROOF message - retrieves zkProof from keeper for a specific chain
  */
-export async function _handleGetZkProof(
+export function _handleGetZkProof(
   message: VaultMessage,
   _sender: chrome.runtime.MessageSender,
   sendResponse: (response?: unknown) => void,
 ): Promise<boolean> {
   const { chain } = message
-
-  try {
-    const response = await sendToKeeper({
-      type: KeeperMessageTypes.GET_ZKPROOF,
-      chain,
-    })
-
-    if (response?.ok) {
-      sendResponse({
-        ok: true,
-        zkProof: response.zkProof,
-      })
-    } else {
-      sendResponse({
-        ok: false,
-        error: response?.error || 'Failed to get zkProof from keeper',
-        zkProof: null,
-      })
-    }
-  } catch (error) {
-    sendResponse({
-      ok: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-      zkProof: null,
-    })
-  }
-
-  return true
+  return forwardToKeeper(
+    sendResponse,
+    { type: KeeperMessageTypes.GET_ZKPROOF, chain },
+    (r) =>
+      r?.ok
+        ? { ok: true, zkProof: r.zkProof }
+        : {
+            ok: false,
+            error: r?.error || 'Failed to get zkProof from keeper',
+            zkProof: null,
+          },
+  )
 }
 
 /**
  * Handles CLEAR_ZKPROOF message - clears zkProofs from keeper
  */
-export async function _handleClearZkProof(
+export function _handleClearZkProof(
   _message: VaultMessage,
   _sender: chrome.runtime.MessageSender,
   sendResponse: (response?: unknown) => void,
 ): Promise<boolean> {
-  try {
-    const response = await sendToKeeper({
-      type: KeeperMessageTypes.CLEAR_ZKPROOF,
-    })
-
-    if (response?.ok) {
-      sendResponse({
-        ok: true,
-        zkProof: response.zkProof,
-      })
-    } else {
-      sendResponse({
-        ok: false,
-        error: response?.error || 'Failed to get zkProof from keeper',
-        zkProof: null,
-      })
-    }
-  } catch (error) {
-    sendResponse({
-      ok: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-      zkProof: null,
-    })
-  }
-
-  return true
+  return forwardToKeeper(
+    sendResponse,
+    { type: KeeperMessageTypes.CLEAR_ZKPROOF },
+    (r) =>
+      r?.ok
+        ? { ok: true, zkProof: r.zkProof }
+        : {
+            ok: false,
+            error: r?.error || 'Failed to get zkProof from keeper',
+            zkProof: null,
+          },
+  )
 }
