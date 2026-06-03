@@ -64,21 +64,23 @@ function useTokenRowDisplay({
 }): TokenRowDisplay {
   const balance = isLoading ? '...' : (data?.formattedBalance ?? '0')
   const symbol = getTokenSymbol(coinType, data?.metadata)
+  const displayBalance = useRefreshText(
+    balance,
+    isRefreshing,
+    refreshTick,
+    scrambleBalanceWithFixedFirst,
+  )
+  const displaySymbol = useRefreshText(
+    symbol,
+    isRefreshing,
+    refreshTick,
+    scrambleLetters,
+  )
 
   return {
     balance,
-    displayBalance: useRefreshText(
-      balance,
-      isRefreshing,
-      refreshTick,
-      scrambleBalanceWithFixedFirst,
-    ),
-    displaySymbol: useRefreshText(
-      symbol,
-      isRefreshing,
-      refreshTick,
-      scrambleLetters,
-    ),
+    displayBalance,
+    displaySymbol,
     shortAddress: `${coinType.slice(0, 6)}•••${coinType.slice(-4)}`,
     symbol,
     tokenName: getTokenName(coinType, data?.metadata),

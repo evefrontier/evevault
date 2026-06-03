@@ -31,8 +31,8 @@ export function TransactionsHeader({
   return (
     <>
       <HeaderMobile
-        address={suiAddress as string}
-        email={email as string}
+        address={suiAddress ?? ''}
+        email={email ?? ''}
         onTransactionsClick={onBack}
       />
       <div className="flex items-center gap-4">

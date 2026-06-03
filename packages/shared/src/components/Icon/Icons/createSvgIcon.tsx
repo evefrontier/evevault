@@ -13,6 +13,7 @@ type IconPath = {
 
 type IconOptions = {
   ariaLabel: string
+  clipPathId?: string
   defaultColor?: string
   paths: IconPath[]
   svgFill?: IconColorValue
@@ -31,6 +32,7 @@ function getPathFill(path: IconPath, color: string) {
 
 export function createSvgIcon({
   ariaLabel,
+  clipPathId,
   defaultColor = 'var(--neutral)',
   paths,
   svgFill = 'none',
@@ -51,17 +53,42 @@ export function createSvgIcon({
       aria-label={ariaLabel}
       role="img"
     >
-      {paths.map((path) => (
-        <path
-          key={path.d}
-          d={path.d}
-          fill={getPathFill(path, color)}
-          fillRule={path.fillRule}
-          clipRule={path.clipRule}
-          stroke={resolveIconColor(path.stroke, color)}
-          strokeWidth={path.strokeWidth}
-        />
-      ))}
+      {clipPathId ? (
+        <g clipPath={`url(#${clipPathId})`}>
+          {paths.map((path, index) => (
+            <path
+              // biome-ignore lint/suspicious/noArrayIndexKey: icon path arrays are static; index avoids duplicate keys for repeated path data.
+              key={index}
+              d={path.d}
+              fill={getPathFill(path, color)}
+              fillRule={path.fillRule}
+              clipRule={path.clipRule}
+              stroke={resolveIconColor(path.stroke, color)}
+              strokeWidth={path.strokeWidth}
+            />
+          ))}
+        </g>
+      ) : (
+        paths.map((path, index) => (
+          <path
+            // biome-ignore lint/suspicious/noArrayIndexKey: icon path arrays are static; index avoids duplicate keys for repeated path data.
+            key={index}
+            d={path.d}
+            fill={getPathFill(path, color)}
+            fillRule={path.fillRule}
+            clipRule={path.clipRule}
+            stroke={resolveIconColor(path.stroke, color)}
+            strokeWidth={path.strokeWidth}
+          />
+        ))
+      )}
+      {clipPathId ? (
+        <defs>
+          <clipPath id={clipPathId}>
+            <rect width="16" height="16" fill="white" />
+          </clipPath>
+        </defs>
+      ) : null}
     </svg>
   )
 

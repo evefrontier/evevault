@@ -98,7 +98,7 @@ export function DropdownSelectMenu({
 }) {
   return (
     <div className="dropdown-select__menu" ref={menuRef}>
-      {children ??
+      {children ||
         items?.map((item, index) => (
           <DropdownSelectItem
             key={item.label}

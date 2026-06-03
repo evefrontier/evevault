@@ -38,6 +38,7 @@ export function useOutsideClick(
     onClickOutsideRef.current = onClickOutside
   }, [onClickOutside])
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: dropdownRef is stable; onClickOutsideRef keeps the callback fresh.
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current?.contains(event.target as Node)) return
@@ -46,7 +47,7 @@ export function useOutsideClick(
 
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [dropdownRef])
+  }, [])
 }
 
 export function useMeasuredMenuHeight(isOpen: boolean) {
