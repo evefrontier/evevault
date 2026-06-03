@@ -58,6 +58,7 @@ describe('localnetDeviceStorage', () => {
 
   it.each([
     ['empty storage', undefined],
+    ['primitive device storage', 7],
     ['invalid device storage JSON', '{not-json'],
     ['missing encryptedKey', JSON.stringify({ state: { localnet: {} } })],
     [

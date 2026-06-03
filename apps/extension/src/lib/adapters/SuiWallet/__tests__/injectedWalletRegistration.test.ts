@@ -143,4 +143,66 @@ describe('registerInjectedWallet', () => {
 
     expect(setChain).not.toHaveBeenCalled()
   })
+
+  it('ignores wallet change messages that are not sent from the page window', () => {
+    const addEventListener = vi.spyOn(window, 'addEventListener')
+    registerInjectedWallet()
+    const wallet = mockRegisterWallet.mock.calls[0][0] as EveVaultWallet
+    const setChain = vi.spyOn(wallet, 'setChain')
+    const listener = addEventListener.mock.calls.find(
+      ([eventName]) => eventName === 'message',
+    )?.[1] as EventListener
+
+    listener(
+      new MessageEvent('message', {
+        data: {
+          __from: 'Eve Vault',
+          event: 'change',
+          payload: {
+            chains: [SUI_TESTNET_CHAIN],
+          },
+        },
+      }),
+    )
+
+    expect(setChain).not.toHaveBeenCalled()
+  })
+
+  it('treats missing and partial wallet change payloads as no-ops for absent fields', () => {
+    const addEventListener = vi.spyOn(window, 'addEventListener')
+    registerInjectedWallet()
+    const wallet = mockRegisterWallet.mock.calls[0][0] as EveVaultWallet
+    const setChain = vi.spyOn(wallet, 'setChain')
+    const disconnect = vi.spyOn(wallet, 'disconnect')
+    const setFeatures = vi.spyOn(wallet, 'setFeatures')
+    const listener = addEventListener.mock.calls.find(
+      ([eventName]) => eventName === 'message',
+    )?.[1] as EventListener
+
+    listener(
+      new MessageEvent('message', {
+        data: {
+          __from: 'Eve Vault',
+          event: 'change',
+        },
+        source: window,
+      }),
+    )
+    listener(
+      new MessageEvent('message', {
+        data: {
+          __from: 'Eve Vault',
+          event: 'change',
+          payload: {
+            accounts: [{ address: '0xaccount' }],
+          },
+        },
+        source: window,
+      }),
+    )
+
+    expect(setChain).not.toHaveBeenCalled()
+    expect(disconnect).not.toHaveBeenCalled()
+    expect(setFeatures).not.toHaveBeenCalled()
+  })
 })

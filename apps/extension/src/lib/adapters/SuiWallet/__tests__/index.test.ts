@@ -158,6 +158,44 @@ describe('EveVaultWallet', () => {
     )
   })
 
+  it('ignores unrelated connect messages until the matching auth response arrives', async () => {
+    const wallet = new EveVaultWallet()
+    const promise = wallet.features[StandardConnect].connect()
+
+    window.dispatchEvent(new MessageEvent('message'))
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        data: {
+          __from: 'Elsewhere',
+          id: 'request-id',
+          type: 'auth_error',
+          error: { message: 'ignored wrong source' },
+        },
+      }),
+    )
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        data: {
+          __from: 'Eve Vault',
+          id: 'other-request',
+          type: 'auth_error',
+          error: { message: 'ignored wrong id' },
+        },
+      }),
+    )
+    dispatchVaultMessage({
+      type: 'auth_success',
+      chain: SUI_LOCALNET_CHAIN,
+      address: '0xlocal',
+    })
+
+    await expect(promise).resolves.toEqual({
+      accounts: expect.arrayContaining([
+        expect.objectContaining({ address: '0xlocal' }),
+      ]),
+    })
+  })
+
   it('emits chain and feature changes to subscribed listeners', () => {
     const wallet = new EveVaultWallet()
     const listener = vi.fn()
@@ -303,6 +341,36 @@ describe('EveVaultWallet', () => {
         transaction: 'execute-json',
         account: { address: '0xaccount' },
         chain: SUI_DEVNET_CHAIN,
+      })
+    })
+
+    dispatchVaultMessage({
+      type: 'sign_and_execute_transaction_success',
+      result,
+    })
+
+    await expect(promise).resolves.toBe(result)
+  })
+
+  it('signs and executes a transaction using the current chain when input has no chain', async () => {
+    const wallet = new EveVaultWallet()
+    const transaction = makeTransaction('execute-current-chain-json')
+    const result = { digest: 'digest', effects: 'effects' }
+    const promise = wallet.features[
+      SuiSignAndExecuteTransaction
+    ].signAndExecuteTransaction({
+      transaction,
+      account: { address: '0xaccount' },
+    } as never)
+
+    await vi.waitFor(() => {
+      expect(lastPostedMessage()).toEqual({
+        __to: 'Eve Vault',
+        id: 'request-id',
+        action: WalletStandardMessageTypes.SIGN_AND_EXECUTE_TRANSACTION,
+        transaction: 'execute-current-chain-json',
+        account: { address: '0xaccount' },
+        chain: SUI_TESTNET_CHAIN,
       })
     })
 
