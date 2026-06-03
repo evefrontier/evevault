@@ -25,6 +25,255 @@ import {
 import { KEEPER_RETRY_DELAY_MS, setPendingAuthAfterUnlock } from './pendingAuth'
 
 const log = createLogger()
+const KEEPER_RETRY_DELAYS_MS = [KEEPER_RETRY_DELAY_MS, 300] as const
+
+type KeeperStatus = Awaited<ReturnType<typeof checkKeeperUnlocked>>
+type CurrentChain = ReturnType<typeof getCurrentChain>
+type StoredChain = Awaited<ReturnType<typeof getCurrentChainFromStorage>>
+
+function resolveTenantId(message: MessageWithId): TenantId {
+  if (
+    typeof message.tenantId === 'string' &&
+    isAvailableTenantId(message.tenantId)
+  ) {
+    return message.tenantId as TenantId
+  }
+
+  return getCurrentTenantId()
+}
+
+function hasStoredEphemeralKey(value: unknown): boolean {
+  if (!value || typeof value !== 'object') return false
+
+  return 'iv' in value && 'data' in value
+}
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function getKeeperStatus(hasDeviceData: boolean): Promise<KeeperStatus> {
+  let keeperStatus = await checkKeeperUnlocked()
+  if (keeperStatus.unlocked || !hasDeviceData) return keeperStatus
+
+  for (const retryDelay of KEEPER_RETRY_DELAYS_MS) {
+    await wait(retryDelay)
+    keeperStatus = await checkKeeperUnlocked()
+    if (keeperStatus.unlocked) break
+  }
+
+  return keeperStatus
+}
+
+async function requestVaultUnlock({
+  id,
+  initialChain,
+  hasDeviceData,
+  tenantId,
+}: {
+  id: string
+  initialChain: CurrentChain
+  hasDeviceData: boolean
+  tenantId: TenantId
+}) {
+  log.error('Cannot login: vault not set up or locked', {
+    chain: initialChain,
+    hasDeviceData,
+  })
+
+  useDeviceStore.setState({ isLocked: true })
+  const windowId = await openPopupWindow('popup')
+  if (windowId === undefined) {
+    log.warn('Failed to open vault popup window')
+  }
+
+  if (hasDeviceData) {
+    setPendingAuthAfterUnlock(id, 'ext', undefined, windowId, tenantId)
+    return
+  }
+
+  sendAuthError(id, {
+    message:
+      'Please set up or unlock the vault in the window we opened, then try again.',
+    vaultOpened: true,
+  })
+}
+
+async function syncPublicKeyFromKeeper({
+  id,
+  initialChain,
+  keeperStatus,
+}: {
+  id: string
+  initialChain: CurrentChain
+  keeperStatus: KeeperStatus
+}): Promise<boolean> {
+  const deviceStore = useDeviceStore.getState()
+  if (deviceStore.ephemeralPublicKey || !keeperStatus.publicKeyBytes) {
+    return true
+  }
+
+  log.info('Syncing ephemeral public key from keeper to deviceStore', {
+    chain: initialChain,
+  })
+
+  try {
+    const publicKey = new Ed25519PublicKey(
+      new Uint8Array(keeperStatus.publicKeyBytes),
+    )
+    const secretKeyToPreserve =
+      deviceStore.ephemeralKeyPairSecretKey ||
+      (await getEphemeralKeyPairSecretKeyFromStorage())
+
+    useDeviceStore.setState({
+      ephemeralPublicKey: publicKey,
+      ephemeralPublicKeyBytes: keeperStatus.publicKeyBytes,
+      ephemeralPublicKeyFlag: publicKey.flag(),
+      ephemeralKeyPairSecretKey: secretKeyToPreserve,
+      isLocked: false,
+    })
+    log.debug('Successfully synced ephemeral public key to deviceStore')
+    return true
+  } catch (error) {
+    log.error('Failed to sync public key from keeper', error)
+    sendAuthError(id, {
+      message: 'Failed to sync vault state. Please try unlocking again.',
+    })
+    return false
+  }
+}
+
+function ensureDevicePublicKey(
+  id: string,
+  initialChain: CurrentChain,
+): boolean {
+  if (useDeviceStore.getState().ephemeralPublicKey) return true
+
+  log.error('Keeper is unlocked but no public key bytes available', {
+    chain: initialChain,
+  })
+  sendAuthError(id, {
+    message: 'Vault state is inconsistent. Please unlock the vault again.',
+  })
+  return false
+}
+
+async function getNonceForChain(
+  id: string,
+  currentChain: StoredChain,
+): Promise<string | null> {
+  let nonce = useDeviceStore.getState().networkData[currentChain]?.nonce
+  if (nonce) return nonce
+
+  try {
+    await useDeviceStore.getState().initializeForChain(currentChain)
+  } catch (error) {
+    log.error('Failed to initialize device data for chain', {
+      currentChain,
+      error,
+    })
+    sendAuthError(id, {
+      message: 'Could not prepare sign-in. Please try again.',
+    })
+    return null
+  }
+
+  nonce = useDeviceStore.getState().networkData[currentChain]?.nonce
+  if (nonce) return nonce
+
+  sendAuthError(id, {
+    message: 'Could not prepare sign-in. Please try again.',
+  })
+  return null
+}
+
+async function handleOAuthResponse({
+  id,
+  responseUrl,
+  codeVerifier,
+  currentChain,
+  tenantId,
+}: {
+  id: string
+  responseUrl: string | undefined
+  codeVerifier: string
+  currentChain: StoredChain
+  tenantId: TenantId
+}) {
+  if (chrome.runtime.lastError) {
+    sendAuthError(id, chrome.runtime.lastError)
+    return
+  }
+
+  if (!responseUrl) {
+    sendAuthError(id, { message: 'No response URL received' })
+    return
+  }
+
+  try {
+    const authCode = extractAuthCode(responseUrl)
+    if (!authCode) {
+      sendAuthError(id, { message: 'No authorization code received' })
+      return
+    }
+
+    const jwtResponse = await exchangeCodeForToken(
+      authCode,
+      chrome.identity.getRedirectURL(),
+      tenantId,
+      { codeVerifier },
+    )
+
+    const chainAfterOAuth = await getCurrentChainFromStorage()
+    if (chainAfterOAuth !== currentChain) {
+      log.error('Network changed during OAuth flow - aborting login', {
+        chainAtOAuthStart: currentChain,
+        chainAfterOAuth,
+      })
+      sendAuthError(id, {
+        message:
+          'Network was switched during login. Please try logging in again.',
+      })
+      return
+    }
+
+    log.info('Storing JWT for network', {
+      chain: currentChain,
+      hasJwt: !!jwtResponse.id_token,
+    })
+    await storeJwt(jwtResponse, currentChain)
+    sendAuthSuccess(id, jwtResponse)
+  } catch (error) {
+    sendAuthError(id, error)
+  }
+}
+
+function launchOAuthLogin({
+  id,
+  authUrl,
+  codeVerifier,
+  currentChain,
+  tenantId,
+}: {
+  id: string
+  authUrl: URL
+  codeVerifier: string
+  currentChain: StoredChain
+  tenantId: TenantId
+}) {
+  chrome.identity.launchWebAuthFlow(
+    { url: authUrl.toString(), interactive: true },
+    (responseUrl) => {
+      void handleOAuthResponse({
+        id,
+        responseUrl,
+        codeVerifier,
+        currentChain,
+        tenantId,
+      })
+    },
+  )
+}
 
 export async function handleExtLogin(
   message: MessageWithId,
@@ -32,174 +281,32 @@ export async function handleExtLogin(
   _sendResponse: (response?: unknown) => void,
 ): Promise<void> {
   const id = ensureMessageId(message)
-
-  const tenantId: TenantId =
-    typeof message.tenantId === 'string' &&
-    isAvailableTenantId(message.tenantId)
-      ? (message.tenantId as TenantId)
-      : getCurrentTenantId()
-
+  const tenantId = resolveTenantId(message)
   const initialChain = getCurrentChain()
-
   const deviceStore = useDeviceStore.getState()
-  const hasDeviceData = !!(
-    deviceStore.ephemeralKeyPairSecretKey &&
-    typeof deviceStore.ephemeralKeyPairSecretKey === 'object' &&
-    'iv' in deviceStore.ephemeralKeyPairSecretKey &&
-    'data' in deviceStore.ephemeralKeyPairSecretKey
+  const hasDeviceData = hasStoredEphemeralKey(
+    deviceStore.ephemeralKeyPairSecretKey,
   )
-
-  let keeperStatus = await checkKeeperUnlocked()
+  const keeperStatus = await getKeeperStatus(hasDeviceData)
   if (!keeperStatus.unlocked) {
-    if (hasDeviceData) {
-      await new Promise((resolve) => setTimeout(resolve, KEEPER_RETRY_DELAY_MS))
-      keeperStatus = await checkKeeperUnlocked()
-      if (!keeperStatus.unlocked) {
-        await new Promise((resolve) => setTimeout(resolve, 300))
-        keeperStatus = await checkKeeperUnlocked()
-      }
-    }
-
-    if (!keeperStatus.unlocked) {
-      log.error('Cannot login: vault not set up or locked', {
-        chain: initialChain,
-        hasDeviceData,
-      })
-
-      useDeviceStore.setState({ isLocked: true })
-      const windowId = await openPopupWindow('popup')
-      if (windowId === undefined) {
-        log.warn('Failed to open vault popup window')
-      }
-
-      if (hasDeviceData) {
-        setPendingAuthAfterUnlock(id, 'ext', undefined, windowId, tenantId)
-        return
-      }
-
-      return sendAuthError(id, {
-        message:
-          'Please set up or unlock the vault in the window we opened, then try again.',
-        vaultOpened: true,
-      })
-    }
+    await requestVaultUnlock({ id, initialChain, hasDeviceData, tenantId })
+    return
   }
 
-  if (!deviceStore.ephemeralPublicKey && keeperStatus.publicKeyBytes) {
-    log.info('Syncing ephemeral public key from keeper to deviceStore', {
-      chain: initialChain,
-    })
-    try {
-      const publicKey = new Ed25519PublicKey(
-        new Uint8Array(keeperStatus.publicKeyBytes),
-      )
-      const secretKeyToPreserve =
-        deviceStore.ephemeralKeyPairSecretKey ||
-        (await getEphemeralKeyPairSecretKeyFromStorage())
-
-      useDeviceStore.setState({
-        ephemeralPublicKey: publicKey,
-        ephemeralPublicKeyBytes: keeperStatus.publicKeyBytes,
-        ephemeralPublicKeyFlag: publicKey.flag(),
-        ephemeralKeyPairSecretKey: secretKeyToPreserve,
-        isLocked: false,
-      })
-      log.debug('Successfully synced ephemeral public key to deviceStore')
-    } catch (error) {
-      log.error('Failed to sync public key from keeper', error)
-      return sendAuthError(id, {
-        message: 'Failed to sync vault state. Please try unlocking again.',
-      })
-    }
-  }
-
-  const deviceWithPublicKey = useDeviceStore.getState()
-  if (!deviceWithPublicKey.ephemeralPublicKey) {
-    log.error('Keeper is unlocked but no public key bytes available', {
-      chain: initialChain,
-    })
-    return sendAuthError(id, {
-      message: 'Vault state is inconsistent. Please unlock the vault again.',
-    })
-  }
+  const didSync = await syncPublicKeyFromKeeper({
+    id,
+    initialChain,
+    keeperStatus,
+  })
+  if (!didSync || !ensureDevicePublicKey(id, initialChain)) return
 
   const currentChain = await getCurrentChainFromStorage()
-
-  let nonce = useDeviceStore.getState().networkData[currentChain]?.nonce
-  if (!nonce) {
-    try {
-      await useDeviceStore.getState().initializeForChain(currentChain)
-    } catch (error) {
-      log.error('Failed to initialize device data for chain', {
-        currentChain,
-        error,
-      })
-      return sendAuthError(id, {
-        message: 'Could not prepare sign-in. Please try again.',
-      })
-    }
-    nonce = useDeviceStore.getState().networkData[currentChain]?.nonce
-  }
-  if (!nonce) {
-    return sendAuthError(id, {
-      message: 'Could not prepare sign-in. Please try again.',
-    })
-  }
+  const nonce = await getNonceForChain(id, currentChain)
+  if (!nonce) return
 
   const { authUrl, codeVerifier } = await getAuthRequest({
     tenantId: tenantId,
     nonce,
   })
-
-  chrome.identity.launchWebAuthFlow(
-    { url: authUrl.toString(), interactive: true },
-    async (responseUrl) => {
-      if (chrome.runtime.lastError) {
-        return sendAuthError(id, chrome.runtime.lastError)
-      }
-
-      if (!responseUrl) {
-        return sendAuthError(id, { message: 'No response URL received' })
-      }
-
-      try {
-        const authCode = extractAuthCode(responseUrl)
-        if (!authCode) {
-          return sendAuthError(id, {
-            message: 'No authorization code received',
-          })
-        }
-
-        const jwtResponse = await exchangeCodeForToken(
-          authCode,
-          chrome.identity.getRedirectURL(),
-          tenantId,
-          { codeVerifier },
-        )
-
-        const chainAfterOAuth = await getCurrentChainFromStorage()
-
-        if (chainAfterOAuth !== currentChain) {
-          log.error('Network changed during OAuth flow - aborting login', {
-            chainAtOAuthStart: currentChain,
-            chainAfterOAuth,
-          })
-          return sendAuthError(id, {
-            message:
-              'Network was switched during login. Please try logging in again.',
-          })
-        }
-
-        log.info('Storing JWT for network', {
-          chain: currentChain,
-          hasJwt: !!jwtResponse.id_token,
-        })
-        await storeJwt(jwtResponse, currentChain)
-
-        sendAuthSuccess(id, jwtResponse)
-      } catch (error) {
-        sendAuthError(id, error)
-      }
-    },
-  )
+  launchOAuthLogin({ id, authUrl, codeVerifier, currentChain, tenantId })
 }

@@ -5,9 +5,7 @@ import {
   type SponsoredTransactionMethod,
 } from '@evefrontier/wallet-core/wallet-standard-extensions'
 import { WalletStandardMessageTypes } from '@evevault/shared'
-import { getZkLoginAddress } from '@evevault/shared/auth'
 import { createLogger } from '@evevault/shared/utils'
-import { fromBase64 } from '@mysten/sui/utils'
 import type {
   IdentifierRecord,
   StandardConnectMethod,
@@ -27,10 +25,8 @@ import type {
 import {
   ReadonlyWalletAccount,
   StandardConnect,
-  StandardDisconnect,
   StandardEvents,
   SUI_DEVNET_CHAIN,
-  SUI_LOCALNET_CHAIN,
   SUI_TESTNET_CHAIN,
   SuiSignAndExecuteTransaction,
   SuiSignPersonalMessage,
@@ -38,61 +34,11 @@ import {
 } from '@mysten/wallet-standard'
 import type { WalletEventListener } from '@/lib/background/types'
 import { trySettle } from '@/lib/util/timeoutGuard'
+import { getAccountsFromAuthSuccess } from './connectAuth'
+import { APPROVAL_TIMEOUT_MS, waitForVaultMessage } from './vaultMessages'
+import { WALLET_FEATURES } from './walletFeatures'
 
 const log = createLogger()
-
-const APPROVAL_TIMEOUT_MS = 2 * 60 * 1000 // 2 minutes
-
-const WALLET_FEATURES = [
-  StandardConnect,
-  StandardDisconnect,
-  SuiSignPersonalMessage,
-  SuiSignTransaction,
-  SuiSignAndExecuteTransaction,
-  EVEFRONTIER_SPONSORED_TRANSACTION,
-] as const
-
-// Options for waitForVaultMessage — separates the protocol details (message types,
-// outbound payload) from the resolution logic (how to map the success response).
-type VaultMessageOpts<T> = {
-  id: string
-  successType: string
-  errorType: string
-  outbound: Record<string, unknown>
-  mapSuccess: (m: Record<string, unknown>) => T
-  timeoutMessage: string
-}
-
-// Posts a message to the injected content script and resolves/rejects based on
-// the first matching response. Cleans up the listener and timeout on settlement.
-function waitForVaultMessage<T>({
-  id,
-  successType,
-  errorType,
-  outbound,
-  mapSuccess,
-  timeoutMessage,
-}: VaultMessageOpts<T>): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    const state = { settled: false }
-    let timeoutId: ReturnType<typeof setTimeout> | undefined
-
-    function onMsg(e: MessageEvent) {
-      const m: Record<string, unknown> = e.data || {}
-      if (m.__from !== 'Eve Vault' || m.id !== id) return
-      if (m.type === successType && trySettle(state, onMsg, timeoutId))
-        resolve(mapSuccess(m))
-      else if (m.type === errorType && trySettle(state, onMsg, timeoutId))
-        reject(new Error(m.error as string))
-    }
-
-    window.addEventListener('message', onMsg)
-    timeoutId = setTimeout(() => {
-      if (trySettle(state, onMsg)) reject(new Error(timeoutMessage))
-    }, APPROVAL_TIMEOUT_MS)
-    window.postMessage(outbound, '*')
-  })
-}
 
 export class EveVaultWallet implements Wallet {
   readonly #version = '1.0.0' as const
@@ -220,79 +166,15 @@ export class EveVaultWallet implements Wallet {
       : SUI_TESTNET_CHAIN
   }
 
-  async #resolveAuthSuccess(
-    m: Record<string, unknown>,
-    resolve: (value: StandardConnectOutput) => void,
-    reject: (reason?: unknown) => void,
-  ): Promise<void> {
+  async #resolveAuthSuccess(m: Record<string, unknown>): Promise<void> {
     try {
-      if (m.chain === SUI_LOCALNET_CHAIN) {
-        if (!m.address) {
-          reject(new Error('Localnet auth_success missing address'))
-          return
-        }
-        const localnetAccount = new ReadonlyWalletAccount({
-          address: m.address as string,
-          publicKey: new Uint8Array(0),
-          chains: [SUI_LOCALNET_CHAIN],
-          features: [...WALLET_FEATURES],
-        })
-        this.#accounts = [localnetAccount]
-        this.#emitChangeEvent({ accounts: this.#accounts })
-        resolve({ accounts: this.accounts })
-        return
-      }
-
-      const result = m.token as { access_token: string }
-      sessionStorage.setItem(
-        'evevault_jwt',
-        JSON.stringify(result.access_token),
-      )
-
-      const zkLoginResponse = await getZkLoginAddress({
-        jwt: result.access_token,
-        enokiApiKey: import.meta.env.VITE_ENOKI_API_KEY,
-      })
-
-      if (zkLoginResponse.error) {
-        reject(new Error(zkLoginResponse.error.message))
-        return
-      }
-      if (!zkLoginResponse.data) {
-        reject(new Error('No data returned from zkLogin address lookup'))
-        return
-      }
-
-      const { address, publicKey: publicKeyB64 } = zkLoginResponse.data
-      const trimmedPublicKey = publicKeyB64.trim()
-      if (!trimmedPublicKey) {
-        reject(new Error('No public key returned from zkLogin address lookup'))
-        return
-      }
-
-      let publicKeyBytes: Uint8Array
-      try {
-        publicKeyBytes = fromBase64(trimmedPublicKey)
-      } catch {
-        reject(
-          new Error(
-            'Invalid base64 public key returned from zkLogin address lookup',
-          ),
-        )
-        return
-      }
-
-      const newAccount = new ReadonlyWalletAccount({
-        address,
-        publicKey: publicKeyBytes,
-        chains: [this.#currentChain, this.#getOtherChain()],
-        features: [...WALLET_FEATURES],
-      })
-      this.#accounts = [newAccount]
+      this.#accounts = await getAccountsFromAuthSuccess(m, [
+        this.#currentChain,
+        this.#getOtherChain(),
+      ])
       this.#emitChangeEvent({ accounts: this.#accounts })
-      resolve({ accounts: this.accounts })
     } catch (err) {
-      reject(err instanceof Error ? err : new Error(String(err)))
+      throw err instanceof Error ? err : new Error(String(err))
     }
   }
 
@@ -340,15 +222,17 @@ export class EveVaultWallet implements Wallet {
         const m: Record<string, unknown> = e.data || {}
         if (m.__from !== 'Eve Vault' || m.id !== id) return
         if (trySettle(state, onMsg, timeoutId)) {
-          if (m.type === 'auth_success')
-            await this.#resolveAuthSuccess(m, resolve, reject)
-          else
+          if (m.type === 'auth_success') {
+            await this.#resolveAuthSuccess(m)
+            resolve({ accounts: this.accounts })
+          } else {
             reject(
               new Error(
                 (m.error as { message?: string })?.message ||
                   'Authentication failed',
               ),
             )
+          }
         }
       }
 

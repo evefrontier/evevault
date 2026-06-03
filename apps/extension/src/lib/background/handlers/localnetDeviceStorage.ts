@@ -12,13 +12,9 @@ type DeviceStorage = {
 }
 
 function isEncryptedBlob(value: unknown): value is HashedData {
-  return (
-    !!value &&
-    typeof value === 'object' &&
-    'iv' in value &&
-    'data' in value &&
-    'salt' in value
-  )
+  if (!value || typeof value !== 'object') return false
+
+  return ['iv', 'data', 'salt'].every((key) => key in value)
 }
 
 function parseDeviceStorage(raw: unknown): DeviceStorage {
