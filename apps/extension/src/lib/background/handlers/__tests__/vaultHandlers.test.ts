@@ -155,7 +155,7 @@ describe('_handleCreateKeypair', () => {
   it('resolves to true (channel kept open by messageHandler return)', async () => {
     stubKeeperBridge({ ok: true })
     const result = _handleCreateKeypair(makeMessage(), mockSender, vi.fn())
-    expect(await result).toBe(true)
+    await expect(result).resolves.toBe(true)
   })
 })
 
