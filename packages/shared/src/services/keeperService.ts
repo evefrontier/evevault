@@ -7,6 +7,32 @@ import { createLogger } from '#/utils/logger'
 
 const log = createLogger()
 
+const sendVaultMessage = async (
+  message: Record<string, unknown>,
+): Promise<VaultResponse | undefined> => {
+  return (await chrome.runtime?.sendMessage?.(message)) as
+    | VaultResponse
+    | undefined
+}
+
+const requireOkResponse = (
+  response: VaultResponse | undefined,
+  {
+    errorMessage,
+    errorLog,
+  }: {
+    errorMessage: string
+    errorLog: string
+  },
+) => {
+  if (response?.ok) {
+    return
+  }
+
+  log.error(errorLog, response)
+  throw new Error(response?.error || errorMessage)
+}
+
 /**
  * Services for managing the ephemeral key and zkproofs vault in the offscreen keeper.
  * The actual keys are stored in memory in the offscreen document, not in this service.
@@ -54,18 +80,16 @@ export const ephKeyService = {
    */
   async lock(): Promise<void> {
     log.debug('[ephKeyService] Locking vault')
-    const res = (await chrome.runtime?.sendMessage?.({
+    const res = await sendVaultMessage({
       type: VaultMessageTypes.LOCK,
-    })) as VaultResponse | undefined
+    })
 
     log.debug('Lock vault response', { ok: res?.ok })
-
-    if (res?.ok) {
-      log.info('Vault locked')
-    } else {
-      log.error('Failed to lock vault', res)
-      throw new Error(res?.error || 'Failed to lock vault')
-    }
+    requireOkResponse(res, {
+      errorMessage: 'Failed to lock vault',
+      errorLog: 'Failed to lock vault',
+    })
+    log.info('Vault locked')
   },
 
   /**
@@ -193,18 +217,16 @@ export const zkProofService = {
    */
   async clear(): Promise<void> {
     log.debug('[ephKeyService] Clearing zkProofs')
-    const res = (await chrome.runtime?.sendMessage?.({
+    const res = await sendVaultMessage({
       type: VaultMessageTypes.CLEAR_ZKPROOF,
-    })) as VaultResponse | undefined
+    })
 
     log.debug('Clear zkProofs response', { ok: res?.ok })
-
-    if (res?.ok) {
-      log.info('zkProofs cleared')
-    } else {
-      log.error('Failed to clear zkProofs', res)
-      throw new Error(res?.error || 'Failed to clear zkProofs')
-    }
+    requireOkResponse(res, {
+      errorMessage: 'Failed to clear zkProofs',
+      errorLog: 'Failed to clear zkProofs',
+    })
+    log.info('zkProofs cleared')
   },
 }
 

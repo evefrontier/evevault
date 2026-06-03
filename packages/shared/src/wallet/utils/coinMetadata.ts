@@ -43,64 +43,90 @@ export async function fetchCoinMetadata(
   coinType: string,
 ): Promise<CoinMetadataResult | null> {
   try {
-    // Check cache first with expiry
-    const cached = coinMetadataCache.get(coinType)
-    if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
-      return cached.data as CoinMetadataResult
-    }
+    const metadata =
+      getCachedCoinMetadata(coinType) ??
+      getKnownCoinMetadata(coinType) ??
+      (await queryCoinMetadata(graphqlClient, coinType))
 
-    // Remove expired entry if it exists
-    if (cached) {
-      coinMetadataCache.delete(coinType)
-    }
+    cacheCoinMetadata(coinType, metadata)
+    return metadata
+  } catch (error) {
+    log.error('Failed to fetch coin metadata', { coinType, error })
+    return null
+  }
+}
 
-    // For SUI, we know the metadata
-    if (coinType === SUI_COIN_TYPE) {
-      const metadata: CoinMetadataResult = {
+const getCachedCoinMetadata = (coinType: string): CoinMetadataResult | null => {
+  const cached = coinMetadataCache.get(coinType)
+  const isFresh = cached && Date.now() - cached.timestamp < CACHE_TTL_MS
+
+  if (!cached) {
+    return null
+  }
+
+  if (!isFresh) {
+    coinMetadataCache.delete(coinType)
+    return null
+  }
+
+  return cached.data as CoinMetadataResult
+}
+
+const getKnownCoinMetadata = (coinType: string): CoinMetadataResult | null => {
+  return coinType === SUI_COIN_TYPE
+    ? {
         decimals: 9,
         symbol: 'SUI',
         name: 'Sui',
         description: 'Sui Native Token',
         iconUrl: null,
       }
-      coinMetadataCache.set(coinType, {
-        data: metadata,
-        timestamp: Date.now(),
-      })
-      return metadata
-    }
+    : null
+}
 
-    const result = await graphqlClient.query<CoinMetadataQueryResponse>({
-      query: COIN_METADATA_QUERY,
-      variables: { coinType },
+const queryCoinMetadata = async (
+  graphqlClient: SuiGraphQLClient,
+  coinType: string,
+): Promise<CoinMetadataResult | null> => {
+  const result = await graphqlClient.query<CoinMetadataQueryResponse>({
+    query: COIN_METADATA_QUERY,
+    variables: { coinType },
+  })
+
+  if (result.errors?.length) {
+    log.warn('GraphQL coinMetadata errors', {
+      coinType,
+      errors: result.errors.map((e) => e.message),
     })
-
-    if (result.errors?.length) {
-      log.warn('GraphQL coinMetadata errors', {
-        coinType,
-        errors: result.errors.map((e) => e.message),
-      })
-      return null
-    }
-
-    const node = result.data?.coinMetadata
-    if (!node || node.decimals == null || node.symbol == null) {
-      log.warn('No metadata found for coin type', { coinType })
-      return null
-    }
-
-    const meta: CoinMetadataResult = {
-      decimals: node.decimals,
-      symbol: node.symbol,
-      name: node.name ?? undefined,
-      description: node.description ?? undefined,
-      iconUrl: node.iconUrl ?? undefined,
-    }
-
-    coinMetadataCache.set(coinType, { data: meta, timestamp: Date.now() })
-    return meta
-  } catch (error) {
-    log.error('Failed to fetch coin metadata', { coinType, error })
     return null
+  }
+
+  return normalizeCoinMetadataNode(result.data?.coinMetadata, coinType)
+}
+
+const normalizeCoinMetadataNode = (
+  node: CoinMetadataQueryResponse['coinMetadata'] | undefined,
+  coinType: string,
+): CoinMetadataResult | null => {
+  if (!node || node.decimals == null || node.symbol == null) {
+    log.warn('No metadata found for coin type', { coinType })
+    return null
+  }
+
+  return {
+    decimals: node.decimals,
+    symbol: node.symbol,
+    name: node.name ?? undefined,
+    description: node.description ?? undefined,
+    iconUrl: node.iconUrl ?? undefined,
+  }
+}
+
+const cacheCoinMetadata = (
+  coinType: string,
+  metadata: CoinMetadataResult | null,
+) => {
+  if (metadata) {
+    coinMetadataCache.set(coinType, { data: metadata, timestamp: Date.now() })
   }
 }
