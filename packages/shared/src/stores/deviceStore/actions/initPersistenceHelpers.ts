@@ -1,4 +1,5 @@
 import type { SuiChain } from '@mysten/wallet-standard'
+import { ephKeyService } from '#/services/vaultService'
 import { resolveStoredSecretKey } from '#/stores/deviceStore/keyHelpers'
 import type {
   NetworkDataEntry,
@@ -10,6 +11,7 @@ import type {
 import { isZkLoginSuiChain } from '#/types/networks'
 import { createLogger } from '#/utils/logger'
 import { DEVICE_STORAGE_KEY } from '#/utils/storageKeys'
+import { setPublicKeyState } from './initStateHelpers'
 import type { SetDeviceState } from './types'
 
 const log = createLogger()
@@ -28,7 +30,12 @@ export const readPersistedDeviceStoreState =
       })
     })
 
-    return parsePersistedDeviceStoreState(persistedDeviceStore)
+    try {
+      return parsePersistedDeviceStoreState(persistedDeviceStore)
+    } catch (error) {
+      log.error('Error parsing persisted device store', error)
+      return null
+    }
   }
 
 const parsePersistedDeviceStoreState = (
@@ -71,23 +78,23 @@ export const tryRehydrateExtensionDevice = async ({
     currentNetworkData.jwtRandomness,
   )
 
-  try {
-    const persistedDeviceStoreState = await readPersistedDeviceStoreState()
-    return persistedDeviceStoreState
-      ? resolvePersistedDeviceStoreState({
-          persistedDeviceStoreState,
-          pin,
-          currentChain,
-          currentNetworkData,
-          storedSecretKey,
-          fallbackNetworkData,
-          set,
-        })
-      : emptyResult
-  } catch (parseError) {
-    log.error('Error parsing persisted device store', parseError)
+  const persistedDeviceStoreState = await readPersistedDeviceStoreState()
+  if (!persistedDeviceStoreState) {
     return emptyResult
   }
+
+  return resolvePersistedDeviceStoreState({
+    persistedDeviceStoreState,
+    pin,
+    currentChain,
+    currentNetworkData,
+    storedSecretKey,
+    fallbackNetworkData,
+    set,
+  }).catch((error) => {
+    log.error('Error resolving persisted device store state', error)
+    return emptyResult
+  })
 }
 
 const resolvePersistedDeviceStoreState = async ({
@@ -119,11 +126,17 @@ const resolvePersistedDeviceStoreState = async ({
     return createRehydrationResult(false, resolvedSecretKey, jwtRandomness)
   }
 
+  const publicKey = await ephKeyService.unlockVault(resolvedSecretKey, pin)
+  if (!publicKey) {
+    return createRehydrationResult(false, resolvedSecretKey, jwtRandomness)
+  }
+
   log.debug('Rehydrating device store from persisted data')
+  setPublicKeyState(set, publicKey, resolvedSecretKey)
   set({
-    ephemeralKeyPairSecretKey: resolvedSecretKey,
     networkData: persistedDeviceStoreState.networkData ?? fallbackNetworkData,
     loading: false,
+    isLocked: false,
     error: null,
   })
   return createRehydrationResult(true, resolvedSecretKey, jwtRandomness)

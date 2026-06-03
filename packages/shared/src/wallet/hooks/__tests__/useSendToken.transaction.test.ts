@@ -111,6 +111,27 @@ describe('useSendToken.transaction helpers', () => {
     expect(tx.transferObjects).toHaveBeenCalled()
   })
 
+  it('uses the suitable coin directly without preparing the primary coin for merging', async () => {
+    const suiClient = createSuiClient({
+      coins: [
+        { objectId: 'coin-1', balance: '100' },
+        { objectId: 'coin-2', balance: '1000' },
+      ],
+    })
+
+    await buildTransferTransactionBytes(
+      '0xsender',
+      '0xrecipient',
+      500n,
+      '0xtoken',
+      suiClient as never,
+    )
+
+    const tx = transactionInstances[0]
+    expect(tx.mergeCoins).not.toHaveBeenCalled()
+    expect(tx.splitCoins).toHaveBeenCalledWith({ objectId: 'coin-2' }, [500n])
+  })
+
   it('merges token coins when no single coin can cover the amount', async () => {
     const suiClient = createSuiClient({
       coins: [

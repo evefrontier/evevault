@@ -9,12 +9,12 @@ type ChainDeviceData = Pick<
   'maxEpoch' | 'maxEpochTimestampMs' | 'nonce'
 >
 
-const EMPTY_NETWORK_DATA: NetworkDataEntry = {
+const createEmptyNetworkData = (): NetworkDataEntry => ({
   maxEpoch: null,
   nonce: null,
   maxEpochTimestampMs: null,
   jwtRandomness: null,
-}
+})
 
 export const isBlankPin = (pin: string): boolean => pin.trim().length === 0
 
@@ -23,8 +23,8 @@ export const getNetworkDataEntry = (
   chain: SuiChain,
 ): NetworkDataEntry => {
   return isZkLoginSuiChain(chain)
-    ? (state.networkData[chain] ?? EMPTY_NETWORK_DATA)
-    : EMPTY_NETWORK_DATA
+    ? (state.networkData[chain] ?? createEmptyNetworkData())
+    : createEmptyNetworkData()
 }
 
 export const isDeviceDataExpired = (
@@ -47,17 +47,27 @@ export const hasFreshNetworkData = (
   data: NetworkDataEntry,
   storedSecretKey: StoredSecretKey,
 ): boolean =>
-  requiredDeviceDataValues(data, storedSecretKey).every(Boolean) &&
+  requiredDeviceDataValues(data, storedSecretKey).every(isPresent) &&
   !isDeviceDataExpired(data)
 
 export const needsPersistedRehydration = (
   data: NetworkDataEntry,
   storedSecretKey: StoredSecretKey,
 ): boolean =>
-  requiredDeviceDataValues(data, storedSecretKey).some((value) => !value)
+  requiredDeviceDataValues(data, storedSecretKey).some(
+    (value) => !isPresent(value),
+  )
 
 export const hasChainDeviceData = (data?: ChainDeviceData): boolean => {
-  return Boolean(data?.nonce && data.maxEpoch && !isDeviceDataExpired(data))
+  return Boolean(
+    isPresent(data?.nonce) &&
+      isPresent(data?.maxEpoch) &&
+      !isDeviceDataExpired(data),
+  )
+}
+
+const isPresent = <T>(value: T | null | undefined): value is T => {
+  return value !== null && value !== undefined
 }
 
 export const getCurrentChainDeviceData = (

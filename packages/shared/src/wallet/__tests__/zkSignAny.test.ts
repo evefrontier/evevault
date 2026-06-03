@@ -83,6 +83,15 @@ const earlyGuardTests = () => {
     ).rejects.toThrow('User not found')
   })
 
+  it('throws when user is undefined at runtime', async () => {
+    await expect(
+      zkSignAny('PersonalMessage', new Uint8Array([1]), {
+        user: undefined,
+        getZkProof: vi.fn(),
+      } as never),
+    ).rejects.toThrow('User not found')
+  })
+
   it('throws when ephemeralPublicKey is null', async () => {
     vi.mocked(useDeviceStore.getState).mockReturnValue(
       makeDeviceState({ ephemeralPublicKey: null }),

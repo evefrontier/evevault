@@ -64,18 +64,22 @@ describe('initStateHelpers', () => {
   })
 
   it('returns empty network data for unsupported or missing chain data', () => {
-    expect(getNetworkDataEntry(createState(), SUI_LOCALNET_CHAIN)).toEqual({
+    const localnetEntry = getNetworkDataEntry(createState(), SUI_LOCALNET_CHAIN)
+    const mainnetEntry = getNetworkDataEntry(createState(), SUI_MAINNET_CHAIN)
+
+    expect(localnetEntry).toEqual({
       jwtRandomness: null,
       maxEpoch: null,
       maxEpochTimestampMs: null,
       nonce: null,
     })
-    expect(getNetworkDataEntry(createState(), SUI_MAINNET_CHAIN)).toEqual({
+    expect(mainnetEntry).toEqual({
       jwtRandomness: null,
       maxEpoch: null,
       maxEpochTimestampMs: null,
       nonce: null,
     })
+    expect(localnetEntry).not.toBe(mainnetEntry)
   })
 
   it('detects expired device data', () => {
@@ -98,13 +102,19 @@ describe('initStateHelpers', () => {
       ...fresh,
       nonce: null,
     }
+    const zeroEpoch = {
+      ...fresh,
+      maxEpoch: 0 as never,
+    }
 
     expect(hasFreshNetworkData(fresh, storedSecretKey)).toBe(true)
+    expect(hasFreshNetworkData(zeroEpoch, storedSecretKey)).toBe(true)
     expect(hasFreshNetworkData(expired, storedSecretKey)).toBe(false)
     expect(hasFreshNetworkData(missingNonce, storedSecretKey)).toBe(false)
     expect(hasFreshNetworkData(fresh, null)).toBe(false)
 
     expect(needsPersistedRehydration(fresh, storedSecretKey)).toBe(false)
+    expect(needsPersistedRehydration(zeroEpoch, storedSecretKey)).toBe(false)
     expect(needsPersistedRehydration(missingNonce, storedSecretKey)).toBe(true)
     expect(needsPersistedRehydration(fresh, null)).toBe(true)
   })

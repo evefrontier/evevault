@@ -123,13 +123,11 @@ const addTokenTransfer = async (
     owner: senderAddress,
     coinType,
   })
-  const primaryCoin = getPrimaryCoinForTransfer(
-    coinObjects,
-    amountInSmallestUnit,
-  )
   const suitableCoin = coinObjects.find(
     (coin: CoinWithBalance) => BigInt(coin.balance) >= amountInSmallestUnit,
   )
+  const primaryCoin =
+    suitableCoin ?? getPrimaryCoinForTransfer(coinObjects, amountInSmallestUnit)
 
   mergeCoinsIfNeeded(tx, primaryCoin, suitableCoin, coinObjects)
   const coinObjectId = suitableCoin?.objectId ?? primaryCoin.objectId

@@ -152,11 +152,11 @@ const buildBalanceChangeItems = async (
   userChanges: GraphQLBalanceChange[],
   graphqlClient: SuiGraphQLClient,
 ): Promise<TransactionBalanceChange[]> => {
-  const items = await Promise.all(
-    userChanges
-      .filter(hasAmount)
-      .map((change) => buildBalanceChangeItem(change, graphqlClient)),
-  )
+  const items: TransactionBalanceChange[] = []
+  for (const change of userChanges) {
+    if (!hasAmount(change)) continue
+    items.push(await buildBalanceChangeItem(change, graphqlClient))
+  }
   return items.filter(Boolean)
 }
 

@@ -18,9 +18,9 @@ export function makeJwtWithExp(exp: number): string {
   return `${header}.${payload}.signature`
 }
 
-export function setWindowLocation(value: any): void {
+export function setWindowLocation(value: Partial<Location>): void {
   Object.defineProperty(window, 'location', {
-    value: value,
+    value,
     configurable: true,
   })
 }

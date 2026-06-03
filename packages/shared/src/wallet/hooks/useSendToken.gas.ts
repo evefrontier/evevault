@@ -120,7 +120,6 @@ const estimateGasFee = async ({
 
   try {
     const mist = await estimateGasMist({
-      formValidForEstimate: true,
       suiClient,
       getSenderAddress,
       amount,

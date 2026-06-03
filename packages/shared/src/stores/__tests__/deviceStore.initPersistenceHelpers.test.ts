@@ -8,21 +8,31 @@ import type {
 } from '#/types'
 import { DEVICE_STORAGE_KEY } from '#/utils/storageKeys'
 
-const { mockResolveStoredSecretKey } = vi.hoisted(() => ({
-  mockResolveStoredSecretKey: vi.fn(),
-}))
+const { logger, mockResolveStoredSecretKey, mockUnlockVault } = vi.hoisted(
+  () => ({
+    logger: {
+      debug: vi.fn(),
+      error: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+    },
+    mockResolveStoredSecretKey: vi.fn(),
+    mockUnlockVault: vi.fn(),
+  }),
+)
 
 vi.mock('#/stores/deviceStore/keyHelpers', () => ({
   resolveStoredSecretKey: mockResolveStoredSecretKey,
 }))
 
+vi.mock('#/services/vaultService', () => ({
+  ephKeyService: {
+    unlockVault: mockUnlockVault,
+  },
+}))
+
 vi.mock('#/utils/logger', () => ({
-  createLogger: () => ({
-    debug: vi.fn(),
-    error: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-  }),
+  createLogger: () => logger,
 }))
 
 import {
@@ -79,6 +89,10 @@ function stubChromeStorage(value: unknown) {
 describe('initPersistenceHelpers', () => {
   beforeEach(() => {
     mockResolveStoredSecretKey.mockResolvedValue(storedSecretKey)
+    mockUnlockVault.mockResolvedValue({
+      flag: () => 0,
+      toRawBytes: () => new Uint8Array(32).fill(1),
+    })
   })
 
   afterEach(() => {
@@ -125,9 +139,15 @@ describe('initPersistenceHelpers', () => {
       '123456',
     )
     expect(set).toHaveBeenCalledWith({
+      ephemeralPublicKey: expect.any(Object),
+      ephemeralPublicKeyBytes: Array.from(new Uint8Array(32).fill(1)),
+      ephemeralPublicKeyFlag: 0,
       ephemeralKeyPairSecretKey: storedSecretKey,
+    })
+    expect(set).toHaveBeenCalledWith({
       networkData: state.networkData,
       loading: false,
+      isLocked: false,
       error: null,
     })
     expect(result).toEqual({
@@ -196,5 +216,35 @@ describe('initPersistenceHelpers', () => {
       storedSecretKey,
       jwtRandomness: networkDataEntry.jwtRandomness,
     })
+    expect(logger.error).toHaveBeenCalledWith(
+      'Error parsing persisted device store',
+      expect.any(Error),
+    )
+  })
+
+  it('logs secret key resolution failures separately from parse failures', async () => {
+    mockResolveStoredSecretKey.mockRejectedValue(new Error('decrypt failed'))
+    stubChromeStorage({ state: persistedState() })
+    const set = vi.fn()
+
+    const result = await tryRehydrateExtensionDevice({
+      pin: '123456',
+      currentChain: SUI_TESTNET_CHAIN,
+      currentNetworkData: networkDataEntry,
+      storedSecretKey,
+      fallbackNetworkData,
+      set,
+    })
+
+    expect(set).not.toHaveBeenCalled()
+    expect(result).toEqual({
+      rehydrated: false,
+      storedSecretKey,
+      jwtRandomness: networkDataEntry.jwtRandomness,
+    })
+    expect(logger.error).toHaveBeenCalledWith(
+      'Error resolving persisted device store state',
+      expect.any(Error),
+    )
   })
 })

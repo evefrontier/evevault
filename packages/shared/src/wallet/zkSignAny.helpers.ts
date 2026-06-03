@@ -23,7 +23,7 @@ type ZkLoginClaims = {
 }
 
 export const requireZkLoginUser = (user: ZkSignAnyParams['user']) => {
-  if (user === null) {
+  if (user == null) {
     throw new Error('User not found')
   }
   return user

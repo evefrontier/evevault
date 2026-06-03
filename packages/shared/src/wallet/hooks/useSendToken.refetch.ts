@@ -1,6 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query'
 import type { MutableRefObject } from 'react'
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 
 const BALANCE_REFETCH_DELAY_MS = 2000
 const TRANSFER_QUERY_KEYS = [['coin-balance'], ['transactions']] as const
@@ -26,13 +26,13 @@ export const useDelayedTransferRefetch = (queryClient: QueryClient) => {
     return () => clearRefetchTimer(postTransferRefetchTimerRef)
   }, [])
 
-  return () => {
+  return useCallback(() => {
     clearRefetchTimer(postTransferRefetchTimerRef)
     postTransferRefetchTimerRef.current = setTimeout(() => {
       postTransferRefetchTimerRef.current = null
       refetchQueriesOnly(queryClient)
     }, BALANCE_REFETCH_DELAY_MS)
-  }
+  }, [queryClient])
 }
 
 const refetchQueriesOnly = (queryClient: QueryClient) => {
