@@ -9,7 +9,7 @@ type SigningCallbacksParams = {
   chain: SuiChain
   isLocalnet: boolean
   localnetAddress: string | null
-  getZkProof: unknown
+  getZkProof: ZkSignAnyParams['getZkProof']
 }
 
 export const useWalletSigningCallbacks = ({
@@ -32,9 +32,7 @@ export const useWalletSigningCallbacks = ({
       return signForChain(scope, msgBytes, {
         chain,
         user: zkLoginUser,
-        getZkProof: isLocalnet
-          ? null
-          : (getZkProof as ZkSignAnyParams['getZkProof']),
+        getZkProof: isLocalnet ? null : getZkProof,
         localnetAddress,
       })
     },

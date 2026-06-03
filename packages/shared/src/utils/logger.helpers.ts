@@ -7,7 +7,14 @@ import type {
 } from './logger.types'
 
 const LOG_LEVELS: LogLevel[] = ['silent', 'error', 'warn', 'info', 'debug']
-const LOGGER_SOURCE_HINTS = ['logger.ts', 'logger.js', 'logger.mjs']
+const LOGGER_SOURCE_HINTS = [
+  'logger.helpers.ts',
+  'logger.helpers.js',
+  'logger.helpers.mjs',
+  'logger.ts',
+  'logger.js',
+  'logger.mjs',
+]
 const MODE_LOG_LEVELS: Partial<Record<string, LogLevel>> = {
   production: 'error',
   test: 'warn',
