@@ -35,19 +35,24 @@ export function usePendingSignAction<TPending>({
   const auth = useSignPopupAuth()
 
   useEffect(() => {
-    chrome.storage.local.get('pendingAction').then(async (data) => {
-      const pendingAction = data.pendingAction
-      if (!pendingAction) {
-        setError(missingError)
-        return
-      }
+    chrome.storage.local
+      .get('pendingAction')
+      .then(async (data) => {
+        const pendingAction = data.pendingAction
+        if (!pendingAction) {
+          setError(missingError)
+          return
+        }
 
-      try {
-        setPending(await parsePending(pendingAction))
-      } catch (err) {
+        try {
+          setPending(await parsePending(pendingAction))
+        } catch (err) {
+          setError(errorMessageFrom(err))
+        }
+      })
+      .catch((err) => {
         setError(errorMessageFrom(err))
-      }
-    })
+      })
   }, [missingError, parsePending])
 
   const storeErrorResult = async (

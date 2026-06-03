@@ -46,11 +46,15 @@ function sendAuthErrorToTab(
   extra?: Record<string, unknown>,
 ): void {
   if (typeof tabId !== 'number') return
-  chrome.tabs.sendMessage(tabId, {
-    id,
-    type: 'auth_error',
-    error: { message, ...extra },
-  })
+  chrome.tabs
+    .sendMessage(tabId, {
+      id,
+      type: 'auth_error',
+      error: { message, ...extra },
+    })
+    .catch((err) => {
+      log.error('Failed to send auth error to tab', err)
+    })
 }
 
 // Returns true if the device store contains a persisted encrypted secret key,
@@ -113,16 +117,16 @@ async function ensureKeeperReady(
 
   if (windowId === undefined) {
     log.warn('Failed to open vault popup window')
-    if (hasDeviceData) {
-      clearPendingAuth()
-      sendAuthErrorToTab(
-        tabId,
-        id,
-        'Failed to open vault window. Please try again.',
-      )
-      return { ready: false }
-    }
-  } else if (hasDeviceData) {
+    if (hasDeviceData) clearPendingAuth()
+    sendAuthErrorToTab(
+      tabId,
+      id,
+      'Failed to open vault window. Please try again.',
+    )
+    return { ready: false }
+  }
+
+  if (hasDeviceData) {
     setPendingAuthWindowId(id, windowId)
     return { ready: false }
   }

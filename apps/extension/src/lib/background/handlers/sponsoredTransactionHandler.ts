@@ -81,19 +81,27 @@ async function executeSponsoredTx({
       digest?: string
       effects?: string
     }
-    await chrome.tabs.sendMessage(senderTabId, {
-      type: 'sign_success',
-      digest: result.digest ?? '0x0',
-      effects: result.effects ?? '0x0',
-      id: messageId,
-    })
+    chrome.tabs
+      .sendMessage(senderTabId, {
+        type: 'sign_success',
+        digest: result.digest ?? '0x0',
+        effects: result.effects ?? '0x0',
+        id: messageId,
+      })
+      .catch((err) => {
+        log.error('Failed to send success message to tab', err)
+      })
   } catch (err) {
     log.error('Sponsored execute failed', err)
-    await chrome.tabs.sendMessage(senderTabId, {
-      type: 'sign_sponsored_transaction_error',
-      error: err instanceof Error ? err.message : 'Unknown error occurred',
-      id: messageId,
-    })
+    chrome.tabs
+      .sendMessage(senderTabId, {
+        type: 'sign_sponsored_transaction_error',
+        error: err instanceof Error ? err.message : 'Unknown error occurred',
+        id: messageId,
+      })
+      .catch((sendErr) => {
+        log.error('Failed to send error message to tab', sendErr)
+      })
   }
 }
 
