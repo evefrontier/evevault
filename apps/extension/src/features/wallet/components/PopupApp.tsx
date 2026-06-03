@@ -71,7 +71,7 @@ function InitErrorView({ initError }: { initError: string }) {
 function App() {
   const navigate = useNavigate()
   const { initError, isInitializing } = useAppInitialization()
-  const { devMode, setDevMode } = useContext()
+  const { chain, devMode, setDevMode } = useContext()
   const { user, loading: authLoading, error: authError } = useAuth()
   const {
     isLocked,
@@ -80,7 +80,6 @@ function App() {
     unlock,
     localnetUrl,
   } = useDevice()
-  const { chain } = useContext()
   const faucetUrl = getFaucetUrlForChain(chain)
   const { handleLogin } = useLogin()
   const { handleTestTransaction, txDigest, handleRotateEphKey } = useDevMode()

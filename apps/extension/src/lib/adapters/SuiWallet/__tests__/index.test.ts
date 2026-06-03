@@ -2,6 +2,7 @@ import { EVEFRONTIER_SPONSORED_TRANSACTION } from '@evefrontier/wallet-core/wall
 import { WalletStandardMessageTypes } from '@evevault/shared'
 import {
   StandardConnect,
+  StandardDisconnect,
   StandardEvents,
   SUI_DEVNET_CHAIN,
   SUI_LOCALNET_CHAIN,
@@ -204,14 +205,15 @@ describe('EveVaultWallet', () => {
     )
   })
 
-  it('emits account changes when disconnecting a connected wallet', async () => {
+  it('emits one account change when disconnecting and treats repeated disconnects as no-ops', async () => {
     const wallet = new EveVaultWallet()
     await connectLocalnet(wallet)
     const listener = vi.fn()
     wallet.features[StandardEvents].on('change', listener)
 
-    wallet.disconnect()
-    wallet.disconnect()
+    await wallet.features[StandardDisconnect].disconnect()
+    // Repeated disconnects should be no-ops once accounts are already cleared.
+    await wallet.features[StandardDisconnect].disconnect()
 
     expect(listener).toHaveBeenCalledTimes(1)
     expect(listener).toHaveBeenCalledWith(

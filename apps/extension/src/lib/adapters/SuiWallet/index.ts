@@ -25,6 +25,7 @@ import type {
 import {
   ReadonlyWalletAccount,
   StandardConnect,
+  StandardDisconnect,
   StandardEvents,
   SUI_DEVNET_CHAIN,
   SUI_TESTNET_CHAIN,
@@ -83,6 +84,10 @@ export class EveVaultWallet implements Wallet {
       [StandardConnect]: {
         version: '1.0.0',
         connect: this.#connect,
+      },
+      [StandardDisconnect]: {
+        version: '1.0.0',
+        disconnect: async () => this.disconnect(),
       },
       [StandardEvents]: {
         version: '1.0.0',
