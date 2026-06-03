@@ -1,6 +1,7 @@
 import { Text } from '@evevault/shared/components'
 import { createLogger } from '@evevault/shared/utils'
 import { useWalletSigningContext } from '@evevault/shared/wallet'
+import type { SuiChain } from '@mysten/wallet-standard'
 import { usePendingSignAction } from '@/features/wallet/hooks'
 import { SignRequestView } from './SignRequestView'
 
@@ -14,7 +15,7 @@ export type PendingSponsoredAction = {
   windowId: number
   sponsoredTxB64: string
   preparationId: string
-  chain: string
+  chain: SuiChain
 }
 
 function parsePendingSponsoredAction(
@@ -26,6 +27,18 @@ function parsePendingSponsoredAction(
   }
 
   throw new Error('No pending sponsored transaction found')
+}
+
+function getSponsoredApproveError(
+  isLocalnet: boolean,
+  auth: { user: unknown; ephemeralPublicKey: unknown; maxEpoch: unknown },
+): string | null {
+  if (isLocalnet) return 'Sponsored transactions are not available on localnet.'
+  if (!auth.user) return 'Sign in and try again.'
+  if (!auth.ephemeralPublicKey)
+    return 'Device key not found. Unlock the wallet and try again.'
+  if (!auth.maxEpoch) return 'Max epoch not set. Re-authenticate and try again.'
+  return null
 }
 
 function SignSponsoredTransaction() {
@@ -50,20 +63,9 @@ function SignSponsoredTransaction() {
 
   const handleApprove = async () => {
     if (!pending) return
-    if (isLocalnet) {
-      setError('Sponsored transactions are not available on localnet.')
-      return
-    }
-    if (!auth.user) {
-      setError('Sign in and try again.')
-      return
-    }
-    if (!auth.ephemeralPublicKey) {
-      setError('Device key not found. Unlock the wallet and try again.')
-      return
-    }
-    if (!auth.maxEpoch) {
-      setError('Max epoch not set. Re-authenticate and try again.')
+    const validationError = getSponsoredApproveError(isLocalnet, auth)
+    if (validationError) {
+      setError(validationError)
       return
     }
 
