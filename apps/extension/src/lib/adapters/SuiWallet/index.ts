@@ -223,8 +223,12 @@ export class EveVaultWallet implements Wallet {
         if (m.__from !== 'Eve Vault' || m.id !== id) return
         if (trySettle(state, onMsg, timeoutId)) {
           if (m.type === 'auth_success') {
-            await this.#resolveAuthSuccess(m)
-            resolve({ accounts: this.accounts })
+            try {
+              await this.#resolveAuthSuccess(m)
+              resolve({ accounts: this.accounts })
+            } catch (error) {
+              reject(error)
+            }
           } else {
             reject(
               new Error(
