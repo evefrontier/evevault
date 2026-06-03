@@ -1,342 +1,86 @@
 import type { FC } from 'react'
 
-export const Identicon1: FC = () => (
-  <svg
-    width="26"
-    height="26"
-    viewBox="0 0 30 30"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    aria-hidden="true"
-  >
-    <rect
-      x="0.5"
-      y="0.5"
-      width="5"
-      height="5"
-      stroke="#FF4700"
-      strokeOpacity="0.5"
-    />
-    <rect x="1" y="9" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-    <rect
-      x="0.5"
-      y="16.5"
-      width="5"
-      height="5"
-      stroke="#FF4700"
-      strokeOpacity="0.5"
-    />
-    <rect
-      x="0.5"
-      y="24.5"
-      width="5"
-      height="5"
-      stroke="#FF4700"
-      strokeOpacity="0.5"
-    />
-    <rect x="9" y="1" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-    <rect x="9" y="9" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-    <rect x="9" y="17" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-    <rect
-      x="8.5"
-      y="24.5"
-      width="5"
-      height="5"
-      stroke="#FF4700"
-      strokeOpacity="0.5"
-    />
-    <rect
-      x="16.5"
-      y="0.5"
-      width="5"
-      height="5"
-      stroke="#FF4700"
-      strokeOpacity="0.5"
-    />
-    <rect x="17" y="9" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-    <rect x="17" y="17" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-    <rect
-      x="16.5"
-      y="24.5"
-      width="5"
-      height="5"
-      stroke="#FF4700"
-      strokeOpacity="0.5"
-    />
-    <rect
-      x="24.5"
-      y="0.5"
-      width="5"
-      height="5"
-      stroke="#FF4700"
-      strokeOpacity="0.5"
-    />
-    <rect
-      x="24.5"
-      y="8.5"
-      width="5"
-      height="5"
-      stroke="#FF4700"
-      strokeOpacity="0.5"
-    />
-    <rect x="25" y="17" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-    <rect x="25" y="25" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-  </svg>
-)
+const CELL_SIZE = 8
+const STROKE_COLOR = '#FF4700'
 
-export const Identicon2: FC = () => (
-  <svg
-    width="26"
-    height="26"
-    viewBox="0 0 30 30"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    aria-hidden="true"
-  >
-    <rect
-      x="8.5"
-      y="0.5"
-      width="5"
-      height="5"
-      stroke="#FF4700"
-      strokeOpacity="0.5"
-    />
-    <rect x="1" y="9" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-    <rect
-      x="0.5"
-      y="16.5"
-      width="5"
-      height="5"
-      stroke="#FF4700"
-      strokeOpacity="0.5"
-    />
-    <rect
-      x="0.5"
-      y="24.5"
-      width="5"
-      height="5"
-      stroke="#FF4700"
-      strokeOpacity="0.5"
-    />
-    <rect x="1" y="1" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-    <rect x="9" y="9" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-    <rect x="9" y="25" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-    <rect
-      x="8.5"
-      y="16.5"
-      width="5"
-      height="5"
-      stroke="#FF4700"
-      strokeOpacity="0.5"
-    />
-    <rect
-      x="16.5"
-      y="0.5"
-      width="5"
-      height="5"
-      stroke="#FF4700"
-      strokeOpacity="0.5"
-    />
-    <rect x="17" y="9" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-    <rect x="17" y="17" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-    <rect
-      x="16.5"
-      y="24.5"
-      width="5"
-      height="5"
-      stroke="#FF4700"
-      strokeOpacity="0.5"
-    />
-    <rect
-      x="24.5"
-      y="0.5"
-      width="5"
-      height="5"
-      stroke="#FF4700"
-      strokeOpacity="0.5"
-    />
-    <rect
-      x="24.5"
-      y="16.5"
-      width="5"
-      height="5"
-      stroke="#FF4700"
-      strokeOpacity="0.5"
-    />
-    <rect x="25" y="9" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-    <rect x="25" y="25" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-  </svg>
-)
+type IdenticonPattern = readonly string[]
+type IdenticonCell = {
+  column: number
+  id: string
+  row: number
+}
 
-export const Identicon3: FC = () => (
-  <svg
-    width="26"
-    height="26"
-    viewBox="0 0 30 30"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    aria-hidden="true"
-  >
-    <rect
-      x="0.5"
-      y="0.5"
-      width="5"
-      height="5"
-      stroke="#FF4700"
-      strokeOpacity="0.5"
-    />
-    <rect x="1" y="9" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-    <rect
-      x="8.5"
-      y="16.5"
-      width="5"
-      height="5"
-      stroke="#FF4700"
-      strokeOpacity="0.5"
-    />
-    <rect
-      x="0.5"
-      y="16.5"
-      width="5"
-      height="5"
-      stroke="#FF4700"
-      strokeOpacity="0.5"
-    />
-    <rect x="9" y="1" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-    <rect x="9" y="9" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-    <rect x="1" y="25" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-    <rect
-      x="8.5"
-      y="24.5"
-      width="5"
-      height="5"
-      stroke="#FF4700"
-      strokeOpacity="0.5"
-    />
-    <rect
-      x="16.5"
-      y="8.5"
-      width="5"
-      height="5"
-      stroke="#FF4700"
-      strokeOpacity="0.5"
-    />
-    <rect x="17" y="1" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-    <rect x="17" y="17" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-    <rect
-      x="16.5"
-      y="24.5"
-      width="5"
-      height="5"
-      stroke="#FF4700"
-      strokeOpacity="0.5"
-    />
-    <rect
-      x="24.5"
-      y="0.5"
-      width="5"
-      height="5"
-      stroke="#FF4700"
-      strokeOpacity="0.5"
-    />
-    <rect
-      x="24.5"
-      y="16.5"
-      width="5"
-      height="5"
-      stroke="#FF4700"
-      strokeOpacity="0.5"
-    />
-    <rect x="25" y="9" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-    <rect x="25" y="25" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-  </svg>
-)
+const IDENTICON_PATTERNS = [
+  ['0100', '1110', '0111', '0001'],
+  ['1000', '1111', '0010', '0101'],
+  ['0110', '1101', '0010', '1001'],
+  ['0100', '1110', '0111', '0001'],
+] as const satisfies readonly IdenticonPattern[]
 
-export const Identicon4: FC = () => (
-  <svg
-    width="26"
-    height="26"
-    viewBox="0 0 30 30"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    aria-hidden="true"
-  >
-    <rect
-      x="0.5"
-      y="0.5"
-      width="5"
-      height="5"
-      stroke="#FF4700"
-      strokeOpacity="0.5"
-    />
-    <rect x="1" y="9" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-    <rect
-      x="0.5"
-      y="16.5"
-      width="5"
-      height="5"
-      stroke="#FF4700"
-      strokeOpacity="0.5"
-    />
-    <rect
-      x="0.5"
-      y="24.5"
-      width="5"
-      height="5"
-      stroke="#FF4700"
-      strokeOpacity="0.5"
-    />
-    <rect x="9" y="1" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-    <rect x="9" y="9" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-    <rect x="9" y="17" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-    <rect
-      x="8.5"
-      y="24.5"
-      width="5"
-      height="5"
-      stroke="#FF4700"
-      strokeOpacity="0.5"
-    />
-    <rect
-      x="16.5"
-      y="0.5"
-      width="5"
-      height="5"
-      stroke="#FF4700"
-      strokeOpacity="0.5"
-    />
-    <rect x="17" y="9" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-    <rect x="17" y="17" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-    <rect
-      x="16.5"
-      y="24.5"
-      width="5"
-      height="5"
-      stroke="#FF4700"
-      strokeOpacity="0.5"
-    />
-    <rect
-      x="24.5"
-      y="0.5"
-      width="5"
-      height="5"
-      stroke="#FF4700"
-      strokeOpacity="0.5"
-    />
-    <rect
-      x="24.5"
-      y="8.5"
-      width="5"
-      height="5"
-      stroke="#FF4700"
-      strokeOpacity="0.5"
-    />
-    <rect x="25" y="17" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-    <rect x="25" y="25" width="4" height="4" stroke="#FF4700" strokeWidth="2" />
-  </svg>
-)
+const IDENTICON_CELLS: readonly IdenticonCell[] = [
+  { column: 0, id: '0-0', row: 0 },
+  { column: 1, id: '0-1', row: 0 },
+  { column: 2, id: '0-2', row: 0 },
+  { column: 3, id: '0-3', row: 0 },
+  { column: 0, id: '1-0', row: 1 },
+  { column: 1, id: '1-1', row: 1 },
+  { column: 2, id: '1-2', row: 1 },
+  { column: 3, id: '1-3', row: 1 },
+  { column: 0, id: '2-0', row: 2 },
+  { column: 1, id: '2-1', row: 2 },
+  { column: 2, id: '2-2', row: 2 },
+  { column: 3, id: '2-3', row: 2 },
+  { column: 0, id: '3-0', row: 3 },
+  { column: 1, id: '3-1', row: 3 },
+  { column: 2, id: '3-2', row: 3 },
+  { column: 3, id: '3-3', row: 3 },
+]
 
-// Map to get identicon by number
+function getCellProps(row: number, column: number, isActive: boolean) {
+  const offset = isActive ? 1 : 0.5
+
+  return {
+    height: isActive ? 4 : 5,
+    stroke: STROKE_COLOR,
+    strokeOpacity: isActive ? undefined : '0.5',
+    strokeWidth: isActive ? 2 : undefined,
+    width: isActive ? 4 : 5,
+    x: column * CELL_SIZE + offset,
+    y: row * CELL_SIZE + offset,
+  }
+}
+
+function Identicon({ pattern }: { pattern: IdenticonPattern }) {
+  return (
+    <svg
+      width="26"
+      height="26"
+      viewBox="0 0 30 30"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      {IDENTICON_CELLS.map(({ column, id, row }) => (
+        <rect
+          key={id}
+          {...getCellProps(row, column, pattern[row][column] === '1')}
+        />
+      ))}
+    </svg>
+  )
+}
+
+function createIdenticon(index: number): FC {
+  return function IdenticonComponent() {
+    return <Identicon pattern={IDENTICON_PATTERNS[index]} />
+  }
+}
+
+export const Identicon1 = createIdenticon(0)
+export const Identicon2 = createIdenticon(1)
+export const Identicon3 = createIdenticon(2)
+export const Identicon4 = createIdenticon(3)
+
 export const IDENTICONS = [
   Identicon1,
   Identicon2,
