@@ -3,9 +3,7 @@ import type React from 'react'
 import { Dropdown } from '#/components/Dropdown'
 import Icon from '#/components/Icon'
 import Text from '#/components/Text'
-import type { getAvailableNetworks } from '#/types'
-
-type AvailableNetwork = ReturnType<typeof getAvailableNetworks>[number]
+import type { NetworkOption } from '#/types'
 
 function getChevronClassName(isOpen: boolean) {
   return `dropdown-selector__chevron ${
@@ -24,7 +22,7 @@ export function NetworkTrigger({
 }: {
   chain: string
   compact: boolean
-  currentNetwork: AvailableNetwork
+  currentNetwork: NetworkOption
   disabled: boolean
   isOpen: boolean
   onToggle: () => void
@@ -87,14 +85,13 @@ function NetworkMenuItem({
 }: {
   chain: string
   disabled: boolean
-  network: AvailableNetwork
+  network: NetworkOption
   onNetworkSelect: (chain: SuiChain) => void
 }) {
   const isActive = network.chain === chain
 
   return (
     <button
-      key={network.chain}
       className={`dropdown__item ${isActive ? 'dropdown__item--active' : ''}`}
       onClick={() => onNetworkSelect(network.chain)}
       disabled={disabled}
@@ -121,7 +118,7 @@ export function NetworkMenu({
   onNetworkSelect,
   triggerRef,
 }: {
-  availableNetworks: AvailableNetwork[]
+  availableNetworks: NetworkOption[]
   chain: string
   disabled: boolean
   isExtensionContext: boolean

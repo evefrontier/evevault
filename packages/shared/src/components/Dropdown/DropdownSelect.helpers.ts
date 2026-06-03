@@ -32,15 +32,21 @@ export function useOutsideClick(
   dropdownRef: React.RefObject<HTMLDivElement | null>,
   onClickOutside: () => void,
 ) {
+  const onClickOutsideRef = useRef(onClickOutside)
+
+  useEffect(() => {
+    onClickOutsideRef.current = onClickOutside
+  }, [onClickOutside])
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current?.contains(event.target as Node)) return
-      onClickOutside()
+      onClickOutsideRef.current()
     }
 
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [dropdownRef, onClickOutside])
+  }, [dropdownRef])
 }
 
 export function useMeasuredMenuHeight(isOpen: boolean) {
