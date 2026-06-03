@@ -152,10 +152,10 @@ describe('_handleCreateKeypair', () => {
     })
   })
 
-  it('returns true synchronously (keeps channel open)', () => {
+  it('resolves to true (channel kept open by messageHandler return)', async () => {
     stubKeeperBridge({ ok: true })
     const result = _handleCreateKeypair(makeMessage(), mockSender, vi.fn())
-    expect(result).toBe(true)
+    expect(await result).toBe(true)
   })
 })
 
@@ -237,7 +237,7 @@ describe('_handleGetPublicKey', () => {
 
     await _handleGetPublicKey(makeMessage(), mockSender, sendResponse)
 
-    expect(sendResponse).toHaveBeenCalledWith({ error: 'LOCKED' })
+    expect(sendResponse).toHaveBeenCalledWith({ ok: false, error: 'LOCKED' })
   })
 
   it('returns fallback error when keeper ok but no publicKeyBytes', async () => {
@@ -247,6 +247,7 @@ describe('_handleGetPublicKey', () => {
     await _handleGetPublicKey(makeMessage(), mockSender, sendResponse)
 
     expect(sendResponse).toHaveBeenCalledWith({
+      ok: false,
       error: 'EVE Vault is LOCKED',
     })
   })
