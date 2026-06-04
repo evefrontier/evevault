@@ -19,17 +19,29 @@ type IconOptions = {
   svgFill?: IconColorValue
 }
 
+/**
+ * Lets icon definitions use the sentinel "color" where the runtime Icon color
+ * prop should replace the static SVG value.
+ */
 function resolveIconColor(value: IconColorValue | undefined, color: string) {
   if (value === 'color') return color
   return value
 }
 
+/**
+ * Defaults fills only for non-stroked paths so stroked icons do not receive a
+ * duplicate fill when converted to the shared factory.
+ */
 function getPathFill(path: IconPath, color: string) {
   if (path.fill !== undefined) return resolveIconColor(path.fill, color)
   if (path.stroke !== undefined) return undefined
   return color
 }
 
+/**
+ * Encodes repeated 16px SVG boilerplate once while preserving per-icon path
+ * data, clip paths, and color override behavior.
+ */
 export function createSvgIcon({
   ariaLabel,
   clipPathId,

@@ -21,6 +21,10 @@ type TokenRowDisplay = {
   tokenName: string
 }
 
+/**
+ * Prefers live metadata but falls back to known token config because some RPCs
+ * omit names for locally configured coin types.
+ */
 function getTokenName(
   coinType: string,
   metadata?: { name?: string | null; symbol?: string | null } | null,
@@ -29,6 +33,10 @@ function getTokenName(
   return metadata?.name || metadata?.symbol || knownDisplay?.name || 'Token'
 }
 
+/**
+ * Keeps an empty symbol possible so unknown token balances do not display a
+ * misleading placeholder ticker.
+ */
 function getTokenSymbol(
   coinType: string,
   metadata?: { symbol?: string | null } | null,
@@ -36,6 +44,10 @@ function getTokenSymbol(
   return metadata?.symbol || getKnownTokenDisplay(coinType)?.symbol || ''
 }
 
+/**
+ * Recomputes scrambled text on refresh ticks while keeping the real balance
+ * stable between animation frames.
+ */
 function useRefreshText(
   value: string,
   isRefreshing: boolean,
@@ -49,6 +61,10 @@ function useRefreshText(
   )
 }
 
+/**
+ * Derives all display strings in one hook so the row JSX only handles layout
+ * and interaction state.
+ */
 function useTokenRowDisplay({
   coinType,
   data,
@@ -87,6 +103,10 @@ function useTokenRowDisplay({
   }
 }
 
+/**
+ * Shares selected and hover classes between mouse and keyboard activation
+ * paths for the whole token row.
+ */
 function getContainerClasses(isSelected: boolean) {
   return [
     'flex flex-col w-full p-2 gap-4',
@@ -97,6 +117,10 @@ function getContainerClasses(isSelected: boolean) {
   ].join(' ')
 }
 
+/**
+ * Stops propagation on copy so copying the coin type does not also select or
+ * deselect the token row.
+ */
 function TokenAddress({
   coinType,
   shortAddress,
@@ -125,6 +149,10 @@ function TokenAddress({
   )
 }
 
+/**
+ * Keeps the loading dots attached to the balance value while symbols scramble
+ * independently during refresh.
+ */
 function TokenBalance({
   displayBalance,
   displaySymbol,
@@ -144,6 +172,10 @@ function TokenBalance({
   )
 }
 
+/**
+ * Stops propagation on transfer so the row remains selected while launching the
+ * send-token flow.
+ */
 function TransferAction({ onTransfer }: { onTransfer?: () => void }) {
   if (!onTransfer) return null
 

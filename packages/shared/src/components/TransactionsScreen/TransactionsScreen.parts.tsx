@@ -8,6 +8,7 @@ import type {
   Transaction,
   TransactionBalanceChange,
   TransactionRowProps,
+  TransactionStatusMessage,
 } from '#/types/components'
 import { formatShortDate, getSuiscanUrl } from '#/utils'
 import {
@@ -16,7 +17,6 @@ import {
   getSummaryClasses,
   getTransactionRowSummary,
   openExternalUrl,
-  type TransactionStatusMessage,
 } from './TransactionsScreen.helpers'
 
 export function TransactionsHeader({

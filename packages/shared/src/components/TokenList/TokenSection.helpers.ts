@@ -12,6 +12,10 @@ const REFRESH_TIMEOUT_MS = 10000
 
 const log = createLogger()
 
+/**
+ * Clears the refresh scramble interval in one place because it is stopped by
+ * normal completion, timeout completion, and component unmount.
+ */
 function clearTimer(
   timerRef: React.MutableRefObject<ReturnType<typeof setInterval> | null>,
 ) {
@@ -20,6 +24,10 @@ function clearTimer(
   timerRef.current = null
 }
 
+/**
+ * Refetches balances and transactions together so the token list and recent
+ * activity stay in sync after a manual refresh.
+ */
 async function refetchBalancesAndTransactions(queryClient: QueryClient) {
   await Promise.all([
     queryClient.refetchQueries({
@@ -33,6 +41,10 @@ async function refetchBalancesAndTransactions(queryClient: QueryClient) {
   ])
 }
 
+/**
+ * Caps manual refresh duration because some wallet queries can hang behind
+ * extension or localnet RPC boundaries.
+ */
 function createTimeoutPromise() {
   let timeoutId: ReturnType<typeof setTimeout> | null = null
   const timeoutPromise = new Promise<void>((resolve) => {
@@ -47,6 +59,10 @@ function createTimeoutPromise() {
   }
 }
 
+/**
+ * Coordinates the balance refresh request with the scramble animation and
+ * timeout fallback used by the compact token list UI.
+ */
 export function useRefreshBalances(
   queryClient: QueryClient,
   showToast: (message: string) => void,
@@ -102,6 +118,10 @@ export function useRefreshBalances(
   return { isRefreshing, refreshBalances, refreshTick }
 }
 
+/**
+ * Rewrites tenant-scoped EVE coin aliases after reading persisted tokens so
+ * stored token lists remain portable across tenants.
+ */
 export function useTokensForChain(
   chain: SuiChain | null,
   tokens: Partial<Record<SuiChain, string[]>>,
@@ -121,6 +141,10 @@ export function useTokensForChain(
   }, [chain, tokens, tenantId, currentEveCoinType])
 }
 
+/**
+ * Wraps clipboard access so callers only handle toast messaging, while browser
+ * capability failures still produce a user-visible result.
+ */
 export function useCopyAddress(showToast: (message: string) => void) {
   return useCallback(
     async (address: string) => {
@@ -138,6 +162,10 @@ export function useCopyAddress(showToast: (message: string) => void) {
   )
 }
 
+/**
+ * Clears selection after removing a token to avoid leaving action controls
+ * attached to a coin that is no longer in the visible list.
+ */
 export function removeSelectedToken({
   chain,
   removeToken,

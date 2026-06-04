@@ -6,6 +6,26 @@ import type { ExtendedTokenRowProps } from '#/types'
 import { formatAddress } from '#/utils'
 import { TokenRow } from './TokenRow'
 
+type TokenRowsProps = Pick<
+  ExtendedTokenRowProps,
+  | 'balanceAddress'
+  | 'chain'
+  | 'isRefreshing'
+  | 'localnetUrl'
+  | 'onCopyAddress'
+  | 'refreshTick'
+  | 'user'
+> & {
+  onSendToken?: (coinType: string) => void
+  selectedToken: string | null
+  setSelectedToken: (coinType: string | null) => void
+  tokensForChain: string[]
+}
+
+/**
+ * Reserves the same vertical space when no wallet address is available so the
+ * token list header does not jump between auth and loading states.
+ */
 export function WalletAddressRow({
   walletAddress,
   onCopyAddress,
@@ -36,6 +56,10 @@ export function WalletAddressRow({
   )
 }
 
+/**
+ * Keeps the refresh button in the balance column because refreshing affects
+ * amounts, not token metadata or addresses.
+ */
 export function TokenListHeader({
   isRefreshing,
   onRefreshBalances,
@@ -91,7 +115,11 @@ export function TokenListHeader({
   )
 }
 
-export function EmptyTokenList() {
+/**
+ * Renders an empty state inside the list area so the action row can stay fixed
+ * below it.
+ */
+function EmptyTokenList() {
   return (
     <div className="flex justify-center items-center py-6 w-full">
       <Text size="large" color="grey-neutral">
@@ -101,26 +129,18 @@ export function EmptyTokenList() {
   )
 }
 
-type TokenRowsProps = Pick<
-  ExtendedTokenRowProps,
-  | 'balanceAddress'
-  | 'chain'
-  | 'isRefreshing'
-  | 'localnetUrl'
-  | 'onCopyAddress'
-  | 'refreshTick'
-  | 'user'
-> & {
-  onSendToken?: (coinType: string) => void
-  selectedToken: string | null
-  setSelectedToken: (coinType: string | null) => void
-  tokensForChain: string[]
-}
-
+/**
+ * Toggles row selection because transfer/remove actions apply to one selected
+ * token at a time.
+ */
 function getNextSelectedToken(selectedToken: string | null, coinType: string) {
   return selectedToken === coinType ? null : coinType
 }
 
+/**
+ * Owns token row rendering so selection, copy, transfer, and refresh props stay
+ * wired consistently for every coin type.
+ */
 export function TokenRows({
   balanceAddress,
   chain,
@@ -156,6 +176,10 @@ export function TokenRows({
   ))
 }
 
+/**
+ * Keeps add/remove controls outside the scrolling token rows so destructive
+ * actions do not move as the list length changes.
+ */
 export function TokenActions({
   canRemove,
   onAddToken,
@@ -184,6 +208,10 @@ export function TokenActions({
   )
 }
 
+/**
+ * Uses a fixed extension height but flexible web height to preserve the popup
+ * layout while still letting web pages fill the available space.
+ */
 export function getTokenListContainerProps(isMobile: boolean) {
   return {
     className: `flex flex-col items-start p-4 px-2 gap-3 w-full bg-crude-dark border border-quantum-60 overflow-hidden ${isMobile ? '' : 'flex-1 min-h-[300px]'}`,

@@ -5,7 +5,6 @@ import {
   getBalanceChangeAmount,
   getBalanceChangeTitle,
   getNextExpandedDigest,
-  getSummaryAmounts,
   getSummaryClasses,
   getTransactionRowSummary,
   getTransactionStatusMessage,
@@ -13,6 +12,10 @@ import {
   openExternalUrl,
 } from '../TransactionsScreen.helpers'
 
+/**
+ * Builds a realistic transaction fixture so tests can override only the field
+ * relevant to a formatter or status case.
+ */
 function createTransaction(overrides: Partial<Transaction> = {}): Transaction {
   return {
     balanceChanges: [
@@ -136,12 +139,12 @@ describe('transaction list helpers', () => {
 
   it('leaves sent summaries unsigned when there are no balance changes', () => {
     expect(
-      getSummaryAmounts(
+      getTransactionRowSummary(
         createTransaction({
           balanceChanges: [],
           direction: 'sent',
         }),
-      ),
+      ).summaryAmounts,
     ).toBe('')
   })
 })

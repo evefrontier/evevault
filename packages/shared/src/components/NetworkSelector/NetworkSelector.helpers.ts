@@ -4,8 +4,6 @@ import type { NetworkSelectorProps } from '#/types'
 import { getAvailableNetworks } from '#/types'
 import { createLogger, isExtension } from '#/utils'
 
-const log = createLogger()
-
 type NetworkSwitchResult = {
   requiresReauth?: boolean
   success: boolean
@@ -21,6 +19,12 @@ type UseNetworkSelectionParams = Pick<
   setIsProcessing: (isProcessing: boolean) => void
 }
 
+const log = createLogger()
+
+/**
+ * Notifies both network-switch callbacks together because re-auth means the
+ * wallet selected the target chain but the session is not usable yet.
+ */
 function notifyRequiresReauth(
   targetChain: SuiChain,
   params: UseNetworkSelectionParams,
@@ -29,6 +33,10 @@ function notifyRequiresReauth(
   params.onRequiresReauth?.(targetChain)
 }
 
+/**
+ * Runs only the post-switch side effects that depend on a successful store
+ * update, keeping failed switches from opening localnet setup.
+ */
 async function handleSuccessfulNetworkSwitch(
   result: NetworkSwitchResult,
   targetChain: SuiChain,
@@ -44,6 +52,10 @@ async function handleSuccessfulNetworkSwitch(
   }
 }
 
+/**
+ * Computes the menu choices from dev mode and runtime context because localnet
+ * is extension-only even when development mode is enabled.
+ */
 export function useAvailableNetworks(devMode: boolean) {
   const isExtensionContext = isExtension()
   const availableNetworks = useMemo(
@@ -54,6 +66,10 @@ export function useAvailableNetworks(devMode: boolean) {
   return { availableNetworks, isExtensionContext }
 }
 
+/**
+ * Forces an available chain when persisted state points to a network hidden by
+ * the current runtime or dev-mode configuration.
+ */
 export function useValidNetwork({
   availableNetworks,
   chain,
@@ -69,6 +85,10 @@ export function useValidNetwork({
   }, [availableNetworks, chain, forceSetChain])
 }
 
+/**
+ * Keeps async network switching serialized through one callback so menu state,
+ * processing state, and re-auth callbacks cannot diverge.
+ */
 export function useNetworkSelection(params: UseNetworkSelectionParams) {
   const { chain, setChain, setIsOpen, setIsProcessing } = params
 

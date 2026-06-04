@@ -1,9 +1,9 @@
 import type { FC } from 'react'
 
+type IdenticonPattern = readonly string[]
+
 const CELL_SIZE = 8
 const STROKE_COLOR = '#FF4700'
-
-type IdenticonPattern = readonly string[]
 
 const IDENTICON_PATTERNS = [
   ['0100', '1110', '0111', '0001'],
@@ -20,6 +20,16 @@ const IDENTICON_CELLS = Array.from({ length: 4 }, (_, row) =>
   })),
 ).flat()
 
+const IDENTICONS = IDENTICON_PATTERNS.map((pattern) => {
+  return function IdenticonComponent() {
+    return <Identicon pattern={pattern} />
+  }
+}) as readonly FC[]
+
+/**
+ * Returns slightly different rect dimensions for active and inactive cells so
+ * the generated icons preserve the original hand-drawn visual weight.
+ */
 function getCellProps(row: number, column: number, isActive: boolean) {
   const offset = isActive ? 1 : 0.5
 
@@ -34,6 +44,10 @@ function getCellProps(row: number, column: number, isActive: boolean) {
   }
 }
 
+/**
+ * Wraps a static pattern in a component so callers can keep treating
+ * identicons as ordinary React nodes.
+ */
 function Identicon({ pattern }: { pattern: IdenticonPattern }) {
   return (
     <svg
@@ -54,24 +68,10 @@ function Identicon({ pattern }: { pattern: IdenticonPattern }) {
   )
 }
 
-function createIdenticon(index: number): FC {
-  return function IdenticonComponent() {
-    return <Identicon pattern={IDENTICON_PATTERNS[index]} />
-  }
-}
-
-export const Identicon1 = createIdenticon(0)
-export const Identicon2 = createIdenticon(1)
-export const Identicon3 = createIdenticon(2)
-export const Identicon4 = createIdenticon(3)
-
-export const IDENTICONS = [
-  Identicon1,
-  Identicon2,
-  Identicon3,
-  Identicon4,
-] as const
-
+/**
+ * Keeps dropdown callers on numeric avatar ids while wrapping indexes larger
+ * than the available pattern set.
+ */
 export const getIdenticon = (index: number) => {
   const Icon = IDENTICONS[index % IDENTICONS.length]
   return <Icon />

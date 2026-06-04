@@ -1,17 +1,24 @@
-import type { Transaction, TransactionBalanceChange } from '#/types/components'
+import type {
+  Transaction,
+  TransactionBalanceChange,
+  TransactionStatusMessage,
+} from '#/types/components'
 import { formatAddress, formatDisplayAmount, SUI_COIN_TYPE } from '#/utils'
 
-export type TransactionStatusMessage = {
-  color: 'error' | 'grey-neutral'
-  text: string
-}
-
+/**
+ * Normalizes TanStack Query pages so the screen can stay independent from the
+ * pagination shape returned by the transaction service.
+ */
 export function getTransactionsFromPages(
   pages?: { transactions: Transaction[] }[],
 ) {
   return pages?.flatMap((page) => page.transactions) ?? []
 }
 
+/**
+ * Keeps expansion state as a single digest because only one transaction row
+ * should be open at a time in the compact extension layout.
+ */
 export function getNextExpandedDigest(
   expandedDigest: string | null,
   digest: string,
@@ -19,6 +26,10 @@ export function getNextExpandedDigest(
   return expandedDigest === digest ? null : digest
 }
 
+/**
+ * Centralizes status precedence so error, loading, and empty states do not
+ * drift between the desktop table and extension list presentations.
+ */
 export function getTransactionStatusMessage({
   error,
   hasTransactions,
@@ -54,6 +65,10 @@ export function getTransactionStatusMessage({
   return null
 }
 
+/**
+ * Builds the row class list in one place because the summary row is reused by
+ * both collapsed and expanded states.
+ */
 export function getSummaryClasses(isExpanded: boolean) {
   return [
     'flex w-full p-2 items-center justify-between gap-2',
@@ -70,7 +85,7 @@ function formatBalanceChangeSummary(balanceChange: TransactionBalanceChange) {
   }`
 }
 
-export function getSummaryAmounts(transaction: Transaction) {
+function getSummaryAmounts(transaction: Transaction) {
   const summaryAmountsRaw = transaction.balanceChanges
     .map(formatBalanceChangeSummary)
     .join(', ')
@@ -82,6 +97,10 @@ export function getSummaryAmounts(transaction: Transaction) {
   return summaryAmountsRaw
 }
 
+/**
+ * Precomputes row display fields so the JSX parts do not duplicate address
+ * truncation or sent/received direction logic.
+ */
 export function getTransactionRowSummary(transaction: Transaction) {
   return {
     iconName: transaction.direction === 'sent' ? 'ArrowRight' : 'ArrowLeft',
@@ -91,6 +110,10 @@ export function getTransactionRowSummary(transaction: Transaction) {
   } as const
 }
 
+/**
+ * Labels gas separately from token changes because both can appear in the same
+ * transaction details block.
+ */
 export function getBalanceChangeTitle(balanceChange: TransactionBalanceChange) {
   if (!balanceChange.tokenName) return null
   return `${balanceChange.coinType === SUI_COIN_TYPE ? 'Gas' : 'Token'}: ${
@@ -98,6 +121,10 @@ export function getBalanceChangeTitle(balanceChange: TransactionBalanceChange) {
   }`
 }
 
+/**
+ * Applies the debit sign at render time because stored balance changes keep
+ * amounts unsigned for easier aggregation.
+ */
 export function getBalanceChangeAmount(
   balanceChange: TransactionBalanceChange,
 ) {
@@ -106,6 +133,10 @@ export function getBalanceChangeAmount(
   return `${sign}${formattedAmount} ${balanceChange.tokenSymbol}`
 }
 
+/**
+ * Wraps window.open to keep external transaction links consistently isolated
+ * from the extension window.
+ */
 export function openExternalUrl(url: string) {
   window.open(url, '_blank', 'noopener,noreferrer')
 }

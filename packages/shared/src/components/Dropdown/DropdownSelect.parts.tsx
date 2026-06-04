@@ -5,6 +5,10 @@ import Text from '#/components/Text'
 import type { DropdownItem } from '#/types'
 import { getIdenticon } from './Identicons'
 
+/**
+ * Keeps the trigger decoration colocated with the measured menu height so the
+ * corner animation remains aligned with custom menu content.
+ */
 export function DropdownSelectTrigger({
   identicon,
   isOpen,
@@ -56,6 +60,10 @@ export function DropdownSelectTrigger({
   )
 }
 
+/**
+ * Handles keyboard activation locally because dropdown items are rendered as
+ * divs to support arbitrary custom content.
+ */
 function DropdownSelectItem({
   item,
   itemIdenticon,
@@ -85,6 +93,10 @@ function DropdownSelectItem({
   )
 }
 
+/**
+ * Falls back to generated item rows only when no custom children are provided,
+ * preserving the legacy items API while allowing richer menu bodies.
+ */
 export function DropdownSelectMenu({
   children,
   items,

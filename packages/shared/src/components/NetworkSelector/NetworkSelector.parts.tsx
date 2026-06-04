@@ -5,12 +5,20 @@ import Icon from '#/components/Icon'
 import Text from '#/components/Text'
 import type { NetworkOption } from '#/types'
 
+/**
+ * Keeps the open-state class generation shared between full and compact
+ * triggers without duplicating the selector CSS names.
+ */
 function getChevronClassName(isOpen: boolean) {
   return `dropdown-selector__chevron ${
     isOpen ? 'dropdown-selector__chevron--open' : ''
   }`
 }
 
+/**
+ * Renders either the compact extension badge or full selector trigger while
+ * preserving one ref target for dropdown positioning.
+ */
 export function NetworkTrigger({
   chain,
   compact,
@@ -77,6 +85,10 @@ export function NetworkTrigger({
   )
 }
 
+/**
+ * Keeps active-state styling and chain selection together so every network
+ * option gets the same disabled and selected behavior.
+ */
 function NetworkMenuItem({
   chain,
   disabled,
@@ -109,6 +121,10 @@ function NetworkMenuItem({
   )
 }
 
+/**
+ * Chooses dropdown placement from runtime context because extension popups open
+ * the network menu upward from the footer area.
+ */
 export function NetworkMenu({
   availableNetworks,
   chain,

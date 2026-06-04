@@ -15,7 +15,7 @@
     "resolveJsonModule": true,
     "noEmit": true,
     "composite": true,
-    "types": ["node"],
+    "types": ["node", "@testing-library/jest-dom"],
     "baseUrl": ".",
     "paths": {
       "#/*": ["./src/*"]

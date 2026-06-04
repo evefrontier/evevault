@@ -12,12 +12,15 @@ import {
   waitFor,
 } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { NetworkOption } from '#/types'
 import { NetworkSelector } from '../NetworkSelector'
 import {
   useAvailableNetworks,
   useNetworkSelection,
   useValidNetwork,
 } from '../NetworkSelector.helpers'
+
+type NetworkSelectionParams = Parameters<typeof useNetworkSelection>[0]
 
 const mockUtils = vi.hoisted(() => ({
   isExtension: vi.fn(() => false),
@@ -42,8 +45,10 @@ vi.mock('#/hooks', () => ({
   useContext: () => mockContext,
 }))
 
-type NetworkSelectionParams = Parameters<typeof useNetworkSelection>[0]
-
+/**
+ * Builds complete hook params so each test can override only the behavior under
+ * assertion while preserving the network selector contract.
+ */
 function createNetworkSelectionParams(
   overrides: Partial<NetworkSelectionParams> = {},
 ): NetworkSelectionParams {
@@ -165,7 +170,7 @@ describe('NetworkSelector', () => {
 describe('useValidNetwork', () => {
   it('forces the first available network when the current chain is invalid', () => {
     const forceSetChain = vi.fn()
-    const availableNetworks = [
+    const availableNetworks: NetworkOption[] = [
       { chain: SUI_TESTNET_CHAIN, label: 'Testnet', shortLabel: 'TEST' },
       { chain: SUI_DEVNET_CHAIN, label: 'Devnet', shortLabel: 'DEV' },
     ]
@@ -183,7 +188,7 @@ describe('useValidNetwork', () => {
 
   it('leaves a valid current chain unchanged', () => {
     const forceSetChain = vi.fn()
-    const availableNetworks = [
+    const availableNetworks: NetworkOption[] = [
       { chain: SUI_TESTNET_CHAIN, label: 'Testnet', shortLabel: 'TEST' },
     ]
 
