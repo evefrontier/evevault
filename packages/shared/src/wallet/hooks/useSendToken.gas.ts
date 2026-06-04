@@ -23,6 +23,8 @@ type GasUsedShape = {
   nonRefundableStorageFee?: string
 }
 
+type EstimateGasMistParams = Omit<GasEstimateParams, 'formValidForEstimate'>
+
 type SimulateResult =
   | {
       $kind: 'Transaction'
@@ -33,10 +35,7 @@ type SimulateResult =
       FailedTransaction: { effects?: { gasUsed?: GasUsedShape } }
     }
 
-type EstimateGasFeeTaskParams = Omit<
-  GasEstimateParams,
-  'formValidForEstimate'
-> & {
+type EstimateGasFeeTaskParams = EstimateGasMistParams & {
   runId: number
   estimateRunIdRef: { current: number }
   setEstimatedGasFee: (value: string | null) => void
@@ -145,7 +144,7 @@ const estimateGasMist = async ({
   decimals,
   recipientAddress,
   coinType,
-}: GasEstimateParams): Promise<string | null> => {
+}: EstimateGasMistParams): Promise<string | null> => {
   const senderAddress = await getSenderAddress()
   if (!senderAddress) {
     return null
