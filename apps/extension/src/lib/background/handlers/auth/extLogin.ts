@@ -24,17 +24,61 @@ import {
 } from './keeperHelpers'
 import { KEEPER_RETRY_DELAY_MS, setPendingAuthAfterUnlock } from './pendingAuth'
 
+type KeeperStatus = Awaited<ReturnType<typeof checkKeeperUnlocked>>
+type CurrentChain = ReturnType<typeof getCurrentChain>
+type StoredChain = Awaited<ReturnType<typeof getCurrentChainFromStorage>>
+type PublicKeySyncResult = 'ok' | 'failed'
+
 const log = createLogger()
 const KEEPER_RETRY_DELAYS_MS = [
   KEEPER_RETRY_DELAY_MS,
   KEEPER_RETRY_DELAY_MS * 3,
 ] as const
 
-type KeeperStatus = Awaited<ReturnType<typeof checkKeeperUnlocked>>
-type CurrentChain = ReturnType<typeof getCurrentChain>
-type StoredChain = Awaited<ReturnType<typeof getCurrentChainFromStorage>>
-type PublicKeySyncResult = 'ok' | 'failed'
+/**
+ * Coordinates the extension OAuth login flow after the keeper has unlocked the
+ * device state, preserving the selected chain across the async browser auth
+ * round trip.
+ */
+export async function handleExtLogin(
+  message: MessageWithId,
+  _sender: chrome.runtime.MessageSender,
+  _sendResponse: (response?: unknown) => void,
+): Promise<void> {
+  const id = ensureMessageId(message)
+  const tenantId = resolveTenantId(message)
+  const initialChain = getCurrentChain()
+  const deviceStore = useDeviceStore.getState()
+  const key = deviceStore.ephemeralKeyPairSecretKey
+  const hasDeviceData =
+    Boolean(key) && typeof key === 'object' && 'iv' in key && 'data' in key
+  const keeperStatus = await getKeeperStatus(hasDeviceData)
+  if (!keeperStatus.unlocked) {
+    await requestVaultUnlock({ id, initialChain, hasDeviceData, tenantId })
+    return
+  }
 
+  const didSync = await syncPublicKeyFromKeeper({
+    id,
+    initialChain,
+    keeperStatus,
+  })
+  if (didSync === 'failed') return
+  if (!ensureDevicePublicKey(id, initialChain)) return
+
+  const currentChain = await getCurrentChainFromStorage()
+  const nonce = await getNonceForChain(id, currentChain)
+  if (!nonce) return
+
+  const { authUrl, codeVerifier } = await getAuthRequest({ tenantId, nonce })
+  launchOAuthLogin({ id, authUrl, codeVerifier, currentChain, tenantId })
+}
+
+/**
+ * Resolves tenant ids defensively because dApp-originated messages can include
+ * arbitrary strings while the extension must only login against configured
+ * tenants.
+ */
 function resolveTenantId(message: MessageWithId): TenantId {
   if (
     typeof message.tenantId === 'string' &&
@@ -46,6 +90,11 @@ function resolveTenantId(message: MessageWithId): TenantId {
   return getCurrentTenantId()
 }
 
+/**
+ * Retries keeper unlock checks briefly when persisted device data exists
+ * because the keeper worker can lag behind popup startup during extension
+ * login.
+ */
 async function getKeeperStatus(hasDeviceData: boolean): Promise<KeeperStatus> {
   let keeperStatus = await checkKeeperUnlocked()
   if (keeperStatus.unlocked || !hasDeviceData) return keeperStatus
@@ -59,6 +108,11 @@ async function getKeeperStatus(hasDeviceData: boolean): Promise<KeeperStatus> {
   return keeperStatus
 }
 
+/**
+ * Opens the popup and records pending auth only when a vault already exists, so
+ * setup-required users get an immediate retry instruction instead of a hidden
+ * queued login.
+ */
 async function requestVaultUnlock({
   id,
   initialChain,
@@ -93,6 +147,10 @@ async function requestVaultUnlock({
   })
 }
 
+/**
+ * Copies the keeper's public key back into device state after unlock because
+ * OAuth nonce generation and account checks read from the shared device store.
+ */
 async function syncPublicKeyFromKeeper({
   id,
   initialChain,
@@ -136,6 +194,10 @@ async function syncPublicKeyFromKeeper({
   }
 }
 
+/**
+ * Verifies that an unlocked keeper also produced a public key before starting
+ * OAuth, avoiding a login that would succeed but be unusable for zkLogin.
+ */
 function ensureDevicePublicKey(
   id: string,
   initialChain: CurrentChain,
@@ -151,6 +213,10 @@ function ensureDevicePublicKey(
   return false
 }
 
+/**
+ * Initializes per-chain device data on demand so extension login can recover
+ * when a network was selected before nonce state existed.
+ */
 async function getNonceForChain(
   id: string,
   currentChain: StoredChain,
@@ -180,6 +246,11 @@ async function getNonceForChain(
   return null
 }
 
+/**
+ * Completes the browser OAuth callback while rejecting responses if the active
+ * network changed during auth, which would otherwise store a JWT under the
+ * wrong chain.
+ */
 async function handleOAuthResponse({
   id,
   responseUrl,
@@ -241,6 +312,10 @@ async function handleOAuthResponse({
   }
 }
 
+/**
+ * Starts Chrome's web auth flow and delegates async response handling without
+ * returning a promise to the Chrome callback API.
+ */
 function launchOAuthLogin({
   id,
   authUrl,
@@ -266,38 +341,4 @@ function launchOAuthLogin({
       })
     },
   )
-}
-
-export async function handleExtLogin(
-  message: MessageWithId,
-  _sender: chrome.runtime.MessageSender,
-  _sendResponse: (response?: unknown) => void,
-): Promise<void> {
-  const id = ensureMessageId(message)
-  const tenantId = resolveTenantId(message)
-  const initialChain = getCurrentChain()
-  const deviceStore = useDeviceStore.getState()
-  const key = deviceStore.ephemeralKeyPairSecretKey
-  const hasDeviceData =
-    Boolean(key) && typeof key === 'object' && 'iv' in key && 'data' in key
-  const keeperStatus = await getKeeperStatus(hasDeviceData)
-  if (!keeperStatus.unlocked) {
-    await requestVaultUnlock({ id, initialChain, hasDeviceData, tenantId })
-    return
-  }
-
-  const didSync = await syncPublicKeyFromKeeper({
-    id,
-    initialChain,
-    keeperStatus,
-  })
-  if (didSync === 'failed') return
-  if (!ensureDevicePublicKey(id, initialChain)) return
-
-  const currentChain = await getCurrentChainFromStorage()
-  const nonce = await getNonceForChain(id, currentChain)
-  if (!nonce) return
-
-  const { authUrl, codeVerifier } = await getAuthRequest({ tenantId, nonce })
-  launchOAuthLogin({ id, authUrl, codeVerifier, currentChain, tenantId })
 }

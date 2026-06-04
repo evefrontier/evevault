@@ -2,6 +2,10 @@ import type { TenantId } from '@evefrontier/wallet-core/definitions'
 import { Button, Heading, TenantSelector } from '@evevault/shared/components'
 import Icon from '@evevault/shared/components/Icon'
 
+/**
+ * Leaves the dev-mode toggle visible while signed out so testers can switch
+ * tenants and localnet behavior before starting auth.
+ */
 function DevModeButton({
   devMode,
   onClick,
@@ -21,6 +25,10 @@ function DevModeButton({
   )
 }
 
+/**
+ * Isolates the signed-out popup state so login, tenant selection, vault reset,
+ * and dev mode controls do not add branches to the root popup component.
+ */
 export function UnauthenticatedView({
   authLoading,
   availableTenantIds,

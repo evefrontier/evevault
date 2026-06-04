@@ -5,10 +5,9 @@ import {
   SUI_TESTNET_CHAIN,
 } from '@mysten/wallet-standard'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import {
-  AUTH_SESSION_JWT_KEY,
-  getAccountsFromAuthSuccess,
-} from '../connectAuth'
+import { getAccountsFromAuthSuccess } from '../connectAuth'
+
+const AUTH_SESSION_JWT_KEY = 'evevault_jwt'
 
 vi.mock('@evevault/shared/auth', () => ({
   getZkLoginAddress: vi.fn(),

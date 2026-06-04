@@ -9,11 +9,15 @@ import { SUI_LOCALNET_CHAIN } from '@mysten/wallet-standard'
 import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
 import { useCallback, useEffect, useState } from 'react'
 
-const log = createLogger()
-
 type UrlStatus = 'idle' | 'loading' | 'ok' | 'error'
 type KeyStatus = 'idle' | 'saving' | 'ok' | 'error'
 
+const log = createLogger()
+
+/**
+ * Validates the URL with a real Sui RPC method so saved localnet endpoints are
+ * known to support the wallet operations that follow.
+ */
 async function validateLocalnetRpcUrl(rpcUrl: string) {
   try {
     new URL(rpcUrl)
@@ -44,6 +48,10 @@ async function validateLocalnetRpcUrl(rpcUrl: string) {
   }
 }
 
+/**
+ * Keeps the back affordance separate from form state so localnet edits do not
+ * rerender the static route header.
+ */
 function SettingsHeader({ onBack }: { onBack: () => void }) {
   return (
     <div className="flex items-center gap-3 mb-6">
@@ -65,6 +73,10 @@ function SettingsHeader({ onBack }: { onBack: () => void }) {
   )
 }
 
+/**
+ * Maps connection state to a stable status slot so the save button does not
+ * shift while validation is running.
+ */
 function UrlStatusText({ status }: { status: UrlStatus }) {
   if (status === 'loading') {
     return (
@@ -91,6 +103,10 @@ function UrlStatusText({ status }: { status: UrlStatus }) {
   return <span />
 }
 
+/**
+ * Owns RPC URL editing separately from persistence because the draft can be
+ * invalid while the currently saved endpoint remains usable.
+ */
 function RpcUrlSection({
   urlDraft,
   urlStatus,
@@ -127,6 +143,10 @@ function RpcUrlSection({
   )
 }
 
+/**
+ * Keeps private-key entry isolated from RPC URL state so validation failures in
+ * one form cannot clear feedback in the other.
+ */
 function PrivateKeySection({
   privateKeyDraft,
   keyStatus,
@@ -185,6 +205,10 @@ function PrivateKeySection({
   )
 }
 
+/**
+ * Displays the keeper-derived address read-only because edits must go through
+ * the encrypted private-key loading path.
+ */
 function CurrentAddressSection({ address }: { address: string | null }) {
   return (
     <section className="flex flex-col gap-2">
@@ -204,6 +228,10 @@ function CurrentAddressSection({ address }: { address: string | null }) {
   )
 }
 
+/**
+ * Coordinates localnet RPC and keypair settings for dev mode while keeping the
+ * two save flows independent.
+ */
 function LocalnetSettingsPage() {
   const navigate = useNavigate()
   const {

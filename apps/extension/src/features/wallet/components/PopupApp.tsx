@@ -25,6 +25,10 @@ import { UnauthenticatedView } from './UnauthenticatedView'
 
 const log = createLogger()
 
+/**
+ * Shares the logo-centered shell between initialization states so loading and
+ * error screens keep identical popup spacing.
+ */
 function SplashView({
   title,
   children,
@@ -45,6 +49,10 @@ function SplashView({
   )
 }
 
+/**
+ * Renders the initialization progress copy separately from the shell to keep
+ * the root component branch small.
+ */
 function LoadingView() {
   return (
     <SplashView title="Loading...">
@@ -55,6 +63,10 @@ function LoadingView() {
   )
 }
 
+/**
+ * Keeps reload handling local to the initialization error state because other
+ * popup errors should not force a full extension page reload.
+ */
 function InitErrorView({ initError }: { initError: string }) {
   return (
     <SplashView title="Error">

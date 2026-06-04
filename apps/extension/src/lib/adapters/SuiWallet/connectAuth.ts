@@ -11,8 +11,29 @@ type AuthToken = {
   access_token: string
 }
 
-export const AUTH_SESSION_JWT_KEY = 'evevault_jwt'
+const AUTH_SESSION_JWT_KEY = 'evevault_jwt'
 
+/**
+ * Converts the auth success payload into the Wallet Standard account shape,
+ * choosing the localnet path without zkLogin because localnet keys are stored
+ * separately from the FusionAuth/Enoki session.
+ */
+export async function getAccountsFromAuthSuccess(
+  message: Record<string, unknown>,
+  chains: SuiChain[],
+) {
+  const account =
+    message.chain === SUI_LOCALNET_CHAIN
+      ? buildLocalnetAccount(message)
+      : await buildZkLoginAccount(message, chains)
+
+  return [account]
+}
+
+/**
+ * Validates the token before writing sessionStorage so failed auth responses do
+ * not leave a stale JWT from an earlier connection attempt.
+ */
 function getAuthToken(message: Record<string, unknown>): AuthToken {
   const token = message.token as AuthToken | undefined
   if (!token?.access_token) {
@@ -21,6 +42,10 @@ function getAuthToken(message: Record<string, unknown>): AuthToken {
   return token
 }
 
+/**
+ * Builds a localnet account with an empty public key because localnet signing
+ * happens through the extension keeper, not through zkLogin account metadata.
+ */
 function buildLocalnetAccount(message: Record<string, unknown>) {
   if (!message.address) {
     throw new Error('Localnet auth_success missing address')
@@ -34,6 +59,10 @@ function buildLocalnetAccount(message: Record<string, unknown>) {
   })
 }
 
+/**
+ * Looks up zkLogin account metadata from the freshly returned JWT so dApps get
+ * the address/public key pair that matches the current OAuth session.
+ */
 async function buildZkLoginAccount(
   message: Record<string, unknown>,
   chains: SuiChain[],
@@ -67,6 +96,10 @@ async function buildZkLoginAccount(
   })
 }
 
+/**
+ * Decodes and validates the Enoki public key before account construction so
+ * malformed lookup results fail during connect instead of later during signing.
+ */
 function decodePublicKey(publicKeyB64: string): Uint8Array {
   const trimmedPublicKey = publicKeyB64.trim()
   if (!trimmedPublicKey) {
@@ -80,16 +113,4 @@ function decodePublicKey(publicKeyB64: string): Uint8Array {
       'Invalid base64 public key returned from zkLogin address lookup',
     )
   }
-}
-
-export async function getAccountsFromAuthSuccess(
-  message: Record<string, unknown>,
-  chains: SuiChain[],
-) {
-  const account =
-    message.chain === SUI_LOCALNET_CHAIN
-      ? buildLocalnetAccount(message)
-      : await buildZkLoginAccount(message, chains)
-
-  return [account]
 }

@@ -7,10 +7,8 @@ import {
 } from '@mysten/wallet-standard'
 import { EveVaultWallet } from './index'
 
-const WALLET_REGISTRATION_KEY = '__evevault_registered__'
-
 type EveVaultRegistrationWindow = Window & {
-  [WALLET_REGISTRATION_KEY]?: boolean
+  __evevault_registered__?: boolean
 }
 
 type WalletChangePayload = {
@@ -19,36 +17,13 @@ type WalletChangePayload = {
   features?: IdentifierRecord<unknown>
 }
 
+const WALLET_REGISTRATION_KEY = '__evevault_registered__'
 const log = createLogger()
 
-function applyWalletChange(
-  walletInstance: EveVaultWallet,
-  { chains, accounts, features }: WalletChangePayload,
-) {
-  const [chain] = chains ?? []
-  if (chain) walletInstance.setChain(chain)
-  if (accounts?.length === 0) walletInstance.disconnect()
-  if (features) walletInstance.setFeatures(features)
-}
-
-function onWalletMessage(walletInstance: EveVaultWallet) {
-  return (event: MessageEvent) => {
-    if (event.source !== window) return
-
-    const data: Record<string, unknown> = event.data || {}
-    if (data.__from !== 'Eve Vault' || data.event !== 'change') return
-
-    applyWalletChange(
-      walletInstance,
-      (data.payload || {}) as WalletChangePayload,
-    )
-  }
-}
-
-function requestPersistedChain() {
-  window.postMessage({ __to: 'Eve Vault', type: 'get_current_chain' }, '*')
-}
-
+/**
+ * Registers exactly one wallet instance on the page so repeated content-script
+ * injection does not create duplicate Wallet Standard providers.
+ */
 export function registerInjectedWallet() {
   const reg = window as EveVaultRegistrationWindow
   if (reg[WALLET_REGISTRATION_KEY]) {
@@ -66,4 +41,45 @@ export function registerInjectedWallet() {
   } catch (error) {
     log.error('Failed to register wallet', error)
   }
+}
+
+/**
+ * Applies only the wallet-standard fields included in a change payload because
+ * chain, account, and feature changes are emitted independently by the
+ * extension.
+ */
+function applyWalletChange(
+  walletInstance: EveVaultWallet,
+  { chains, accounts, features }: WalletChangePayload,
+) {
+  const [chain] = chains ?? []
+  if (chain) walletInstance.setChain(chain)
+  if (accounts?.length === 0) walletInstance.disconnect()
+  if (features) walletInstance.setFeatures(features)
+}
+
+/**
+ * Filters page messages by source and event marker before touching wallet
+ * state, keeping unrelated window.postMessage traffic from dApps ignored.
+ */
+function onWalletMessage(walletInstance: EveVaultWallet) {
+  return (event: MessageEvent) => {
+    if (event.source !== window) return
+
+    const data: Record<string, unknown> = event.data || {}
+    if (data.__from !== 'Eve Vault' || data.event !== 'change') return
+
+    applyWalletChange(
+      walletInstance,
+      (data.payload || {}) as WalletChangePayload,
+    )
+  }
+}
+
+/**
+ * Requests the persisted chain immediately after registration so dApps that
+ * connect early see the same chain as the extension UI.
+ */
+function requestPersistedChain() {
+  window.postMessage({ __to: 'Eve Vault', type: 'get_current_chain' }, '*')
 }

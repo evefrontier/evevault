@@ -1,7 +1,5 @@
 import { trySettle } from '@/lib/util/timeoutGuard'
 
-export const APPROVAL_TIMEOUT_MS = 2 * 60 * 1000 // 2 minutes
-
 type VaultMessageOpts<T> = {
   id: string
   successType: string
@@ -11,15 +9,13 @@ type VaultMessageOpts<T> = {
   timeoutMessage: string
 }
 
-function getVaultMessageErrorMessage(error: unknown): string {
-  if (typeof error === 'string' && error.length > 0) return error
-  if (error && typeof error === 'object' && 'message' in error) {
-    const { message } = error as { message?: unknown }
-    if (typeof message === 'string' && message.length > 0) return message
-  }
-  return 'Request failed'
-}
+export const APPROVAL_TIMEOUT_MS = 2 * 60 * 1000 // 2 minutes
 
+/**
+ * Sends a single wallet request through the injected-page bridge and resolves
+ * only the matching response id so overlapping dApp requests cannot settle each
+ * other.
+ */
 export function waitForVaultMessage<T>({
   id,
   successType,
@@ -50,4 +46,17 @@ export function waitForVaultMessage<T>({
     }, APPROVAL_TIMEOUT_MS)
     window.postMessage(outbound, '*')
   })
+}
+
+/**
+ * Accepts both legacy string errors and structured error objects because the
+ * extension bridge has emitted both shapes across wallet-standard flows.
+ */
+function getVaultMessageErrorMessage(error: unknown): string {
+  if (typeof error === 'string' && error.length > 0) return error
+  if (error && typeof error === 'object' && 'message' in error) {
+    const { message } = error as { message?: unknown }
+    if (typeof message === 'string' && message.length > 0) return message
+  }
+  return 'Request failed'
 }

@@ -11,6 +11,10 @@ import type { SuiChain } from '@mysten/wallet-standard'
 import type { User } from 'oidc-client-ts'
 import { APP_VERSION } from '@/lib/appVersion'
 
+/**
+ * Builds the explorer URL at render time so localnet transactions use the
+ * currently configured RPC URL when available.
+ */
 function TransactionDigestLink({
   chain,
   txDigest,
@@ -34,6 +38,10 @@ function TransactionDigestLink({
   )
 }
 
+/**
+ * Keeps the authenticated popup shell focused on wiring wallet actions while
+ * PopupApp owns auth, initialization, and routing decisions.
+ */
 export function AuthenticatedWalletView({
   user,
   chain,
