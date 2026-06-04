@@ -10,8 +10,7 @@ export function useDropdownOpenState({
   onOpenChange?: (isOpen: boolean) => void
 }) {
   const [internalIsOpen, setInternalIsOpen] = useState(false)
-  const isControlled = controlledIsOpen !== undefined
-  const isOpen = isControlled ? controlledIsOpen : internalIsOpen
+  const isOpen = controlledIsOpen ?? internalIsOpen
 
   const setIsOpen = useCallback(
     (open: boolean) => {

@@ -53,23 +53,8 @@ export function createSvgIcon({
       aria-label={ariaLabel}
       role="img"
     >
-      {clipPathId ? (
-        <g clipPath={`url(#${clipPathId})`}>
-          {paths.map((path, index) => (
-            <path
-              // biome-ignore lint/suspicious/noArrayIndexKey: icon path arrays are static; index avoids duplicate keys for repeated path data.
-              key={index}
-              d={path.d}
-              fill={getPathFill(path, color)}
-              fillRule={path.fillRule}
-              clipRule={path.clipRule}
-              stroke={resolveIconColor(path.stroke, color)}
-              strokeWidth={path.strokeWidth}
-            />
-          ))}
-        </g>
-      ) : (
-        paths.map((path, index) => (
+      {(() => {
+        const pathElements = paths.map((path, index) => (
           <path
             // biome-ignore lint/suspicious/noArrayIndexKey: icon path arrays are static; index avoids duplicate keys for repeated path data.
             key={index}
@@ -81,14 +66,19 @@ export function createSvgIcon({
             strokeWidth={path.strokeWidth}
           />
         ))
-      )}
-      {clipPathId ? (
+        return clipPathId ? (
+          <g clipPath={`url(#${clipPathId})`}>{pathElements}</g>
+        ) : (
+          pathElements
+        )
+      })()}
+      {clipPathId && (
         <defs>
           <clipPath id={clipPathId}>
             <rect width="16" height="16" fill="white" />
           </clipPath>
         </defs>
-      ) : null}
+      )}
     </svg>
   )
 

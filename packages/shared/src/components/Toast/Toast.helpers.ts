@@ -29,19 +29,14 @@ export function useToastLifecycle({
   const autoDismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const scheduleExit = useCallback(() => {
-    clearTimer(exitTimerRef)
+  const handleClose = useCallback(() => {
+    clearTimers([autoDismissTimerRef, exitTimerRef])
+    setIsAnimating(false)
     exitTimerRef.current = setTimeout(() => {
       exitTimerRef.current = null
       onClose()
     }, EXIT_DELAY_MS)
   }, [onClose])
-
-  const handleClose = useCallback(() => {
-    clearTimers([autoDismissTimerRef, exitTimerRef])
-    setIsAnimating(false)
-    scheduleExit()
-  }, [scheduleExit])
 
   useEffect(() => {
     if (!isVisible) return
@@ -50,11 +45,15 @@ export function useToastLifecycle({
     autoDismissTimerRef.current = setTimeout(() => {
       autoDismissTimerRef.current = null
       setIsAnimating(false)
-      scheduleExit()
+      clearTimer(exitTimerRef)
+      exitTimerRef.current = setTimeout(() => {
+        exitTimerRef.current = null
+        onClose()
+      }, EXIT_DELAY_MS)
     }, duration)
 
     return () => clearTimers([autoDismissTimerRef, exitTimerRef])
-  }, [isVisible, duration, scheduleExit])
+  }, [isVisible, duration, onClose])
 
   return { handleClose, isAnimating }
 }

@@ -70,16 +70,7 @@ export function useValidNetwork({
 }
 
 export function useNetworkSelection(params: UseNetworkSelectionParams) {
-  const {
-    chain,
-    isExtensionContext,
-    onLocalnetSelected,
-    onNetworkSwitchStart,
-    onRequiresReauth,
-    setChain,
-    setIsOpen,
-    setIsProcessing,
-  } = params
+  const { chain, setChain, setIsOpen, setIsProcessing } = params
 
   return useCallback(
     async (targetChain: SuiChain) => {
@@ -97,16 +88,7 @@ export function useNetworkSelection(params: UseNetworkSelectionParams) {
         if (!result.success) {
           log.error('Failed to switch network')
         } else {
-          await handleSuccessfulNetworkSwitch(result, targetChain, {
-            chain,
-            isExtensionContext,
-            onLocalnetSelected,
-            onNetworkSwitchStart,
-            onRequiresReauth,
-            setChain,
-            setIsOpen,
-            setIsProcessing,
-          })
+          await handleSuccessfulNetworkSwitch(result, targetChain, params)
         }
       } catch (error) {
         log.error('Failed to switch network', error)
@@ -114,15 +96,6 @@ export function useNetworkSelection(params: UseNetworkSelectionParams) {
         setIsProcessing(false)
       }
     },
-    [
-      chain,
-      isExtensionContext,
-      onLocalnetSelected,
-      onNetworkSwitchStart,
-      onRequiresReauth,
-      setChain,
-      setIsOpen,
-      setIsProcessing,
-    ],
+    [chain, setChain, setIsOpen, setIsProcessing, params],
   )
 }
