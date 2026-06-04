@@ -53,10 +53,7 @@ export const hasFreshNetworkData = (
 export const needsPersistedRehydration = (
   data: NetworkDataEntry,
   storedSecretKey: StoredSecretKey,
-): boolean =>
-  requiredDeviceDataValues(data, storedSecretKey).some(
-    (value) => !isPresent(value),
-  )
+): boolean => !hasFreshNetworkData(data, storedSecretKey)
 
 export const hasChainDeviceData = (data?: ChainDeviceData): boolean => {
   return Boolean(

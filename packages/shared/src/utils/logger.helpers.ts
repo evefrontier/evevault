@@ -70,7 +70,7 @@ export const createNestedScope = (
 }
 
 const isLogLevel = (value?: string | null): value is LogLevel => {
-  return LOG_LEVELS.includes((value ?? '').toLowerCase() as LogLevel)
+  return value != null && LOG_LEVELS.includes(value.toLowerCase() as LogLevel)
 }
 
 const resolveModeLogLevel = (envMode?: string): LogLevel => {

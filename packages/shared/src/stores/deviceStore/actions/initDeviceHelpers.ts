@@ -12,7 +12,6 @@ import {
   hasChainDeviceData,
   hasFreshNetworkData,
   isBlankPin,
-  needsPersistedRehydration,
   setPublicKeyState,
 } from './initStateHelpers'
 import type { GetDeviceState, SetDeviceState } from './types'
@@ -112,12 +111,12 @@ export const initializeExtensionDevice = async ({
     return
   }
 
-  const rehydration = await rehydrateExtensionDeviceIfNeeded({
+  const rehydration = await tryRehydrateExtensionDevice({
     pin,
     currentChain,
-    currentState,
-    networkDataEntry,
+    currentNetworkData: networkDataEntry,
     storedSecretKey,
+    fallbackNetworkData: currentState.networkData,
     set,
   })
 
@@ -179,40 +178,6 @@ const initializeWebChainIfNeeded = async (
 ) => {
   if (!hasChainDeviceData(currentNetworkData)) {
     await get().initializeForChain(currentChain)
-  }
-}
-
-const rehydrateExtensionDeviceIfNeeded = async ({
-  pin,
-  currentChain,
-  currentState,
-  networkDataEntry,
-  storedSecretKey,
-  set,
-}: {
-  pin: string
-  currentChain: SuiChain
-  currentState: DeviceState
-  networkDataEntry: NetworkDataEntry
-  storedSecretKey: StoredSecretKey
-  set: SetDeviceState
-}): Promise<{ rehydrated: boolean; storedSecretKey: StoredSecretKey }> => {
-  if (!needsPersistedRehydration(networkDataEntry, storedSecretKey)) {
-    return { rehydrated: false, storedSecretKey }
-  }
-
-  const rehydration = await tryRehydrateExtensionDevice({
-    pin,
-    currentChain,
-    currentNetworkData: networkDataEntry,
-    storedSecretKey,
-    fallbackNetworkData: currentState.networkData,
-    set,
-  })
-
-  return {
-    rehydrated: rehydration.rehydrated,
-    storedSecretKey: rehydration.storedSecretKey,
   }
 }
 

@@ -17,19 +17,10 @@ const sendVaultMessage = async (
 
 const requireOkResponse = (
   response: VaultResponse | undefined,
-  {
-    errorMessage,
-    errorLog,
-  }: {
-    errorMessage: string
-    errorLog: string
-  },
+  errorMessage: string,
 ) => {
-  if (response?.ok) {
-    return
-  }
-
-  log.error(errorLog, response)
+  if (response?.ok) return
+  log.error(errorMessage, response)
   throw new Error(response?.error || errorMessage)
 }
 
@@ -85,10 +76,7 @@ export const ephKeyService = {
     })
 
     log.debug('Lock vault response', { ok: res?.ok })
-    requireOkResponse(res, {
-      errorMessage: 'Failed to lock vault',
-      errorLog: 'Failed to lock vault',
-    })
+    requireOkResponse(res, 'Failed to lock vault')
     log.info('Vault locked')
   },
 
@@ -222,10 +210,7 @@ export const zkProofService = {
     })
 
     log.debug('Clear zkProofs response', { ok: res?.ok })
-    requireOkResponse(res, {
-      errorMessage: 'Failed to clear zkProofs',
-      errorLog: 'Failed to clear zkProofs',
-    })
+    requireOkResponse(res, 'Failed to clear zkProofs')
     log.info('zkProofs cleared')
   },
 }

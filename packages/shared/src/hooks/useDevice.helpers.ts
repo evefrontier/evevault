@@ -29,18 +29,22 @@ export const getCurrentDeviceData = ({
   networkData: NetworkDataMap
   localnet: LocalnetData
 }) => {
+  if (isLocalnetChain(currentChain)) {
+    return {
+      maxEpoch: localnet.maxEpoch,
+      maxEpochTimestampMs: localnet.maxEpochTimestampMs,
+      nonce: null,
+    }
+  }
+
   const chainData = isZkLoginSuiChain(currentChain)
     ? networkData[currentChain]
     : undefined
 
   return {
-    maxEpoch: isLocalnetChain(currentChain)
-      ? localnet.maxEpoch
-      : (chainData?.maxEpoch ?? null),
-    maxEpochTimestampMs: isLocalnetChain(currentChain)
-      ? localnet.maxEpochTimestampMs
-      : (chainData?.maxEpochTimestampMs ?? null),
-    nonce: isLocalnetChain(currentChain) ? null : (chainData?.nonce ?? null),
+    maxEpoch: chainData?.maxEpoch ?? null,
+    maxEpochTimestampMs: chainData?.maxEpochTimestampMs ?? null,
+    nonce: chainData?.nonce ?? null,
   }
 }
 

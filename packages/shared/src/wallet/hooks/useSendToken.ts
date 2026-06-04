@@ -131,8 +131,7 @@ export function useSendToken({
 
   const rawSuiBalance = suiBalanceData?.rawBalance ?? '0'
   const hasZeroSui = !suiBalanceLoading && BigInt(rawSuiBalance) === 0n
-  const hasGas =
-    coinType === SUI_COIN_TYPE || (suiBalanceLoading ? false : !hasZeroSui)
+  const hasGas = coinType === SUI_COIN_TYPE || !hasZeroSui
 
   // Collect validation errors
   const validationErrors = useMemo(() => {

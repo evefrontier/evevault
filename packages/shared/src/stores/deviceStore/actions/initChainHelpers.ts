@@ -86,7 +86,7 @@ const initializeLocalnetChainData = async (
   const localnetUrl = get().localnet.url
   if (!localnetUrl) {
     log.warn('Localnet URL not configured, skipping epoch fetch')
-    setLocalnetEpochData(set, get, createEmptyEpochData())
+    setLocalnetEpochData(set, get, NULL_EPOCH)
     return
   }
 
@@ -99,7 +99,7 @@ const initializeLocalnetChainData = async (
     })
   } catch (err) {
     log.error('Failed to fetch localnet epoch', err)
-    setLocalnetEpochData(set, get, createEmptyEpochData())
+    setLocalnetEpochData(set, get, NULL_EPOCH)
   }
 }
 
@@ -128,13 +128,7 @@ const initializeZkLoginChainData = async (
   })
 }
 
-const createEmptyEpochData = (): Pick<
-  LocalnetDeviceData,
-  'maxEpoch' | 'maxEpochTimestampMs'
-> => ({
-  maxEpoch: null,
-  maxEpochTimestampMs: null,
-})
+const NULL_EPOCH = { maxEpoch: null, maxEpochTimestampMs: null } as const
 
 const setLocalnetEpochData = (
   set: SetDeviceState,

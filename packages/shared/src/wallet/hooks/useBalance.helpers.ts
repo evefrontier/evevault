@@ -151,22 +151,17 @@ const resolveSafeCheckpoint = (
     return parsed
   }
 
-  logCheckpointFallback(raw)
-  return undefined
-}
-
-const logCheckpointFallback = (raw: string | number | null | undefined) => {
   if (raw != null) {
     log.debug(
       'Checkpoint sequenceNumber out of safe integer range or invalid, querying balance without atCheckpoint',
       { raw },
     )
-    return
+  } else {
+    log.debug(
+      'Latest checkpoint unavailable, querying balance without atCheckpoint',
+    )
   }
-
-  log.debug(
-    'Latest checkpoint unavailable, querying balance without atCheckpoint',
-  )
+  return undefined
 }
 
 const isOutsideConsistentRangeError = (err: unknown): boolean => {

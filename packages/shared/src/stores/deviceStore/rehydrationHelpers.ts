@@ -24,16 +24,10 @@ export const handleDeviceStoreRehydration = (
 }
 
 const normalizeLocalnetState = (state: DeviceState | undefined) => {
-  if (state && !state.localnet) {
-    state.localnet = createEmptyLocalnetDeviceData()
-    return
-  }
-
-  if (state?.localnet) {
-    state.localnet = {
-      ...createEmptyLocalnetDeviceData(),
-      ...state.localnet,
-    }
+  if (!state) return
+  state.localnet = {
+    ...createEmptyLocalnetDeviceData(),
+    ...(state.localnet ?? {}),
   }
 }
 
