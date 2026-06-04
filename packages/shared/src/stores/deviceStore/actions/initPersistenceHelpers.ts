@@ -22,6 +22,7 @@ type ExtensionRehydrationResult = {
   jwtRandomness: string | null
 }
 
+/** Reads the device store snapshot from chrome.storage.local; handles both legacy string-serialized and current object formats. */
 export const readPersistedDeviceStoreState =
   async (): Promise<PersistedDeviceStoreState | null> => {
     const persistedDeviceStore = await new Promise<unknown>((resolve) => {
@@ -57,6 +58,7 @@ const parsePersistedDeviceStoreState = (
     : null
 }
 
+/** Attempts to restore keypair and network data from chrome.storage; returns `rehydrated: false` if no persisted state exists so the caller can fall through to keypair creation. */
 export const tryRehydrateExtensionDevice = async ({
   pin,
   currentChain,
@@ -142,6 +144,7 @@ const resolvePersistedDeviceStoreState = async ({
   return createRehydrationResult(true, resolvedSecretKey, jwtRandomness)
 }
 
+/** jwtRandomness is only meaningful for zkLogin chains; localnet has no JWT flow. */
 const getPersistedJwtRandomness = (
   state: PersistedDeviceStoreState,
   chain: SuiChain,

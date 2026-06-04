@@ -25,6 +25,7 @@ type InitActionParams = {
   get: GetDeviceState
 }
 
+/** Entry point for device init: validates PIN, initializes the vault service, then delegates to platform-specific logic. */
 export const initializeDeviceStore = async ({
   pin,
   currentChain,
@@ -65,7 +66,8 @@ const initializePlatformDevice = async (params: InitActionParams) => {
   await initializeExtensionDevice(params)
 }
 
-export const initializeWebDevice = async ({
+/** Web: keypair lives in IndexedDB encrypted with WebCrypto; if one already exists, unlock it instead of creating a new one. */
+const initializeWebDevice = async ({
   pin,
   currentChain,
   currentNetworkData,
@@ -92,7 +94,8 @@ export const initializeWebDevice = async ({
   set({ loading: false, isLocked: false })
 }
 
-export const initializeExtensionDevice = async ({
+/** Extension: tries rehydrating from chrome.storage before creating a new keypair so network data survives service worker restarts. */
+const initializeExtensionDevice = async ({
   pin,
   currentChain,
   set,
@@ -139,7 +142,8 @@ export const initializeExtensionDevice = async ({
   set({ loading: false, isLocked: false })
 }
 
-export const ensureExtensionKeypair = async ({
+/** Both the storedSecretKey and the in-state ephemeralKeyPairSecretKey must exist to skip creation; either missing means the keypair was lost. */
+const ensureExtensionKeypair = async ({
   pin,
   currentState,
   storedSecretKey,

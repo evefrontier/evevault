@@ -3,12 +3,7 @@ export {
   initializeForChainData,
   rotateEphemeralKeyForChain,
 } from './initChainHelpers'
-export {
-  ensureExtensionKeypair,
-  initializeDeviceStore,
-  initializeExtensionDevice,
-  initializeWebDevice,
-} from './initDeviceHelpers'
+export { initializeDeviceStore } from './initDeviceHelpers'
 export {
   readPersistedDeviceStoreState,
   tryRehydrateExtensionDevice,

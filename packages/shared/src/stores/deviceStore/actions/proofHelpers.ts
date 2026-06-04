@@ -26,6 +26,7 @@ type ProofInput = {
   vendedIdToken: string
 }
 
+/** Returns cached proof if epoch is still valid; generates a new one otherwise. Localnet has no zkLogin proof flow. */
 export const getZkProofForChain = async (
   currentChain: SuiChain,
   set: SetDeviceState,
@@ -39,6 +40,7 @@ export const getZkProofForChain = async (
   return cachedProof ?? generateZkProof(currentChain, set, get)
 }
 
+/** Epoch expiry check prevents reusing a proof whose max epoch has passed, even if the keeper has it stored. */
 const getCachedZkProof = async (
   currentChain: SuiChain,
   get: GetDeviceState,
@@ -115,6 +117,7 @@ const requireAuthenticatedUser = () => {
   }
 }
 
+/** The nonce is cryptographically bound to the ephemeral key and epoch; rotating the key also refreshes the nonce. */
 const ensureProofNonce = async (
   chain: SuiChain,
   network: string,
@@ -206,6 +209,7 @@ const requestZkProof = async ({
   })
 }
 
+/** Stores the proof in the keeper service so it can be reused across sessions within the same epoch. */
 const persistSuccessfulProof = async (
   chain: SuiChain,
   zkProofResponse: ZkProofResponse,

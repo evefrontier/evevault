@@ -30,6 +30,7 @@ export type BalanceQueryParams = {
   graphqlClient: GraphQLClient | null
 }
 
+/** Routes between localnet (gRPC RPC) and zkLogin chains (GraphQL) since localnet has no GraphQL endpoint. */
 export async function fetchBalanceForChain({
   activeAddress,
   coinType,
@@ -56,6 +57,7 @@ export async function fetchBalanceForChain({
   return buildGraphqlBalanceResult(data, coinType)
 }
 
+/** Fetches the latest checkpoint first so the balance query is pinned to a consistent point in time. */
 async function fetchZkLoginBalanceViaGraphql(
   graphqlClient: GraphQLClient,
   address: string,
@@ -116,6 +118,7 @@ async function fetchLocalnetBalanceViaGrpc(
   }
 }
 
+/** The "outside consistent range" error occurs when the checkpoint advances between the two queries; retrying without `atCheckpoint` resolves it. */
 const fetchZkLoginBalanceWithCheckpointRetry = async (
   graphqlClient: GraphQLClient,
   activeAddress: string,
@@ -139,6 +142,7 @@ const fetchZkLoginBalanceWithCheckpointRetry = async (
   }
 }
 
+/** Checkpoint sequence numbers can exceed `Number.MAX_SAFE_INTEGER` on long-lived networks; querying without `atCheckpoint` is safer than passing a corrupted value. */
 const resolveSafeCheckpoint = (
   raw: string | number | null | undefined,
 ): number | undefined => {

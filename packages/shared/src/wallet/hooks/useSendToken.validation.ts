@@ -31,6 +31,7 @@ export const isPositiveAmountWithinBalance = (
   }
 }
 
+/** Returns all active errors, not just the first, so the UI can surface every blocking issue at once. */
 export const buildValidationErrors = (
   params: ValidationErrorParams,
 ): string[] => {
@@ -71,6 +72,7 @@ export const canSendToken = ({
   ].every(Boolean)
 }
 
+/** Subset of `canSendToken` conditions — gas estimation uses public data so the wallet doesn't need to be unlocked yet. */
 export const isFormValidForEstimate = ({
   isValidRecipient,
   isValidAmount,

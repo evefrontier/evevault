@@ -17,6 +17,7 @@ const SWITCH_SUCCESS: NetworkSwitchResult = {
   requiresReauth: false,
 }
 
+/** Switching to localnet never requires re-auth; other chains need a JWT to derive the zkLogin address. */
 export const checkNetworkSwitchRequirement = async (
   currentChain: SuiChain,
   nextChain: SuiChain,
@@ -29,6 +30,7 @@ export const checkNetworkSwitchRequirement = async (
   return { requiresReauth: !(await hasJwt()) }
 }
 
+/** Used during logout-based network switches where normal auth checks are intentionally skipped. */
 export const forceSetContextChain = (
   chain: SuiChain,
   set: SetContextState,
@@ -150,6 +152,7 @@ const initializeDeviceDataIfNeeded = async (chain: SuiChain) => {
   }
 }
 
+/** Also triggers on epoch expiry, not just missing data — expired nonces cannot be used for new zkLogin proofs. */
 const needsNetworkDataInitialization = (
   networkData:
     | {
@@ -167,6 +170,7 @@ const needsNetworkDataInitialization = (
   )
 }
 
+/** Extension background script must be notified so the wallet-standard account list reflects the new chain. */
 const notifyExtensionChainChanged = (chain: SuiChain) => {
   if (isExtension()) {
     chrome.runtime?.sendMessage?.({

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef } from 'react'
 const BALANCE_REFETCH_DELAY_MS = 2000
 const TRANSFER_QUERY_KEYS = [['coin-balance'], ['transactions']] as const
 
+/** Invalidates then immediately refetches so the UI reflects the new balance without waiting for the next polling interval. */
 export const refetchTransferQueries = (queryClient: QueryClient) => {
   TRANSFER_QUERY_KEYS.forEach((queryKey) => {
     queryClient.invalidateQueries({ queryKey })
@@ -17,6 +18,7 @@ export const refetchTransferQueries = (queryClient: QueryClient) => {
   )
 }
 
+/** Delays the refetch by `BALANCE_REFETCH_DELAY_MS` to allow chain state to finalize before querying updated balances. */
 export const useDelayedTransferRefetch = (queryClient: QueryClient) => {
   const postTransferRefetchTimerRef = useRef<ReturnType<
     typeof setTimeout

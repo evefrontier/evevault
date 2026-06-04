@@ -12,6 +12,7 @@ type SigningCallbacksParams = {
   getZkProof: ZkSignAnyParams['getZkProof']
 }
 
+/** All callbacks are memoized with `useCallback` so dependent hooks and components don't re-render on every render cycle. */
 export const useWalletSigningCallbacks = ({
   chain,
   isLocalnet,
@@ -42,6 +43,7 @@ export const useWalletSigningCallbacks = ({
   return { getSenderAddress, sign }
 }
 
+/** `profile.sui_address` is typed as `unknown` in the user profile schema, so an explicit cast is required here. */
 const getNetworkUserAddress = async (
   chain: SuiChain,
 ): Promise<string | null> => {

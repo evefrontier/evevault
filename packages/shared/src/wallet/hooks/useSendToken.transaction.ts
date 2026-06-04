@@ -19,6 +19,7 @@ type ExecuteTransferParams = {
   ) => Promise<{ bytes: string; signature: string }>
 }
 
+/** SUI uses the gas coin directly (splitCoins from gas); other tokens require fetching coin objects and potentially merging them. */
 export async function buildTransferTransactionBytes(
   senderAddress: string,
   recipientAddress: string,
@@ -103,6 +104,7 @@ const addSuiTransfer = (
   tx.transferObjects([coin], recipientAddress)
 }
 
+/** Merges all coin objects into the primary when no single coin has enough balance, then splits the exact amount. */
 const addTokenTransfer = async (
   tx: Transaction,
   {
@@ -154,6 +156,7 @@ const getPrimaryCoinForTransfer = (
   return coinObjects[0]
 }
 
+/** Only merges when no single coin covers the amount; avoids unnecessary merge operations that would touch extra objects. */
 const mergeCoinsIfNeeded = (
   tx: Transaction,
   primaryCoin: CoinWithBalance,

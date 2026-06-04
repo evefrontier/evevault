@@ -37,6 +37,7 @@ export const requireEphemeralPublicKey = () => {
   return ephemeralPublicKey
 }
 
+/** Validates both the error field and the proof structure separately — a response can have no error but still contain invalid data. */
 export const loadZkProof = async (
   getZkProof: ZkSignAnyParams['getZkProof'],
 ) => {
@@ -60,6 +61,7 @@ export const requireMaxEpoch = (): string => {
   return maxEpoch
 }
 
+/** Web uses an in-process WebCrypto signer; extension must message the background script because the private key never leaves the service worker. */
 export const signWithEphemeralKey = async (
   scope: IntentScope,
   msgBytes: Uint8Array,
@@ -75,6 +77,7 @@ export const signWithEphemeralKey = async (
   return signature
 }
 
+/** `salt`, `sub`, and `aud` must all be non-empty — any missing field breaks the on-chain zkLogin address derivation. */
 export const requireZkLoginClaims = (
   user: NonNullable<ZkSignAnyParams['user']>,
 ): ZkLoginClaims => ({
@@ -83,6 +86,7 @@ export const requireZkLoginClaims = (
   aud: requireProfileField(user.profile?.aud, 'aud'),
 })
 
+/** Assembles the final zkLogin signature format by applying the partial ZK proof to the ephemeral signature. */
 export const createZkLoginSignature = ({
   maxEpoch,
   partialZkLoginSignature,

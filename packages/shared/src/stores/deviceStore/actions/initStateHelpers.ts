@@ -43,6 +43,7 @@ const requiredDeviceDataValues = (
   storedSecretKey,
 ]
 
+/** `storedSecretKey` is part of "freshness" — without it the vault can't be unlocked even if epoch data is present. */
 export const hasFreshNetworkData = (
   data: NetworkDataEntry,
   storedSecretKey: StoredSecretKey,
@@ -67,6 +68,7 @@ const isPresent = <T>(value: T | null | undefined): value is T => {
   return value !== null && value !== undefined
 }
 
+/** Localnet uses `'localnet'` as a sentinel nonce — it never goes through zkLogin proof generation. */
 export const getCurrentChainDeviceData = (
   state: DeviceState,
   chain: SuiChain,
@@ -82,6 +84,7 @@ export const getCurrentChainDeviceData = (
   return isZkLoginSuiChain(chain) ? state.networkData[chain] : undefined
 }
 
+/** Omitting `secretKey` leaves the stored key unchanged — used when only refreshing the public key after an unlock. */
 export const setPublicKeyState = (
   set: SetDeviceState,
   publicKey: PublicKey,

@@ -134,11 +134,13 @@ describe('initStateHelpers', () => {
   it('returns current chain device data for localnet and zkLogin chains', () => {
     const state = createState()
 
+    // toEqual: localnet returns exactly these 3 properties, no more
     expect(getCurrentChainDeviceData(state, SUI_LOCALNET_CHAIN)).toEqual({
       maxEpoch: '7',
       maxEpochTimestampMs: state.localnet.maxEpochTimestampMs,
       nonce: 'localnet',
     })
+    // toMatchObject: testnet includes maxEpochTimestampMs as well, but we only verify these properties are present
     expect(getCurrentChainDeviceData(state, SUI_TESTNET_CHAIN)).toMatchObject({
       jwtRandomness: 'randomness',
       maxEpoch: '12',

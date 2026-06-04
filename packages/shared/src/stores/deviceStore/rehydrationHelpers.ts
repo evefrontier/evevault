@@ -7,6 +7,7 @@ import { reconstructPublicKey } from './keyHelpers'
 
 const log = createLogger()
 
+/** Called by the zustand persist middleware immediately after loading state from storage; mutates state in place. */
 export const handleDeviceStoreRehydration = (
   state: DeviceState | undefined,
   error?: unknown,
@@ -69,6 +70,7 @@ const reconstructPersistedPublicKey = (state: DeviceState | undefined) => {
   clearPublicKeyState(state)
 }
 
+/** Public key bytes without a matching secret key means the encrypted key was lost from storage (e.g. extension data cleared); device must be re-initialized. */
 const clearInconsistentKeyState = (state: DeviceState | undefined) => {
   if (!state?.ephemeralPublicKeyBytes || state.ephemeralKeyPairSecretKey) {
     return
@@ -85,6 +87,7 @@ const clearInconsistentKeyState = (state: DeviceState | undefined) => {
   state.isLocked = true
 }
 
+/** Web vault lock state is always derived from the in-memory ephKeyService, never from persisted state, since the WebCrypto key is not stored. */
 const updateWebLockState = (state: DeviceState | undefined) => {
   if (isWeb() && state) {
     state.isLocked = !ephKeyService.isUnlocked()

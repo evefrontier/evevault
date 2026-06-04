@@ -10,6 +10,7 @@ import type { GetDeviceState, SetDeviceState } from './types'
 
 const log = createLogger()
 
+/** Flushes the in-memory vault so the private key is no longer accessible without re-entering the PIN. */
 export const lockDevice = async (set: SetDeviceState) => {
   await ephKeyService.lock()
   set({ isLocked: true })
@@ -28,6 +29,7 @@ export const unlockDevice = async (
   }
 }
 
+/** Wipes all ephemeral key state in-memory; does NOT remove the encrypted keypair from storage (requires re-init with PIN). */
 export const resetDevice = (set: SetDeviceState) => {
   set({
     isLocked: true,
@@ -87,6 +89,7 @@ const unlockExtensionDevice = async (
   return ephKeyService.unlockVault(storedKey, pin)
 }
 
+/** `publicKey` can be null on extension unlock if key refresh fails — still marks as unlocked so the vault state is consistent. */
 const setUnlockedState = (set: SetDeviceState, publicKey: PublicKey | null) => {
   set(
     publicKey

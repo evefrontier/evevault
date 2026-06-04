@@ -11,6 +11,7 @@ const log = createLogger()
 
 type LocalnetData = DeviceState['localnet']
 
+/** A configured PIN produces an encrypted key object with `{ iv, data }`; a raw/null key means no PIN was set. */
 export const isPinConfigured = (secretKey: StoredSecretKey): boolean => {
   return Boolean(
     secretKey &&
@@ -20,6 +21,7 @@ export const isPinConfigured = (secretKey: StoredSecretKey): boolean => {
   )
 }
 
+/** Localnet epoch data lives in its own slice; zkLogin chains store per-chain data in `networkData`. */
 export const getCurrentDeviceData = ({
   currentChain,
   networkData,
@@ -48,6 +50,7 @@ export const getCurrentDeviceData = ({
   }
 }
 
+/** The key flag determines which curve was used; without it we default to Ed25519. */
 export const reconstructEphemeralPublicKey = (
   ephemeralPublicKeyBytes: number[] | null,
   ephemeralPublicKeyFlag: number | null,
@@ -67,6 +70,7 @@ export const reconstructEphemeralPublicKey = (
   }
 }
 
+/** Curries the current chain into store actions so hook callers don't have to pass it at every call site. */
 export const bindDeviceActions = (
   currentChain: SuiChain,
   { initialize, getZkProof }: Pick<DeviceState, 'initialize' | 'getZkProof'>,

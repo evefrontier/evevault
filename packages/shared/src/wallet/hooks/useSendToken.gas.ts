@@ -42,6 +42,7 @@ type EstimateGasFeeTaskParams = EstimateGasMistParams & {
   setEstimatedGasFeeLoading: (value: boolean) => void
 }
 
+/** Debounces estimation to avoid firing a simulation on every keystroke; uses a runId to discard stale results from overlapping requests. */
 export const useEstimatedGasFee = ({
   formValidForEstimate,
   suiClient,
@@ -92,6 +93,7 @@ export const useEstimatedGasFee = ({
   return { estimatedGasFee, estimatedGasFeeLoading }
 }
 
+/** Works on both `Transaction` and `FailedTransaction` response shapes since a failed simulation still reports gas consumed. */
 export function parseGasUsedFromSimulation(result: unknown): string | null {
   try {
     const gasUsed = getSimulationGasUsed(result)
@@ -164,6 +166,7 @@ const estimateGasMist = async ({
   return parseGasUsedFromSimulation(sim)
 }
 
+/** Guards against out-of-order async responses — only the most recent estimate updates the displayed fee. */
 const updateEstimateState = (
   runId: number,
   estimateRunIdRef: { current: number },

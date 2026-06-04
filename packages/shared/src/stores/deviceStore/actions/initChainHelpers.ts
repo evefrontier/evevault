@@ -18,6 +18,8 @@ import type { GetDeviceState, SetDeviceState } from './types'
 
 const log = createLogger()
 
+const NULL_EPOCH = { maxEpoch: null, maxEpochTimestampMs: null } as const
+
 export const initializeForChainData = async (
   chain: SuiChain,
   set: SetDeviceState,
@@ -33,6 +35,7 @@ export const initializeForChainData = async (
   await initializeZkLoginChainData(chain, set, get)
 }
 
+/** Clears JWTs and cached ZK proofs before rotating so stale proofs tied to the old key can't be reused. */
 export const rotateEphemeralKeyForChain = async (
   currentChain: SuiChain,
   set: SetDeviceState,
@@ -60,6 +63,7 @@ export const rotateEphemeralKeyForChain = async (
   await get().initializeForChain(currentChain)
 }
 
+/** Guards against redundant network calls when the chain was already initialized (e.g. after rehydration). */
 export const initializeChainIfNeeded = async (
   currentChain: SuiChain,
   get: GetDeviceState,
@@ -79,6 +83,7 @@ const clearDerivedZkLoginState = async () => {
   await Promise.all([clearAllZkLoginJwts(), zkProofService.clear()])
 }
 
+/** Localnet epoch comes from the local RPC rather than GraphQL; missing URL is non-fatal — nonce stays null. */
 const initializeLocalnetChainData = async (
   set: SetDeviceState,
   get: GetDeviceState,
@@ -103,6 +108,7 @@ const initializeLocalnetChainData = async (
   }
 }
 
+/** Nonce binds the ephemeral key to a specific epoch window; both must be generated together. */
 const initializeZkLoginChainData = async (
   chain: SuiChain,
   set: SetDeviceState,
@@ -127,8 +133,6 @@ const initializeZkLoginChainData = async (
     jwtRandomness,
   })
 }
-
-const NULL_EPOCH = { maxEpoch: null, maxEpochTimestampMs: null } as const
 
 const setLocalnetEpochData = (
   set: SetDeviceState,

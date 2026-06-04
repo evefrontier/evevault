@@ -27,6 +27,7 @@ type CreateLoggerFnOptions = {
   level: LogLevel
 }
 
+/** Vite env vars (`VITE_LOG_LEVEL`, `MODE`) take priority over Node.js `process.env` so browser and Node environments both work. */
 export const resolveEnvLogLevel = (): LogLevel => {
   const importMetaEnv = getImportMetaEnv()
   const processEnv = getProcessEnv()
@@ -44,12 +45,14 @@ export const resolveEnvLogLevel = (): LogLevel => {
   return resolveModeLogLevel(importMetaEnv?.MODE ?? processEnv?.NODE_ENV)
 }
 
+/** Auto-derives the scope label from the calling file's path when not explicitly provided, so logger calls self-identify. */
 export const resolveLoggerScope = (
   providedScope?: string,
 ): string | undefined => {
   return providedScope ?? deriveScopeFromPath(getCallerFrame()?.filePath)
 }
 
+/** Curried factory so each logger instance closes over its own scope and active level without repeating the check logic. */
 export const createLogFunction =
   ({ resolvedScope, level }: CreateLoggerFnOptions) =>
   (consoleMethod: keyof Console, logLevel: LogLevel): LoggerFn =>
@@ -60,6 +63,7 @@ export const createLogFunction =
     }
   }
 
+/** Produces `"parent:child"` labels for sub-loggers; falls back to just the child if there is no parent scope. */
 export const createNestedScope = (
   resolvedScope: string | undefined,
   childScope: string,
