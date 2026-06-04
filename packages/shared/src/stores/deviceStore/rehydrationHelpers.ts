@@ -1,5 +1,5 @@
 import { ephKeyService } from '#/services/vaultService'
-import type { DeviceState } from '#/types'
+import { type DeviceState, KEY_FLAG_SECP256R1 } from '#/types'
 import { isWeb } from '#/utils/environment'
 import { createLogger } from '#/utils/logger'
 import { createEmptyLocalnetDeviceData } from './constants'
@@ -61,9 +61,9 @@ const reconstructPersistedPublicKey = (state: DeviceState | undefined) => {
 
   if (publicKey) {
     state.ephemeralPublicKey = publicKey
-    log.debug(
-      `Reconstructed ${isWeb() ? 'Secp256r1' : 'Ed25519'} public key from storage`,
-    )
+    const schemeName =
+      publicKey.flag() === KEY_FLAG_SECP256R1 ? 'Secp256r1' : 'Ed25519'
+    log.debug(`Reconstructed ${schemeName} public key from storage`)
     return
   }
 

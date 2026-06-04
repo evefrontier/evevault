@@ -2,7 +2,7 @@ import type { PublicKey } from '@mysten/sui/cryptography'
 import type { SuiChain } from '@mysten/wallet-standard'
 import type { DeviceState, NetworkDataEntry, StoredSecretKey } from '#/types'
 import { isLocalnetChain, isZkLoginSuiChain } from '#/types/networks'
-import { isPresent } from '#/utils'
+import { isNonNullable } from '#/utils'
 import type { SetDeviceState } from './types'
 
 type ChainDeviceData = Pick<
@@ -49,7 +49,7 @@ export const hasFreshNetworkData = (
   data: NetworkDataEntry,
   storedSecretKey: StoredSecretKey,
 ): boolean =>
-  requiredDeviceDataValues(data, storedSecretKey).every(isPresent) &&
+  requiredDeviceDataValues(data, storedSecretKey).every(isNonNullable) &&
   !isDeviceDataExpired(data)
 
 export const needsPersistedRehydration = (
@@ -59,8 +59,8 @@ export const needsPersistedRehydration = (
 
 export const hasChainDeviceData = (data?: ChainDeviceData): boolean => {
   return Boolean(
-    isPresent(data?.nonce) &&
-      isPresent(data?.maxEpoch) &&
+    isNonNullable(data?.nonce) &&
+      isNonNullable(data?.maxEpoch) &&
       !isDeviceDataExpired(data),
   )
 }

@@ -1,4 +1,7 @@
-import type { TenantId } from '@evefrontier/wallet-core/definitions'
+import {
+  DEFAULT_TENANT,
+  type TenantId,
+} from '@evefrontier/wallet-core/definitions'
 import { SUI_TESTNET_CHAIN, type SuiChain } from '@mysten/wallet-standard'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
@@ -18,7 +21,6 @@ import {
 
 // Store dependency direction is intentional: contextStore may coordinate with
 // deviceStore during network switches, but deviceStore must not import contextStore.
-const INITIAL_TENANT_ID = 'stillness' as TenantId
 
 type PersistedContextState = Partial<{
   tenantId: TenantId
@@ -57,7 +59,7 @@ const initialState = getInitialStateFromLocalStorage()
 export const useContextStore = create<ContextState>()(
   persist(
     (set, get) => ({
-      tenantId: initialState.tenantId ?? INITIAL_TENANT_ID,
+      tenantId: initialState.tenantId ?? DEFAULT_TENANT,
       devMode: initialState.devMode ?? false,
       setTenantId: async (id: TenantId) => {
         if (!getAvailableTenantIds(true).includes(id)) {
@@ -119,5 +121,5 @@ export function getCurrentContextTenantId(): TenantId {
   const state = useContextStore.getState()
   return isAvailableTenantId(state.tenantId, state.devMode)
     ? state.tenantId
-    : INITIAL_TENANT_ID
+    : DEFAULT_TENANT
 }

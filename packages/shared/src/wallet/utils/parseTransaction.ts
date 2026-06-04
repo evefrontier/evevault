@@ -4,7 +4,7 @@ import type {
   TransactionBalanceChange,
   TransactionDirection,
 } from '#/types/components'
-import { isPresent, SUI_COIN_TYPE } from '#/utils'
+import { isNonNullable, SUI_COIN_TYPE } from '#/utils'
 import { formatByDecimals } from '#/utils/format'
 import { createLogger } from '#/utils/logger'
 import type {
@@ -234,7 +234,7 @@ const isNonSuiAmountChange = (change: GraphQLBalanceChange): boolean => {
 }
 
 const hasAmount = (change: GraphQLBalanceChange): boolean => {
-  return isPresent(change.amount)
+  return isNonNullable(change.amount)
 }
 
 const getCoinType = (change?: GraphQLBalanceChange): string => {

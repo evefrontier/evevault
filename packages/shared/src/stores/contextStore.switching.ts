@@ -12,7 +12,7 @@ type GetContextState = () => ContextState
 
 const log = createLogger()
 
-const SWITCH_SUCCESS: NetworkSwitchResult = {
+const SWITCHED_WITHOUT_REAUTH: NetworkSwitchResult = {
   success: true,
   requiresReauth: false,
 }
@@ -54,7 +54,7 @@ export const setContextChain = async (
   const currentChain = get().chain
 
   if (currentChain === chain) {
-    return SWITCH_SUCCESS
+    return SWITCHED_WITHOUT_REAUTH
   }
 
   log.info('Setting chain', { from: currentChain, to: chain })
@@ -70,7 +70,7 @@ const switchToLocalnetChain = (
   set({ chain, loading: false })
   notifyExtensionChainChanged(chain)
   log.info('Switched to localnet')
-  return SWITCH_SUCCESS
+  return SWITCHED_WITHOUT_REAUTH
 }
 
 const switchToZkLoginChain = async (
@@ -110,7 +110,7 @@ const switchAuthenticatedZkLoginChain = async (
 
     set({ loading: false })
     log.info('Successfully switched to zkLogin chain', { chain })
-    return SWITCH_SUCCESS
+    return SWITCHED_WITHOUT_REAUTH
   } catch (error) {
     log.error('Failed to complete network switch', error)
     set({ loading: false })
