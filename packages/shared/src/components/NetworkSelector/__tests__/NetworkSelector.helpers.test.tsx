@@ -3,8 +3,16 @@ import {
   SUI_LOCALNET_CHAIN,
   SUI_TESTNET_CHAIN,
 } from '@mysten/wallet-standard'
-import { act, renderHook } from '@testing-library/react'
+import {
+  act,
+  fireEvent,
+  render,
+  renderHook,
+  screen,
+  waitFor,
+} from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { NetworkSelector } from '../NetworkSelector'
 import {
   useAvailableNetworks,
   useNetworkSelection,
@@ -18,9 +26,20 @@ const mockUtils = vi.hoisted(() => ({
   },
 }))
 
+const mockContext = vi.hoisted(() => ({
+  forceSetChain: vi.fn(),
+  loading: false,
+  setChain: vi.fn(async () => ({ success: true })),
+  devMode: false,
+}))
+
 vi.mock('#/utils', () => ({
   createLogger: () => mockUtils.logger,
   isExtension: mockUtils.isExtension,
+}))
+
+vi.mock('#/hooks', () => ({
+  useContext: () => mockContext,
 }))
 
 type NetworkSelectionParams = Parameters<typeof useNetworkSelection>[0]
@@ -45,6 +64,9 @@ describe('useAvailableNetworks', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockUtils.isExtension.mockReturnValue(false)
+    mockContext.loading = false
+    mockContext.devMode = false
+    mockContext.setChain.mockResolvedValue({ success: true })
   })
 
   it('includes localnet only when dev mode is enabled in an extension context', () => {
@@ -69,6 +91,74 @@ describe('useAvailableNetworks', () => {
         (network) => network.chain === SUI_LOCALNET_CHAIN,
       ),
     ).toBe(false)
+  })
+})
+
+describe('NetworkSelector', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockUtils.isExtension.mockReturnValue(false)
+    mockContext.loading = false
+    mockContext.devMode = false
+    mockContext.setChain.mockResolvedValue({ success: true })
+  })
+
+  it('opens the full menu and switches to a selected network', async () => {
+    render(<NetworkSelector chain={SUI_TESTNET_CHAIN} />)
+
+    expect(screen.getByText('NETWORK')).toBeInTheDocument()
+    fireEvent.click(
+      screen.getByRole('button', { name: /network sui:testnet/i }),
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Devnet' }))
+
+    await waitFor(() => {
+      expect(mockContext.setChain).toHaveBeenCalledWith(SUI_DEVNET_CHAIN)
+    })
+    expect(
+      screen.queryByRole('button', { name: 'Devnet' }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('renders the compact extension menu with localnet and runs its callback', async () => {
+    const onLocalnetSelected = vi.fn()
+    mockUtils.isExtension.mockReturnValue(true)
+    mockContext.devMode = true
+
+    const { container } = render(
+      <NetworkSelector
+        chain={SUI_TESTNET_CHAIN}
+        compact
+        onLocalnetSelected={onLocalnetSelected}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'TEST' }))
+
+    expect(
+      container.querySelector('.dropdown--placement-top'),
+    ).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Localnet' }))
+
+    await waitFor(() => {
+      expect(mockContext.setChain).toHaveBeenCalledWith(SUI_LOCALNET_CHAIN)
+    })
+    expect(onLocalnetSelected).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not open while the context is loading', () => {
+    mockContext.loading = true
+
+    render(<NetworkSelector chain={SUI_TESTNET_CHAIN} />)
+
+    fireEvent.click(
+      screen.getByRole('button', { name: /network sui:testnet/i }),
+    )
+
+    expect(
+      screen.queryByRole('button', { name: 'Devnet' }),
+    ).not.toBeInTheDocument()
   })
 })
 
