@@ -96,7 +96,7 @@ export function AuthenticatedWalletView({
 
       <TokenListSection
         user={user}
-        chain={chain || null}
+        chain={chain}
         walletAddress={activeAddress ?? ''}
         balanceAddress={activeAddress}
         localnetUrl={localnetUrl}

@@ -220,15 +220,9 @@ function LocalnetSettingsPage() {
   const [address, setAddress] = useState<string | null>(null)
 
   useEffect(() => {
-    const fetchAddress = async () => {
-      const address = await localnetKeyService.getAddress()
-      if (address) {
-        setAddress(address)
-      } else {
-        setAddress(null)
-      }
-    }
-    fetchAddress()
+    localnetKeyService
+      .getAddress()
+      .then((address) => setAddress(address ?? null))
   }, [])
 
   const handleUrlSave = useCallback(async () => {

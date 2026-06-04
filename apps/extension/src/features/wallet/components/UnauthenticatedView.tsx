@@ -1,9 +1,6 @@
 import type { TenantId } from '@evefrontier/wallet-core/definitions'
 import { Button, Heading, TenantSelector } from '@evevault/shared/components'
 import Icon from '@evevault/shared/components/Icon'
-import { createLogger } from '@evevault/shared/utils'
-
-const log = createLogger()
 
 function DevModeButton({
   devMode,
@@ -45,14 +42,6 @@ export function UnauthenticatedView({
   onResetVault: () => Promise<void>
   onDevModeToggle: () => void
 }) {
-  const handleResetVaultClick = async () => {
-    try {
-      await onResetVault()
-    } catch (error) {
-      log.error('Failed to reset vault', error)
-    }
-  }
-
   return (
     <div className="flex flex-col items-center justify-between gap-4 w-full h-full">
       <section className="flex flex-col items-center gap-10 w-full flex-1">
@@ -73,7 +62,7 @@ export function UnauthenticatedView({
         {isPinSet && (
           <button
             type="button"
-            onClick={() => void handleResetVaultClick()}
+            onClick={() => void onResetVault()}
             className="text-sm underline text-grey-neutral hover:text-neutral focus:outline-none focus:ring-2 focus:ring-primary rounded"
           >
             Reset Vault

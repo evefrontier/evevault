@@ -171,18 +171,6 @@ export class EveVaultWallet implements Wallet {
       : SUI_TESTNET_CHAIN
   }
 
-  async #resolveAuthSuccess(m: Record<string, unknown>): Promise<void> {
-    try {
-      this.#accounts = await getAccountsFromAuthSuccess(m, [
-        this.#currentChain,
-        this.#getOtherChain(),
-      ])
-      this.#emitChangeEvent({ accounts: this.#accounts })
-    } catch (err) {
-      throw err instanceof Error ? err : new Error(String(err))
-    }
-  }
-
   /**
    * Update the current chain and emit a change event
    * Public method to allow external chain updates
@@ -229,7 +217,11 @@ export class EveVaultWallet implements Wallet {
         if (trySettle(state, onMsg, timeoutId)) {
           if (m.type === 'auth_success') {
             try {
-              await this.#resolveAuthSuccess(m)
+              this.#accounts = await getAccountsFromAuthSuccess(m, [
+                this.#currentChain,
+                this.#getOtherChain(),
+              ])
+              this.#emitChangeEvent({ accounts: this.#accounts })
               resolve({ accounts: this.accounts })
             } catch (error) {
               reject(error)

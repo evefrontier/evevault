@@ -142,8 +142,12 @@ function App() {
           switchTenantAndReload(tenantId as TenantId)
         }
         onResetVault={async () => {
-          await resetVaultOnDevice()
-          navigate({ to: '/' })
+          try {
+            await resetVaultOnDevice()
+            navigate({ to: '/' })
+          } catch (error) {
+            log.error('Failed to reset vault', error)
+          }
         }}
         onDevModeToggle={handleDevModeToggle}
       />

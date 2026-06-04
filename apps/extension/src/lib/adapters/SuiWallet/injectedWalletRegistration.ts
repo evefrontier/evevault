@@ -21,20 +21,6 @@ type WalletChangePayload = {
 
 const log = createLogger()
 
-function isAlreadyRegistered() {
-  const registrationWindow = window as EveVaultRegistrationWindow
-  return Boolean(registrationWindow[WALLET_REGISTRATION_KEY])
-}
-
-function markRegistered() {
-  const registrationWindow = window as EveVaultRegistrationWindow
-  registrationWindow[WALLET_REGISTRATION_KEY] = true
-}
-
-function getChangePayload(data: Record<string, unknown>): WalletChangePayload {
-  return (data.payload || {}) as WalletChangePayload
-}
-
 function applyWalletChange(
   walletInstance: EveVaultWallet,
   { chains, accounts, features }: WalletChangePayload,
@@ -52,7 +38,10 @@ function onWalletMessage(walletInstance: EveVaultWallet) {
     const data: Record<string, unknown> = event.data || {}
     if (data.__from !== 'Eve Vault' || data.event !== 'change') return
 
-    applyWalletChange(walletInstance, getChangePayload(data))
+    applyWalletChange(
+      walletInstance,
+      (data.payload || {}) as WalletChangePayload,
+    )
   }
 }
 
@@ -61,7 +50,8 @@ function requestPersistedChain() {
 }
 
 export function registerInjectedWallet() {
-  if (isAlreadyRegistered()) {
+  const reg = window as EveVaultRegistrationWindow
+  if (reg[WALLET_REGISTRATION_KEY]) {
     log.info('Eve Vault already registered, skipping')
     return
   }
@@ -69,7 +59,7 @@ export function registerInjectedWallet() {
   try {
     const walletInstance = new EveVaultWallet()
     registerWallet(walletInstance)
-    markRegistered()
+    reg[WALLET_REGISTRATION_KEY] = true
     log.info('Eve Vault registered successfully')
     window.addEventListener('message', onWalletMessage(walletInstance))
     requestPersistedChain()

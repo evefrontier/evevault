@@ -13,13 +13,10 @@ type VaultMessageOpts<T> = {
 
 function getVaultMessageErrorMessage(error: unknown): string {
   if (typeof error === 'string' && error.length > 0) return error
-  if (error instanceof Error) return error.message
-
   if (error && typeof error === 'object' && 'message' in error) {
-    const message = (error as { message?: unknown }).message
+    const { message } = error as { message?: unknown }
     if (typeof message === 'string' && message.length > 0) return message
   }
-
   return 'Request failed'
 }
 

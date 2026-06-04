@@ -25,15 +25,15 @@ import {
 import { KEEPER_RETRY_DELAY_MS, setPendingAuthAfterUnlock } from './pendingAuth'
 
 const log = createLogger()
-const KEEPER_RETRY_DELAY_MULTIPLIERS = [1, 3] as const
-const KEEPER_RETRY_DELAYS_MS = KEEPER_RETRY_DELAY_MULTIPLIERS.map(
-  (multiplier) => KEEPER_RETRY_DELAY_MS * multiplier,
-)
+const KEEPER_RETRY_DELAYS_MS = [
+  KEEPER_RETRY_DELAY_MS,
+  KEEPER_RETRY_DELAY_MS * 3,
+] as const
 
 type KeeperStatus = Awaited<ReturnType<typeof checkKeeperUnlocked>>
 type CurrentChain = ReturnType<typeof getCurrentChain>
 type StoredChain = Awaited<ReturnType<typeof getCurrentChainFromStorage>>
-type PublicKeySyncResult = 'ready' | 'synced' | 'missing' | 'failed'
+type PublicKeySyncResult = 'ok' | 'failed'
 
 function resolveTenantId(message: MessageWithId): TenantId {
   if (
@@ -46,22 +46,12 @@ function resolveTenantId(message: MessageWithId): TenantId {
   return getCurrentTenantId()
 }
 
-function hasStoredEphemeralKey(value: unknown): boolean {
-  if (!value || typeof value !== 'object') return false
-
-  return 'iv' in value && 'data' in value
-}
-
-function wait(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
-
 async function getKeeperStatus(hasDeviceData: boolean): Promise<KeeperStatus> {
   let keeperStatus = await checkKeeperUnlocked()
   if (keeperStatus.unlocked || !hasDeviceData) return keeperStatus
 
   for (const retryDelay of KEEPER_RETRY_DELAYS_MS) {
-    await wait(retryDelay)
+    await new Promise<void>((resolve) => setTimeout(resolve, retryDelay))
     keeperStatus = await checkKeeperUnlocked()
     if (keeperStatus.unlocked) break
   }
@@ -113,8 +103,8 @@ async function syncPublicKeyFromKeeper({
   keeperStatus: KeeperStatus
 }): Promise<PublicKeySyncResult> {
   const deviceStore = useDeviceStore.getState()
-  if (deviceStore.ephemeralPublicKey) return 'ready'
-  if (!keeperStatus.publicKeyBytes) return 'missing'
+  if (deviceStore.ephemeralPublicKey) return 'ok'
+  if (!keeperStatus.publicKeyBytes) return 'ok'
 
   log.info('Syncing ephemeral public key from keeper to deviceStore', {
     chain: initialChain,
@@ -136,7 +126,7 @@ async function syncPublicKeyFromKeeper({
       isLocked: false,
     })
     log.debug('Successfully synced ephemeral public key to deviceStore')
-    return 'synced'
+    return 'ok'
   } catch (error) {
     log.error('Failed to sync public key from keeper', error)
     sendAuthError(id, {
@@ -287,9 +277,9 @@ export async function handleExtLogin(
   const tenantId = resolveTenantId(message)
   const initialChain = getCurrentChain()
   const deviceStore = useDeviceStore.getState()
-  const hasDeviceData = hasStoredEphemeralKey(
-    deviceStore.ephemeralKeyPairSecretKey,
-  )
+  const key = deviceStore.ephemeralKeyPairSecretKey
+  const hasDeviceData =
+    Boolean(key) && typeof key === 'object' && 'iv' in key && 'data' in key
   const keeperStatus = await getKeeperStatus(hasDeviceData)
   if (!keeperStatus.unlocked) {
     await requestVaultUnlock({ id, initialChain, hasDeviceData, tenantId })
@@ -302,19 +292,12 @@ export async function handleExtLogin(
     keeperStatus,
   })
   if (didSync === 'failed') return
-  if (didSync === 'missing') {
-    ensureDevicePublicKey(id, initialChain)
-    return
-  }
   if (!ensureDevicePublicKey(id, initialChain)) return
 
   const currentChain = await getCurrentChainFromStorage()
   const nonce = await getNonceForChain(id, currentChain)
   if (!nonce) return
 
-  const { authUrl, codeVerifier } = await getAuthRequest({
-    tenantId: tenantId,
-    nonce,
-  })
+  const { authUrl, codeVerifier } = await getAuthRequest({ tenantId, nonce })
   launchOAuthLogin({ id, authUrl, codeVerifier, currentChain, tenantId })
 }
