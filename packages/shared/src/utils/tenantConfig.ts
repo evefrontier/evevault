@@ -24,10 +24,6 @@ function isWebProduction(): boolean {
   return mode === 'production'
 }
 
-function getDefaultConfig(): TenantConfig {
-  return TENANT_KEYS[DEFAULT_TENANT_ID]
-}
-
 /**
  * Returns FusionAuth client config for the given tenant.
  */

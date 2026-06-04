@@ -1,10 +1,8 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { chromeStorageAdapter, localStorageAdapter } from '#/adapters'
-import { ephKeyService } from '#/services/vaultService'
 import type { DeviceState } from '#/types'
 import { isWeb } from '#/utils/environment'
-import { createLogger } from '#/utils/logger'
 import { DEVICE_STORAGE_KEY } from '#/utils/storageKeys'
 import { createInitActions } from './actions/initActions'
 import { createLockActions } from './actions/lockActions'
@@ -14,10 +12,8 @@ import {
   createInitialNetworkData,
   DEFAULT_LOCALNET_URL,
 } from './constants'
-import { reconstructPublicKey } from './keyHelpers'
+import { handleDeviceStoreRehydration } from './rehydrationHelpers'
 import { createDeviceSelectors } from './selectors'
-
-const log = createLogger()
 
 export {
   createEmptyLocalnetDeviceData,
@@ -65,77 +61,7 @@ export const useDeviceStore = create<DeviceState>()(
       },
       onRehydrateStorage: () => {
         return (state, error) => {
-          if (error) {
-            log.error('Error rehydrating device store', error)
-            return
-          }
-
-          if (state && !state.localnet) {
-            state.localnet = createEmptyLocalnetDeviceData()
-          } else if (state?.localnet) {
-            state.localnet = {
-              ...createEmptyLocalnetDeviceData(),
-              ...state.localnet,
-            }
-          }
-
-          if (
-            state?.ephemeralKeyPairSecretKey &&
-            typeof state.ephemeralKeyPairSecretKey === 'object'
-          ) {
-            const key = state.ephemeralKeyPairSecretKey
-            if (!('iv' in key) || !('data' in key)) {
-              log.warn(
-                'Invalid ephemeralKeyPairSecretKey structure on rehydration, setting to null',
-                {
-                  hasIv: 'iv' in key,
-                  hasData: 'data' in key,
-                  keys: Object.keys(key),
-                },
-              )
-              state.ephemeralKeyPairSecretKey = null
-            }
-          }
-
-          if (state?.ephemeralPublicKeyBytes) {
-            const publicKey = reconstructPublicKey(
-              state.ephemeralPublicKeyBytes,
-              state.ephemeralPublicKeyFlag ?? null,
-            )
-
-            if (publicKey) {
-              state.ephemeralPublicKey = publicKey
-              log.debug(
-                `Reconstructed ${isWeb() ? 'Secp256r1' : 'Ed25519'} public key from storage`,
-              )
-            } else {
-              state.ephemeralPublicKey = null
-              state.ephemeralPublicKeyBytes = null
-              state.ephemeralPublicKeyFlag = null
-            }
-          }
-
-          if (
-            state?.ephemeralPublicKeyBytes &&
-            !state?.ephemeralKeyPairSecretKey
-          ) {
-            log.warn(
-              'Inconsistent state on rehydration: have ephemeralPublicKeyBytes but ephemeralKeyPairSecretKey is null/missing. This indicates the secret key was lost from storage.',
-              {
-                hasEphemeralPublicKeyBytes: !!state.ephemeralPublicKeyBytes,
-                hasEphemeralKeyPairSecretKey: !!state.ephemeralKeyPairSecretKey,
-              },
-            )
-            state.ephemeralPublicKey = null
-            state.ephemeralPublicKeyBytes = null
-            state.ephemeralPublicKeyFlag = null
-            state.isLocked = true
-          }
-
-          if (isWeb() && state) {
-            state.isLocked = !ephKeyService.isUnlocked()
-            state.loading = false
-          }
+          handleDeviceStoreRehydration(state, error)
         }
       },
     },

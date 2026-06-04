@@ -1,124 +1,22 @@
-import type { SuiGrpcClient } from '@mysten/sui/grpc'
-import { Transaction } from '@mysten/sui/transactions'
 import { isValidSuiAddress } from '@mysten/sui/utils'
 import { useQueryClient } from '@tanstack/react-query'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import {
-  createLogger,
-  formatMistToSui,
-  GAS_FEE_WARNING_MESSAGE,
-  SUI_COIN_TYPE,
-  toSmallestUnit,
-} from '#/utils'
+import { useCallback, useMemo, useState } from 'react'
+import { createLogger, GAS_FEE_WARNING_MESSAGE, SUI_COIN_TYPE } from '#/utils'
 import { isEveCoinType } from '#/wallet/eveToken'
 import { useBalance } from './useBalance'
+import {
+  buildValidationErrors,
+  canSendToken,
+  executeTokenTransfer,
+  isFormValidForEstimate,
+  isPositiveAmountWithinBalance,
+  refetchTransferQueries,
+  useDelayedTransferRefetch,
+  useEstimatedGasFee,
+} from './useSendToken.helpers'
 import { useWalletSigningContext } from './useWalletSigningContext'
 
 const log = createLogger()
-
-const ESTIMATE_DEBOUNCE_MS = 600
-
-type CoinWithBalance = { balance: string; objectId: string }
-
-/**
- * Builds a transfer transaction and returns the BCS bytes (unsigned).
- * Used for both execution and gas estimation.
- */
-async function buildTransferTransactionBytes(
-  senderAddress: string,
-  recipientAddress: string,
-  amountInSmallestUnit: bigint,
-  coinType: string,
-  suiClient: SuiGrpcClient,
-): Promise<Uint8Array> {
-  const tx = new Transaction()
-  tx.setSender(senderAddress)
-
-  if (coinType === SUI_COIN_TYPE) {
-    const [coin] = tx.splitCoins(tx.gas, [amountInSmallestUnit])
-    tx.transferObjects([coin], recipientAddress)
-  } else {
-    const { objects: coinObjects } = await suiClient.listCoins({
-      owner: senderAddress,
-      coinType,
-    })
-    if (coinObjects.length === 0) {
-      throw new Error('No coins found for this token')
-    }
-    const totalBalance = coinObjects.reduce(
-      (sum: bigint, coin: CoinWithBalance) => sum + BigInt(coin.balance),
-      0n,
-    )
-    if (totalBalance < amountInSmallestUnit) {
-      throw new Error('Token balance changed during transaction preparation')
-    }
-    const suitableCoin = coinObjects.find(
-      (c: CoinWithBalance) => BigInt(c.balance) >= amountInSmallestUnit,
-    )
-    if (suitableCoin) {
-      const [coin] = tx.splitCoins(tx.object(suitableCoin.objectId), [
-        amountInSmallestUnit,
-      ])
-      tx.transferObjects([coin], recipientAddress)
-    } else {
-      const primaryCoin = coinObjects[0]
-      const otherCoins = coinObjects.slice(1)
-      if (otherCoins.length > 0) {
-        tx.mergeCoins(
-          tx.object(primaryCoin.objectId),
-          otherCoins.map((c: CoinWithBalance) => tx.object(c.objectId)),
-        )
-      }
-      const [coin] = tx.splitCoins(tx.object(primaryCoin.objectId), [
-        amountInSmallestUnit,
-      ])
-      tx.transferObjects([coin], recipientAddress)
-    }
-  }
-
-  const txb = await tx.build({ client: suiClient })
-  return new Uint8Array(txb)
-}
-
-/** SDK simulateTransaction result shape: effects live under Transaction or FailedTransaction. */
-type SimulateResult =
-  | {
-      $kind: 'Transaction'
-      Transaction: { effects?: { gasUsed?: GasUsedShape } }
-    }
-  | {
-      $kind: 'FailedTransaction'
-      FailedTransaction: { effects?: { gasUsed?: GasUsedShape } }
-    }
-type GasUsedShape = {
-  computationCost?: string
-  storageCost?: string
-  storageRebate?: string
-  nonRefundableStorageFee?: string
-}
-
-/** Parse gas cost in MIST from simulation result (best-effort). Expects SDK result with include.effects. */
-function parseGasUsedFromSimulation(result: unknown): string | null {
-  try {
-    const r = result as SimulateResult
-    const effects =
-      r?.$kind === 'Transaction'
-        ? r.Transaction?.effects
-        : r?.$kind === 'FailedTransaction'
-          ? r.FailedTransaction?.effects
-          : undefined
-    const gasUsed = effects?.gasUsed
-    if (!gasUsed) return null
-    const computation = BigInt(gasUsed.computationCost ?? '0')
-    const storage = BigInt(gasUsed.storageCost ?? '0')
-    const rebate = BigInt(gasUsed.storageRebate ?? '0')
-    const nonRefundable = BigInt(gasUsed.nonRefundableStorageFee ?? '0')
-    const total = computation + storage - rebate + nonRefundable
-    return total > 0n ? total.toString() : null
-  } catch {
-    return null
-  }
-}
 
 interface UseSendTokenParams {
   coinType: string
@@ -190,12 +88,7 @@ export function useSendToken({
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [txDigest, setTxDigest] = useState<string | null>(null)
-  const [estimatedGasFee, setEstimatedGasFee] = useState<string | null>(null)
-  const [estimatedGasFeeLoading, setEstimatedGasFeeLoading] = useState(false)
-  const estimateRunIdRef = useRef(0)
-  const postTransferRefetchTimerRef = useRef<ReturnType<
-    typeof setTimeout
-  > | null>(null)
+  const scheduleDelayedTransferRefetch = useDelayedTransferRefetch(queryClient)
 
   // Fetch balance for the selected token
   const { data: balanceData, isLoading: balanceLoading } = useBalance({
@@ -233,38 +126,26 @@ export function useSendToken({
 
   // Amount validation
   const isValidAmount = useMemo(() => {
-    if (!amount || amount === '' || amount === '0') return false
-
-    try {
-      const amountInSmallestUnit = toSmallestUnit(amount, decimals)
-      const balanceInSmallestUnit = BigInt(rawBalance)
-
-      return (
-        amountInSmallestUnit > 0n &&
-        amountInSmallestUnit <= balanceInSmallestUnit
-      )
-    } catch {
-      return false
-    }
+    return isPositiveAmountWithinBalance(amount, rawBalance, decimals)
   }, [amount, rawBalance, decimals])
 
   const rawSuiBalance = suiBalanceData?.rawBalance ?? '0'
   const hasZeroSui = !suiBalanceLoading && BigInt(rawSuiBalance) === 0n
-  const hasGas =
-    coinType === SUI_COIN_TYPE || (suiBalanceLoading ? false : !hasZeroSui)
+  const hasGas = coinType === SUI_COIN_TYPE || !hasZeroSui
 
   // Collect validation errors
   const validationErrors = useMemo(() => {
-    const errors: string[] = []
-    if (!isNetworkReady) errors.push('No network selected')
-    if (!isAuthenticated) errors.push('Not authenticated')
-    if (!isWalletUnlocked) errors.push('Wallet not ready')
-    if (!hasBalance) errors.push('Insufficient balance')
-    if (!hasGas) errors.push('No SUI for gas (required for transaction fees)')
-    if (recipientAddress && !isValidRecipient)
-      errors.push('Invalid Sui address')
-    if (amount && !isValidAmount) errors.push('Invalid amount')
-    return errors
+    return buildValidationErrors({
+      isNetworkReady,
+      isAuthenticated,
+      isWalletUnlocked,
+      hasBalance,
+      hasGas,
+      recipientAddress,
+      isValidRecipient,
+      amount,
+      isValidAmount,
+    })
   }, [
     isNetworkReady,
     isAuthenticated,
@@ -277,14 +158,15 @@ export function useSendToken({
     amount,
   ])
 
-  const canSend =
-    isNetworkReady &&
-    isAuthenticated &&
-    isWalletUnlocked &&
-    hasBalance &&
-    hasGas &&
-    isValidRecipient &&
-    isValidAmount
+  const canSend = canSendToken({
+    isNetworkReady,
+    isAuthenticated,
+    isWalletUnlocked,
+    hasBalance,
+    hasGas,
+    isValidRecipient,
+    isValidAmount,
+  })
 
   const suiForGasWarning =
     !suiBalanceLoading && coinType !== SUI_COIN_TYPE && hasZeroSui
@@ -292,73 +174,16 @@ export function useSendToken({
       : null
   const showFaucetTestSui = !suiBalanceLoading && hasZeroSui
 
-  const formValidForEstimate =
-    isValidRecipient &&
-    isValidAmount &&
-    hasBalance &&
-    !balanceLoading &&
-    !!effectiveSenderAddress &&
-    !!chain
+  const formValidForEstimate = isFormValidForEstimate({
+    isValidRecipient,
+    isValidAmount,
+    hasBalance,
+    balanceLoading,
+    effectiveSenderAddress,
+    chain,
+  })
 
-  // Clear delayed refetch timer on unmount
-  useEffect(() => {
-    return () => {
-      if (postTransferRefetchTimerRef.current != null) {
-        clearTimeout(postTransferRefetchTimerRef.current)
-        postTransferRefetchTimerRef.current = null
-      }
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!formValidForEstimate || !suiClient) {
-      setEstimatedGasFee(null)
-      setEstimatedGasFeeLoading(false)
-      return
-    }
-
-    const runId = ++estimateRunIdRef.current
-    const timer = setTimeout(async () => {
-      setEstimatedGasFeeLoading(true)
-      setEstimatedGasFee(null)
-      try {
-        const senderAddress = await getSenderAddress()
-        if (!senderAddress) {
-          if (runId === estimateRunIdRef.current) {
-            setEstimatedGasFee(null)
-          }
-          return
-        }
-        const amountInSmallestUnit = toSmallestUnit(amount, decimals)
-        const txBytes = await buildTransferTransactionBytes(
-          senderAddress,
-          recipientAddress,
-          amountInSmallestUnit,
-          coinType,
-          suiClient,
-        )
-        const sim = await suiClient.simulateTransaction({
-          transaction: txBytes,
-          include: { effects: true },
-        })
-        const mist = parseGasUsedFromSimulation(sim)
-        if (runId === estimateRunIdRef.current && mist) {
-          setEstimatedGasFee(formatMistToSui(mist))
-        }
-      } catch (err) {
-        log.warn('Gas estimation failed', { err })
-        if (runId === estimateRunIdRef.current) {
-          setEstimatedGasFee(null)
-        }
-      } finally {
-        if (runId === estimateRunIdRef.current) {
-          setEstimatedGasFeeLoading(false)
-        }
-      }
-    }, ESTIMATE_DEBOUNCE_MS)
-
-    return () => clearTimeout(timer)
-  }, [
+  const { estimatedGasFee, estimatedGasFeeLoading } = useEstimatedGasFee({
     formValidForEstimate,
     suiClient,
     getSenderAddress,
@@ -366,7 +191,7 @@ export function useSendToken({
     decimals,
     recipientAddress,
     coinType,
-  ])
+  })
 
   const send = useCallback(async () => {
     if (!canSend) {
@@ -379,41 +204,15 @@ export function useSendToken({
     setTxDigest(null)
 
     try {
-      const senderAddress = await getSenderAddress()
-
-      if (!senderAddress) {
-        throw new Error('Wallet not ready to sign')
-      }
-
-      const amountInSmallestUnit = toSmallestUnit(amount, decimals)
-
-      const txBytes = await buildTransferTransactionBytes(
-        senderAddress,
-        recipientAddress,
-        amountInSmallestUnit,
+      const digest = await executeTokenTransfer({
+        amount,
         coinType,
+        decimals,
+        recipientAddress,
         suiClient,
-      )
-
-      const { bytes, signature } = await sign('TransactionData', txBytes)
-
-      log.debug('Transaction signed', {
-        bytesLength: bytes.length,
-        signatureLength: signature.length,
+        getSenderAddress,
+        sign,
       })
-
-      const result = await suiClient.core.executeTransaction({
-        transaction: txBytes,
-        signatures: [signature],
-      })
-
-      // @mysten/sui 2.x: discriminated union Transaction | FailedTransaction
-      if ('$kind' in result && result.$kind === 'FailedTransaction') {
-        throw new Error('Transaction failed')
-      }
-      const txResponse = (result as { Transaction: { digest?: string | null } })
-        .Transaction
-      const digest = txResponse?.digest ?? null
 
       log.info('Token transfer executed', {
         digest,
@@ -423,40 +222,8 @@ export function useSendToken({
       })
 
       setTxDigest(digest)
-
-      // Invalidate so token list refetches when user navigates back
-      queryClient.invalidateQueries({ queryKey: ['coin-balance'] })
-      queryClient.invalidateQueries({ queryKey: ['transactions'] })
-
-      // Refetch in background (type: "all" so inactive queries refresh too); don't block isLoading
-      void Promise.all([
-        queryClient.refetchQueries({
-          queryKey: ['coin-balance'],
-          type: 'all',
-        }),
-        queryClient.refetchQueries({
-          queryKey: ['transactions'],
-          type: 'all',
-        }),
-      ])
-
-      // Delayed refetch: GraphQL indexer often lags; refetch after 2s so cache has correct balance
-      const BALANCE_REFETCH_DELAY_MS = 2000
-      if (postTransferRefetchTimerRef.current != null) {
-        clearTimeout(postTransferRefetchTimerRef.current)
-        postTransferRefetchTimerRef.current = null
-      }
-      postTransferRefetchTimerRef.current = setTimeout(() => {
-        postTransferRefetchTimerRef.current = null
-        void queryClient.refetchQueries({
-          queryKey: ['coin-balance'],
-          type: 'all',
-        })
-        void queryClient.refetchQueries({
-          queryKey: ['transactions'],
-          type: 'all',
-        })
-      }, BALANCE_REFETCH_DELAY_MS)
+      refetchTransferQueries(queryClient)
+      scheduleDelayedTransferRefetch()
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to send token'
@@ -475,6 +242,7 @@ export function useSendToken({
     sign,
     suiClient,
     queryClient,
+    scheduleDelayedTransferRefetch,
   ])
 
   return {

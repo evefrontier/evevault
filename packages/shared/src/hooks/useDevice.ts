@@ -1,14 +1,12 @@
-import type { PublicKey } from '@mysten/sui/cryptography'
-import { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519'
-import { Secp256r1PublicKey } from '@mysten/sui/keypairs/secp256r1'
 import { useMemo } from 'react'
 import { useContextStore } from '#/stores/contextStore'
 import { useDeviceStore } from '#/stores/deviceStore'
-import { isLocalnetChain, isZkLoginSuiChain } from '#/types/networks'
-import { KEY_FLAG_SECP256R1 } from '#/types/stores'
-import { createLogger } from '#/utils/logger'
-
-const log = createLogger()
+import {
+  bindDeviceActions,
+  getCurrentDeviceData,
+  isPinConfigured,
+  reconstructEphemeralPublicKey,
+} from './useDevice.helpers'
 
 export const useDevice = () => {
   const {
@@ -27,14 +25,10 @@ export const useDevice = () => {
     lock,
   } = useDeviceStore()
 
-  const isPinSet = useMemo(() => {
-    return (
-      !!ephemeralKeyPairSecretKey &&
-      typeof ephemeralKeyPairSecretKey === 'object' &&
-      'iv' in ephemeralKeyPairSecretKey &&
-      'data' in ephemeralKeyPairSecretKey
-    )
-  }, [ephemeralKeyPairSecretKey])
+  const isPinSet = useMemo(
+    () => isPinConfigured(ephemeralKeyPairSecretKey),
+    [ephemeralKeyPairSecretKey],
+  )
 
   // Subscribe to chain changes reactively
   const { chain: currentChain } = useContextStore()
@@ -46,40 +40,28 @@ export const useDevice = () => {
 
   // Read device data directly from networkData instead of using getter functions
   // This ensures we react to changes in networkData and don't capture stale values
-  const maxEpoch = useMemo(() => {
-    if (isLocalnetChain(currentChain)) return localnet.maxEpoch
-    if (!isZkLoginSuiChain(currentChain) || !networkData) return null
-    return networkData[currentChain]?.maxEpoch ?? null
-  }, [currentChain, networkData, localnet.maxEpoch])
-  const maxEpochTimestampMs = useMemo(() => {
-    if (isLocalnetChain(currentChain)) return localnet.maxEpochTimestampMs
-    if (!isZkLoginSuiChain(currentChain) || !networkData) return null
-    return networkData[currentChain]?.maxEpochTimestampMs ?? null
-  }, [currentChain, networkData, localnet.maxEpochTimestampMs])
-  const nonce = useMemo(() => {
-    if (isLocalnetChain(currentChain)) return null
-    if (!isZkLoginSuiChain(currentChain) || !networkData) return null
-    return networkData[currentChain]?.nonce ?? null
-  }, [currentChain, networkData])
+  const { maxEpoch, maxEpochTimestampMs, nonce } = useMemo(
+    () => getCurrentDeviceData({ currentChain, networkData, localnet }),
+    [currentChain, networkData, localnet],
+  )
 
   // Reconstruct public key from bytes using the correct key type
-  const ephemeralPublicKey = useMemo((): PublicKey | null => {
-    if (!ephemeralPublicKeyBytes) return null
-
-    try {
-      const keyBytes = new Uint8Array(ephemeralPublicKeyBytes)
-
-      // Use the flag to determine key type, default to Ed25519 for extension
-      if (ephemeralPublicKeyFlag === KEY_FLAG_SECP256R1) {
-        return new Secp256r1PublicKey(keyBytes)
-      } else {
-        return new Ed25519PublicKey(keyBytes)
-      }
-    } catch (error) {
-      log.error('Failed to reconstruct public key:', error)
-      return null
-    }
-  }, [ephemeralPublicKeyBytes, ephemeralPublicKeyFlag])
+  const ephemeralPublicKey = useMemo(
+    () =>
+      reconstructEphemeralPublicKey(
+        ephemeralPublicKeyBytes,
+        ephemeralPublicKeyFlag,
+      ),
+    [ephemeralPublicKeyBytes, ephemeralPublicKeyFlag],
+  )
+  const actions = useMemo(
+    () =>
+      bindDeviceActions(currentChain, {
+        initialize,
+        getZkProof: getZkProofForChain,
+      }),
+    [currentChain, initialize, getZkProofForChain],
+  )
 
   return {
     isLocked,
@@ -93,10 +75,10 @@ export const useDevice = () => {
     nonce,
     loading,
     error,
-    initialize: (pin: string) => initialize(pin, currentChain),
+    initialize: actions.initialize,
     initializeForChain,
     rotateEphemeralKey,
-    getZkProof: () => getZkProofForChain(currentChain),
+    getZkProof: actions.getZkProof,
     unlock,
     lock,
   }

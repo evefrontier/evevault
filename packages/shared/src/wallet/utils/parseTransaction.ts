@@ -4,7 +4,7 @@ import type {
   TransactionBalanceChange,
   TransactionDirection,
 } from '#/types/components'
-import { SUI_COIN_TYPE } from '#/utils'
+import { isNonNullable, SUI_COIN_TYPE } from '#/utils'
 import { formatByDecimals } from '#/utils/format'
 import { createLogger } from '#/utils/logger'
 import type {
@@ -49,136 +49,213 @@ export async function parseGraphQLTransaction(
   userAddress: string,
   graphqlClient: SuiGraphQLClient,
 ): Promise<Transaction | null> {
+  const context = getTransactionContext(txNode)
+  const parsedTransaction =
+    context &&
+    ((await buildUserBalanceTransaction(context, userAddress, graphqlClient)) ??
+      (await buildOutgoingBalanceTransaction(
+        context,
+        userAddress,
+        graphqlClient,
+      )))
+
+  return parsedTransaction || null
+}
+
+type TransactionContext = {
+  digest: string
+  timestamp: number
+  balanceChanges: GraphQLBalanceChange[]
+}
+
+const getTransactionContext = (
+  txNode: GraphQLTransactionNode,
+): TransactionContext | null => {
   const { digest, effects } = txNode
+  const balanceChanges = effects?.balanceChanges?.nodes
+  return digest && effects && balanceChanges?.length
+    ? {
+        digest,
+        timestamp: effects.timestamp
+          ? new Date(effects.timestamp).getTime()
+          : Date.now(),
+        balanceChanges,
+      }
+    : null
+}
 
-  if (!digest || !effects?.balanceChanges?.nodes) {
-    return null
-  }
+const buildUserBalanceTransaction = async (
+  context: TransactionContext,
+  userAddress: string,
+  graphqlClient: SuiGraphQLClient,
+): Promise<Transaction | null> => {
+  const userChanges = getUserBalanceChanges(context.balanceChanges, userAddress)
+  const balanceChangeItems = await buildBalanceChangeItems(
+    userChanges,
+    graphqlClient,
+  )
+  const primary = getPrimaryUserChange(userChanges, balanceChangeItems)
 
-  const timestamp = effects.timestamp
-  const balanceChanges = effects.balanceChanges.nodes
+  return primary
+    ? {
+        digest: context.digest,
+        timestamp: context.timestamp,
+        direction: primary.direction,
+        counterparty: findCounterparty(
+          context.balanceChanges,
+          userAddress,
+          primary.direction,
+          primary.coinType,
+        ),
+        balanceChanges: balanceChangeItems,
+      }
+    : null
+}
 
-  if (balanceChanges.length === 0) {
-    return null
-  }
+const buildOutgoingBalanceTransaction = async (
+  context: TransactionContext,
+  userAddress: string,
+  graphqlClient: SuiGraphQLClient,
+): Promise<Transaction | null> => {
+  const outgoingChange = context.balanceChanges.find(isOutgoingChange)
+  const balanceChange = outgoingChange
+    ? await buildOutgoingBalanceChange(outgoingChange, graphqlClient)
+    : null
 
-  const ts = timestamp ? new Date(timestamp).getTime() : Date.now()
+  return balanceChange
+    ? {
+        digest: context.digest,
+        timestamp: context.timestamp,
+        direction: 'sent',
+        counterparty: findRecipientCounterparty(
+          context.balanceChanges,
+          userAddress,
+        ),
+        balanceChanges: [balanceChange],
+      }
+    : null
+}
 
-  const userChanges = balanceChanges.filter((bc) => {
+const getUserBalanceChanges = (
+  balanceChanges: GraphQLBalanceChange[],
+  userAddress: string,
+): GraphQLBalanceChange[] => {
+  return balanceChanges.filter((bc) => {
     const owner = bc.owner?.address
     return (
       owner?.toLowerCase() === userAddress.toLowerCase() && bc.amount != null
     )
   })
+}
 
-  if (userChanges.length > 0) {
-    const balanceChangeItems: TransactionBalanceChange[] = []
-
-    for (const userBalanceChange of userChanges) {
-      if (userBalanceChange.amount == null) continue
-      const amount = BigInt(userBalanceChange.amount)
-      const coinType = userBalanceChange.coinType?.repr ?? SUI_COIN_TYPE
-      const amountAbs = amount >= 0n ? amount : amount * -1n
-      const isDebit = amount < 0n
-
-      const metadata = await fetchCoinMetadata(graphqlClient, coinType)
-      const decimals = metadata?.decimals ?? 9
-      if (!metadata) {
-        log.warn('Falling back to default decimals for coin type', {
-          coinType,
-          rawAmount: amountAbs.toString(),
-          defaultDecimals: decimals,
-        })
-      }
-
-      balanceChangeItems.push({
-        amount: formatByDecimals(amountAbs.toString(), decimals),
-        tokenSymbol: metadata?.symbol ?? extractSymbolFromCoinType(coinType),
-        tokenName: metadata?.name ?? undefined,
-        coinType,
-        isDebit,
-      })
-    }
-
-    if (balanceChangeItems.length === 0) return null
-
-    const nonSuiUserChanges = userChanges.filter((change) => {
-      const ct = change.coinType?.repr ?? SUI_COIN_TYPE
-      return ct !== SUI_COIN_TYPE && change.amount != null
-    })
-    const primaryUserChange =
-      nonSuiUserChanges[0] ??
-      userChanges.find((change) => change.amount != null) ??
-      userChanges[0]
-    const primaryAmount =
-      primaryUserChange?.amount != null ? BigInt(primaryUserChange.amount) : 0n
-    const direction: TransactionDirection =
-      primaryAmount >= 0n ? 'received' : 'sent'
-    const primaryCoinType = primaryUserChange?.coinType?.repr ?? SUI_COIN_TYPE
-    const primary =
-      balanceChangeItems.find((bc) => bc.coinType === primaryCoinType) ??
-      balanceChangeItems.find((bc) => bc.coinType !== SUI_COIN_TYPE) ??
-      balanceChangeItems[0]
-    const counterparty = findCounterparty(
-      balanceChanges,
-      userAddress,
-      direction,
-      primary.coinType,
-    )
-
-    return {
-      digest,
-      timestamp: ts,
-      direction,
-      counterparty,
-      balanceChanges: balanceChangeItems,
-    }
+const buildBalanceChangeItems = async (
+  userChanges: GraphQLBalanceChange[],
+  graphqlClient: SuiGraphQLClient,
+): Promise<TransactionBalanceChange[]> => {
+  const items: TransactionBalanceChange[] = []
+  for (const change of userChanges) {
+    if (!hasAmount(change)) continue
+    items.push(await buildBalanceChangeItem(change, graphqlClient))
   }
+  return items.filter(Boolean)
+}
 
-  const outgoingChange = balanceChanges.find((bc) => {
-    if (!bc.amount) return false
-    return BigInt(bc.amount) < 0n
-  })
-
-  if (!outgoingChange?.amount) {
-    return null
-  }
-
-  const recipientChange = balanceChanges.find((bc) => {
-    if (!bc.amount) return false
-    const amount = BigInt(bc.amount)
-    if (amount <= 0n) return false
-    const ownerAddress = bc.owner?.address
-    return ownerAddress?.toLowerCase() !== userAddress.toLowerCase()
-  })
-  const counterparty = recipientChange?.owner?.address ?? 'System'
-
-  const amountAbs = BigInt(outgoingChange.amount) * -1n
-  const coinType = outgoingChange.coinType?.repr ?? SUI_COIN_TYPE
-
+const buildBalanceChangeItem = async (
+  change: GraphQLBalanceChange,
+  graphqlClient: SuiGraphQLClient,
+): Promise<TransactionBalanceChange> => {
+  const amount = BigInt(change.amount ?? '0')
+  const amountAbs = absBigInt(amount)
+  const coinType = getCoinType(change)
   const metadata = await fetchCoinMetadata(graphqlClient, coinType)
   const decimals = metadata?.decimals ?? 9
+  logMetadataFallback(metadata, coinType, amountAbs, decimals)
+
+  return {
+    amount: formatByDecimals(amountAbs.toString(), decimals),
+    tokenSymbol: metadata?.symbol ?? extractSymbolFromCoinType(coinType),
+    tokenName: metadata?.name ?? undefined,
+    coinType,
+    isDebit: amount < 0n,
+  }
+}
+
+const buildOutgoingBalanceChange = async (
+  outgoingChange: GraphQLBalanceChange,
+  graphqlClient: SuiGraphQLClient,
+): Promise<TransactionBalanceChange | null> => {
+  return outgoingChange.amount
+    ? buildBalanceChangeItem(outgoingChange, graphqlClient)
+    : null
+}
+
+const getPrimaryUserChange = (
+  userChanges: GraphQLBalanceChange[],
+  balanceChangeItems: TransactionBalanceChange[],
+): { direction: TransactionDirection; coinType: string } | null => {
+  const primaryUserChange =
+    userChanges.find(isNonSuiAmountChange) ?? userChanges.find(hasAmount)
+  const primaryAmount = BigInt(primaryUserChange?.amount ?? '0')
+  const primaryCoinType = getCoinType(primaryUserChange)
+  const primary =
+    balanceChangeItems.find((bc) => bc.coinType === primaryCoinType) ??
+    balanceChangeItems.find((bc) => bc.coinType !== SUI_COIN_TYPE) ??
+    balanceChangeItems[0]
+
+  return primary
+    ? {
+        direction: primaryAmount >= 0n ? 'received' : 'sent',
+        coinType: primary.coinType,
+      }
+    : null
+}
+
+const findRecipientCounterparty = (
+  balanceChanges: GraphQLBalanceChange[],
+  userAddress: string,
+): string => {
+  const recipientChange = balanceChanges.find((bc) => {
+    const ownerAddress = bc.owner?.address
+    return (
+      Boolean(bc.amount) &&
+      BigInt(bc.amount ?? '0') > 0n &&
+      ownerAddress?.toLowerCase() !== userAddress.toLowerCase()
+    )
+  })
+  return recipientChange?.owner?.address ?? 'System'
+}
+
+const isOutgoingChange = (bc: GraphQLBalanceChange): boolean => {
+  return Boolean(bc.amount) && BigInt(bc.amount ?? '0') < 0n
+}
+
+const isNonSuiAmountChange = (change: GraphQLBalanceChange): boolean => {
+  return getCoinType(change) !== SUI_COIN_TYPE && hasAmount(change)
+}
+
+const hasAmount = (change: GraphQLBalanceChange): boolean => {
+  return isNonNullable(change.amount)
+}
+
+const getCoinType = (change?: GraphQLBalanceChange): string => {
+  return change?.coinType?.repr ?? SUI_COIN_TYPE
+}
+
+const absBigInt = (amount: bigint): bigint => {
+  return amount >= 0n ? amount : amount * -1n
+}
+
+const logMetadataFallback = (
+  metadata: unknown,
+  coinType: string,
+  rawAmount: bigint,
+  defaultDecimals: number,
+) => {
   if (!metadata) {
     log.warn('Falling back to default decimals for coin type', {
       coinType,
-      rawAmount: amountAbs.toString(),
-      defaultDecimals: decimals,
+      rawAmount: rawAmount.toString(),
+      defaultDecimals,
     })
-  }
-
-  return {
-    digest,
-    timestamp: ts,
-    direction: 'sent',
-    counterparty,
-    balanceChanges: [
-      {
-        amount: formatByDecimals(amountAbs.toString(), decimals),
-        tokenSymbol: metadata?.symbol ?? extractSymbolFromCoinType(coinType),
-        tokenName: metadata?.name ?? undefined,
-        coinType,
-        isDebit: true,
-      },
-    ],
   }
 }
