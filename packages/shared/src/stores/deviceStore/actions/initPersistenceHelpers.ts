@@ -14,13 +14,13 @@ import { DEVICE_STORAGE_KEY } from '#/utils/storageKeys'
 import { setPublicKeyState } from './initStateHelpers'
 import type { SetDeviceState } from './types'
 
-const log = createLogger()
-
 type ExtensionRehydrationResult = {
   rehydrated: boolean
   storedSecretKey: StoredSecretKey
   jwtRandomness: string | null
 }
+
+const log = createLogger()
 
 /** Reads the device store snapshot from chrome.storage.local; handles both legacy string-serialized and current object formats. */
 export const readPersistedDeviceStoreState =

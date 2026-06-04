@@ -7,9 +7,9 @@ import { isLocalnetChain, isZkLoginSuiChain } from '#/types/networks'
 import { KEY_FLAG_SECP256R1 } from '#/types/stores'
 import { createLogger } from '#/utils/logger'
 
-const log = createLogger()
-
 type LocalnetData = DeviceState['localnet']
+
+const log = createLogger()
 
 /** A configured PIN produces an encrypted key object with `{ iv, data }`; a raw/null key means no PIN was set. */
 export const isPinConfigured = (secretKey: StoredSecretKey): boolean => {

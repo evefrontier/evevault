@@ -2,8 +2,6 @@ import type { SuiGrpcClient } from '@mysten/sui/grpc'
 import { Transaction } from '@mysten/sui/transactions'
 import { createLogger, SUI_COIN_TYPE, toSmallestUnit } from '#/utils'
 
-const log = createLogger()
-
 type CoinWithBalance = { balance: string; objectId: string }
 
 type ExecuteTransferParams = {
@@ -18,6 +16,8 @@ type ExecuteTransferParams = {
     bytes: Uint8Array,
   ) => Promise<{ bytes: string; signature: string }>
 }
+
+const log = createLogger()
 
 /** SUI uses the gas coin directly (splitCoins from gas); other tokens require fetching coin objects and potentially merging them. */
 export async function buildTransferTransactionBytes(

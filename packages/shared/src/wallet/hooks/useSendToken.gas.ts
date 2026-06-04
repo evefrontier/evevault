@@ -3,9 +3,6 @@ import { useEffect, useRef, useState } from 'react'
 import { createLogger, formatMistToSui, toSmallestUnit } from '#/utils'
 import { buildTransferTransactionBytes } from './useSendToken.transaction'
 
-const log = createLogger()
-const ESTIMATE_DEBOUNCE_MS = 600
-
 type GasEstimateParams = {
   formValidForEstimate: boolean
   suiClient: SuiGrpcClient
@@ -41,6 +38,9 @@ type EstimateGasFeeTaskParams = EstimateGasMistParams & {
   setEstimatedGasFee: (value: string | null) => void
   setEstimatedGasFeeLoading: (value: boolean) => void
 }
+
+const log = createLogger()
+const ESTIMATE_DEBOUNCE_MS = 600
 
 /** Debounces estimation to avoid firing a simulation on every keystroke; uses a runId to discard stale results from overlapping requests. */
 export const useEstimatedGasFee = ({

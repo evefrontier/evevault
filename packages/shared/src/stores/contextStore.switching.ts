@@ -3,14 +3,14 @@ import type { ContextState, NetworkSwitchResult } from '#/types'
 import { isLocalnetChain, isZkLoginSuiChain } from '#/types/networks'
 import { createLogger, isExtension } from '#/utils'
 
-const log = createLogger()
-
 type SetContextState = (
   partial:
     | Partial<ContextState>
     | ((state: ContextState) => Partial<ContextState> | ContextState),
 ) => void
 type GetContextState = () => ContextState
+
+const log = createLogger()
 
 const SWITCH_SUCCESS: NetworkSwitchResult = {
   success: true,

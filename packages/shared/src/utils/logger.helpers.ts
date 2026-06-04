@@ -6,6 +6,11 @@ import type {
   StackFrame,
 } from './logger.types'
 
+type CreateLoggerFnOptions = {
+  resolvedScope?: string
+  level: LogLevel
+}
+
 const LOG_LEVELS: LogLevel[] = ['silent', 'error', 'warn', 'info', 'debug']
 const LOGGER_SOURCE_HINTS = [
   'logger.helpers.ts',
@@ -21,11 +26,6 @@ const MODE_LOG_LEVELS: Partial<Record<string, LogLevel>> = {
 }
 const PATH_PREFIX_PATTERN = /^webpack-internal:\/\/\/|^vite:\/\/|^file:\/\//
 const URL_SUFFIX_PATTERN = /[?#]/
-
-type CreateLoggerFnOptions = {
-  resolvedScope?: string
-  level: LogLevel
-}
 
 /** Vite env vars (`VITE_LOG_LEVEL`, `MODE`) take priority over Node.js `process.env` so browser and Node environments both work. */
 export const resolveEnvLogLevel = (): LogLevel => {

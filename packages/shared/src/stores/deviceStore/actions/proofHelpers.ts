@@ -10,8 +10,6 @@ import { createLogger } from '#/utils/logger'
 import { fetchZkProof } from '#/wallet/zkProof'
 import type { GetDeviceState, SetDeviceState } from './types'
 
-const log = createLogger()
-
 type ZkProofResult = ZkProofResponse | { error: string }
 
 type ProofInput = {
@@ -25,6 +23,8 @@ type ProofInput = {
   >
   vendedIdToken: string
 }
+
+const log = createLogger()
 
 /** Returns cached proof if epoch is still valid; generates a new one otherwise. Localnet has no zkLogin proof flow. */
 export const getZkProofForChain = async (

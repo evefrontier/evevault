@@ -16,14 +16,14 @@ import {
 } from './initStateHelpers'
 import type { GetDeviceState, SetDeviceState } from './types'
 
-const log = createLogger()
-
 type InitActionParams = {
   pin: string
   currentChain: SuiChain
   set: SetDeviceState
   get: GetDeviceState
 }
+
+const log = createLogger()
 
 /** Entry point for device init: validates PIN, initializes the vault service, then delegates to platform-specific logic. */
 export const initializeDeviceStore = async ({
