@@ -2,6 +2,7 @@ import type { PublicKey } from '@mysten/sui/cryptography'
 import type { SuiChain } from '@mysten/wallet-standard'
 import type { DeviceState, NetworkDataEntry, StoredSecretKey } from '#/types'
 import { isLocalnetChain, isZkLoginSuiChain } from '#/types/networks'
+import { isPresent } from '#/utils'
 import type { SetDeviceState } from './types'
 
 type ChainDeviceData = Pick<
@@ -62,10 +63,6 @@ export const hasChainDeviceData = (data?: ChainDeviceData): boolean => {
       isPresent(data?.maxEpoch) &&
       !isDeviceDataExpired(data),
   )
-}
-
-const isPresent = <T>(value: T | null | undefined): value is T => {
-  return value !== null && value !== undefined
 }
 
 /** Localnet uses `'localnet'` as a sentinel nonce — it never goes through zkLogin proof generation. */

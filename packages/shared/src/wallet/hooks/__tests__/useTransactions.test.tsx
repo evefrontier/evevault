@@ -38,6 +38,7 @@ vi.mock('#/utils', () => ({
     warn: vi.fn(),
     error: vi.fn(),
   })),
+  isPresent: (value: unknown) => value !== null && value !== undefined,
   SUI_COIN_TYPE: '0x2::sui::SUI',
   isExtension: vi.fn(() => false),
   isWeb: vi.fn(() => true),

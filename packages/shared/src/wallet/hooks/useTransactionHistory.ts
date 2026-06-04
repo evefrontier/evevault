@@ -10,7 +10,7 @@ import { SUI_TESTNET_CHAIN } from '@mysten/wallet-standard'
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { createSuiGraphQLClient } from '#/sui/graphqlClient'
-import { createLogger } from '#/utils'
+import { createLogger, isPresent } from '#/utils'
 import { TRANSACTIONS_QUERY } from '#/wallet/queries/transactions'
 import type {
   GraphQLTransactionNode,
@@ -97,9 +97,7 @@ export function useTransactionHistory({
       )
 
       const transactions = parsed
-        .filter(
-          (tx): tx is import('#/types/components').Transaction => tx !== null,
-        )
+        .filter(isPresent)
         .sort((a, b) => b.timestamp - a.timestamp)
 
       log.debug('Transactions fetched successfully via GraphQL', {
