@@ -14,7 +14,7 @@ const IDENTICON_PATTERNS = [
   ['0100', '1110', '0111', '0001'],
   ['1000', '1111', '0010', '0101'],
   ['0110', '1101', '0010', '1001'],
-  ['0100', '1110', '0111', '0001'],
+  ['1011', '0111', '1100', '0010'],
 ] as const satisfies readonly IdenticonPattern[]
 
 const IDENTICON_CELLS: readonly IdenticonCell[] = [

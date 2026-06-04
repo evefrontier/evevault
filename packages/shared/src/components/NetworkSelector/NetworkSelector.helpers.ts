@@ -21,7 +21,7 @@ type UseNetworkSelectionParams = Pick<
   setIsProcessing: (isProcessing: boolean) => void
 }
 
-function notifyReauth(
+function notifyRequiresReauth(
   targetChain: SuiChain,
   params: UseNetworkSelectionParams,
 ) {
@@ -35,7 +35,7 @@ async function handleSuccessfulNetworkSwitch(
   params: UseNetworkSelectionParams,
 ) {
   if (result.requiresReauth) {
-    notifyReauth(targetChain, params)
+    notifyRequiresReauth(targetChain, params)
     return
   }
 

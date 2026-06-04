@@ -60,13 +60,16 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
     isError,
     isLoading,
   })
+  const email = typeof user.profile.email === 'string' ? user.profile.email : ''
+  const suiAddress =
+    typeof user.profile.sui_address === 'string' ? user.profile.sui_address : ''
 
   return (
     <div className="flex flex-col gap-4 w-full">
       <TransactionsHeader
-        email={user?.profile?.email ?? ''}
+        email={email}
         onBack={onBack}
-        suiAddress={user?.profile?.sui_address ?? ''}
+        suiAddress={suiAddress}
       />
 
       <div className="flex flex-col items-start p-4 px-2 gap-4 w-full min-h-[207px] bg-crude-dark border border-quantum-60">

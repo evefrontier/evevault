@@ -18,4 +18,13 @@ describe('getIdenticon', () => {
 
     expect(wrapped.innerHTML).toBe(first.innerHTML)
   })
+
+  it('renders distinct identicons for the available indexes', () => {
+    const renderedIdenticons = [0, 1, 2, 3].map((index) => {
+      const { container } = render(getIdenticon(index))
+      return container.innerHTML
+    })
+
+    expect(new Set(renderedIdenticons).size).toBe(4)
+  })
 })
