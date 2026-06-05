@@ -28,15 +28,50 @@ vi.mock('#/wallet/signWithIntent', () => ({
   signWithIntent: vi.fn(),
 }))
 
-const mockApplyZKProof = vi.fn()
-const mockProcessSignature = vi.fn()
+const {
+  mockApplyZKProof,
+  mockIsPartialZKLoginSignature,
+  mockProcessSignature,
+} = vi.hoisted(() => ({
+  mockApplyZKProof: vi.fn(),
+  mockIsPartialZKLoginSignature: vi.fn((_value: unknown) => true),
+  mockProcessSignature: vi.fn(),
+}))
 
 vi.mock('@evefrontier/wallet-core/crypto', () => ({
-  isPartialZKLoginSignature: vi.fn(() => true),
-  ZKProofHandler: class {
-    applyZKProof = mockApplyZKProof
-    processSignature = mockProcessSignature
-  },
+  createZkLoginSignature: vi.fn(
+    ({ maxEpoch, partialZkLoginSignature, claims, userSignature, bytes }) => {
+      if (!mockIsPartialZKLoginSignature(partialZkLoginSignature)) {
+        throw new Error('ZK proof data not found or invalid')
+      }
+      mockApplyZKProof({
+        maxEpoch: Number(maxEpoch),
+        partialZkLoginSignature,
+        userSalt: claims.salt,
+        tokenClaimSub: claims.sub,
+        tokenClaimAud: claims.aud,
+      })
+      return mockProcessSignature({ signature: userSignature, bytes }).signature
+    },
+  ),
+  isPartialZKLoginSignature: mockIsPartialZKLoginSignature,
+  loadZkProof: vi.fn(async (getZkProof) => {
+    const zkProof = await getZkProof()
+    if (!zkProof) {
+      throw new Error('Failed to get ZK proof')
+    }
+    if (zkProof.error) {
+      throw new Error(
+        typeof zkProof.error === 'string'
+          ? zkProof.error
+          : (zkProof.error.message ?? 'Failed to get ZK proof'),
+      )
+    }
+    if (!('data' in zkProof) || !mockIsPartialZKLoginSignature(zkProof.data)) {
+      throw new Error('ZK proof data not found or invalid')
+    }
+    return zkProof.data
+  }),
 }))
 
 import { isPartialZKLoginSignature } from '@evefrontier/wallet-core/crypto'
@@ -77,7 +112,7 @@ const earlyGuardTests = () => {
   it('throws when user is null', async () => {
     await expect(
       zkSignAny('PersonalMessage', new Uint8Array([1]), {
-        user: null,
+        user: null as never,
         getZkProof: vi.fn(),
       }),
     ).rejects.toThrow('User not found')

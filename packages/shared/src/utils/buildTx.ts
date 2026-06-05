@@ -1,14 +1,5 @@
-import type { SuiGrpcClient } from '@mysten/sui/grpc'
-import type { Transaction } from '@mysten/sui/transactions'
+import { buildTransactionBytes } from '@evefrontier/wallet-core/utils'
 
 // Sets the sender of the tx using useWalletSigningContext
 // Then builds the transaction bytes
-export const buildTx = async (
-  tx: Transaction,
-  sender: string,
-  suiClient: SuiGrpcClient,
-): Promise<Uint8Array> => {
-  tx.setSender(sender)
-  const txb = await tx.build({ client: suiClient })
-  return txb
-}
+export const buildTx = buildTransactionBytes

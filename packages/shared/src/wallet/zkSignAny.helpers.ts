@@ -1,6 +1,6 @@
 import {
-  isPartialZKLoginSignature,
-  ZKProofHandler,
+  createZkLoginSignature,
+  loadZkProof,
 } from '@evefrontier/wallet-core/crypto'
 import type { IntentScope } from '@mysten/sui/cryptography'
 import { ephKeyService } from '#/services/vaultService'
@@ -37,21 +37,6 @@ export const requireEphemeralPublicKey = () => {
   return ephemeralPublicKey
 }
 
-/** Validates both the error field and the proof structure separately — a response can have no error but still contain invalid data. */
-export const loadZkProof = async (
-  getZkProof: ZkSignAnyParams['getZkProof'],
-) => {
-  const zkProof = await getZkProof()
-  const error = getProofErrorMessage(zkProof)
-  if (error) {
-    throw new Error(error)
-  }
-  if (!('data' in zkProof) || !isPartialZKLoginSignature(zkProof.data)) {
-    throw new Error('ZK proof data not found or invalid')
-  }
-  return zkProof
-}
-
 export const requireMaxEpoch = (): string => {
   const chain = useContextStore.getState().chain
   const maxEpoch = useDeviceStore.getState().getMaxEpoch(chain)
@@ -85,50 +70,6 @@ export const requireZkLoginClaims = (
   sub: requireProfileField(user.profile?.sub, 'sub'),
   aud: requireProfileField(user.profile?.aud, 'aud'),
 })
-
-/** Assembles the final zkLogin signature format by applying the partial ZK proof to the ephemeral signature. */
-export const createZkLoginSignature = ({
-  maxEpoch,
-  partialZkLoginSignature,
-  claims,
-  userSignature,
-  bytes,
-}: {
-  maxEpoch: string
-  partialZkLoginSignature: unknown
-  claims: ZkLoginClaims
-  userSignature: string
-  bytes: string
-}): string => {
-  if (!isPartialZKLoginSignature(partialZkLoginSignature)) {
-    throw new Error('ZK proof data not found or invalid')
-  }
-
-  const zkProofHandler = new ZKProofHandler()
-  zkProofHandler.applyZKProof({
-    maxEpoch: parseInt(maxEpoch, 10),
-    partialZkLoginSignature,
-    userSalt: claims.salt,
-    tokenClaimSub: claims.sub,
-    tokenClaimAud: claims.aud,
-  })
-  return zkProofHandler.processSignature({ signature: userSignature, bytes })
-    .signature
-}
-
-const getProofErrorMessage = (
-  zkProof: Awaited<ReturnType<ZkSignAnyParams['getZkProof']>>,
-): string | null => {
-  if (!zkProof) {
-    return 'Failed to get ZK proof'
-  }
-  if (!zkProof.error) {
-    return null
-  }
-  return typeof zkProof.error === 'string'
-    ? zkProof.error
-    : (zkProof.error.message ?? 'Failed to get ZK proof')
-}
 
 const signWithWebEphemeralKey = async (
   scope: IntentScope,
@@ -180,3 +121,5 @@ const requireProfileField = (value: unknown, field: string): string => {
   }
   return value
 }
+
+export { createZkLoginSignature, loadZkProof }

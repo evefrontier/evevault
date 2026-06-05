@@ -39,7 +39,7 @@ export const zkSignAny = async (
   log.info('Combining proof and signature to create zkLogin signature')
   const zkSignature = createZkLoginSignature({
     maxEpoch,
-    partialZkLoginSignature: zkProof.data,
+    partialZkLoginSignature: zkProof,
     claims: requireZkLoginClaims(user),
     userSignature,
     bytes,

@@ -73,18 +73,21 @@ describe('signWithIntent', () => {
     })
   })
 
-  it("wraps keypair errors as 'Error signing message'", async () => {
+  it('propagates keypair signing errors', async () => {
     keypair = makeMockKeypair({
       signPersonalMessage: vi.fn().mockRejectedValue(new Error('crypto fail')),
     })
 
     await expect(
       signWithIntent(MSG, 'PersonalMessage', { sui_address: ADDR, keypair }),
-    ).rejects.toThrow('Error signing message')
+    ).rejects.toThrow('crypto fail')
   })
 
   it('routes RawBytes scope to signPersonalMessage', async () => {
-    await signWithIntent(MSG, 'RawBytes', { sui_address: ADDR, keypair })
+    await signWithIntent(MSG, 'RawBytes' as never, {
+      sui_address: ADDR,
+      keypair,
+    })
     expect(keypair.signPersonalMessage).toHaveBeenCalled()
   })
 
