@@ -393,6 +393,11 @@ export interface Transaction {
   balanceChanges: TransactionBalanceChange[]
 }
 
+export type TransactionStatusMessage = {
+  color: 'error' | 'grey-neutral'
+  text: string
+}
+
 export interface TransactionsScreenProps {
   user: User
   chain: string

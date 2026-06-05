@@ -1,16 +1,14 @@
-import { SUI_LOCALNET_CHAIN, type SuiChain } from '@mysten/wallet-standard'
 import type React from 'react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Dropdown } from '#/components/Dropdown'
-import Icon from '#/components/Icon'
-import Text from '#/components/Text'
+import { useMemo, useRef, useState } from 'react'
 import { useContext } from '#/hooks'
 import type { NetworkSelectorProps } from '#/types'
-import { getAvailableNetworks } from '#/types'
-import { createLogger, isExtension } from '#/utils'
 import './NetworkSelector.css'
-
-const log = createLogger()
+import {
+  useAvailableNetworks,
+  useNetworkSelection,
+  useValidNetwork,
+} from './NetworkSelector.helpers'
+import { NetworkMenu, NetworkTrigger } from './NetworkSelector.parts'
 
 export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
   chain,
@@ -26,58 +24,20 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
   const [isProcessing, setIsProcessing] = useState(false)
   const triggerRef = useRef<HTMLButtonElement>(null)
 
-  const isExtensionContext = isExtension()
+  const { availableNetworks, isExtensionContext } =
+    useAvailableNetworks(devMode)
+  useValidNetwork({ availableNetworks, chain, forceSetChain })
 
-  const availableNetworks = useMemo(
-    () => getAvailableNetworks(devMode, isExtensionContext),
-    [devMode, isExtensionContext],
-  )
-
-  // If the persisted chain is no longer in availableNetworks (e.g. localnet persisted
-  // but dev mode was toggled off), reset to the first available network.
-  useEffect(() => {
-    if (!availableNetworks.find((n) => n.chain === chain)) {
-      forceSetChain(availableNetworks[0].chain)
-    }
-  }, [availableNetworks, chain, forceSetChain])
-
-  const handleNetworkSelect = useCallback(
-    async (targetChain: SuiChain) => {
-      if (targetChain === chain) {
-        setIsOpen(false)
-        return
-      }
-
-      setIsOpen(false)
-      setIsProcessing(true)
-
-      try {
-        const result = await setChain(targetChain)
-
-        if (!result.success) {
-          log.error('Failed to switch network')
-        } else if (result.requiresReauth) {
-          onNetworkSwitchStart?.(chain, targetChain)
-          onRequiresReauth?.(targetChain)
-        } else if (targetChain === SUI_LOCALNET_CHAIN && isExtensionContext) {
-          await onLocalnetSelected?.()
-        }
-        setIsProcessing(false)
-      } catch (error) {
-        log.error('Failed to switch network', error)
-      } finally {
-        setIsProcessing(false)
-      }
-    },
-    [
-      chain,
-      setChain,
-      onNetworkSwitchStart,
-      onRequiresReauth,
-      onLocalnetSelected,
-      isExtensionContext,
-    ],
-  )
+  const handleNetworkSelect = useNetworkSelection({
+    chain,
+    isExtensionContext,
+    onLocalnetSelected,
+    onNetworkSwitchStart,
+    onRequiresReauth,
+    setChain,
+    setIsOpen,
+    setIsProcessing,
+  })
 
   const currentNetwork = useMemo(
     () =>
@@ -86,6 +46,9 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
   )
 
   const isDisabled = loading || isProcessing
+  const handleToggle = () => {
+    if (!isDisabled) setIsOpen(!isOpen)
+  }
 
   return (
     <div
@@ -93,82 +56,27 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
         isExtensionContext ? 'dropdown-selector--extension' : ''
       } ${className}`}
     >
-      {compact ? (
-        <button
-          ref={triggerRef}
-          type="button"
-          className="network-selector__badge"
-          onClick={() => !isDisabled && setIsOpen(!isOpen)}
-          disabled={isDisabled}
-        >
-          <Text size="small" variant="bold" color="neutral">
-            {currentNetwork.shortLabel}
-          </Text>
-        </button>
-      ) : (
-        <button
-          ref={triggerRef}
-          type="button"
-          className="dropdown-selector__trigger"
-          onClick={() => !isDisabled && setIsOpen(!isOpen)}
-          disabled={isDisabled}
-        >
-          <Icon name="Network" color="quantum" />
-          <div className="flex flex-col gap-0.5">
-            <Text
-              className="text-start"
-              variant="label-small"
-              color="neutral-50"
-              size="small"
-            >
-              NETWORK
-            </Text>
-            <Text variant="label-medium" size="medium">
-              {chain.toUpperCase()}
-            </Text>
-          </div>
-          <Icon
-            name="ChevronArrowDown"
-            width={16}
-            height={16}
-            color="neutral"
-            className={`dropdown-selector__chevron ${
-              isOpen ? 'dropdown-selector__chevron--open' : ''
-            }`}
-          />
-        </button>
-      )}
+      <NetworkTrigger
+        chain={chain}
+        compact={compact}
+        currentNetwork={currentNetwork}
+        disabled={isDisabled}
+        isOpen={isOpen}
+        onToggle={handleToggle}
+        triggerRef={triggerRef}
+      />
 
-      {isOpen && (
-        <Dropdown
-          onClickOutside={() => setIsOpen(false)}
+      {isOpen ? (
+        <NetworkMenu
+          availableNetworks={availableNetworks}
+          chain={chain}
+          disabled={isDisabled}
+          isExtensionContext={isExtensionContext}
+          onClose={() => setIsOpen(false)}
+          onNetworkSelect={handleNetworkSelect}
           triggerRef={triggerRef}
-          placement={isExtensionContext ? 'top' : 'bottom'}
-        >
-          {availableNetworks.map((network) => (
-            <button
-              key={network.chain}
-              className={`dropdown__item ${
-                network.chain === chain ? 'dropdown__item--active' : ''
-              }`}
-              onClick={() => handleNetworkSelect(network.chain)}
-              disabled={isDisabled}
-              type="button"
-            >
-              <Text
-                size="medium"
-                variant={network.chain === chain ? 'bold' : 'regular'}
-                color={network.chain === chain ? 'quantum' : 'neutral'}
-              >
-                {network.label}
-              </Text>
-              {network.chain === chain && (
-                <span className="dropdown__check">✓</span>
-              )}
-            </button>
-          ))}
-        </Dropdown>
-      )}
+        />
+      ) : null}
     </div>
   )
 }
