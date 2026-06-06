@@ -1,7 +1,7 @@
+import { buildTransactionBytes } from '@evefrontier/wallet-core/utils'
 import { describe, expect, it, vi } from 'vitest'
-import { buildTx } from '#/utils/buildTx'
 
-describe('buildTx', () => {
+describe('buildTransactionBytes', () => {
   it('sets sender before building with the provided Sui client', async () => {
     const bytes = new Uint8Array([1, 2, 3])
     const callOrder: string[] = []
@@ -17,7 +17,7 @@ describe('buildTx', () => {
     const suiClient = { id: 'sui-client' }
 
     await expect(
-      buildTx(tx as never, '0xabc', suiClient as never),
+      buildTransactionBytes(tx as never, '0xabc', suiClient as never),
     ).resolves.toBe(bytes)
 
     expect(tx.setSender).toHaveBeenCalledWith('0xabc')
@@ -32,7 +32,9 @@ describe('buildTx', () => {
       build: vi.fn().mockRejectedValue(error),
     }
 
-    await expect(buildTx(tx as never, '0xabc', {} as never)).rejects.toBe(error)
+    await expect(
+      buildTransactionBytes(tx as never, '0xabc', {} as never),
+    ).rejects.toBe(error)
     expect(tx.setSender).toHaveBeenCalledWith('0xabc')
   })
 
@@ -46,7 +48,7 @@ describe('buildTx', () => {
       build: vi.fn().mockResolvedValue(bytes),
     }
 
-    await buildTx(tx as never, '0xwallet_address', {} as never)
+    await buildTransactionBytes(tx as never, '0xwallet_address', {} as never)
 
     expect(internalSender).toBe('0xwallet_address')
     expect(tx.setSender).toHaveBeenCalledWith('0xwallet_address')

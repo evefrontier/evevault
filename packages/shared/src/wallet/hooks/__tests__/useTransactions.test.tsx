@@ -1,3 +1,4 @@
+import { getEveCoinType, TenantId } from '@evefrontier/wallet-core/definitions'
 import { SUI_DEVNET_CHAIN } from '@mysten/wallet-standard'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
@@ -248,8 +249,7 @@ describe('useTransactionHistory hook (GraphQL)', () => {
   })
 
   it('derives direction from primary (non-SUI) change when user has multiple balance changes (e.g. incoming token + gas)', async () => {
-    const eveCoinType =
-      '0x59d7bb2e0feffb90cb2446fb97c2ce7d4bd24d2fb98939d6cb6c3940110a0de0::EVE::EVE'
+    const eveCoinType = getEveCoinType(TenantId.STILLNESS)
     const mockResponse = createMockGraphQLResponse([
       {
         digest: 'tx-multi',

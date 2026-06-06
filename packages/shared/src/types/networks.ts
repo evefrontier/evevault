@@ -1,4 +1,4 @@
-import { TenantId } from '@evefrontier/wallet-core/definitions'
+import { getEveCoinType, TenantId } from '@evefrontier/wallet-core/definitions'
 import {
   SUI_DEVNET_CHAIN,
   SUI_LOCALNET_CHAIN,
@@ -7,7 +7,6 @@ import {
   type SuiChain,
 } from '@mysten/wallet-standard'
 import { SUI_COIN_TYPE } from '#/utils/constants'
-import { getEveCoinType } from '#/wallet/eveToken'
 
 export function isLocalnetChain(chain: SuiChain | string | null | undefined) {
   return chain === SUI_LOCALNET_CHAIN

@@ -1,8 +1,8 @@
+import { isEveCoinType } from '@evefrontier/wallet-core/definitions'
 import { isValidSuiAddress } from '@mysten/sui/utils'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useMemo, useState } from 'react'
 import { createLogger, GAS_FEE_WARNING_MESSAGE, SUI_COIN_TYPE } from '#/utils'
-import { isEveCoinType } from '#/wallet/eveToken'
 import { useBalance } from './useBalance'
 import {
   buildValidationErrors,

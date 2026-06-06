@@ -83,7 +83,7 @@ vi.mock('@mysten/sui/transactions', () => {
   }
 })
 
-import { TenantId } from '@evefrontier/wallet-core/definitions'
+import { getEveCoinType, TenantId } from '@evefrontier/wallet-core/definitions'
 // Import after mocks
 // Using workspace aliases in test files due to Vite resolution limitations with relative imports
 import { getUserForNetwork, useAuth } from '#/auth'
@@ -91,7 +91,6 @@ import { useDevice } from '#/hooks/useDevice'
 import { useContextStore } from '#/stores/contextStore'
 import { createSuiClient } from '#/sui'
 import { createMockUser } from '#/testing'
-import { getEveCoinType } from '#/wallet/eveToken'
 import { useBalance } from '#/wallet/hooks/useBalance'
 import { useSendToken } from '#/wallet/hooks/useSendToken'
 import { useWalletSigningContext } from '#/wallet/hooks/useWalletSigningContext'

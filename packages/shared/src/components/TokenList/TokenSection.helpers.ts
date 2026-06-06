@@ -1,3 +1,7 @@
+import {
+  getEveCoinType,
+  isEveCoinType,
+} from '@evefrontier/wallet-core/definitions'
 import type { SuiChain } from '@mysten/wallet-standard'
 import type { QueryClient } from '@tanstack/react-query'
 import type React from 'react'
@@ -5,7 +9,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useContext } from '#/hooks'
 import { getDefaultTokensForChain } from '#/types/networks'
 import { createLogger } from '#/utils'
-import { getEveCoinType, isEveCoinType } from '#/wallet/eveToken'
 
 const SCRAMBLE_INTERVAL_MS = 200
 const REFRESH_TIMEOUT_MS = 10000

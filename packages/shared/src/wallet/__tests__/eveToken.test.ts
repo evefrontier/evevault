@@ -1,23 +1,30 @@
 import { getEveCoinType, TenantId } from '@evefrontier/wallet-core/definitions'
-import { EVE_PACKAGE_ID_BY_TENANT } from '@evefrontier/wallet-core/utils'
 import { describe, expect, it } from 'vitest'
-import { isEveCoinType } from '#/wallet/eveToken'
+
+const expectedEveCoinTypes = {
+  [TenantId.TAUCETI]:
+    '0x6407060579895a8b30f7d30d2447046eb80ecc23f0c9acde09222b2a505583c9::EVE::EVE',
+  [TenantId.TESSERACT]:
+    '0x6407060579895a8b30f7d30d2447046eb80ecc23f0c9acde09222b2a505583c9::EVE::EVE',
+  [TenantId.TETRA]:
+    '0x6407060579895a8b30f7d30d2447046eb80ecc23f0c9acde09222b2a505583c9::EVE::EVE',
+  [TenantId.TIAKI]:
+    '0x6407060579895a8b30f7d30d2447046eb80ecc23f0c9acde09222b2a505583c9::EVE::EVE',
+  [TenantId.UTOPIA]:
+    '0xf0446b93345c1118f21239d7ac58fb82d005219b2016e100f074e4d17162a465::EVE::EVE',
+  [TenantId.STILLNESS]:
+    '0x2a66a89b5a735738ffa4423ac024d23571326163f324f9051557617319e59d60::EVE::EVE',
+} satisfies Record<TenantId, string>
 
 describe('eveToken', () => {
   describe('getEveCoinType', () => {
-    it('returns coin type in format packageId::EVE::EVE for each tenant', () => {
-      const tenants = [
-        TenantId.TAUCETI,
-        TenantId.TESSERACT,
-        TenantId.TETRA,
-        TenantId.TIAKI,
-        TenantId.UTOPIA,
-        TenantId.STILLNESS,
-      ] as const
-      for (const tenantId of tenants) {
+    it('returns the expected coin type for each tenant', () => {
+      for (const [tenantId, expectedCoinType] of Object.entries(
+        expectedEveCoinTypes,
+      ) as [TenantId, string][]) {
         const coinType = getEveCoinType(tenantId)
         expect(coinType).toMatch(/^0x[a-f0-9]+::EVE::EVE$/)
-        expect(coinType).toBe(`${EVE_PACKAGE_ID_BY_TENANT[tenantId]}::EVE::EVE`)
+        expect(coinType).toBe(expectedCoinType)
       }
     })
 
@@ -25,39 +32,6 @@ describe('eveToken', () => {
       expect(getEveCoinType(TenantId.TAUCETI)).toBe(
         getEveCoinType(TenantId.TESSERACT),
       )
-    })
-  })
-
-  describe('isEveCoinType', () => {
-    it('returns true for each tenant EVE coin type', () => {
-      expect(isEveCoinType(getEveCoinType(TenantId.TAUCETI))).toBe(true)
-      expect(isEveCoinType(getEveCoinType(TenantId.TESSERACT))).toBe(true)
-      expect(isEveCoinType(getEveCoinType(TenantId.TETRA))).toBe(true)
-      expect(isEveCoinType(getEveCoinType(TenantId.TIAKI))).toBe(true)
-      expect(isEveCoinType(getEveCoinType(TenantId.UTOPIA))).toBe(true)
-      expect(isEveCoinType(getEveCoinType(TenantId.STILLNESS))).toBe(true)
-    })
-
-    it('returns true for the legacy EVE coin type', () => {
-      expect(
-        isEveCoinType(
-          '0x59d7bb2e0feffb90cb2446fb97c2ce7d4bd24d2fb98939d6cb6c3940110a0de0::EVE::EVE',
-        ),
-      ).toBe(true)
-    })
-
-    it('returns false for SUI coin type', () => {
-      expect(isEveCoinType('0x2::sui::SUI')).toBe(false)
-    })
-
-    it('returns false for arbitrary string', () => {
-      expect(isEveCoinType('')).toBe(false)
-      expect(isEveCoinType('0x2::other::TOKEN')).toBe(false)
-      expect(
-        isEveCoinType(
-          '0x0000000000000000000000000000000000000000000000000000000000000001::EVE::EVE',
-        ),
-      ).toBe(false)
     })
   })
 })
