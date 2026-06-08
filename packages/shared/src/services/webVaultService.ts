@@ -1,5 +1,4 @@
 import { ZKWebCryptoSigner } from '@evefrontier/wallet-core/crypto'
-import { WebCryptoSigner } from '@mysten/signers/webcrypto'
 import type { PublicKey } from '@mysten/sui/cryptography'
 import type { SuiChain } from '@mysten/wallet-standard'
 import type { ZkProofResponse } from '#/types/enoki'
@@ -93,17 +92,18 @@ class WebVaultService {
 
     // Recover keypair from IndexedDB
     try {
-      const exported =
-        await get<ReturnType<WebCryptoSigner['export']>>(KEYPAIR_STORAGE_KEY)
+      const exported = await get<{
+        privateKey: CryptoKey
+        publicKey: Uint8Array
+      }>(KEYPAIR_STORAGE_KEY)
       if (!exported) {
         log.error('[web-vault] No keypair found in IndexedDB')
         return false
       }
 
-      const tempSigner = await WebCryptoSigner.import(exported)
       this.signer = new ZKWebCryptoSigner(
-        tempSigner.privateKey,
-        tempSigner.getPublicKey().toRawBytes(),
+        exported.privateKey,
+        exported.publicKey,
       )
       this.unlockExpiry = Date.now() + durationMs
 
@@ -153,8 +153,10 @@ class WebVaultService {
    * Checks if a keypair exists in IndexedDB.
    */
   async hasKeypair(): Promise<boolean> {
-    const exported =
-      await get<ReturnType<WebCryptoSigner['export']>>(KEYPAIR_STORAGE_KEY)
+    const exported = await get<{
+      privateKey: CryptoKey
+      publicKey: Uint8Array
+    }>(KEYPAIR_STORAGE_KEY)
     return exported !== null && exported !== undefined
   }
 
