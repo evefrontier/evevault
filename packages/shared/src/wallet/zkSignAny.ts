@@ -1,9 +1,11 @@
+import {
+  createZkLoginSignature,
+  loadZkProof,
+} from '@evefrontier/wallet-core/crypto'
 import type { IntentScope } from '@mysten/sui/cryptography'
 import type { ZkSignAnyParams } from '#/types/wallet'
 import { createLogger } from '#/utils/logger'
 import {
-  createZkLoginSignature,
-  loadZkProof,
   requireEphemeralPublicKey,
   requireMaxEpoch,
   requireZkLoginClaims,

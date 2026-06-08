@@ -249,6 +249,7 @@ describe('useTransactionHistory hook (GraphQL)', () => {
   })
 
   it('derives direction from primary (non-SUI) change when user has multiple balance changes (e.g. incoming token + gas)', async () => {
+    // Any non-SUI coin type works here — direction detection only checks SUI_COIN_TYPE.
     const eveCoinType = getEveCoinType(TenantId.STILLNESS)
     const mockResponse = createMockGraphQLResponse([
       {

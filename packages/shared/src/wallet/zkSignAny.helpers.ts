@@ -1,7 +1,3 @@
-import {
-  createZkLoginSignature,
-  loadZkProof,
-} from '@evefrontier/wallet-core/crypto'
 import type { IntentScope } from '@mysten/sui/cryptography'
 import { ephKeyService } from '#/services/vaultService'
 import { useContextStore } from '#/stores/contextStore'
@@ -121,5 +117,3 @@ const requireProfileField = (value: unknown, field: string): string => {
   }
   return value
 }
-
-export { createZkLoginSignature, loadZkProof }
