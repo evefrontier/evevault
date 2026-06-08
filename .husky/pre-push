@@ -8,5 +8,5 @@ export PATH="$HOME/.bun/bin:$PATH"
 # A global override to 2.3.2 would break fdir (requires picomatch ^3||^4). Dev-only, no runtime exposure.
 # GHSA-vpq2-c234-7xj6: @tootallnate/once 2.x in teeny-request > http-proxy-agent@5. Upgrading to 3.x
 # is a breaking change for that package. Dev-only, no runtime exposure.
-bun audit --ignore=GHSA-3v7f-55p6-f55p --ignore=GHSA-c2c7-rcm5-vvqj --ignore=GHSA-vpq2-c234-7xj6
+bun audit
 NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--no-experimental-webstorage" bun run test:run
