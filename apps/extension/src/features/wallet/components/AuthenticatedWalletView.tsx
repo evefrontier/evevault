@@ -6,8 +6,9 @@ import {
   Text,
   TokenListSection,
 } from '@evevault/shared/components'
-import { getSuiscanUrl } from '@evevault/shared/utils'
+import { EXTENSION_ROUTES, getSuiscanUrl } from '@evevault/shared/utils'
 import type { SuiChain } from '@mysten/wallet-standard'
+import { useNavigate } from '@tanstack/react-router'
 import type { User } from 'oidc-client-ts'
 import { APP_VERSION } from '@/lib/appVersion'
 
@@ -56,10 +57,6 @@ export function AuthenticatedWalletView({
   onDevModeToggle,
   onTestTransaction,
   onRotateEphKey,
-  onTransactionsClick,
-  onLocalnetSettingsClick,
-  onAddToken,
-  onSendToken,
   onLocalnetSelected,
   onNetworkSwitchStart,
 }: {
@@ -76,13 +73,10 @@ export function AuthenticatedWalletView({
   onDevModeToggle: () => void
   onTestTransaction: () => void
   onRotateEphKey: () => void
-  onTransactionsClick: () => void
-  onLocalnetSettingsClick: () => void
-  onAddToken: () => void
-  onSendToken: (coinType: string) => void
   onLocalnetSelected: () => Promise<void>
   onNetworkSwitchStart: (previousNetwork: string, targetNetwork: string) => void
 }) {
+  const navigate = useNavigate()
   const openFaucet = faucetUrl
     ? () => window.open(faucetUrl, '_blank', 'noopener,noreferrer')
     : undefined
@@ -92,13 +86,19 @@ export function AuthenticatedWalletView({
       <HeaderMobile
         address={activeAddress ?? ''}
         email={user.profile?.email ?? ''}
-        onTransactionsClick={onTransactionsClick}
+        onTransactionsClick={() =>
+          navigate({ to: EXTENSION_ROUTES.TRANSACTIONS })
+        }
         showDevActions={devMode}
         onDevModeToggle={onDevModeToggle}
         onSignSubmitTxClick={devMode ? onTestTransaction : undefined}
         onRotateEphKeyClick={devMode ? onRotateEphKey : undefined}
         onFaucetTestSuiClick={devMode ? openFaucet : undefined}
-        onLocalnetSettingsClick={devMode ? onLocalnetSettingsClick : undefined}
+        onLocalnetSettingsClick={
+          devMode
+            ? () => navigate({ to: EXTENSION_ROUTES.LOCALNET_SETTINGS })
+            : undefined
+        }
         version={APP_VERSION}
       />
 
@@ -108,8 +108,10 @@ export function AuthenticatedWalletView({
         walletAddress={activeAddress ?? ''}
         balanceAddress={activeAddress}
         localnetUrl={localnetUrl}
-        onAddToken={onAddToken}
-        onSendToken={onSendToken}
+        onAddToken={() => navigate({ to: '/add-token' })}
+        onSendToken={(coinType) =>
+          navigate({ to: '/send-token', search: { coinType } })
+        }
       />
 
       <div className="justify-between flex items-center gap-4">

@@ -181,16 +181,6 @@ function App() {
       onDevModeToggle={handleDevModeToggle}
       onTestTransaction={handleTestTransaction}
       onRotateEphKey={handleRotateEphKey}
-      onTransactionsClick={() =>
-        navigate({ to: EXTENSION_ROUTES.TRANSACTIONS })
-      }
-      onLocalnetSettingsClick={() =>
-        navigate({ to: EXTENSION_ROUTES.LOCALNET_SETTINGS })
-      }
-      onAddToken={() => navigate({ to: '/add-token' })}
-      onSendToken={(coinType) =>
-        navigate({ to: '/send-token', search: { coinType } })
-      }
       onLocalnetSelected={async () => {
         const addr = await localnetKeyService.getAddress().catch(() => null)
         if (!addr) {
