@@ -86,7 +86,6 @@ const localnetSign = async (
     const { msgBytes, scope } = message as {
       msgBytes: number[]
       scope: string
-      suiAddress: string
     }
 
     const messageBytes = new Uint8Array(msgBytes)

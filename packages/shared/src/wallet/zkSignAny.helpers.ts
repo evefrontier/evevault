@@ -97,11 +97,15 @@ const signWithExtensionEphemeralKey = async (
   user: NonNullable<ZkSignAnyParams['user']>,
   zkProofData: ZKProofData,
 ): Promise<EphemeralSignature> => {
+  if (!user.profile?.sui_address) {
+    throw new Error('[signWithExtensionEphemeralKey] User address not found')
+  }
+
   const response = (await chrome.runtime?.sendMessage?.({
     type: VaultMessageTypes.ZK_EPH_SIGN_BYTES,
     msgBytes: Array.from(msgBytes),
     scope,
-    sui_address: user.profile?.sui_address as string,
+    sui_address: user.profile.sui_address,
     zkProofData,
   })) as
     | { ok?: boolean; bytes?: string; userSignature?: string; error?: string }

@@ -62,7 +62,7 @@ export async function _handleLocalnetSignBytes(
   _sender: chrome.runtime.MessageSender,
   sendResponse: (response?: unknown) => void,
 ): Promise<boolean> {
-  const { msgBytes, scope, suiAddress } = message
+  const { msgBytes, scope } = message
 
   try {
     const response = await sendToKeeper({
@@ -75,7 +75,6 @@ export async function _handleLocalnetSignBytes(
               : Object.values(msgBytes as Record<number, number>),
           ),
       scope,
-      suiAddress,
     })
 
     if (response?.ok && response?.bytes && response?.signature) {

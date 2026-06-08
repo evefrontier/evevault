@@ -13,7 +13,7 @@ const PIN_HASH_STORAGE_KEY = 'evevault:web-pin-hash'
 const ZKPROOF_STORAGE_PREFIX = 'evevault:web-zkproof:'
 
 /**
- * Web-specific vault service using WebCryptoSigner (Secp256r1).
+ * Web-specific vault service using ZKWebCryptoSigner (Secp256r1).
  *
  * Security model:
  * - Keys are non-extractable CryptoKeys (hardware-backed security)
@@ -46,7 +46,7 @@ class WebVaultService {
     // Generate new keypair
     this.signer = await ZKWebCryptoSigner.generate()
 
-    // Store the keypair directly in IndexedDB (required by WebCryptoSigner)
+    // Store the keypair directly in IndexedDB (required by ZKWebCryptoSigner)
     const exported = this.signer.export()
     await set(KEYPAIR_STORAGE_KEY, exported)
 

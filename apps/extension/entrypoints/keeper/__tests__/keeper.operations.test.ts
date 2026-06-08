@@ -42,10 +42,11 @@ vi.mock('@evevault/shared', async (importActual) => {
   }
 })
 
-// Patch signing methods on ZKEd25519Keypair's prototype so every instance
-// created by fromSecretKey/generate (including the ephemeral and localnet keys)
-// uses our mocks. The prototype patch is permanent for this file; vi.clearAllMocks()
-// resets state but leaves the assignment in place.
+// Patch ZKEd25519Keypair.prototype so every instance the keeper creates
+// internally (via fromSecretKey/generate) routes through our mocks — the test
+// never holds a reference to those instances, so there's no other intercept
+// point. The patch runs once when the module loads; vi.clearAllMocks() resets
+// call history between tests but does not undo the prototype assignment.
 vi.mock('@evefrontier/wallet-core/crypto', async (importActual) => {
   const actual =
     await importActual<typeof import('@evefrontier/wallet-core/crypto')>()
