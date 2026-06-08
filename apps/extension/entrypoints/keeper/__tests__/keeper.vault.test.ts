@@ -1,10 +1,10 @@
+import { ZKEd25519Keypair } from '@evefrontier/wallet-core/crypto'
 import {
   decrypt,
   encrypt,
   type HashedData,
   KeeperMessageTypes,
 } from '@evevault/shared'
-import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createKeeperTestContext,
@@ -45,7 +45,7 @@ describe('Keeper CREATE_KEYPAIR handler', () => {
       resp.hashedSecretKey as HashedData,
       TEST_PIN,
     )
-    const reconstructed = Ed25519Keypair.fromSecretKey(secretKey)
+    const reconstructed = ZKEd25519Keypair.fromSecretKey(secretKey)
     expect(Array.from(reconstructed.getPublicKey().toRawBytes())).toEqual(
       resp.publicKeyBytes,
     )
@@ -71,7 +71,7 @@ describe('Keeper CREATE_KEYPAIR handler', () => {
 
 describe('Keeper UNLOCK_VAULT handler', () => {
   it('decrypts the secret key, reconstructs the keypair, and responds { ok: true }', async () => {
-    const keypair = Ed25519Keypair.generate()
+    const keypair = ZKEd25519Keypair.generate()
     const hashedSecretKey = await encrypt(keypair.getSecretKey(), TEST_PIN)
     const resp = await dispatch({
       type: KeeperMessageTypes.UNLOCK_VAULT,
@@ -94,7 +94,7 @@ describe('Keeper UNLOCK_VAULT handler', () => {
 
   it('returns a decryption error and leaves vault locked for a wrong PIN', async () => {
     const hashedSecretKey = await encrypt(
-      Ed25519Keypair.generate().getSecretKey(),
+      ZKEd25519Keypair.generate().getSecretKey(),
       TEST_PIN,
     )
     const resp = await dispatch({
@@ -177,7 +177,7 @@ describe('Keeper CLEAR_EPHKEY handler', () => {
 
   it('clears ephemeralKey, sessionDerivedKey, and localnetKey in one CLEAR_EPHKEY call', async () => {
     // Set a localnet key so we can verify it is cleared alongside the ephemeral key
-    const localnetKeypair = Ed25519Keypair.generate()
+    const localnetKeypair = ZKEd25519Keypair.generate()
     const setResp = await dispatch({
       type: KeeperMessageTypes.LOCALNET_SET_KEYPAIR,
       privateKey: localnetKeypair.getSecretKey(),

@@ -1,5 +1,7 @@
-import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519'
-import { Secp256r1Keypair } from '@mysten/sui/keypairs/secp256r1'
+import {
+  ZKEd25519Keypair,
+  ZKSecp256r1Keypair,
+} from '@evefrontier/wallet-core/crypto'
 import { describe, expect, it } from 'vitest'
 import {
   isHashedSecretKey,
@@ -62,7 +64,7 @@ describe('resolveStoredSecretKey', () => {
 
 describe('reconstructPublicKey', () => {
   it('reconstructs Ed25519 when flag is KEY_FLAG_ED25519', () => {
-    const kp = Ed25519Keypair.generate()
+    const kp = ZKEd25519Keypair.generate()
     const pub = kp.getPublicKey()
     const bytes = Array.from(pub.toRawBytes())
     const out = reconstructPublicKey(bytes, KEY_FLAG_ED25519)
@@ -71,7 +73,7 @@ describe('reconstructPublicKey', () => {
   })
 
   it('reconstructs Secp256r1 when flag is KEY_FLAG_SECP256R1', () => {
-    const kp = Secp256r1Keypair.generate()
+    const kp = ZKSecp256r1Keypair.generate()
     const pub = kp.getPublicKey()
     const bytes = Array.from(pub.toRawBytes())
     const out = reconstructPublicKey(bytes, KEY_FLAG_SECP256R1)
@@ -80,7 +82,7 @@ describe('reconstructPublicKey', () => {
   })
 
   it('uses jsdom web default (Secp256r1) when flag is null', () => {
-    const kp = Secp256r1Keypair.generate()
+    const kp = ZKSecp256r1Keypair.generate()
     const pub = kp.getPublicKey()
     const bytes = Array.from(pub.toRawBytes())
     const out = reconstructPublicKey(bytes, null)

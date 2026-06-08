@@ -1,3 +1,4 @@
+import { ZKSecp256r1Keypair } from '@evefrontier/wallet-core/crypto'
 import type { PublicKey } from '@mysten/sui/cryptography'
 import { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519'
 import { Secp256r1PublicKey } from '@mysten/sui/keypairs/secp256r1'

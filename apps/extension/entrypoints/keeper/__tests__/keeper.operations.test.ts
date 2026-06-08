@@ -1,3 +1,4 @@
+import { ZKEd25519Keypair } from '@evefrontier/wallet-core/crypto'
 import {
   decrypt,
   encrypt,
@@ -5,7 +6,6 @@ import {
   KeeperMessageTypes,
 } from '@evevault/shared'
 import type { ZkProofResponse } from '@evevault/shared/types'
-import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519'
 import {
   SUI_DEVNET_CHAIN,
   SUI_MAINNET_CHAIN,
@@ -435,7 +435,7 @@ describe('Keeper LOCALNET_SET_KEYPAIR handler', () => {
   })
 
   it('loads keypair into RAM and returns encrypted blob when vault is unlocked', async () => {
-    const keypair = Ed25519Keypair.generate()
+    const keypair = ZKEd25519Keypair.generate()
     const bech32 = keypair.getSecretKey()
 
     const resp = await dispatch({
@@ -460,7 +460,7 @@ describe('Keeper LOCALNET_SET_KEYPAIR handler', () => {
     // resulting ciphertext is compatible with decrypt(blob, TEST_PIN) which re-derives the
     // same key internally. If session key derivation ever changes to use a different source,
     // this round-trip test will catch it.
-    const keypair = Ed25519Keypair.generate()
+    const keypair = ZKEd25519Keypair.generate()
     const bech32 = keypair.getSecretKey()
 
     const resp = await dispatch({
@@ -476,7 +476,7 @@ describe('Keeper LOCALNET_SET_KEYPAIR handler', () => {
     // Simulates locked keeper: unlock sets sessionDerivedKey/sessionSalt;
     // CLEAR_EPHKEY clears them (same branch as never unlocked for this handler).
     await dispatch({ type: KeeperMessageTypes.CLEAR_EPHKEY })
-    const keypair = Ed25519Keypair.generate()
+    const keypair = ZKEd25519Keypair.generate()
 
     const resp = await dispatch({
       type: KeeperMessageTypes.LOCALNET_SET_KEYPAIR,
@@ -493,7 +493,7 @@ describe('Keeper LOCALNET_SET_KEYPAIR handler', () => {
 
     const resp = await dispatch({
       type: KeeperMessageTypes.LOCALNET_SET_KEYPAIR,
-      privateKey: Ed25519Keypair.generate().getSecretKey(),
+      privateKey: ZKEd25519Keypair.generate().getSecretKey(),
     })
 
     expect(resp.ok).toBe(false)
@@ -501,7 +501,7 @@ describe('Keeper LOCALNET_SET_KEYPAIR handler', () => {
   })
 
   it('after expiry, LOCALNET_GET_ADDRESS clears and hides a loaded key', async () => {
-    const keypair = Ed25519Keypair.generate()
+    const keypair = ZKEd25519Keypair.generate()
     await dispatch({
       type: KeeperMessageTypes.LOCALNET_SET_KEYPAIR,
       privateKey: keypair.getSecretKey(),
@@ -519,7 +519,7 @@ describe('Keeper LOCALNET_SET_KEYPAIR handler', () => {
   })
 
   it('after expiry, LOCALNET_SIGN rejects a loaded key', async () => {
-    const keypair = Ed25519Keypair.generate()
+    const keypair = ZKEd25519Keypair.generate()
     await dispatch({
       type: KeeperMessageTypes.LOCALNET_SET_KEYPAIR,
       privateKey: keypair.getSecretKey(),
@@ -538,6 +538,56 @@ describe('Keeper LOCALNET_SET_KEYPAIR handler', () => {
     expect(resp.ok).toBe(false)
     expect(resp.error).toBe('No localnet keypair loaded')
     expect(mockSignTransaction).not.toHaveBeenCalled()
+  })
+
+  it('signs transaction bytes with TransactionData scope', async () => {
+    const keypair = ZKEd25519Keypair.generate()
+    await dispatch({
+      type: KeeperMessageTypes.LOCALNET_SET_KEYPAIR,
+      privateKey: keypair.getSecretKey(),
+    })
+    mockSignTransaction.mockResolvedValue({
+      bytes: 'txBytes',
+      signature: 'txSig',
+    })
+
+    const resp = await dispatch({
+      type: KeeperMessageTypes.LOCALNET_SIGN,
+      msgBytes: [1, 2, 3],
+      scope: 'TransactionData',
+      suiAddress: keypair.getPublicKey().toSuiAddress(),
+    })
+
+    expect(resp.ok).toBe(true)
+    expect(resp.bytes).toBe('txBytes')
+    expect(resp.signature).toBe('txSig')
+    expect(mockSignTransaction).toHaveBeenCalledWith(new Uint8Array([1, 2, 3]))
+  })
+
+  it('signs personal message bytes with PersonalMessage scope', async () => {
+    const keypair = ZKEd25519Keypair.generate()
+    await dispatch({
+      type: KeeperMessageTypes.LOCALNET_SET_KEYPAIR,
+      privateKey: keypair.getSecretKey(),
+    })
+    mockSignPersonalMessage.mockResolvedValue({
+      bytes: 'msgBytes',
+      signature: 'msgSig',
+    })
+
+    const resp = await dispatch({
+      type: KeeperMessageTypes.LOCALNET_SIGN,
+      msgBytes: [4, 5, 6],
+      scope: 'PersonalMessage',
+      suiAddress: keypair.getPublicKey().toSuiAddress(),
+    })
+
+    expect(resp.ok).toBe(true)
+    expect(resp.bytes).toBe('msgBytes')
+    expect(resp.signature).toBe('msgSig')
+    expect(mockSignPersonalMessage).toHaveBeenCalledWith(
+      new Uint8Array([4, 5, 6]),
+    )
   })
 
   it('returns error when privateKey is missing', async () => {
@@ -564,14 +614,14 @@ describe('Keeper LOCALNET_SET_KEYPAIR handler', () => {
 
 describe('Keeper UNLOCK_VAULT — localnet key restoration', () => {
   it('restores localnet keypair from encrypted blob on unlock', async () => {
-    const localnetKeypair = Ed25519Keypair.generate()
+    const localnetKeypair = ZKEd25519Keypair.generate()
     const bech32 = localnetKeypair.getSecretKey()
     const encrypted = await encrypt(bech32, TEST_PIN)
 
     const resp = await dispatch({
       type: KeeperMessageTypes.UNLOCK_VAULT,
       hashedSecretKey: await encrypt(
-        Ed25519Keypair.generate().getSecretKey(),
+        ZKEd25519Keypair.generate().getSecretKey(),
         TEST_PIN,
       ),
       pin: TEST_PIN,
@@ -589,7 +639,7 @@ describe('Keeper UNLOCK_VAULT — localnet key restoration', () => {
   })
 
   it('leaves localnetKey null when no encrypted blob is passed', async () => {
-    const ephKeypair = Ed25519Keypair.generate()
+    const ephKeypair = ZKEd25519Keypair.generate()
     const hashedSecretKey = await encrypt(ephKeypair.getSecretKey(), TEST_PIN)
 
     const resp = await dispatch({
@@ -608,7 +658,7 @@ describe('Keeper UNLOCK_VAULT — localnet key restoration', () => {
   })
 
   it('leaves localnetKey null and does not throw when blob is malformed', async () => {
-    const ephKeypair = Ed25519Keypair.generate()
+    const ephKeypair = ZKEd25519Keypair.generate()
     const hashedSecretKey = await encrypt(ephKeypair.getSecretKey(), TEST_PIN)
 
     const resp = await dispatch({
@@ -627,9 +677,9 @@ describe('Keeper UNLOCK_VAULT — localnet key restoration', () => {
   })
 
   it('leaves localnetKey null when wrong PIN is used to decrypt', async () => {
-    const localnetKeypair = Ed25519Keypair.generate()
+    const localnetKeypair = ZKEd25519Keypair.generate()
     const encrypted = await encrypt(localnetKeypair.getSecretKey(), TEST_PIN)
-    const ephKeypair = Ed25519Keypair.generate()
+    const ephKeypair = ZKEd25519Keypair.generate()
     const hashedSecretKey = await encrypt(
       ephKeypair.getSecretKey(),
       'wrong-pin',
@@ -651,7 +701,7 @@ describe('Keeper UNLOCK_VAULT — localnet key restoration', () => {
   })
 
   it("ignores a plain string (old unencrypted format) — no 'data' property", async () => {
-    const ephKeypair = Ed25519Keypair.generate()
+    const ephKeypair = ZKEd25519Keypair.generate()
     const hashedSecretKey = await encrypt(ephKeypair.getSecretKey(), TEST_PIN)
 
     const resp = await dispatch({

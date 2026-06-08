@@ -1,5 +1,5 @@
+import type { ZKEd25519Keypair } from '@evefrontier/wallet-core/crypto'
 import type { PublicKey } from '@mysten/sui/cryptography'
-import type { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519'
 import type { SuiChain } from '@mysten/wallet-standard'
 import type { ZkProofResponse } from './enoki'
 import type { ZkLoginSuiChain } from './networks'
@@ -72,7 +72,7 @@ export interface SessionData {
 
 export interface SessionState extends SessionData {
   setDecryptedEphemeralKeyPairSecretKey: (secretKey: string) => void
-  getEphemeralKeyPair: () => Ed25519Keypair | null
+  getEphemeralKeyPair: () => ZKEd25519Keypair | null
   clear: () => void
   loadFromStorage: () => void
 }
