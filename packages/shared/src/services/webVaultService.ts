@@ -1,3 +1,4 @@
+import { ZKWebCryptoSigner } from '@evefrontier/wallet-core/crypto'
 import { WebCryptoSigner } from '@mysten/signers/webcrypto'
 import type { PublicKey } from '@mysten/sui/cryptography'
 import type { SuiChain } from '@mysten/wallet-standard'
@@ -22,7 +23,7 @@ const ZKPROOF_STORAGE_PREFIX = 'evevault:web-zkproof:'
  * - True security comes from the non-extractable nature of the CryptoKey
  */
 class WebVaultService {
-  private signer: WebCryptoSigner | null = null
+  private signer: ZKWebCryptoSigner | null = null
   private unlockExpiry: number | null = null
   private initialized = false
 
@@ -44,7 +45,7 @@ class WebVaultService {
     }
 
     // Generate new keypair
-    this.signer = await WebCryptoSigner.generate()
+    this.signer = await ZKWebCryptoSigner.generate()
 
     // Store the keypair directly in IndexedDB (required by WebCryptoSigner)
     const exported = this.signer.export()
@@ -99,7 +100,11 @@ class WebVaultService {
         return false
       }
 
-      this.signer = await WebCryptoSigner.import(exported)
+      const tempSigner = await WebCryptoSigner.import(exported)
+      this.signer = new ZKWebCryptoSigner(
+        tempSigner.privateKey,
+        tempSigner.getPublicKey().toRawBytes(),
+      )
       this.unlockExpiry = Date.now() + durationMs
 
       log.info(
@@ -122,7 +127,7 @@ class WebVaultService {
     return Array.from(publicKey.toRawBytes())
   }
 
-  getSigner(): WebCryptoSigner | null {
+  getSigner(): ZKWebCryptoSigner | null {
     if (!this.isUnlocked()) return null
     return this.signer
   }
@@ -168,7 +173,7 @@ class WebVaultService {
 
     // Generate a new keypair. The PIN hash in IndexedDB is unchanged — the
     // user's PIN hasn't changed, only the ephemeral key has been rotated.
-    const newSigner = await WebCryptoSigner.generate()
+    const newSigner = await ZKWebCryptoSigner.generate()
     const exported = newSigner.export()
     await set(KEYPAIR_STORAGE_KEY, exported)
 

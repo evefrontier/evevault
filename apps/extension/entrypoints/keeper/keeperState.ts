@@ -1,5 +1,5 @@
+import type { ZKEd25519Keypair } from '@evefrontier/wallet-core/crypto'
 import type { ZkProofResponse } from '@evevault/shared'
-import type { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519'
 import type { SuiChain } from '@mysten/wallet-standard'
 import type { LocalnetState } from './local'
 
@@ -12,7 +12,7 @@ const VAULT_UNLOCK_MS = 10 * 60 * 1000
  */
 
 // Decrypted zkLogin ephemeral key. This must never be written to extension storage.
-let ephemeralKey: Ed25519Keypair | null = null
+let ephemeralKey: ZKEd25519Keypair | null = null
 
 // Dev-only localnet signer. Kept separate so localnet can work without zkLogin proofs.
 export const localnetState: LocalnetState = { localnetKey: null }
@@ -50,18 +50,18 @@ export function lockVault(): void {
   _vaultUnlockExpiry = null
 }
 
-export function unlockVaultWithKeypair(keypair: Ed25519Keypair): void {
+export function unlockVaultWithKeypair(keypair: ZKEd25519Keypair): void {
   ephemeralKey = keypair
   _vaultUnlocked = true
   _vaultUnlockExpiry = Date.now() + VAULT_UNLOCK_MS
 }
 
-export function keeperReplaceEphemeralKey(keypair: Ed25519Keypair): void {
+export function keeperReplaceEphemeralKey(keypair: ZKEd25519Keypair): void {
   // Preserve the original unlock expiry while swapping the rotated key.
   ephemeralKey = keypair
 }
 
-export function getEphemeralKey(): Ed25519Keypair | null {
+export function getEphemeralKey(): ZKEd25519Keypair | null {
   return ephemeralKey
 }
 

@@ -1,7 +1,5 @@
-import {
-  createZkLoginSignature,
-  loadZkProof,
-} from '@evefrontier/wallet-core/crypto'
+import { loadZkProof } from '@evefrontier/wallet-core/crypto'
+import type { ZKProofData } from '@evefrontier/wallet-core/types'
 import type { IntentScope } from '@mysten/sui/cryptography'
 import type { ZkSignAnyParams } from '#/types/wallet'
 import { createLogger } from '#/utils/logger'
@@ -28,24 +26,25 @@ export const zkSignAny = async (
   requireEphemeralPublicKey()
 
   log.info('Getting ZK proof')
-  const zkProof = await loadZkProof(params.getZkProof)
+  const partialZkLoginSignature = await loadZkProof(params.getZkProof)
   const maxEpoch = requireMaxEpoch()
+  const claims = requireZkLoginClaims(user)
+
+  const zkProofData: ZKProofData = {
+    maxEpoch: Number(maxEpoch),
+    partialZkLoginSignature,
+    userSalt: claims.salt,
+    tokenClaimSub: claims.sub,
+    tokenClaimAud: claims.aud,
+  }
 
   log.info('Requesting ephemeral signature')
-  const { bytes, userSignature } = await signWithEphemeralKey(
+  const { bytes, userSignature: zkSignature } = await signWithEphemeralKey(
     scope,
     msgBytes,
     user,
+    zkProofData,
   )
-
-  log.info('Combining proof and signature to create zkLogin signature')
-  const zkSignature = createZkLoginSignature({
-    maxEpoch,
-    partialZkLoginSignature: zkProof,
-    claims: requireZkLoginClaims(user),
-    userSignature,
-    bytes,
-  })
 
   return { bytes, zkSignature }
 }

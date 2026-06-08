@@ -1,5 +1,5 @@
+import { ZKEd25519Keypair } from '@evefrontier/wallet-core/crypto'
 import { decrypt, deriveAesKey, type HashedData } from '@evevault/shared'
-import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519'
 import type { BackgroundMessage } from '@/lib/background/types'
 import {
   localnetState,
@@ -11,7 +11,7 @@ export function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Unknown error'
 }
 
-export function publicKeyBytes(keypair: Ed25519Keypair | null): number[] {
+export function publicKeyBytes(keypair: ZKEd25519Keypair | null): number[] {
   return Array.from(keypair?.getPublicKey().toRawBytes() ?? [])
 }
 
@@ -59,7 +59,7 @@ export async function restoreLocalnetKeyIfPresent(
 
   try {
     const localnetPrivKey = await decrypt(encLocalnet as HashedData, pin)
-    localnetState.localnetKey = Ed25519Keypair.fromSecretKey(localnetPrivKey)
+    localnetState.localnetKey = ZKEd25519Keypair.fromSecretKey(localnetPrivKey)
   } catch {
     localnetState.localnetKey = null
   }
@@ -78,7 +78,7 @@ export async function restoreUnlockedVault(
   hashedSecretKey: HashedData,
   pin: string,
 ): Promise<void> {
-  const keypair = Ed25519Keypair.fromSecretKey(secretKey)
+  const keypair = ZKEd25519Keypair.fromSecretKey(secretKey)
   const sessionKey = await deriveSessionKey(pin, hashedSecretKey)
 
   // Commit unlock state only after all required crypto setup has succeeded.

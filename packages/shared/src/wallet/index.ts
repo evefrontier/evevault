@@ -12,7 +12,6 @@ export { useSendToken } from './hooks/useSendToken'
 export { useTransactionHistory } from './hooks/useTransactionHistory'
 export { useWalletSigningContext } from './hooks/useWalletSigningContext'
 export { signForChain } from './signForChain'
-export { signWithIntent } from './signWithIntent'
 export type {
   CoinMetadataQueryResponse,
   CoinMetadataResult,

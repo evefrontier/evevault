@@ -19,13 +19,17 @@ import {
   TEST_PIN,
 } from './keeperTestUtils'
 
-const { mockEncrypt, mockEncryptWithKey, mockSignWithIntent } = vi.hoisted(
-  () => ({
-    mockEncrypt: vi.fn(),
-    mockEncryptWithKey: vi.fn(),
-    mockSignWithIntent: vi.fn(),
-  }),
-)
+const {
+  mockEncrypt,
+  mockEncryptWithKey,
+  mockSignTransaction,
+  mockSignPersonalMessage,
+} = vi.hoisted(() => ({
+  mockEncrypt: vi.fn(),
+  mockEncryptWithKey: vi.fn(),
+  mockSignTransaction: vi.fn(),
+  mockSignPersonalMessage: vi.fn(),
+}))
 
 // Mock only the exports that need per-test control. Everything else uses real
 // crypto.
@@ -38,9 +42,18 @@ vi.mock('@evevault/shared', async (importActual) => {
   }
 })
 
-vi.mock('@evevault/shared/wallet', () => ({
-  signWithIntent: mockSignWithIntent,
-}))
+// Patch signing methods on ZKEd25519Keypair's prototype so every instance
+// created by fromSecretKey/generate (including the ephemeral and localnet keys)
+// uses our mocks. The prototype patch is permanent for this file; vi.clearAllMocks()
+// resets state but leaves the assignment in place.
+vi.mock('@evefrontier/wallet-core/crypto', async (importActual) => {
+  const actual =
+    await importActual<typeof import('@evefrontier/wallet-core/crypto')>()
+  actual.ZKEd25519Keypair.prototype.signTransaction = mockSignTransaction
+  actual.ZKEd25519Keypair.prototype.signPersonalMessage =
+    mockSignPersonalMessage
+  return actual
+})
 
 // ── keeper loader ─────────────────────────────────────────────────────────────
 
@@ -170,6 +183,14 @@ describe('Keeper ROTATE_KEYPAIR handler', () => {
 describe('Keeper EPH_SIGN handler', () => {
   beforeEach(async () => {
     await unlockVault()
+    mockSignTransaction.mockResolvedValue({
+      bytes: 'signed-bytes',
+      signature: 'user-signature',
+    })
+    mockSignPersonalMessage.mockResolvedValue({
+      bytes: 'signed-bytes',
+      signature: 'user-signature',
+    })
   })
 
   it('returns LOCKED when the vault is locked', async () => {
@@ -184,41 +205,44 @@ describe('Keeper EPH_SIGN handler', () => {
     expect(resp.error).toBe('[KEEPER_EPH_SIGN] LOCKED')
   })
 
-  it('converts msgBytes to Uint8Array and signs with intent', async () => {
-    mockSignWithIntent.mockResolvedValue({
-      bytes: 'signed-bytes',
-      userSignature: 'user-signature',
-    })
-
+  it('converts msgBytes to Uint8Array and calls signTransaction for TransactionData scope', async () => {
     const resp = await dispatch({
       type: KeeperMessageTypes.EPH_SIGN,
       msgBytes: [1, 2, 3],
       scope: 'TransactionData',
-      sui_address: '0xabc',
     })
 
     expect(resp.ok).toBe(true)
     expect(resp.bytes).toBe('signed-bytes')
     expect(resp.userSignature).toBe('user-signature')
 
-    expect(mockSignWithIntent).toHaveBeenCalledOnce()
-    const [passedBytes, passedScope, passedCtx] =
-      mockSignWithIntent.mock.calls[0]
-    expect(passedBytes).toBeInstanceOf(Uint8Array)
-    expect(Array.from(passedBytes as Uint8Array)).toEqual([1, 2, 3])
-    expect(passedScope).toBe('TransactionData')
-    expect((passedCtx as { sui_address: string }).sui_address).toBe('0xabc')
-    expect((passedCtx as { keypair: unknown }).keypair).toBeInstanceOf(
-      Ed25519Keypair,
-    )
+    expect(mockSignTransaction).toHaveBeenCalledOnce()
+    expect(mockSignTransaction).toHaveBeenCalledWith(new Uint8Array([1, 2, 3]))
+    expect(mockSignPersonalMessage).not.toHaveBeenCalled()
   })
 
-  it('returns an error when signWithIntent throws', async () => {
-    mockSignWithIntent.mockRejectedValue(new Error('sign failed'))
+  it('calls signPersonalMessage for non-TransactionData scope', async () => {
+    const resp = await dispatch({
+      type: KeeperMessageTypes.EPH_SIGN,
+      msgBytes: [1, 2, 3],
+      scope: 'PersonalMessage',
+    })
+
+    expect(resp.ok).toBe(true)
+    expect(mockSignPersonalMessage).toHaveBeenCalledOnce()
+    expect(mockSignPersonalMessage).toHaveBeenCalledWith(
+      new Uint8Array([1, 2, 3]),
+    )
+    expect(mockSignTransaction).not.toHaveBeenCalled()
+  })
+
+  it('returns an error when signing throws', async () => {
+    mockSignTransaction.mockRejectedValue(new Error('sign failed'))
 
     const resp = await dispatch({
       type: KeeperMessageTypes.EPH_SIGN,
       msgBytes: [1, 2, 3],
+      scope: 'TransactionData',
     })
 
     expect(resp.ok).toBe(false)
@@ -513,7 +537,7 @@ describe('Keeper LOCALNET_SET_KEYPAIR handler', () => {
 
     expect(resp.ok).toBe(false)
     expect(resp.error).toBe('No localnet keypair loaded')
-    expect(mockSignWithIntent).not.toHaveBeenCalled()
+    expect(mockSignTransaction).not.toHaveBeenCalled()
   })
 
   it('returns error when privateKey is missing', async () => {
