@@ -37,7 +37,6 @@ export async function signForChain(
         type: VaultMessageTypes.LOCALNET_SIGN_BYTES,
         msgBytes: Array.from(msgBytes), // Convert Uint8Array to array for serialization
         scope,
-        suiAddress: opts.localnetAddress as string,
       })) as
         | {
             ok?: boolean

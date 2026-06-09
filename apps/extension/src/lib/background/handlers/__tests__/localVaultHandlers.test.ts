@@ -211,7 +211,6 @@ describe('_handleLocalnetSignBytes', () => {
     const message = makeMessage({
       msgBytes: [1, 2, 3],
       scope: 'TransactionData',
-      suiAddress: '0xabc',
     } as Partial<VaultMessage>)
 
     await _handleLocalnetSignBytes(message, mockSender, sendResponse)
@@ -232,7 +231,6 @@ describe('_handleLocalnetSignBytes', () => {
     const message = makeMessage({
       msgBytes: new Uint8Array([10, 20, 30]) as unknown as number[],
       scope: 'TransactionData',
-      suiAddress: '0xabc',
     } as Partial<VaultMessage>)
 
     await _handleLocalnetSignBytes(message, mockSender, vi.fn())
@@ -250,7 +248,6 @@ describe('_handleLocalnetSignBytes', () => {
     const message = makeMessage({
       msgBytes: [1, 2, 3],
       scope: 'TransactionData',
-      suiAddress: '0xabc',
     } as Partial<VaultMessage>)
 
     await _handleLocalnetSignBytes(message, mockSender, sendResponse)
@@ -267,7 +264,6 @@ describe('_handleLocalnetSignBytes', () => {
     const message = makeMessage({
       msgBytes: [1, 2, 3],
       scope: 'TransactionData',
-      suiAddress: '0xabc',
     } as Partial<VaultMessage>)
 
     await _handleLocalnetSignBytes(message, mockSender, sendResponse)

@@ -75,7 +75,11 @@ import {
   zkProofService as keeperZkProofService,
 } from './keeperService'
 // Import after all mocks are set up
-import { ephKeyService, zkProofService } from './vaultService'
+import {
+  ephKeyService,
+  localnetKeyService,
+  zkProofService,
+} from './vaultService'
 import { webVaultService } from './webVaultService'
 
 describe('ephKeyService routing', () => {
@@ -359,5 +363,58 @@ describe('zkProofService routing', () => {
       expect(keeperZkProofService.clear).toHaveBeenCalled()
       expect(webVaultService.clearZkProof).not.toHaveBeenCalled()
     })
+  })
+})
+
+describe('ephKeyService.initialize extension path', () => {
+  beforeEach(() => {
+    mockIsWebValue = false
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('is a no-op in extension context (does not call webVaultService)', async () => {
+    await ephKeyService.initialize()
+    expect(webVaultService.initialize).not.toHaveBeenCalled()
+  })
+})
+
+describe('ephKeyService.unlockVault web failure path', () => {
+  beforeEach(() => {
+    mockIsWebValue = true
+  })
+
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('throws when webVaultService.unlock returns false', async () => {
+    vi.mocked(webVaultService.unlock).mockResolvedValueOnce(false)
+
+    await expect(ephKeyService.unlockVault(null, '123456')).rejects.toThrow(
+      'Failed to unlock vault',
+    )
+  })
+})
+
+describe('localnetKeyService', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('setKeypairFromPrivateKey throws when called from web', async () => {
+    mockIsWebValue = true
+    await expect(
+      localnetKeyService.setKeypairFromPrivateKey('key'),
+    ).rejects.toThrow('localnetKeyService is extension-only')
+  })
+
+  it('getAddress throws when called from web', async () => {
+    mockIsWebValue = true
+    await expect(localnetKeyService.getAddress()).rejects.toThrow(
+      'localnetKeyService is extension-only',
+    )
   })
 })

@@ -1,7 +1,6 @@
+import { ZKEd25519Keypair } from '@evefrontier/wallet-core/crypto'
+import type { ZKProofData } from '@evefrontier/wallet-core/types'
 import { encrypt, encryptWithKey, type HashedData } from '@evevault/shared'
-import { signWithIntent } from '@evevault/shared/wallet'
-import type { IntentScope } from '@mysten/sui/cryptography'
-import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519'
 import type { BackgroundMessage } from '@/lib/background/types'
 import {
   cacheSessionKey,
@@ -25,7 +24,7 @@ export function handleCreateKeypair(
   sendResponse: KeeperSendResponse,
 ): boolean {
   const pin = message.pin as string
-  const keypair = Ed25519Keypair.generate()
+  const keypair = ZKEd25519Keypair.generate()
 
   // Chrome keeps the response channel open only when the listener returns true.
   ;(async () => {
@@ -113,7 +112,7 @@ export function handleRotateKeypair(
 
   ;(async () => {
     try {
-      const newKeypair = Ed25519Keypair.generate()
+      const newKeypair = ZKEd25519Keypair.generate()
       const hashedSecretKey = await encryptWithKey(
         newKeypair.getSecretKey(),
         sessionKey.derivedKey,
@@ -148,20 +147,21 @@ export function handleEphSign(
   // Capture the current key before async work so a later lock does not mutate it.
   ;(async () => {
     try {
-      const { msgBytes, scope, sui_address } = message
-      const ephSignature = await signWithIntent(
-        new Uint8Array(msgBytes as number[]),
-        scope as IntentScope,
-        {
-          sui_address: sui_address as string,
-          keypair: key,
-        },
-      )
+      const { msgBytes, scope, zkProofData } = message
+      if (!zkProofData) {
+        throw new Error('[KEEPER_EPH_SIGN] zkProofData is required')
+      }
+      key.applyZKProof(zkProofData as ZKProofData)
+      const msgUint8 = new Uint8Array(msgBytes as number[])
+      const result =
+        scope === 'TransactionData'
+          ? await key.signTransaction(msgUint8)
+          : await key.signPersonalMessage(msgUint8)
 
       sendResponse({
         ok: true,
-        bytes: ephSignature.bytes,
-        userSignature: ephSignature.userSignature,
+        bytes: result.bytes,
+        userSignature: result.signature,
       })
     } catch (error) {
       sendResponse({ ok: false, error: getErrorMessage(error) })

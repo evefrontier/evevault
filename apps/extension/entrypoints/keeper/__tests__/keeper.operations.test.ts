@@ -1,3 +1,5 @@
+import { ZKEd25519Keypair } from '@evefrontier/wallet-core/crypto'
+import type { ZKProofData } from '@evefrontier/wallet-core/types'
 import {
   decrypt,
   encrypt,
@@ -19,13 +21,19 @@ import {
   TEST_PIN,
 } from './keeperTestUtils'
 
-const { mockEncrypt, mockEncryptWithKey, mockSignWithIntent } = vi.hoisted(
-  () => ({
-    mockEncrypt: vi.fn(),
-    mockEncryptWithKey: vi.fn(),
-    mockSignWithIntent: vi.fn(),
-  }),
-)
+const {
+  mockEncrypt,
+  mockEncryptWithKey,
+  mockApplyZKProof,
+  mockSignTransaction,
+  mockSignPersonalMessage,
+} = vi.hoisted(() => ({
+  mockEncrypt: vi.fn(),
+  mockEncryptWithKey: vi.fn(),
+  mockApplyZKProof: vi.fn(),
+  mockSignTransaction: vi.fn(),
+  mockSignPersonalMessage: vi.fn(),
+}))
 
 // Mock only the exports that need per-test control. Everything else uses real
 // crypto.
@@ -38,15 +46,43 @@ vi.mock('@evevault/shared', async (importActual) => {
   }
 })
 
-vi.mock('@evevault/shared/wallet', () => ({
-  signWithIntent: mockSignWithIntent,
-}))
+// Patch keypair prototypes so every instance the keeper creates internally
+// (via fromSecretKey/generate) routes through our mocks — the test never holds
+// a reference to those instances, so there's no other intercept point. Each
+// patch runs once when the module loads; vi.clearAllMocks() resets call history
+// between tests but does not undo the prototype assignments.
+// ZKEd25519Keypair — used for the main vault ephemeral key.
+vi.mock('@evefrontier/wallet-core/crypto', async (importActual) => {
+  const actual =
+    await importActual<typeof import('@evefrontier/wallet-core/crypto')>()
+  actual.ZKEd25519Keypair.prototype.applyZKProof = mockApplyZKProof
+  actual.ZKEd25519Keypair.prototype.signTransaction = mockSignTransaction
+  actual.ZKEd25519Keypair.prototype.signPersonalMessage =
+    mockSignPersonalMessage
+  return actual
+})
+// Ed25519Keypair — used for the localnet key (no zkLogin, plain signing).
+vi.mock('@mysten/sui/keypairs/ed25519', async (importActual) => {
+  const actual =
+    await importActual<typeof import('@mysten/sui/keypairs/ed25519')>()
+  actual.Ed25519Keypair.prototype.signTransaction = mockSignTransaction
+  actual.Ed25519Keypair.prototype.signPersonalMessage = mockSignPersonalMessage
+  return actual
+})
 
 // ── keeper loader ─────────────────────────────────────────────────────────────
 
 const ctx = createKeeperTestContext()
 const { dispatch, rawDispatch, unlockVault } = ctx
 setupKeeperSuite(ctx)
+
+const TEST_ZK_PROOF_DATA: ZKProofData = {
+  maxEpoch: 100,
+  partialZkLoginSignature: undefined,
+  userSalt: 'test-salt',
+  tokenClaimSub: 'test-sub',
+  tokenClaimAud: 'test-aud',
+}
 
 beforeEach(async () => {
   const actual =
@@ -170,6 +206,14 @@ describe('Keeper ROTATE_KEYPAIR handler', () => {
 describe('Keeper EPH_SIGN handler', () => {
   beforeEach(async () => {
     await unlockVault()
+    mockSignTransaction.mockResolvedValue({
+      bytes: 'signed-bytes',
+      signature: 'user-signature',
+    })
+    mockSignPersonalMessage.mockResolvedValue({
+      bytes: 'signed-bytes',
+      signature: 'user-signature',
+    })
   })
 
   it('returns LOCKED when the vault is locked', async () => {
@@ -184,45 +228,62 @@ describe('Keeper EPH_SIGN handler', () => {
     expect(resp.error).toBe('[KEEPER_EPH_SIGN] LOCKED')
   })
 
-  it('converts msgBytes to Uint8Array and signs with intent', async () => {
-    mockSignWithIntent.mockResolvedValue({
-      bytes: 'signed-bytes',
-      userSignature: 'user-signature',
-    })
-
+  it('converts msgBytes to Uint8Array and calls signTransaction for TransactionData scope', async () => {
     const resp = await dispatch({
       type: KeeperMessageTypes.EPH_SIGN,
       msgBytes: [1, 2, 3],
       scope: 'TransactionData',
-      sui_address: '0xabc',
+      zkProofData: TEST_ZK_PROOF_DATA,
     })
 
     expect(resp.ok).toBe(true)
     expect(resp.bytes).toBe('signed-bytes')
     expect(resp.userSignature).toBe('user-signature')
 
-    expect(mockSignWithIntent).toHaveBeenCalledOnce()
-    const [passedBytes, passedScope, passedCtx] =
-      mockSignWithIntent.mock.calls[0]
-    expect(passedBytes).toBeInstanceOf(Uint8Array)
-    expect(Array.from(passedBytes as Uint8Array)).toEqual([1, 2, 3])
-    expect(passedScope).toBe('TransactionData')
-    expect((passedCtx as { sui_address: string }).sui_address).toBe('0xabc')
-    expect((passedCtx as { keypair: unknown }).keypair).toBeInstanceOf(
-      Ed25519Keypair,
-    )
+    expect(mockSignTransaction).toHaveBeenCalledOnce()
+    expect(mockSignTransaction).toHaveBeenCalledWith(new Uint8Array([1, 2, 3]))
+    expect(mockSignPersonalMessage).not.toHaveBeenCalled()
   })
 
-  it('returns an error when signWithIntent throws', async () => {
-    mockSignWithIntent.mockRejectedValue(new Error('sign failed'))
+  it('calls signPersonalMessage for non-TransactionData scope', async () => {
+    const resp = await dispatch({
+      type: KeeperMessageTypes.EPH_SIGN,
+      msgBytes: [1, 2, 3],
+      scope: 'PersonalMessage',
+      zkProofData: TEST_ZK_PROOF_DATA,
+    })
+
+    expect(resp.ok).toBe(true)
+    expect(mockSignPersonalMessage).toHaveBeenCalledOnce()
+    expect(mockSignPersonalMessage).toHaveBeenCalledWith(
+      new Uint8Array([1, 2, 3]),
+    )
+    expect(mockSignTransaction).not.toHaveBeenCalled()
+  })
+
+  it('returns an error when signing throws', async () => {
+    mockSignTransaction.mockRejectedValue(new Error('sign failed'))
 
     const resp = await dispatch({
       type: KeeperMessageTypes.EPH_SIGN,
       msgBytes: [1, 2, 3],
+      scope: 'TransactionData',
+      zkProofData: TEST_ZK_PROOF_DATA,
     })
 
     expect(resp.ok).toBe(false)
     expect(resp.error).toBe('sign failed')
+  })
+
+  it('returns an error when zkProofData is missing', async () => {
+    const resp = await dispatch({
+      type: KeeperMessageTypes.EPH_SIGN,
+      msgBytes: [1, 2, 3],
+      scope: 'TransactionData',
+    })
+
+    expect(resp.ok).toBe(false)
+    expect(resp.error).toBe('[KEEPER_EPH_SIGN] zkProofData is required')
   })
 
   it('returns false without responding for non-KEEPER targets', () => {
@@ -513,7 +574,57 @@ describe('Keeper LOCALNET_SET_KEYPAIR handler', () => {
 
     expect(resp.ok).toBe(false)
     expect(resp.error).toBe('No localnet keypair loaded')
-    expect(mockSignWithIntent).not.toHaveBeenCalled()
+    expect(mockSignTransaction).not.toHaveBeenCalled()
+  })
+
+  it('signs transaction bytes with TransactionData scope', async () => {
+    const keypair = Ed25519Keypair.generate()
+    await dispatch({
+      type: KeeperMessageTypes.LOCALNET_SET_KEYPAIR,
+      privateKey: keypair.getSecretKey(),
+    })
+    mockSignTransaction.mockResolvedValue({
+      bytes: 'txBytes',
+      signature: 'txSig',
+    })
+
+    const resp = await dispatch({
+      type: KeeperMessageTypes.LOCALNET_SIGN,
+      msgBytes: [1, 2, 3],
+      scope: 'TransactionData',
+      suiAddress: keypair.getPublicKey().toSuiAddress(),
+    })
+
+    expect(resp.ok).toBe(true)
+    expect(resp.bytes).toBe('txBytes')
+    expect(resp.signature).toBe('txSig')
+    expect(mockSignTransaction).toHaveBeenCalledWith(new Uint8Array([1, 2, 3]))
+  })
+
+  it('signs personal message bytes with PersonalMessage scope', async () => {
+    const keypair = Ed25519Keypair.generate()
+    await dispatch({
+      type: KeeperMessageTypes.LOCALNET_SET_KEYPAIR,
+      privateKey: keypair.getSecretKey(),
+    })
+    mockSignPersonalMessage.mockResolvedValue({
+      bytes: 'msgBytes',
+      signature: 'msgSig',
+    })
+
+    const resp = await dispatch({
+      type: KeeperMessageTypes.LOCALNET_SIGN,
+      msgBytes: [4, 5, 6],
+      scope: 'PersonalMessage',
+      suiAddress: keypair.getPublicKey().toSuiAddress(),
+    })
+
+    expect(resp.ok).toBe(true)
+    expect(resp.bytes).toBe('msgBytes')
+    expect(resp.signature).toBe('msgSig')
+    expect(mockSignPersonalMessage).toHaveBeenCalledWith(
+      new Uint8Array([4, 5, 6]),
+    )
   })
 
   it('returns error when privateKey is missing', async () => {
@@ -547,7 +658,7 @@ describe('Keeper UNLOCK_VAULT — localnet key restoration', () => {
     const resp = await dispatch({
       type: KeeperMessageTypes.UNLOCK_VAULT,
       hashedSecretKey: await encrypt(
-        Ed25519Keypair.generate().getSecretKey(),
+        ZKEd25519Keypair.generate().getSecretKey(),
         TEST_PIN,
       ),
       pin: TEST_PIN,
@@ -565,7 +676,7 @@ describe('Keeper UNLOCK_VAULT — localnet key restoration', () => {
   })
 
   it('leaves localnetKey null when no encrypted blob is passed', async () => {
-    const ephKeypair = Ed25519Keypair.generate()
+    const ephKeypair = ZKEd25519Keypair.generate()
     const hashedSecretKey = await encrypt(ephKeypair.getSecretKey(), TEST_PIN)
 
     const resp = await dispatch({
@@ -584,7 +695,7 @@ describe('Keeper UNLOCK_VAULT — localnet key restoration', () => {
   })
 
   it('leaves localnetKey null and does not throw when blob is malformed', async () => {
-    const ephKeypair = Ed25519Keypair.generate()
+    const ephKeypair = ZKEd25519Keypair.generate()
     const hashedSecretKey = await encrypt(ephKeypair.getSecretKey(), TEST_PIN)
 
     const resp = await dispatch({
@@ -605,7 +716,7 @@ describe('Keeper UNLOCK_VAULT — localnet key restoration', () => {
   it('leaves localnetKey null when wrong PIN is used to decrypt', async () => {
     const localnetKeypair = Ed25519Keypair.generate()
     const encrypted = await encrypt(localnetKeypair.getSecretKey(), TEST_PIN)
-    const ephKeypair = Ed25519Keypair.generate()
+    const ephKeypair = ZKEd25519Keypair.generate()
     const hashedSecretKey = await encrypt(
       ephKeypair.getSecretKey(),
       'wrong-pin',
@@ -627,7 +738,7 @@ describe('Keeper UNLOCK_VAULT — localnet key restoration', () => {
   })
 
   it("ignores a plain string (old unencrypted format) — no 'data' property", async () => {
-    const ephKeypair = Ed25519Keypair.generate()
+    const ephKeypair = ZKEd25519Keypair.generate()
     const hashedSecretKey = await encrypt(ephKeypair.getSecretKey(), TEST_PIN)
 
     const resp = await dispatch({

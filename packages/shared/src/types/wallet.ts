@@ -1,8 +1,6 @@
+import type { ZKEd25519Keypair } from '@evefrontier/wallet-core/crypto'
 import type { PublicKey, Signer } from '@mysten/sui/cryptography'
-import type {
-  Ed25519Keypair,
-  Ed25519PublicKey,
-} from '@mysten/sui/keypairs/ed25519'
+import type { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519'
 import type { User } from 'oidc-client-ts'
 import type { ZkProofResponse } from './enoki'
 import type { StoredSecretKey } from './stores'
@@ -42,7 +40,7 @@ export interface RawSignParams {
 export interface ExtensionZkProofParams {
   jwtRandomness: string
   maxEpoch: string
-  ephemeralKeyPair: Ed25519Keypair
+  ephemeralKeyPair: ZKEd25519Keypair
   idToken: string
   enokiApiKey: string
   network?: string
@@ -50,7 +48,7 @@ export interface ExtensionZkProofParams {
 
 export interface ExtensionEphSignParams {
   sui_address: string
-  ephemeralKeyPair: Ed25519Keypair
+  ephemeralKeyPair: ZKEd25519Keypair
 }
 
 // Type guard for Ed25519PublicKey

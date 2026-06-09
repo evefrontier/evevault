@@ -1,6 +1,5 @@
 export * from './address'
 export * from './authCleanup'
-export * from './buildTx'
 export * from './calculate'
 export * from './constants'
 export * from './devMode'

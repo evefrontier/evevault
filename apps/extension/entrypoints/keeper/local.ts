@@ -1,6 +1,8 @@
-import { encryptWithKey, signWithIntent } from '@evevault/shared'
-import type { IntentScope } from '@mysten/sui/cryptography'
-import { SUI_PRIVATE_KEY_PREFIX } from '@mysten/sui/cryptography'
+import { encryptWithKey } from '@evevault/shared'
+import {
+  type IntentScope,
+  SUI_PRIVATE_KEY_PREFIX,
+} from '@mysten/sui/cryptography'
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519'
 import type { BackgroundMessage } from '@/lib/background/types'
 
@@ -84,22 +86,21 @@ const localnetSign = async (
   }
 
   try {
-    const { msgBytes, scope, suiAddress } = message as {
+    const { msgBytes, scope } = message as {
       msgBytes: number[]
       scope: IntentScope
-      suiAddress: string
     }
 
     const messageBytes = new Uint8Array(msgBytes)
-    const result = await signWithIntent(messageBytes, scope, {
-      sui_address: suiAddress,
-      keypair: key,
-    })
+    const result =
+      scope === 'TransactionData'
+        ? await key.signTransaction(messageBytes)
+        : await key.signPersonalMessage(messageBytes)
 
     sendResponse({
       ok: true,
       bytes: result.bytes,
-      signature: result.userSignature,
+      signature: result.signature,
     })
   } catch (error) {
     sendResponse({

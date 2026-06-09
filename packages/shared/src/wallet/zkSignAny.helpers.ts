@@ -1,7 +1,4 @@
-import {
-  isPartialZKLoginSignature,
-  ZKProofHandler,
-} from '@evefrontier/wallet-core/crypto'
+import type { ZKProofData } from '@evefrontier/wallet-core/types'
 import type { IntentScope } from '@mysten/sui/cryptography'
 import { ephKeyService } from '#/services/vaultService'
 import { useContextStore } from '#/stores/contextStore'
@@ -9,7 +6,6 @@ import { useDeviceStore } from '#/stores/deviceStore'
 import { VaultMessageTypes } from '#/types/messages'
 import type { ZkSignAnyParams } from '#/types/wallet'
 import { isWeb } from '#/utils/environment'
-import { signWithIntent } from './signWithIntent'
 
 type EphemeralSignature = {
   bytes: string
@@ -37,21 +33,6 @@ export const requireEphemeralPublicKey = () => {
   return ephemeralPublicKey
 }
 
-/** Validates both the error field and the proof structure separately — a response can have no error but still contain invalid data. */
-export const loadZkProof = async (
-  getZkProof: ZkSignAnyParams['getZkProof'],
-) => {
-  const zkProof = await getZkProof()
-  const error = getProofErrorMessage(zkProof)
-  if (error) {
-    throw new Error(error)
-  }
-  if (!('data' in zkProof) || !isPartialZKLoginSignature(zkProof.data)) {
-    throw new Error('ZK proof data not found or invalid')
-  }
-  return zkProof
-}
-
 export const requireMaxEpoch = (): string => {
   const chain = useContextStore.getState().chain
   const maxEpoch = useDeviceStore.getState().getMaxEpoch(chain)
@@ -66,10 +47,11 @@ export const signWithEphemeralKey = async (
   scope: IntentScope,
   msgBytes: Uint8Array,
   user: NonNullable<ZkSignAnyParams['user']>,
+  zkProofData: ZKProofData,
 ): Promise<EphemeralSignature> => {
   const signature = isWeb()
-    ? await signWithWebEphemeralKey(scope, msgBytes, user)
-    : await signWithExtensionEphemeralKey(scope, msgBytes, user)
+    ? await signWithWebEphemeralKey(scope, msgBytes, user, zkProofData)
+    : await signWithExtensionEphemeralKey(scope, msgBytes, user, zkProofData)
 
   if (!signature.userSignature) {
     throw new Error('User signature not found')
@@ -86,77 +68,45 @@ export const requireZkLoginClaims = (
   aud: requireProfileField(user.profile?.aud, 'aud'),
 })
 
-/** Assembles the final zkLogin signature format by applying the partial ZK proof to the ephemeral signature. */
-export const createZkLoginSignature = ({
-  maxEpoch,
-  partialZkLoginSignature,
-  claims,
-  userSignature,
-  bytes,
-}: {
-  maxEpoch: string
-  partialZkLoginSignature: unknown
-  claims: ZkLoginClaims
-  userSignature: string
-  bytes: string
-}): string => {
-  if (!isPartialZKLoginSignature(partialZkLoginSignature)) {
-    throw new Error('ZK proof data not found or invalid')
-  }
-
-  const zkProofHandler = new ZKProofHandler()
-  zkProofHandler.applyZKProof({
-    maxEpoch: parseInt(maxEpoch, 10),
-    partialZkLoginSignature,
-    userSalt: claims.salt,
-    tokenClaimSub: claims.sub,
-    tokenClaimAud: claims.aud,
-  })
-  return zkProofHandler.processSignature({ signature: userSignature, bytes })
-    .signature
-}
-
-const getProofErrorMessage = (
-  zkProof: Awaited<ReturnType<ZkSignAnyParams['getZkProof']>>,
-): string | null => {
-  if (!zkProof) {
-    return 'Failed to get ZK proof'
-  }
-  if (!zkProof.error) {
-    return null
-  }
-  return typeof zkProof.error === 'string'
-    ? zkProof.error
-    : (zkProof.error.message ?? 'Failed to get ZK proof')
-}
-
 const signWithWebEphemeralKey = async (
   scope: IntentScope,
   msgBytes: Uint8Array,
   user: NonNullable<ZkSignAnyParams['user']>,
+  zkProofData: ZKProofData,
 ): Promise<EphemeralSignature> => {
   const signer = ephKeyService.getSigner()
   if (!signer) {
     throw new Error('Vault is locked or no keypair exists')
   }
 
-  const result = await signWithIntent(msgBytes, scope, {
-    sui_address: user.profile?.sui_address as string,
-    keypair: signer,
-  })
-  return { bytes: result.bytes, userSignature: result.userSignature }
+  if (!user.profile?.sui_address) {
+    throw new Error('[signWithWebEphemeralKey] User address not found')
+  }
+
+  signer.applyZKProof(zkProofData)
+  const result =
+    scope === 'TransactionData'
+      ? await signer.signTransaction(msgBytes)
+      : await signer.signPersonalMessage(msgBytes)
+  return { bytes: result.bytes, userSignature: result.signature }
 }
 
 const signWithExtensionEphemeralKey = async (
   scope: IntentScope,
   msgBytes: Uint8Array,
   user: NonNullable<ZkSignAnyParams['user']>,
+  zkProofData: ZKProofData,
 ): Promise<EphemeralSignature> => {
+  if (!user.profile?.sui_address) {
+    throw new Error('[signWithExtensionEphemeralKey] User address not found')
+  }
+
   const response = (await chrome.runtime?.sendMessage?.({
     type: VaultMessageTypes.ZK_EPH_SIGN_BYTES,
     msgBytes: Array.from(msgBytes),
     scope,
-    sui_address: user.profile?.sui_address as string,
+    sui_address: user.profile.sui_address,
+    zkProofData,
   })) as
     | { ok?: boolean; bytes?: string; userSignature?: string; error?: string }
     | undefined

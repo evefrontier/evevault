@@ -1,5 +1,5 @@
+import { ZKEd25519Keypair } from '@evefrontier/wallet-core/crypto'
 import { encrypt, type HashedData, KeeperMessageTypes } from '@evevault/shared'
-import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519'
 import { afterEach, beforeAll, expect, vi } from 'vitest'
 
 export const TEST_PIN = '123456'
@@ -35,7 +35,7 @@ export function createKeeperTestContext(): {
     sendResponse: ReturnType<typeof vi.fn>
   }
   unlockVault: () => Promise<{
-    keypair: Ed25519Keypair
+    keypair: ZKEd25519Keypair
     hashedSecretKey: HashedData
   }>
 } {
@@ -68,10 +68,10 @@ export function createKeeperTestContext(): {
 
   /** Unlock the vault with a freshly encrypted keypair. */
   async function unlockVault(): Promise<{
-    keypair: Ed25519Keypair
+    keypair: ZKEd25519Keypair
     hashedSecretKey: HashedData
   }> {
-    const keypair = Ed25519Keypair.generate()
+    const keypair = ZKEd25519Keypair.generate()
     const hashedSecretKey = await encrypt(keypair.getSecretKey(), TEST_PIN)
     const resp = await dispatch({
       type: KeeperMessageTypes.UNLOCK_VAULT,

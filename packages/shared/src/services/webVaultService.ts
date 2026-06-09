@@ -1,4 +1,4 @@
-import { WebCryptoSigner } from '@mysten/signers/webcrypto'
+import { ZKWebCryptoSigner } from '@evefrontier/wallet-core/crypto'
 import type { PublicKey } from '@mysten/sui/cryptography'
 import type { SuiChain } from '@mysten/wallet-standard'
 import type { ZkProofResponse } from '#/types/enoki'
@@ -13,7 +13,7 @@ const PIN_HASH_STORAGE_KEY = 'evevault:web-pin-hash'
 const ZKPROOF_STORAGE_PREFIX = 'evevault:web-zkproof:'
 
 /**
- * Web-specific vault service using WebCryptoSigner (Secp256r1).
+ * Web-specific vault service using ZKWebCryptoSigner (Secp256r1).
  *
  * Security model:
  * - Keys are non-extractable CryptoKeys (hardware-backed security)
@@ -22,7 +22,7 @@ const ZKPROOF_STORAGE_PREFIX = 'evevault:web-zkproof:'
  * - True security comes from the non-extractable nature of the CryptoKey
  */
 class WebVaultService {
-  private signer: WebCryptoSigner | null = null
+  private signer: ZKWebCryptoSigner | null = null
   private unlockExpiry: number | null = null
   private initialized = false
 
@@ -44,9 +44,9 @@ class WebVaultService {
     }
 
     // Generate new keypair
-    this.signer = await WebCryptoSigner.generate()
+    this.signer = await ZKWebCryptoSigner.generate()
 
-    // Store the keypair directly in IndexedDB (required by WebCryptoSigner)
+    // Store the keypair directly in IndexedDB (required by ZKWebCryptoSigner)
     const exported = this.signer.export()
     await set(KEYPAIR_STORAGE_KEY, exported)
 
@@ -93,13 +93,16 @@ class WebVaultService {
     // Recover keypair from IndexedDB
     try {
       const exported =
-        await get<ReturnType<WebCryptoSigner['export']>>(KEYPAIR_STORAGE_KEY)
+        await get<ReturnType<ZKWebCryptoSigner['export']>>(KEYPAIR_STORAGE_KEY)
       if (!exported) {
         log.error('[web-vault] No keypair found in IndexedDB')
         return false
       }
 
-      this.signer = await WebCryptoSigner.import(exported)
+      this.signer = new ZKWebCryptoSigner(
+        exported.privateKey,
+        exported.publicKey,
+      )
       this.unlockExpiry = Date.now() + durationMs
 
       log.info(
@@ -122,7 +125,7 @@ class WebVaultService {
     return Array.from(publicKey.toRawBytes())
   }
 
-  getSigner(): WebCryptoSigner | null {
+  getSigner(): ZKWebCryptoSigner | null {
     if (!this.isUnlocked()) return null
     return this.signer
   }
@@ -149,7 +152,7 @@ class WebVaultService {
    */
   async hasKeypair(): Promise<boolean> {
     const exported =
-      await get<ReturnType<WebCryptoSigner['export']>>(KEYPAIR_STORAGE_KEY)
+      await get<ReturnType<ZKWebCryptoSigner['export']>>(KEYPAIR_STORAGE_KEY)
     return exported !== null && exported !== undefined
   }
 
@@ -168,7 +171,7 @@ class WebVaultService {
 
     // Generate a new keypair. The PIN hash in IndexedDB is unchanged — the
     // user's PIN hasn't changed, only the ephemeral key has been rotated.
-    const newSigner = await WebCryptoSigner.generate()
+    const newSigner = await ZKWebCryptoSigner.generate()
     const exported = newSigner.export()
     await set(KEYPAIR_STORAGE_KEY, exported)
 

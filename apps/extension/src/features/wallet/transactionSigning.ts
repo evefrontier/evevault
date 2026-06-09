@@ -1,5 +1,5 @@
+import { buildTransactionBytes } from '@evefrontier/wallet-core/utils'
 import type { ParsedTransactionWithDisplay } from '@evevault/shared/types'
-import { buildTx } from '@evevault/shared/utils'
 import type { SuiGrpcClient } from '@mysten/sui/grpc'
 import { Transaction } from '@mysten/sui/transactions'
 import type { useSignPopupAuth } from './hooks/useSignPopupAuth'
@@ -52,7 +52,7 @@ export async function prepareAndSignTransaction({
     )
   }
 
-  const txb = await buildTx(
+  const txb = await buildTransactionBytes(
     Transaction.from(pendingTransaction.transaction),
     senderAddress,
     suiClient,

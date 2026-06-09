@@ -1,4 +1,5 @@
-import type { PublicKey, Signer } from '@mysten/sui/cryptography'
+import type { ZKWebCryptoSigner } from '@evefrontier/wallet-core/crypto'
+import type { PublicKey } from '@mysten/sui/cryptography'
 import type { SuiChain } from '@mysten/wallet-standard'
 import type { ZkProofResponse } from '#/types/enoki'
 import type { StoredSecretKey } from '#/types/stores'
@@ -123,9 +124,9 @@ export const ephKeyService = {
    * Gets the signer for signing operations (web only)
    * Extension uses ZK_SIGN_BYTES message instead
    */
-  getSigner(): Signer | null {
+  getSigner(): ZKWebCryptoSigner | null {
     if (isWeb()) {
-      return webVaultService.getSigner() as Signer | null
+      return webVaultService.getSigner()
     }
     // Extension doesn't expose signer directly - use signBytes instead
     return null

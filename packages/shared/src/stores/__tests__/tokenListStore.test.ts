@@ -6,9 +6,17 @@ vi.mock('#/utils/environment', () => ({
   isExtension: vi.fn(() => false),
 }))
 
-vi.mock('#/wallet/eveToken', () => ({
-  getEveCoinType: vi.fn(() => '0xmock::EVE::EVE'),
-}))
+vi.mock('@evefrontier/wallet-core/definitions', async (importOriginal) => {
+  const actual =
+    await importOriginal<
+      typeof import('@evefrontier/wallet-core/definitions')
+    >()
+
+  return {
+    ...actual,
+    getEveCoinType: vi.fn(() => '0xmock::EVE::EVE'),
+  }
+})
 
 import { useTokenListStore } from '#/stores/tokenListStore'
 import { DEFAULT_TOKENS_BY_CHAIN } from '#/types/networks'

@@ -24,34 +24,36 @@ vi.mock('#/services/vaultService', () => ({
   },
 }))
 
-vi.mock('#/wallet/signWithIntent', () => ({
-  signWithIntent: vi.fn(),
-}))
+const { mockApplyZKProof, mockSignTransaction, mockSignPersonalMessage } =
+  vi.hoisted(() => ({
+    mockApplyZKProof: vi.fn(),
+    mockSignTransaction: vi.fn(),
+    mockSignPersonalMessage: vi.fn(),
+  }))
 
-const mockApplyZKProof = vi.fn()
-const mockProcessSignature = vi.fn()
+vi.mock('@evefrontier/wallet-core/crypto', async (importActual) =>
+  importActual(),
+)
 
-vi.mock('@evefrontier/wallet-core/crypto', () => ({
-  isPartialZKLoginSignature: vi.fn(() => true),
-  ZKProofHandler: class {
-    applyZKProof = mockApplyZKProof
-    processSignature = mockProcessSignature
-  },
-}))
-
-import { isPartialZKLoginSignature } from '@evefrontier/wallet-core/crypto'
 import { ephKeyService } from '#/services/vaultService'
 import { useContextStore } from '#/stores/contextStore'
 import { useDeviceStore } from '#/stores/deviceStore'
 import type { DeviceState } from '#/types'
 import { isWeb } from '#/utils/environment'
-import { signWithIntent } from '#/wallet/signWithIntent'
 import { zkSignAny } from '#/wallet/zkSignAny'
 
 const validProofData = {
-  proofPoints: {},
-  issBase64Details: {},
-  headerBase64: '',
+  proofPoints: {
+    a: ['1', '2', '3'],
+    b: [
+      ['1', '2'],
+      ['3', '4'],
+      ['5', '6'],
+    ],
+    c: ['1', '2', '3'],
+  },
+  issBase64Details: { value: 'test-issuer', indexMod4: 1 },
+  headerBase64: 'test-header-base64',
 }
 
 const minimalUser = {
@@ -77,7 +79,7 @@ const earlyGuardTests = () => {
   it('throws when user is null', async () => {
     await expect(
       zkSignAny('PersonalMessage', new Uint8Array([1]), {
-        user: null,
+        user: null as never,
         getZkProof: vi.fn(),
       }),
     ).rejects.toThrow('User not found')
@@ -184,8 +186,6 @@ const postSigningGuardTests = () => {
   })
 
   it('throws when zkProof.data fails isPartialZKLoginSignature check', async () => {
-    vi.mocked(isPartialZKLoginSignature).mockReturnValue(false)
-
     await expect(
       zkSignAny('PersonalMessage', new Uint8Array([1]), {
         user: minimalUser,
@@ -240,15 +240,19 @@ describe('zkSignAny', () => {
     vi.mocked(useContextStore.getState).mockReturnValue({
       chain: 'sui:testnet',
     } as unknown as ReturnType<typeof useContextStore.getState>)
-    vi.mocked(ephKeyService.getSigner).mockReturnValue(
-      {} as unknown as ReturnType<typeof ephKeyService.getSigner>,
-    )
-    vi.mocked(signWithIntent).mockResolvedValue({
+    vi.mocked(ephKeyService.getSigner).mockReturnValue({
+      applyZKProof: mockApplyZKProof,
+      signTransaction: mockSignTransaction,
+      signPersonalMessage: mockSignPersonalMessage,
+    } as unknown as ReturnType<typeof ephKeyService.getSigner>)
+    mockSignTransaction.mockResolvedValue({
       bytes: 'b64bytes',
-      userSignature: 'ephSig',
+      signature: 'zkSig123',
     })
-    vi.mocked(isPartialZKLoginSignature).mockReturnValue(true)
-    mockProcessSignature.mockReturnValue({ signature: 'zkSig123' })
+    mockSignPersonalMessage.mockResolvedValue({
+      bytes: 'b64bytes',
+      signature: 'zkSig123',
+    })
   })
 
   afterEach(() => {
@@ -262,7 +266,7 @@ describe('zkSignAny', () => {
 
     earlyGuardTests()
 
-    it('applies the ZK proof and returns the combined signature and bytes', async () => {
+    it('applies the ZK proof and calls signPersonalMessage for PersonalMessage scope', async () => {
       const result = await zkSignAny('PersonalMessage', new Uint8Array([1]), {
         user: minimalUser,
         getZkProof: vi.fn().mockResolvedValue({ data: validProofData }),
@@ -275,10 +279,17 @@ describe('zkSignAny', () => {
         tokenClaimSub: 'user-sub',
         tokenClaimAud: 'user-aud',
       })
-      expect(mockProcessSignature).toHaveBeenCalledWith({
-        signature: 'ephSig',
-        bytes: 'b64bytes',
+      expect(mockSignPersonalMessage).toHaveBeenCalledWith(new Uint8Array([1]))
+      expect(result).toEqual({ bytes: 'b64bytes', zkSignature: 'zkSig123' })
+    })
+
+    it('calls signTransaction for TransactionData scope', async () => {
+      const result = await zkSignAny('TransactionData', new Uint8Array([1]), {
+        user: minimalUser,
+        getZkProof: vi.fn().mockResolvedValue({ data: validProofData }),
       })
+
+      expect(mockSignTransaction).toHaveBeenCalledWith(new Uint8Array([1]))
       expect(result).toEqual({ bytes: 'b64bytes', zkSignature: 'zkSig123' })
     })
 
@@ -328,18 +339,7 @@ describe('zkSignAny', () => {
         getZkProof: vi.fn().mockResolvedValue({ data: validProofData }),
       })
 
-      expect(mockApplyZKProof).toHaveBeenCalledWith({
-        maxEpoch: 5,
-        partialZkLoginSignature: validProofData,
-        userSalt: 'user-salt',
-        tokenClaimSub: 'user-sub',
-        tokenClaimAud: 'user-aud',
-      })
-      expect(mockProcessSignature).toHaveBeenCalledWith({
-        signature: 'extSig',
-        bytes: 'extBytes',
-      })
-      expect(result).toEqual({ bytes: 'extBytes', zkSignature: 'zkSig123' })
+      expect(result).toEqual({ bytes: 'extBytes', zkSignature: 'extSig' })
     })
 
     it('throws when background script returns no response', async () => {

@@ -80,13 +80,20 @@ Object.defineProperty(globalThis, 'indexedDB', {
   },
 })
 
-// Mock WebCryptoSigner - defined inline to avoid hoisting issues
-vi.mock('@mysten/signers/webcrypto', () => {
+// Mock @evefrontier/wallet-core/crypto — replace ZKWebCryptoSigner with a
+// spy-able class so generate() and the constructor are fully controllable.
+// export() returns the same shape that unlock() reads from IndexedDB, so the
+// constructor mock intercepts reconstruction without touching real WebCrypto.
+vi.mock('@evefrontier/wallet-core/crypto', () => {
+  const mockPublicKey = new Uint8Array(33).fill(1)
   const mockSigner = {
     getPublicKey: vi.fn(() => ({
-      toRawBytes: () => new Uint8Array(33).fill(1),
+      toRawBytes: () => mockPublicKey,
     })),
-    export: vi.fn(() => ({ mockExportedKeypair: true })),
+    export: vi.fn(() => ({
+      privateKey: 'mock-crypto-key' as unknown as CryptoKey,
+      publicKey: mockPublicKey,
+    })),
     sign: vi.fn(() => Promise.resolve(new Uint8Array(64))),
     signTransaction: vi.fn(() =>
       Promise.resolve({ bytes: 'mockBytes', signature: 'mockSig' }),
@@ -94,14 +101,19 @@ vi.mock('@mysten/signers/webcrypto', () => {
     signPersonalMessage: vi.fn(() =>
       Promise.resolve({ bytes: 'mockBytes', signature: 'mockSig' }),
     ),
+    applyZKProof: vi.fn(),
   }
-
-  return {
-    WebCryptoSigner: {
-      generate: vi.fn(() => Promise.resolve(mockSigner)),
-      import: vi.fn(() => Promise.resolve(mockSigner)),
-    },
-  }
+  // Regular function (not arrow) so it can be called with `new`. When a
+  // constructor explicitly returns an object, `new` returns that object.
+  // Object.assign lets TypeScript infer `generate` as part of the type.
+  const MockZKWebCryptoSigner = Object.assign(
+    // biome-ignore lint/complexity/useArrowFunction: arrow functions cannot be used as constructors with `new`
+    vi.fn(function () {
+      return mockSigner
+    }),
+    { generate: vi.fn(() => Promise.resolve(mockSigner)) },
+  )
+  return { ZKWebCryptoSigner: MockZKWebCryptoSigner }
 })
 
 // Mock logger to avoid console noise
@@ -114,8 +126,8 @@ vi.mock('#/utils/logger', () => ({
   }),
 }))
 
-import { WebCryptoSigner } from '@mysten/signers/webcrypto'
 // Import after mocks are set up
+import { ZKWebCryptoSigner } from '@evefrontier/wallet-core/crypto'
 import { webVaultService } from './webVaultService'
 
 describe('WebVaultService', () => {
@@ -152,8 +164,8 @@ describe('WebVaultService', () => {
       const pin = '123456'
       const publicKey = await webVaultService.createEphemeralKeyPair(pin)
 
-      // Verify WebCryptoSigner.generate was called
-      expect(WebCryptoSigner.generate).toHaveBeenCalled()
+      // Verify ZKWebCryptoSigner.generate was called
+      expect(ZKWebCryptoSigner.generate).toHaveBeenCalled()
 
       // Verify keypair was stored
       expect(mockSetFn).toHaveBeenCalledWith(
@@ -216,7 +228,7 @@ describe('WebVaultService', () => {
       const result = await webVaultService.unlock(testPin)
 
       expect(result).toBe(true)
-      expect(WebCryptoSigner.import).toHaveBeenCalled()
+      expect(ZKWebCryptoSigner).toHaveBeenCalledOnce()
       expect(webVaultService.isUnlocked()).toBe(true)
     })
 
@@ -225,15 +237,15 @@ describe('WebVaultService', () => {
       await webVaultService.unlock(testPin)
       expect(webVaultService.isUnlocked()).toBe(true)
 
-      // Clear the import mock to check it's not called again
-      vi.mocked(WebCryptoSigner.import).mockClear()
+      // Clear the constructor mock to check it's not called again
+      vi.mocked(ZKWebCryptoSigner).mockClear()
 
       // Second unlock should just extend expiry, not reimport
       const result = await webVaultService.unlock(testPin)
 
       expect(result).toBe(true)
-      // Import should NOT be called again since we're already unlocked
-      expect(WebCryptoSigner.import).not.toHaveBeenCalled()
+      // Constructor should NOT be called again since we're already unlocked
+      expect(ZKWebCryptoSigner).not.toHaveBeenCalled()
     })
 
     it('throws on invalid PIN', async () => {
@@ -294,7 +306,7 @@ describe('WebVaultService', () => {
 
       const publicKey = await webVaultService.rotateEphemeralKeyPair()
 
-      expect(WebCryptoSigner.generate).toHaveBeenCalledTimes(2)
+      expect(ZKWebCryptoSigner.generate).toHaveBeenCalledTimes(2)
       expect(publicKey).toBeDefined()
       expect(mockSetFn).toHaveBeenCalledWith(
         'evevault:web-ephemeral-keypair',

@@ -7,7 +7,7 @@ describe('createSvgIcon', () => {
     const Icon = createSvgIcon({
       ariaLabel: 'Clipped',
       clipPathId: 'clip-test',
-      paths: [{ d: 'M1 1H2V2H1Z' }],
+      paths: [{ d: 'M1 1H2V2H1Z' }], // Represents a tiny square path
     })
 
     const { container } = render(<Icon />)
