@@ -122,7 +122,7 @@ describe('signForChain — localnet path', () => {
 
     const sentPayload = sendMessage.mock.calls[0][0]
     expect(Array.isArray(sentPayload.msgBytes)).toBe(true)
-    expect(sentPayload.suiAddress).toBe(LOCAL_ADDR)
+    expect(sentPayload.scope).toBe('PersonalMessage')
   })
 })
 

@@ -1,10 +1,10 @@
-import { ZKEd25519Keypair } from '@evefrontier/wallet-core/crypto'
 import { encryptWithKey } from '@evevault/shared'
 import { SUI_PRIVATE_KEY_PREFIX } from '@mysten/sui/cryptography'
+import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519'
 import type { BackgroundMessage } from '@/lib/background/types'
 
 type LocalnetState = {
-  localnetKey: ZKEd25519Keypair | null
+  localnetKey: Ed25519Keypair | null
 }
 
 const localnetSetKeypair = async (
@@ -30,7 +30,7 @@ const localnetSetKeypair = async (
     if (!privateKey.startsWith(`${SUI_PRIVATE_KEY_PREFIX}1`)) {
       throw new Error('Invalid private key')
     }
-    localnetState.localnetKey = ZKEd25519Keypair.fromSecretKey(privateKey)
+    localnetState.localnetKey = Ed25519Keypair.fromSecretKey(privateKey)
     const address = localnetState.localnetKey.getPublicKey().toSuiAddress()
     // Encrypt and return the blob to the background script for storage
     // (offscreen documents cannot access chrome.storage)

@@ -6,6 +6,7 @@ import {
   KeeperMessageTypes,
 } from '@evevault/shared'
 import type { ZkProofResponse } from '@evevault/shared/types'
+import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519'
 import {
   SUI_DEVNET_CHAIN,
   SUI_MAINNET_CHAIN,
@@ -42,17 +43,26 @@ vi.mock('@evevault/shared', async (importActual) => {
   }
 })
 
-// Patch ZKEd25519Keypair.prototype so every instance the keeper creates
-// internally (via fromSecretKey/generate) routes through our mocks — the test
-// never holds a reference to those instances, so there's no other intercept
-// point. The patch runs once when the module loads; vi.clearAllMocks() resets
-// call history between tests but does not undo the prototype assignment.
+// Patch keypair prototypes so every instance the keeper creates internally
+// (via fromSecretKey/generate) routes through our mocks — the test never holds
+// a reference to those instances, so there's no other intercept point. Each
+// patch runs once when the module loads; vi.clearAllMocks() resets call history
+// between tests but does not undo the prototype assignments.
+// ZKEd25519Keypair — used for the main vault ephemeral key.
 vi.mock('@evefrontier/wallet-core/crypto', async (importActual) => {
   const actual =
     await importActual<typeof import('@evefrontier/wallet-core/crypto')>()
   actual.ZKEd25519Keypair.prototype.signTransaction = mockSignTransaction
   actual.ZKEd25519Keypair.prototype.signPersonalMessage =
     mockSignPersonalMessage
+  return actual
+})
+// Ed25519Keypair — used for the localnet key (no zkLogin, plain signing).
+vi.mock('@mysten/sui/keypairs/ed25519', async (importActual) => {
+  const actual =
+    await importActual<typeof import('@mysten/sui/keypairs/ed25519')>()
+  actual.Ed25519Keypair.prototype.signTransaction = mockSignTransaction
+  actual.Ed25519Keypair.prototype.signPersonalMessage = mockSignPersonalMessage
   return actual
 })
 
@@ -436,7 +446,7 @@ describe('Keeper LOCALNET_SET_KEYPAIR handler', () => {
   })
 
   it('loads keypair into RAM and returns encrypted blob when vault is unlocked', async () => {
-    const keypair = ZKEd25519Keypair.generate()
+    const keypair = Ed25519Keypair.generate()
     const bech32 = keypair.getSecretKey()
 
     const resp = await dispatch({
@@ -461,7 +471,7 @@ describe('Keeper LOCALNET_SET_KEYPAIR handler', () => {
     // resulting ciphertext is compatible with decrypt(blob, TEST_PIN) which re-derives the
     // same key internally. If session key derivation ever changes to use a different source,
     // this round-trip test will catch it.
-    const keypair = ZKEd25519Keypair.generate()
+    const keypair = Ed25519Keypair.generate()
     const bech32 = keypair.getSecretKey()
 
     const resp = await dispatch({
@@ -477,7 +487,7 @@ describe('Keeper LOCALNET_SET_KEYPAIR handler', () => {
     // Simulates locked keeper: unlock sets sessionDerivedKey/sessionSalt;
     // CLEAR_EPHKEY clears them (same branch as never unlocked for this handler).
     await dispatch({ type: KeeperMessageTypes.CLEAR_EPHKEY })
-    const keypair = ZKEd25519Keypair.generate()
+    const keypair = Ed25519Keypair.generate()
 
     const resp = await dispatch({
       type: KeeperMessageTypes.LOCALNET_SET_KEYPAIR,
@@ -494,7 +504,7 @@ describe('Keeper LOCALNET_SET_KEYPAIR handler', () => {
 
     const resp = await dispatch({
       type: KeeperMessageTypes.LOCALNET_SET_KEYPAIR,
-      privateKey: ZKEd25519Keypair.generate().getSecretKey(),
+      privateKey: Ed25519Keypair.generate().getSecretKey(),
     })
 
     expect(resp.ok).toBe(false)
@@ -502,7 +512,7 @@ describe('Keeper LOCALNET_SET_KEYPAIR handler', () => {
   })
 
   it('after expiry, LOCALNET_GET_ADDRESS clears and hides a loaded key', async () => {
-    const keypair = ZKEd25519Keypair.generate()
+    const keypair = Ed25519Keypair.generate()
     await dispatch({
       type: KeeperMessageTypes.LOCALNET_SET_KEYPAIR,
       privateKey: keypair.getSecretKey(),
@@ -520,7 +530,7 @@ describe('Keeper LOCALNET_SET_KEYPAIR handler', () => {
   })
 
   it('after expiry, LOCALNET_SIGN rejects a loaded key', async () => {
-    const keypair = ZKEd25519Keypair.generate()
+    const keypair = Ed25519Keypair.generate()
     await dispatch({
       type: KeeperMessageTypes.LOCALNET_SET_KEYPAIR,
       privateKey: keypair.getSecretKey(),
@@ -542,7 +552,7 @@ describe('Keeper LOCALNET_SET_KEYPAIR handler', () => {
   })
 
   it('signs transaction bytes with TransactionData scope', async () => {
-    const keypair = ZKEd25519Keypair.generate()
+    const keypair = Ed25519Keypair.generate()
     await dispatch({
       type: KeeperMessageTypes.LOCALNET_SET_KEYPAIR,
       privateKey: keypair.getSecretKey(),
@@ -566,7 +576,7 @@ describe('Keeper LOCALNET_SET_KEYPAIR handler', () => {
   })
 
   it('signs personal message bytes with PersonalMessage scope', async () => {
-    const keypair = ZKEd25519Keypair.generate()
+    const keypair = Ed25519Keypair.generate()
     await dispatch({
       type: KeeperMessageTypes.LOCALNET_SET_KEYPAIR,
       privateKey: keypair.getSecretKey(),
@@ -615,7 +625,7 @@ describe('Keeper LOCALNET_SET_KEYPAIR handler', () => {
 
 describe('Keeper UNLOCK_VAULT — localnet key restoration', () => {
   it('restores localnet keypair from encrypted blob on unlock', async () => {
-    const localnetKeypair = ZKEd25519Keypair.generate()
+    const localnetKeypair = Ed25519Keypair.generate()
     const bech32 = localnetKeypair.getSecretKey()
     const encrypted = await encrypt(bech32, TEST_PIN)
 
@@ -678,7 +688,7 @@ describe('Keeper UNLOCK_VAULT — localnet key restoration', () => {
   })
 
   it('leaves localnetKey null when wrong PIN is used to decrypt', async () => {
-    const localnetKeypair = ZKEd25519Keypair.generate()
+    const localnetKeypair = Ed25519Keypair.generate()
     const encrypted = await encrypt(localnetKeypair.getSecretKey(), TEST_PIN)
     const ephKeypair = ZKEd25519Keypair.generate()
     const hashedSecretKey = await encrypt(

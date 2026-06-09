@@ -1,5 +1,6 @@
 import { ZKEd25519Keypair } from '@evefrontier/wallet-core/crypto'
 import { decrypt, deriveAesKey, type HashedData } from '@evevault/shared'
+import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519'
 import type { BackgroundMessage } from '@/lib/background/types'
 import {
   localnetState,
@@ -59,7 +60,7 @@ export async function restoreLocalnetKeyIfPresent(
 
   try {
     const localnetPrivKey = await decrypt(encLocalnet as HashedData, pin)
-    localnetState.localnetKey = ZKEd25519Keypair.fromSecretKey(localnetPrivKey)
+    localnetState.localnetKey = Ed25519Keypair.fromSecretKey(localnetPrivKey)
   } catch {
     localnetState.localnetKey = null
   }
