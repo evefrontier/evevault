@@ -88,19 +88,19 @@
       },
       "devDependencies": {
         "@testing-library/react": "^16.3.2",
-        "@types/node": "^25.6.2",
+        "@types/node": "^25.9.2",
         "@vitest/browser-playwright": "4.1.8",
         "typescript": "^5.9.3",
       },
       "peerDependencies": {
         "@mysten/sui": "^2.17.0",
         "@mysten/wallet-standard": "^0.20.3",
-        "@tanstack/react-query": "^5.100.14",
-        "@tanstack/react-router": "^1.135.2",
-        "@types/react": "^19.1.9",
+        "@tanstack/react-query": "^5.101.0",
+        "@tanstack/react-router": "^1.170.15",
+        "@types/react": "^19.2.17",
         "jose": "6.0.12",
-        "oidc-client-ts": "^3.3.0",
-        "react": "^19.2.6",
+        "oidc-client-ts": "^3.5.0",
+        "react": "^19.2.7",
       },
     },
   },
@@ -110,6 +110,7 @@
     "@mysten/wallet-standard": "^0.20.3",
     "@vitest/browser": "4.1.8",
     "axios": "^1.16.0",
+    "shell-quote": "^1.8.4",
     "tmp": "^0.2.6",
     "uuid": ">=11.1.1",
     "valibot": ">=1.2.0",
@@ -1864,7 +1865,7 @@
 
     "shebang-regex": ["shebang-regex@3.0.0", "", {}, "sha512-7++dFhtcx3353uBaq8DDR4NuxBetBzC7ZQOhmTQInHEd6bSrXdiEyzCvG07Z44UYdLShWUyXt5M/yhz8ekcb1A=="],
 
-    "shell-quote": ["shell-quote@1.7.3", "", {}, "sha512-Vpfqwm4EnqGdlsBFNmHhxhElJYrdfcxPThu+ryKS5J8L/fhAwLazFZtq+S+TWZ9ANj2piSQLGj6NQg+lKPmxrw=="],
+    "shell-quote": ["shell-quote@1.8.4", "", {}, "sha512-VsC6n6vz1ihYYyZZwX7YZSF5l5x36ca17OC+a69h94YqB7X6XLwf+5MOgynYir2SLFUbl8gIYvBo8K8RoNQ6bQ=="],
 
     "shellwords": ["shellwords@0.1.1", "", {}, "sha512-vFwSUfQvqybiICwZY5+DAWIPLKsWO31Q91JSKl3UYv+K5c2QRPzn0qzec6QPu1Qc9eHYItiP3NdJqNVqetYAww=="],
 
