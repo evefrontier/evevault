@@ -1,5 +1,8 @@
 import { encryptWithKey } from '@evevault/shared'
-import { SUI_PRIVATE_KEY_PREFIX } from '@mysten/sui/cryptography'
+import {
+  type IntentScope,
+  SUI_PRIVATE_KEY_PREFIX,
+} from '@mysten/sui/cryptography'
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519'
 import type { BackgroundMessage } from '@/lib/background/types'
 
@@ -85,7 +88,7 @@ const localnetSign = async (
   try {
     const { msgBytes, scope } = message as {
       msgBytes: number[]
-      scope: string
+      scope: IntentScope
     }
 
     const messageBytes = new Uint8Array(msgBytes)

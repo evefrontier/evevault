@@ -1,4 +1,5 @@
 import { ZKEd25519Keypair } from '@evefrontier/wallet-core/crypto'
+import type { ZKProofData } from '@evefrontier/wallet-core/types'
 import {
   decrypt,
   encrypt,
@@ -23,11 +24,13 @@ import {
 const {
   mockEncrypt,
   mockEncryptWithKey,
+  mockApplyZKProof,
   mockSignTransaction,
   mockSignPersonalMessage,
 } = vi.hoisted(() => ({
   mockEncrypt: vi.fn(),
   mockEncryptWithKey: vi.fn(),
+  mockApplyZKProof: vi.fn(),
   mockSignTransaction: vi.fn(),
   mockSignPersonalMessage: vi.fn(),
 }))
@@ -52,6 +55,7 @@ vi.mock('@evevault/shared', async (importActual) => {
 vi.mock('@evefrontier/wallet-core/crypto', async (importActual) => {
   const actual =
     await importActual<typeof import('@evefrontier/wallet-core/crypto')>()
+  actual.ZKEd25519Keypair.prototype.applyZKProof = mockApplyZKProof
   actual.ZKEd25519Keypair.prototype.signTransaction = mockSignTransaction
   actual.ZKEd25519Keypair.prototype.signPersonalMessage =
     mockSignPersonalMessage
@@ -71,6 +75,14 @@ vi.mock('@mysten/sui/keypairs/ed25519', async (importActual) => {
 const ctx = createKeeperTestContext()
 const { dispatch, rawDispatch, unlockVault } = ctx
 setupKeeperSuite(ctx)
+
+const TEST_ZK_PROOF_DATA: ZKProofData = {
+  maxEpoch: 100,
+  partialZkLoginSignature: undefined,
+  userSalt: 'test-salt',
+  tokenClaimSub: 'test-sub',
+  tokenClaimAud: 'test-aud',
+}
 
 beforeEach(async () => {
   const actual =
@@ -221,6 +233,7 @@ describe('Keeper EPH_SIGN handler', () => {
       type: KeeperMessageTypes.EPH_SIGN,
       msgBytes: [1, 2, 3],
       scope: 'TransactionData',
+      zkProofData: TEST_ZK_PROOF_DATA,
     })
 
     expect(resp.ok).toBe(true)
@@ -237,6 +250,7 @@ describe('Keeper EPH_SIGN handler', () => {
       type: KeeperMessageTypes.EPH_SIGN,
       msgBytes: [1, 2, 3],
       scope: 'PersonalMessage',
+      zkProofData: TEST_ZK_PROOF_DATA,
     })
 
     expect(resp.ok).toBe(true)
@@ -254,10 +268,22 @@ describe('Keeper EPH_SIGN handler', () => {
       type: KeeperMessageTypes.EPH_SIGN,
       msgBytes: [1, 2, 3],
       scope: 'TransactionData',
+      zkProofData: TEST_ZK_PROOF_DATA,
     })
 
     expect(resp.ok).toBe(false)
     expect(resp.error).toBe('sign failed')
+  })
+
+  it('returns an error when zkProofData is missing', async () => {
+    const resp = await dispatch({
+      type: KeeperMessageTypes.EPH_SIGN,
+      msgBytes: [1, 2, 3],
+      scope: 'TransactionData',
+    })
+
+    expect(resp.ok).toBe(false)
+    expect(resp.error).toBe('[KEEPER_EPH_SIGN] zkProofData is required')
   })
 
   it('returns false without responding for non-KEEPER targets', () => {

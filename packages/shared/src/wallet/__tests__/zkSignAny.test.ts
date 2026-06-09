@@ -24,40 +24,17 @@ vi.mock('#/services/vaultService', () => ({
   },
 }))
 
-const {
-  mockApplyZKProof,
-  mockSignTransaction,
-  mockSignPersonalMessage,
-  mockIsPartialZKLoginSignature,
-} = vi.hoisted(() => ({
-  mockApplyZKProof: vi.fn(),
-  mockSignTransaction: vi.fn(),
-  mockSignPersonalMessage: vi.fn(),
-  mockIsPartialZKLoginSignature: vi.fn((_value: unknown) => true),
-}))
+const { mockApplyZKProof, mockSignTransaction, mockSignPersonalMessage } =
+  vi.hoisted(() => ({
+    mockApplyZKProof: vi.fn(),
+    mockSignTransaction: vi.fn(),
+    mockSignPersonalMessage: vi.fn(),
+  }))
 
-vi.mock('@evefrontier/wallet-core/crypto', () => ({
-  isPartialZKLoginSignature: mockIsPartialZKLoginSignature,
-  loadZkProof: vi.fn(async (getZkProof) => {
-    const zkProof = await getZkProof()
-    if (!zkProof) {
-      throw new Error('Failed to get ZK proof')
-    }
-    if (zkProof.error) {
-      throw new Error(
-        typeof zkProof.error === 'string'
-          ? zkProof.error
-          : (zkProof.error.message ?? 'Failed to get ZK proof'),
-      )
-    }
-    if (!('data' in zkProof) || !mockIsPartialZKLoginSignature(zkProof.data)) {
-      throw new Error('ZK proof data not found or invalid')
-    }
-    return zkProof.data
-  }),
-}))
+vi.mock('@evefrontier/wallet-core/crypto', async (importActual) =>
+  importActual(),
+)
 
-import { isPartialZKLoginSignature } from '@evefrontier/wallet-core/crypto'
 import { ephKeyService } from '#/services/vaultService'
 import { useContextStore } from '#/stores/contextStore'
 import { useDeviceStore } from '#/stores/deviceStore'
@@ -66,9 +43,17 @@ import { isWeb } from '#/utils/environment'
 import { zkSignAny } from '#/wallet/zkSignAny'
 
 const validProofData = {
-  proofPoints: {},
-  issBase64Details: {},
-  headerBase64: '',
+  proofPoints: {
+    a: ['1', '2', '3'],
+    b: [
+      ['1', '2'],
+      ['3', '4'],
+      ['5', '6'],
+    ],
+    c: ['1', '2', '3'],
+  },
+  issBase64Details: { value: 'test-issuer', indexMod4: 1 },
+  headerBase64: 'test-header-base64',
 }
 
 const minimalUser = {
@@ -201,8 +186,6 @@ const postSigningGuardTests = () => {
   })
 
   it('throws when zkProof.data fails isPartialZKLoginSignature check', async () => {
-    vi.mocked(isPartialZKLoginSignature).mockReturnValue(false)
-
     await expect(
       zkSignAny('PersonalMessage', new Uint8Array([1]), {
         user: minimalUser,
@@ -270,7 +253,6 @@ describe('zkSignAny', () => {
       bytes: 'b64bytes',
       signature: 'zkSig123',
     })
-    vi.mocked(isPartialZKLoginSignature).mockReturnValue(true)
   })
 
   afterEach(() => {

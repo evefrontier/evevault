@@ -148,9 +148,10 @@ export function handleEphSign(
   ;(async () => {
     try {
       const { msgBytes, scope, zkProofData } = message
-      if (zkProofData) {
-        key.applyZKProof(zkProofData as ZKProofData)
+      if (!zkProofData) {
+        throw new Error('[KEEPER_EPH_SIGN] zkProofData is required')
       }
+      key.applyZKProof(zkProofData as ZKProofData)
       const msgUint8 = new Uint8Array(msgBytes as number[])
       const result =
         scope === 'TransactionData'

@@ -92,10 +92,8 @@ class WebVaultService {
 
     // Recover keypair from IndexedDB
     try {
-      const exported = await get<{
-        privateKey: CryptoKey
-        publicKey: Uint8Array
-      }>(KEYPAIR_STORAGE_KEY)
+      const exported =
+        await get<ReturnType<ZKWebCryptoSigner['export']>>(KEYPAIR_STORAGE_KEY)
       if (!exported) {
         log.error('[web-vault] No keypair found in IndexedDB')
         return false
@@ -153,10 +151,8 @@ class WebVaultService {
    * Checks if a keypair exists in IndexedDB.
    */
   async hasKeypair(): Promise<boolean> {
-    const exported = await get<{
-      privateKey: CryptoKey
-      publicKey: Uint8Array
-    }>(KEYPAIR_STORAGE_KEY)
+    const exported =
+      await get<ReturnType<ZKWebCryptoSigner['export']>>(KEYPAIR_STORAGE_KEY)
     return exported !== null && exported !== undefined
   }
 
