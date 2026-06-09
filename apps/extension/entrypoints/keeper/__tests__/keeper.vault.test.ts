@@ -265,7 +265,6 @@ describe('Keeper vault expiry (enforceExpiry)', () => {
       type: KeeperMessageTypes.EPH_SIGN,
       msgBytes: [],
       scope: 'TransactionData',
-      sui_address: '0x1',
     })
     expect(String(resp.error)).toContain('LOCKED')
   })

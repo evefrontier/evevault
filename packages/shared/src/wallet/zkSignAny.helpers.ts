@@ -84,6 +84,9 @@ const signWithWebEphemeralKey = async (
   }
 
   signer.applyZKProof(zkProofData)
+  // Scope routing is inline rather than via wallet-core's signWithIntent: the
+  // proof is already applied above, so signing directly emits the zkLogin
+  // signature. See the matching note in the keeper's handleEphSign.
   const result =
     scope === 'TransactionData'
       ? await signer.signTransaction(msgBytes)
@@ -105,7 +108,6 @@ const signWithExtensionEphemeralKey = async (
     type: VaultMessageTypes.ZK_EPH_SIGN_BYTES,
     msgBytes: Array.from(msgBytes),
     scope,
-    sui_address: user.profile.sui_address,
     zkProofData,
   })) as
     | { ok?: boolean; bytes?: string; userSignature?: string; error?: string }

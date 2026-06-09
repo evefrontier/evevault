@@ -210,7 +210,7 @@ export function _handleZkEphSignBytes(
   _sender: chrome.runtime.MessageSender,
   sendResponse: (response?: unknown) => void,
 ): Promise<boolean> {
-  const { msgBytes, scope, sui_address, zkProofData } = message
+  const { msgBytes, scope, zkProofData } = message
   return forwardToKeeper(
     sendResponse,
     {
@@ -223,7 +223,6 @@ export function _handleZkEphSignBytes(
               : Object.values(msgBytes as Record<number, number>),
           ),
       scope,
-      sui_address,
       zkProofData,
     },
     (r) =>

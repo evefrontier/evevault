@@ -268,7 +268,6 @@ describe('_handleZkEphSignBytes', () => {
       makeMessage({
         msgBytes: [1, 2, 3],
         scope: 'TransactionData',
-        sui_address: '0xabc',
       }),
       mockSender,
       sendResponse,
@@ -277,7 +276,6 @@ describe('_handleZkEphSignBytes', () => {
     const msg = captureKeeperMessage()
     expect(msg?.msgBytes).toEqual([1, 2, 3])
     expect(msg?.scope).toBe('TransactionData')
-    expect(msg?.sui_address).toBe('0xabc')
     expect(sendResponse).toHaveBeenCalledWith({
       ok: true,
       bytes: 'b64bytes',
@@ -292,7 +290,6 @@ describe('_handleZkEphSignBytes', () => {
       makeMessage({
         msgBytes: new Uint8Array([10, 20, 30]) as unknown as number[],
         scope: 'TransactionData',
-        sui_address: '0xabc',
       }),
       mockSender,
       vi.fn(),
@@ -309,7 +306,6 @@ describe('_handleZkEphSignBytes', () => {
       makeMessage({
         msgBytes: [1],
         scope: 'TransactionData',
-        sui_address: '0x1',
       }),
       mockSender,
       sendResponse,
