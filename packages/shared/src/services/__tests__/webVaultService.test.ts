@@ -128,7 +128,7 @@ vi.mock('#/utils/logger', () => ({
 
 // Import after mocks are set up
 import { ZKWebCryptoSigner } from '@evefrontier/wallet-core/crypto'
-import { webVaultService } from './webVaultService'
+import { webVaultService } from '../webVaultService'
 
 describe('WebVaultService', () => {
   beforeEach(() => {
