@@ -40,6 +40,15 @@ describe('deriveEncryptionKey', () => {
     expect(deriveEncryptionKey(token)).toBe('s:t:undefined')
   })
 
+  it('decodes real base64url payloads containing - and _', () => {
+    const claims = { sub: '???', tid: '>>>', email: 'a/b+c@example.com' }
+    const payload = Buffer.from(JSON.stringify(claims)).toString('base64url')
+    // guard: the fixture must really contain base64url-specific chars
+    expect(payload).toMatch(/[-_]/)
+    const token = `header.${payload}.sig`
+    expect(deriveEncryptionKey(token)).toBe('???:>>>:a/b+c@example.com')
+  })
+
   it.each([
     ['a non-JWT string', 'garbage'],
     ['a token with no payload segment', 'header'],

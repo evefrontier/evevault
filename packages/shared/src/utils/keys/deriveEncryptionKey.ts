@@ -1,10 +1,15 @@
+import { decodeJwt } from 'jose'
 import { createLogger } from '#/utils/logger'
 
 const log = createLogger()
 
 const deriveEncryptionKey = (token: string): string => {
   try {
-    const claims = JSON.parse(atob(token.split('.')[1]))
+    const claims = decodeJwt(token) as {
+      sub?: string
+      tid?: string
+      email?: string
+    }
     // Use a combination of claims that won't change during the session
     return `${claims.sub}:${claims.tid}:${claims.email}`
   } catch (error) {
