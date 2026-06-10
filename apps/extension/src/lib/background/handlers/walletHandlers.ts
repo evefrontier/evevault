@@ -11,6 +11,17 @@ import { requireSigningPermission } from './signingPermissions'
 
 const log = createLogger()
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value != null && typeof value === 'object' && !Array.isArray(value)
+}
+
+function isApprovalResultForWindow(
+  result: unknown,
+  windowId: number,
+): result is Record<string, unknown> {
+  return isRecord(result) && result.windowId === windowId
+}
+
 // Maps a wallet action string to its corresponding error message type so
 // the dApp's listener can route the rejection correctly.
 function getSignErrorType(action: string): SigningErrorType {
@@ -182,6 +193,8 @@ async function handleApprovePopup(
       [key: string]: chrome.storage.StorageChange
     }) => {
       const result = changes.transactionResult?.newValue
+      if (!isApprovalResultForWindow(result, windowId)) return
+
       const isSuccess =
         result?.status === 'signed' || result?.status === 'signed_and_executed'
 

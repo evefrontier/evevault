@@ -199,6 +199,7 @@ describe('handleApprovePopup', () => {
       wrapped({
         transactionResult: {
           newValue: {
+            windowId: 99,
             status: 'signed',
             bytes: new Uint8Array([1, 2]),
             signature: 'sig-bytes',
@@ -230,6 +231,7 @@ describe('handleApprovePopup', () => {
       wrapped({
         transactionResult: {
           newValue: {
+            windowId: 99,
             status: 'signed_and_executed',
             bytes: new Uint8Array([9]),
             signature: 'sig',
@@ -263,6 +265,7 @@ describe('handleApprovePopup', () => {
       wrapped({
         transactionResult: {
           newValue: {
+            windowId: 99,
             status: 'signed_and_executed',
             bytes: new Uint8Array([1]),
             signature: 'sig',
@@ -293,6 +296,7 @@ describe('handleApprovePopup', () => {
       wrapped({
         transactionResult: {
           newValue: {
+            windowId: 99,
             status: 'signed',
             bytes: new Uint8Array([1]),
             signature: 'sig',
@@ -324,6 +328,7 @@ describe('handleApprovePopup', () => {
       wrapped({
         transactionResult: {
           newValue: {
+            windowId: 99,
             status: 'signed_and_executed',
             bytes: new Uint8Array([1]),
             signature: 'sig',
@@ -355,6 +360,7 @@ describe('handleApprovePopup', () => {
       wrapped({
         transactionResult: {
           newValue: {
+            windowId: 99,
             status: 'signed_and_executed',
             bytes: new Uint8Array([1]),
             signature: 'sig',
@@ -383,6 +389,7 @@ describe('handleApprovePopup', () => {
       wrapped({
         transactionResult: {
           newValue: {
+            windowId: 99,
             status: 'error',
             error: errorPayload,
           },
@@ -422,6 +429,7 @@ describe('handleApprovePopup', () => {
       wrapped({
         transactionResult: {
           newValue: {
+            windowId: 99,
             status: 'error',
             error: 'User said no',
           },
@@ -568,6 +576,31 @@ describe('handleApprovePopup', () => {
       expect(chrome.storage.local.remove).not.toHaveBeenCalled()
     })
 
+    it('ignores transactionResult for a different popup window', async () => {
+      const wrapped = await getWrappedListener(
+        {
+          id: 'mismatched-window',
+          action: WalletStandardMessageTypes.SIGN_TRANSACTION,
+        },
+        { tab: { id: 1 } },
+      )
+
+      wrapped({
+        transactionResult: {
+          newValue: {
+            windowId: 123,
+            status: 'signed',
+            bytes: new Uint8Array([1]),
+            signature: 'sig',
+          },
+        },
+      })
+
+      expect(chrome.tabs.sendMessage).not.toHaveBeenCalled()
+      expect(chrome.storage.local.remove).not.toHaveBeenCalled()
+      expect(chrome.storage.onChanged.removeListener).not.toHaveBeenCalled()
+    })
+
     it('does nothing on success when sender has no tab id', async () => {
       const wrapped = await getWrappedListener(
         { action: WalletStandardMessageTypes.SIGN_TRANSACTION },
@@ -577,6 +610,7 @@ describe('handleApprovePopup', () => {
       wrapped({
         transactionResult: {
           newValue: {
+            windowId: 99,
             status: 'signed',
             bytes: new Uint8Array([1]),
             signature: 'sig',
@@ -627,6 +661,7 @@ describe('handleApprovePopup', () => {
       wrapped({
         transactionResult: {
           newValue: {
+            windowId: 99,
             status: 'signed',
             bytes: new Uint8Array([1]),
             signature: 's',
