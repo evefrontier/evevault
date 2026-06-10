@@ -20,6 +20,22 @@ export const isErrorWithMessage = (
   )
 }
 
+/** Decode a token once, tolerating opaque (non-JWT) and absent values. */
+const decodeTokenSafely = (token?: string) => {
+  if (!token) return null
+  try {
+    return decodeJwt(token)
+  } catch {
+    return null
+  }
+}
+
+/** First value that is actually a number, else undefined. */
+const firstNumber = (...values: unknown[]): number | undefined =>
+  values.find((value): value is number => typeof value === 'number')
+
+const nowInSeconds = () => Math.floor(Date.now() / 1000)
+
 /**
  * Expiry for a **persisted** primary JWT. Prefer absolute `expires_at` (set at store time).
  */
@@ -29,37 +45,24 @@ export const resolveExpiresAt = (jwt: JwtResponse): number => {
     return jwt.expires_at
   }
 
-  // Decode each token once, tolerating opaque (non-JWT) values
-  const decodeToken = (token: string) => {
-    try {
-      return decodeJwt(token)
-    } catch {
-      return null
-    }
-  }
-
-  const fromAccess = jwt.access_token ? decodeToken(jwt.access_token) : null
-  const fromId = jwt.id_token ? decodeToken(jwt.id_token) : null
+  const fromAccess = decodeTokenSafely(jwt.access_token)
+  const fromId = decodeTokenSafely(jwt.id_token)
 
   // Use the exp claim embedded in the access_token or id_token
-  if (typeof fromAccess?.exp === 'number') return fromAccess.exp
-  if (typeof fromId?.exp === 'number') return fromId.exp
+  const exp = firstNumber(fromAccess?.exp, fromId?.exp)
+  if (exp !== undefined) return exp
 
-  // Compute absolute expiry from expires_in, anchoring to the token's own
-  // iat claim so the result is independent of local clock at store time
-  // Fall back to Date.now() if neither token carries iat
+  // Compute absolute expiry from expires_in, anchoring to the token's own iat
+  // claim so the result is independent of local clock at store time; fall back
+  // to Date.now() if neither token carries iat
   if (typeof jwt.expires_in === 'number') {
-    const iat = fromId?.iat ?? fromAccess?.iat
-    if (typeof iat === 'number') return iat + jwt.expires_in
-    return Math.floor(Date.now() / 1000) + jwt.expires_in
+    const iat = firstNumber(fromId?.iat, fromAccess?.iat)
+    return (iat ?? nowInSeconds()) + jwt.expires_in
   }
 
-  // No expiry information at all — use iat as a best-effort anchor
-  const iat = fromAccess?.iat ?? fromId?.iat
-  if (typeof iat === 'number') return iat
-
-  // Last resort: treat the token as expiring right now
-  return Math.floor(Date.now() / 1000)
+  // No expiry information at all — use iat as a best-effort anchor, otherwise
+  // treat the token as expiring right now
+  return firstNumber(fromAccess?.iat, fromId?.iat) ?? nowInSeconds()
 }
 
 /**
