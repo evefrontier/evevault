@@ -55,7 +55,7 @@ describe('waitForVaultMessage', () => {
     await expect(promise).resolves.toBe('signed')
     expect(window.postMessage).toHaveBeenCalledWith(
       { __to: 'Eve Vault', id: 'request-1' },
-      '*',
+      window.location.origin,
     )
   })
 

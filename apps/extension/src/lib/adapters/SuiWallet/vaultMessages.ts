@@ -1,4 +1,5 @@
 import { trySettle } from '@/lib/util/timeoutGuard'
+import { postToEveVaultBridge } from './bridgeTargetOrigin'
 
 type VaultMessageOpts<T> = {
   id: string
@@ -44,7 +45,7 @@ export function waitForVaultMessage<T>({
     timeoutId = setTimeout(() => {
       if (trySettle(state, onMsg)) reject(new Error(timeoutMessage))
     }, APPROVAL_TIMEOUT_MS)
-    window.postMessage(outbound, '*')
+    postToEveVaultBridge(outbound)
   })
 }
 
