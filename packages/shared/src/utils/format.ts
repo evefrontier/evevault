@@ -60,7 +60,7 @@ export function toSmallestUnit(amount: string, decimals: number): bigint {
 }
 
 /** SUI decimals (1 SUI = 10^9 MIST). */
-const SUI_DECIMALS = 9
+export const SUI_DECIMALS = 9
 
 /**
  * Formats MIST (Sui smallest unit) as human-readable SUI string.

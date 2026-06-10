@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { SUI_DECIMALS } from '#/utils/format'
 import {
   buildValidationErrors,
   canSendToken,
@@ -6,45 +7,50 @@ import {
   isPositiveAmountWithinBalance,
 } from '#/wallet/hooks/useSendToken.validation'
 
-const DECIMALS = 9 // SUI uses 9 decimals
 const ONE_SUI = 1_000_000_000n.toString()
 
 describe('isPositiveAmountWithinBalance', () => {
   it('returns false for empty amount or "0"', () => {
-    expect(isPositiveAmountWithinBalance('', ONE_SUI, DECIMALS)).toBe(false)
-    expect(isPositiveAmountWithinBalance('0', ONE_SUI, DECIMALS)).toBe(false)
+    expect(isPositiveAmountWithinBalance('', ONE_SUI, SUI_DECIMALS)).toBe(false)
+    expect(isPositiveAmountWithinBalance('0', ONE_SUI, SUI_DECIMALS)).toBe(
+      false,
+    )
   })
 
   it('returns true when amount is in range', () => {
-    expect(isPositiveAmountWithinBalance('0.5', ONE_SUI, DECIMALS)).toBe(true)
+    expect(isPositiveAmountWithinBalance('0.5', ONE_SUI, SUI_DECIMALS)).toBe(
+      true,
+    )
   })
 
   it('returns true when amount exactly equals the balance', () => {
-    expect(isPositiveAmountWithinBalance('1', ONE_SUI, DECIMALS)).toBe(true)
+    expect(isPositiveAmountWithinBalance('1', ONE_SUI, SUI_DECIMALS)).toBe(true)
   })
 
   it('returns false when amount is one smallest-unit over the balance', () => {
     const balance = 1_000_000_000n.toString()
     // 1.000000001 SUI = balance + 1 mist
     expect(
-      isPositiveAmountWithinBalance('1.000000001', balance, DECIMALS),
+      isPositiveAmountWithinBalance('1.000000001', balance, SUI_DECIMALS),
     ).toBe(false)
   })
 
   it('returns false for a tiny positive amount above a smaller balance', () => {
-    expect(isPositiveAmountWithinBalance('0.000000001', '0', DECIMALS)).toBe(
+    expect(
+      isPositiveAmountWithinBalance('0.000000001', '0', SUI_DECIMALS),
+    ).toBe(false)
+  })
+
+  it('returns false when amount cannot be parsed (catch path)', () => {
+    expect(isPositiveAmountWithinBalance('abc', ONE_SUI, SUI_DECIMALS)).toBe(
       false,
     )
   })
 
-  it('returns false when amount cannot be parsed (catch path)', () => {
-    expect(isPositiveAmountWithinBalance('abc', ONE_SUI, DECIMALS)).toBe(false)
-  })
-
   it('returns false when amount has too many decimal places (catch path)', () => {
-    // 10 fractional digits exceeds DECIMALS and toSmallestUnit throws
+    // 10 fractional digits exceeds SUI_DECIMALS and toSmallestUnit throws
     expect(
-      isPositiveAmountWithinBalance('1.0000000001', ONE_SUI, DECIMALS),
+      isPositiveAmountWithinBalance('1.0000000001', ONE_SUI, SUI_DECIMALS),
     ).toBe(false)
   })
 })
