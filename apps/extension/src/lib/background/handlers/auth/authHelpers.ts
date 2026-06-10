@@ -13,11 +13,20 @@ import type { MessageWithId } from '@/lib/background/types'
 const log = createLogger()
 
 export function buildAuthSuccessToken(jwt: JwtResponse): AuthSuccessToken {
-  return {
-    ...jwt,
+  const token: AuthSuccessToken = {
+    access_token: jwt.access_token,
+    id_token: jwt.id_token,
+    expires_in: jwt.expires_in,
+    scope: jwt.scope,
+    token_type: jwt.token_type,
+    refresh_token: jwt.refresh_token,
+    refresh_token_id: jwt.refresh_token_id,
+    expires_at: jwt.expires_at,
     email: extractEmailFromJwt(jwt),
-    userId: extractUserIdFromJwt(jwt),
+    userId: jwt.userId ?? extractUserIdFromJwt(jwt),
   }
+
+  return token
 }
 
 export function ensureMessageId(message: MessageWithId): string {
@@ -76,14 +85,24 @@ export function sendAuthSuccess(id: string, jwt: JwtResponse): void {
 export function sendAuthSuccessToTab(
   tabId: number,
   ids: string[],
-  token: AuthSuccessToken,
-  opts: { chain: SuiChain; address?: string; logger?: Logger },
+  opts: {
+    chain: SuiChain
+    address: string
+    publicKey?: string
+    logger?: Logger
+  },
 ): void {
-  const { chain, address, logger } = opts
+  const { chain, address, publicKey, logger } = opts
   const logErr = logger ?? log
   for (const id of ids) {
     chrome.tabs
-      .sendMessage(tabId, { id, type: 'auth_success', token, chain, address })
+      .sendMessage(tabId, {
+        id,
+        type: 'auth_success',
+        chain,
+        address,
+        ...(publicKey && { publicKey }),
+      })
       .catch((err) => {
         logErr.error('Failed to send auth_success to tab', { tabId, id, err })
       })

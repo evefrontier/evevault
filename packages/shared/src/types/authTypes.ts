@@ -17,9 +17,7 @@ export type OAuthTokenResponse = JwtResponse & {
   expires_at: number
 }
 
-export interface AuthSuccessToken {
-  id_token?: string
-  access_token?: string
+export type AuthSuccessToken = JwtResponse & {
   email?: string
   userId?: string
 }

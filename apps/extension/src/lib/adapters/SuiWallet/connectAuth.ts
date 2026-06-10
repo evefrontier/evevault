@@ -1,4 +1,3 @@
-import { getZkLoginAddress } from '@evevault/shared/auth'
 import { fromBase64 } from '@mysten/sui/utils'
 import {
   ReadonlyWalletAccount,
@@ -8,10 +7,9 @@ import {
 import { WALLET_FEATURES } from './walletFeatures'
 
 type AuthToken = {
-  access_token: string
+  address: string
+  publicKey: string
 }
-
-const AUTH_SESSION_JWT_KEY = 'evevault_jwt'
 
 /**
  * Converts the auth success payload into the Wallet Standard account shape,
@@ -30,16 +28,20 @@ export async function getAccountsFromAuthSuccess(
   return [account]
 }
 
-/**
- * Validates the token before writing sessionStorage so failed auth responses do
- * not leave a stale JWT from an earlier connection attempt.
- */
-function getAuthToken(message: Record<string, unknown>): AuthToken {
-  const token = message.token as AuthToken | undefined
-  if (!token?.access_token) {
-    throw new Error('Authentication response missing access token')
+function getAccountMetadata(message: Record<string, unknown>): AuthToken {
+  if (
+    typeof message.address !== 'string' ||
+    !message.address ||
+    typeof message.publicKey !== 'string' ||
+    !message.publicKey
+  ) {
+    throw new Error('Authentication response missing account metadata')
   }
-  return token
+
+  return {
+    address: message.address,
+    publicKey: message.publicKey,
+  }
 }
 
 /**
@@ -60,32 +62,14 @@ function buildLocalnetAccount(message: Record<string, unknown>) {
 }
 
 /**
- * Looks up zkLogin account metadata from the freshly returned JWT so dApps get
- * the address/public key pair that matches the current OAuth session.
+ * Builds the zkLogin Wallet Standard account from metadata resolved in the
+ * extension background. OAuth tokens must never leave the extension boundary.
  */
 async function buildZkLoginAccount(
   message: Record<string, unknown>,
   chains: SuiChain[],
 ) {
-  const token = getAuthToken(message)
-  sessionStorage.setItem(
-    AUTH_SESSION_JWT_KEY,
-    JSON.stringify(token.access_token),
-  )
-
-  const zkLoginResponse = await getZkLoginAddress({
-    jwt: token.access_token,
-    enokiApiKey: import.meta.env.VITE_ENOKI_API_KEY,
-  })
-
-  if (zkLoginResponse.error) {
-    throw new Error(zkLoginResponse.error.message)
-  }
-  if (!zkLoginResponse.data) {
-    throw new Error('No data returned from zkLogin address lookup')
-  }
-
-  const { address, publicKey: publicKeyB64 } = zkLoginResponse.data
+  const { address, publicKey: publicKeyB64 } = getAccountMetadata(message)
   const publicKey = decodePublicKey(publicKeyB64)
 
   return new ReadonlyWalletAccount({
