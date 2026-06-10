@@ -134,7 +134,7 @@ const buildDropdownItems = ({
   if (showDevActions && version) {
     items.push({
       label: `v${version}`,
-      icon: 'Info',
+      icon: 'Info' as IconName,
       onClick: () => {},
       preventCloseOnClick: true,
     })

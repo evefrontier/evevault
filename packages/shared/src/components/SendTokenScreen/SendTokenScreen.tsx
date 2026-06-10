@@ -18,7 +18,7 @@ interface TransferSuccessScreenProps {
   tokenSymbol: string
   txDigest: string
   suiscanUrl: string | null
-  onCancel: () => void
+  onCancel?: () => void
 }
 
 /** Confirmation screen shown once a transfer has a transaction digest. */
@@ -192,7 +192,7 @@ interface TransferFormProps {
   onRecipientChange: (event: React.ChangeEvent<HTMLInputElement>) => void
   onAmountChange: (event: React.ChangeEvent<HTMLInputElement>) => void
   onSend: () => void
-  onCancel: () => void
+  onCancel?: () => void
 }
 
 /** Transfer entry form: notices, recipient/amount inputs and action buttons. */
