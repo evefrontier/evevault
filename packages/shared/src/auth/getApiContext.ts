@@ -20,17 +20,17 @@ export function getApiContext(token: string): {
   const tenant = (decoded.tenant as string) || ''
   const tier = resolveTier(tenant, decoded)
 
-  const apiBaseUrl = `https://api.${tier}.evefrontier.com`
+  const apiBaseUrl = `https://api.${tier}.pub.evefrontier.com`
   return { apiBaseUrl, tenant, decoded }
 }
 
 function resolveTier(tenant: string, decoded: JwtClaims): string {
   switch (tenant) {
     case STILLNESS_TENANT:
-      return `${decoded.tier ?? 'prod'}.tech`
+      return `${decoded.tier ?? 'live'}`
     case UTOPIA_TENANT:
-      return `${UAT_TIER}.pub`
+      return `${UAT_TIER}`
     default:
-      return `${decoded.tier ?? 'test'}.pub`
+      return `${decoded.tier ?? 'test'}`
   }
 }
