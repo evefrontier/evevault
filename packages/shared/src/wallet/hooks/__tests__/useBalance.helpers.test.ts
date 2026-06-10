@@ -70,6 +70,8 @@ describe('fetchBalanceForChain — localnet', () => {
         coinType: SUI_COIN_TYPE,
         isLocalnet: true,
         graphqlClient: null,
+        // localnetUrl is intentionally omitted:
+        // destructures to undefined and trips the !localnetUrl guard
       }),
     ).rejects.toThrow('localnetUrl required for localnet balance')
   })
@@ -138,6 +140,8 @@ describe('fetchBalanceForChain — zkLogin (GraphQL)', () => {
 
   it('returns SUI metadata for the SUI coin type', async () => {
     const client = createGraphqlClient({
+      // sequenceNumber is an arbitrary valid checkpoint value
+      // to ensure the balance query proceeds with atCheckpoint.
       checkpoint: { data: { checkpoint: { sequenceNumber: 42 } } },
       balance: balanceData('2000000000'),
     })

@@ -15,6 +15,5 @@ export {
   hasFreshNetworkData,
   isBlankPin,
   isDeviceDataExpired,
-  needsPersistedRehydration,
   setPublicKeyState,
 } from './initStateHelpers'

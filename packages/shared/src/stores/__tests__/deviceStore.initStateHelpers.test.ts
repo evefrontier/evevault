@@ -12,7 +12,6 @@ import {
   hasFreshNetworkData,
   isBlankPin,
   isDeviceDataExpired,
-  needsPersistedRehydration,
   setPublicKeyState,
 } from '#/stores/deviceStore/actions/initStateHelpers'
 import type { DeviceState, NetworkDataEntry, StoredSecretKey } from '#/types'
@@ -112,11 +111,6 @@ describe('initStateHelpers', () => {
     expect(hasFreshNetworkData(expired, storedSecretKey)).toBe(false)
     expect(hasFreshNetworkData(missingNonce, storedSecretKey)).toBe(false)
     expect(hasFreshNetworkData(fresh, null)).toBe(false)
-
-    expect(needsPersistedRehydration(fresh, storedSecretKey)).toBe(false)
-    expect(needsPersistedRehydration(zeroEpoch, storedSecretKey)).toBe(false)
-    expect(needsPersistedRehydration(missingNonce, storedSecretKey)).toBe(true)
-    expect(needsPersistedRehydration(fresh, null)).toBe(true)
   })
 
   it('detects complete per-chain device data', () => {
