@@ -89,6 +89,9 @@ describe('handleMessage sender authorization', () => {
   beforeEach(() => {
     installChromeMock()
     vi.clearAllMocks()
+    mocks.handleDappLogin.mockResolvedValue(undefined)
+    mocks.handleExtLogin.mockResolvedValue(undefined)
+    mocks.handleWebUnlock.mockResolvedValue(undefined)
   })
 
   it('allows public dApp connect messages from tab senders', () => {
