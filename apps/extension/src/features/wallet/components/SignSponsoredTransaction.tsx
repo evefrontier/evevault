@@ -1,4 +1,6 @@
+import type { SponsoredTransactionMetadata } from '@evefrontier/wallet-core/wallet-standard-extensions'
 import { Text } from '@evevault/shared/components'
+import type { DappRequestContext } from '@evevault/shared/types'
 import { createLogger } from '@evevault/shared/utils'
 import { useWalletSigningContext } from '@evevault/shared/wallet'
 import type { SuiChain } from '@mysten/wallet-standard'
@@ -16,6 +18,11 @@ export type PendingSponsoredAction = {
   sponsoredTxB64: string
   preparationId: string
   chain: SuiChain
+  dapp?: DappRequestContext
+  sponsoredAction?: string
+  assembly?: string
+  assemblyType?: string
+  metadata?: SponsoredTransactionMetadata
 }
 
 function parsePendingSponsoredAction(
@@ -39,6 +46,27 @@ function getSponsoredApproveError(
     return 'Device key not found. Unlock the wallet and try again.'
   if (!auth.maxEpoch) return 'Max epoch not set. Re-authenticate and try again.'
   return null
+}
+
+function SponsoredDetail({
+  label,
+  value,
+}: {
+  label: string
+  value: string | undefined
+}) {
+  if (!value) return null
+
+  return (
+    <div className="grid grid-cols-[82px_minmax(0,1fr)] gap-2 text-left">
+      <span className="text-[10px] uppercase text-[var(--grey-neutral)]">
+        {label}
+      </span>
+      <span className="truncate text-xs text-[var(--neutral)]" title={value}>
+        {value}
+      </span>
+    </div>
+  )
 }
 
 function SignSponsoredTransaction() {
@@ -107,10 +135,28 @@ function SignSponsoredTransaction() {
       error={error}
       loadingMessage="Loading..."
       chain={pending?.chain}
+      dapp={pending?.dapp}
+      requestKind="Sponsored transaction"
       onApprove={handleApprove}
       onReject={handleReject}
     >
-      <Text>Sign this sponsored transaction to continue.</Text>
+      <div className="w-[320px] max-w-[88vw] border border-[var(--matter-05)] p-3">
+        <Text size="small" color="grey-neutral">
+          Sponsored request
+        </Text>
+        <div className="mt-2 flex flex-col gap-2">
+          <SponsoredDetail label="Name" value={pending?.metadata?.name} />
+          <SponsoredDetail label="Action" value={pending?.sponsoredAction} />
+          <SponsoredDetail label="Assembly" value={pending?.assembly} />
+          <SponsoredDetail label="Type" value={pending?.assemblyType} />
+          <SponsoredDetail label="URL" value={pending?.metadata?.url} />
+        </div>
+        {pending?.metadata?.description && (
+          <Text className="mt-3 max-h-20 overflow-y-auto break-words text-left">
+            {pending.metadata.description}
+          </Text>
+        )}
+      </div>
     </SignRequestView>
   )
 }

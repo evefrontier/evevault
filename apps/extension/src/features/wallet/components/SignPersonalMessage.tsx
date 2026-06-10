@@ -117,13 +117,21 @@ function SignPersonalMessage() {
       error={error}
       loadingMessage="Loading message..."
       chain={chain || SUI_TESTNET_CHAIN}
+      dapp={pendingMessage?.dapp}
+      accountAddress={pendingMessage?.account?.address}
+      requestKind="Personal message"
       onApprove={handleSignPersonalMessage}
       onReject={handleReject}
     >
       {pendingMessage && (
-        <Text>
-          {decodeMessageBytes(toMessageBytes(pendingMessage.message))}
-        </Text>
+        <div className="w-[320px] max-w-[88vw] border border-[var(--matter-05)] p-3">
+          <Text size="small" color="grey-neutral">
+            Message
+          </Text>
+          <Text className="mt-2 max-h-28 overflow-y-auto break-words text-left">
+            {decodeMessageBytes(toMessageBytes(pendingMessage.message))}
+          </Text>
+        </div>
       )}
     </SignRequestView>
   )
