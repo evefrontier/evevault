@@ -43,6 +43,11 @@ type SigningErrorMessage = {
   id: string
   error?: unknown
 }
+type DisconnectResponseMessage = {
+  type: 'disconnect_success' | 'disconnect_error'
+  id?: string
+  error?: unknown
+}
 type ChangeEventMessage = {
   __from: 'Eve Vault'
   event: 'change'
@@ -60,6 +65,7 @@ export type TabBoundMessage =
   | SignSuccessMessage
   | SignAndExecuteSuccessMessage
   | SigningErrorMessage
+  | DisconnectResponseMessage
   | ChangeEventMessage
 
 /** Forbids any OAuth token field on a tab-bound message at compile time. */

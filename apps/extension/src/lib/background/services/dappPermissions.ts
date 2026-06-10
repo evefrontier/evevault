@@ -14,6 +14,10 @@ export type DappPermissionResult =
   | { allowed: true; context: DappRequestContext }
   | { allowed: false; error: string; context?: DappRequestContext }
 
+export type DappPermissionRevocationResult =
+  | { ok: true; context: DappRequestContext; hadPermission: boolean }
+  | { ok: false; error: string }
+
 const ALLOWED_PAGE_PROTOCOLS = new Set(['http:', 'https:'])
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -189,4 +193,29 @@ export async function requireDappPermission(
       ...context,
     }),
   }
+}
+
+export async function revokeDappPermission(
+  sender: chrome.runtime.MessageSender,
+): Promise<DappPermissionRevocationResult> {
+  const context = getDappRequestContext(sender)
+  if (!context) {
+    return {
+      ok: false,
+      error: 'Disconnect requests must come from a valid web page origin.',
+    }
+  }
+
+  const permissions = await readPermissionStore()
+  const hadPermission = Boolean(permissions[context.origin])
+  if (!hadPermission) {
+    return { ok: true, context, hadPermission: false }
+  }
+
+  const { [context.origin]: _removed, ...remainingPermissions } = permissions
+  await chrome.storage.local.set({
+    [DAPP_PERMISSIONS_STORAGE_KEY]: remainingPermissions,
+  })
+
+  return { ok: true, context, hadPermission: true }
 }

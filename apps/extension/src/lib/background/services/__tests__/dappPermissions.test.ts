@@ -5,6 +5,7 @@ import {
   getDappRequestContext,
   grantDappPermission,
   requireDappPermission,
+  revokeDappPermission,
 } from '../dappPermissions'
 
 describe('dappPermissions', () => {
@@ -113,6 +114,56 @@ describe('dappPermissions', () => {
       allowed: false,
       context: { origin: 'https://app.example' },
       error: 'Connect this site on the selected network before signing.',
+    })
+  })
+
+  it('revokes a permission for the sender origin', async () => {
+    await grantDappPermission(
+      { origin: 'https://app.example' },
+      SUI_TESTNET_CHAIN,
+    )
+
+    await expect(
+      revokeDappPermission({
+        origin: 'https://app.example',
+      } as chrome.runtime.MessageSender),
+    ).resolves.toEqual({
+      ok: true,
+      context: { origin: 'https://app.example' },
+      hadPermission: true,
+    })
+
+    expect(storage[DAPP_PERMISSIONS_STORAGE_KEY]).toEqual({})
+    await expect(
+      requireDappPermission({
+        origin: 'https://app.example',
+      } as chrome.runtime.MessageSender),
+    ).resolves.toMatchObject({
+      allowed: false,
+      error: 'Connect this site to EVE Vault before requesting a signature.',
+    })
+  })
+
+  it('treats revocation without a stored permission as success', async () => {
+    await expect(
+      revokeDappPermission({
+        origin: 'https://app.example',
+      } as chrome.runtime.MessageSender),
+    ).resolves.toEqual({
+      ok: true,
+      context: { origin: 'https://app.example' },
+      hadPermission: false,
+    })
+  })
+
+  it('rejects revocation from non-web senders', async () => {
+    await expect(
+      revokeDappPermission({
+        origin: 'chrome-extension://extension-id',
+      } as chrome.runtime.MessageSender),
+    ).resolves.toEqual({
+      ok: false,
+      error: 'Disconnect requests must come from a valid web page origin.',
     })
   })
 })

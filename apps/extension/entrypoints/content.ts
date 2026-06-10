@@ -61,6 +61,13 @@ function isConnectMessage(data: Record<string, unknown>): boolean {
   return data.type === 'connect' && isValidRequestId(data.id)
 }
 
+function isDisconnectMessage(data: Record<string, unknown>): boolean {
+  return (
+    data.type === WalletStandardMessageTypes.DISCONNECT &&
+    isValidRequestId(data.id)
+  )
+}
+
 function isPersonalMessageRequest(data: Record<string, unknown>): boolean {
   return every([
     isValidRequestId(data.id),
@@ -108,9 +115,11 @@ function isAllowedWalletAction(data: Record<string, unknown>): boolean {
 }
 
 function isAllowedBridgePayload(data: Record<string, unknown>): boolean {
-  return data.type === 'connect'
-    ? isConnectMessage(data)
-    : isAllowedWalletAction(data)
+  if (data.type === 'connect') return isConnectMessage(data)
+  if (data.type === WalletStandardMessageTypes.DISCONNECT)
+    return isDisconnectMessage(data)
+
+  return isAllowedWalletAction(data)
 }
 
 export function isAllowedPageMessage(

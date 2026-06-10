@@ -1,6 +1,7 @@
 import { VaultMessageTypes, WalletStandardMessageTypes } from '@evevault/shared'
 import { createLogger } from '@evevault/shared/utils'
 import { sendToTab } from '@/lib/background/messaging/tabMessaging'
+import { revokeDappPermission } from '@/lib/background/services/dappPermissions'
 import type {
   BackgroundMessage,
   EveFrontierSponsoredTransactionMessage,
@@ -41,6 +42,11 @@ type RouteContext = {
   sendResponse: SendResponse
   tabId?: number
 }
+type DisconnectResponseMessage = {
+  id?: string
+  type: 'disconnect_success' | 'disconnect_error'
+  error?: unknown
+}
 type MessageRoute = {
   access: SenderAccess
   handle: (ctx: RouteContext) => unknown
@@ -76,6 +82,64 @@ function runWebUnlock({ message, sender, sendResponse }: RouteContext): true {
   return true
 }
 
+function sendDisconnectResponse(
+  sender: MsgSender,
+  sendResponse: SendResponse,
+  response: DisconnectResponseMessage,
+): void {
+  sendResponse(response)
+
+  const tabId = sender.tab?.id
+  if (typeof tabId !== 'number') return
+
+  sendToTab(tabId, response)
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'Unknown error occurred'
+}
+
+async function handleDappDisconnect(
+  message: BackgroundMessage,
+  sender: MsgSender,
+  sendResponse: SendResponse,
+): Promise<void> {
+  const result = await revokeDappPermission(sender)
+  if (result.ok) {
+    log.info('Revoked dApp permission', {
+      origin: result.context.origin,
+      hadPermission: result.hadPermission,
+    })
+    sendDisconnectResponse(sender, sendResponse, {
+      id: message.id,
+      type: 'disconnect_success',
+    })
+    return
+  }
+
+  sendDisconnectResponse(sender, sendResponse, {
+    id: message.id,
+    type: 'disconnect_error',
+    error: { message: result.error },
+  })
+}
+
+function runDappDisconnect({
+  message,
+  sender,
+  sendResponse,
+}: RouteContext): true {
+  void handleDappDisconnect(message, sender, sendResponse).catch((e) => {
+    log.error('handleDappDisconnect failed', e)
+    sendDisconnectResponse(sender, sendResponse, {
+      id: message.id,
+      type: 'disconnect_error',
+      error: { message: getErrorMessage(e) },
+    })
+  })
+  return true
+}
+
 const AUTH_ROUTES: readonly RegisteredMessageRoute[] = [
   {
     access: 'extension',
@@ -86,6 +150,12 @@ const AUTH_ROUTES: readonly RegisteredMessageRoute[] = [
     access: 'dapp',
     matches: (message) => message.type === 'connect',
     handle: runDappLogin,
+  },
+  {
+    access: 'dapp',
+    matches: (message) =>
+      message.type === WalletStandardMessageTypes.DISCONNECT,
+    handle: runDappDisconnect,
   },
   {
     access: 'extension',

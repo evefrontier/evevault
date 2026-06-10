@@ -10,6 +10,7 @@ import type {
   IdentifierRecord,
   StandardConnectMethod,
   StandardConnectOutput,
+  StandardDisconnectMethod,
   StandardEventsOnMethod,
   SuiChain,
   SuiSignAndExecuteTransactionInput,
@@ -88,7 +89,7 @@ export class EveVaultWallet implements Wallet {
       },
       [StandardDisconnect]: {
         version: '1.0.0',
-        disconnect: async () => this.disconnect(),
+        disconnect: this.#disconnect,
       },
       [StandardEvents]: {
         version: '1.0.0',
@@ -199,6 +200,24 @@ export class EveVaultWallet implements Wallet {
       this.#accounts = []
       this.#emitChangeEvent({ accounts: [] })
     }
+  }
+
+  #disconnect: StandardDisconnectMethod = async () => {
+    const id = crypto.randomUUID()
+    await waitForVaultMessage({
+      id,
+      successType: 'disconnect_success',
+      errorType: 'disconnect_error',
+      outbound: {
+        __to: 'Eve Vault',
+        id,
+        type: WalletStandardMessageTypes.DISCONNECT,
+      },
+      mapSuccess: () => undefined,
+      timeoutMessage: 'Disconnect timed out',
+    })
+
+    this.disconnect()
   }
 
   // Not authenticated, trigger login flow
