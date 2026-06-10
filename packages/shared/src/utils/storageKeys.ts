@@ -4,6 +4,7 @@ export const DEVICE_STORAGE_KEY = 'evevault:device'
 export const CONTEXT_STORAGE_KEY = 'evevault:context'
 export const TOKENLIST_STORAGE_KEY = 'evevault:tokenlist'
 export const JWT_STORAGE_KEY = 'evevault:jwt'
+export const DAPP_PERMISSIONS_STORAGE_KEY = 'evevault:dapp-permissions'
 
 /** Persist keys used by Zustand and auth (localStorage / chrome.storage.local). Cleared on reset. */
 export const EVEVAULT_STORAGE_KEYS = [
@@ -18,6 +19,7 @@ export const EVEVAULT_STORAGE_KEYS = [
 export const EXTENSION_EXTRA_KEYS = [
   'pendingAction',
   'transactionResult',
+  DAPP_PERMISSIONS_STORAGE_KEY,
 ] as const
 
 /** sessionStorage key for post-login redirect path. */

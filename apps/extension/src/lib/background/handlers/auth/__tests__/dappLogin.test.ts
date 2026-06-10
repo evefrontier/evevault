@@ -116,6 +116,12 @@ function installChromeMock() {
     runtime: {
       lastError: undefined,
     },
+    storage: {
+      local: {
+        get: vi.fn(async () => ({})),
+        set: vi.fn(async () => undefined),
+      },
+    },
   } as unknown as typeof chrome)
 }
 
@@ -151,7 +157,15 @@ describe('handleDappLogin', () => {
   it('sends dApps account metadata without OAuth token material', async () => {
     await handleDappLogin(
       { id: 'connect-id' },
-      { tab: { id: 42 } } as chrome.runtime.MessageSender,
+      {
+        origin: 'https://dapp.example',
+        url: 'https://dapp.example/connect',
+        tab: {
+          id: 42,
+          url: 'https://dapp.example/connect',
+          title: 'Example dApp',
+        },
+      } as chrome.runtime.MessageSender,
       vi.fn(),
       42,
     )

@@ -6,6 +6,14 @@ export enum WalletActions {
 
 import type { SuiChain } from '@mysten/wallet-standard'
 
+export interface DappRequestContext {
+  origin: string
+  url?: string
+  title?: string
+  favIconUrl?: string
+  connectedAt?: number
+}
+
 export interface PendingTransaction extends VaultMessage {
   transaction: string
   chain: SuiChain
@@ -19,6 +27,7 @@ export interface ParsedTransactionWithDisplay extends PendingTransaction {
 export interface PendingPersonalMessage extends VaultMessage {
   /** Raw bytes of the message as sent by the dapp (Uint8Array serialized through chrome storage) */
   message: Uint8Array | Record<string, number> | number[]
+  account?: { address: string }
 }
 
 interface VaultMessage {
@@ -28,4 +37,5 @@ interface VaultMessage {
   timestamp: number
   windowId: number
   __to: 'Eve Vault'
+  dapp?: DappRequestContext
 }

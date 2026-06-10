@@ -3,18 +3,24 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { handleApprovePopup } from '@/lib/background/handlers/walletHandlers'
 import type { WalletActionMessage } from '@/lib/background/types'
 
-const { mockOpenPopupWindow, logMethods } = vi.hoisted(() => ({
-  mockOpenPopupWindow: vi.fn(),
-  logMethods: {
-    info: vi.fn(),
-    error: vi.fn(),
-    warn: vi.fn(),
-    debug: vi.fn(),
-  },
-}))
+const { mockOpenPopupWindow, mockRequireDappPermission, logMethods } =
+  vi.hoisted(() => ({
+    mockOpenPopupWindow: vi.fn(),
+    mockRequireDappPermission: vi.fn(),
+    logMethods: {
+      info: vi.fn(),
+      error: vi.fn(),
+      warn: vi.fn(),
+      debug: vi.fn(),
+    },
+  }))
 
 vi.mock('@/lib/background/services/popupWindow', () => ({
   openPopupWindow: (action: string) => mockOpenPopupWindow(action),
+}))
+
+vi.mock('@/lib/background/services/dappPermissions', () => ({
+  requireDappPermission: mockRequireDappPermission,
 }))
 
 vi.mock('@evevault/shared/utils', async (importOriginal) => {
@@ -64,6 +70,10 @@ describe('handleApprovePopup', () => {
   beforeEach(() => {
     storageListeners = []
     mockOpenPopupWindow.mockResolvedValue(99)
+    mockRequireDappPermission.mockResolvedValue({
+      allowed: true,
+      context: { origin: 'https://example.test' },
+    })
     installChromeMock(storageListeners)
   })
 
@@ -89,6 +99,38 @@ describe('handleApprovePopup', () => {
     }
     return wrapped
   }
+
+  describe('dApp permissions', () => {
+    it('rejects signing when the requesting origin is not connected', async () => {
+      mockRequireDappPermission.mockResolvedValueOnce({
+        allowed: false,
+        error: 'Connect this site to EVE Vault before requesting a signature.',
+      })
+      const sendResponse = vi.fn()
+
+      const result = await handleApprovePopup(
+        {
+          id: 'req-denied',
+          action: WalletStandardMessageTypes.SIGN_TRANSACTION,
+        },
+        { tab: { id: 42 } } as chrome.runtime.MessageSender,
+        sendResponse,
+      )
+
+      expect(result).toBe(false)
+      expect(mockOpenPopupWindow).not.toHaveBeenCalled()
+      expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(42, {
+        type: 'sign_transaction_error',
+        error: 'Connect this site to EVE Vault before requesting a signature.',
+        id: 'req-denied',
+      })
+      expect(sendResponse).toHaveBeenCalledWith({
+        type: 'sign_transaction_error',
+        error: 'Connect this site to EVE Vault before requesting a signature.',
+        id: 'req-denied',
+      })
+    })
+  })
 
   describe('when opening the popup fails', () => {
     it('calls sendResponse with sign_transaction_error when windowId is falsy', async () => {

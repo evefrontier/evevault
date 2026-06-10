@@ -52,9 +52,7 @@ async function clearExtensionStorage(): Promise<void> {
     await new Promise<void>((resolve) => {
       chrome.storage.local.remove([...EXTENSION_EXTRA_KEYS], () => resolve())
     })
-    log.info(
-      '[resetVaultOnDevice] Cleared extension pendingAction/transactionResult',
-    )
+    log.info('[resetVaultOnDevice] Cleared extension-only local storage')
   }
 }
 

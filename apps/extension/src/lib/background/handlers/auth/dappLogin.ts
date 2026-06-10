@@ -5,6 +5,7 @@ import {
   getZkLoginAddress,
 } from '@evevault/shared/auth'
 import { useContextStore, useDeviceStore } from '@evevault/shared/stores'
+import type { DappRequestContext } from '@evevault/shared/types'
 import {
   isLocalnetChain,
   isZkLoginSuiChain,
@@ -13,6 +14,10 @@ import {
 import { createLogger } from '@evevault/shared/utils'
 import { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519'
 import { sendToTab } from '@/lib/background/messaging/tabMessaging'
+import {
+  getDappRequestContext,
+  grantDappPermission,
+} from '@/lib/background/services/dappPermissions'
 import { getAuthRequest } from '@/lib/background/services/oauthService'
 import { openPopupWindow } from '@/lib/background/services/popupWindow'
 import type { MessageWithId } from '@/lib/background/types'
@@ -42,7 +47,7 @@ const delay = (ms: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, ms))
 
 // Sends an auth_error to the tab if tabId is defined, otherwise does nothing.
-// Centralises the repeated `if (typeof tabId === 'number') chrome.tabs.sendMessage` pattern.
+// Centralises guarded tab-bound auth errors through sendToTab.
 function sendAuthErrorToTab(
   tabId: number | undefined,
   id: string,
@@ -197,12 +202,19 @@ async function checkExistingAuth(
   id: string,
   additionalIds: string[],
   chain: ReturnType<typeof getCurrentChain>,
+  dappContext: DappRequestContext,
 ): Promise<boolean> {
   const existingJwt = await getJwt()
   if (!existingJwt?.id_token) return false
 
   log.debug('Connect: already connected, sending auth_success without OIDC')
-  await completeDappConnect(tabId, [id, ...additionalIds], existingJwt, chain)
+  await completeDappConnect(
+    tabId,
+    [id, ...additionalIds],
+    existingJwt,
+    chain,
+    dappContext,
+  )
   return true
 }
 
@@ -311,6 +323,7 @@ async function completeDappConnect(
   ids: string[],
   jwt: Awaited<ReturnType<typeof getJwt>>,
   chain: ReturnType<typeof getCurrentChain>,
+  dappContext: DappRequestContext,
 ): Promise<void> {
   const result = await resolveDappConnectAccount(jwt, chain)
   if (!result.ok) {
@@ -318,6 +331,7 @@ async function completeDappConnect(
     return
   }
 
+  await grantDappPermission(dappContext, chain)
   log.debug('Connect: sending auth_success with account metadata', {
     chain,
   })
@@ -374,6 +388,7 @@ type OAuthCallbackContext = {
   tenant: string
   codeVerifier: string
   tabId: number | undefined
+  dappContext: DappRequestContext
 }
 
 // Processes the redirect URL from chrome.identity.launchWebAuthFlow: exchanges
@@ -390,6 +405,7 @@ async function handleOAuthCallback(
     tenant,
     codeVerifier,
     tabId,
+    dappContext,
   } = ctx
 
   if (chrome.runtime.lastError || !responseUrl) {
@@ -433,6 +449,7 @@ async function handleOAuthCallback(
         [id, ...additionalIds],
         jwtResponse,
         chain,
+        dappContext,
       )
     }
   } catch (error) {
@@ -447,11 +464,21 @@ async function handleOAuthCallback(
 
 export async function handleDappLogin(
   message: MessageWithId,
-  _sender: chrome.runtime.MessageSender,
+  sender: chrome.runtime.MessageSender,
   _sendResponse: (response?: unknown) => void,
   tabId?: number,
 ): Promise<void> {
   const id = ensureMessageId(message)
+  const dappContext = getDappRequestContext(sender)
+  if (!dappContext) {
+    sendAuthErrorToTab(
+      tabId,
+      id,
+      'Connect requests must come from a valid web page origin.',
+    )
+    return
+  }
+
   const additionalIds =
     (message as MessageWithId & { additionalIds?: string[] }).additionalIds ??
     []
@@ -479,7 +506,8 @@ export async function handleDappLogin(
   }
 
   if (typeof tabId === 'number') {
-    if (await checkExistingAuth(tabId, id, additionalIds, chain)) return
+    if (await checkExistingAuth(tabId, id, additionalIds, chain, dappContext))
+      return
   }
 
   const nonce = await ensureNonce(chain, id, tabId)
@@ -501,6 +529,7 @@ export async function handleDappLogin(
         tenant,
         codeVerifier,
         tabId,
+        dappContext,
       }),
   )
 }

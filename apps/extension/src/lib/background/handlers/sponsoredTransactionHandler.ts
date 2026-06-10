@@ -2,6 +2,7 @@ import { WalletStandardMessageTypes } from '@evevault/shared'
 import { getApiContext, getJwt, getStoredChain } from '@evevault/shared/auth'
 import { createLogger } from '@evevault/shared/utils'
 import { sendToTab } from '@/lib/background/messaging/tabMessaging'
+import { requireDappPermission } from '@/lib/background/services/dappPermissions'
 import { openPopupWindow } from '@/lib/background/services/popupWindow'
 import type {
   EveFrontierSponsoredTransactionMessage,
@@ -118,6 +119,12 @@ async function handleSponsoredTransaction(
       throw new Error(`Assembly not found: ${assembly}, ${assemblyType}`)
     }
 
+    const permission = await requireDappPermission(sender, chain)
+    if (!permission.allowed) {
+      sendSponsoredError(senderTabId, message.id, permission.error)
+      return true
+    }
+
     log.info('Eve Frontier sponsored transaction request received', {
       action,
       assembly,
@@ -191,6 +198,11 @@ async function handleSponsoredTransaction(
         sponsoredTxB64: sponsoredTxReturn.bcsDataB64Bytes,
         preparationId: sponsoredTxReturn.preparationId,
         chain,
+        dapp: permission.context,
+        sponsoredAction: action,
+        assembly,
+        assemblyType,
+        metadata,
       },
     })
 
