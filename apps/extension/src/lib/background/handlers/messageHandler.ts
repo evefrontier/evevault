@@ -44,35 +44,54 @@ type MessageRoute = {
   access: SenderAccess
   handle: (ctx: RouteContext) => unknown
 }
+type RegisteredMessageRoute = MessageRoute & {
+  matches: (message: BackgroundMessage) => boolean
+}
 type RouteResolver = (message: BackgroundMessage) => MessageRoute | null
 
-// Auth action handlers. 'connect' is keyed by message.type rather than action
-// because the wallet-standard connect message arrives with type='connect', not action='connect'.
-const AUTH_HANDLERS: Partial<
-  Record<
-    string,
-    (
-      m: BackgroundMessage,
-      s: MsgSender,
-      sr: SendResponse,
-      tabId?: number,
-    ) => void
-  >
-> = {
-  ext_login: (m, s, sr) => handleExtLogin(m, s, sr),
-  dapp_login: (m, s, sr, tabId) =>
-    void handleDappLogin(m, s, sr, tabId).catch((e) =>
-      log.error('handleDappLogin failed', e),
-    ),
-  connect: (m, s, sr, tabId) =>
-    void handleDappLogin(m, s, sr, tabId).catch((e) =>
-      log.error('handleDappLogin failed', e),
-    ),
-  web_unlock: (m, s, sr) =>
-    void handleWebUnlock(m as WebUnlockMessage, s, sr).catch((e) =>
-      log.error('handleWebUnlock failed', e),
-    ),
+function runExtLogin({ message, sender, sendResponse }: RouteContext): true {
+  void handleExtLogin(message, sender, sendResponse).catch((e) =>
+    log.error('handleExtLogin failed', e),
+  )
+  return true
 }
+
+function runDappLogin({
+  message,
+  sender,
+  sendResponse,
+  tabId,
+}: RouteContext): true {
+  void handleDappLogin(message, sender, sendResponse, tabId).catch((e) =>
+    log.error('handleDappLogin failed', e),
+  )
+  return true
+}
+
+function runWebUnlock({ message, sender, sendResponse }: RouteContext): true {
+  void handleWebUnlock(message as WebUnlockMessage, sender, sendResponse).catch(
+    (e) => log.error('handleWebUnlock failed', e),
+  )
+  return true
+}
+
+const AUTH_ROUTES: readonly RegisteredMessageRoute[] = [
+  {
+    access: 'extension',
+    matches: (message) => message.action === 'ext_login',
+    handle: runExtLogin,
+  },
+  {
+    access: 'dapp',
+    matches: (message) => message.type === 'connect',
+    handle: runDappLogin,
+  },
+  {
+    access: 'extension',
+    matches: (message) => message.action === 'web_unlock',
+    handle: runWebUnlock,
+  },
+]
 
 // Wallet Standard action handlers — all keyed by the action field of the message.
 const WALLET_ACTION_HANDLERS: Partial<
@@ -155,18 +174,7 @@ function hasRequiredSender(sender: MsgSender, access: SenderAccess): boolean {
 }
 
 function resolveAuthRoute(message: BackgroundMessage): MessageRoute | null {
-  const authHandler =
-    AUTH_HANDLERS[message.action ?? ''] ?? AUTH_HANDLERS[message.type ?? '']
-
-  return authHandler
-    ? {
-        access: message.type === 'connect' ? 'dapp' : 'extension',
-        handle: ({ message, sender, sendResponse, tabId }) => {
-          authHandler(message, sender, sendResponse, tabId)
-          return true
-        },
-      }
-    : null
+  return AUTH_ROUTES.find((route) => route.matches(message)) ?? null
 }
 
 function resolveWalletRoute(message: BackgroundMessage): MessageRoute | null {

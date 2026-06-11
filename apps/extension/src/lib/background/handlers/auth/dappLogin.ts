@@ -20,7 +20,7 @@ import {
   ensureMessageId,
   extractAuthCode,
   getCurrentChain,
-  sendAuthSuccessToTab,
+  sendDappConnectSuccessToTab,
 } from './authHelpers'
 import {
   checkKeeperUnlocked,
@@ -79,10 +79,9 @@ type DappAccountMetadata = {
   publicKey?: string
 }
 
-type DappAccountContext = {
-  id: string
-  tabId: number
-}
+type DappConnectAccountResult =
+  | { ok: true; account: DappAccountMetadata }
+  | { ok: false; error: string }
 
 type ZkLoginAddressResult = Awaited<ReturnType<typeof getZkLoginAddress>>
 
@@ -206,105 +205,89 @@ async function checkExistingAuth(
   if (!existingJwt?.id_token) return false
 
   log.debug('Connect: already connected, sending auth_success without OIDC')
-  await sendDappAuthSuccess(tabId, [id, ...additionalIds], existingJwt, chain)
+  await completeDappConnect(tabId, [id, ...additionalIds], existingJwt, chain)
   return true
 }
 
-async function resolveDappAccountMetadata(
+async function resolveDappConnectAccount(
   jwt: Awaited<ReturnType<typeof getJwt>>,
-  id: string,
-  tabId: number,
   chain: ReturnType<typeof getCurrentChain>,
-): Promise<DappAccountMetadata | null> {
-  const context = { id, tabId }
-
+): Promise<DappConnectAccountResult> {
   return isLocalnetChain(chain)
-    ? resolveLocalnetDappAccount(context)
-    : resolveZkLoginDappAccount(jwt, context)
+    ? resolveLocalnetDappConnectAccount()
+    : resolveZkLoginDappConnectAccount(jwt)
 }
 
-async function resolveLocalnetDappAccount({
-  id,
-  tabId,
-}: DappAccountContext): Promise<DappAccountMetadata | null> {
+async function resolveLocalnetDappConnectAccount(): Promise<DappConnectAccountResult> {
   const response = await sendToKeeper({
     type: KeeperMessageTypes.LOCALNET_GET_ADDRESS,
   })
   const address = response?.ok ? response.address : undefined
 
   if (!address) {
-    chrome.tabs.sendMessage(tabId, {
-      id,
-      type: 'auth_error',
-      error: { message: 'Could not retrieve localnet address' },
-    })
+    return {
+      ok: false,
+      error: 'Could not retrieve localnet address',
+    }
   }
 
-  return address ? { address } : null
+  return { ok: true, account: { address } }
 }
 
-async function resolveZkLoginDappAccount(
+async function resolveZkLoginDappConnectAccount(
   jwt: Awaited<ReturnType<typeof getJwt>>,
-  context: DappAccountContext,
-): Promise<DappAccountMetadata | null> {
-  const accessToken = getDappAccessToken(jwt, context)
-  const zkLoginResponse = accessToken
-    ? await fetchDappZkLoginAddress(accessToken, context)
-    : null
-
-  return parseDappZkLoginAccount(zkLoginResponse, context)
-}
-
-function getDappAccessToken(
-  jwt: Awaited<ReturnType<typeof getJwt>>,
-  { id, tabId }: DappAccountContext,
-): string | null {
+): Promise<DappConnectAccountResult> {
   const accessToken = jwt?.access_token
-
   if (!accessToken) {
-    sendAuthErrorToTab(
-      tabId,
-      id,
-      'Authentication response missing account metadata.',
-    )
+    return {
+      ok: false,
+      error: 'Authentication response missing account metadata.',
+    }
   }
 
-  return accessToken ?? null
+  const zkLoginResponse = await fetchDappZkLoginAddress(accessToken)
+
+  return parseDappZkLoginAccount(zkLoginResponse)
 }
 
 async function fetchDappZkLoginAddress(
   accessToken: string,
-  { id, tabId }: DappAccountContext,
 ): Promise<ZkLoginAddressResult | null> {
   return getZkLoginAddress({
     jwt: accessToken,
     enokiApiKey: import.meta.env.VITE_ENOKI_API_KEY ?? '',
   }).catch((error) => {
     log.error('Failed to resolve dApp account metadata', error)
-    sendAuthErrorToTab(tabId, id, 'Could not resolve wallet account metadata.')
     return null
   })
 }
 
 function parseDappZkLoginAccount(
   zkLoginResponse: ZkLoginAddressResult | null,
-  { id, tabId }: DappAccountContext,
-): DappAccountMetadata | null {
-  if (!zkLoginResponse) return null
+): DappConnectAccountResult {
+  if (!zkLoginResponse) {
+    return {
+      ok: false,
+      error: 'Could not resolve wallet account metadata.',
+    }
+  }
 
   const hasLookupError = !!zkLoginResponse.error
   if (hasLookupError) {
-    sendAuthErrorToTab(tabId, id, zkLoginResponse.error.message)
+    return { ok: false, error: zkLoginResponse?.error?.message ?? '' }
   }
 
   const address = zkLoginResponse.data?.address
   const publicKey = zkLoginResponse.data?.publicKey
   const account = buildDappAccountMetadata(address, publicKey)
-  if (!hasLookupError && !account) {
-    sendAuthErrorToTab(tabId, id, 'Could not resolve wallet account metadata.')
+  if (!account) {
+    return {
+      ok: false,
+      error: 'Could not resolve wallet account metadata.',
+    }
   }
 
-  return hasLookupError ? null : account
+  return { ok: true, account }
 }
 
 function buildDappAccountMetadata(
@@ -316,22 +299,35 @@ function buildDappAccountMetadata(
   return { address, publicKey }
 }
 
-async function sendDappAuthSuccess(
+function sendDappConnectErrorToTab(
+  tabId: number,
+  ids: string[],
+  error: string,
+): void {
+  for (const id of ids) {
+    sendAuthErrorToTab(tabId, id, error)
+  }
+}
+
+async function completeDappConnect(
   tabId: number,
   ids: string[],
   jwt: Awaited<ReturnType<typeof getJwt>>,
   chain: ReturnType<typeof getCurrentChain>,
 ): Promise<void> {
-  const account = await resolveDappAccountMetadata(jwt, ids[0], tabId, chain)
-  if (!account) return
+  const result = await resolveDappConnectAccount(jwt, chain)
+  if (!result.ok) {
+    sendDappConnectErrorToTab(tabId, ids, result.error)
+    return
+  }
 
   log.debug('Connect: sending auth_success with account metadata', {
     chain,
   })
-  sendAuthSuccessToTab(tabId, ids, {
+  sendDappConnectSuccessToTab(tabId, ids, {
     chain,
-    address: account.address,
-    publicKey: account.publicKey,
+    address: result.account.address,
+    publicKey: result.account.publicKey,
   })
 }
 
@@ -435,7 +431,7 @@ async function handleOAuthCallback(
     await storeJwt(jwtResponse)
 
     if (typeof tabId === 'number') {
-      await sendDappAuthSuccess(
+      await completeDappConnect(
         tabId,
         [id, ...additionalIds],
         jwtResponse,

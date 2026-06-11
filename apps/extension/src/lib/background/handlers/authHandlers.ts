@@ -40,7 +40,7 @@ export function checkPendingAuthAfterUnlock(): void {
   } else if (pending.tabId !== undefined) {
     handleDappLogin(
       {
-        action: 'dapp_login',
+        type: 'connect',
         id: pending.id,
         additionalIds: pending.additionalIds,
       } as MessageWithId,

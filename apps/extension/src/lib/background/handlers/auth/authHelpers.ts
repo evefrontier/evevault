@@ -1,5 +1,10 @@
 import { useContextStore } from '@evevault/shared/stores'
-import type { AuthSuccessToken, JwtResponse } from '@evevault/shared/types'
+import type {
+  AuthSuccessToken,
+  DappConnectSuccessMessage,
+  ExtensionAuthSuccessMessage,
+  JwtResponse,
+} from '@evevault/shared/types'
 import {
   CONTEXT_STORAGE_KEY,
   createLogger,
@@ -12,7 +17,9 @@ import type { MessageWithId } from '@/lib/background/types'
 
 const log = createLogger()
 
-export function buildAuthSuccessToken(jwt: JwtResponse): AuthSuccessToken {
+export function buildExtensionAuthSuccessToken(
+  jwt: JwtResponse,
+): AuthSuccessToken {
   const token: AuthSuccessToken = {
     access_token: jwt.access_token,
     id_token: jwt.id_token,
@@ -77,12 +84,17 @@ export function extractAuthCode(responseUrl: string): string | null {
   return new URL(responseUrl).searchParams.get('code')
 }
 
-export function sendAuthSuccess(id: string, jwt: JwtResponse): void {
-  const token = buildAuthSuccessToken(jwt)
-  chrome.runtime.sendMessage({ id, type: 'auth_success', token })
+export function sendExtensionAuthSuccess(id: string, jwt: JwtResponse): void {
+  const token = buildExtensionAuthSuccessToken(jwt)
+  const message: ExtensionAuthSuccessMessage = {
+    id,
+    type: 'auth_success',
+    token,
+  }
+  chrome.runtime.sendMessage(message)
 }
 
-export function sendAuthSuccessToTab(
+export function sendDappConnectSuccessToTab(
   tabId: number,
   ids: string[],
   opts: {
@@ -95,17 +107,17 @@ export function sendAuthSuccessToTab(
   const { chain, address, publicKey, logger } = opts
   const logErr = logger ?? log
   for (const id of ids) {
-    chrome.tabs
-      .sendMessage(tabId, {
-        id,
-        type: 'auth_success',
-        chain,
-        address,
-        ...(publicKey && { publicKey }),
-      })
-      .catch((err) => {
-        logErr.error('Failed to send auth_success to tab', { tabId, id, err })
-      })
+    const message: DappConnectSuccessMessage = {
+      id,
+      type: 'auth_success',
+      chain,
+      address,
+      ...(publicKey && { publicKey }),
+    }
+
+    chrome.tabs.sendMessage(tabId, message).catch((err) => {
+      logErr.error('Failed to send auth_success to tab', { tabId, id, err })
+    })
   }
 }
 

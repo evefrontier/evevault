@@ -1,5 +1,13 @@
 import { VaultMessageTypes, WalletStandardMessageTypes } from '@evevault/shared'
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest'
 
 type ContentModule = typeof import('../content')
 
@@ -30,6 +38,10 @@ beforeEach(() => {
       },
     },
   } as unknown as typeof chrome)
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
 })
 
 describe('content bridge message validation', () => {
@@ -105,20 +117,65 @@ describe('content bridge message validation', () => {
     expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(allowed.data)
   })
 
-  it('posts background responses to the page origin instead of wildcard origin', () => {
+  it('posts public background responses to the page origin instead of wildcard origin', () => {
     const postMessage = vi
       .spyOn(window, 'postMessage')
       .mockImplementation(() => undefined)
 
-    content.forwardToPage({ id: 'connect-id', type: 'auth_success' })
+    content.forwardToPage({
+      id: 'connect-id',
+      type: 'auth_success',
+      chain: 'sui:testnet',
+      address: '0x123',
+      publicKey: 'AQID',
+    })
 
     expect(postMessage).toHaveBeenCalledWith(
       {
         __from: 'Eve Vault',
         id: 'connect-id',
         type: 'auth_success',
+        chain: 'sui:testnet',
+        address: '0x123',
+        publicKey: 'AQID',
       },
       window.location.origin,
     )
+  })
+
+  it('does not forward token-bearing auth responses to the page', () => {
+    const postMessage = vi
+      .spyOn(window, 'postMessage')
+      .mockImplementation(() => undefined)
+
+    content.forwardToPage({
+      id: 'connect-id',
+      type: 'auth_success',
+      token: {
+        access_token: 'access-token',
+        id_token: 'id-token',
+        refresh_token: 'refresh-token',
+      },
+    })
+
+    expect(postMessage).not.toHaveBeenCalled()
+  })
+
+  it('does not forward nested token material to the page', () => {
+    const postMessage = vi
+      .spyOn(window, 'postMessage')
+      .mockImplementation(() => undefined)
+
+    content.forwardToPage({
+      id: 'connect-id',
+      type: 'auth_success',
+      chain: 'sui:testnet',
+      address: '0x123',
+      account: {
+        id_token: 'id-token',
+      },
+    })
+
+    expect(postMessage).not.toHaveBeenCalled()
   })
 })

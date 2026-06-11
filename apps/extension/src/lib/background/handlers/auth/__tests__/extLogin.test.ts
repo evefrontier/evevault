@@ -8,7 +8,7 @@ import type { MessageWithId } from '@/lib/background/types'
 import {
   getCurrentChainFromStorage,
   sendAuthError,
-  sendAuthSuccess,
+  sendExtensionAuthSuccess,
 } from '../authHelpers'
 import { handleExtLogin } from '../extLogin'
 import { checkKeeperUnlocked } from '../keeperHelpers'
@@ -50,7 +50,7 @@ const { mocks, logger } = vi.hoisted(() => {
       getCurrentChain: vi.fn(),
       getCurrentChainFromStorage: vi.fn(),
       sendAuthError: vi.fn(),
-      sendAuthSuccess: vi.fn(),
+      sendExtensionAuthSuccess: vi.fn(),
       checkKeeperUnlocked: vi.fn(),
       getEphemeralKeyPairSecretKeyFromStorage: vi.fn(),
       setPendingAuthAfterUnlock: vi.fn(),
@@ -94,7 +94,7 @@ vi.mock('../authHelpers', () => ({
   getCurrentChain: mocks.getCurrentChain,
   getCurrentChainFromStorage: mocks.getCurrentChainFromStorage,
   sendAuthError: mocks.sendAuthError,
-  sendAuthSuccess: mocks.sendAuthSuccess,
+  sendExtensionAuthSuccess: mocks.sendExtensionAuthSuccess,
 }))
 
 vi.mock('../keeperHelpers', () => ({
@@ -115,7 +115,7 @@ const mockGetAuthRequest = vi.mocked(getAuthRequest)
 const mockOpenPopupWindow = vi.mocked(openPopupWindow)
 const mockGetCurrentChainFromStorage = vi.mocked(getCurrentChainFromStorage)
 const mockSendAuthError = vi.mocked(sendAuthError)
-const mockSendAuthSuccess = vi.mocked(sendAuthSuccess)
+const mockSendExtensionAuthSuccess = vi.mocked(sendExtensionAuthSuccess)
 const mockCheckKeeperUnlocked = vi.mocked(checkKeeperUnlocked)
 const mockSetPendingAuthAfterUnlock = vi.mocked(setPendingAuthAfterUnlock)
 
@@ -257,7 +257,7 @@ describe('handleExtLogin', () => {
     )
 
     await vi.waitFor(() => {
-      expect(mockSendAuthSuccess).toHaveBeenCalledWith('message-id', {
+      expect(mockSendExtensionAuthSuccess).toHaveBeenCalledWith('message-id', {
         id_token: 'id-token',
       })
     })
@@ -309,7 +309,7 @@ describe('handleExtLogin', () => {
     )
 
     await vi.waitFor(() => {
-      expect(mockSendAuthSuccess).toHaveBeenCalledWith('message-id', {
+      expect(mockSendExtensionAuthSuccess).toHaveBeenCalledWith('message-id', {
         id_token: 'id-token',
       })
     })
@@ -372,6 +372,6 @@ describe('handleExtLogin', () => {
       })
     })
     expect(mockStoreJwt).not.toHaveBeenCalled()
-    expect(mockSendAuthSuccess).not.toHaveBeenCalled()
+    expect(mockSendExtensionAuthSuccess).not.toHaveBeenCalled()
   })
 })

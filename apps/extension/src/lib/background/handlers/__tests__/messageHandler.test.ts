@@ -112,6 +112,19 @@ describe('handleMessage sender authorization', () => {
     )
   })
 
+  it('rejects public dApp connect messages from extension senders', () => {
+    const sendResponse = vi.fn()
+
+    expect(
+      handleMessage(
+        { type: 'connect', id: 'connect-id' },
+        extensionSender(),
+        sendResponse,
+      ),
+    ).toBe(false)
+    expect(mocks.handleDappLogin).not.toHaveBeenCalled()
+  })
+
   it('rejects vault messages from tab senders', () => {
     const sendResponse = vi.fn()
 
@@ -157,15 +170,6 @@ describe('handleMessage sender authorization', () => {
       ),
     ).toBe(false)
     expect(mocks.handleExtLogin).not.toHaveBeenCalled()
-
-    expect(
-      handleMessage(
-        { action: 'dapp_login', id: 'legacy-dapp-id' },
-        dappSender(),
-        sendResponse,
-      ),
-    ).toBe(false)
-    expect(mocks.handleDappLogin).toHaveBeenCalledTimes(0)
 
     handleMessage(
       { event: 'change', payload: { accounts: [] } },

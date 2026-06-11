@@ -18,7 +18,7 @@ const SPONSORED_MESSAGE_STRING_FIELDS = [
 type PageMessageValidator = (data: Record<string, unknown>) => boolean
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === 'object'
+  return !!value && typeof value === 'object' && !Array.isArray(value)
 }
 
 function isValidRequestId(value: unknown): value is string {
@@ -55,6 +55,24 @@ function hasStringFields(
 
 function hasOptionalObjectMetadata(data: Record<string, unknown>): boolean {
   return data.metadata === undefined || isRecord(data.metadata)
+}
+
+const TOKEN_MATERIAL_FIELDS = new Set([
+  'token',
+  'access_token',
+  'id_token',
+  'refresh_token',
+  'refresh_token_id',
+])
+
+function hasNoTokenMaterial(value: unknown): boolean {
+  if (Array.isArray(value)) return value.every(hasNoTokenMaterial)
+  if (!isRecord(value)) return true
+
+  return Object.entries(value).every(
+    ([field, child]) =>
+      !TOKEN_MATERIAL_FIELDS.has(field) && hasNoTokenMaterial(child),
+  )
 }
 
 function isEveVaultRequest(data: unknown): data is Record<string, unknown> {
@@ -124,6 +142,88 @@ export function isAllowedPageMessage(
   return isAllowedBridgePayload(data)
 }
 
+function hasStringIdAndType(data: Record<string, unknown>): boolean {
+  return isValidRequestId(data.id) && typeof data.type === 'string'
+}
+
+function isPublicAuthSuccess(data: Record<string, unknown>): boolean {
+  return every([
+    hasStringIdAndType(data),
+    data.type === 'auth_success',
+    typeof data.chain === 'string',
+    typeof data.address === 'string',
+    data.publicKey === undefined || typeof data.publicKey === 'string',
+  ])
+}
+
+function isPublicAuthError(data: Record<string, unknown>): boolean {
+  return every([
+    hasStringIdAndType(data),
+    data.type === 'auth_error',
+    data.error !== undefined,
+  ])
+}
+
+function isSignatureSuccess(data: Record<string, unknown>): boolean {
+  return every([
+    hasStringIdAndType(data),
+    data.type === 'sign_success',
+    typeof data.bytes === 'string' || typeof data.digest === 'string',
+    typeof data.signature === 'string' || typeof data.effects === 'string',
+  ])
+}
+
+function isSignAndExecuteSuccess(data: Record<string, unknown>): boolean {
+  return every([
+    hasStringIdAndType(data),
+    data.type === 'sign_and_execute_transaction_success',
+    isRecord(data.result),
+  ])
+}
+
+const PUBLIC_ERROR_TYPES = new Set([
+  'sign_error',
+  'sign_personal_message_error',
+  'sign_transaction_error',
+  'sign_and_execute_transaction_error',
+  'sign_sponsored_transaction_error',
+])
+
+function isPublicErrorType(value: unknown): value is string {
+  return typeof value === 'string' && PUBLIC_ERROR_TYPES.has(value)
+}
+
+function isPublicSigningError(data: Record<string, unknown>): boolean {
+  return every([
+    hasStringIdAndType(data),
+    isPublicErrorType(data.type),
+    data.error !== undefined,
+  ])
+}
+
+function isPublicChangeEvent(data: Record<string, unknown>): boolean {
+  return data.event === 'change' && isRecord(data.payload)
+}
+
+const PUBLIC_EXTENSION_MESSAGE_VALIDATORS: readonly PageMessageValidator[] = [
+  isPublicAuthSuccess,
+  isPublicAuthError,
+  isSignatureSuccess,
+  isSignAndExecuteSuccess,
+  isPublicSigningError,
+  isPublicChangeEvent,
+]
+
+export function isAllowedExtensionMessage(
+  data: unknown,
+): data is Record<string, unknown> {
+  if (!isRecord(data) || !hasNoTokenMaterial(data)) return false
+
+  return PUBLIC_EXTENSION_MESSAGE_VALIDATORS.some((validator) =>
+    validator(data),
+  )
+}
+
 function postToPage(message: Record<string, unknown>): void {
   const targetOrigin = getPageTargetOrigin()
   if (!targetOrigin) return
@@ -175,6 +275,8 @@ export function handleWindowMessage(event: MessageEvent) {
 }
 
 export function forwardToPage(message: Record<string, unknown>) {
+  if (!isAllowedExtensionMessage(message)) return
+
   const id = (message.id as string) || undefined
   const type = (message.type as string) || ''
   postToPage({ __from: 'Eve Vault', id, type, ...message })
