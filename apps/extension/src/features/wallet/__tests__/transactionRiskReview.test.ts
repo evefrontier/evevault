@@ -1,25 +1,23 @@
 import { describe, expect, it } from 'vitest'
-import { reviewTransactionDisplay } from '../transactionRiskReview'
+import { reviewTransaction } from '../transactionRiskReview'
 
-describe('reviewTransactionDisplay', () => {
+describe('reviewTransaction', () => {
   it('flags high-risk programmable transaction commands', () => {
-    const findings = reviewTransactionDisplay(
-      JSON.stringify({
-        commands: [
-          {
-            TransferObjects: { objects: [{ Input: 0 }], address: { Input: 1 } },
+    const findings = reviewTransaction({
+      commands: [
+        {
+          TransferObjects: { objects: [{ Input: 0 }], address: { Input: 1 } },
+        },
+        {
+          MoveCall: {
+            package: '0x2',
+            module: 'coin',
+            function: 'transfer',
           },
-          {
-            MoveCall: {
-              package: '0x2',
-              module: 'coin',
-              function: 'transfer',
-            },
-          },
-          { MakeMoveVec: { type: null, objects: [{ Input: 2 }] } },
-        ],
-      }),
-    )
+        },
+        { MakeMoveVec: { type: null, objects: [{ Input: 2 }] } },
+      ],
+    })
 
     expect(findings).toEqual(
       expect.arrayContaining([
@@ -40,11 +38,9 @@ describe('reviewTransactionDisplay', () => {
   })
 
   it('flags package publishing and upgrades as dangerous', () => {
-    const findings = reviewTransactionDisplay(
-      JSON.stringify({
-        commands: [{ Publish: { modules: [] } }, { Upgrade: { modules: [] } }],
-      }),
-    )
+    const findings = reviewTransaction({
+      commands: [{ Publish: { modules: [] } }, { Upgrade: { modules: [] } }],
+    })
 
     expect(findings).toEqual(
       expect.arrayContaining([
@@ -61,21 +57,19 @@ describe('reviewTransactionDisplay', () => {
   })
 
   it('flags shared object references', () => {
-    const findings = reviewTransactionDisplay(
-      JSON.stringify({
-        inputs: [
-          {
-            Object: {
-              SharedObject: {
-                objectId: '0xshared',
-                initialSharedVersion: 1,
-                mutable: true,
-              },
+    const findings = reviewTransaction({
+      inputs: [
+        {
+          Object: {
+            SharedObject: {
+              objectId: '0xshared',
+              initialSharedVersion: 1,
+              mutable: true,
             },
           },
-        ],
-      }),
-    )
+        },
+      ],
+    })
 
     expect(findings).toContainEqual(
       expect.objectContaining({
@@ -85,12 +79,38 @@ describe('reviewTransactionDisplay', () => {
     )
   })
 
-  it('warns when the transaction cannot be decoded as JSON', () => {
-    expect(reviewTransactionDisplay('not json')).toEqual([
+  it('warns when the transaction cannot be decoded for review', () => {
+    expect(reviewTransaction(undefined)).toEqual([
       expect.objectContaining({
         severity: 'warning',
         title: 'Unverified transaction format',
       }),
     ])
+  })
+
+  it('does not flag command-like metadata outside transaction commands', () => {
+    expect(
+      reviewTransaction({
+        metadata: {
+          MoveCall: 'display label only',
+          SharedObject: 'not an input object',
+        },
+      }),
+    ).toEqual([])
+  })
+
+  it('supports command arrays nested under data', () => {
+    expect(
+      reviewTransaction({
+        data: {
+          commands: [{ kind: 'MoveCall' }],
+        },
+      }),
+    ).toContainEqual(
+      expect.objectContaining({
+        severity: 'warning',
+        title: 'Calls Move code',
+      }),
+    )
   })
 })

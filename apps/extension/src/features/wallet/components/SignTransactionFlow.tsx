@@ -3,7 +3,7 @@ import Json from '@evevault/shared/components/Json'
 import { useTransactionSigning } from '@/features/wallet/hooks'
 import type { SignResult } from '@/features/wallet/hooks/useTransactionSigning'
 import {
-  reviewTransactionDisplay,
+  reviewTransaction,
   type TransactionRiskFinding,
 } from '../transactionRiskReview'
 import { SignRequestView } from './SignRequestView'
@@ -60,7 +60,7 @@ export function SignTransactionFlow({
 
   const handleApprove = () => withSigning(onSign)
   const riskFindings = pendingTransaction
-    ? reviewTransactionDisplay(pendingTransaction.displayValue)
+    ? reviewTransaction(pendingTransaction.reviewValue)
     : []
 
   return (

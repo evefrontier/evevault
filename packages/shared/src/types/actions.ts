@@ -23,6 +23,7 @@ export interface PendingTransaction extends VaultMessage {
 
 export interface ParsedTransactionWithDisplay extends PendingTransaction {
   displayValue: string
+  reviewValue?: unknown
 }
 
 export interface PendingPersonalMessage extends VaultMessage {
