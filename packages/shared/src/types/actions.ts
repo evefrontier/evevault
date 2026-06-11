@@ -2,6 +2,7 @@ export enum WalletActions {
   SIGN_PERSONAL_MESSAGE = 'sign_personal_message',
   SIGN_TRANSACTION = 'sign_transaction',
   SIGN_AND_EXECUTE_TRANSACTION = 'sign_and_execute_transaction',
+  SIGN_SPONSORED_TRANSACTION = 'sign_sponsored_transaction',
 }
 
 import type { SuiChain } from '@mysten/wallet-standard'
@@ -30,7 +31,34 @@ export interface PendingPersonalMessage extends VaultMessage {
   account?: { address: string }
 }
 
-interface VaultMessage {
+export type PendingSponsoredTransactionMetadata = {
+  name?: string
+  description?: string
+  url?: string
+}
+
+export interface PendingSponsoredTransaction {
+  action: WalletActions.SIGN_SPONSORED_TRANSACTION
+  id?: string
+  senderTabId?: number
+  timestamp: number
+  windowId: number
+  sponsoredTxB64: string
+  preparationId: string
+  chain: SuiChain
+  dapp?: DappRequestContext
+  sponsoredAction?: string
+  assembly?: string
+  assemblyType?: string
+  metadata?: PendingSponsoredTransactionMetadata
+}
+
+export type PendingAction =
+  | PendingTransaction
+  | PendingPersonalMessage
+  | PendingSponsoredTransaction
+
+export interface VaultMessage {
   id: string
   action: WalletActions
   senderTabId: number

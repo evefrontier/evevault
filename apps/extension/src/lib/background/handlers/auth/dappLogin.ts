@@ -5,7 +5,7 @@ import {
   getZkLoginAddress,
 } from '@evevault/shared/auth'
 import { useContextStore, useDeviceStore } from '@evevault/shared/stores'
-import type { DappRequestContext } from '@evevault/shared/types'
+import type { DappRequestContext, JwtResponse } from '@evevault/shared/types'
 import {
   isLocalnetChain,
   isZkLoginSuiChain,
@@ -59,6 +59,16 @@ function sendAuthErrorToTab(
     id,
     type: 'auth_error',
     error: { message, ...extra },
+  })
+}
+
+function sendAuthErrorToTabIds(
+  tabId: number,
+  ids: string[],
+  message: string,
+): void {
+  ids.forEach((id) => {
+    sendAuthErrorToTab(tabId, id, message)
   })
 }
 
@@ -195,32 +205,17 @@ async function syncPublicKeyFromKeeper(
   }
 }
 
-// If the tab already has a valid JWT, sends auth_success immediately without
-// going through the OAuth flow. Returns true if handled (caller should return).
-async function checkExistingAuth(
-  tabId: number,
-  id: string,
-  additionalIds: string[],
-  chain: ReturnType<typeof getCurrentChain>,
-  dappContext: DappRequestContext,
-): Promise<boolean> {
-  const existingJwt = await getJwt()
-  if (!existingJwt?.id_token) return false
-
-  log.debug('Connect: already connected, sending auth_success without OIDC')
-  await completeDappConnect(
-    tabId,
-    [id, ...additionalIds],
-    existingJwt,
-    chain,
-    dappContext,
-  )
-  return true
+type DappConnectCompletionOptions = {
+  tabId: number
+  ids: string[]
+  jwt: JwtResponse
+  chain: ReturnType<typeof getCurrentChain>
+  dappContext: DappRequestContext
 }
 
 async function resolveDappConnectAccount(
-  jwt: Awaited<ReturnType<typeof getJwt>>,
-  chain: ReturnType<typeof getCurrentChain>,
+  jwt,
+  chain,
 ): Promise<DappConnectAccountResult> {
   return isLocalnetChain(chain)
     ? resolveLocalnetDappConnectAccount()
@@ -308,38 +303,51 @@ function buildDappAccountMetadata(
   return { address, publicKey }
 }
 
-function sendDappConnectErrorToTab(
-  tabId: number,
-  ids: string[],
-  error: string,
-): void {
-  for (const id of ids) {
-    sendAuthErrorToTab(tabId, id, error)
-  }
-}
-
-async function completeDappConnect(
-  tabId: number,
-  ids: string[],
-  jwt: Awaited<ReturnType<typeof getJwt>>,
-  chain: ReturnType<typeof getCurrentChain>,
-  dappContext: DappRequestContext,
-): Promise<void> {
+async function completeDappConnect({
+  tabId,
+  ids,
+  jwt,
+  chain,
+  dappContext,
+}: DappConnectCompletionOptions): Promise<void> {
   const result = await resolveDappConnectAccount(jwt, chain)
   if (!result.ok) {
-    sendDappConnectErrorToTab(tabId, ids, result.error)
+    sendAuthErrorToTabIds(tabId, ids, result.error)
     return
   }
 
-  await grantDappPermission(dappContext, chain)
   log.debug('Connect: sending auth_success with account metadata', {
     chain,
   })
+  await grantDappPermission(dappContext, chain)
   sendDappConnectSuccessToTab(tabId, ids, {
     chain,
     address: result.account.address,
     publicKey: result.account.publicKey,
   })
+}
+
+// If the tab already has a valid JWT, sends auth_success immediately without
+// going through the OAuth flow. Returns true if handled (caller should return).
+async function checkExistingAuth(
+  tabId: number,
+  id: string,
+  additionalIds: string[],
+  chain: ReturnType<typeof getCurrentChain>,
+  dappContext: DappRequestContext,
+): Promise<boolean> {
+  const existingJwt = await getJwt()
+  if (!existingJwt?.id_token) return false
+
+  log.debug('Connect: already connected, sending auth_success without OIDC')
+  await completeDappConnect({
+    tabId,
+    ids: [id, ...additionalIds],
+    jwt: existingJwt,
+    chain,
+    dappContext,
+  })
+  return true
 }
 
 // Returns the zkLogin nonce for the chain, initializing device data if needed.
@@ -444,13 +452,13 @@ async function handleOAuthCallback(
     await storeJwt(jwtResponse)
 
     if (typeof tabId === 'number') {
-      await completeDappConnect(
+      await completeDappConnect({
         tabId,
-        [id, ...additionalIds],
-        jwtResponse,
+        ids: [id, ...additionalIds],
+        jwt: jwtResponse,
         chain,
         dappContext,
-      )
+      })
     }
   } catch (error) {
     log.error('Token exchange failed', error)

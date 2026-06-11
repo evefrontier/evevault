@@ -2,7 +2,7 @@ import { VaultMessageTypes, WalletStandardMessageTypes } from '@evevault/shared'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { handleMessage } from '@/lib/background/handlers/messageHandler'
 
-const { mocks, logger } = vi.hoisted(() => ({
+const { logger, mocks } = vi.hoisted(() => ({
   logger: {
     info: vi.fn(),
     error: vi.fn(),
@@ -10,6 +10,8 @@ const { mocks, logger } = vi.hoisted(() => ({
     debug: vi.fn(),
   },
   mocks: {
+    getDappRequestContext: vi.fn(),
+    revokeDappPermission: vi.fn(),
     handleDappLogin: vi.fn(),
     handleExtLogin: vi.fn(),
     handleWebUnlock: vi.fn(),
@@ -17,7 +19,22 @@ const { mocks, logger } = vi.hoisted(() => ({
     handleSponsoredTransaction: vi.fn(),
     handleUnlockVault: vi.fn(),
     handleLock: vi.fn(),
+    handleCreateKeypair: vi.fn(),
+    handleRotateKeypair: vi.fn(),
+    handleGetPublicKey: vi.fn(),
+    handleZkEphSignBytes: vi.fn(),
+    handleSetZkProof: vi.fn(),
+    handleGetZkProof: vi.fn(),
+    handleClearZkProof: vi.fn(),
+    handleLocalnetSetKeypair: vi.fn(),
+    handleLocalnetGetAddress: vi.fn(),
+    handleLocalnetSignBytes: vi.fn(),
   },
+}))
+
+vi.mock('@/lib/background/services/dappPermissions', () => ({
+  getDappRequestContext: mocks.getDappRequestContext,
+  revokeDappPermission: mocks.revokeDappPermission,
 }))
 
 vi.mock('@evevault/shared/utils', async (importOriginal) => {
@@ -45,16 +62,16 @@ vi.mock('@/lib/background/handlers/sponsoredTransactionHandler', () => ({
 vi.mock('@/lib/background/handlers/vaultHandlers', () => ({
   handleUnlockVault: mocks.handleUnlockVault,
   handleLock: mocks.handleLock,
-  _handleCreateKeypair: vi.fn(),
-  _handleRotateKeypair: vi.fn(),
-  _handleGetPublicKey: vi.fn(),
-  _handleZkEphSignBytes: vi.fn(),
-  _handleSetZkProof: vi.fn(),
-  _handleGetZkProof: vi.fn(),
-  _handleClearZkProof: vi.fn(),
-  _handleLocalnetSetKeypair: vi.fn(),
-  _handleLocalnetGetAddress: vi.fn(),
-  _handleLocalnetSignBytes: vi.fn(),
+  _handleCreateKeypair: mocks.handleCreateKeypair,
+  _handleRotateKeypair: mocks.handleRotateKeypair,
+  _handleGetPublicKey: mocks.handleGetPublicKey,
+  _handleZkEphSignBytes: mocks.handleZkEphSignBytes,
+  _handleSetZkProof: mocks.handleSetZkProof,
+  _handleGetZkProof: mocks.handleGetZkProof,
+  _handleClearZkProof: mocks.handleClearZkProof,
+  _handleLocalnetSetKeypair: mocks.handleLocalnetSetKeypair,
+  _handleLocalnetGetAddress: mocks.handleLocalnetGetAddress,
+  _handleLocalnetSignBytes: mocks.handleLocalnetSignBytes,
 }))
 
 function installChromeMock() {
@@ -64,13 +81,14 @@ function installChromeMock() {
     },
     tabs: {
       query: vi.fn((callback) => callback([{ id: 1 }, { id: 2 }])),
-      sendMessage: vi.fn(),
+      sendMessage: vi.fn(() => Promise.resolve()),
     },
   } as unknown as typeof chrome)
 }
 
 function dappSender(): chrome.runtime.MessageSender {
   return {
+    origin: 'https://dapp.example',
     url: 'https://dapp.example/app',
     tab: {
       id: 42,
@@ -85,13 +103,29 @@ function extensionSender(): chrome.runtime.MessageSender {
   }
 }
 
-describe('handleMessage sender authorization', () => {
+describe('handleMessage route policy', () => {
   beforeEach(() => {
     installChromeMock()
     vi.clearAllMocks()
+    mocks.getDappRequestContext.mockImplementation(
+      (sender: chrome.runtime.MessageSender) =>
+        sender.tab
+          ? {
+              origin: 'https://dapp.example',
+              url: 'https://dapp.example/app',
+            }
+          : null,
+    )
     mocks.handleDappLogin.mockResolvedValue(undefined)
     mocks.handleExtLogin.mockResolvedValue(undefined)
     mocks.handleWebUnlock.mockResolvedValue(undefined)
+    mocks.handleApprovePopup.mockReturnValue(true)
+    mocks.handleGetPublicKey.mockResolvedValue(true)
+    mocks.revokeDappPermission.mockResolvedValue({
+      ok: true,
+      context: { origin: 'https://dapp.example' },
+      hadPermission: true,
+    })
   })
 
   it('allows public dApp connect messages from tab senders', () => {
@@ -123,6 +157,10 @@ describe('handleMessage sender authorization', () => {
       ),
     ).toBe(false)
     expect(mocks.handleDappLogin).not.toHaveBeenCalled()
+    expect(sendResponse).toHaveBeenCalledWith({
+      type: 'auth_error',
+      error: { message: 'Unauthorized message sender' },
+    })
   })
 
   it('rejects vault messages from tab senders', () => {
@@ -171,18 +209,18 @@ describe('handleMessage sender authorization', () => {
     ).toBe(false)
     expect(mocks.handleExtLogin).not.toHaveBeenCalled()
 
-    handleMessage(
-      { event: 'change', payload: { accounts: [] } },
-      dappSender(),
-      sendResponse,
-    )
-
+    expect(
+      handleMessage(
+        { event: 'change', payload: { accounts: [] } },
+        dappSender(),
+        sendResponse,
+      ),
+    ).toBe(false)
     expect(chrome.tabs.query).not.toHaveBeenCalled()
   })
 
   it('allows wallet signing actions from tab senders only', () => {
     const sendResponse = vi.fn()
-    mocks.handleApprovePopup.mockReturnValue(true)
 
     expect(
       handleMessage(
@@ -203,5 +241,60 @@ describe('handleMessage sender authorization', () => {
       ),
     ).toBe(false)
     expect(mocks.handleApprovePopup).not.toHaveBeenCalled()
+  })
+
+  it('revokes dApp permission and sends disconnect success to the page', async () => {
+    const sendResponse = vi.fn()
+
+    expect(
+      handleMessage(
+        { type: WalletStandardMessageTypes.DISCONNECT, id: 'disconnect-id' },
+        dappSender(),
+        sendResponse,
+      ),
+    ).toBe(true)
+
+    await vi.waitFor(() => {
+      expect(mocks.revokeDappPermission).toHaveBeenCalledWith(
+        expect.objectContaining({ tab: expect.objectContaining({ id: 42 }) }),
+      )
+    })
+    expect(sendResponse).toHaveBeenCalledWith({
+      id: 'disconnect-id',
+      type: 'disconnect_success',
+    })
+    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(42, {
+      id: 'disconnect-id',
+      type: 'disconnect_success',
+    })
+  })
+
+  it('sends disconnect error when revocation fails', async () => {
+    mocks.revokeDappPermission.mockResolvedValueOnce({
+      ok: false,
+      error: 'revocation failed',
+    })
+    const sendResponse = vi.fn()
+
+    expect(
+      handleMessage(
+        { type: WalletStandardMessageTypes.DISCONNECT, id: 'disconnect-id' },
+        dappSender(),
+        sendResponse,
+      ),
+    ).toBe(true)
+
+    await vi.waitFor(() => {
+      expect(sendResponse).toHaveBeenCalledWith({
+        id: 'disconnect-id',
+        type: 'disconnect_error',
+        error: { message: 'revocation failed' },
+      })
+    })
+    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(42, {
+      id: 'disconnect-id',
+      type: 'disconnect_error',
+      error: { message: 'revocation failed' },
+    })
   })
 })

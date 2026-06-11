@@ -5,9 +5,9 @@ import {
   type SigningErrorType,
   sendToTab,
 } from '@/lib/background/messaging/tabMessaging'
-import { requireDappPermission } from '@/lib/background/services/dappPermissions'
 import { openPopupWindow } from '@/lib/background/services/popupWindow'
 import type { WalletActionMessage } from '@/lib/background/types'
+import { requireSigningPermission } from './signingPermissions'
 
 const log = createLogger()
 
@@ -129,7 +129,7 @@ async function handleApprovePopup(
     log.info('Wallet action request received', { action: message.action })
 
     const senderTabId = sender.tab?.id
-    const permission = await requireDappPermission(
+    const permission = await requireSigningPermission(
       sender,
       getRequestedChain(message),
     )

@@ -1,36 +1,18 @@
-import type { SponsoredTransactionMetadata } from '@evefrontier/wallet-core/wallet-standard-extensions'
 import { Text } from '@evevault/shared/components'
-import type { DappRequestContext } from '@evevault/shared/types'
+import type { PendingSponsoredTransaction } from '@evevault/shared/types'
 import { createLogger } from '@evevault/shared/utils'
 import { useWalletSigningContext } from '@evevault/shared/wallet'
-import type { SuiChain } from '@mysten/wallet-standard'
 import { usePendingSignAction } from '@/features/wallet/hooks'
 import { SignRequestView } from './SignRequestView'
 
 const log = createLogger()
 
-export type PendingSponsoredAction = {
-  action: string
-  id?: string
-  senderTabId?: number
-  timestamp: number
-  windowId: number
-  sponsoredTxB64: string
-  preparationId: string
-  chain: SuiChain
-  dapp?: DappRequestContext
-  sponsoredAction?: string
-  assembly?: string
-  assemblyType?: string
-  metadata?: SponsoredTransactionMetadata
-}
-
 function parsePendingSponsoredAction(
   pendingAction: unknown,
-): PendingSponsoredAction {
-  const action = pendingAction as Partial<PendingSponsoredAction>
+): PendingSponsoredTransaction {
+  const action = pendingAction as Partial<PendingSponsoredTransaction>
   if (action.sponsoredTxB64 != null && action.preparationId != null) {
-    return action as PendingSponsoredAction
+    return action as PendingSponsoredTransaction
   }
 
   throw new Error('No pending sponsored transaction found')

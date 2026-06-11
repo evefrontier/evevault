@@ -9,6 +9,10 @@ type DappPermissionRecord = DappRequestContext & {
 }
 
 type DappPermissionStore = Record<string, DappPermissionRecord>
+type PermissionStoreUpdate<T> = {
+  store: DappPermissionStore
+  result: T
+}
 
 export type DappPermissionResult =
   | { allowed: true; context: DappRequestContext }
@@ -19,6 +23,7 @@ export type DappPermissionRevocationResult =
   | { ok: false; error: string }
 
 const ALLOWED_PAGE_PROTOCOLS = new Set(['http:', 'https:'])
+let permissionStoreUpdateQueue: Promise<unknown> = Promise.resolve()
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value != null && typeof value === 'object' && !Array.isArray(value)
@@ -112,6 +117,22 @@ async function readPermissionStore(): Promise<DappPermissionStore> {
   return Object.fromEntries(entries)
 }
 
+async function updatePermissionStore<T>(
+  update: (permissions: DappPermissionStore) => PermissionStoreUpdate<T>,
+): Promise<T> {
+  const nextUpdate = permissionStoreUpdateQueue.then(async () => {
+    const permissions = await readPermissionStore()
+    const { store, result } = update(permissions)
+    await chrome.storage.local.set({
+      [DAPP_PERMISSIONS_STORAGE_KEY]: store,
+    })
+    return result
+  })
+
+  permissionStoreUpdateQueue = nextUpdate.catch(() => undefined)
+  return nextUpdate
+}
+
 function mergeChains(
   chains: SuiChain[] | undefined,
   chain: SuiChain,
@@ -133,27 +154,27 @@ export async function grantDappPermission(
   context: DappRequestContext,
   chain: SuiChain,
 ): Promise<DappRequestContext> {
-  const permissions = await readPermissionStore()
-  const existing = permissions[context.origin]
-  const now = Date.now()
-  const record: DappPermissionRecord = {
-    origin: context.origin,
-    connectedAt: existing?.connectedAt ?? now,
-    updatedAt: now,
-    chains: mergeChains(existing?.chains, chain),
-    ...(context.url && { url: context.url }),
-    ...(context.title && { title: context.title }),
-    ...(context.favIconUrl && { favIconUrl: context.favIconUrl }),
-  }
+  return updatePermissionStore((permissions) => {
+    const existing = permissions[context.origin]
+    const now = Date.now()
+    const record: DappPermissionRecord = {
+      origin: context.origin,
+      connectedAt: existing?.connectedAt ?? now,
+      updatedAt: now,
+      chains: mergeChains(existing?.chains, chain),
+      ...(context.url && { url: context.url }),
+      ...(context.title && { title: context.title }),
+      ...(context.favIconUrl && { favIconUrl: context.favIconUrl }),
+    }
 
-  await chrome.storage.local.set({
-    [DAPP_PERMISSIONS_STORAGE_KEY]: {
-      ...permissions,
-      [context.origin]: record,
-    },
+    return {
+      store: {
+        ...permissions,
+        [context.origin]: record,
+      },
+      result: toRequestContext(record),
+    }
   })
-
-  return toRequestContext(record)
 }
 
 export async function requireDappPermission(
@@ -206,16 +227,19 @@ export async function revokeDappPermission(
     }
   }
 
-  const permissions = await readPermissionStore()
-  const hadPermission = Boolean(permissions[context.origin])
-  if (!hadPermission) {
-    return { ok: true, context, hadPermission: false }
-  }
+  return updatePermissionStore((permissions) => {
+    const hadPermission = Boolean(permissions[context.origin])
+    if (!hadPermission) {
+      return {
+        store: permissions,
+        result: { ok: true, context, hadPermission: false },
+      }
+    }
 
-  const { [context.origin]: _removed, ...remainingPermissions } = permissions
-  await chrome.storage.local.set({
-    [DAPP_PERMISSIONS_STORAGE_KEY]: remainingPermissions,
+    const { [context.origin]: _removed, ...remainingPermissions } = permissions
+    return {
+      store: remainingPermissions,
+      result: { ok: true, context, hadPermission: true },
+    }
   })
-
-  return { ok: true, context, hadPermission: true }
 }

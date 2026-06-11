@@ -1,13 +1,17 @@
-import { WalletStandardMessageTypes } from '@evevault/shared'
+import {
+  type PendingSponsoredTransaction,
+  WalletActions,
+  WalletStandardMessageTypes,
+} from '@evevault/shared'
 import { getApiContext, getJwt, getStoredChain } from '@evevault/shared/auth'
 import { createLogger } from '@evevault/shared/utils'
 import { sendToTab } from '@/lib/background/messaging/tabMessaging'
-import { requireDappPermission } from '@/lib/background/services/dappPermissions'
 import { openPopupWindow } from '@/lib/background/services/popupWindow'
 import type {
   EveFrontierSponsoredTransactionMessage,
   SponsoredTxReturn,
 } from '@/lib/background/types'
+import { requireSigningPermission } from './signingPermissions'
 
 const log = createLogger()
 
@@ -119,7 +123,7 @@ async function handleSponsoredTransaction(
       throw new Error(`Assembly not found: ${assembly}, ${assemblyType}`)
     }
 
-    const permission = await requireDappPermission(sender, chain)
+    const permission = await requireSigningPermission(sender, chain)
     if (!permission.allowed) {
       sendSponsoredError(senderTabId, message.id, permission.error)
       return true
@@ -188,23 +192,23 @@ async function handleSponsoredTransaction(
       throw new Error('Failed to open sponsored transaction popup')
     }
 
-    await chrome.storage.local.set({
-      pendingAction: {
-        action: actionType,
-        id: message.id,
-        senderTabId,
-        timestamp: Date.now(),
-        windowId,
-        sponsoredTxB64: sponsoredTxReturn.bcsDataB64Bytes,
-        preparationId: sponsoredTxReturn.preparationId,
-        chain,
-        dapp: permission.context,
-        sponsoredAction: action,
-        assembly,
-        assemblyType,
-        metadata,
-      },
-    })
+    const pendingAction: PendingSponsoredTransaction = {
+      action: WalletActions.SIGN_SPONSORED_TRANSACTION,
+      id: message.id,
+      senderTabId,
+      timestamp: Date.now(),
+      windowId,
+      sponsoredTxB64: sponsoredTxReturn.bcsDataB64Bytes,
+      preparationId: sponsoredTxReturn.preparationId,
+      chain,
+      dapp: permission.context,
+      sponsoredAction: action,
+      assembly,
+      assemblyType,
+      metadata,
+    }
+
+    await chrome.storage.local.set({ pendingAction })
 
     let timeoutId: ReturnType<typeof setTimeout>
     let registeredListener: (changes: {

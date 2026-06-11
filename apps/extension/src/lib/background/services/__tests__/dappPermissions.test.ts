@@ -1,6 +1,6 @@
 import { DAPP_PERMISSIONS_STORAGE_KEY } from '@evevault/shared/utils'
 import { SUI_DEVNET_CHAIN, SUI_TESTNET_CHAIN } from '@mysten/wallet-standard'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   getDappRequestContext,
   grantDappPermission,
@@ -26,6 +26,10 @@ describe('dappPermissions', () => {
         },
       },
     } as unknown as typeof chrome
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('extracts web origin context from the sender', () => {
@@ -83,6 +87,103 @@ describe('dappPermissions', () => {
       'https://app.example': {
         origin: 'https://app.example',
         chains: [SUI_TESTNET_CHAIN],
+      },
+    })
+  })
+
+  it('merges chain grants without replacing the original connected time', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(1000)
+    await grantDappPermission(
+      { origin: 'https://app.example' },
+      SUI_TESTNET_CHAIN,
+    )
+
+    vi.setSystemTime(2000)
+    await grantDappPermission(
+      { origin: 'https://app.example' },
+      SUI_DEVNET_CHAIN,
+    )
+
+    expect(storage[DAPP_PERMISSIONS_STORAGE_KEY]).toMatchObject({
+      'https://app.example': {
+        connectedAt: 1000,
+        updatedAt: 2000,
+        chains: [SUI_TESTNET_CHAIN, SUI_DEVNET_CHAIN],
+      },
+    })
+  })
+
+  it('preserves unrelated origins when revoking one permission', async () => {
+    await grantDappPermission(
+      { origin: 'https://app.example' },
+      SUI_TESTNET_CHAIN,
+    )
+    await grantDappPermission(
+      { origin: 'https://other.example' },
+      SUI_DEVNET_CHAIN,
+    )
+
+    await revokeDappPermission({
+      origin: 'https://app.example',
+    } as chrome.runtime.MessageSender)
+
+    expect(storage[DAPP_PERMISSIONS_STORAGE_KEY]).toMatchObject({
+      'https://other.example': {
+        origin: 'https://other.example',
+        chains: [SUI_DEVNET_CHAIN],
+      },
+    })
+    expect(
+      (storage[DAPP_PERMISSIONS_STORAGE_KEY] as Record<string, unknown>)[
+        'https://app.example'
+      ],
+    ).toBeUndefined()
+  })
+
+  it('cleans malformed entries when updating the permission store', async () => {
+    storage[DAPP_PERMISSIONS_STORAGE_KEY] = {
+      'https://broken.example': {
+        origin: 'https://broken.example',
+        chains: ['sui:testnet'],
+      },
+    }
+
+    await grantDappPermission(
+      { origin: 'https://app.example' },
+      SUI_TESTNET_CHAIN,
+    )
+
+    expect(storage[DAPP_PERMISSIONS_STORAGE_KEY]).toMatchObject({
+      'https://app.example': {
+        origin: 'https://app.example',
+        chains: [SUI_TESTNET_CHAIN],
+      },
+    })
+    expect(
+      (storage[DAPP_PERMISSIONS_STORAGE_KEY] as Record<string, unknown>)[
+        'https://broken.example'
+      ],
+    ).toBeUndefined()
+  })
+
+  it('serializes concurrent grants so updates do not overwrite each other', async () => {
+    await Promise.all([
+      grantDappPermission({ origin: 'https://app.example' }, SUI_TESTNET_CHAIN),
+      grantDappPermission(
+        { origin: 'https://other.example' },
+        SUI_DEVNET_CHAIN,
+      ),
+    ])
+
+    expect(storage[DAPP_PERMISSIONS_STORAGE_KEY]).toMatchObject({
+      'https://app.example': {
+        origin: 'https://app.example',
+        chains: [SUI_TESTNET_CHAIN],
+      },
+      'https://other.example': {
+        origin: 'https://other.example',
+        chains: [SUI_DEVNET_CHAIN],
       },
     })
   })
