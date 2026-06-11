@@ -17,22 +17,22 @@ async function makeIdToken(claims: Record<string, unknown>): Promise<string> {
 }
 
 describe('getApiContext', () => {
-  it('stillness: uses decoded.tier for .tech host segment', async () => {
+  it('stillness: uses decoded.tier for pub host segment', async () => {
     const token = await makeIdToken({
       tenant: 'stillness',
-      tier: 'staging',
+      tier: 'prod',
     })
     const { apiBaseUrl, tenant, decoded } = getApiContext(token)
     expect(tenant).toBe('stillness')
-    expect(decoded.tier).toBe('staging')
-    expect(apiBaseUrl).toBe('https://api.staging.tech.evefrontier.com')
+    expect(decoded.tier).toBe('prod')
+    expect(apiBaseUrl).toBe('https://api.prod.pub.evefrontier.com')
   })
 
-  it('stillness: defaults tier to prod when tier claim is missing', async () => {
+  it('stillness: defaults tier to live when tier claim is missing', async () => {
     const token = await makeIdToken({ tenant: 'stillness' })
     const { apiBaseUrl, tenant } = getApiContext(token)
     expect(tenant).toBe('stillness')
-    expect(apiBaseUrl).toBe('https://api.prod.tech.evefrontier.com')
+    expect(apiBaseUrl).toBe('https://api.live.pub.evefrontier.com')
   })
 
   it('utopia: uses fixed uat.pub segment (ignores tier claim)', async () => {
