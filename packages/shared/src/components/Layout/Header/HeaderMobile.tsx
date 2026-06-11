@@ -16,7 +16,13 @@ import { formatAddress } from '#/utils'
  * Dev-only actions (shown under "Dev mode" when the toggle is on). Each is
  * included only when its handler is provided. Ordered as they appear in the menu.
  */
-const DEV_ACTION_ORDER = [
+type DevActionHandlerKey =
+  | 'onSignSubmitTxClick'
+  | 'onRotateEphKeyClick'
+  | 'onFaucetTestSuiClick'
+  | 'onLocalnetSettingsClick'
+
+const DEV_DROPDOWN_ACTIONS = [
   {
     handlerKey: 'onSignSubmitTxClick',
     label: 'Sign and submit test',
@@ -38,7 +44,7 @@ const DEV_ACTION_ORDER = [
     icon: 'Settings',
   },
 ] as const satisfies ReadonlyArray<{
-  handlerKey: keyof HeaderMobileProps
+  handlerKey: DevActionHandlerKey
   label: string
   icon: IconName
 }>
@@ -47,7 +53,7 @@ interface DropdownItemsParams {
   address: string
   showDevActions: boolean
   onDevModeToggle?: () => void | Promise<void>
-  devHandlers: Partial<Record<keyof HeaderMobileProps, () => void>>
+  devHandlers: Partial<Record<DevActionHandlerKey, () => void>>
   onTransactionsClick?: () => void
   version?: string
   copy: (value: string) => void
@@ -102,7 +108,7 @@ const buildDropdownItems = ({
 
   // Dev-only actions (only those whose handler is provided), under Dev mode
   if (showDevActions) {
-    for (const { handlerKey, label, icon } of DEV_ACTION_ORDER) {
+    for (const { handlerKey, label, icon } of DEV_DROPDOWN_ACTIONS) {
       const onClick = devHandlers[handlerKey]
       if (onClick) items.push({ label, icon, onClick })
     }

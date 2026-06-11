@@ -172,62 +172,53 @@ const TransferNotices: React.FC<TransferNoticesProps> = ({
   </>
 )
 
-interface TransferFormProps {
+interface TransferFormValues {
   recipientAddress: string
   amount: string
+  currentBalance: string
+  tokenSymbol: string
+}
+
+interface TransferFormStatus {
   isValidRecipient: boolean
   isValidAmount: boolean
   validationErrors: string[]
-  currentBalance: string
-  tokenSymbol: string
   canSend: boolean
   isLoading: boolean
   error: string | null
+}
+
+interface TransferFormNotices {
   suiForGasWarning: string | null
   gasFeeWarning: string
   estimatedGasFee: string | null
   estimatedGasFeeLoading: boolean
   showFaucetTestSui: boolean
   faucetUrl: string | null
+}
+
+interface TransferFormActions {
   onRecipientChange: (event: React.ChangeEvent<HTMLInputElement>) => void
   onAmountChange: (event: React.ChangeEvent<HTMLInputElement>) => void
   onSend: () => void
   onCancel?: () => void
 }
 
-/** Transfer entry form: notices, recipient/amount inputs and action buttons. */
-const TransferForm: React.FC<TransferFormProps> = ({
-  recipientAddress,
-  amount,
-  isValidRecipient,
-  isValidAmount,
-  validationErrors,
-  currentBalance,
-  tokenSymbol,
-  canSend,
-  isLoading,
-  error,
-  suiForGasWarning,
-  gasFeeWarning,
-  estimatedGasFee,
-  estimatedGasFeeLoading,
-  showFaucetTestSui,
-  faucetUrl,
-  onRecipientChange,
-  onAmountChange,
-  onSend,
-  onCancel,
-}) => {
-  // Derive input errors for display
+const TransferForm: React.FC<{
+  values: TransferFormValues
+  status: TransferFormStatus
+  notices: TransferFormNotices
+  actions: TransferFormActions
+}> = ({ values, status, notices, actions }) => {
   const recipientError =
-    recipientAddress && !isValidRecipient
+    values.recipientAddress && !status.isValidRecipient
       ? 'Invalid Sui address format'
       : undefined
   const amountError =
-    amount && !isValidAmount ? 'Invalid amount or exceeds balance' : undefined
-
-  // Filter validation errors for display (exclude input-specific ones)
-  const systemErrors = validationErrors.filter(
+    values.amount && !status.isValidAmount
+      ? 'Invalid amount or exceeds balance'
+      : undefined
+  const systemErrors = status.validationErrors.filter(
     (e) => !e.includes('Invalid Sui address') && !e.includes('Invalid amount'),
   )
 
@@ -243,15 +234,7 @@ const TransferForm: React.FC<TransferFormProps> = ({
 
       {/* Form Section - gap-10 between form groups */}
       <div className="flex flex-col gap-10 items-end">
-        <TransferNotices
-          systemErrors={systemErrors}
-          suiForGasWarning={suiForGasWarning}
-          gasFeeWarning={gasFeeWarning}
-          estimatedGasFee={estimatedGasFee}
-          estimatedGasFeeLoading={estimatedGasFeeLoading}
-          showFaucetTestSui={showFaucetTestSui}
-          faucetUrl={faucetUrl}
-        />
+        <TransferNotices systemErrors={systemErrors} {...notices} />
 
         {/* Input Row + Balance - gap-4 */}
         <div className="flex flex-col gap-4 w-full items-end">
@@ -261,18 +244,18 @@ const TransferForm: React.FC<TransferFormProps> = ({
               <Input
                 type="text"
                 placeholder="Recipient Address"
-                value={recipientAddress}
+                value={values.recipientAddress}
                 errorText={recipientError}
-                onChange={onRecipientChange}
+                onChange={actions.onRecipientChange}
               />
             </div>
             <div className="w-[160px]">
               <Input
                 type="text"
                 placeholder="Amount"
-                value={amount}
+                value={values.amount}
                 errorText={amountError}
-                onChange={onAmountChange}
+                onChange={actions.onAmountChange}
               />
             </div>
           </div>
@@ -286,16 +269,16 @@ const TransferForm: React.FC<TransferFormProps> = ({
           >
             Wallet balance:{' '}
             <span className="font-medium">
-              {currentBalance} {tokenSymbol}
+              {values.currentBalance} {values.tokenSymbol}
             </span>
           </Text>
         </div>
 
         {/* Error Display */}
-        {error && (
+        {status.error && (
           <div className="p-2 bg-red-10/10 border border-red-10/30 w-full">
             <Text variant="light" size="xsmall" color="error">
-              {error}
+              {status.error}
             </Text>
           </div>
         )}
@@ -303,13 +286,13 @@ const TransferForm: React.FC<TransferFormProps> = ({
         {/* Action Buttons - gap-1 (DuoButton style) */}
         <div className="flex gap-1">
           <Button
-            disabled={!canSend || isLoading}
-            isLoading={isLoading}
-            onClick={onSend}
+            disabled={!status.canSend || status.isLoading}
+            isLoading={status.isLoading}
+            onClick={actions.onSend}
           >
-            {isLoading ? 'Sending...' : 'transfer'}
+            {status.isLoading ? 'Sending...' : 'transfer'}
           </Button>
-          <Button variant="secondary" onClick={onCancel}>
+          <Button variant="secondary" onClick={actions.onCancel}>
             cancel
           </Button>
         </div>
@@ -415,26 +398,34 @@ export const SendTokenScreen: React.FC<SendTokenScreenProps> = ({
 
   return (
     <TransferForm
-      recipientAddress={recipientAddress}
-      amount={amount}
-      isValidRecipient={isValidRecipient}
-      isValidAmount={isValidAmount}
-      validationErrors={validationErrors}
-      currentBalance={currentBalance}
-      tokenSymbol={tokenSymbol}
-      canSend={canSend}
-      isLoading={isLoading}
-      error={error}
-      suiForGasWarning={suiForGasWarning}
-      gasFeeWarning={gasFeeWarning}
-      estimatedGasFee={estimatedGasFee}
-      estimatedGasFeeLoading={estimatedGasFeeLoading}
-      showFaucetTestSui={showFaucetTestSui}
-      faucetUrl={faucetUrl}
-      onRecipientChange={handleRecipientChange}
-      onAmountChange={handleAmountChange}
-      onSend={handleSend}
-      onCancel={onCancel}
+      values={{
+        recipientAddress,
+        amount,
+        currentBalance,
+        tokenSymbol,
+      }}
+      status={{
+        isValidRecipient,
+        isValidAmount,
+        validationErrors,
+        canSend,
+        isLoading,
+        error,
+      }}
+      notices={{
+        suiForGasWarning,
+        gasFeeWarning,
+        estimatedGasFee,
+        estimatedGasFeeLoading,
+        showFaucetTestSui,
+        faucetUrl,
+      }}
+      actions={{
+        onRecipientChange: handleRecipientChange,
+        onAmountChange: handleAmountChange,
+        onSend: handleSend,
+        onCancel,
+      }}
     />
   )
 }

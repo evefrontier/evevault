@@ -9,17 +9,6 @@ import { createLogger } from '#/utils/logger'
 
 const log = createLogger()
 
-export const isErrorWithMessage = (
-  error: unknown,
-): error is { message: string } => {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'message' in error &&
-    typeof (error as { message?: unknown }).message === 'string'
-  )
-}
-
 /** Decode a token once, tolerating opaque (non-JWT) and absent values. */
 const decodeTokenSafely = (token?: string) => {
   if (!token) return null
@@ -35,6 +24,17 @@ const firstNumber = (...values: unknown[]): number | undefined =>
   values.find((value): value is number => typeof value === 'number')
 
 const nowInSeconds = () => Math.floor(Date.now() / 1000)
+
+export const isErrorWithMessage = (
+  error: unknown,
+): error is { message: string } => {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    typeof (error as { message?: unknown }).message === 'string'
+  )
+}
 
 /**
  * Expiry for a **persisted** primary JWT. Prefer absolute `expires_at` (set at store time).

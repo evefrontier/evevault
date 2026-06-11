@@ -32,7 +32,7 @@ const completeOAuthCallback = async (): Promise<RoutePath> => {
   const redirectAfterLogin = sessionStorage.getItem(
     SESSION_STORAGE_REDIRECT_KEY,
   )
-  sessionStorage.removeItem('evevault_redirect_after_login')
+  sessionStorage.removeItem(SESSION_STORAGE_REDIRECT_KEY)
   const tenantId =
     sessionStorage.getItem(OAuthTenantSessionKey) ?? getCurrentTenantId()
   sessionStorage.removeItem(OAuthTenantSessionKey)

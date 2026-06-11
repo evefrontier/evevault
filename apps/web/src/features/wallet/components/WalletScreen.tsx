@@ -16,13 +16,16 @@ import {
   getTenantLabel,
   useDeviceStore,
 } from '@evevault/shared/stores'
-import { createSuiClient, getFaucetUrlForChain } from '@evevault/shared/sui'
+import {
+  type createSuiClient,
+  getFaucetUrlForChain,
+} from '@evevault/shared/sui'
 import { createLogger, getSuiscanUrl, WEB_ROUTES } from '@evevault/shared/utils'
 import { zkSignAny } from '@evevault/shared/wallet'
 import { Transaction } from '@mysten/sui/transactions'
 import type { SuiChain } from '@mysten/wallet-standard'
 import { SUI_TESTNET_CHAIN } from '@mysten/wallet-standard'
-import { useQueryClient } from '@tanstack/react-query'
+import type { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import type { User } from 'oidc-client-ts'
 import type { ReactNode } from 'react'
@@ -63,6 +66,103 @@ const executeTestTransaction = async (
   return { ok: true, digest }
 }
 
+interface WalletDashboardState {
+  user: User
+  chain: SuiChain | undefined
+  tenantId: TenantId
+  devMode: boolean
+  faucetUrl: string | null
+  txDigest: string | null
+  authError: ReactNode
+  deviceError: ReactNode
+}
+
+interface WalletDashboardActions {
+  onDevModeToggle: () => void
+  onSignSubmitTx: () => void | Promise<void>
+  onTransactions: () => void
+  onAddToken: () => void
+  onSendToken: (coinType: string) => void
+}
+
+/** Initializes auth + device stores on mount and reports init status. */
+const useWalletInitialization = (initializeAuth: () => Promise<unknown>) => {
+  const { chain: networkState } = useContext()
+  const [initError, setInitError] = useState<string | null>(null)
+  const [isInitializing, setIsInitializing] = useState(true)
+
+  useEffect(() => {
+    const initializeStores = async () => {
+      try {
+        log.info('Initializing stores')
+        await initializeAuth()
+
+        log.debug('Network state after init', networkState)
+
+        useDeviceStore.subscribe(async (state, prevState) => {
+          log.debug('Device store changed', { state, prevState })
+        })
+
+        log.info('Stores initialized successfully')
+        setIsInitializing(false)
+      } catch (error) {
+        log.error('Error initializing stores', error)
+        setInitError(
+          error instanceof Error ? error.message : 'Failed to initialize',
+        )
+        setIsInitializing(false)
+      }
+    }
+
+    initializeStores()
+  }, [initializeAuth, networkState])
+
+  return { initError, isInitializing }
+}
+
+/** Signs + submits a test transaction and records the resulting digest. */
+const useWalletTestTransaction = (params: {
+  user: User | null | undefined
+  maxEpoch: string | number | null | undefined
+  ephemeralPublicKey: unknown
+  suiClient: ReturnType<typeof createSuiClient>
+  getZkProof: Parameters<typeof zkSignAny>[2]['getZkProof']
+  queryClient: ReturnType<typeof useQueryClient>
+}) => {
+  const {
+    user,
+    maxEpoch,
+    ephemeralPublicKey,
+    suiClient,
+    getZkProof,
+    queryClient,
+  } = params
+  const [txDigest, setTxDigest] = useState<string | null>(null)
+
+  const signAndSubmit = useCallback(async () => {
+    if (!user || !maxEpoch) return
+    if (!ephemeralPublicKey) {
+      throw new Error('[Wallet Screen] Ephemeral public key not found')
+    }
+    const { ok, digest } = await executeTestTransaction(
+      user,
+      suiClient,
+      getZkProof,
+    )
+    if (!ok) {
+      setTxDigest(null)
+      return
+    }
+    setTxDigest(digest)
+    void Promise.all([
+      queryClient.refetchQueries({ queryKey: ['coin-balance'] }),
+      queryClient.refetchQueries({ queryKey: ['transactions'] }),
+    ])
+  }, [user, maxEpoch, ephemeralPublicKey, getZkProof, suiClient, queryClient])
+
+  return { txDigest, signAndSubmit }
+}
+
 /** Branded app shell used by the loading / error / signed-out states. */
 const WalletShell = ({
   children,
@@ -82,7 +182,7 @@ const WalletShell = ({
   </Background>
 )
 
-interface WalletDashboardProps {
+interface WalletDashboardState {
   user: User
   chain: SuiChain | undefined
   tenantId: TenantId
@@ -91,6 +191,9 @@ interface WalletDashboardProps {
   txDigest: string | null
   authError: ReactNode
   deviceError: ReactNode
+}
+
+interface WalletDashboardActions {
   onDevModeToggle: () => void
   onSignSubmitTx: () => void | Promise<void>
   onTransactions: () => void
@@ -98,22 +201,23 @@ interface WalletDashboardProps {
   onSendToken: (coinType: string) => void
 }
 
-/** Authenticated, unlocked wallet view: header, token list and network row. */
-const WalletDashboard: React.FC<WalletDashboardProps> = ({
-  user,
-  chain,
-  tenantId,
-  devMode,
-  faucetUrl,
-  txDigest,
-  authError,
-  deviceError,
-  onDevModeToggle,
-  onSignSubmitTx,
-  onTransactions,
-  onAddToken,
-  onSendToken,
+const WalletDashboard = ({
+  wallet,
+  actions,
+}: {
+  wallet: WalletDashboardState
+  actions: WalletDashboardActions
 }) => {
+  const {
+    user,
+    chain,
+    tenantId,
+    devMode,
+    faucetUrl,
+    txDigest,
+    authError,
+    deviceError,
+  } = wallet
   const address = user.profile?.sui_address as string
   // Defined chain (testnet fallback) so balance and token list use the same
   // network and we avoid cross-network transfer/balance errors
@@ -124,10 +228,10 @@ const WalletDashboard: React.FC<WalletDashboardProps> = ({
       <HeaderMobile
         address={address}
         email={user.profile?.email as string}
-        onTransactionsClick={onTransactions}
+        onTransactionsClick={actions.onTransactions}
         showDevActions={devMode}
-        onDevModeToggle={onDevModeToggle}
-        onSignSubmitTxClick={devMode ? onSignSubmitTx : undefined}
+        onDevModeToggle={actions.onDevModeToggle}
+        onSignSubmitTxClick={devMode ? actions.onSignSubmitTx : undefined}
         onFaucetTestSuiClick={
           devMode && faucetUrl
             ? () => window.open(faucetUrl, '_blank', 'noopener,noreferrer')
@@ -143,8 +247,8 @@ const WalletDashboard: React.FC<WalletDashboardProps> = ({
         user={user}
         chain={resolvedChain}
         walletAddress={address}
-        onAddToken={onAddToken}
-        onSendToken={onSendToken}
+        onAddToken={actions.onAddToken}
+        onSendToken={actions.onSendToken}
       />
       {/* Network selector and test tx result */}
       <div className="justify-between pt-8 flex gap-4 flex-col sm:flex-row">
@@ -194,84 +298,6 @@ const WalletDashboard: React.FC<WalletDashboardProps> = ({
   )
 }
 
-/** Initializes auth + device stores on mount and reports init status. */
-const useInitializeStores = (initializeAuth: () => Promise<unknown>) => {
-  const { chain: networkState } = useContext()
-  const [initError, setInitError] = useState<string | null>(null)
-  const [isInitializing, setIsInitializing] = useState(true)
-
-  useEffect(() => {
-    const initializeStores = async () => {
-      try {
-        log.info('Initializing stores')
-        await initializeAuth()
-
-        log.debug('Network state after init', networkState)
-
-        useDeviceStore.subscribe(async (state, prevState) => {
-          log.debug('Device store changed', { state, prevState })
-        })
-
-        log.info('Stores initialized successfully')
-        setIsInitializing(false)
-      } catch (error) {
-        log.error('Error initializing stores', error)
-        setInitError(
-          error instanceof Error ? error.message : 'Failed to initialize',
-        )
-        setIsInitializing(false)
-      }
-    }
-
-    initializeStores()
-  }, [initializeAuth, networkState])
-
-  return { initError, isInitializing }
-}
-
-/** Signs + submits a test transaction and records the resulting digest. */
-const useTestTransaction = (params: {
-  user: User | null | undefined
-  maxEpoch: string | number | null | undefined
-  ephemeralPublicKey: unknown
-  suiClient: ReturnType<typeof createSuiClient>
-  getZkProof: Parameters<typeof zkSignAny>[2]['getZkProof']
-  queryClient: ReturnType<typeof useQueryClient>
-}) => {
-  const {
-    user,
-    maxEpoch,
-    ephemeralPublicKey,
-    suiClient,
-    getZkProof,
-    queryClient,
-  } = params
-  const [txDigest, setTxDigest] = useState<string | null>(null)
-
-  const signAndSubmit = useCallback(async () => {
-    if (!user || !maxEpoch) return
-    if (!ephemeralPublicKey) {
-      throw new Error('[Wallet Screen] Ephemeral public key not found')
-    }
-    const { ok, digest } = await executeTestTransaction(
-      user,
-      suiClient,
-      getZkProof,
-    )
-    if (!ok) {
-      setTxDigest(null)
-      return
-    }
-    setTxDigest(digest)
-    void Promise.all([
-      queryClient.refetchQueries({ queryKey: ['coin-balance'] }),
-      queryClient.refetchQueries({ queryKey: ['transactions'] }),
-    ])
-  }, [user, maxEpoch, ephemeralPublicKey, getZkProof, suiClient, queryClient])
-
-  return { txDigest, signAndSubmit }
-}
-
 export const WalletScreen = () => {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -306,17 +332,16 @@ export const WalletScreen = () => {
     return createSuiClient(currentChain)
   }, [chain])
 
-  const { initError, isInitializing } = useInitializeStores(initializeAuth)
-  const { txDigest, signAndSubmit: handleSignAndSubmitTx } = useTestTransaction(
-    {
+  const { initError, isInitializing } = useWalletInitialization(initializeAuth)
+  const { txDigest, signAndSubmit: handleSignAndSubmitTx } =
+    useWalletTestTransaction({
       user,
       maxEpoch,
       ephemeralPublicKey,
       suiClient,
       getZkProof,
       queryClient,
-    },
-  )
+    })
 
   const handleDevModeToggle = useCallback(() => {
     setDevMode(!devMode)
@@ -370,24 +395,27 @@ export const WalletScreen = () => {
 
   return (
     <WalletDashboard
-      user={user}
-      chain={chain}
-      tenantId={tenantId}
-      devMode={devMode}
-      faucetUrl={faucetUrl}
-      txDigest={txDigest}
-      authError={authError}
-      deviceError={deviceError}
-      onDevModeToggle={handleDevModeToggle}
-      onSignSubmitTx={handleSignAndSubmitTx}
-      onTransactions={() => navigate({ to: WEB_ROUTES.WALLET_TRANSACTIONS })}
-      onAddToken={() => navigate({ to: WEB_ROUTES.WALLET_ADD_TOKEN })}
-      onSendToken={(coinType) =>
-        navigate({
-          to: WEB_ROUTES.WALLET_SEND_TOKEN,
-          search: { coinType },
-        })
-      }
+      wallet={{
+        user,
+        chain,
+        tenantId,
+        devMode,
+        faucetUrl,
+        txDigest,
+        authError,
+        deviceError,
+      }}
+      actions={{
+        onDevModeToggle: handleDevModeToggle,
+        onSignSubmitTx: handleSignAndSubmitTx,
+        onTransactions: () => navigate({ to: WEB_ROUTES.WALLET_TRANSACTIONS }),
+        onAddToken: () => navigate({ to: WEB_ROUTES.WALLET_ADD_TOKEN }),
+        onSendToken: (coinType) =>
+          navigate({
+            to: WEB_ROUTES.WALLET_SEND_TOKEN,
+            search: { coinType },
+          }),
+      }}
     />
   )
 }
