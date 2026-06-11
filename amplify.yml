@@ -2,21 +2,26 @@ version: 1
 applications:
   - appRoot: apps/web
     frontend:
+      buildPath: /
       phases:
         preBuild:
           commands:
-            - sudo yum install -y rsync
-            - curl -fsSL https://bun.sh/install | bash -s "bun-v1.3.1"
-            - export PATH="$HOME/.bun/bin:$PATH"
-            - cd ../.. && bun install --frozen-lockfile
+            - command -v unzip >/dev/null 2>&1 || yum install -y unzip || sudo yum install -y unzip
+            - curl -fsSL https://bun.com/install | bash -s "bun-v1.3.13"
+            - export BUN_INSTALL="$HOME/.bun"
+            - export PATH="$BUN_INSTALL/bin:$PATH"
+            - export HUSKY=0
+            - bun --version
+            - test -n "$GITHUB_PACKAGES_TOKEN" || (echo "GITHUB_PACKAGES_TOKEN is required for GitHub Packages" && exit 1)
+            - export GITHUB_TOKEN="$GITHUB_PACKAGES_TOKEN"
+            - 'printf "@evefrontier:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=${GITHUB_PACKAGES_TOKEN}\n" > .npmrc'
+            - time bun install --frozen-lockfile --linker hoisted --filter './' --filter './apps/web' --filter './packages/shared'
         build:
           commands:
-            - export PATH="$HOME/.bun/bin:$PATH"
-            - bun run build
+            - export BUN_INSTALL="$HOME/.bun"
+            - export PATH="$BUN_INSTALL/bin:$PATH"
+            - cd apps/web && time env -u NODE_OPTIONS bunx --bun vite build
       artifacts:
-        baseDirectory: dist
+        baseDirectory: apps/web/dist
         files:
-          - '**/*'
-      cache:
-        paths:
-          - ~/.bun/install/cache/**/*
+          - "**/*"
