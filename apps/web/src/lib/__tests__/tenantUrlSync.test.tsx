@@ -7,6 +7,7 @@ import {
 import { runTenantSwitchCleanup } from '@evevault/shared/auth'
 import { setWindowLocation } from '@evevault/shared/testing'
 import { act, render } from '@testing-library/react'
+import { StrictMode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TenantUrlSync } from '../tenantUrlSync'
 
@@ -182,6 +183,20 @@ describe('TenantUrlSync didRun guard', () => {
     await renderAndFlush()
 
     expect(mockApplyTenantFromUrl).toHaveBeenCalledTimes(2)
+  })
+
+  it('guards against StrictMode double-invoking the effect on mount', async () => {
+    // StrictMode runs the setup effect twice on mount; the `didRun` ref must
+    // short-circuit the second invocation so the tenant sync runs only once.
+    await act(async () => {
+      render(
+        <StrictMode>
+          <TenantUrlSync />
+        </StrictMode>,
+      )
+    })
+
+    expect(mockApplyTenantFromUrl).toHaveBeenCalledOnce()
   })
 })
 

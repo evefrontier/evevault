@@ -10,7 +10,7 @@ vi.mock('#/utils/environment', () => ({
 }))
 
 // Mock webVaultService - defined inline
-vi.mock('./webVaultService', () => ({
+vi.mock('#/services/webVaultService', () => ({
   webVaultService: {
     initialize: vi.fn(() => Promise.resolve()),
     hasKeypair: vi.fn(() => Promise.resolve(true)),
@@ -33,7 +33,7 @@ vi.mock('./webVaultService', () => ({
 }))
 
 // Mock keeperService - defined inline
-vi.mock('./keeperService', () => ({
+vi.mock('#/services/keeperService', () => ({
   ephKeyService: {
     unlockVault: vi.fn(() =>
       Promise.resolve({ toRawBytes: () => new Uint8Array(32) }),
@@ -73,14 +73,14 @@ vi.mock('#/types/wallet', () => ({
 import {
   ephKeyService as keeperEphKeyService,
   zkProofService as keeperZkProofService,
-} from './keeperService'
+} from '#/services/keeperService'
 // Import after all mocks are set up
 import {
   ephKeyService,
   localnetKeyService,
   zkProofService,
-} from './vaultService'
-import { webVaultService } from './webVaultService'
+} from '#/services/vaultService'
+import { webVaultService } from '#/services/webVaultService'
 
 describe('ephKeyService routing', () => {
   afterEach(() => {

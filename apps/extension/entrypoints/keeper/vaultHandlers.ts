@@ -151,8 +151,16 @@ export function handleEphSign(
       if (!zkProofData) {
         throw new Error('[KEEPER_EPH_SIGN] zkProofData is required')
       }
+      // Re-applied on every sign rather than cached: applyZKProof cleanly
+      // overwrites the keypair's proof state (no accumulation), so this is
+      // idempotent and also picks up a fresh proof when the epoch rolls over
+      // mid-session.
       key.applyZKProof(zkProofData as ZKProofData)
       const msgUint8 = new Uint8Array(msgBytes as number[])
+      // We route by scope inline rather than via wallet-core's exported
+      // signWithIntent: the proof is already applied to the keypair above, after
+      // which signTransaction/signPersonalMessage emit the zkLogin signature
+      // directly. signWithIntent would only wrap this same two-line branch.
       const result =
         scope === 'TransactionData'
           ? await key.signTransaction(msgUint8)

@@ -52,11 +52,6 @@ export const hasFreshNetworkData = (
   requiredDeviceDataValues(data, storedSecretKey).every(isNonNullable) &&
   !isDeviceDataExpired(data)
 
-export const needsPersistedRehydration = (
-  data: NetworkDataEntry,
-  storedSecretKey: StoredSecretKey,
-): boolean => !hasFreshNetworkData(data, storedSecretKey)
-
 export const hasChainDeviceData = (data?: ChainDeviceData): boolean => {
   return Boolean(
     isNonNullable(data?.nonce) &&

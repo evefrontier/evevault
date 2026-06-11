@@ -1,3 +1,4 @@
+import { bytesToB64 } from '../base64'
 import {
   AES_IV_LENGTH,
   AES_KEY_LENGTH,
@@ -52,9 +53,9 @@ export async function encrypt(string: string, pin: string) {
   )
 
   return {
-    iv: btoa(String.fromCharCode(...iv)),
-    data: btoa(String.fromCharCode(...new Uint8Array(encryptedData))),
-    salt: btoa(String.fromCharCode(...salt)),
+    iv: bytesToB64(iv),
+    data: bytesToB64(new Uint8Array(encryptedData)),
+    salt: bytesToB64(salt),
   }
 }
 
@@ -76,8 +77,8 @@ export async function encryptWithKey(
   )
 
   return {
-    iv: btoa(String.fromCharCode(...iv)),
-    data: btoa(String.fromCharCode(...new Uint8Array(encryptedData))),
+    iv: bytesToB64(iv),
+    data: bytesToB64(new Uint8Array(encryptedData)),
     salt,
   }
 }
