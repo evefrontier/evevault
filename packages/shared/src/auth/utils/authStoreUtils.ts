@@ -4,20 +4,11 @@ import { type IdTokenClaims, User } from 'oidc-client-ts'
 import { getZkLoginAddress } from '#/auth/getZkLoginAddress'
 import { getJwt } from '#/auth/storageService'
 import { getEnokiApiKey } from '#/auth/stores/authStore'
+import { decodeJwtSafely } from '#/auth/utils/jwtUtils'
 import type { JwtResponse } from '#/types/authTypes'
 import { createLogger } from '#/utils/logger'
 
 const log = createLogger()
-
-/** Decode a token once, tolerating opaque (non-JWT) and absent values. */
-const decodeTokenSafely = (token?: string) => {
-  if (!token) return null
-  try {
-    return decodeJwt(token)
-  } catch {
-    return null
-  }
-}
 
 /** First value that is actually a number, else undefined. */
 const firstNumber = (...values: unknown[]): number | undefined =>
@@ -45,8 +36,8 @@ export const resolveExpiresAt = (jwt: JwtResponse): number => {
     return jwt.expires_at
   }
 
-  const fromAccess = decodeTokenSafely(jwt.access_token)
-  const fromId = decodeTokenSafely(jwt.id_token)
+  const fromAccess = decodeJwtSafely(jwt.access_token)
+  const fromId = decodeJwtSafely(jwt.id_token)
 
   // Use the exp claim embedded in the access_token or id_token
   const exp = firstNumber(fromAccess?.exp, fromId?.exp)

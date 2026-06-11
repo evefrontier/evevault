@@ -59,37 +59,44 @@ describe('resolveExpiresAt', () => {
   const tokenWithExp = (exp: number, iat = 1748779000) =>
     new UnsecuredJWT({ sub: 'u1', exp, iat }).encode()
 
+  const jwtResponse = (overrides: Partial<JwtResponse>): JwtResponse => ({
+    access_token: 'a',
+    id_token: tokenWithIat,
+    expires_in: 3600,
+    scope: 's',
+    token_type: 'Bearer',
+    ...overrides,
+  })
+
   it('uses the exp claim from access_token when expires_at absent', () => {
     expect(
-      resolveExpiresAt({
-        access_token: tokenWithExp(1_800_000_500),
-        id_token: tokenWithIat,
-        expires_in: 120,
-        scope: 's',
-        token_type: 'Bearer',
-      }),
+      resolveExpiresAt(
+        jwtResponse({
+          access_token: tokenWithExp(1_800_000_500),
+          expires_in: 120,
+        }),
+      ),
     ).toBe(1_800_000_500)
   })
 
   it('prefers the access_token exp over the id_token exp', () => {
     expect(
-      resolveExpiresAt({
-        access_token: tokenWithExp(1_800_000_111),
-        id_token: tokenWithExp(1_800_000_222),
-        scope: 's',
-        token_type: 'Bearer',
-      }),
+      resolveExpiresAt(
+        jwtResponse({
+          access_token: tokenWithExp(1_800_000_111),
+          id_token: tokenWithExp(1_800_000_222),
+        }),
+      ),
     ).toBe(1_800_000_111)
   })
 
   it('falls back to the id_token exp when access_token has none', () => {
     expect(
-      resolveExpiresAt({
-        access_token: tokenWithIat,
-        id_token: tokenWithExp(1_800_000_333),
-        scope: 's',
-        token_type: 'Bearer',
-      }),
+      resolveExpiresAt(
+        jwtResponse({
+          id_token: tokenWithExp(1_800_000_333),
+        }),
+      ),
     ).toBe(1_800_000_333)
   })
 
@@ -101,26 +108,26 @@ describe('resolveExpiresAt', () => {
       .setIssuedAt(1_600_000_000)
       .encode()
     expect(
-      resolveExpiresAt({
-        access_token: accessToken,
-        id_token: idToken,
-        expires_in: 300,
-        scope: 's',
-        token_type: 'Bearer',
-      }),
+      resolveExpiresAt(
+        jwtResponse({
+          access_token: accessToken,
+          id_token: idToken,
+          expires_in: 300,
+        }),
+      ),
     ).toBe(1_700_000_000 + 300)
   })
 
   it('uses Date.now() + expires_in when neither token carries iat', () => {
     const noClaims = new UnsecuredJWT({ sub: 'u1' }).encode()
     expect(
-      resolveExpiresAt({
-        access_token: noClaims,
-        id_token: noClaims,
-        expires_in: 300,
-        scope: 's',
-        token_type: 'Bearer',
-      }),
+      resolveExpiresAt(
+        jwtResponse({
+          access_token: noClaims,
+          id_token: noClaims,
+          expires_in: 300,
+        }),
+      ),
     ).toBe(
       Math.floor(new Date('2025-06-01T12:00:00.000Z').getTime() / 1000) + 300,
     )
@@ -128,48 +135,44 @@ describe('resolveExpiresAt', () => {
 
   it('tolerates an opaque (non-JWT) token and falls back to now', () => {
     expect(
-      resolveExpiresAt({
-        access_token: 'not-a-jwt',
-        id_token: 'also-not-a-jwt',
-        scope: 's',
-        token_type: 'Bearer',
-      } as JwtResponse),
+      resolveExpiresAt(
+        jwtResponse({
+          access_token: 'not-a-jwt',
+          id_token: 'also-not-a-jwt',
+          expires_in: undefined,
+        }),
+      ),
     ).toBe(Math.floor(new Date('2025-06-01T12:00:00.000Z').getTime() / 1000))
   })
 
   it('uses expires_at when present', () => {
     expect(
-      resolveExpiresAt({
-        access_token: 'a',
-        id_token: 'i',
-        expires_in: 3600,
-        scope: 's',
-        token_type: 'Bearer',
-        expires_at: 1_900_000_000,
-      }),
+      resolveExpiresAt(
+        jwtResponse({
+          id_token: 'i',
+          expires_at: 1_900_000_000,
+        }),
+      ),
     ).toBe(1_900_000_000)
   })
 
   it('uses iat + expires_in when expires_at absent', () => {
     expect(
-      resolveExpiresAt({
-        access_token: 'a',
-        id_token: tokenWithIat,
-        expires_in: 120,
-        scope: 's',
-        token_type: 'Bearer',
-      }),
+      resolveExpiresAt(
+        jwtResponse({
+          expires_in: 120,
+        }),
+      ),
     ).toBe(1748779000 + 120)
   })
 
   it('falls back to iat when expires_at and expires_in are not usable numbers', () => {
     expect(
-      resolveExpiresAt({
-        access_token: tokenWithIat,
-        id_token: tokenWithIat,
-        scope: 's',
-        token_type: 'Bearer',
-      } as JwtResponse),
+      resolveExpiresAt(
+        jwtResponse({
+          expires_in: undefined,
+        }),
+      ),
     ).toBe(1748779000)
   })
 })

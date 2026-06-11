@@ -5,11 +5,71 @@ import {
   getZkLoginJwtForNetwork,
   storeZkLoginJwtForNetwork,
 } from '#/auth/storageService'
+import { decodeJwtSafely } from '#/auth/utils/jwtUtils'
 import { vendJwt } from '#/auth/vendToken'
 import type { JwtResponse } from '#/types/authTypes'
 import { createLogger } from '#/utils/logger'
 
 const log = createLogger()
+
+type StoredZkLoginJwt = {
+  expires_at: number
+  id_token: string
+}
+
+const getStaleReuseReasons = ({
+  isEpochValid,
+  isJwtValid,
+  nonceMatches,
+}: {
+  isEpochValid: boolean
+  isJwtValid: boolean
+  nonceMatches: boolean
+}) =>
+  [
+    !isJwtValid ? 'jwt_expired' : null,
+    !nonceMatches ? 'nonce_mismatch' : null,
+    !isEpochValid ? 'epoch_expired_or_missing' : null,
+  ].filter((reason): reason is string => reason !== null)
+
+const getReusableStoredIdToken = ({
+  chain,
+  deviceNonce,
+  isEpochValid,
+  maxEpochTimestampMs,
+  now,
+  stored,
+}: {
+  chain: SuiChain
+  deviceNonce: string
+  isEpochValid: boolean
+  maxEpochTimestampMs: number | null
+  now: number
+  stored: StoredZkLoginJwt | null
+}) => {
+  if (!stored?.id_token) return null
+
+  const decoded = decodeJwtSafely(stored.id_token)
+  if (!decoded) {
+    log.info('Re-vending zkLogin JWT due to decode failure', { chain })
+    return null
+  }
+
+  const isJwtValid = now < stored.expires_at
+  const nonceMatches = decoded.nonce === deviceNonce
+  if (isJwtValid && nonceMatches && isEpochValid) return stored.id_token
+
+  log.info('Re-vending zkLogin JWT due to stale reuse candidate', {
+    chain,
+    reasons: getStaleReuseReasons({
+      isEpochValid,
+      isJwtValid,
+      nonceMatches,
+    }),
+    maxEpochTimestampMs,
+  })
+  return null
+}
 
 /**
  * Returns a vended zkLogin JWT matching current device nonce, reusing stored token when valid
@@ -26,31 +86,15 @@ export async function resolveVendedIdTokenForZkProof(
   const isEpochValid =
     maxEpochTimestampMs != null && Date.now() < maxEpochTimestampMs
 
-  if (stored?.id_token) {
-    try {
-      const expAt = stored.expires_at
-      const isJwtValid = now < expAt
-      const decoded = decodeJwt(stored.id_token)
-      const jwtNonce = decoded.nonce as string | undefined
-      const nonceMatches = jwtNonce === deviceNonce
-
-      if (isJwtValid && nonceMatches && isEpochValid) {
-        return stored.id_token as string
-      }
-
-      const reasons: string[] = []
-      if (!isJwtValid) reasons.push('jwt_expired')
-      if (!nonceMatches) reasons.push('nonce_mismatch')
-      if (!isEpochValid) reasons.push('epoch_expired_or_missing')
-      log.info('Re-vending zkLogin JWT due to stale reuse candidate', {
-        chain,
-        reasons,
-        maxEpochTimestampMs,
-      })
-    } catch {
-      log.info('Re-vending zkLogin JWT due to decode failure', { chain })
-    }
-  }
+  const reusableToken = getReusableStoredIdToken({
+    chain,
+    deviceNonce,
+    isEpochValid,
+    maxEpochTimestampMs,
+    now,
+    stored,
+  })
+  if (reusableToken) return reusableToken
 
   const newIdToken = await vendJwt(primaryJwt.id_token as string, {
     nonce: deviceNonce,

@@ -16,16 +16,13 @@ import {
   getTenantLabel,
   useDeviceStore,
 } from '@evevault/shared/stores'
-import {
-  type createSuiClient,
-  getFaucetUrlForChain,
-} from '@evevault/shared/sui'
+import { createSuiClient, getFaucetUrlForChain } from '@evevault/shared/sui'
 import { createLogger, getSuiscanUrl, WEB_ROUTES } from '@evevault/shared/utils'
 import { zkSignAny } from '@evevault/shared/wallet'
 import { Transaction } from '@mysten/sui/transactions'
 import type { SuiChain } from '@mysten/wallet-standard'
 import { SUI_TESTNET_CHAIN } from '@mysten/wallet-standard'
-import type { useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import type { User } from 'oidc-client-ts'
 import type { ReactNode } from 'react'
@@ -181,25 +178,6 @@ const WalletShell = ({
     {footer}
   </Background>
 )
-
-interface WalletDashboardState {
-  user: User
-  chain: SuiChain | undefined
-  tenantId: TenantId
-  devMode: boolean
-  faucetUrl: string | null
-  txDigest: string | null
-  authError: ReactNode
-  deviceError: ReactNode
-}
-
-interface WalletDashboardActions {
-  onDevModeToggle: () => void
-  onSignSubmitTx: () => void | Promise<void>
-  onTransactions: () => void
-  onAddToken: () => void
-  onSendToken: (coinType: string) => void
-}
 
 const WalletDashboard = ({
   wallet,
