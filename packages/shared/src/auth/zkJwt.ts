@@ -49,7 +49,7 @@ const getReusableStoredIdToken = ({
 }) => {
   if (!stored?.id_token) return null
 
-  const decoded = decodeJwtSafely(stored.id_token)
+  const decoded = decodeJwtSafely<IdTokenClaims>(stored.id_token)
   if (!decoded) {
     log.info('Re-vending zkLogin JWT due to decode failure', { chain })
     return null

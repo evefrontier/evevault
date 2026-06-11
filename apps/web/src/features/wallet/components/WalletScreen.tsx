@@ -11,11 +11,7 @@ import {
 } from '@evevault/shared/components'
 import Icon from '@evevault/shared/components/Icon'
 import { useContext, useDevice } from '@evevault/shared/hooks'
-import {
-  getCurrentTenantId,
-  getTenantLabel,
-  useDeviceStore,
-} from '@evevault/shared/stores'
+import { getCurrentTenantId, getTenantLabel } from '@evevault/shared/stores'
 import { createSuiClient, getFaucetUrlForChain } from '@evevault/shared/sui'
 import { createLogger, getSuiscanUrl, WEB_ROUTES } from '@evevault/shared/utils'
 import { zkSignAny } from '@evevault/shared/wallet'
@@ -95,10 +91,6 @@ const useWalletInitialization = (initializeAuth: () => Promise<unknown>) => {
         await initializeAuth()
 
         log.debug('Network state after init', networkState)
-
-        useDeviceStore.subscribe(async (state, prevState) => {
-          log.debug('Device store changed', { state, prevState })
-        })
 
         log.info('Stores initialized successfully')
         setIsInitializing(false)
