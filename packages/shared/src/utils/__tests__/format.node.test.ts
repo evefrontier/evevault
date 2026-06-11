@@ -1,9 +1,9 @@
+import { SUI_DECIMALS } from '@mysten/sui/utils'
 import { describe, expect, it } from 'vitest'
 import {
   formatByDecimals,
   formatDisplayAmount,
   formatShortDate,
-  SUI_DECIMALS,
   toSmallestUnit,
 } from '#/utils/format'
 
@@ -114,6 +114,35 @@ describe('formatByDecimals', () => {
       expect(formatByDecimals('1100000000', SUI_DECIMALS)).toBe('1.1')
       expect(formatByDecimals('1120000000', SUI_DECIMALS)).toBe('1.12')
     })
+  })
+
+  describe('different decimal configurations', () => {
+    it('works with 6 decimals', () => {
+      expect(formatByDecimals('1000000', 6)).toBe('1')
+      expect(formatByDecimals('1500000', 6)).toBe('1.5')
+      expect(formatByDecimals('1', 6)).toBe('0.000001')
+    })
+
+    it('works with 0 decimals', () => {
+      expect(formatByDecimals('1', 0)).toBe('1')
+      expect(formatByDecimals('1000', 0)).toBe('1000')
+    })
+  })
+})
+
+describe('round-trip conversion with non-SUI decimals', () => {
+  it('round-trips across varying decimal configurations', () => {
+    const cases = [
+      { value: '1.5', decimals: 6 },
+      { value: '0.000001', decimals: 6 },
+      { value: '0.000000000000000001', decimals: 18 },
+      { value: '1000', decimals: 0 },
+    ]
+
+    for (const { value, decimals } of cases) {
+      const smallest = toSmallestUnit(value, decimals)
+      expect(formatByDecimals(smallest.toString(), decimals)).toBe(value)
+    }
   })
 })
 

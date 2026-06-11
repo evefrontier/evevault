@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { HashedData } from '#/types/stores'
-import { b64ToBytes, bytesToB64 } from './base64'
+import { b64ToBytes, bytesToB64 } from '../base64'
 import { decrypt } from './decrypt'
 import { encrypt } from './encrypt'
 

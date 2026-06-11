@@ -1,5 +1,5 @@
 import type { HashedData } from '#/types/stores'
-import { b64ToBytes } from './base64'
+import { b64ToBytes } from '../base64'
 import { deriveAesKey } from './encrypt'
 
 export async function decrypt(encryptedKey: HashedData, pin: string) {

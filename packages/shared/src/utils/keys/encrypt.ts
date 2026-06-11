@@ -1,4 +1,4 @@
-import { bytesToB64 } from './base64'
+import { bytesToB64 } from '../base64'
 import {
   AES_IV_LENGTH,
   AES_KEY_LENGTH,

@@ -1,3 +1,5 @@
+import { SUI_DECIMALS } from '@mysten/sui/utils'
+
 /**
  * Formats a raw token amount by its decimals into a human-readable string.
  *
@@ -58,9 +60,6 @@ export function toSmallestUnit(amount: string, decimals: number): bigint {
   const combined = (whole === '0' || whole === '' ? '' : whole) + paddedFraction
   return BigInt(combined === '' ? '0' : combined)
 }
-
-/** SUI decimals (1 SUI = 10^9 MIST). */
-export const SUI_DECIMALS = 9
 
 /**
  * Formats MIST (Sui smallest unit) as human-readable SUI string.
