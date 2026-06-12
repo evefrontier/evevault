@@ -1,5 +1,5 @@
 import { VaultMessageTypes, WalletStandardMessageTypes } from '@evevault/shared'
-import { createLogger } from '@evevault/shared/utils'
+import { createLogger, redactSensitive } from '@evevault/shared/utils'
 import { sendToTab } from '@/lib/background/messaging/tabMessaging'
 import {
   getDappRequestContext,
@@ -305,5 +305,5 @@ export function handleMessage(
     return true
   }
 
-  log.warn('Unknown background message', message)
+  log.warn('Unknown background message', redactSensitive(message))
 }
