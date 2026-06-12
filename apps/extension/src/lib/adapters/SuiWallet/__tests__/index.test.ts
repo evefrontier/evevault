@@ -35,7 +35,7 @@ vi.mock('@evevault/shared/utils', async (importOriginal) => {
 describe('EveVaultWallet', () => {
   beforeEach(() => {
     vi.spyOn(window, 'postMessage').mockImplementation(() => undefined)
-    vi.spyOn(crypto, 'randomUUID').mockReturnValue('request-id')
+    vi.spyOn(crypto, 'randomUUID').mockReturnValue(`request-id-y-x-z`)
   })
 
   afterEach(() => {

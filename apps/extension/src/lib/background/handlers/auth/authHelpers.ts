@@ -1,9 +1,10 @@
 import { useContextStore } from '@evevault/shared/stores'
-import type {
-  AuthSuccessToken,
-  DappConnectSuccessMessage,
-  ExtensionAuthSuccessMessage,
-  JwtResponse,
+import {
+  AuthMessageTypes,
+  type AuthSuccessToken,
+  type DappConnectSuccessMessage,
+  type ExtensionAuthSuccessMessage,
+  type JwtResponse,
 } from '@evevault/shared/types'
 import { CONTEXT_STORAGE_KEY, createLogger } from '@evevault/shared/utils'
 import type { SuiChain } from '@mysten/wallet-standard'
@@ -85,7 +86,7 @@ export function sendExtensionAuthSuccess(id: string, jwt: JwtResponse): void {
   const token = buildExtensionAuthSuccessToken(jwt)
   const message: ExtensionAuthSuccessMessage = {
     id,
-    type: 'auth_success',
+    type: AuthMessageTypes.AUTH_SUCCESS,
     token,
   }
   chrome.runtime.sendMessage(message)
@@ -104,7 +105,7 @@ export function sendDappConnectSuccessToTab(
   for (const id of ids) {
     const message: DappConnectSuccessMessage = {
       id,
-      type: 'auth_success',
+      type: AuthMessageTypes.AUTH_SUCCESS,
       chain,
       address,
       ...(publicKey && { publicKey }),

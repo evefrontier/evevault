@@ -23,16 +23,20 @@ type TabAuthErrorMessage = { type: 'auth_error'; id?: string; error?: unknown }
 type SignSuccessMessage = {
   type: 'sign_success'
   id: string
-  // Passthrough keeper outputs; not re-validated here (and never token material).
-  bytes?: unknown
-  signature?: unknown
-  digest?: unknown
-  effects?: unknown
+  bytes?: string
+  signature?: string
+  digest?: string
+  effects?: string
 }
 type SignAndExecuteSuccessMessage = {
   type: 'sign_and_execute_transaction_success'
   id: string
-  result: Record<string, unknown>
+  result: {
+    bytes: string
+    signature: string
+    digest: string
+    effects: string
+  }
 }
 type SigningErrorMessage = {
   type: SigningErrorType
@@ -73,11 +77,12 @@ function inDevBuild(): boolean {
  * The ONLY permitted caller of chrome.tabs.sendMessage.
  *
  * chrome.tabs.sendMessage is the sole transport that reaches a content script
- * (and therefore a page); chrome.runtime.sendMessage does not. Funnelling every
- * page-bound message through here lets the TabBoundMessage type statically
- * forbid OAuth token fields, while the runtime hasNoTokenMaterial check is a
- * second, independent guard using the same predicate the content script applies
- * on egress. Token material must only travel via chrome.runtime.sendMessage
+ * (and therefore a page). Funnelling every page-bound message through here
+ * lets the TabBoundMessage type statically forbid OAuth token fields,
+ * while the runtime hasNoTokenMaterial check is a second, independent guard
+ * using the same predicate the content script applies on egress.
+ *
+ * Token material must only travel via chrome.runtime.sendMessage
  * (extension contexts) or live in chrome.storage.session / background memory.
  */
 export function sendToTab<M extends TabBoundMessage>(

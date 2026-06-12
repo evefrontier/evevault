@@ -81,20 +81,20 @@ async function buildZkLoginAccount(
 }
 
 /**
- * Decodes and validates the Enoki public key before account construction so
- * malformed lookup results fail during connect instead of later during signing.
+ * Decodes and validates the background-resolved public key before account
+ * construction so malformed auth metadata fails during connect instead of later
+ * during signing. The zkLogin address lookup itself happens in the extension
+ * background; this only consumes the resulting metadata.
  */
 function decodePublicKey(publicKeyB64: string): Uint8Array {
   const trimmedPublicKey = publicKeyB64.trim()
   if (!trimmedPublicKey) {
-    throw new Error('No public key returned from zkLogin address lookup')
+    throw new Error('No public key in auth metadata')
   }
 
   try {
     return fromBase64(trimmedPublicKey)
   } catch {
-    throw new Error(
-      'Invalid base64 public key returned from zkLogin address lookup',
-    )
+    throw new Error('Invalid base64 public key in auth metadata')
   }
 }

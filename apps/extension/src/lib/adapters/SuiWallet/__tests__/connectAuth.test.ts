@@ -46,6 +46,25 @@ describe('getAccountsFromAuthSuccess', () => {
     expect(sessionStorage.length).toBe(0)
   })
 
+  it('ignores any token material riding along on the auth message', async () => {
+    const [account] = await getAccountsFromAuthSuccess(
+      {
+        address: '0xzk',
+        publicKey: 'AQID',
+        token: { access_token: 'should-be-ignored' },
+        id_token: 'should-be-ignored',
+        refresh_token: 'should-be-ignored',
+      },
+      [SUI_TESTNET_CHAIN, SUI_DEVNET_CHAIN],
+    )
+
+    // The account is built purely from address/publicKey, and no token material
+    // is ever persisted to the page.
+    expect(account.address).toBe('0xzk')
+    expect(account.publicKey).toEqual(new Uint8Array([1, 2, 3]))
+    expect(sessionStorage.length).toBe(0)
+  })
+
   it('throws when the auth response does not include account metadata', async () => {
     await expect(
       getAccountsFromAuthSuccess({}, [SUI_TESTNET_CHAIN, SUI_DEVNET_CHAIN]),
@@ -61,23 +80,21 @@ describe('getAccountsFromAuthSuccess', () => {
     ).rejects.toThrow('Authentication response missing account metadata')
   })
 
-  it('throws when zkLogin returns a blank public key', async () => {
+  it('throws when the provided public key is blank', async () => {
     await expect(
       getAccountsFromAuthSuccess({ address: '0xzk', publicKey: '   ' }, [
         SUI_TESTNET_CHAIN,
         SUI_DEVNET_CHAIN,
       ]),
-    ).rejects.toThrow('No public key returned from zkLogin address lookup')
+    ).rejects.toThrow('No public key in auth metadata')
   })
 
-  it('throws when zkLogin returns an invalid base64 public key', async () => {
+  it('throws when the provided public key is invalid base64', async () => {
     await expect(
       getAccountsFromAuthSuccess(
         { address: '0xzk', publicKey: '%%%not-base64%%%' },
         [SUI_TESTNET_CHAIN, SUI_DEVNET_CHAIN],
       ),
-    ).rejects.toThrow(
-      'Invalid base64 public key returned from zkLogin address lookup',
-    )
+    ).rejects.toThrow('Invalid base64 public key in auth metadata')
   })
 })
