@@ -35,7 +35,9 @@ vi.mock('@evevault/shared/utils', async (importOriginal) => {
 describe('EveVaultWallet', () => {
   beforeEach(() => {
     vi.spyOn(window, 'postMessage').mockImplementation(() => undefined)
-    vi.spyOn(crypto, 'randomUUID').mockReturnValue(`request-id-y-x-z`)
+    vi.spyOn(crypto, 'randomUUID').mockReturnValue(
+      'request-id' as `${string}-${string}-${string}-${string}-${string}`,
+    )
   })
 
   afterEach(() => {
@@ -249,9 +251,9 @@ describe('EveVaultWallet', () => {
     const listener = vi.fn()
     wallet.features[StandardEvents].on('change', listener)
 
-    await wallet.features[StandardDisconnect].disconnect()
+    await wallet.features[StandardDisconnect]?.disconnect()
     // Repeated disconnects should be no-ops once accounts are already cleared.
-    await wallet.features[StandardDisconnect].disconnect()
+    await wallet.features[StandardDisconnect]?.disconnect()
 
     expect(listener).toHaveBeenCalledTimes(1)
     expect(listener).toHaveBeenCalledWith(
@@ -388,7 +390,7 @@ describe('EveVaultWallet', () => {
       EVEFRONTIER_SPONSORED_TRANSACTION
     ].signSponsoredTransaction({
       txAction: 'mine',
-      assembly: 'assembly',
+      assembly: 1,
       assemblyType: 'type',
       metadata: {
         name: 'Name',
@@ -403,7 +405,7 @@ describe('EveVaultWallet', () => {
       action: WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION,
       message: {
         action: 'mine',
-        assembly: 'assembly',
+        assembly: 1,
         assemblyType: 'type',
         metadata: {
           name: 'Name',
@@ -431,7 +433,7 @@ describe('EveVaultWallet', () => {
       EVEFRONTIER_SPONSORED_TRANSACTION
     ].signSponsoredTransaction({
       txAction: 'mine',
-      assembly: 'assembly',
+      assembly: 1,
       assemblyType: 'type',
       metadata: {},
     })
@@ -442,7 +444,7 @@ describe('EveVaultWallet', () => {
       action: WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION,
       message: {
         action: 'mine',
-        assembly: 'assembly',
+        assembly: 1,
         assemblyType: 'type',
       },
     })

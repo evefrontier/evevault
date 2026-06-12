@@ -114,7 +114,7 @@ async function handleSponsoredTransaction(
       return true
     }
 
-    if (!assembly || !assemblyType) {
+    if (assembly == null || !assemblyType) {
       throw new Error(`Assembly not found: ${assembly}, ${assemblyType}`)
     }
 
