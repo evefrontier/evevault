@@ -1,4 +1,5 @@
 import { createLogger } from '@evevault/shared/utils'
+import { sendToTab } from '@/lib/background/messaging/tabMessaging'
 import { sendAuthError } from './authHelpers'
 
 const log = createLogger()
@@ -40,19 +41,11 @@ export function sendPendingAuthError(pending: PendingAuthAfterUnlock): void {
   } else if (pending.tabId !== undefined) {
     const ids = [pending.id, ...(pending.additionalIds ?? [])]
     for (const id of ids) {
-      chrome.tabs
-        .sendMessage(pending.tabId, {
-          id,
-          type: 'auth_error',
-          error: errorPayload,
-        })
-        .catch((err) => {
-          log.error('Failed to send auth_error to tab', {
-            tabId: pending.tabId,
-            id,
-            err,
-          })
-        })
+      sendToTab(pending.tabId, {
+        id,
+        type: 'auth_error',
+        error: errorPayload,
+      })
     }
   }
 }

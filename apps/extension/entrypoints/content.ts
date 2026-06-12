@@ -1,5 +1,5 @@
 import { WalletStandardMessageTypes } from '@evevault/shared/types'
-import { createLogger } from '@evevault/shared/utils'
+import { createLogger, hasNoTokenMaterial } from '@evevault/shared/utils'
 import { CONTEXT_STORAGE_KEY } from '@evevault/shared/utils/storageKeys'
 
 const log = createLogger()
@@ -19,6 +19,10 @@ type PageMessageValidator = (data: Record<string, unknown>) => boolean
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
+}
+
+function every(checks: boolean[]): boolean {
+  return checks.every(Boolean)
 }
 
 function isValidRequestId(value: unknown): value is string {
@@ -42,10 +46,6 @@ function hasObjectAccount(data: Record<string, unknown>): boolean {
   return isRecord(data.account)
 }
 
-function every(checks: boolean[]): boolean {
-  return checks.every(Boolean)
-}
-
 function hasStringFields(
   data: Record<string, unknown>,
   fields: readonly string[],
@@ -55,24 +55,6 @@ function hasStringFields(
 
 function hasOptionalObjectMetadata(data: Record<string, unknown>): boolean {
   return data.metadata === undefined || isRecord(data.metadata)
-}
-
-const TOKEN_MATERIAL_FIELDS = new Set([
-  'token',
-  'access_token',
-  'id_token',
-  'refresh_token',
-  'refresh_token_id',
-])
-
-function hasNoTokenMaterial(value: unknown): boolean {
-  if (Array.isArray(value)) return value.every(hasNoTokenMaterial)
-  if (!isRecord(value)) return true
-
-  return Object.entries(value).every(
-    ([field, child]) =>
-      !TOKEN_MATERIAL_FIELDS.has(field) && hasNoTokenMaterial(child),
-  )
 }
 
 function isEveVaultRequest(data: unknown): data is Record<string, unknown> {

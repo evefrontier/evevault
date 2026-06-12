@@ -1,5 +1,6 @@
 import { VaultMessageTypes, WalletStandardMessageTypes } from '@evevault/shared'
 import { createLogger } from '@evevault/shared/utils'
+import { sendToTab } from '@/lib/background/messaging/tabMessaging'
 import type {
   BackgroundMessage,
   EveFrontierSponsoredTransactionMessage,
@@ -208,7 +209,7 @@ function broadcastChangeEvent(payload: unknown): void {
   chrome.tabs.query({}, (tabs) => {
     tabs.forEach((tab) => {
       if (tab.id) {
-        chrome.tabs.sendMessage(tab.id, {
+        sendToTab(tab.id, {
           __from: 'Eve Vault',
           event: 'change',
           payload,

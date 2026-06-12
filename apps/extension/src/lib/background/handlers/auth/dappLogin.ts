@@ -12,6 +12,7 @@ import {
 } from '@evevault/shared/types'
 import { createLogger } from '@evevault/shared/utils'
 import { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519'
+import { sendToTab } from '@/lib/background/messaging/tabMessaging'
 import { getAuthRequest } from '@/lib/background/services/oauthService'
 import { openPopupWindow } from '@/lib/background/services/popupWindow'
 import type { MessageWithId } from '@/lib/background/types'
@@ -49,15 +50,11 @@ function sendAuthErrorToTab(
   extra?: Record<string, unknown>,
 ): void {
   if (typeof tabId !== 'number') return
-  chrome.tabs
-    .sendMessage(tabId, {
-      id,
-      type: 'auth_error',
-      error: { message, ...extra },
-    })
-    .catch((err) => {
-      log.error('Failed to send auth error to tab', err)
-    })
+  sendToTab(tabId, {
+    id,
+    type: 'auth_error',
+    error: { message, ...extra },
+  })
 }
 
 // Returns true if the device store contains a persisted encrypted secret key,

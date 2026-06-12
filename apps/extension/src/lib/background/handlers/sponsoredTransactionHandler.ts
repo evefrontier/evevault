@@ -1,6 +1,7 @@
 import { WalletStandardMessageTypes } from '@evevault/shared'
 import { getApiContext, getJwt, getStoredChain } from '@evevault/shared/auth'
 import { createLogger } from '@evevault/shared/utils'
+import { sendToTab } from '@/lib/background/messaging/tabMessaging'
 import { openPopupWindow } from '@/lib/background/services/popupWindow'
 import type {
   EveFrontierSponsoredTransactionMessage,
@@ -17,15 +18,11 @@ function sendSponsoredError(
   error: string,
 ): void {
   if (senderTabId != null) {
-    chrome.tabs
-      .sendMessage(senderTabId, {
-        type: 'sign_sponsored_transaction_error',
-        error,
-        id: messageId,
-      })
-      .catch((err) => {
-        log.error('Failed to send error message to tab', err)
-      })
+    sendToTab(senderTabId, {
+      type: 'sign_sponsored_transaction_error',
+      error,
+      id: messageId,
+    })
   } else {
     log.warn('No sender tab id, cannot send error to page', { error })
   }
@@ -81,27 +78,19 @@ async function executeSponsoredTx({
       digest?: string
       effects?: string
     }
-    chrome.tabs
-      .sendMessage(senderTabId, {
-        type: 'sign_success',
-        digest: result.digest ?? '0x0',
-        effects: result.effects ?? '0x0',
-        id: messageId,
-      })
-      .catch((err) => {
-        log.error('Failed to send success message to tab', err)
-      })
+    sendToTab(senderTabId, {
+      type: 'sign_success',
+      digest: result.digest ?? '0x0',
+      effects: result.effects ?? '0x0',
+      id: messageId,
+    })
   } catch (err) {
     log.error('Sponsored execute failed', err)
-    chrome.tabs
-      .sendMessage(senderTabId, {
-        type: 'sign_sponsored_transaction_error',
-        error: err instanceof Error ? err.message : 'Unknown error occurred',
-        id: messageId,
-      })
-      .catch((sendErr) => {
-        log.error('Failed to send error message to tab', sendErr)
-      })
+    sendToTab(senderTabId, {
+      type: 'sign_sponsored_transaction_error',
+      error: err instanceof Error ? err.message : 'Unknown error occurred',
+      id: messageId,
+    })
   }
 }
 

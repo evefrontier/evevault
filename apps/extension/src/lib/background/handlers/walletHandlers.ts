@@ -1,5 +1,9 @@
 import { WalletStandardMessageTypes } from '@evevault/shared'
 import { createLogger } from '@evevault/shared/utils'
+import {
+  type SigningErrorType,
+  sendToTab,
+} from '@/lib/background/messaging/tabMessaging'
 import { openPopupWindow } from '@/lib/background/services/popupWindow'
 import type { WalletActionMessage } from '@/lib/background/types'
 
@@ -7,7 +11,7 @@ const log = createLogger()
 
 // Maps a wallet action string to its corresponding error message type so
 // the dApp's listener can route the rejection correctly.
-function getSignErrorType(action: string): string {
+function getSignErrorType(action: string): SigningErrorType {
   if (action === WalletStandardMessageTypes.SIGN_TRANSACTION)
     return 'sign_transaction_error'
   if (action === WalletStandardMessageTypes.SIGN_PERSONAL_MESSAGE)
@@ -31,38 +35,30 @@ function sendApprovalSuccess(
       result.digest != null &&
       result.effects != null
     if (!hasRequired) {
-      chrome.tabs
-        .sendMessage(senderTabId, {
-          type: 'sign_and_execute_transaction_error',
-          error: 'Missing bytes or signature in transaction result',
-          id: messageId,
-        })
-        .catch((err) => log.error('Failed to send sign_and_execute error', err))
-    } else {
-      chrome.tabs
-        .sendMessage(senderTabId, {
-          type: 'sign_and_execute_transaction_success',
-          result: {
-            bytes: result.bytes,
-            signature: result.signature,
-            digest: result.digest,
-            effects: result.effects,
-          },
-          id: messageId,
-        })
-        .catch((err) =>
-          log.error('Failed to send sign_and_execute success', err),
-        )
-    }
-  } else {
-    chrome.tabs
-      .sendMessage(senderTabId, {
-        type: 'sign_success',
-        bytes: result.bytes,
-        signature: result.signature,
+      sendToTab(senderTabId, {
+        type: 'sign_and_execute_transaction_error',
+        error: 'Missing bytes or signature in transaction result',
         id: messageId,
       })
-      .catch((err) => log.error('Failed to send success message', err))
+    } else {
+      sendToTab(senderTabId, {
+        type: 'sign_and_execute_transaction_success',
+        result: {
+          bytes: result.bytes,
+          signature: result.signature,
+          digest: result.digest,
+          effects: result.effects,
+        },
+        id: messageId,
+      })
+    }
+  } else {
+    sendToTab(senderTabId, {
+      type: 'sign_success',
+      bytes: result.bytes,
+      signature: result.signature,
+      id: messageId,
+    })
   }
 }
 
@@ -76,22 +72,18 @@ function sendApprovalError(
   messageId: string,
 ): void {
   if (isSignAndExecute && senderTabId) {
-    chrome.tabs
-      .sendMessage(senderTabId, {
-        type: 'sign_and_execute_transaction_error',
-        error: result.error,
-        id: messageId,
-      })
-      .catch((err) => log.error('Failed to send sign_and_execute error', err))
+    sendToTab(senderTabId, {
+      type: 'sign_and_execute_transaction_error',
+      error: result.error,
+      id: messageId,
+    })
   } else if (typeof senderTabId === 'number') {
     const errorType = getSignErrorType(action)
-    chrome.tabs
-      .sendMessage(senderTabId, {
-        type: errorType,
-        error: result.error,
-        id: messageId,
-      })
-      .catch((err) => log.error(`Failed to send ${errorType} error`, err))
+    sendToTab(senderTabId, {
+      type: errorType,
+      error: result.error,
+      id: messageId,
+    })
   }
 }
 
