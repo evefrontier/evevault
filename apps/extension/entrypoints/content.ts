@@ -129,8 +129,10 @@ function isPublicAuthSuccess(data: Record<string, unknown>): boolean {
   return every([
     hasStringIdAndType(data),
     data.type === 'auth_success',
-    typeof data.chain === 'string',
-    typeof data.address === 'string',
+    // chain/address are present on dApp connect success but absent on the bare
+    // web-unlock auth_success ({ id, type }); both are valid, token-free shapes.
+    data.chain === undefined || typeof data.chain === 'string',
+    data.address === undefined || typeof data.address === 'string',
     data.publicKey === undefined || typeof data.publicKey === 'string',
   ])
 }
@@ -258,7 +260,9 @@ export function forwardToPage(message: Record<string, unknown>) {
 
   const id = (message.id as string) || undefined
   const type = (message.type as string) || ''
-  postToPage({ __from: 'Eve Vault', id, type, ...message })
+  // Spread first so the forwarded message can never override the authenticity
+  // marker (__from) or the normalized id/type the page relies on.
+  postToPage({ ...message, __from: 'Eve Vault', id, type })
 }
 
 export default defineContentScript({

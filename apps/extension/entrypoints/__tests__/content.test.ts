@@ -178,4 +178,34 @@ describe('content bridge message validation', () => {
 
     expect(postMessage).not.toHaveBeenCalled()
   })
+
+  it('forwards the bare web-unlock auth_success (no chain/address) to the page', () => {
+    const postMessage = vi
+      .spyOn(window, 'postMessage')
+      .mockImplementation(() => undefined)
+
+    content.forwardToPage({ id: 'unlock-id', type: 'auth_success' })
+
+    expect(postMessage).toHaveBeenCalledWith(
+      { __from: 'Eve Vault', id: 'unlock-id', type: 'auth_success' },
+      window.location.origin,
+    )
+  })
+
+  it('forces __from to "Eve Vault" even if the forwarded message sets it', () => {
+    const postMessage = vi
+      .spyOn(window, 'postMessage')
+      .mockImplementation(() => undefined)
+
+    content.forwardToPage({
+      __from: 'attacker',
+      id: 'unlock-id',
+      type: 'auth_success',
+    })
+
+    expect(postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ __from: 'Eve Vault' }),
+      window.location.origin,
+    )
+  })
 })
