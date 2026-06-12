@@ -129,7 +129,12 @@ function SignSponsoredTransaction() {
         <div className="mt-2 flex flex-col gap-2">
           <SponsoredDetail label="Name" value={pending?.metadata?.name} />
           <SponsoredDetail label="Action" value={pending?.sponsoredAction} />
-          <SponsoredDetail label="Assembly" value={pending?.assembly} />
+          <SponsoredDetail
+            label="Assembly"
+            value={
+              pending?.assembly != null ? String(pending.assembly) : undefined
+            }
+          />
           <SponsoredDetail label="Type" value={pending?.assemblyType} />
           <SponsoredDetail label="URL" value={pending?.metadata?.url} />
         </div>

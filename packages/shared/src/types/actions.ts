@@ -48,7 +48,8 @@ export interface PendingSponsoredTransaction {
   chain: SuiChain
   dapp?: DappRequestContext
   sponsoredAction?: string
-  assembly?: string
+  /** Numeric `assemblyId`; mirrors EveFrontierSponsoredTransactionMessage.assembly. */
+  assembly?: number
   assemblyType?: string
   metadata?: PendingSponsoredTransactionMetadata
 }
