@@ -1,11 +1,11 @@
+import type { SuiChain } from '@mysten/wallet-standard'
+
 export enum WalletActions {
   SIGN_PERSONAL_MESSAGE = 'sign_personal_message',
   SIGN_TRANSACTION = 'sign_transaction',
   SIGN_AND_EXECUTE_TRANSACTION = 'sign_and_execute_transaction',
   SIGN_SPONSORED_TRANSACTION = 'sign_sponsored_transaction',
 }
-
-import type { SuiChain } from '@mysten/wallet-standard'
 
 export interface DappRequestContext {
   origin: string

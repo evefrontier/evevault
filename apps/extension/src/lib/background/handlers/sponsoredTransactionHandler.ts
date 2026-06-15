@@ -15,6 +15,18 @@ import { requireSigningPermission } from './signingPermissions'
 
 const log = createLogger()
 
+// Options for executeSponsoredTx — bundles the API context and the signed result
+// so the function signature stays below qlty's parameter count threshold.
+type ExecuteSponsoredTxOptions = {
+  apiBaseUrl: string
+  tenant: string
+  idToken: string
+  preparationId: string
+  zkSignature: string
+  senderTabId: number
+  messageId: string
+}
+
 // Sends a sign_sponsored_transaction_error to the originating tab, or logs a
 // warning if there's no tab to send to (e.g. request came from a background context).
 function sendSponsoredError(
@@ -31,18 +43,6 @@ function sendSponsoredError(
   } else {
     log.warn('No sender tab id, cannot send error to page', { error })
   }
-}
-
-// Options for executeSponsoredTx — bundles the API context and the signed result
-// so the function signature stays below qlty's parameter count threshold.
-type ExecuteSponsoredTxOptions = {
-  apiBaseUrl: string
-  tenant: string
-  idToken: string
-  preparationId: string
-  zkSignature: string
-  senderTabId: number
-  messageId: string
 }
 
 // POSTs the signed sponsored transaction to the backend execute endpoint and

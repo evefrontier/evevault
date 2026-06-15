@@ -288,9 +288,8 @@ describe('handleMessage route policy', () => {
     expect(mocks.handleApprovePopup).not.toHaveBeenCalled()
   })
 
-  it('routes wallet signing actions from tab senders even when URL metadata is incomplete', () => {
+  it('routes wallet signing actions from tab senders without resolving dApp context', () => {
     const sendResponse = vi.fn()
-    mocks.getDappRequestContext.mockReturnValueOnce(null)
 
     expect(
       handleMessage(
@@ -305,6 +304,7 @@ describe('handleMessage route policy', () => {
       expect.objectContaining({ tab: expect.objectContaining({ id: 42 }) }),
       sendResponse,
     )
+    expect(mocks.getDappRequestContext).not.toHaveBeenCalled()
     expect(sendResponse).not.toHaveBeenCalledWith({
       type: 'auth_error',
       error: { message: 'Unauthorized message sender' },

@@ -46,6 +46,43 @@ const log = createLogger()
 const delay = (ms: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, ms))
 
+// Discriminated union so callers can access publicKeyBytes only when ready.
+type KeeperReadyResult =
+  | { ready: true; publicKeyBytes?: number[] }
+  | { ready: false }
+
+type DappAccountMetadata = {
+  address: string
+  publicKey?: string
+}
+
+type DappConnectAccountResult =
+  | { ok: true; account: DappAccountMetadata }
+  | { ok: false; error: string }
+
+type ZkLoginAddressResult = Awaited<ReturnType<typeof getZkLoginAddress>>
+
+type DappConnectCompletionOptions = {
+  tabId: number
+  ids: string[]
+  jwt: JwtResponse
+  chain: ReturnType<typeof getCurrentChain>
+  dappContext: DappRequestContext
+}
+
+// Context threaded into the launchWebAuthFlow callback, which runs outside the
+// normal async scope and can't capture variables from the surrounding await chain.
+type OAuthCallbackContext = {
+  id: string
+  additionalIds: string[]
+  chain: ReturnType<typeof getCurrentChain>
+  chromeRedirectUri: string
+  tenant: string
+  codeVerifier: string
+  tabId: number | undefined
+  dappContext: DappRequestContext
+}
+
 // Sends an auth_error to the tab if tabId is defined, otherwise does nothing.
 // Centralises guarded tab-bound auth errors through sendToTab.
 function sendAuthErrorToTab(
@@ -80,22 +117,6 @@ function checkHasDeviceData(): boolean {
 
   return ['iv', 'data'].every((field) => field in key)
 }
-
-// Discriminated union so callers can access publicKeyBytes only when ready.
-type KeeperReadyResult =
-  | { ready: true; publicKeyBytes?: number[] }
-  | { ready: false }
-
-type DappAccountMetadata = {
-  address: string
-  publicKey?: string
-}
-
-type DappConnectAccountResult =
-  | { ok: true; account: DappAccountMetadata }
-  | { ok: false; error: string }
-
-type ZkLoginAddressResult = Awaited<ReturnType<typeof getZkLoginAddress>>
 
 // Checks that the keeper is unlocked, retrying briefly if device data exists
 // (handles the race where the background script wakes before keeper is ready).
@@ -203,14 +224,6 @@ async function syncPublicKeyFromKeeper(
     )
     return false
   }
-}
-
-type DappConnectCompletionOptions = {
-  tabId: number
-  ids: string[]
-  jwt: JwtResponse
-  chain: ReturnType<typeof getCurrentChain>
-  dappContext: DappRequestContext
 }
 
 async function resolveDappConnectAccount(
@@ -384,19 +397,6 @@ async function ensureNonce(
     return null
   }
   return nonce
-}
-
-// Context threaded into the launchWebAuthFlow callback, which runs outside the
-// normal async scope and can't capture variables from the surrounding await chain.
-type OAuthCallbackContext = {
-  id: string
-  additionalIds: string[]
-  chain: ReturnType<typeof getCurrentChain>
-  chromeRedirectUri: string
-  tenant: string
-  codeVerifier: string
-  tabId: number | undefined
-  dappContext: DappRequestContext
 }
 
 // Processes the redirect URL from chrome.identity.launchWebAuthFlow: exchanges

@@ -5,6 +5,7 @@ import {
   Text,
 } from '@evevault/shared/components'
 import type { DappRequestContext } from '@evevault/shared/types'
+import { formatAddress } from '@evevault/shared/utils'
 import type { SuiChain } from '@mysten/wallet-standard'
 import type { ReactNode } from 'react'
 import type { useSignPopupAuth } from '@/features/wallet/hooks'
@@ -24,11 +25,6 @@ type SignRequestViewProps = {
   onApprove: () => void | Promise<void>
   onReject: () => void | Promise<void>
   children: ReactNode
-}
-
-function shortenMiddle(value: string): string {
-  if (value.length <= 22) return value
-  return `${value.slice(0, 10)}...${value.slice(-8)}`
 }
 
 function formatConnectedAt(connectedAt: number | undefined): string | null {
@@ -84,7 +80,7 @@ function RequestContextPanel({
         {accountAddress && (
           <ContextRow
             label="Account"
-            value={shortenMiddle(accountAddress)}
+            value={formatAddress(accountAddress, 10, 8)}
             title={accountAddress}
           />
         )}
@@ -142,12 +138,12 @@ export function SignRequestView({
             </div>
 
             {error && (
-              <div style={{ marginBottom: '20px' }}>
+              <div className="mb-5">
                 <Text color="error">Error: {error}</Text>
               </div>
             )}
 
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div className="flex gap-2">
               <Button onClick={onApprove} disabled={loading} variant="primary">
                 {loading ? 'Signing...' : 'Approve'}
               </Button>

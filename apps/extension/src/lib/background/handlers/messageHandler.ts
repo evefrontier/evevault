@@ -43,6 +43,7 @@ type RouteHandler = (
   sr: SendResponse,
   tabId?: number,
 ) => unknown
+type VaultHandler = (m: VaultMessage, s: MsgSender, sr: SendResponse) => unknown
 type MessageRoute = {
   access: RouteAccess
   handle: RouteHandler
@@ -111,7 +112,6 @@ async function handleDappDisconnect(
   })
 }
 
-type VaultHandler = (m: VaultMessage, s: MsgSender, sr: SendResponse) => unknown
 function vaultRoute(handler: VaultHandler): MessageRoute {
   return {
     access: 'extension',

@@ -127,7 +127,6 @@ function SignSponsoredTransaction() {
           Sponsored request
         </Text>
         <div className="mt-2 flex flex-col gap-2">
-          <SponsoredDetail label="Name" value={pending?.metadata?.name} />
           <SponsoredDetail label="Action" value={pending?.sponsoredAction} />
           <SponsoredDetail
             label="Assembly"
@@ -137,12 +136,12 @@ function SignSponsoredTransaction() {
           />
           <SponsoredDetail label="Type" value={pending?.assemblyType} />
           <SponsoredDetail label="URL" value={pending?.metadata?.url} />
+          <SponsoredDetail label="Name" value={pending?.metadata?.name} />
+          <SponsoredDetail
+            label="Description"
+            value={pending?.metadata?.description}
+          />
         </div>
-        {pending?.metadata?.description && (
-          <Text className="mt-3 max-h-20 overflow-y-auto break-words text-left">
-            {pending.metadata.description}
-          </Text>
-        )}
       </div>
     </SignRequestView>
   )
