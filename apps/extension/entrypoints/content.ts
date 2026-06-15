@@ -198,6 +198,13 @@ function isPublicSigningError(data: Record<string, unknown>): boolean {
   ])
 }
 
+function isPublicDisconnectResponse(data: Record<string, unknown>): boolean {
+  if (!hasStringIdAndType(data)) return false
+  if (data.type === 'disconnect_success') return true
+
+  return data.type === 'disconnect_error' && data.error !== undefined
+}
+
 function isPublicChangeEvent(data: Record<string, unknown>): boolean {
   return data.event === 'change' && isRecord(data.payload)
 }
@@ -208,6 +215,7 @@ const PUBLIC_EXTENSION_MESSAGE_VALIDATORS: readonly PageMessageValidator[] = [
   isSignatureSuccess,
   isSignAndExecuteSuccess,
   isPublicSigningError,
+  isPublicDisconnectResponse,
   isPublicChangeEvent,
 ]
 

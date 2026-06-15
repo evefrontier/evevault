@@ -222,6 +222,40 @@ describe('content bridge message validation', () => {
     )
   })
 
+  it('forwards disconnect responses to the page', () => {
+    const postMessage = vi
+      .spyOn(window, 'postMessage')
+      .mockImplementation(() => undefined)
+
+    content.forwardToPage({
+      id: 'disconnect-id',
+      type: 'disconnect_success',
+    })
+    content.forwardToPage({
+      id: 'disconnect-id',
+      type: 'disconnect_error',
+      error: { message: 'revocation failed' },
+    })
+
+    expect(postMessage).toHaveBeenCalledWith(
+      {
+        __from: 'Eve Vault',
+        id: 'disconnect-id',
+        type: 'disconnect_success',
+      },
+      window.location.origin,
+    )
+    expect(postMessage).toHaveBeenCalledWith(
+      {
+        __from: 'Eve Vault',
+        id: 'disconnect-id',
+        type: 'disconnect_error',
+        error: { message: 'revocation failed' },
+      },
+      window.location.origin,
+    )
+  })
+
   it('forces __from to "Eve Vault" even if the forwarded message sets it', () => {
     const postMessage = vi
       .spyOn(window, 'postMessage')

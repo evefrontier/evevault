@@ -26,7 +26,12 @@ export const SENSITIVE_FIELDS: ReadonlySet<string> = new Set<string>([
 export const REDACTED = '[REDACTED]'
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === 'object' && !Array.isArray(value)
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false
+  }
+
+  const prototype = Object.getPrototypeOf(value)
+  return prototype === Object.prototype || prototype === null
 }
 
 /**

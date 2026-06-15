@@ -47,6 +47,16 @@ describe('redactSensitive', () => {
     expect(redactSensitive(undefined)).toBe(undefined)
   })
 
+  it('passes non-plain objects through unchanged', () => {
+    const error = new Error('boom')
+    const date = new Date('2026-06-15T00:00:00.000Z')
+    const url = new URL('https://example.com/path')
+
+    expect(redactSensitive(error)).toBe(error)
+    expect(redactSensitive(date)).toBe(date)
+    expect(redactSensitive(url)).toBe(url)
+  })
+
   it('covers the documented secret field names', () => {
     for (const field of [
       'pin',
