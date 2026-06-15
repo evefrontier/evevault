@@ -1,6 +1,6 @@
 import { Text } from '@evevault/shared/components'
 import type { PendingPersonalMessage } from '@evevault/shared/types'
-import { createLogger } from '@evevault/shared/utils'
+import { createLogger, toErrorMessage } from '@evevault/shared/utils'
 import { useWalletSigningContext } from '@evevault/shared/wallet'
 import { SUI_TESTNET_CHAIN } from '@mysten/wallet-standard'
 import { usePendingSignAction } from '@/features/wallet/hooks'
@@ -99,8 +99,7 @@ function SignPersonalMessage() {
       window.close()
     } catch (err) {
       log.error('Personal message signing failed', err)
-      const errorMessage =
-        err instanceof Error ? err.message : 'Unknown error occurred'
+      const errorMessage = toErrorMessage(err, 'Unknown error occurred')
       setError(errorMessage)
       await storeErrorResult(errorMessage)
     } finally {
@@ -124,11 +123,11 @@ function SignPersonalMessage() {
       onReject={handleReject}
     >
       {pendingMessage && (
-        <div className="w-[320px] max-w-[88vw] border border-[var(--matter-05)] p-3">
+        <div className="w-[320px] max-w-[88vw] border border-(--matter-05) p-3">
           <Text size="small" color="grey-neutral">
             Message
           </Text>
-          <Text className="mt-2 max-h-28 overflow-y-auto break-words text-left">
+          <Text className="mt-2 max-h-28 overflow-y-auto wrap-break-word text-left">
             {decodeMessageBytes(toMessageBytes(pendingMessage.message))}
           </Text>
         </div>

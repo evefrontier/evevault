@@ -1,10 +1,7 @@
 import { VaultMessageTypes, WalletStandardMessageTypes } from '@evevault/shared'
 import { createLogger, redactSensitive } from '@evevault/shared/utils'
 import { sendToTab } from '@/lib/background/messaging/tabMessaging'
-import {
-  getDappRequestContext,
-  revokeDappPermission,
-} from '@/lib/background/services/dappPermissions'
+import { revokeDappPermission } from '@/lib/background/services/dappPermissions'
 import type {
   BackgroundMessage,
   EveFrontierSponsoredTransactionMessage,
@@ -230,21 +227,22 @@ function findRoute(message: BackgroundMessage): MessageRoute | undefined {
 }
 
 function isExtensionSender(sender: MsgSender): boolean {
-  if (sender.tab) return false
-
-  const senderUrl = sender.url ?? ''
-  if (!senderUrl) return true
-
+  const senderUrls = [sender.origin, sender.url, sender.tab?.url]
   const extensionId = chrome.runtime?.id
-  if (!extensionId) return senderUrl.startsWith('chrome-extension://')
+  const isOwnExtensionUrl = (url: string | undefined) => {
+    if (!url) return false
+    if (!extensionId) return url.startsWith('chrome-extension://')
 
-  return senderUrl.startsWith(`chrome-extension://${extensionId}/`)
+    return url.startsWith(`chrome-extension://${extensionId}/`)
+  }
+
+  if (senderUrls.some(isOwnExtensionUrl)) return true
+
+  return !sender.tab && !sender.origin && !sender.url
 }
 
 function isDappSender(sender: MsgSender): boolean {
-  return (
-    typeof sender.tab?.id === 'number' && getDappRequestContext(sender) !== null
-  )
+  return typeof sender.tab?.id === 'number' && !isExtensionSender(sender)
 }
 
 function rejectUnauthorized(

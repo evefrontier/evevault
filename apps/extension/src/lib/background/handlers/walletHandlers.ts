@@ -1,5 +1,5 @@
 import { WalletStandardMessageTypes } from '@evevault/shared'
-import { createLogger } from '@evevault/shared/utils'
+import { createLogger, toErrorMessage } from '@evevault/shared/utils'
 import type { SuiChain } from '@mysten/wallet-standard'
 import {
   type SigningErrorType,
@@ -102,17 +102,18 @@ function sendApprovalError(
   action: string,
   messageId: string,
 ): void {
+  const error = toErrorMessage(result.error, 'Unknown error occurred')
   if (isSignAndExecute && typeof senderTabId === 'number') {
     sendToTab(senderTabId, {
       type: 'sign_and_execute_transaction_error',
-      error: result.error,
+      error,
       id: messageId,
     })
   } else if (typeof senderTabId === 'number') {
     const errorType = getSignErrorType(action)
     sendToTab(senderTabId, {
       type: errorType,
-      error: result.error,
+      error,
       id: messageId,
     })
   }
@@ -222,8 +223,7 @@ async function handleApprovePopup(
     return true
   } catch (error) {
     log.error('Transaction signing failed', error)
-    const errorMessage =
-      error instanceof Error ? error.message : 'Unknown error occurred'
+    const errorMessage = toErrorMessage(error, 'Unknown error occurred')
     sendImmediateSigningError(sender.tab?.id, action, message.id, errorMessage)
     sendResponse({
       type: getImmediateSigningErrorType(action),

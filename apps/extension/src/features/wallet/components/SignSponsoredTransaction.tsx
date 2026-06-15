@@ -41,10 +41,10 @@ function SponsoredDetail({
 
   return (
     <div className="grid grid-cols-[82px_minmax(0,1fr)] gap-2 text-left">
-      <span className="text-[10px] uppercase text-[var(--grey-neutral)]">
+      <span className="text-[10px] uppercase text-(--grey-neutral)">
         {label}
       </span>
-      <span className="truncate text-xs text-[var(--neutral)]" title={value}>
+      <span className="truncate text-xs text-(--neutral)" title={value}>
         {value}
       </span>
     </div>
@@ -122,7 +122,7 @@ function SignSponsoredTransaction() {
       onApprove={handleApprove}
       onReject={handleReject}
     >
-      <div className="w-[320px] max-w-[88vw] border border-[var(--matter-05)] p-3">
+      <div className="w-[320px] max-w-[88vw] border border-(--matter-05) p-3">
         <Text size="small" color="grey-neutral">
           Sponsored request
         </Text>

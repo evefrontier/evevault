@@ -50,11 +50,11 @@ function ContextRow({
 }) {
   return (
     <div className="grid grid-cols-[72px_minmax(0,1fr)] gap-2 items-baseline">
-      <span className="text-[10px] uppercase text-[var(--grey-neutral)]">
+      <span className="text-[10px] uppercase text-(--grey-neutral)">
         {label}
       </span>
       <span
-        className="text-xs leading-4 text-[var(--neutral)] truncate"
+        className="text-xs leading-4 text-(--neutral) truncate"
         title={title ?? value}
       >
         {value}
@@ -76,7 +76,7 @@ function RequestContextPanel({
   if (!dapp && !accountAddress && !requestKind) return null
 
   return (
-    <div className="w-[320px] max-w-[88vw] border border-[var(--quantum-60)] bg-[var(--crude-dark)] p-3 text-left">
+    <div className="w-[320px] max-w-[88vw] border border-(--matter-05) p-3">
       <div className="flex flex-col gap-2">
         {dapp && (
           <ContextRow label="Site" value={dapp.origin} title={dapp.url} />

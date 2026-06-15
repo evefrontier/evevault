@@ -168,7 +168,7 @@ describe('handleApprovePopup', () => {
       })
     })
 
-    it('calls sendResponse with a generic message when openPopupWindow throws a non-Error', async () => {
+    it('calls sendResponse with the message when openPopupWindow throws a string', async () => {
       mockOpenPopupWindow.mockRejectedValue('boom')
       const sendResponse = vi.fn()
 
@@ -180,7 +180,8 @@ describe('handleApprovePopup', () => {
 
       expect(sendResponse).toHaveBeenCalledWith({
         type: 'sign_transaction_error',
-        error: 'Unknown error occurred',
+        error: 'boom',
+        id: undefined,
       })
     })
   })
@@ -376,14 +377,14 @@ describe('handleApprovePopup', () => {
     async function fireTransactionError(
       message: WalletActionMessage,
       sender: { tab?: { id?: number } } = { tab: { id: 42 } },
-      errorText = 'User said no',
+      errorPayload: unknown = 'User said no',
     ) {
       const wrapped = await getWrappedListener(message, sender)
       wrapped({
         transactionResult: {
           newValue: {
             status: 'error',
-            error: errorText,
+            error: errorPayload,
           },
         },
       })
@@ -444,6 +445,23 @@ describe('handleApprovePopup', () => {
         id: 'req-2',
       })
       expect(logMethods.warn).not.toHaveBeenCalled()
+    })
+
+    it('normalizes structured error payloads before sending to the page', async () => {
+      await fireTransactionError(
+        {
+          id: 'req-structured-error',
+          action: WalletStandardMessageTypes.SIGN_PERSONAL_MESSAGE,
+        },
+        { tab: { id: 42 } },
+        { message: 'approval object failure' },
+      )
+
+      expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(42, {
+        type: 'sign_personal_message_error',
+        error: 'approval object failure',
+        id: 'req-structured-error',
+      })
     })
 
     it('maps unknown action to sign_error and logs a warning', async () => {

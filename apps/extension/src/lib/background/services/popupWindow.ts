@@ -17,7 +17,7 @@ export async function openPopupWindow(
       url: popupUrl,
       type: 'popup',
       width: 500,
-      height: 500,
+      height: 650,
       focused: true,
     })
 

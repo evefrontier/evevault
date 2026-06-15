@@ -118,7 +118,7 @@ const TransferNotices: React.FC<TransferNoticesProps> = ({
 
     {/* SUI for gas warning (non-blocking) */}
     {suiForGasWarning && (
-      <div className="w-full rounded border border-[var(--quantum-30)] bg-[var(--quantum-10)] p-2">
+      <div className="w-full rounded border border-(--quantum-30) bg-(--quantum-10) p-2">
         <Text variant="light" size="xsmall" color="neutral-90">
           {suiForGasWarning}
         </Text>
@@ -126,7 +126,7 @@ const TransferNotices: React.FC<TransferNoticesProps> = ({
     )}
 
     {/* Gas fee warning (all transfers) + optional estimate */}
-    <div className="w-full rounded border border-[var(--quantum-30)] bg-[var(--quantum-10)] p-2">
+    <div className="w-full rounded border border-(--quantum-30) bg-(--quantum-10) p-2">
       <Text variant="light" size="xsmall" color="neutral-90">
         {gasFeeWarning}
       </Text>

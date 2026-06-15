@@ -58,7 +58,10 @@ function isEveVaultRequest(data: unknown): data is Record<string, unknown> {
 }
 
 function isConnectMessage(data: Record<string, unknown>): boolean {
-  return data.type === 'connect' && isValidRequestId(data.id)
+  return (
+    data.type === WalletStandardMessageTypes.CONNECT &&
+    isValidRequestId(data.id)
+  )
 }
 
 function isDisconnectMessage(data: Record<string, unknown>): boolean {
@@ -115,7 +118,8 @@ function isAllowedWalletAction(data: Record<string, unknown>): boolean {
 }
 
 function isAllowedBridgePayload(data: Record<string, unknown>): boolean {
-  if (data.type === 'connect') return isConnectMessage(data)
+  if (data.type === WalletStandardMessageTypes.CONNECT)
+    return isConnectMessage(data)
   if (data.type === WalletStandardMessageTypes.DISCONNECT)
     return isDisconnectMessage(data)
 

@@ -8,7 +8,7 @@ export default function DesktopLeftSideBar({ items }: NavigationBarProps) {
   const location = useLocation()
 
   return (
-    <div className="flex h-screen w-56 flex-col bg-[var(--crude)]">
+    <div className="flex h-screen w-56 flex-col bg-(--crude)">
       {/* Logo */}
       <div className="flex items-center justify-center px-4 py-8 pb-40">
         <img src="/images/logo.png" alt="EVE Vault" className="h-20 w-auto" />
@@ -23,9 +23,7 @@ export default function DesktopLeftSideBar({ items }: NavigationBarProps) {
             <Link
               to={item.path}
               className={`flex w-full items-center gap-4 px-10 py-6 transition-colors ${
-                isActive
-                  ? 'bg-[var(--quantum-50)]'
-                  : 'hover:bg-[var(--quantum-10)]'
+                isActive ? 'bg-(--quantum-50)' : 'hover:bg-(--quantum-10)'
               }`}
               aria-current={isActive ? 'page' : undefined}
             >

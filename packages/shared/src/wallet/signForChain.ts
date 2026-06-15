@@ -2,6 +2,7 @@ import type { IntentScope } from '@mysten/sui/cryptography'
 import { SUI_LOCALNET_CHAIN, type SuiChain } from '@mysten/wallet-standard'
 import { VaultMessageTypes } from '#/types'
 import type { ZkSignAnyParams } from '#/types/wallet'
+import { toErrorMessage } from '#/utils/errorMessage'
 import { zkSignAny } from './zkSignAny'
 
 /**
@@ -42,7 +43,7 @@ export async function signForChain(
             ok?: boolean
             bytes?: string
             signature?: string
-            error?: string
+            error?: unknown
           }
         | undefined
 
@@ -53,17 +54,17 @@ export async function signForChain(
       }
 
       if (!response.ok || !response.bytes || !response.signature) {
-        const errorMessage = response.error || 'Failed to sign bytes'
-        throw new Error(errorMessage)
+        throw new Error(toErrorMessage(response.error, 'Failed to sign bytes'))
       }
 
       return { bytes: response.bytes, signature: response.signature }
     } catch (error) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : '[signForChain] Unknown error during localnet signing'
-      throw new Error(errorMessage)
+      throw new Error(
+        toErrorMessage(
+          error,
+          '[signForChain] Unknown error during localnet signing',
+        ),
+      )
     }
   }
 

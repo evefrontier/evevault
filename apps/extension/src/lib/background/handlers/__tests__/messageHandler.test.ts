@@ -103,6 +103,17 @@ function extensionSender(): chrome.runtime.MessageSender {
   }
 }
 
+function extensionTabSender(): chrome.runtime.MessageSender {
+  return {
+    origin: 'chrome-extension://extension-id',
+    url: 'chrome-extension://extension-id/sign_transaction.html',
+    tab: {
+      id: 77,
+      url: 'chrome-extension://extension-id/sign_transaction.html',
+    } as chrome.tabs.Tab,
+  }
+}
+
 describe('handleMessage route policy', () => {
   beforeEach(() => {
     installChromeMock()
@@ -163,6 +174,23 @@ describe('handleMessage route policy', () => {
     })
   })
 
+  it('rejects public dApp connect messages from extension tab senders', () => {
+    const sendResponse = vi.fn()
+
+    expect(
+      handleMessage(
+        { type: 'connect', id: 'connect-id' },
+        extensionTabSender(),
+        sendResponse,
+      ),
+    ).toBe(false)
+    expect(mocks.handleDappLogin).not.toHaveBeenCalled()
+    expect(sendResponse).toHaveBeenCalledWith({
+      type: 'auth_error',
+      error: { message: 'Unauthorized message sender' },
+    })
+  })
+
   it('rejects vault messages from tab senders', () => {
     const sendResponse = vi.fn()
 
@@ -193,6 +221,23 @@ describe('handleMessage route policy', () => {
     expect(mocks.handleLock).toHaveBeenCalledWith(
       { type: VaultMessageTypes.LOCK },
       extensionSender(),
+      sendResponse,
+    )
+  })
+
+  it('allows vault messages from extension tab senders', () => {
+    const sendResponse = vi.fn()
+
+    const result = handleMessage(
+      { type: VaultMessageTypes.ZK_EPH_SIGN_BYTES },
+      extensionTabSender(),
+      sendResponse,
+    )
+
+    expect(result).toBe(true)
+    expect(mocks.handleZkEphSignBytes).toHaveBeenCalledWith(
+      { type: VaultMessageTypes.ZK_EPH_SIGN_BYTES },
+      extensionTabSender(),
       sendResponse,
     )
   })
@@ -241,6 +286,29 @@ describe('handleMessage route policy', () => {
       ),
     ).toBe(false)
     expect(mocks.handleApprovePopup).not.toHaveBeenCalled()
+  })
+
+  it('routes wallet signing actions from tab senders even when URL metadata is incomplete', () => {
+    const sendResponse = vi.fn()
+    mocks.getDappRequestContext.mockReturnValueOnce(null)
+
+    expect(
+      handleMessage(
+        { action: WalletStandardMessageTypes.SIGN_TRANSACTION, id: 'sign-id' },
+        { tab: { id: 42 } } as chrome.runtime.MessageSender,
+        sendResponse,
+      ),
+    ).toBe(true)
+
+    expect(mocks.handleApprovePopup).toHaveBeenCalledWith(
+      { action: WalletStandardMessageTypes.SIGN_TRANSACTION, id: 'sign-id' },
+      expect.objectContaining({ tab: expect.objectContaining({ id: 42 }) }),
+      sendResponse,
+    )
+    expect(sendResponse).not.toHaveBeenCalledWith({
+      type: 'auth_error',
+      error: { message: 'Unauthorized message sender' },
+    })
   })
 
   it('revokes dApp permission and sends disconnect success to the page', async () => {

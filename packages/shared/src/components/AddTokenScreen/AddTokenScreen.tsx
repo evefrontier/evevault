@@ -79,7 +79,7 @@ export const AddTokenScreen: React.FC<AddTokenScreenProps> = ({
         value={inputValue}
         errorText={error || undefined}
         onChange={handleInputChange}
-        className="w-full rounded border border-[var(--matter-05)] bg-transparent px-3 py-2.5 text-[var(--neutral)] outline-none focus:border-[var(--matter-05)]"
+        className="w-full rounded border border-(--matter-05) bg-transparent px-3 py-2.5 text-(--neutral) outline-none focus:border-(--matter-05)"
       />
       <div className="flex gap-2">
         <Button disabled={!canAdd} onClick={handleAddToken}>
