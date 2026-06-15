@@ -35,6 +35,7 @@ import {
 } from '@mysten/wallet-standard'
 import type { WalletEventListener } from '@/lib/background/types'
 import { trySettle } from '@/lib/util/timeoutGuard'
+import { postToEveVaultBridge } from './bridgeTargetOrigin'
 import { getAccountsFromAuthSuccess } from './connectAuth'
 import { APPROVAL_TIMEOUT_MS, waitForVaultMessage } from './vaultMessages'
 import { WALLET_FEATURES } from './walletFeatures'
@@ -243,7 +244,7 @@ export class EveVaultWallet implements Wallet {
           reject(new Error('Connection request timed out'))
         }
       }, APPROVAL_TIMEOUT_MS)
-      window.postMessage({ __to: 'Eve Vault', type: 'connect', id }, '*')
+      postToEveVaultBridge({ __to: 'Eve Vault', type: 'connect', id })
     })
   }
 

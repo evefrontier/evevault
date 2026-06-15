@@ -60,7 +60,7 @@ describe('registerInjectedWallet', () => {
     expect(registrationWindow()[REGISTRATION_KEY]).toBe(true)
     expect(window.postMessage).toHaveBeenCalledWith(
       { __to: 'Eve Vault', type: 'get_current_chain' },
-      '*',
+      window.location.origin,
     )
   })
 

@@ -259,8 +259,8 @@ describe('handleApprovePopup', () => {
 
       await vi.waitFor(() => {
         expect(logMethods.error).toHaveBeenCalledWith(
-          'Failed to send success message',
-          expect.any(Error),
+          'Failed to send message to tab',
+          expect.objectContaining({ err: new Error('tab gone') }),
         )
       })
     })
@@ -290,8 +290,8 @@ describe('handleApprovePopup', () => {
 
       await vi.waitFor(() => {
         expect(logMethods.error).toHaveBeenCalledWith(
-          'Failed to send sign_and_execute error',
-          expect.any(Error),
+          'Failed to send message to tab',
+          expect.objectContaining({ err: new Error('tab gone') }),
         )
       })
     })
@@ -323,8 +323,8 @@ describe('handleApprovePopup', () => {
 
       await vi.waitFor(() => {
         expect(logMethods.error).toHaveBeenCalledWith(
-          'Failed to send sign_and_execute success',
-          expect.any(Error),
+          'Failed to send message to tab',
+          expect.objectContaining({ err: new Error('tab gone') }),
         )
       })
     })
@@ -470,8 +470,8 @@ describe('handleApprovePopup', () => {
 
       await vi.waitFor(() => {
         expect(logMethods.error).toHaveBeenCalledWith(
-          'Failed to send sign_transaction_error error',
-          expect.any(Error),
+          'Failed to send message to tab',
+          expect.objectContaining({ err: new Error('tab gone') }),
         )
       })
     })
@@ -488,8 +488,8 @@ describe('handleApprovePopup', () => {
 
       await vi.waitFor(() => {
         expect(logMethods.error).toHaveBeenCalledWith(
-          'Failed to send sign_and_execute error',
-          expect.any(Error),
+          'Failed to send message to tab',
+          expect.objectContaining({ err: new Error('tab gone') }),
         )
       })
     })

@@ -1,7 +1,6 @@
 import { storeJwt } from '@evevault/shared'
 import { createLogger } from '@evevault/shared/utils'
-import { decodeJwt } from 'jose'
-import type { IdTokenClaims } from 'oidc-client-ts'
+import { sendToTab } from '@/lib/background/messaging/tabMessaging'
 import type { WebUnlockMessage } from '@/lib/background/types'
 import { ensureMessageId } from './authHelpers'
 
@@ -19,19 +18,12 @@ export async function handleWebUnlock(
   try {
     const { jwt, tabId } = message
 
-    const decodedJwt = decodeJwt<IdTokenClaims>(jwt.id_token as string)
-
     await storeJwt(jwt)
 
     if (typeof tabId === 'number') {
-      chrome.tabs.sendMessage(tabId, {
+      sendToTab(tabId, {
         id,
         type: 'auth_success',
-        token: {
-          ...jwt,
-          email: decodedJwt.email,
-          userId: decodedJwt.sub,
-        },
       })
     }
   } catch (error) {
@@ -41,7 +33,7 @@ export async function handleWebUnlock(
       error instanceof Error ? error.message : 'Failed to complete web unlock'
     log.error('Web unlock failed', { error })
     if (tabId !== null) {
-      chrome.tabs.sendMessage(tabId, {
+      sendToTab(tabId, {
         id,
         type: 'auth_error',
         error: errorMessage,

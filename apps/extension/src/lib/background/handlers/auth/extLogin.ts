@@ -16,7 +16,7 @@ import {
   getCurrentChain,
   getCurrentChainFromStorage,
   sendAuthError,
-  sendAuthSuccess,
+  sendExtensionAuthSuccess,
 } from './authHelpers'
 import {
   checkKeeperUnlocked,
@@ -306,7 +306,7 @@ async function handleOAuthResponse({
       hasJwt: !!jwtResponse.id_token,
     })
     await storeJwt(jwtResponse, currentChain)
-    sendAuthSuccess(id, jwtResponse)
+    sendExtensionAuthSuccess(id, jwtResponse)
   } catch (error) {
     sendAuthError(id, error)
   }
