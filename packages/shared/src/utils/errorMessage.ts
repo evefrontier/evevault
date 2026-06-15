@@ -1,9 +1,8 @@
 const DEFAULT_ERROR_MESSAGE = 'Unknown error'
-const OBJECT_OBJECT_MESSAGE = '[object Object]'
 
 function cleanMessage(value: string): string | null {
   const message = value.trim()
-  if (!message || message === OBJECT_OBJECT_MESSAGE) return null
+  if (!message || message === '[object Object]') return null
   return message
 }
 

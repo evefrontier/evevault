@@ -65,6 +65,22 @@ describe('content bridge message validation', () => {
     ).toBe(true)
   })
 
+  it('allows sponsored transaction requests with string assembly ids', () => {
+    expect(
+      content.isAllowedPageMessage({
+        __to: 'Eve Vault',
+        id: 'sponsored-id',
+        action:
+          WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION,
+        message: {
+          action: 'mine',
+          assembly: '1',
+          assemblyType: 'type',
+        },
+      }),
+    ).toBe(true)
+  })
+
   it('rejects vault and malformed wallet messages from the page', () => {
     expect(
       content.isAllowedPageMessage({
@@ -86,6 +102,20 @@ describe('content bridge message validation', () => {
       content.isAllowedPageMessage({
         type: 'connect',
         id: 'connect-id',
+      }),
+    ).toBe(false)
+
+    expect(
+      content.isAllowedPageMessage({
+        __to: 'Eve Vault',
+        id: 'sponsored-id',
+        action:
+          WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION,
+        message: {
+          action: 'mine',
+          assembly: 1,
+          assemblyType: 'type',
+        },
       }),
     ).toBe(false)
   })

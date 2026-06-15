@@ -54,10 +54,20 @@ type DisconnectResponseMessage = {
   error?: unknown
 }
 
+/**
+ * Builds the normalized lookup key used by MESSAGE_ROUTES for fields that can
+ * route a message. Keeping the field in the key avoids collisions between
+ * identical action and type values.
+ */
 function routeKey(field: RouteField, value: string): string {
   return `${field}:${value}`
 }
 
+/**
+ * Starts an async route without blocking Chrome's message listener and keeps
+ * the channel open by returning true. Route-specific error handling can attach
+ * a fallback response through onError.
+ */
 function runAsyncRoute(
   name: string,
   task: Promise<unknown>,
@@ -70,6 +80,10 @@ function runAsyncRoute(
   return true
 }
 
+/**
+ * Sends a disconnect result through the immediate runtime response and, when
+ * the request came from a tab, mirrors it back through the content-script path.
+ */
 function sendDisconnectResponse(
   sender: MsgSender,
   sendResponse: SendResponse,
@@ -83,10 +97,18 @@ function sendDisconnectResponse(
   sendToTab(tabId, response)
 }
 
+/**
+ * Converts unexpected route failures into a stable message for dApp-facing
+ * disconnect errors.
+ */
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'Unknown error occurred'
 }
 
+/**
+ * Revokes the stored permission for the sender's dApp origin and reports the
+ * disconnect outcome using the Wallet Standard response shape.
+ */
 async function handleDappDisconnect(
   message: BackgroundMessage,
   sender: MsgSender,
@@ -112,6 +134,10 @@ async function handleDappDisconnect(
   })
 }
 
+/**
+ * Adapts vault-only handlers into MessageRoute entries that are restricted to
+ * extension senders and run through the shared async route wrapper.
+ */
 function vaultRoute(handler: VaultHandler): MessageRoute {
   return {
     access: 'extension',
@@ -176,10 +202,13 @@ const MESSAGE_ROUTES: Record<string, MessageRoute> = {
   )]: {
     access: 'dapp',
     handle: (m, s, sr) =>
-      handleSponsoredTransaction(
-        m as EveFrontierSponsoredTransactionMessage,
-        s,
-        sr,
+      runAsyncRoute(
+        'handleSponsoredTransaction',
+        handleSponsoredTransaction(
+          m as EveFrontierSponsoredTransactionMessage,
+          s,
+          sr,
+        ),
       ),
   },
   [routeKey('type', VaultMessageTypes.UNLOCK_VAULT)]:
@@ -211,6 +240,11 @@ const MESSAGE_ROUTES: Record<string, MessageRoute> = {
   ),
 }
 
+/**
+ * Finds the first route registered for the message's action or type field.
+ * Action is checked first because Wallet Standard signing requests route by
+ * action, while connect/disconnect and vault messages route by type.
+ */
 function findRoute(message: BackgroundMessage): MessageRoute | undefined {
   const candidates: Array<[RouteField, unknown]> = [
     ['action', message.action],
@@ -226,6 +260,11 @@ function findRoute(message: BackgroundMessage): MessageRoute | undefined {
   return undefined
 }
 
+/**
+ * Identifies messages that originate from this extension rather than a web
+ * page. Runtime messages without tab/origin/url metadata are also treated as
+ * internal extension messages.
+ */
 function isExtensionSender(sender: MsgSender): boolean {
   const senderUrls = [sender.origin, sender.url, sender.tab?.url]
   const extensionId = chrome.runtime?.id
@@ -241,10 +280,18 @@ function isExtensionSender(sender: MsgSender): boolean {
   return !sender.tab && !sender.origin && !sender.url
 }
 
+/**
+ * Identifies messages sent by a page tab, excluding extension UI tabs so
+ * extension pages cannot exercise dApp-only routes.
+ */
 function isDappSender(sender: MsgSender): boolean {
   return typeof sender.tab?.id === 'number' && !isExtensionSender(sender)
 }
 
+/**
+ * Emits a consistent authorization failure for routes called from the wrong
+ * sender class and logs only routing metadata.
+ */
 function rejectUnauthorized(
   message: BackgroundMessage,
   sendResponse: SendResponse,
@@ -261,12 +308,20 @@ function rejectUnauthorized(
   return false
 }
 
+/**
+ * Checks whether a sender is allowed to call a route based on the route's
+ * declared access policy.
+ */
 function hasRequiredSender(sender: MsgSender, access: RouteAccess): boolean {
   return access === 'extension'
     ? isExtensionSender(sender)
     : isDappSender(sender)
 }
 
+/**
+ * Broadcasts extension-originated account/chain change events to all tabs via
+ * the guarded tab messaging path.
+ */
 function broadcastChangeEvent(payload: unknown): void {
   log.info('Broadcasting chain change event', payload)
   chrome.tabs.query({}, (tabs) => {

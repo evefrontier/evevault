@@ -361,7 +361,7 @@ export class EveVaultWallet implements Wallet {
           WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION,
         message: {
           action: input.txAction,
-          assembly: input.assembly,
+          assembly: String(input.assembly),
           assemblyType: input.assemblyType,
           ...(hasMetadata && {
             metadata: {

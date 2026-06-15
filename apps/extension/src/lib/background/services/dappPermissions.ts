@@ -1,5 +1,5 @@
 import type { DappRequestContext } from '@evevault/shared/types'
-import { DAPP_PERMISSIONS_STORAGE_KEY } from '@evevault/shared/utils'
+import { DAPP_PERMISSIONS_STORAGE_KEY, isRecord } from '@evevault/shared/utils'
 import type { SuiChain } from '@mysten/wallet-standard'
 
 type DappPermissionRecord = DappRequestContext & {
@@ -24,10 +24,6 @@ export type DappPermissionRevocationResult =
 
 const ALLOWED_PAGE_PROTOCOLS = new Set(['http:', 'https:'])
 let permissionStoreUpdateQueue: Promise<unknown> = Promise.resolve()
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value != null && typeof value === 'object' && !Array.isArray(value)
-}
 
 function stringOrUndefined(value: unknown): string | undefined {
   return typeof value === 'string' && value.length > 0 ? value : undefined
@@ -104,17 +100,20 @@ function toPermissionRecord(
   }
 }
 
-async function readPermissionStore(): Promise<DappPermissionStore> {
-  const result = await chrome.storage.local.get(DAPP_PERMISSIONS_STORAGE_KEY)
-  const raw = result[DAPP_PERMISSIONS_STORAGE_KEY]
-  if (!isRecord(raw)) return {}
+function sanitizePermissionStore(value: unknown): DappPermissionStore {
+  if (!isRecord(value)) return {}
 
-  const entries = Object.entries(raw).flatMap(([origin, value]) => {
-    const record = toPermissionRecord(origin, value)
+  const entries = Object.entries(value).flatMap(([origin, entry]) => {
+    const record = toPermissionRecord(origin, entry)
     return record ? [[origin, record] as const] : []
   })
 
   return Object.fromEntries(entries)
+}
+
+async function readPermissionStore(): Promise<DappPermissionStore> {
+  const result = await chrome.storage.local.get(DAPP_PERMISSIONS_STORAGE_KEY)
+  return sanitizePermissionStore(result[DAPP_PERMISSIONS_STORAGE_KEY])
 }
 
 async function updatePermissionStore<T>(
@@ -123,9 +122,7 @@ async function updatePermissionStore<T>(
   const nextUpdate = permissionStoreUpdateQueue.then(async () => {
     const permissions = await readPermissionStore()
     const { store, result } = update(permissions)
-    await chrome.storage.local.set({
-      [DAPP_PERMISSIONS_STORAGE_KEY]: store,
-    })
+    await chrome.storage.local.set({ [DAPP_PERMISSIONS_STORAGE_KEY]: store })
     return result
   })
 

@@ -431,7 +431,7 @@ describe('EveVaultWallet', () => {
       EVEFRONTIER_SPONSORED_TRANSACTION
     ].signSponsoredTransaction({
       txAction: 'mine',
-      assembly: 1,
+      assembly: '1',
       assemblyType: 'type',
       metadata: {
         name: 'Name',
@@ -446,7 +446,7 @@ describe('EveVaultWallet', () => {
       action: WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION,
       message: {
         action: 'mine',
-        assembly: 1,
+        assembly: '1',
         assemblyType: 'type',
         metadata: {
           name: 'Name',
@@ -474,7 +474,7 @@ describe('EveVaultWallet', () => {
       EVEFRONTIER_SPONSORED_TRANSACTION
     ].signSponsoredTransaction({
       txAction: 'mine',
-      assembly: 1,
+      assembly: '1',
       assemblyType: 'type',
       metadata: {},
     })
@@ -485,8 +485,36 @@ describe('EveVaultWallet', () => {
       action: WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION,
       message: {
         action: 'mine',
-        assembly: 1,
+        assembly: '1',
         assemblyType: 'type',
+      },
+    })
+
+    dispatchVaultMessage({
+      type: 'sign_success',
+      digest: 'digest',
+      effects: 'effects',
+    })
+
+    await expect(promise).resolves.toEqual({
+      digest: 'digest',
+      effects: 'effects',
+    })
+  })
+
+  it('normalizes sponsored transaction assembly ids to strings', async () => {
+    const wallet = new EveVaultWallet()
+    const promise = wallet.features[
+      EVEFRONTIER_SPONSORED_TRANSACTION
+    ].signSponsoredTransaction({
+      txAction: 'mine',
+      assembly: 1 as unknown as string,
+      assemblyType: 'type',
+    })
+
+    expect(lastPostedMessage()).toMatchObject({
+      message: {
+        assembly: '1',
       },
     })
 

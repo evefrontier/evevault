@@ -131,6 +131,7 @@ describe('handleMessage route policy', () => {
     mocks.handleExtLogin.mockResolvedValue(undefined)
     mocks.handleWebUnlock.mockResolvedValue(undefined)
     mocks.handleApprovePopup.mockReturnValue(true)
+    mocks.handleSponsoredTransaction.mockResolvedValue(true)
     mocks.handleGetPublicKey.mockResolvedValue(true)
     mocks.revokeDappPermission.mockResolvedValue({
       ok: true,
@@ -309,6 +310,26 @@ describe('handleMessage route policy', () => {
       type: 'auth_error',
       error: { message: 'Unauthorized message sender' },
     })
+  })
+
+  it('routes sponsored signing actions through the async route wrapper', () => {
+    const sendResponse = vi.fn()
+    const message = {
+      action: WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION,
+      id: 'sponsored-id',
+      message: {
+        action: 'mine',
+        assembly: '1',
+        assemblyType: 'type',
+      },
+    }
+
+    expect(handleMessage(message, dappSender(), sendResponse)).toBe(true)
+    expect(mocks.handleSponsoredTransaction).toHaveBeenCalledWith(
+      message,
+      expect.objectContaining({ tab: expect.objectContaining({ id: 42 }) }),
+      sendResponse,
+    )
   })
 
   it('revokes dApp permission and sends disconnect success to the page', async () => {

@@ -1,10 +1,9 @@
-/** Individual storage keys for use in stores and auth. */
+/** Individual storage keys for persisted stores and auth. */
 export const AUTH_STORAGE_KEY = 'evevault:auth'
 export const DEVICE_STORAGE_KEY = 'evevault:device'
 export const CONTEXT_STORAGE_KEY = 'evevault:context'
 export const TOKENLIST_STORAGE_KEY = 'evevault:tokenlist'
 export const JWT_STORAGE_KEY = 'evevault:jwt'
-export const DAPP_PERMISSIONS_STORAGE_KEY = 'evevault:dapp-permissions'
 
 /** Persist keys used by Zustand and auth (localStorage / chrome.storage.local). Cleared on reset. */
 export const EVEVAULT_STORAGE_KEYS = [
@@ -15,7 +14,10 @@ export const EVEVAULT_STORAGE_KEYS = [
   JWT_STORAGE_KEY,
 ] as const
 
-/** Extension-only chrome.storage.local keys cleared on reset (not covered by cleanupExtensionStorage). */
+/** Extension-only persisted dApp permission store. */
+export const DAPP_PERMISSIONS_STORAGE_KEY = 'dappPermissions'
+
+/** Extension-only chrome.storage.local keys explicitly cleared on vault reset. */
 export const EXTENSION_EXTRA_KEYS = [
   'pendingAction',
   'transactionResult',

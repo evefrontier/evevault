@@ -150,7 +150,7 @@ async function handleSponsoredTransaction(
     const { apiBaseUrl, tenant } = getApiContext(jwt.id_token)
 
     const response = await fetch(
-      `${apiBaseUrl}/transactions/sponsored/${encodedAssemblyType}/${encodedAction}`,
+      `${apiBaseUrl}/v2/transactions/sponsored/${encodedAssemblyType}/${encodedAction}`,
       {
         method: 'POST',
         body: JSON.stringify({
