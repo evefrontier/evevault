@@ -55,19 +55,29 @@ export function usePendingSignAction<TPending>({
       })
   }, [missingError, parsePending])
 
-  const storeErrorResult = async (
-    errorMessage: string,
+  // Writes the popup's result to storage, always stamping the windowId and the
+  // per-request id so the background can bind the result to its originating
+  // request (NEW-E). All result writers must go through here.
+  const storeResult = async (
+    result: Record<string, unknown>,
     targetPending = pending,
   ) => {
     if (!targetPending) return
 
     await chrome.storage.local.set({
       transactionResult: {
+        ...result,
         windowId: getWindowId(targetPending),
-        status: 'error',
-        error: errorMessage,
+        requestId: (targetPending as { requestId?: string }).requestId,
       },
     })
+  }
+
+  const storeErrorResult = async (
+    errorMessage: string,
+    targetPending = pending,
+  ) => {
+    await storeResult({ status: 'error', error: errorMessage }, targetPending)
   }
 
   const handleReject = async () => {
@@ -90,6 +100,7 @@ export function usePendingSignAction<TPending>({
     setError,
     auth,
     handleReject,
+    storeResult,
     storeErrorResult,
   }
 }

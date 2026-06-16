@@ -84,6 +84,7 @@ function SignSponsoredTransaction() {
     setError,
     auth,
     handleReject,
+    storeResult,
     storeErrorResult,
   } = usePendingSignAction({
     parsePending: parsePendingSponsoredAction,
@@ -111,13 +112,10 @@ function SignSponsoredTransaction() {
       )
       const { signature: zkSignature } = await sign('TransactionData', txbBytes)
 
-      await chrome.storage.local.set({
-        transactionResult: {
-          windowId: pending.windowId,
-          status: 'signed',
-          zkSignature,
-          preparationId: pending.preparationId,
-        },
+      await storeResult({
+        status: 'signed',
+        zkSignature,
+        preparationId: pending.preparationId,
       })
       window.close()
     } catch (err) {

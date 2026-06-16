@@ -3,6 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { handleApprovePopup } from '@/lib/background/handlers/walletHandlers'
 import type { WalletActionMessage } from '@/lib/background/types'
 
+// Constant requestId so tests can echo back the value the handler mints (it
+// binds the popup result to windowId + requestId, see NEW-E).
+const TEST_REQUEST_ID = '11111111-1111-1111-1111-111111111111'
+
 const { mockOpenPopupWindow, mockRequireDappPermission, logMethods } =
   vi.hoisted(() => ({
     mockOpenPopupWindow: vi.fn(),
@@ -74,6 +78,7 @@ describe('handleApprovePopup', () => {
       allowed: true,
       context: { origin: 'https://example.test' },
     })
+    vi.spyOn(crypto, 'randomUUID').mockReturnValue(TEST_REQUEST_ID)
     installChromeMock(storageListeners)
   })
 
@@ -200,6 +205,7 @@ describe('handleApprovePopup', () => {
         transactionResult: {
           newValue: {
             windowId: 99,
+            requestId: TEST_REQUEST_ID,
             status: 'signed',
             bytes: new Uint8Array([1, 2]),
             signature: 'sig-bytes',
@@ -232,6 +238,7 @@ describe('handleApprovePopup', () => {
         transactionResult: {
           newValue: {
             windowId: 99,
+            requestId: TEST_REQUEST_ID,
             status: 'signed_and_executed',
             bytes: new Uint8Array([9]),
             signature: 'sig',
@@ -266,6 +273,7 @@ describe('handleApprovePopup', () => {
         transactionResult: {
           newValue: {
             windowId: 99,
+            requestId: TEST_REQUEST_ID,
             status: 'signed_and_executed',
             bytes: new Uint8Array([1]),
             signature: 'sig',
@@ -297,6 +305,7 @@ describe('handleApprovePopup', () => {
         transactionResult: {
           newValue: {
             windowId: 99,
+            requestId: TEST_REQUEST_ID,
             status: 'signed',
             bytes: new Uint8Array([1]),
             signature: 'sig',
@@ -329,6 +338,7 @@ describe('handleApprovePopup', () => {
         transactionResult: {
           newValue: {
             windowId: 99,
+            requestId: TEST_REQUEST_ID,
             status: 'signed_and_executed',
             bytes: new Uint8Array([1]),
             signature: 'sig',
@@ -361,6 +371,7 @@ describe('handleApprovePopup', () => {
         transactionResult: {
           newValue: {
             windowId: 99,
+            requestId: TEST_REQUEST_ID,
             status: 'signed_and_executed',
             bytes: new Uint8Array([1]),
             signature: 'sig',
@@ -390,6 +401,7 @@ describe('handleApprovePopup', () => {
         transactionResult: {
           newValue: {
             windowId: 99,
+            requestId: TEST_REQUEST_ID,
             status: 'error',
             error: errorPayload,
           },
@@ -430,6 +442,7 @@ describe('handleApprovePopup', () => {
         transactionResult: {
           newValue: {
             windowId: 99,
+            requestId: TEST_REQUEST_ID,
             status: 'error',
             error: 'User said no',
           },
@@ -601,6 +614,32 @@ describe('handleApprovePopup', () => {
       expect(chrome.storage.onChanged.removeListener).not.toHaveBeenCalled()
     })
 
+    it('ignores a result whose requestId does not match the request', async () => {
+      const wrapped = await getWrappedListener(
+        {
+          id: 'mismatched-request',
+          action: WalletStandardMessageTypes.SIGN_TRANSACTION,
+        },
+        { tab: { id: 1 } },
+      )
+
+      wrapped({
+        transactionResult: {
+          newValue: {
+            windowId: 99,
+            requestId: 'a-different-request-id',
+            status: 'signed',
+            bytes: new Uint8Array([1]),
+            signature: 'sig',
+          },
+        },
+      })
+
+      expect(chrome.tabs.sendMessage).not.toHaveBeenCalled()
+      expect(chrome.storage.local.remove).not.toHaveBeenCalled()
+      expect(chrome.storage.onChanged.removeListener).not.toHaveBeenCalled()
+    })
+
     it('does nothing on success when sender has no tab id', async () => {
       const wrapped = await getWrappedListener(
         { action: WalletStandardMessageTypes.SIGN_TRANSACTION },
@@ -611,6 +650,7 @@ describe('handleApprovePopup', () => {
         transactionResult: {
           newValue: {
             windowId: 99,
+            requestId: TEST_REQUEST_ID,
             status: 'signed',
             bytes: new Uint8Array([1]),
             signature: 'sig',
@@ -662,6 +702,7 @@ describe('handleApprovePopup', () => {
         transactionResult: {
           newValue: {
             windowId: 99,
+            requestId: TEST_REQUEST_ID,
             status: 'signed',
             bytes: new Uint8Array([1]),
             signature: 's',

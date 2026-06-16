@@ -44,6 +44,8 @@ export interface PendingSponsoredTransaction {
   senderTabId?: number
   timestamp: number
   windowId: number
+  /** Per-approval id binding the popup's result to this request (see VaultMessage). */
+  requestId?: string
   sponsoredTxB64: string
   preparationId: string
   chain: SuiChain
@@ -65,6 +67,12 @@ export interface VaultMessage {
   senderTabId: number
   timestamp: number
   windowId: number
+  /**
+   * Per-approval id minted by the background when the popup is opened. The popup
+   * echoes it back in transactionResult so the background can bind the result to
+   * this specific request (not just a reused windowId).
+   */
+  requestId?: string
   __to: 'Eve Vault'
   dapp?: DappRequestContext
 }

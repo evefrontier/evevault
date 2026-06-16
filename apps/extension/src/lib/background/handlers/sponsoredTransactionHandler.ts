@@ -192,12 +192,15 @@ async function handleSponsoredTransaction(
       throw new Error('Failed to open sponsored transaction popup')
     }
 
+    const requestId = crypto.randomUUID()
+
     const pendingAction: PendingSponsoredTransaction = {
       action: WalletActions.SIGN_SPONSORED_TRANSACTION,
       id: message.id,
       senderTabId,
       timestamp: Date.now(),
       windowId,
+      requestId,
       sponsoredTxB64: sponsoredTxReturn.bcsDataB64Bytes,
       preparationId: sponsoredTxReturn.preparationId,
       chain,
@@ -224,7 +227,12 @@ async function handleSponsoredTransaction(
       [key: string]: chrome.storage.StorageChange
     }) => {
       const result = changes.transactionResult?.newValue
-      if (!result || result.windowId !== windowId) return
+      if (
+        !result ||
+        result.windowId !== windowId ||
+        result.requestId !== requestId
+      )
+        return
 
       detachSponsoredListener()
       chrome.storage.local.remove(['pendingAction', 'transactionResult'])

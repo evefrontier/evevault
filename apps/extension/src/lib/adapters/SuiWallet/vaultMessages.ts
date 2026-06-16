@@ -31,6 +31,10 @@ export function waitForVaultMessage<T>({
     let timeoutId: ReturnType<typeof setTimeout> | undefined
 
     function onMsg(e: MessageEvent) {
+      // The content-script bridge re-posts responses to the page with the page's
+      // own origin (see content.ts / bridgeTargetOrigin). Drop anything from a
+      // different origin so a cross-origin frame can't spoof a vault response.
+      if (e.origin !== window.location.origin) return
       const m: Record<string, unknown> = e.data || {}
       if (m.__from !== 'Eve Vault' || m.id !== id) return
       if (m.type === successType && trySettle(state, onMsg, timeoutId)) {

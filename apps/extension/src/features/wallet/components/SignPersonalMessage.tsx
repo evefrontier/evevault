@@ -56,6 +56,7 @@ function SignPersonalMessage() {
     setError,
     auth,
     handleReject,
+    storeResult,
     storeErrorResult,
   } = usePendingSignAction({
     parsePending: parsePendingMessage,
@@ -75,7 +76,7 @@ function SignPersonalMessage() {
       setLoading(true)
       setError(null)
 
-      const { message, windowId } = pendingMessage
+      const { message } = pendingMessage
 
       assertCanSign(auth, isLocalnet)
 
@@ -85,14 +86,7 @@ function SignPersonalMessage() {
 
       const { bytes, signature } = await sign('PersonalMessage', messageBytes)
 
-      await chrome.storage.local.set({
-        transactionResult: {
-          windowId,
-          status: 'signed',
-          bytes,
-          signature,
-        },
-      })
+      await storeResult({ status: 'signed', bytes, signature })
 
       log.debug('Signed personal message')
 

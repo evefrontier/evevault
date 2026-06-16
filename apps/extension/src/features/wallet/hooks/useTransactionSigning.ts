@@ -7,6 +7,9 @@ const log = createLogger()
 
 export type SignResult = Awaited<ReturnType<typeof prepareAndSignTransaction>>
 
+/** Writes a transactionResult, stamping windowId + requestId (see usePendingSignAction). */
+export type StoreResult = (result: Record<string, unknown>) => Promise<void>
+
 export function useTransactionSigning() {
   const { getSenderAddress, isLocalnet, sign, suiClient } =
     useWalletSigningContext()
@@ -18,6 +21,7 @@ export function useTransactionSigning() {
     setError,
     auth,
     handleReject,
+    storeResult,
     storeErrorResult,
   } = usePendingTransaction()
 
@@ -59,6 +63,7 @@ export function useTransactionSigning() {
     auth,
     handleReject,
     withSigning,
+    storeResult,
     suiClient,
   }
 }

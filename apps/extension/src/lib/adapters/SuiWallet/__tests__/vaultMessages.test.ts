@@ -23,6 +23,7 @@ describe('waitForVaultMessage', () => {
 
     window.dispatchEvent(
       new MessageEvent('message', {
+        origin: window.location.origin,
         data: {
           __from: 'Elsewhere',
           id: 'request-1',
@@ -33,6 +34,7 @@ describe('waitForVaultMessage', () => {
     )
     window.dispatchEvent(
       new MessageEvent('message', {
+        origin: window.location.origin,
         data: {
           __from: 'Eve Vault',
           id: 'other-request',
@@ -43,6 +45,7 @@ describe('waitForVaultMessage', () => {
     )
     window.dispatchEvent(
       new MessageEvent('message', {
+        origin: window.location.origin,
         data: {
           __from: 'Eve Vault',
           id: 'request-1',
@@ -71,6 +74,7 @@ describe('waitForVaultMessage', () => {
 
     window.dispatchEvent(
       new MessageEvent('message', {
+        origin: window.location.origin,
         data: {
           __from: 'Eve Vault',
           id: 'request-2',
@@ -95,6 +99,7 @@ describe('waitForVaultMessage', () => {
 
     window.dispatchEvent(
       new MessageEvent('message', {
+        origin: window.location.origin,
         data: {
           __from: 'Eve Vault',
           id: 'request-structured-error',
@@ -119,6 +124,7 @@ describe('waitForVaultMessage', () => {
 
     window.dispatchEvent(
       new MessageEvent('message', {
+        origin: window.location.origin,
         data: {
           __from: 'Eve Vault',
           id: 'request-nested-error',
@@ -143,6 +149,7 @@ describe('waitForVaultMessage', () => {
 
     window.dispatchEvent(
       new MessageEvent('message', {
+        origin: window.location.origin,
         data: {
           __from: 'Eve Vault',
           id: 'request-object-string-error',
@@ -167,6 +174,7 @@ describe('waitForVaultMessage', () => {
 
     window.dispatchEvent(
       new MessageEvent('message', {
+        origin: window.location.origin,
         data: {
           __from: 'Eve Vault',
           id: 'request-empty-error',
@@ -177,6 +185,34 @@ describe('waitForVaultMessage', () => {
     )
 
     await expect(promise).rejects.toThrow('Request failed')
+  })
+
+  it('ignores a matching response from a different origin', async () => {
+    vi.useFakeTimers()
+    const promise = waitForVaultMessage({
+      id: 'request-cross-origin',
+      successType: 'ok',
+      errorType: 'error',
+      outbound: { __to: 'Eve Vault', id: 'request-cross-origin' },
+      mapSuccess: (message) => message.result as string,
+      timeoutMessage: 'timed out',
+    })
+    const expectation = expect(promise).rejects.toThrow('timed out')
+
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        origin: 'https://evil.example',
+        data: {
+          __from: 'Eve Vault',
+          id: 'request-cross-origin',
+          type: 'ok',
+          result: 'spoofed',
+        },
+      }),
+    )
+
+    await vi.advanceTimersByTimeAsync(APPROVAL_TIMEOUT_MS)
+    await expectation
   })
 
   it('rejects when no matching response arrives before the timeout', async () => {

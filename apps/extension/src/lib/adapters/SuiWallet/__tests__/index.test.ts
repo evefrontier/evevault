@@ -53,6 +53,7 @@ describe('EveVaultWallet', () => {
   function dispatchVaultMessage(data: Record<string, unknown>) {
     window.dispatchEvent(
       new MessageEvent('message', {
+        origin: window.location.origin,
         data: {
           __from: 'Eve Vault',
           id: 'request-id',
