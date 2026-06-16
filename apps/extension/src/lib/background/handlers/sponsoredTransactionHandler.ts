@@ -1,4 +1,8 @@
-import { WalletStandardMessageTypes } from '@evevault/shared'
+import {
+  type PendingSponsoredTransaction,
+  WalletActions,
+  WalletStandardMessageTypes,
+} from '@evevault/shared'
 import { getApiContext, getJwt, getStoredChain } from '@evevault/shared/auth'
 import { createLogger } from '@evevault/shared/utils'
 import { sendToTab } from '@/lib/background/messaging/tabMessaging'
@@ -7,8 +11,21 @@ import type {
   EveFrontierSponsoredTransactionMessage,
   SponsoredTxReturn,
 } from '@/lib/background/types'
+import { requireSigningPermission } from './signingPermissions'
 
 const log = createLogger()
+
+// Options for executeSponsoredTx — bundles the API context and the signed result
+// so the function signature stays below qlty's parameter count threshold.
+type ExecuteSponsoredTxOptions = {
+  apiBaseUrl: string
+  tenant: string
+  idToken: string
+  preparationId: string
+  zkSignature: string
+  senderTabId: number
+  messageId: string
+}
 
 // Sends a sign_sponsored_transaction_error to the originating tab, or logs a
 // warning if there's no tab to send to (e.g. request came from a background context).
@@ -26,18 +43,6 @@ function sendSponsoredError(
   } else {
     log.warn('No sender tab id, cannot send error to page', { error })
   }
-}
-
-// Options for executeSponsoredTx — bundles the API context and the signed result
-// so the function signature stays below qlty's parameter count threshold.
-type ExecuteSponsoredTxOptions = {
-  apiBaseUrl: string
-  tenant: string
-  idToken: string
-  preparationId: string
-  zkSignature: string
-  senderTabId: number
-  messageId: string
 }
 
 // POSTs the signed sponsored transaction to the backend execute endpoint and
@@ -118,6 +123,12 @@ async function handleSponsoredTransaction(
       throw new Error(`Assembly not found: ${assembly}, ${assemblyType}`)
     }
 
+    const permission = await requireSigningPermission(sender, chain)
+    if (!permission.allowed) {
+      sendSponsoredError(senderTabId, message.id, permission.error)
+      return true
+    }
+
     log.info('Eve Frontier sponsored transaction request received', {
       action,
       assembly,
@@ -139,7 +150,7 @@ async function handleSponsoredTransaction(
     const { apiBaseUrl, tenant } = getApiContext(jwt.id_token)
 
     const response = await fetch(
-      `${apiBaseUrl}/transactions/sponsored/${encodedAssemblyType}/${encodedAction}`,
+      `${apiBaseUrl}/v2/transactions/sponsored/${encodedAssemblyType}/${encodedAction}`,
       {
         method: 'POST',
         body: JSON.stringify({
@@ -181,18 +192,23 @@ async function handleSponsoredTransaction(
       throw new Error('Failed to open sponsored transaction popup')
     }
 
-    await chrome.storage.local.set({
-      pendingAction: {
-        action: actionType,
-        id: message.id,
-        senderTabId,
-        timestamp: Date.now(),
-        windowId,
-        sponsoredTxB64: sponsoredTxReturn.bcsDataB64Bytes,
-        preparationId: sponsoredTxReturn.preparationId,
-        chain,
-      },
-    })
+    const pendingAction: PendingSponsoredTransaction = {
+      action: WalletActions.SIGN_SPONSORED_TRANSACTION,
+      id: message.id,
+      senderTabId,
+      timestamp: Date.now(),
+      windowId,
+      sponsoredTxB64: sponsoredTxReturn.bcsDataB64Bytes,
+      preparationId: sponsoredTxReturn.preparationId,
+      chain,
+      dapp: permission.context,
+      sponsoredAction: action,
+      assembly,
+      assemblyType,
+      metadata,
+    }
+
+    await chrome.storage.local.set({ pendingAction })
 
     let timeoutId: ReturnType<typeof setTimeout>
     let registeredListener: (changes: {

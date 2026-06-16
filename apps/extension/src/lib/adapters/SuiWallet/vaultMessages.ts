@@ -1,3 +1,4 @@
+import { toErrorMessage } from '@evevault/shared/utils'
 import { trySettle } from '@/lib/util/timeoutGuard'
 import { postToEveVaultBridge } from './bridgeTargetOrigin'
 
@@ -37,7 +38,7 @@ export function waitForVaultMessage<T>({
         return
       }
       if (m.type === errorType && trySettle(state, onMsg, timeoutId)) {
-        reject(new Error(getVaultMessageErrorMessage(m.error)))
+        reject(new Error(toErrorMessage(m.error, 'Request failed')))
       }
     }
 
@@ -47,17 +48,4 @@ export function waitForVaultMessage<T>({
     }, APPROVAL_TIMEOUT_MS)
     postToEveVaultBridge(outbound)
   })
-}
-
-/**
- * Accepts both legacy string errors and structured error objects because the
- * extension bridge has emitted both shapes across wallet-standard flows.
- */
-function getVaultMessageErrorMessage(error: unknown): string {
-  if (typeof error === 'string' && error.length > 0) return error
-  if (error && typeof error === 'object' && 'message' in error) {
-    const { message } = error as { message?: unknown }
-    if (typeof message === 'string' && message.length > 0) return message
-  }
-  return 'Request failed'
 }

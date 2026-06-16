@@ -3,18 +3,24 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { handleApprovePopup } from '@/lib/background/handlers/walletHandlers'
 import type { WalletActionMessage } from '@/lib/background/types'
 
-const { mockOpenPopupWindow, logMethods } = vi.hoisted(() => ({
-  mockOpenPopupWindow: vi.fn(),
-  logMethods: {
-    info: vi.fn(),
-    error: vi.fn(),
-    warn: vi.fn(),
-    debug: vi.fn(),
-  },
-}))
+const { mockOpenPopupWindow, mockRequireDappPermission, logMethods } =
+  vi.hoisted(() => ({
+    mockOpenPopupWindow: vi.fn(),
+    mockRequireDappPermission: vi.fn(),
+    logMethods: {
+      info: vi.fn(),
+      error: vi.fn(),
+      warn: vi.fn(),
+      debug: vi.fn(),
+    },
+  }))
 
 vi.mock('@/lib/background/services/popupWindow', () => ({
   openPopupWindow: (action: string) => mockOpenPopupWindow(action),
+}))
+
+vi.mock('@/lib/background/services/dappPermissions', () => ({
+  requireDappPermission: mockRequireDappPermission,
 }))
 
 vi.mock('@evevault/shared/utils', async (importOriginal) => {
@@ -64,6 +70,10 @@ describe('handleApprovePopup', () => {
   beforeEach(() => {
     storageListeners = []
     mockOpenPopupWindow.mockResolvedValue(99)
+    mockRequireDappPermission.mockResolvedValue({
+      allowed: true,
+      context: { origin: 'https://example.test' },
+    })
     installChromeMock(storageListeners)
   })
 
@@ -89,6 +99,38 @@ describe('handleApprovePopup', () => {
     }
     return wrapped
   }
+
+  describe('dApp permissions', () => {
+    it('rejects signing when the requesting origin is not connected', async () => {
+      mockRequireDappPermission.mockResolvedValueOnce({
+        allowed: false,
+        error: 'Connect this site to EVE Vault before requesting a signature.',
+      })
+      const sendResponse = vi.fn()
+
+      const result = await handleApprovePopup(
+        {
+          id: 'req-denied',
+          action: WalletStandardMessageTypes.SIGN_TRANSACTION,
+        },
+        { tab: { id: 42 } } as chrome.runtime.MessageSender,
+        sendResponse,
+      )
+
+      expect(result).toBe(false)
+      expect(mockOpenPopupWindow).not.toHaveBeenCalled()
+      expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(42, {
+        type: 'sign_transaction_error',
+        error: 'Connect this site to EVE Vault before requesting a signature.',
+        id: 'req-denied',
+      })
+      expect(sendResponse).toHaveBeenCalledWith({
+        type: 'sign_transaction_error',
+        error: 'Connect this site to EVE Vault before requesting a signature.',
+        id: 'req-denied',
+      })
+    })
+  })
 
   describe('when opening the popup fails', () => {
     it('calls sendResponse with sign_transaction_error when windowId is falsy', async () => {
@@ -126,7 +168,7 @@ describe('handleApprovePopup', () => {
       })
     })
 
-    it('calls sendResponse with a generic message when openPopupWindow throws a non-Error', async () => {
+    it('calls sendResponse with the message when openPopupWindow throws a string', async () => {
       mockOpenPopupWindow.mockRejectedValue('boom')
       const sendResponse = vi.fn()
 
@@ -138,7 +180,8 @@ describe('handleApprovePopup', () => {
 
       expect(sendResponse).toHaveBeenCalledWith({
         type: 'sign_transaction_error',
-        error: 'Unknown error occurred',
+        error: 'boom',
+        id: undefined,
       })
     })
   })
@@ -334,14 +377,14 @@ describe('handleApprovePopup', () => {
     async function fireTransactionError(
       message: WalletActionMessage,
       sender: { tab?: { id?: number } } = { tab: { id: 42 } },
-      errorText = 'User said no',
+      errorPayload: unknown = 'User said no',
     ) {
       const wrapped = await getWrappedListener(message, sender)
       wrapped({
         transactionResult: {
           newValue: {
             status: 'error',
-            error: errorText,
+            error: errorPayload,
           },
         },
       })
@@ -402,6 +445,23 @@ describe('handleApprovePopup', () => {
         id: 'req-2',
       })
       expect(logMethods.warn).not.toHaveBeenCalled()
+    })
+
+    it('normalizes structured error payloads before sending to the page', async () => {
+      await fireTransactionError(
+        {
+          id: 'req-structured-error',
+          action: WalletStandardMessageTypes.SIGN_PERSONAL_MESSAGE,
+        },
+        { tab: { id: 42 } },
+        { message: 'approval object failure' },
+      )
+
+      expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(42, {
+        type: 'sign_personal_message_error',
+        error: 'approval object failure',
+        id: 'req-structured-error',
+      })
     })
 
     it('maps unknown action to sign_error and logs a warning', async () => {

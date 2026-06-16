@@ -1,29 +1,18 @@
 import { Text } from '@evevault/shared/components'
+import type { PendingSponsoredTransaction } from '@evevault/shared/types'
 import { createLogger } from '@evevault/shared/utils'
 import { useWalletSigningContext } from '@evevault/shared/wallet'
-import type { SuiChain } from '@mysten/wallet-standard'
 import { usePendingSignAction } from '@/features/wallet/hooks'
 import { SignRequestView } from './SignRequestView'
 
 const log = createLogger()
 
-export type PendingSponsoredAction = {
-  action: string
-  id?: string
-  senderTabId?: number
-  timestamp: number
-  windowId: number
-  sponsoredTxB64: string
-  preparationId: string
-  chain: SuiChain
-}
-
 function parsePendingSponsoredAction(
   pendingAction: unknown,
-): PendingSponsoredAction {
-  const action = pendingAction as Partial<PendingSponsoredAction>
+): PendingSponsoredTransaction {
+  const action = pendingAction as Partial<PendingSponsoredTransaction>
   if (action.sponsoredTxB64 != null && action.preparationId != null) {
-    return action as PendingSponsoredAction
+    return action as PendingSponsoredTransaction
   }
 
   throw new Error('No pending sponsored transaction found')
@@ -39,6 +28,27 @@ function getSponsoredApproveError(
     return 'Device key not found. Unlock the wallet and try again.'
   if (!auth.maxEpoch) return 'Max epoch not set. Re-authenticate and try again.'
   return null
+}
+
+function SponsoredDetail({
+  label,
+  value,
+}: {
+  label: string
+  value: string | undefined
+}) {
+  if (!value) return null
+
+  return (
+    <div className="grid grid-cols-[82px_minmax(0,1fr)] gap-2 text-left">
+      <span className="text-[10px] uppercase text-(--grey-neutral)">
+        {label}
+      </span>
+      <span className="truncate text-xs text-(--neutral)" title={value}>
+        {value}
+      </span>
+    </div>
+  )
 }
 
 function SignSponsoredTransaction() {
@@ -107,10 +117,32 @@ function SignSponsoredTransaction() {
       error={error}
       loadingMessage="Loading..."
       chain={pending?.chain}
+      dapp={pending?.dapp}
+      requestKind="Sponsored transaction"
       onApprove={handleApprove}
       onReject={handleReject}
     >
-      <Text>Sign this sponsored transaction to continue.</Text>
+      <div className="w-[320px] max-w-[88vw] border border-(--matter-05) p-3">
+        <Text size="small" color="grey-neutral">
+          Sponsored request
+        </Text>
+        <div className="mt-2 flex flex-col gap-2">
+          <SponsoredDetail label="Action" value={pending?.sponsoredAction} />
+          <SponsoredDetail
+            label="Assembly"
+            value={
+              pending?.assembly != null ? String(pending.assembly) : undefined
+            }
+          />
+          <SponsoredDetail label="Type" value={pending?.assemblyType} />
+          <SponsoredDetail label="URL" value={pending?.metadata?.url} />
+          <SponsoredDetail label="Name" value={pending?.metadata?.name} />
+          <SponsoredDetail
+            label="Description"
+            value={pending?.metadata?.description}
+          />
+        </div>
+      </div>
     </SignRequestView>
   )
 }

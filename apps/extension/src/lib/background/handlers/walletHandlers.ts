@@ -1,11 +1,13 @@
 import { WalletStandardMessageTypes } from '@evevault/shared'
-import { createLogger } from '@evevault/shared/utils'
+import { createLogger, toErrorMessage } from '@evevault/shared/utils'
+import type { SuiChain } from '@mysten/wallet-standard'
 import {
   type SigningErrorType,
   sendToTab,
 } from '@/lib/background/messaging/tabMessaging'
 import { openPopupWindow } from '@/lib/background/services/popupWindow'
 import type { WalletActionMessage } from '@/lib/background/types'
+import { requireSigningPermission } from './signingPermissions'
 
 const log = createLogger()
 
@@ -18,6 +20,35 @@ function getSignErrorType(action: string): SigningErrorType {
     return 'sign_personal_message_error'
   log.warn('Unknown action', { action })
   return 'sign_error'
+}
+
+function getRequestedChain(message: WalletActionMessage): SuiChain | undefined {
+  return typeof message.chain === 'string'
+    ? (message.chain as SuiChain)
+    : undefined
+}
+
+function getImmediateSigningErrorType(action: string): SigningErrorType {
+  return action === WalletStandardMessageTypes.SIGN_AND_EXECUTE_TRANSACTION
+    ? 'sign_and_execute_transaction_error'
+    : getSignErrorType(action)
+}
+
+function sendImmediateSigningError(
+  senderTabId: number | undefined,
+  action: string,
+  messageId: string | undefined,
+  error: string,
+): void {
+  const errorType = getImmediateSigningErrorType(action)
+
+  if (typeof senderTabId !== 'number' || !messageId) return
+
+  sendToTab(senderTabId, {
+    type: errorType,
+    error,
+    id: messageId,
+  })
 }
 
 // Sends the signed result back to the originating tab. Sign-and-execute has a
@@ -71,17 +102,18 @@ function sendApprovalError(
   action: string,
   messageId: string,
 ): void {
-  if (isSignAndExecute && senderTabId) {
+  const error = toErrorMessage(result.error, 'Unknown error occurred')
+  if (isSignAndExecute && typeof senderTabId === 'number') {
     sendToTab(senderTabId, {
       type: 'sign_and_execute_transaction_error',
-      error: result.error,
+      error,
       id: messageId,
     })
   } else if (typeof senderTabId === 'number') {
     const errorType = getSignErrorType(action)
     sendToTab(senderTabId, {
       type: errorType,
-      error: result.error,
+      error,
       id: messageId,
     })
   }
@@ -98,6 +130,25 @@ async function handleApprovePopup(
     log.info('Wallet action request received', { action: message.action })
 
     const senderTabId = sender.tab?.id
+    const permission = await requireSigningPermission(
+      sender,
+      getRequestedChain(message),
+    )
+    if (!permission.allowed) {
+      sendImmediateSigningError(
+        senderTabId,
+        action,
+        message.id,
+        permission.error,
+      )
+      sendResponse({
+        type: getImmediateSigningErrorType(action),
+        error: permission.error,
+        id: message.id,
+      })
+      return false
+    }
+
     const windowId = await openPopupWindow(action)
 
     if (!windowId) {
@@ -110,6 +161,7 @@ async function handleApprovePopup(
         windowId,
         senderTabId,
         timestamp: Date.now(),
+        dapp: permission.context,
       },
     })
 
@@ -133,7 +185,7 @@ async function handleApprovePopup(
       const isSuccess =
         result?.status === 'signed' || result?.status === 'signed_and_executed'
 
-      if (isSuccess && senderTabId) {
+      if (isSuccess && typeof senderTabId === 'number') {
         sendApprovalSuccess(result, isSignAndExecute, senderTabId, message.id)
         chrome.storage.local.remove(['pendingAction', 'transactionResult'])
         detachApprovalListener()
@@ -171,9 +223,12 @@ async function handleApprovePopup(
     return true
   } catch (error) {
     log.error('Transaction signing failed', error)
+    const errorMessage = toErrorMessage(error, 'Unknown error occurred')
+    sendImmediateSigningError(sender.tab?.id, action, message.id, errorMessage)
     sendResponse({
-      type: 'sign_transaction_error',
-      error: error instanceof Error ? error.message : 'Unknown error occurred',
+      type: getImmediateSigningErrorType(action),
+      error: errorMessage,
+      id: message.id,
     })
     return false
   }

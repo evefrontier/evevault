@@ -1,6 +1,7 @@
 import { VaultMessageTypes, WalletStandardMessageTypes } from '@evevault/shared'
-import { createLogger } from '@evevault/shared/utils'
+import { createLogger, redactSensitive } from '@evevault/shared/utils'
 import { sendToTab } from '@/lib/background/messaging/tabMessaging'
+import { revokeDappPermission } from '@/lib/background/services/dappPermissions'
 import type {
   BackgroundMessage,
   EveFrontierSponsoredTransactionMessage,
@@ -34,124 +35,263 @@ const log = createLogger()
 
 type MsgSender = chrome.runtime.MessageSender
 type SendResponse = (response?: unknown) => void
-type SenderAccess = 'dapp' | 'extension'
-type RouteContext = {
-  message: BackgroundMessage
-  sender: MsgSender
-  sendResponse: SendResponse
-  tabId?: number
-}
-type MessageRoute = {
-  access: SenderAccess
-  handle: (ctx: RouteContext) => unknown
-}
-type RegisteredMessageRoute = MessageRoute & {
-  matches: (message: BackgroundMessage) => boolean
-}
-type RouteResolver = (message: BackgroundMessage) => MessageRoute | null
-
-function runExtLogin({ message, sender, sendResponse }: RouteContext): true {
-  void handleExtLogin(message, sender, sendResponse).catch((e) =>
-    log.error('handleExtLogin failed', e),
-  )
-  return true
-}
-
-function runDappLogin({
-  message,
-  sender,
-  sendResponse,
-  tabId,
-}: RouteContext): true {
-  void handleDappLogin(message, sender, sendResponse, tabId).catch((e) =>
-    log.error('handleDappLogin failed', e),
-  )
-  return true
-}
-
-function runWebUnlock({ message, sender, sendResponse }: RouteContext): true {
-  void handleWebUnlock(message as WebUnlockMessage, sender, sendResponse).catch(
-    (e) => log.error('handleWebUnlock failed', e),
-  )
-  return true
-}
-
-const AUTH_ROUTES: readonly RegisteredMessageRoute[] = [
-  {
-    access: 'extension',
-    matches: (message) => message.action === 'ext_login',
-    handle: runExtLogin,
-  },
-  {
-    access: 'dapp',
-    matches: (message) => message.type === 'connect',
-    handle: runDappLogin,
-  },
-  {
-    access: 'extension',
-    matches: (message) => message.action === 'web_unlock',
-    handle: runWebUnlock,
-  },
-]
-
-// Wallet Standard action handlers — all keyed by the action field of the message.
-const WALLET_ACTION_HANDLERS: Partial<
-  Record<
-    string,
-    (m: BackgroundMessage, s: MsgSender, sr: SendResponse) => unknown
-  >
-> = {
-  [WalletStandardMessageTypes.SIGN_PERSONAL_MESSAGE]: (m, s, sr) =>
-    handleApprovePopup(m as WalletActionMessage, s, sr),
-  [WalletStandardMessageTypes.SIGN_TRANSACTION]: (m, s, sr) =>
-    handleApprovePopup(m as WalletActionMessage, s, sr),
-  [WalletStandardMessageTypes.SIGN_AND_EXECUTE_TRANSACTION]: (m, s, sr) =>
-    handleApprovePopup(m as WalletActionMessage, s, sr),
-  [WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION]: (
-    m,
-    s,
-    sr,
-  ) =>
-    handleSponsoredTransaction(
-      m as EveFrontierSponsoredTransactionMessage,
-      s,
-      sr,
-    ),
-}
-
-// Vault message type handlers.
+type RouteField = 'action' | 'type'
+type RouteAccess = 'dapp' | 'extension'
+type RouteHandler = (
+  m: BackgroundMessage,
+  s: MsgSender,
+  sr: SendResponse,
+  tabId?: number,
+) => unknown
 type VaultHandler = (m: VaultMessage, s: MsgSender, sr: SendResponse) => unknown
-const VAULT_HANDLERS: Partial<Record<string, VaultHandler>> = {
-  [VaultMessageTypes.UNLOCK_VAULT]: handleUnlockVault,
-  [VaultMessageTypes.LOCK]: handleLock,
-  [VaultMessageTypes.CREATE_KEYPAIR]: _handleCreateKeypair,
-  [VaultMessageTypes.ROTATE_KEYPAIR]: _handleRotateKeypair,
-  [VaultMessageTypes.GET_PUBLIC_KEY]: _handleGetPublicKey,
-  [VaultMessageTypes.ZK_EPH_SIGN_BYTES]: _handleZkEphSignBytes,
-  [VaultMessageTypes.SET_ZKPROOF]: _handleSetZkProof,
-  [VaultMessageTypes.GET_ZKPROOF]: _handleGetZkProof,
-  [VaultMessageTypes.CLEAR_ZKPROOF]: _handleClearZkProof,
-  [VaultMessageTypes.LOCALNET_SET_KEYPAIR]: _handleLocalnetSetKeypair,
-  [VaultMessageTypes.LOCALNET_GET_ADDRESS]: _handleLocalnetGetAddress,
-  [VaultMessageTypes.LOCALNET_SIGN_BYTES]: _handleLocalnetSignBytes,
+type MessageRoute = {
+  access: RouteAccess
+  handle: RouteHandler
+}
+type DisconnectResponseMessage = {
+  id?: string
+  type: 'disconnect_success' | 'disconnect_error'
+  error?: unknown
 }
 
+/**
+ * Builds the normalized lookup key used by MESSAGE_ROUTES for fields that can
+ * route a message. Keeping the field in the key avoids collisions between
+ * identical action and type values.
+ */
+function routeKey(field: RouteField, value: string): string {
+  return `${field}:${value}`
+}
+
+/**
+ * Starts an async route without blocking Chrome's message listener and keeps
+ * the channel open by returning true. Route-specific error handling can attach
+ * a fallback response through onError.
+ */
+function runAsyncRoute(
+  name: string,
+  task: Promise<unknown>,
+  onError?: (error: unknown) => void,
+): true {
+  void task.catch((error) => {
+    log.error(`${name} failed`, error)
+    onError?.(error)
+  })
+  return true
+}
+
+/**
+ * Sends a disconnect result through the immediate runtime response and, when
+ * the request came from a tab, mirrors it back through the content-script path.
+ */
+function sendDisconnectResponse(
+  sender: MsgSender,
+  sendResponse: SendResponse,
+  response: DisconnectResponseMessage,
+): void {
+  sendResponse(response)
+
+  const tabId = sender.tab?.id
+  if (typeof tabId !== 'number') return
+
+  sendToTab(tabId, response)
+}
+
+/**
+ * Converts unexpected route failures into a stable message for dApp-facing
+ * disconnect errors.
+ */
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'Unknown error occurred'
+}
+
+/**
+ * Revokes the stored permission for the sender's dApp origin and reports the
+ * disconnect outcome using the Wallet Standard response shape.
+ */
+async function handleDappDisconnect(
+  message: BackgroundMessage,
+  sender: MsgSender,
+  sendResponse: SendResponse,
+): Promise<void> {
+  const result = await revokeDappPermission(sender)
+  if (result.ok) {
+    log.info('Revoked dApp permission', {
+      origin: result.context.origin,
+      hadPermission: result.hadPermission,
+    })
+    sendDisconnectResponse(sender, sendResponse, {
+      id: message.id,
+      type: 'disconnect_success',
+    })
+    return
+  }
+
+  sendDisconnectResponse(sender, sendResponse, {
+    id: message.id,
+    type: 'disconnect_error',
+    error: { message: result.error },
+  })
+}
+
+/**
+ * Adapts vault-only handlers into MessageRoute entries that are restricted to
+ * extension senders and run through the shared async route wrapper.
+ */
+function vaultRoute(handler: VaultHandler): MessageRoute {
+  return {
+    access: 'extension',
+    handle: (m, s, sr) =>
+      runAsyncRoute(
+        'vaultHandler',
+        Promise.resolve(handler(m as VaultMessage, s, sr)),
+      ),
+  }
+}
+
+const MESSAGE_ROUTES: Record<string, MessageRoute> = {
+  [routeKey('action', 'ext_login')]: {
+    access: 'extension',
+    handle: (m, s, sr) =>
+      runAsyncRoute('handleExtLogin', handleExtLogin(m, s, sr)),
+  },
+  // Wallet Standard connect arrives as type='connect', not action='connect'.
+  [routeKey('type', 'connect')]: {
+    access: 'dapp',
+    handle: (m, s, sr, tabId) =>
+      runAsyncRoute('handleDappLogin', handleDappLogin(m, s, sr, tabId)),
+  },
+  [routeKey('type', WalletStandardMessageTypes.DISCONNECT)]: {
+    access: 'dapp',
+    handle: (m, s, sr) =>
+      runAsyncRoute(
+        'handleDappDisconnect',
+        handleDappDisconnect(m, s, sr),
+        (error) =>
+          sendDisconnectResponse(s, sr, {
+            id: m.id,
+            type: 'disconnect_error',
+            error: { message: getErrorMessage(error) },
+          }),
+      ),
+  },
+  [routeKey('action', 'web_unlock')]: {
+    access: 'extension',
+    handle: (m, s, sr) =>
+      runAsyncRoute(
+        'handleWebUnlock',
+        handleWebUnlock(m as WebUnlockMessage, s, sr),
+      ),
+  },
+  [routeKey('action', WalletStandardMessageTypes.SIGN_PERSONAL_MESSAGE)]: {
+    access: 'dapp',
+    handle: (m, s, sr) => handleApprovePopup(m as WalletActionMessage, s, sr),
+  },
+  [routeKey('action', WalletStandardMessageTypes.SIGN_TRANSACTION)]: {
+    access: 'dapp',
+    handle: (m, s, sr) => handleApprovePopup(m as WalletActionMessage, s, sr),
+  },
+  [routeKey('action', WalletStandardMessageTypes.SIGN_AND_EXECUTE_TRANSACTION)]:
+    {
+      access: 'dapp',
+      handle: (m, s, sr) => handleApprovePopup(m as WalletActionMessage, s, sr),
+    },
+  [routeKey(
+    'action',
+    WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION,
+  )]: {
+    access: 'dapp',
+    handle: (m, s, sr) =>
+      runAsyncRoute(
+        'handleSponsoredTransaction',
+        handleSponsoredTransaction(
+          m as EveFrontierSponsoredTransactionMessage,
+          s,
+          sr,
+        ),
+      ),
+  },
+  [routeKey('type', VaultMessageTypes.UNLOCK_VAULT)]:
+    vaultRoute(handleUnlockVault),
+  [routeKey('type', VaultMessageTypes.LOCK)]: vaultRoute(handleLock),
+  [routeKey('type', VaultMessageTypes.CREATE_KEYPAIR)]:
+    vaultRoute(_handleCreateKeypair),
+  [routeKey('type', VaultMessageTypes.ROTATE_KEYPAIR)]:
+    vaultRoute(_handleRotateKeypair),
+  [routeKey('type', VaultMessageTypes.GET_PUBLIC_KEY)]:
+    vaultRoute(_handleGetPublicKey),
+  [routeKey('type', VaultMessageTypes.ZK_EPH_SIGN_BYTES)]: vaultRoute(
+    _handleZkEphSignBytes,
+  ),
+  [routeKey('type', VaultMessageTypes.SET_ZKPROOF)]:
+    vaultRoute(_handleSetZkProof),
+  [routeKey('type', VaultMessageTypes.GET_ZKPROOF)]:
+    vaultRoute(_handleGetZkProof),
+  [routeKey('type', VaultMessageTypes.CLEAR_ZKPROOF)]:
+    vaultRoute(_handleClearZkProof),
+  [routeKey('type', VaultMessageTypes.LOCALNET_SET_KEYPAIR)]: vaultRoute(
+    _handleLocalnetSetKeypair,
+  ),
+  [routeKey('type', VaultMessageTypes.LOCALNET_GET_ADDRESS)]: vaultRoute(
+    _handleLocalnetGetAddress,
+  ),
+  [routeKey('type', VaultMessageTypes.LOCALNET_SIGN_BYTES)]: vaultRoute(
+    _handleLocalnetSignBytes,
+  ),
+}
+
+/**
+ * Finds the first route registered for the message's action or type field.
+ * Action is checked first because Wallet Standard signing requests route by
+ * action, while connect/disconnect and vault messages route by type.
+ */
+function findRoute(message: BackgroundMessage): MessageRoute | undefined {
+  const candidates: Array<[RouteField, unknown]> = [
+    ['action', message.action],
+    ['type', message.type],
+  ]
+
+  for (const [field, value] of candidates) {
+    if (typeof value !== 'string') continue
+    const route = MESSAGE_ROUTES[routeKey(field, value)]
+    if (route) return route
+  }
+
+  return undefined
+}
+
+/**
+ * Identifies messages that originate from this extension rather than a web
+ * page. Runtime messages without tab/origin/url metadata are also treated as
+ * internal extension messages.
+ */
 function isExtensionSender(sender: MsgSender): boolean {
-  if (sender.tab) return false
-
-  const senderUrl = sender.url ?? ''
-  if (!senderUrl) return true
-
+  const senderUrls = [sender.origin, sender.url, sender.tab?.url]
   const extensionId = chrome.runtime?.id
-  if (!extensionId) return senderUrl.startsWith('chrome-extension://')
+  const isOwnExtensionUrl = (url: string | undefined) => {
+    if (!url) return false
+    if (!extensionId) return url.startsWith('chrome-extension://')
 
-  return senderUrl.startsWith(`chrome-extension://${extensionId}/`)
+    return url.startsWith(`chrome-extension://${extensionId}/`)
+  }
+
+  if (senderUrls.some(isOwnExtensionUrl)) return true
+
+  return !sender.tab && !sender.origin && !sender.url
 }
 
+/**
+ * Identifies messages sent by a page tab, excluding extension UI tabs so
+ * extension pages cannot exercise dApp-only routes.
+ */
 function isDappSender(sender: MsgSender): boolean {
   return typeof sender.tab?.id === 'number' && !isExtensionSender(sender)
 }
 
+/**
+ * Emits a consistent authorization failure for routes called from the wrong
+ * sender class and logs only routing metadata.
+ */
 function rejectUnauthorized(
   message: BackgroundMessage,
   sendResponse: SendResponse,
@@ -168,42 +308,20 @@ function rejectUnauthorized(
   return false
 }
 
-function hasRequiredSender(sender: MsgSender, access: SenderAccess): boolean {
+/**
+ * Checks whether a sender is allowed to call a route based on the route's
+ * declared access policy.
+ */
+function hasRequiredSender(sender: MsgSender, access: RouteAccess): boolean {
   return access === 'extension'
     ? isExtensionSender(sender)
     : isDappSender(sender)
 }
 
-function resolveAuthRoute(message: BackgroundMessage): MessageRoute | null {
-  return AUTH_ROUTES.find((route) => route.matches(message)) ?? null
-}
-
-function resolveWalletRoute(message: BackgroundMessage): MessageRoute | null {
-  const walletHandler = WALLET_ACTION_HANDLERS[message.action ?? '']
-
-  return walletHandler
-    ? {
-        access: 'dapp',
-        handle: ({ message, sender, sendResponse }) =>
-          walletHandler(message, sender, sendResponse),
-      }
-    : null
-}
-
-function resolveVaultRoute(message: BackgroundMessage): MessageRoute | null {
-  const vaultHandler = VAULT_HANDLERS[message.type ?? '']
-
-  return vaultHandler
-    ? {
-        access: 'extension',
-        handle: ({ message, sender, sendResponse }) => {
-          vaultHandler(message as VaultMessage, sender, sendResponse)
-          return true
-        },
-      }
-    : null
-}
-
+/**
+ * Broadcasts extension-originated account/chain change events to all tabs via
+ * the guarded tab messaging path.
+ */
 function broadcastChangeEvent(payload: unknown): void {
   log.info('Broadcasting chain change event', payload)
   chrome.tabs.query({}, (tabs) => {
@@ -219,53 +337,26 @@ function broadcastChangeEvent(payload: unknown): void {
   })
 }
 
-function resolveChangeRoute(message: BackgroundMessage): MessageRoute | null {
-  const hasChangePayload = message.event === 'change' && !!message.payload
-
-  return hasChangePayload
-    ? {
-        access: 'extension',
-        handle: ({ message }) => broadcastChangeEvent(message.payload),
-      }
-    : null
-}
-
-const MESSAGE_ROUTE_RESOLVERS: readonly RouteResolver[] = [
-  resolveAuthRoute,
-  resolveWalletRoute,
-  resolveVaultRoute,
-  resolveChangeRoute,
-]
-
-function resolveMessageRoute(message: BackgroundMessage): MessageRoute | null {
-  for (const resolveRoute of MESSAGE_ROUTE_RESOLVERS) {
-    const route = resolveRoute(message)
-    if (route) return route
-  }
-
-  return null
-}
-
 export function handleMessage(
   message: BackgroundMessage,
   sender: chrome.runtime.MessageSender,
   sendResponse: (response?: unknown) => void,
 ) {
-  const route = resolveMessageRoute(message)
-
-  if (!route) {
-    log.warn('Unknown background message', message)
-    return
+  const route = findRoute(message)
+  if (route) {
+    if (!hasRequiredSender(sender, route.access)) {
+      return rejectUnauthorized(message, sendResponse)
+    }
+    return route.handle(message, sender, sendResponse, sender.tab?.id)
   }
 
-  if (!hasRequiredSender(sender, route.access)) {
-    return rejectUnauthorized(message, sendResponse)
+  if (message.event === 'change' && message.payload) {
+    if (!hasRequiredSender(sender, 'extension')) {
+      return rejectUnauthorized(message, sendResponse)
+    }
+    broadcastChangeEvent(message.payload)
+    return true
   }
 
-  return route.handle({
-    message,
-    sender,
-    sendResponse,
-    tabId: sender.tab?.id,
-  })
+  log.warn('Unknown background message', redactSensitive(message))
 }

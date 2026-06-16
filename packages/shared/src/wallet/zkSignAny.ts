@@ -34,8 +34,9 @@ export const zkSignAny = async (
     maxEpoch: Number(maxEpoch),
     partialZkLoginSignature,
     userSalt: claims.salt,
-    tokenClaimSub: claims.sub,
-    tokenClaimAud: claims.aud,
+    keyClaimName: claims.keyClaimName,
+    keyClaimValue: claims.keyClaimValue,
+    aud: claims.aud,
   }
 
   log.info('Requesting ephemeral signature')

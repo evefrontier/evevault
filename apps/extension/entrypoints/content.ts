@@ -9,7 +9,11 @@ const PUBLIC_WALLET_ACTIONS = new Set<string>([
   WalletStandardMessageTypes.SIGN_AND_EXECUTE_TRANSACTION,
   WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION,
 ])
-const SPONSORED_MESSAGE_STRING_FIELDS = ['action', 'assemblyType'] as const
+const SPONSORED_MESSAGE_STRING_FIELDS = [
+  'action',
+  'assembly',
+  'assemblyType',
+] as const
 
 type PageMessageValidator = (data: Record<string, unknown>) => boolean
 
@@ -58,7 +62,17 @@ function isEveVaultRequest(data: unknown): data is Record<string, unknown> {
 }
 
 function isConnectMessage(data: Record<string, unknown>): boolean {
-  return data.type === 'connect' && isValidRequestId(data.id)
+  return (
+    data.type === WalletStandardMessageTypes.CONNECT &&
+    isValidRequestId(data.id)
+  )
+}
+
+function isDisconnectMessage(data: Record<string, unknown>): boolean {
+  return (
+    data.type === WalletStandardMessageTypes.DISCONNECT &&
+    isValidRequestId(data.id)
+  )
 }
 
 function isPersonalMessageRequest(data: Record<string, unknown>): boolean {
@@ -84,7 +98,6 @@ function isSponsoredTransactionRequest(data: Record<string, unknown>): boolean {
   return every([
     isValidRequestId(data.id),
     hasStringFields(message, SPONSORED_MESSAGE_STRING_FIELDS),
-    Number.isFinite(message.assembly),
     hasOptionalObjectMetadata(message),
   ])
 }
@@ -108,9 +121,12 @@ function isAllowedWalletAction(data: Record<string, unknown>): boolean {
 }
 
 function isAllowedBridgePayload(data: Record<string, unknown>): boolean {
-  return data.type === 'connect'
-    ? isConnectMessage(data)
-    : isAllowedWalletAction(data)
+  if (data.type === WalletStandardMessageTypes.CONNECT)
+    return isConnectMessage(data)
+  if (data.type === WalletStandardMessageTypes.DISCONNECT)
+    return isDisconnectMessage(data)
+
+  return isAllowedWalletAction(data)
 }
 
 export function isAllowedPageMessage(
@@ -182,6 +198,13 @@ function isPublicSigningError(data: Record<string, unknown>): boolean {
   ])
 }
 
+function isPublicDisconnectResponse(data: Record<string, unknown>): boolean {
+  if (!hasStringIdAndType(data)) return false
+  if (data.type === 'disconnect_success') return true
+
+  return data.type === 'disconnect_error' && data.error !== undefined
+}
+
 function isPublicChangeEvent(data: Record<string, unknown>): boolean {
   return data.event === 'change' && isRecord(data.payload)
 }
@@ -192,6 +215,7 @@ const PUBLIC_EXTENSION_MESSAGE_VALIDATORS: readonly PageMessageValidator[] = [
   isSignatureSuccess,
   isSignAndExecuteSuccess,
   isPublicSigningError,
+  isPublicDisconnectResponse,
   isPublicChangeEvent,
 ]
 

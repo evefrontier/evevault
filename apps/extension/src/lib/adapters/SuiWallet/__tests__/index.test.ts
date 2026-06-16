@@ -245,15 +245,37 @@ describe('EveVaultWallet', () => {
     )
   })
 
-  it('emits one account change when disconnecting and treats repeated disconnects as no-ops', async () => {
+  it('revokes dApp permission and emits one account change when disconnecting', async () => {
     const wallet = new EveVaultWallet()
     await connectLocalnet(wallet)
     const listener = vi.fn()
     wallet.features[StandardEvents].on('change', listener)
 
-    await wallet.features[StandardDisconnect]?.disconnect()
-    // Repeated disconnects should be no-ops once accounts are already cleared.
-    await wallet.features[StandardDisconnect]?.disconnect()
+    vi.mocked(window.postMessage).mockClear()
+    const disconnect = wallet.features[StandardDisconnect].disconnect()
+
+    expect(lastPostedMessage()).toEqual({
+      __to: 'Eve Vault',
+      id: 'request-id',
+      type: WalletStandardMessageTypes.DISCONNECT,
+    })
+
+    dispatchVaultMessage({ type: 'disconnect_success' })
+    await disconnect
+
+    // Repeated disconnects still revoke stored origin permission, but should
+    // not emit another account-change event once accounts are already cleared.
+    vi.mocked(window.postMessage).mockClear()
+    const repeatedDisconnect = wallet.features[StandardDisconnect].disconnect()
+
+    expect(lastPostedMessage()).toEqual({
+      __to: 'Eve Vault',
+      id: 'request-id',
+      type: WalletStandardMessageTypes.DISCONNECT,
+    })
+
+    dispatchVaultMessage({ type: 'disconnect_success' })
+    await repeatedDisconnect
 
     expect(listener).toHaveBeenCalledTimes(1)
     expect(listener).toHaveBeenCalledWith(
@@ -261,6 +283,25 @@ describe('EveVaultWallet', () => {
         accounts: [],
       }),
     )
+  })
+
+  it('keeps accounts connected when permission revocation fails', async () => {
+    const wallet = new EveVaultWallet()
+    await connectLocalnet(wallet)
+    const listener = vi.fn()
+    wallet.features[StandardEvents].on('change', listener)
+
+    const disconnect = wallet.features[StandardDisconnect].disconnect()
+    dispatchVaultMessage({
+      type: 'disconnect_error',
+      error: { message: 'revocation failed' },
+    })
+
+    await expect(disconnect).rejects.toThrow('revocation failed')
+    expect(wallet.accounts).toEqual(
+      expect.arrayContaining([expect.objectContaining({ address: '0xlocal' })]),
+    )
+    expect(listener).not.toHaveBeenCalled()
   })
 
   it('signs a personal message by posting the expected request and mapping the response', async () => {
@@ -390,7 +431,7 @@ describe('EveVaultWallet', () => {
       EVEFRONTIER_SPONSORED_TRANSACTION
     ].signSponsoredTransaction({
       txAction: 'mine',
-      assembly: 1,
+      assembly: '1',
       assemblyType: 'type',
       metadata: {
         name: 'Name',
@@ -405,7 +446,7 @@ describe('EveVaultWallet', () => {
       action: WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION,
       message: {
         action: 'mine',
-        assembly: 1,
+        assembly: '1',
         assemblyType: 'type',
         metadata: {
           name: 'Name',
@@ -433,7 +474,7 @@ describe('EveVaultWallet', () => {
       EVEFRONTIER_SPONSORED_TRANSACTION
     ].signSponsoredTransaction({
       txAction: 'mine',
-      assembly: 1,
+      assembly: '1',
       assemblyType: 'type',
       metadata: {},
     })
@@ -444,8 +485,36 @@ describe('EveVaultWallet', () => {
       action: WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION,
       message: {
         action: 'mine',
-        assembly: 1,
+        assembly: '1',
         assemblyType: 'type',
+      },
+    })
+
+    dispatchVaultMessage({
+      type: 'sign_success',
+      digest: 'digest',
+      effects: 'effects',
+    })
+
+    await expect(promise).resolves.toEqual({
+      digest: 'digest',
+      effects: 'effects',
+    })
+  })
+
+  it('normalizes sponsored transaction assembly ids to strings', async () => {
+    const wallet = new EveVaultWallet()
+    const promise = wallet.features[
+      EVEFRONTIER_SPONSORED_TRANSACTION
+    ].signSponsoredTransaction({
+      txAction: 'mine',
+      assembly: 1 as unknown as string,
+      assemblyType: 'type',
+    })
+
+    expect(lastPostedMessage()).toMatchObject({
+      message: {
+        assembly: '1',
       },
     })
 

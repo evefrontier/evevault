@@ -6,6 +6,7 @@ import { useDeviceStore } from '#/stores/deviceStore'
 import { VaultMessageTypes } from '#/types/messages'
 import type { ZkSignAnyParams } from '#/types/wallet'
 import { isWeb } from '#/utils/environment'
+import { toErrorMessage } from '#/utils/errorMessage'
 
 type EphemeralSignature = {
   bytes: string
@@ -14,9 +15,12 @@ type EphemeralSignature = {
 
 type ZkLoginClaims = {
   salt: string
-  sub: string
+  keyClaimName: string
+  keyClaimValue: string
   aud: string
 }
+
+const ZK_LOGIN_KEY_CLAIM_NAME = 'sub'
 
 export const requireZkLoginUser = (user: ZkSignAnyParams['user']) => {
   if (user == null) {
@@ -59,12 +63,16 @@ export const signWithEphemeralKey = async (
   return signature
 }
 
-/** `salt`, `sub`, and `aud` must all be non-empty — any missing field breaks the on-chain zkLogin address derivation. */
+/** `salt`, the configured key claim, and `aud` must all be non-empty — any missing field breaks the on-chain zkLogin address derivation. */
 export const requireZkLoginClaims = (
   user: NonNullable<ZkSignAnyParams['user']>,
 ): ZkLoginClaims => ({
   salt: requireProfileField(user.profile?.salt, 'salt'),
-  sub: requireProfileField(user.profile?.sub, 'sub'),
+  keyClaimName: ZK_LOGIN_KEY_CLAIM_NAME,
+  keyClaimValue: requireProfileField(
+    user.profile?.sub,
+    ZK_LOGIN_KEY_CLAIM_NAME,
+  ),
   aud: requireProfileField(user.profile?.aud, 'aud'),
 })
 
@@ -110,7 +118,7 @@ const signWithExtensionEphemeralKey = async (
     scope,
     zkProofData,
   })) as
-    | { ok?: boolean; bytes?: string; userSignature?: string; error?: string }
+    | { ok?: boolean; bytes?: string; userSignature?: string; error?: unknown }
     | undefined
 
   if (!response) {
@@ -120,7 +128,7 @@ const signWithExtensionEphemeralKey = async (
   }
 
   if (!response.ok || !response.bytes || !response.userSignature) {
-    throw new Error(response.error || 'Failed to sign bytes')
+    throw new Error(toErrorMessage(response.error, 'Failed to sign bytes'))
   }
 
   return { bytes: response.bytes, userSignature: response.userSignature }

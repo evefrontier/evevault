@@ -107,6 +107,54 @@ describe('waitForVaultMessage', () => {
     await expect(promise).rejects.toThrow('structured rejection')
   })
 
+  it('uses nested messages from structured error responses', async () => {
+    const promise = waitForVaultMessage({
+      id: 'request-nested-error',
+      successType: 'ok',
+      errorType: 'error',
+      outbound: { __to: 'Eve Vault', id: 'request-nested-error' },
+      mapSuccess: (message) => message,
+      timeoutMessage: 'timed out',
+    })
+
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        data: {
+          __from: 'Eve Vault',
+          id: 'request-nested-error',
+          type: 'error',
+          error: { error: { message: 'nested rejection' } },
+        },
+      }),
+    )
+
+    await expect(promise).rejects.toThrow('nested rejection')
+  })
+
+  it('does not surface object-string error messages', async () => {
+    const promise = waitForVaultMessage({
+      id: 'request-object-string-error',
+      successType: 'ok',
+      errorType: 'error',
+      outbound: { __to: 'Eve Vault', id: 'request-object-string-error' },
+      mapSuccess: (message) => message,
+      timeoutMessage: 'timed out',
+    })
+
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        data: {
+          __from: 'Eve Vault',
+          id: 'request-object-string-error',
+          type: 'error',
+          error: '[object Object]',
+        },
+      }),
+    )
+
+    await expect(promise).rejects.toThrow('Request failed')
+  })
+
   it('uses a fallback message when error responses have no message', async () => {
     const promise = waitForVaultMessage({
       id: 'request-empty-error',

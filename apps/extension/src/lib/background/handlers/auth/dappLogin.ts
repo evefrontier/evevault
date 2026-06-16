@@ -5,6 +5,7 @@ import {
   getZkLoginAddress,
 } from '@evevault/shared/auth'
 import { useContextStore, useDeviceStore } from '@evevault/shared/stores'
+import type { DappRequestContext, JwtResponse } from '@evevault/shared/types'
 import {
   isLocalnetChain,
   isZkLoginSuiChain,
@@ -13,6 +14,10 @@ import {
 import { createLogger } from '@evevault/shared/utils'
 import { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519'
 import { sendToTab } from '@/lib/background/messaging/tabMessaging'
+import {
+  getDappRequestContext,
+  grantDappPermission,
+} from '@/lib/background/services/dappPermissions'
 import { getAuthRequest } from '@/lib/background/services/oauthService'
 import { openPopupWindow } from '@/lib/background/services/popupWindow'
 import type { MessageWithId } from '@/lib/background/types'
@@ -41,31 +46,6 @@ const log = createLogger()
 const delay = (ms: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, ms))
 
-// Sends an auth_error to the tab if tabId is defined, otherwise does nothing.
-// Centralises the repeated `if (typeof tabId === 'number') chrome.tabs.sendMessage` pattern.
-function sendAuthErrorToTab(
-  tabId: number | undefined,
-  id: string,
-  message: string,
-  extra?: Record<string, unknown>,
-): void {
-  if (typeof tabId !== 'number') return
-  sendToTab(tabId, {
-    id,
-    type: 'auth_error',
-    error: { message, ...extra },
-  })
-}
-
-// Returns true if the device store contains a persisted encrypted secret key,
-// indicating the vault has been set up and can be unlocked without a fresh setup flow.
-function checkHasDeviceData(): boolean {
-  const key = useDeviceStore.getState().ephemeralKeyPairSecretKey
-  if (!key || typeof key !== 'object') return false
-
-  return ['iv', 'data'].every((field) => field in key)
-}
-
 // Discriminated union so callers can access publicKeyBytes only when ready.
 type KeeperReadyResult =
   | { ready: true; publicKeyBytes?: number[] }
@@ -81,6 +61,62 @@ type DappConnectAccountResult =
   | { ok: false; error: string }
 
 type ZkLoginAddressResult = Awaited<ReturnType<typeof getZkLoginAddress>>
+
+type DappConnectCompletionOptions = {
+  tabId: number
+  ids: string[]
+  jwt: JwtResponse
+  chain: ReturnType<typeof getCurrentChain>
+  dappContext: DappRequestContext
+}
+
+// Context threaded into the launchWebAuthFlow callback, which runs outside the
+// normal async scope and can't capture variables from the surrounding await chain.
+type OAuthCallbackContext = {
+  id: string
+  additionalIds: string[]
+  chain: ReturnType<typeof getCurrentChain>
+  chromeRedirectUri: string
+  tenant: string
+  codeVerifier: string
+  tabId: number | undefined
+  dappContext: DappRequestContext
+}
+
+// Sends an auth_error to the tab if tabId is defined, otherwise does nothing.
+// Centralises guarded tab-bound auth errors through sendToTab.
+function sendAuthErrorToTab(
+  tabId: number | undefined,
+  id: string,
+  message: string,
+  extra?: Record<string, unknown>,
+): void {
+  if (typeof tabId !== 'number') return
+  sendToTab(tabId, {
+    id,
+    type: 'auth_error',
+    error: { message, ...extra },
+  })
+}
+
+function sendAuthErrorToTabIds(
+  tabId: number,
+  ids: string[],
+  message: string,
+): void {
+  ids.forEach((id) => {
+    sendAuthErrorToTab(tabId, id, message)
+  })
+}
+
+// Returns true if the device store contains a persisted encrypted secret key,
+// indicating the vault has been set up and can be unlocked without a fresh setup flow.
+function checkHasDeviceData(): boolean {
+  const key = useDeviceStore.getState().ephemeralKeyPairSecretKey
+  if (!key || typeof key !== 'object') return false
+
+  return ['iv', 'data'].every((field) => field in key)
+}
 
 // Checks that the keeper is unlocked, retrying briefly if device data exists
 // (handles the race where the background script wakes before keeper is ready).
@@ -190,25 +226,9 @@ async function syncPublicKeyFromKeeper(
   }
 }
 
-// If the tab already has a valid JWT, sends auth_success immediately without
-// going through the OAuth flow. Returns true if handled (caller should return).
-async function checkExistingAuth(
-  tabId: number,
-  id: string,
-  additionalIds: string[],
-  chain: ReturnType<typeof getCurrentChain>,
-): Promise<boolean> {
-  const existingJwt = await getJwt()
-  if (!existingJwt?.id_token) return false
-
-  log.debug('Connect: already connected, sending auth_success without OIDC')
-  await completeDappConnect(tabId, [id, ...additionalIds], existingJwt, chain)
-  return true
-}
-
 async function resolveDappConnectAccount(
-  jwt: Awaited<ReturnType<typeof getJwt>>,
-  chain: ReturnType<typeof getCurrentChain>,
+  jwt,
+  chain,
 ): Promise<DappConnectAccountResult> {
   return isLocalnetChain(chain)
     ? resolveLocalnetDappConnectAccount()
@@ -296,36 +316,51 @@ function buildDappAccountMetadata(
   return { address, publicKey }
 }
 
-function sendDappConnectErrorToTab(
-  tabId: number,
-  ids: string[],
-  error: string,
-): void {
-  for (const id of ids) {
-    sendAuthErrorToTab(tabId, id, error)
-  }
-}
-
-async function completeDappConnect(
-  tabId: number,
-  ids: string[],
-  jwt: Awaited<ReturnType<typeof getJwt>>,
-  chain: ReturnType<typeof getCurrentChain>,
-): Promise<void> {
+async function completeDappConnect({
+  tabId,
+  ids,
+  jwt,
+  chain,
+  dappContext,
+}: DappConnectCompletionOptions): Promise<void> {
   const result = await resolveDappConnectAccount(jwt, chain)
   if (!result.ok) {
-    sendDappConnectErrorToTab(tabId, ids, result.error)
+    sendAuthErrorToTabIds(tabId, ids, result.error)
     return
   }
 
   log.debug('Connect: sending auth_success with account metadata', {
     chain,
   })
+  await grantDappPermission(dappContext, chain)
   sendDappConnectSuccessToTab(tabId, ids, {
     chain,
     address: result.account.address,
     publicKey: result.account.publicKey,
   })
+}
+
+// If the tab already has a valid JWT, sends auth_success immediately without
+// going through the OAuth flow. Returns true if handled (caller should return).
+async function checkExistingAuth(
+  tabId: number,
+  id: string,
+  additionalIds: string[],
+  chain: ReturnType<typeof getCurrentChain>,
+  dappContext: DappRequestContext,
+): Promise<boolean> {
+  const existingJwt = await getJwt()
+  if (!existingJwt?.id_token) return false
+
+  log.debug('Connect: already connected, sending auth_success without OIDC')
+  await completeDappConnect({
+    tabId,
+    ids: [id, ...additionalIds],
+    jwt: existingJwt,
+    chain,
+    dappContext,
+  })
+  return true
 }
 
 // Returns the zkLogin nonce for the chain, initializing device data if needed.
@@ -364,18 +399,6 @@ async function ensureNonce(
   return nonce
 }
 
-// Context threaded into the launchWebAuthFlow callback, which runs outside the
-// normal async scope and can't capture variables from the surrounding await chain.
-type OAuthCallbackContext = {
-  id: string
-  additionalIds: string[]
-  chain: ReturnType<typeof getCurrentChain>
-  chromeRedirectUri: string
-  tenant: string
-  codeVerifier: string
-  tabId: number | undefined
-}
-
 // Processes the redirect URL from chrome.identity.launchWebAuthFlow: exchanges
 // the auth code for a JWT, stores it, and sends auth_success to the originating tab.
 async function handleOAuthCallback(
@@ -390,6 +413,7 @@ async function handleOAuthCallback(
     tenant,
     codeVerifier,
     tabId,
+    dappContext,
   } = ctx
 
   if (chrome.runtime.lastError || !responseUrl) {
@@ -428,12 +452,13 @@ async function handleOAuthCallback(
     await storeJwt(jwtResponse)
 
     if (typeof tabId === 'number') {
-      await completeDappConnect(
+      await completeDappConnect({
         tabId,
-        [id, ...additionalIds],
-        jwtResponse,
+        ids: [id, ...additionalIds],
+        jwt: jwtResponse,
         chain,
-      )
+        dappContext,
+      })
     }
   } catch (error) {
     log.error('Token exchange failed', error)
@@ -447,11 +472,21 @@ async function handleOAuthCallback(
 
 export async function handleDappLogin(
   message: MessageWithId,
-  _sender: chrome.runtime.MessageSender,
+  sender: chrome.runtime.MessageSender,
   _sendResponse: (response?: unknown) => void,
   tabId?: number,
 ): Promise<void> {
   const id = ensureMessageId(message)
+  const dappContext = getDappRequestContext(sender)
+  if (!dappContext) {
+    sendAuthErrorToTab(
+      tabId,
+      id,
+      'Connect requests must come from a valid web page origin.',
+    )
+    return
+  }
+
   const additionalIds =
     (message as MessageWithId & { additionalIds?: string[] }).additionalIds ??
     []
@@ -479,7 +514,8 @@ export async function handleDappLogin(
   }
 
   if (typeof tabId === 'number') {
-    if (await checkExistingAuth(tabId, id, additionalIds, chain)) return
+    if (await checkExistingAuth(tabId, id, additionalIds, chain, dappContext))
+      return
   }
 
   const nonce = await ensureNonce(chain, id, tabId)
@@ -501,6 +537,7 @@ export async function handleDappLogin(
         tenant,
         codeVerifier,
         tabId,
+        dappContext,
       }),
   )
 }

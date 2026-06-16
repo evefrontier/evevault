@@ -80,8 +80,9 @@ const TEST_ZK_PROOF_DATA: ZKProofData = {
   maxEpoch: 100,
   partialZkLoginSignature: undefined,
   userSalt: 'test-salt',
-  tokenClaimSub: 'test-sub',
-  tokenClaimAud: 'test-aud',
+  keyClaimName: 'sub',
+  keyClaimValue: 'test-sub',
+  aud: 'test-aud',
 }
 
 beforeEach(async () => {

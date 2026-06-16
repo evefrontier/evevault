@@ -65,6 +65,22 @@ describe('content bridge message validation', () => {
     ).toBe(true)
   })
 
+  it('allows sponsored transaction requests with string assembly ids', () => {
+    expect(
+      content.isAllowedPageMessage({
+        __to: 'Eve Vault',
+        id: 'sponsored-id',
+        action:
+          WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION,
+        message: {
+          action: 'mine',
+          assembly: '1',
+          assemblyType: 'type',
+        },
+      }),
+    ).toBe(true)
+  })
+
   it('rejects vault and malformed wallet messages from the page', () => {
     expect(
       content.isAllowedPageMessage({
@@ -86,6 +102,20 @@ describe('content bridge message validation', () => {
       content.isAllowedPageMessage({
         type: 'connect',
         id: 'connect-id',
+      }),
+    ).toBe(false)
+
+    expect(
+      content.isAllowedPageMessage({
+        __to: 'Eve Vault',
+        id: 'sponsored-id',
+        action:
+          WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION,
+        message: {
+          action: 'mine',
+          assembly: 1,
+          assemblyType: 'type',
+        },
       }),
     ).toBe(false)
   })
@@ -188,6 +218,40 @@ describe('content bridge message validation', () => {
 
     expect(postMessage).toHaveBeenCalledWith(
       { __from: 'Eve Vault', id: 'unlock-id', type: 'auth_success' },
+      window.location.origin,
+    )
+  })
+
+  it('forwards disconnect responses to the page', () => {
+    const postMessage = vi
+      .spyOn(window, 'postMessage')
+      .mockImplementation(() => undefined)
+
+    content.forwardToPage({
+      id: 'disconnect-id',
+      type: 'disconnect_success',
+    })
+    content.forwardToPage({
+      id: 'disconnect-id',
+      type: 'disconnect_error',
+      error: { message: 'revocation failed' },
+    })
+
+    expect(postMessage).toHaveBeenCalledWith(
+      {
+        __from: 'Eve Vault',
+        id: 'disconnect-id',
+        type: 'disconnect_success',
+      },
+      window.location.origin,
+    )
+    expect(postMessage).toHaveBeenCalledWith(
+      {
+        __from: 'Eve Vault',
+        id: 'disconnect-id',
+        type: 'disconnect_error',
+        error: { message: 'revocation failed' },
+      },
       window.location.origin,
     )
   })

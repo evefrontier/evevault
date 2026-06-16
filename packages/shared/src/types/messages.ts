@@ -58,6 +58,8 @@ export enum VaultMessageTypes {
 }
 
 export enum WalletStandardMessageTypes {
+  CONNECT = 'connect',
+  DISCONNECT = 'disconnect',
   SIGN_PERSONAL_MESSAGE = 'sign_personal_message',
   SIGN_TRANSACTION = 'sign_transaction',
   SIGN_AND_EXECUTE_TRANSACTION = 'sign_and_execute_transaction',

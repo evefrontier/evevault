@@ -4,6 +4,8 @@ import {
   NetworkSelector,
   Text,
 } from '@evevault/shared/components'
+import type { DappRequestContext } from '@evevault/shared/types'
+import { formatAddress } from '@evevault/shared/utils'
 import type { SuiChain } from '@mysten/wallet-standard'
 import type { ReactNode } from 'react'
 import type { useSignPopupAuth } from '@/features/wallet/hooks'
@@ -17,9 +19,76 @@ type SignRequestViewProps = {
   error: string | null
   loadingMessage: string
   chain?: SuiChain
+  dapp?: DappRequestContext
+  accountAddress?: string
+  requestKind?: string
   onApprove: () => void | Promise<void>
   onReject: () => void | Promise<void>
   children: ReactNode
+}
+
+function formatConnectedAt(connectedAt: number | undefined): string | null {
+  if (!connectedAt) return null
+  return new Date(connectedAt).toLocaleString(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  })
+}
+
+function ContextRow({
+  label,
+  value,
+  title,
+}: {
+  label: string
+  value: string
+  title?: string
+}) {
+  return (
+    <div className="grid grid-cols-[72px_minmax(0,1fr)] gap-2 items-baseline">
+      <span className="text-[10px] uppercase text-(--grey-neutral)">
+        {label}
+      </span>
+      <span
+        className="text-xs leading-4 text-(--neutral) truncate"
+        title={title ?? value}
+      >
+        {value}
+      </span>
+    </div>
+  )
+}
+
+function RequestContextPanel({
+  dapp,
+  accountAddress,
+  requestKind,
+}: {
+  dapp?: DappRequestContext
+  accountAddress?: string
+  requestKind?: string
+}) {
+  const connectedAt = formatConnectedAt(dapp?.connectedAt)
+  if (!dapp && !accountAddress && !requestKind) return null
+
+  return (
+    <div className="w-[320px] max-w-[88vw] border border-(--matter-05) p-3">
+      <div className="flex flex-col gap-2">
+        {dapp && (
+          <ContextRow label="Site" value={dapp.origin} title={dapp.url} />
+        )}
+        {accountAddress && (
+          <ContextRow
+            label="Account"
+            value={formatAddress(accountAddress, 10, 8)}
+            title={accountAddress}
+          />
+        )}
+        {requestKind && <ContextRow label="Request" value={requestKind} />}
+        {connectedAt && <ContextRow label="Connected" value={connectedAt} />}
+      </div>
+    </div>
+  )
 }
 
 export function SignRequestView({
@@ -30,6 +99,9 @@ export function SignRequestView({
   error,
   loadingMessage,
   chain,
+  dapp,
+  accountAddress,
+  requestKind,
   onApprove,
   onReject,
   children,
@@ -53,20 +125,25 @@ export function SignRequestView({
         </div>
       ) : (
         <div className="flex flex-col items-center justify-between h-full">
-          <div className="flex flex-col items-center justify-center gap-10">
+          <div className="flex flex-col items-center justify-center gap-6">
             <img src="/images/logo.png" alt="EVE Vault" className="h-20" />
-            <div className="flex flex-col items-center justify-center gap-4">
+            <div className="flex flex-col items-center justify-center gap-3">
               <Heading level={2}>{title}</Heading>
+              <RequestContextPanel
+                dapp={dapp}
+                accountAddress={accountAddress}
+                requestKind={requestKind}
+              />
               {children}
             </div>
 
             {error && (
-              <div style={{ marginBottom: '20px' }}>
+              <div className="mb-5">
                 <Text color="error">Error: {error}</Text>
               </div>
             )}
 
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div className="flex gap-2">
               <Button onClick={onApprove} disabled={loading} variant="primary">
                 {loading ? 'Signing...' : 'Approve'}
               </Button>

@@ -1,3 +1,4 @@
+import { Text } from '@evevault/shared/components'
 import Json from '@evevault/shared/components/Json'
 import { useTransactionSigning } from '@/features/wallet/hooks'
 import type { SignResult } from '@/features/wallet/hooks/useTransactionSigning'
@@ -32,11 +33,22 @@ export function SignTransactionFlow({
       error={error}
       loadingMessage="Loading transaction..."
       chain={pendingTransaction?.chain}
+      dapp={pendingTransaction?.dapp}
+      accountAddress={pendingTransaction?.account.address}
+      requestKind={title}
       onApprove={handleApprove}
       onReject={handleReject}
     >
       {pendingTransaction && (
-        <Json value={pendingTransaction.displayValue} className="max-h-24" />
+        <div className="flex w-full flex-col items-center gap-2">
+          <Text size="small" color="grey-neutral">
+            Transaction payload
+          </Text>
+          <Json
+            value={pendingTransaction.displayValue}
+            className="max-h-36 text-xs"
+          />
+        </div>
       )}
     </SignRequestView>
   )
