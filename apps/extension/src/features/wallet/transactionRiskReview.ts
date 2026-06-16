@@ -122,7 +122,7 @@ export function reviewTransaction(
   if (!isRecord(transaction)) {
     return [
       {
-        severity: 'warning',
+        severity: 'danger',
         title: 'Unverified transaction format',
         detail: 'The transaction payload could not be decoded for review.',
       },
@@ -133,4 +133,15 @@ export function reviewTransaction(
     ...reviewCommands(getTransactionArray(transaction, 'commands')),
     ...reviewInputs(getTransactionArray(transaction, 'inputs')),
   ])
+}
+
+/**
+ * Whether the user must explicitly acknowledge before approving. True when any
+ * finding is danger-class — including an undecodable payload, which is the
+ * blind-signing case the approval gate exists to prevent.
+ */
+export function requiresAcknowledgement(
+  findings: TransactionRiskFinding[],
+): boolean {
+  return findings.some((finding) => finding.severity === 'danger')
 }

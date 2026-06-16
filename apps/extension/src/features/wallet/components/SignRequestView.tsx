@@ -1,5 +1,6 @@
 import {
   Button,
+  Checkbox,
   Heading,
   NetworkSelector,
   Text,
@@ -7,9 +8,12 @@ import {
 import type { DappRequestContext } from '@evevault/shared/types'
 import { formatAddress } from '@evevault/shared/utils'
 import type { SuiChain } from '@mysten/wallet-standard'
-import type { ReactNode } from 'react'
+import { type ReactNode, useState } from 'react'
 import type { useSignPopupAuth } from '@/features/wallet/hooks'
 import { SignPopupAuthGate } from './SignPopupAuthGate'
+
+const DEFAULT_ACKNOWLEDGEMENT_LABEL =
+  'I understand the risks and want to approve this request.'
 
 type SignRequestViewProps = {
   auth: ReturnType<typeof useSignPopupAuth>
@@ -22,6 +26,9 @@ type SignRequestViewProps = {
   dapp?: DappRequestContext
   accountAddress?: string
   requestKind?: string
+  /** When true, Approve stays disabled until the user ticks the acknowledgement. */
+  requireAcknowledgement?: boolean
+  acknowledgementLabel?: string
   onApprove: () => void | Promise<void>
   onReject: () => void | Promise<void>
   children: ReactNode
@@ -102,10 +109,14 @@ export function SignRequestView({
   dapp,
   accountAddress,
   requestKind,
+  requireAcknowledgement = false,
+  acknowledgementLabel = DEFAULT_ACKNOWLEDGEMENT_LABEL,
   onApprove,
   onReject,
   children,
 }: SignRequestViewProps) {
+  const [acknowledged, setAcknowledged] = useState(false)
+  const approveDisabled = loading || (requireAcknowledgement && !acknowledged)
   return (
     <SignPopupAuthGate
       isLocked={auth.isLocked}
@@ -143,8 +154,23 @@ export function SignRequestView({
               </div>
             )}
 
+            {requireAcknowledgement && (
+              <Checkbox
+                name="acknowledge-risk"
+                isChecked={acknowledged}
+                isDisabled={loading}
+                text={acknowledgementLabel}
+                onChange={setAcknowledged}
+                containerStyle={{ maxWidth: 320 }}
+              />
+            )}
+
             <div className="flex gap-2">
-              <Button onClick={onApprove} disabled={loading} variant="primary">
+              <Button
+                onClick={onApprove}
+                disabled={approveDisabled}
+                variant="primary"
+              >
                 {loading ? 'Signing...' : 'Approve'}
               </Button>
 

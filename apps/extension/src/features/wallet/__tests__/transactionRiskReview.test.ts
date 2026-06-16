@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { reviewTransaction } from '../transactionRiskReview'
+import {
+  requiresAcknowledgement,
+  reviewTransaction,
+} from '../transactionRiskReview'
 
 describe('reviewTransaction', () => {
   it('flags high-risk programmable transaction commands', () => {
@@ -79,10 +82,10 @@ describe('reviewTransaction', () => {
     )
   })
 
-  it('warns when the transaction cannot be decoded for review', () => {
+  it('flags an undecodable transaction as danger', () => {
     expect(reviewTransaction(undefined)).toEqual([
       expect.objectContaining({
-        severity: 'warning',
+        severity: 'danger',
         title: 'Unverified transaction format',
       }),
     ])
@@ -111,6 +114,33 @@ describe('reviewTransaction', () => {
         severity: 'warning',
         title: 'Calls Move code',
       }),
+    )
+  })
+})
+
+describe('requiresAcknowledgement', () => {
+  it('requires acknowledgement for danger findings', () => {
+    expect(requiresAcknowledgement(reviewTransaction(undefined))).toBe(true)
+    expect(
+      requiresAcknowledgement(
+        reviewTransaction({
+          commands: [{ TransferObjects: { objects: [], address: {} } }],
+        }),
+      ),
+    ).toBe(true)
+  })
+
+  it('does not require acknowledgement for warning-only findings', () => {
+    expect(
+      requiresAcknowledgement(
+        reviewTransaction({ commands: [{ kind: 'MoveCall' }] }),
+      ),
+    ).toBe(false)
+  })
+
+  it('does not require acknowledgement when there are no findings', () => {
+    expect(requiresAcknowledgement(reviewTransaction({ commands: [] }))).toBe(
+      false,
     )
   })
 })
