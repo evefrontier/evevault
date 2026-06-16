@@ -1,6 +1,6 @@
 import type { DappRequestContext } from '@evevault/shared/types'
 import { DAPP_PERMISSIONS_STORAGE_KEY, isRecord } from '@evevault/shared/utils'
-import type { SuiChain } from '@mysten/wallet-standard'
+import { SUI_CHAINS, type SuiChain } from '@mysten/wallet-standard'
 
 type DappPermissionRecord = DappRequestContext & {
   chains: SuiChain[]
@@ -70,8 +70,12 @@ export function getDappRequestContext(
   }
 }
 
+function isSuiChainValue(value: unknown): value is SuiChain {
+  return typeof value === 'string' && SUI_CHAINS.includes(value as SuiChain)
+}
+
 function isSuiChainArray(value: unknown): value is SuiChain[] {
-  return Array.isArray(value) && value.every((item) => typeof item === 'string')
+  return Array.isArray(value) && value.every(isSuiChainValue)
 }
 
 function toPermissionRecord(

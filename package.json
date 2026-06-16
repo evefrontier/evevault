@@ -66,16 +66,11 @@
     "vitest": "4.1.8"
   },
   "overrides": {
-    "@mysten/signers": "^1.0.5",
-    "@mysten/sui": "^2.17.0",
-    "@mysten/wallet-standard": "^0.20.3",
+    "uuid": ">=11.1.1",
+    "tmp": "^0.2.6",
+    "shell-quote": "^1.8.4",
     "axios": "^1.16.0",
     "esbuild": "^0.28.1",
-    "valibot": ">=1.2.0",
-    "uuid": ">=11.1.1",
-    "vite": "^7.3.3",
-    "@vitest/browser": "4.1.8",
-    "tmp": "^0.2.6",
-    "shell-quote": "^1.8.4"
+    "js-yaml": "^4.1.2"
   }
 }

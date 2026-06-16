@@ -167,6 +167,34 @@ describe('dappPermissions', () => {
     ).toBeUndefined()
   })
 
+  it('cleans entries with malformed chain values when updating the permission store', async () => {
+    storage[DAPP_PERMISSIONS_STORAGE_KEY] = {
+      'https://broken.example': {
+        origin: 'https://broken.example',
+        connectedAt: 1000,
+        updatedAt: 1000,
+        chains: ['', 'localnet', 'sui:unknown', 'sui:*', 'sui:testnet'],
+      },
+    }
+
+    await grantDappPermission(
+      { origin: 'https://app.example' },
+      SUI_TESTNET_CHAIN,
+    )
+
+    expect(storage[DAPP_PERMISSIONS_STORAGE_KEY]).toMatchObject({
+      'https://app.example': {
+        origin: 'https://app.example',
+        chains: [SUI_TESTNET_CHAIN],
+      },
+    })
+    expect(
+      (storage[DAPP_PERMISSIONS_STORAGE_KEY] as Record<string, unknown>)[
+        'https://broken.example'
+      ],
+    ).toBeUndefined()
+  })
+
   it('serializes concurrent grants so updates do not overwrite each other', async () => {
     await Promise.all([
       grantDappPermission({ origin: 'https://app.example' }, SUI_TESTNET_CHAIN),
