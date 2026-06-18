@@ -17,6 +17,7 @@ export const SENSITIVE_FIELDS: ReadonlySet<string> = new Set<string>([
   'zkProof',
   'proof',
   'signature',
+  'zkSignature',
   'userSignature',
   'jwt',
   'salt',

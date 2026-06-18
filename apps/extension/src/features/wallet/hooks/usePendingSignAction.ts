@@ -22,7 +22,8 @@ export type PopupResultPayload =
     }
   | { status: 'error'; error: string }
 
-export type StoreResult = (result: PopupResultPayload) => Promise<void>
+/** Resolves true when the result was written, false when it was refused. */
+export type StoreResult = (result: PopupResultPayload) => Promise<boolean>
 
 type PendingParser<TPending> = (
   pendingAction: unknown,
@@ -81,8 +82,8 @@ export function usePendingSignAction<TPending extends { requestId?: string }>({
   const storeResult = async (
     result: PopupResultPayload,
     targetPending = pending,
-  ) => {
-    if (!targetPending) return
+  ): Promise<boolean> => {
+    if (!targetPending) return false
 
     const { requestId } = targetPending
     if (!requestId) {
@@ -92,7 +93,7 @@ export function usePendingSignAction<TPending extends { requestId?: string }>({
       log.error(
         'Refusing to store sign result: pending action has no requestId',
       )
-      return
+      return false
     }
 
     await chrome.storage.local.set({
@@ -102,21 +103,27 @@ export function usePendingSignAction<TPending extends { requestId?: string }>({
         requestId,
       },
     })
+    return true
   }
 
   const storeErrorResult = async (
     errorMessage: string,
     targetPending = pending,
-  ) => {
-    await storeResult({ status: 'error', error: errorMessage }, targetPending)
+  ): Promise<boolean> => {
+    return storeResult({ status: 'error', error: errorMessage }, targetPending)
   }
 
   const handleReject = async () => {
     if (!pending) return
 
     try {
-      await storeErrorResult(rejectError, pending)
-      window.close()
+      // Only close once the rejection is actually recorded; closing on a
+      // refused write would leave the dApp request hanging with no response.
+      if (await storeErrorResult(rejectError, pending)) {
+        window.close()
+        return
+      }
+      setError(rejectFailureError)
     } catch (err) {
       log.error(rejectLogMessage, err)
       setError(rejectFailureError)

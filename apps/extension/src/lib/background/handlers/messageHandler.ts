@@ -262,8 +262,9 @@ function findRoute(message: BackgroundMessage): MessageRoute | undefined {
 
 /**
  * Identifies messages that originate from this extension rather than a web
- * page. Runtime messages without tab/origin/url metadata are also treated as
- * internal extension messages.
+ * page. Fails closed: a sender is trusted only when it carries a URL under this
+ * extension's own origin. Senders with no identifying metadata are NOT trusted,
+ * so the privileged extension-only routes can't be reached without provenance.
  */
 function isExtensionSender(sender: MsgSender): boolean {
   const senderUrls = [sender.origin, sender.url, sender.tab?.url]
@@ -275,9 +276,7 @@ function isExtensionSender(sender: MsgSender): boolean {
     return url.startsWith(`chrome-extension://${extensionId}/`)
   }
 
-  if (senderUrls.some(isOwnExtensionUrl)) return true
-
-  return !sender.tab && !sender.origin && !sender.url
+  return senderUrls.some(isOwnExtensionUrl)
 }
 
 /**

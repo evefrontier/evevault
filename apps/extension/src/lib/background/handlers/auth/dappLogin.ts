@@ -11,7 +11,7 @@ import {
   isZkLoginSuiChain,
   KeeperMessageTypes,
 } from '@evevault/shared/types'
-import { createLogger } from '@evevault/shared/utils'
+import { createLogger, toErrorMessage } from '@evevault/shared/utils'
 import { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519'
 import { sendToTab } from '@/lib/background/messaging/tabMessaging'
 import {
@@ -45,6 +45,15 @@ const log = createLogger()
 
 const delay = (ms: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, ms))
+
+// The background can wake before the keeper is ready. When device data exists we
+// re-check after a short delay, then a second, longer one for the slower races
+// the first misses, before falling back to opening the unlock popup.
+const KEEPER_WAKE_RETRY_DELAY_MS = 300
+const KEEPER_UNLOCK_RETRY_DELAYS_MS = [
+  KEEPER_RETRY_DELAY_MS,
+  KEEPER_WAKE_RETRY_DELAY_MS,
+]
 
 // Discriminated union so callers can access publicKeyBytes only when ready.
 type KeeperReadyResult =
@@ -100,7 +109,7 @@ function sendAuthErrorToTab(
 }
 
 function sendAuthErrorToTabIds(
-  tabId: number,
+  tabId: number | undefined,
   ids: string[],
   message: string,
 ): void {
@@ -130,11 +139,10 @@ async function ensureKeeperReady(
   let keeperStatus = await checkKeeperUnlocked()
 
   if (!keeperStatus.unlocked && hasDeviceData) {
-    await delay(KEEPER_RETRY_DELAY_MS)
-    keeperStatus = await checkKeeperUnlocked()
-    if (!keeperStatus.unlocked) {
-      await delay(300)
+    for (const ms of KEEPER_UNLOCK_RETRY_DELAYS_MS) {
+      await delay(ms)
       keeperStatus = await checkKeeperUnlocked()
+      if (keeperStatus.unlocked) break
     }
   }
 
@@ -227,8 +235,8 @@ async function syncPublicKeyFromKeeper(
 }
 
 async function resolveDappConnectAccount(
-  jwt,
-  chain,
+  jwt: JwtResponse,
+  chain: ReturnType<typeof getCurrentChain>,
 ): Promise<DappConnectAccountResult> {
   return isLocalnetChain(chain)
     ? resolveLocalnetDappConnectAccount()
@@ -415,28 +423,28 @@ async function handleOAuthCallback(
     tabId,
     dappContext,
   } = ctx
+  // The success path notifies the dApp via the tab; every failure path must do
+  // the same, or the dApp's connect request hangs until it times out.
+  const ids = [id, ...additionalIds]
 
   if (chrome.runtime.lastError || !responseUrl) {
-    chrome.runtime.sendMessage({
-      id,
-      auth_success: false,
-      error: chrome.runtime.lastError?.message || 'responseUrl not found',
-    })
-    chrome.runtime.sendMessage({
-      id,
-      type: 'auth_error',
-      error: chrome.runtime.lastError,
-    })
+    log.error('Auth flow returned no response', chrome.runtime.lastError)
+    sendAuthErrorToTabIds(
+      tabId,
+      ids,
+      chrome.runtime.lastError?.message ??
+        'Sign-in did not complete. Please try again.',
+    )
     return
   }
 
   const authCode = extractAuthCode(responseUrl)
   if (!authCode) {
-    chrome.runtime.sendMessage({
-      id,
-      auth_success: false,
-      error: 'Authorization code not found in response.',
-    })
+    sendAuthErrorToTabIds(
+      tabId,
+      ids,
+      'Authorization code not found in response.',
+    )
     return
   }
 
@@ -454,7 +462,7 @@ async function handleOAuthCallback(
     if (typeof tabId === 'number') {
       await completeDappConnect({
         tabId,
-        ids: [id, ...additionalIds],
+        ids,
         jwt: jwtResponse,
         chain,
         dappContext,
@@ -462,11 +470,11 @@ async function handleOAuthCallback(
     }
   } catch (error) {
     log.error('Token exchange failed', error)
-    chrome.runtime.sendMessage({
-      id,
-      auth_success: false,
-      error: error instanceof Error ? error.message : String(error),
-    })
+    sendAuthErrorToTabIds(
+      tabId,
+      ids,
+      toErrorMessage(error, 'Sign-in failed. Please try again.'),
+    )
   }
 }
 

@@ -21,14 +21,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)
 }
 
-function every(checks: boolean[]): boolean {
-  return checks.every(Boolean)
-}
-
 function isValidRequestId(value: unknown): value is string {
   if (typeof value !== 'string') return false
 
-  return every([value.length > 0, value.length <= 128])
+  return value.length > 0 && value.length <= 128
 }
 
 function getPageTargetOrigin(): string | null {
@@ -39,7 +35,7 @@ function getPageTargetOrigin(): string | null {
 function isTrustedPageEvent(event: MessageEvent): boolean {
   const origin = getPageTargetOrigin()
 
-  return every([event.source === window, !!origin, event.origin === origin])
+  return event.source === window && !!origin && event.origin === origin
 }
 
 function hasObjectAccount(data: Record<string, unknown>): boolean {
@@ -76,30 +72,30 @@ function isDisconnectMessage(data: Record<string, unknown>): boolean {
 }
 
 function isPersonalMessageRequest(data: Record<string, unknown>): boolean {
-  return every([
-    isValidRequestId(data.id),
-    data.message !== undefined,
-    hasObjectAccount(data),
-  ])
+  return (
+    isValidRequestId(data.id) &&
+    data.message !== undefined &&
+    hasObjectAccount(data)
+  )
 }
 
 function isTransactionRequest(data: Record<string, unknown>): boolean {
-  return every([
-    isValidRequestId(data.id),
-    typeof data.transaction === 'string',
-    hasObjectAccount(data),
-  ])
+  return (
+    isValidRequestId(data.id) &&
+    typeof data.transaction === 'string' &&
+    hasObjectAccount(data)
+  )
 }
 
 function isSponsoredTransactionRequest(data: Record<string, unknown>): boolean {
   const message = data.message
   if (!isRecord(message)) return false
 
-  return every([
-    isValidRequestId(data.id),
-    hasStringFields(message, SPONSORED_MESSAGE_STRING_FIELDS),
-    hasOptionalObjectMetadata(message),
-  ])
+  return (
+    isValidRequestId(data.id) &&
+    hasStringFields(message, SPONSORED_MESSAGE_STRING_FIELDS) &&
+    hasOptionalObjectMetadata(message)
+  )
 }
 
 const WALLET_ACTION_VALIDATORS: Partial<Record<string, PageMessageValidator>> =
@@ -142,40 +138,40 @@ function hasStringIdAndType(data: Record<string, unknown>): boolean {
 }
 
 function isPublicAuthSuccess(data: Record<string, unknown>): boolean {
-  return every([
-    hasStringIdAndType(data),
-    data.type === 'auth_success',
+  return (
+    hasStringIdAndType(data) &&
+    data.type === 'auth_success' &&
     // chain/address are present on dApp connect success but absent on the bare
     // web-unlock auth_success ({ id, type }); both are valid, token-free shapes.
-    data.chain === undefined || typeof data.chain === 'string',
-    data.address === undefined || typeof data.address === 'string',
-    data.publicKey === undefined || typeof data.publicKey === 'string',
-  ])
+    (data.chain === undefined || typeof data.chain === 'string') &&
+    (data.address === undefined || typeof data.address === 'string') &&
+    (data.publicKey === undefined || typeof data.publicKey === 'string')
+  )
 }
 
 function isPublicAuthError(data: Record<string, unknown>): boolean {
-  return every([
-    hasStringIdAndType(data),
-    data.type === 'auth_error',
-    data.error !== undefined,
-  ])
+  return (
+    hasStringIdAndType(data) &&
+    data.type === 'auth_error' &&
+    data.error !== undefined
+  )
 }
 
 function isSignatureSuccess(data: Record<string, unknown>): boolean {
-  return every([
-    hasStringIdAndType(data),
-    data.type === 'sign_success',
-    typeof data.bytes === 'string' || typeof data.digest === 'string',
-    typeof data.signature === 'string' || typeof data.effects === 'string',
-  ])
+  return (
+    hasStringIdAndType(data) &&
+    data.type === 'sign_success' &&
+    (typeof data.bytes === 'string' || typeof data.digest === 'string') &&
+    (typeof data.signature === 'string' || typeof data.effects === 'string')
+  )
 }
 
 function isSignAndExecuteSuccess(data: Record<string, unknown>): boolean {
-  return every([
-    hasStringIdAndType(data),
-    data.type === 'sign_and_execute_transaction_success',
-    isRecord(data.result),
-  ])
+  return (
+    hasStringIdAndType(data) &&
+    data.type === 'sign_and_execute_transaction_success' &&
+    isRecord(data.result)
+  )
 }
 
 const PUBLIC_ERROR_TYPES = new Set([
@@ -191,11 +187,11 @@ function isPublicErrorType(value: unknown): value is string {
 }
 
 function isPublicSigningError(data: Record<string, unknown>): boolean {
-  return every([
-    hasStringIdAndType(data),
-    isPublicErrorType(data.type),
-    data.error !== undefined,
-  ])
+  return (
+    hasStringIdAndType(data) &&
+    isPublicErrorType(data.type) &&
+    data.error !== undefined
+  )
 }
 
 function isPublicDisconnectResponse(data: Record<string, unknown>): boolean {
