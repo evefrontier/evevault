@@ -7,8 +7,8 @@ const log = createLogger()
 
 export type SignResult = Awaited<ReturnType<typeof prepareAndSignTransaction>>
 
-/** Writes a transactionResult, stamping windowId + requestId (see usePendingSignAction). */
-export type StoreResult = (result: Record<string, unknown>) => Promise<void>
+// Re-exported so the signing-flow components can keep importing it from here.
+export type { StoreResult } from './usePendingSignAction'
 
 export function useTransactionSigning() {
   const { getSenderAddress, isLocalnet, sign, suiClient } =

@@ -1,3 +1,5 @@
+import { isRecord } from '@evevault/shared/utils'
+
 export type TransactionRiskSeverity = 'danger' | 'warning'
 
 export type TransactionRiskFinding = {
@@ -32,10 +34,6 @@ const COMMAND_RISK_RULES: Record<string, TransactionRiskFinding> = {
     title: 'Builds object vectors',
     detail: 'This can pass multiple objects into a Move call.',
   },
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value != null && typeof value === 'object' && !Array.isArray(value)
 }
 
 function normalizeKey(key: string): string {

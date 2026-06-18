@@ -1,5 +1,5 @@
 import { WalletStandardMessageTypes } from '@evevault/shared'
-import { createLogger, toErrorMessage } from '@evevault/shared/utils'
+import { createLogger, isRecord, toErrorMessage } from '@evevault/shared/utils'
 import type { SuiChain } from '@mysten/wallet-standard'
 import {
   type SigningErrorType,
@@ -10,10 +10,6 @@ import type { WalletActionMessage } from '@/lib/background/types'
 import { requireSigningPermission } from './signingPermissions'
 
 const log = createLogger()
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value != null && typeof value === 'object' && !Array.isArray(value)
-}
 
 // Binds the popup's result to this specific request: the windowId must match and
 // the popup must echo back the requestId minted when the popup was opened. This

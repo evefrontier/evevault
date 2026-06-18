@@ -4,7 +4,7 @@ import { handleApprovePopup } from '@/lib/background/handlers/walletHandlers'
 import type { WalletActionMessage } from '@/lib/background/types'
 
 // Constant requestId so tests can echo back the value the handler mints (it
-// binds the popup result to windowId + requestId, see NEW-E).
+// binds the popup result to windowId + requestId).
 const TEST_REQUEST_ID = '11111111-1111-1111-1111-111111111111'
 
 const { mockOpenPopupWindow, mockRequireDappPermission, logMethods } =
