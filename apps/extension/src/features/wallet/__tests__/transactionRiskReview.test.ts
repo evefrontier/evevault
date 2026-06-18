@@ -91,7 +91,10 @@ describe('reviewTransaction', () => {
     ])
   })
 
-  it('does not flag command-like metadata outside transaction commands', () => {
+  it('treats a payload with no commands or inputs as unverified, not as its metadata keys', () => {
+    // Command-like keys living in metadata must not be misread as commands; and
+    // because there is nothing reviewable, the payload is flagged unverified
+    // rather than silently passing as safe.
     expect(
       reviewTransaction({
         metadata: {
@@ -99,7 +102,12 @@ describe('reviewTransaction', () => {
           SharedObject: 'not an input object',
         },
       }),
-    ).toEqual([])
+    ).toEqual([
+      expect.objectContaining({
+        severity: 'danger',
+        title: 'Unverified transaction format',
+      }),
+    ])
   })
 
   it('supports command arrays nested under data', () => {

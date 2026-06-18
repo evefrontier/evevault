@@ -55,17 +55,21 @@ function dedupeFindings(
   })
 }
 
-function getTransactionArray(
+// Returns the array at `key` (top-level or nested under `data`), or undefined
+// when the transaction has no such field at all. Distinguishing "absent" from
+// "present but empty" lets reviewTransaction tell a recognizable transaction
+// shape (empty `commands` is a genuine no-op) from an unrecognized payload.
+function findTransactionArray(
   transaction: Record<string, unknown>,
   key: string,
-): unknown[] {
+): unknown[] | undefined {
   const value = transaction[key]
   if (Array.isArray(value)) return value
 
   const data = transaction.data
   if (isRecord(data) && Array.isArray(data[key])) return data[key]
 
-  return []
+  return undefined
 }
 
 function getCommandName(command: unknown): string | null {
@@ -116,22 +120,32 @@ function reviewInputs(inputs: unknown[]): TransactionRiskFinding[] {
     : []
 }
 
+const UNVERIFIED_FINDING: TransactionRiskFinding = {
+  severity: 'danger',
+  title: 'Unverified transaction format',
+  detail: 'The transaction payload could not be decoded for review.',
+}
+
 export function reviewTransaction(
   transaction: unknown,
 ): TransactionRiskFinding[] {
-  if (!isRecord(transaction)) {
-    return [
-      {
-        severity: 'danger',
-        title: 'Unverified transaction format',
-        detail: 'The transaction payload could not be decoded for review.',
-      },
-    ]
+  if (!isRecord(transaction)) return [UNVERIFIED_FINDING]
+
+  const commands = findTransactionArray(transaction, 'commands')
+  const inputs = findTransactionArray(transaction, 'inputs')
+
+  // A decoded object carrying neither a `commands` nor an `inputs` array is not
+  // a transaction shape we know how to review (e.g. the SDK's JSON format
+  // drifted, or the payload isn't a programmable transaction at all). Treat it
+  // as unverified (danger) rather than silently "safe" — this is the fail-safe
+  // that stops an unrecognized payload from bypassing the approval gate.
+  if (commands === undefined && inputs === undefined) {
+    return [UNVERIFIED_FINDING]
   }
 
   return dedupeFindings([
-    ...reviewCommands(getTransactionArray(transaction, 'commands')),
-    ...reviewInputs(getTransactionArray(transaction, 'inputs')),
+    ...reviewCommands(commands ?? []),
+    ...reviewInputs(inputs ?? []),
   ])
 }
 
