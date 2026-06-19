@@ -272,4 +272,230 @@ describe('content bridge message validation', () => {
       window.location.origin,
     )
   })
+
+  it('allows disconnect messages from the page', () => {
+    expect(
+      content.isAllowedPageMessage({
+        __to: 'Eve Vault',
+        type: 'disconnect',
+        id: 'disconnect-id',
+      }),
+    ).toBe(true)
+  })
+
+  it('rejects disconnect messages with an invalid id', () => {
+    expect(
+      content.isAllowedPageMessage({
+        __to: 'Eve Vault',
+        type: 'disconnect',
+        id: '',
+      }),
+    ).toBe(false)
+  })
+
+  it('rejects a personal message request without an account', () => {
+    expect(
+      content.isAllowedPageMessage({
+        __to: 'Eve Vault',
+        id: 'pm-id',
+        action: WalletStandardMessageTypes.SIGN_PERSONAL_MESSAGE,
+        message: 'hello',
+      }),
+    ).toBe(false)
+  })
+
+  it('allows a personal message request with a valid account', () => {
+    expect(
+      content.isAllowedPageMessage({
+        __to: 'Eve Vault',
+        id: 'pm-id',
+        action: WalletStandardMessageTypes.SIGN_PERSONAL_MESSAGE,
+        message: 'hello',
+        account: { address: '0xabc' },
+      }),
+    ).toBe(true)
+  })
+
+  it('rejects messages from cross-origin sources', () => {
+    const crossOrigin = new MessageEvent('message', {
+      data: { __to: 'Eve Vault', type: 'connect', id: 'connect-id' },
+      origin: 'https://evil.example',
+      source: window,
+    })
+
+    content.handleWindowMessage(crossOrigin)
+
+    expect(chrome.runtime.sendMessage).not.toHaveBeenCalled()
+  })
+
+  it('ignores messages that originated from the extension itself (__from guard)', () => {
+    const reflected = new MessageEvent('message', {
+      data: { __from: 'Eve Vault', type: 'auth_success', id: 'x' },
+      origin: window.location.origin,
+      source: window,
+    })
+
+    content.handleWindowMessage(reflected)
+
+    expect(chrome.runtime.sendMessage).not.toHaveBeenCalled()
+  })
+
+  it('responds to get_current_chain by posting a change event to the page', async () => {
+    const postMessage = vi
+      .spyOn(window, 'postMessage')
+      .mockImplementation(() => undefined)
+    ;(chrome.storage.local.get as ReturnType<typeof vi.fn>).mockImplementation(
+      (_keys: unknown, callback: (result: Record<string, unknown>) => void) => {
+        callback({
+          'evevault:context': JSON.stringify({
+            state: { chain: 'sui:mainnet' },
+          }),
+        })
+      },
+    )
+
+    const event = new MessageEvent('message', {
+      data: { __to: 'Eve Vault', type: 'get_current_chain' },
+      origin: window.location.origin,
+      source: window,
+    })
+
+    content.handleWindowMessage(event)
+
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        __from: 'Eve Vault',
+        event: 'change',
+        payload: { chains: ['sui:mainnet'] },
+      }),
+      window.location.origin,
+    )
+  })
+
+  it('forwards sign_success messages to the page', () => {
+    const postMessage = vi
+      .spyOn(window, 'postMessage')
+      .mockImplementation(() => undefined)
+
+    content.forwardToPage({
+      id: 'sign-id',
+      type: 'sign_success',
+      bytes: 'dGVzdA==',
+      signature: 'c2ln',
+    })
+
+    expect(postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'sign_success', id: 'sign-id' }),
+      window.location.origin,
+    )
+  })
+
+  it('blocks sign_success missing both bytes and digest', () => {
+    const postMessage = vi
+      .spyOn(window, 'postMessage')
+      .mockImplementation(() => undefined)
+
+    content.forwardToPage({ id: 'sign-id', type: 'sign_success' })
+
+    expect(postMessage).not.toHaveBeenCalled()
+  })
+
+  it('forwards sign_and_execute_transaction_success with a result object', () => {
+    const postMessage = vi
+      .spyOn(window, 'postMessage')
+      .mockImplementation(() => undefined)
+
+    content.forwardToPage({
+      id: 'exec-id',
+      type: 'sign_and_execute_transaction_success',
+      result: { bytes: 'b', signature: 's', digest: 'd', effects: 'e' },
+    })
+
+    expect(postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'sign_and_execute_transaction_success' }),
+      window.location.origin,
+    )
+  })
+
+  it('blocks sign_and_execute_transaction_success when result is not an object', () => {
+    const postMessage = vi
+      .spyOn(window, 'postMessage')
+      .mockImplementation(() => undefined)
+
+    content.forwardToPage({
+      id: 'exec-id',
+      type: 'sign_and_execute_transaction_success',
+      result: 'not-an-object',
+    })
+
+    expect(postMessage).not.toHaveBeenCalled()
+  })
+
+  it('forwards all public signing error types', () => {
+    const errorTypes = [
+      'sign_error',
+      'sign_personal_message_error',
+      'sign_transaction_error',
+      'sign_and_execute_transaction_error',
+      'sign_sponsored_transaction_error',
+    ]
+
+    for (const type of errorTypes) {
+      const postMessage = vi
+        .spyOn(window, 'postMessage')
+        .mockImplementation(() => undefined)
+      content.forwardToPage({ id: 'err-id', type, error: 'User rejected' })
+      expect(postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ type }),
+        window.location.origin,
+      )
+    }
+  })
+
+  it('blocks unknown signing error types', () => {
+    const postMessage = vi
+      .spyOn(window, 'postMessage')
+      .mockImplementation(() => undefined)
+
+    content.forwardToPage({
+      id: 'err-id',
+      type: 'sign_unknown_error',
+      error: 'x',
+    })
+
+    expect(postMessage).not.toHaveBeenCalled()
+  })
+
+  it('forwards change events with a record payload', () => {
+    const postMessage = vi
+      .spyOn(window, 'postMessage')
+      .mockImplementation(() => undefined)
+
+    content.forwardToPage({
+      __from: 'Eve Vault',
+      event: 'change',
+      payload: { chains: ['sui:testnet'] },
+    })
+
+    expect(postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'change' }),
+      window.location.origin,
+    )
+  })
+
+  it('blocks change events with a non-record payload', () => {
+    const postMessage = vi
+      .spyOn(window, 'postMessage')
+      .mockImplementation(() => undefined)
+
+    content.forwardToPage({
+      __from: 'Eve Vault',
+      event: 'change',
+      payload: 'not-an-object',
+    })
+
+    expect(postMessage).not.toHaveBeenCalled()
+  })
 })
