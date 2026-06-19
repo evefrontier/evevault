@@ -86,7 +86,13 @@ function SignPersonalMessage() {
 
       const { bytes, signature } = await sign('PersonalMessage', messageBytes)
 
-      await storeResult({ status: 'signed', bytes, signature })
+      const stored = await storeResult({ status: 'signed', bytes, signature })
+      // A refused write (e.g. missing requestId) would strand the dApp request,
+      // so keep the popup open and surface the error instead of closing.
+      if (!stored) {
+        setError('Failed to record the signing result. Please try again.')
+        return
+      }
 
       log.debug('Signed personal message')
 

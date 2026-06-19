@@ -32,9 +32,11 @@ export function waitForVaultMessage<T>({
 
     function onMsg(e: MessageEvent) {
       // The content-script bridge re-posts responses to the page with the page's
-      // own origin (see content.ts / bridgeTargetOrigin). Drop anything from a
-      // different origin so a cross-origin frame can't spoof a vault response.
-      if (e.origin !== window.location.origin) return
+      // own origin (see content.ts / bridgeTargetOrigin). Require the message to
+      // come from this same window object too: a same-origin iframe shares the
+      // origin but is a different source, so the origin check alone wouldn't stop
+      // it from spoofing a vault response.
+      if (e.source !== window || e.origin !== window.location.origin) return
       const m: Record<string, unknown> = e.data || {}
       if (m.__from !== 'Eve Vault' || m.id !== id) return
       if (m.type === successType && trySettle(state, onMsg, timeoutId)) {

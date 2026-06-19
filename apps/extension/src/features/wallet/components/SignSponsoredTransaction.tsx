@@ -112,11 +112,17 @@ function SignSponsoredTransaction() {
       )
       const { signature: zkSignature } = await sign('TransactionData', txbBytes)
 
-      await storeResult({
+      const stored = await storeResult({
         status: 'signed',
         zkSignature,
         preparationId: pending.preparationId,
       })
+      // A refused write (e.g. missing requestId) would strand the sponsored
+      // request, so keep the popup open and surface the error instead of closing.
+      if (!stored) {
+        setError('Failed to record the signing result. Please try again.')
+        return
+      }
       window.close()
     } catch (err) {
       log.error('Sponsored transaction signing failed', err)

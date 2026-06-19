@@ -1,12 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { APPROVAL_TIMEOUT_MS, waitForVaultMessage } from '../vaultMessages'
 
-// Same-origin by default.
+// Same-origin and posted by the page window itself by default, matching the
+// listener's source+origin guard. Negative tests override origin or source.
 function dispatchVaultMessage(
   data: Record<string, unknown>,
   origin = window.location.origin,
+  source: MessageEventSource | null = window,
 ) {
-  window.dispatchEvent(new MessageEvent('message', { origin, data }))
+  window.dispatchEvent(new MessageEvent('message', { origin, source, data }))
 }
 
 describe('waitForVaultMessage', () => {
@@ -179,6 +181,40 @@ describe('waitForVaultMessage', () => {
 
     await vi.advanceTimersByTimeAsync(APPROVAL_TIMEOUT_MS)
     await expectation
+  })
+
+  it('ignores a same-origin response from a different window source', async () => {
+    const promise = waitForVaultMessage({
+      id: 'request-source',
+      successType: 'ok',
+      errorType: 'error',
+      outbound: { __to: 'Eve Vault', id: 'request-source' },
+      mapSuccess: (message) => message.result as string,
+      timeoutMessage: 'timed out',
+    })
+
+    const iframe = document.createElement('iframe')
+    document.body.appendChild(iframe)
+    // Shares the page origin but comes from the iframe window: must be ignored.
+    dispatchVaultMessage(
+      {
+        __from: 'Eve Vault',
+        id: 'request-source',
+        type: 'ok',
+        result: 'spoofed',
+      },
+      window.location.origin,
+      iframe.contentWindow,
+    )
+    // The genuine same-window response still settles the request.
+    dispatchVaultMessage({
+      __from: 'Eve Vault',
+      id: 'request-source',
+      type: 'ok',
+      result: 'genuine',
+    })
+
+    await expect(promise).resolves.toBe('genuine')
   })
 
   it('rejects when no matching response arrives before the timeout', async () => {
