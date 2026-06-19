@@ -44,6 +44,7 @@ test-results/
 # Misc
 *.tsbuildinfo
 .qlty
+!.qlty/qlty.toml
 
 # Temporary files
 temp_*.txt
