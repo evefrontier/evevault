@@ -7,6 +7,21 @@ import type { WalletActionMessage } from '@/lib/background/types'
 // binds the popup result to windowId + requestId).
 const TEST_REQUEST_ID = '11111111-1111-1111-1111-111111111111'
 
+type StorageListener = (changes: {
+  [key: string]: chrome.storage.StorageChange
+}) => void
+
+// windowId 99 (from mockOpenPopupWindow) + the minted requestId are bind a
+// result to its request. They're identical across every positive test;
+// negative tests override only the field under test (windowId / requestId).
+const MATCHING_BINDING = { windowId: 99, requestId: TEST_REQUEST_ID }
+
+function fireResult(wrapped: StorageListener, result: Record<string, unknown>) {
+  wrapped({
+    transactionResult: { newValue: { ...MATCHING_BINDING, ...result } },
+  })
+}
+
 const { mockOpenPopupWindow, mockRequireDappPermission, logMethods } =
   vi.hoisted(() => ({
     mockOpenPopupWindow: vi.fn(),
@@ -36,9 +51,7 @@ vi.mock('@evevault/shared/utils', async (importOriginal) => {
 })
 
 function installChromeMock(
-  storageListeners: Array<
-    (changes: { [key: string]: chrome.storage.StorageChange }) => void
-  >,
+  storageListeners: StorageListener[],
   sendMessageImpl?: typeof chrome.tabs.sendMessage,
 ) {
   globalThis.chrome = {
@@ -48,15 +61,9 @@ function installChromeMock(
         remove: vi.fn(() => Promise.resolve()),
       },
       onChanged: {
-        addListener: vi.fn(
-          (
-            fn: (changes: {
-              [key: string]: chrome.storage.StorageChange
-            }) => void,
-          ) => {
-            storageListeners.push(fn)
-          },
-        ),
+        addListener: vi.fn((fn: StorageListener) => {
+          storageListeners.push(fn)
+        }),
         removeListener: vi.fn(),
       },
     },
@@ -67,9 +74,7 @@ function installChromeMock(
 }
 
 describe('handleApprovePopup', () => {
-  let storageListeners: Array<
-    (changes: { [key: string]: chrome.storage.StorageChange }) => void
-  >
+  let storageListeners: StorageListener[]
 
   beforeEach(() => {
     storageListeners = []
@@ -201,16 +206,10 @@ describe('handleApprovePopup', () => {
         { tab: { id: 42 } },
       )
 
-      wrapped({
-        transactionResult: {
-          newValue: {
-            windowId: 99,
-            requestId: TEST_REQUEST_ID,
-            status: 'signed',
-            bytes: new Uint8Array([1, 2]),
-            signature: 'sig-bytes',
-          },
-        },
+      fireResult(wrapped, {
+        status: 'signed',
+        bytes: new Uint8Array([1, 2]),
+        signature: 'sig-bytes',
       })
 
       expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(42, {
@@ -234,18 +233,12 @@ describe('handleApprovePopup', () => {
         { tab: { id: 7 } },
       )
 
-      wrapped({
-        transactionResult: {
-          newValue: {
-            windowId: 99,
-            requestId: TEST_REQUEST_ID,
-            status: 'signed_and_executed',
-            bytes: new Uint8Array([9]),
-            signature: 'sig',
-            digest: 'dg',
-            effects: 'fx',
-          },
-        },
+      fireResult(wrapped, {
+        status: 'signed_and_executed',
+        bytes: new Uint8Array([9]),
+        signature: 'sig',
+        digest: 'dg',
+        effects: 'fx',
       })
 
       expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(7, {
@@ -269,16 +262,10 @@ describe('handleApprovePopup', () => {
         { tab: { id: 7 } },
       )
 
-      wrapped({
-        transactionResult: {
-          newValue: {
-            windowId: 99,
-            requestId: TEST_REQUEST_ID,
-            status: 'signed_and_executed',
-            bytes: new Uint8Array([1]),
-            signature: 'sig',
-          },
-        },
+      fireResult(wrapped, {
+        status: 'signed_and_executed',
+        bytes: new Uint8Array([1]),
+        signature: 'sig',
       })
 
       expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(7, {
@@ -301,16 +288,10 @@ describe('handleApprovePopup', () => {
         { tab: { id: 1 } },
       )
 
-      wrapped({
-        transactionResult: {
-          newValue: {
-            windowId: 99,
-            requestId: TEST_REQUEST_ID,
-            status: 'signed',
-            bytes: new Uint8Array([1]),
-            signature: 'sig',
-          },
-        },
+      fireResult(wrapped, {
+        status: 'signed',
+        bytes: new Uint8Array([1]),
+        signature: 'sig',
       })
 
       await vi.waitFor(() => {
@@ -334,16 +315,10 @@ describe('handleApprovePopup', () => {
         { tab: { id: 3 } },
       )
 
-      wrapped({
-        transactionResult: {
-          newValue: {
-            windowId: 99,
-            requestId: TEST_REQUEST_ID,
-            status: 'signed_and_executed',
-            bytes: new Uint8Array([1]),
-            signature: 'sig',
-          },
-        },
+      fireResult(wrapped, {
+        status: 'signed_and_executed',
+        bytes: new Uint8Array([1]),
+        signature: 'sig',
       })
 
       await vi.waitFor(() => {
@@ -367,18 +342,12 @@ describe('handleApprovePopup', () => {
         { tab: { id: 3 } },
       )
 
-      wrapped({
-        transactionResult: {
-          newValue: {
-            windowId: 99,
-            requestId: TEST_REQUEST_ID,
-            status: 'signed_and_executed',
-            bytes: new Uint8Array([1]),
-            signature: 'sig',
-            digest: 'd',
-            effects: 'e',
-          },
-        },
+      fireResult(wrapped, {
+        status: 'signed_and_executed',
+        bytes: new Uint8Array([1]),
+        signature: 'sig',
+        digest: 'd',
+        effects: 'e',
       })
 
       await vi.waitFor(() => {
@@ -397,16 +366,7 @@ describe('handleApprovePopup', () => {
       errorPayload: unknown = 'User said no',
     ) {
       const wrapped = await getWrappedListener(message, sender)
-      wrapped({
-        transactionResult: {
-          newValue: {
-            windowId: 99,
-            requestId: TEST_REQUEST_ID,
-            status: 'error',
-            error: errorPayload,
-          },
-        },
-      })
+      fireResult(wrapped, { status: 'error', error: errorPayload })
     }
 
     it('maps SIGN_TRANSACTION to sign_transaction_error', async () => {
@@ -438,16 +398,7 @@ describe('handleApprovePopup', () => {
         throw new Error('expected registered storage listener')
       }
 
-      wrapped({
-        transactionResult: {
-          newValue: {
-            windowId: 99,
-            requestId: TEST_REQUEST_ID,
-            status: 'error',
-            error: 'User said no',
-          },
-        },
-      })
+      fireResult(wrapped, { status: 'error', error: 'User said no' })
 
       expect(chrome.storage.onChanged.removeListener).toHaveBeenCalledWith(
         registered,
@@ -598,15 +549,11 @@ describe('handleApprovePopup', () => {
         { tab: { id: 1 } },
       )
 
-      wrapped({
-        transactionResult: {
-          newValue: {
-            windowId: 123,
-            status: 'signed',
-            bytes: new Uint8Array([1]),
-            signature: 'sig',
-          },
-        },
+      fireResult(wrapped, {
+        windowId: 123,
+        status: 'signed',
+        bytes: new Uint8Array([1]),
+        signature: 'sig',
       })
 
       expect(chrome.tabs.sendMessage).not.toHaveBeenCalled()
@@ -623,16 +570,11 @@ describe('handleApprovePopup', () => {
         { tab: { id: 1 } },
       )
 
-      wrapped({
-        transactionResult: {
-          newValue: {
-            windowId: 99,
-            requestId: 'a-different-request-id',
-            status: 'signed',
-            bytes: new Uint8Array([1]),
-            signature: 'sig',
-          },
-        },
+      fireResult(wrapped, {
+        requestId: 'a-different-request-id',
+        status: 'signed',
+        bytes: new Uint8Array([1]),
+        signature: 'sig',
       })
 
       expect(chrome.tabs.sendMessage).not.toHaveBeenCalled()
@@ -646,16 +588,10 @@ describe('handleApprovePopup', () => {
         {},
       )
 
-      wrapped({
-        transactionResult: {
-          newValue: {
-            windowId: 99,
-            requestId: TEST_REQUEST_ID,
-            status: 'signed',
-            bytes: new Uint8Array([1]),
-            signature: 'sig',
-          },
-        },
+      fireResult(wrapped, {
+        status: 'signed',
+        bytes: new Uint8Array([1]),
+        signature: 'sig',
       })
 
       expect(chrome.tabs.sendMessage).not.toHaveBeenCalled()
@@ -698,16 +634,10 @@ describe('handleApprovePopup', () => {
         { tab: { id: 2 } },
       )
 
-      wrapped({
-        transactionResult: {
-          newValue: {
-            windowId: 99,
-            requestId: TEST_REQUEST_ID,
-            status: 'signed',
-            bytes: new Uint8Array([1]),
-            signature: 's',
-          },
-        },
+      fireResult(wrapped, {
+        status: 'signed',
+        bytes: new Uint8Array([1]),
+        signature: 's',
       })
 
       await vi.advanceTimersByTimeAsync(10 * 60 * 1000)

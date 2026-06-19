@@ -8,7 +8,9 @@ export type TransactionRiskFinding = {
   detail: string
 }
 
-const COMMAND_RISK_RULES: Record<string, TransactionRiskFinding> = {
+// Single catalog of every user-facing risk finding. The three review paths
+// below (per-command, per-input, and payload-level) all reference entries here.
+const FINDINGS = {
   publish: {
     severity: 'danger',
     title: 'Publishes Move code',
@@ -19,21 +21,41 @@ const COMMAND_RISK_RULES: Record<string, TransactionRiskFinding> = {
     title: 'Upgrades Move code',
     detail: 'This can change package behavior controlled by your account.',
   },
-  transferobjects: {
+  transferObjects: {
     severity: 'danger',
     title: 'Transfers objects',
     detail: 'This can move owned objects or tokens out of your account.',
   },
-  movecall: {
+  moveCall: {
     severity: 'warning',
     title: 'Calls Move code',
     detail: 'Review the package, module, and function before approving.',
   },
-  makemovevec: {
+  makeMoveVec: {
     severity: 'warning',
     title: 'Builds object vectors',
     detail: 'This can pass multiple objects into a Move call.',
   },
+  sharedObject: {
+    severity: 'warning',
+    title: 'Uses shared objects',
+    detail: 'Shared object calls can change state used by other accounts.',
+  },
+  unverified: {
+    severity: 'danger',
+    title: 'Unverified transaction format',
+    detail: 'The transaction payload could not be decoded for review.',
+  },
+} as const satisfies Record<string, TransactionRiskFinding>
+
+// Normalized PTB command name → finding. Only these are matched by command key
+// (see getCommandName); the other catalog entries are surfaced directly.
+const COMMAND_RISK_RULES: Record<string, TransactionRiskFinding> = {
+  publish: FINDINGS.publish,
+  upgrade: FINDINGS.upgrade,
+  transferobjects: FINDINGS.transferObjects,
+  movecall: FINDINGS.moveCall,
+  makemovevec: FINDINGS.makeMoveVec,
 }
 
 function normalizeKey(key: string): string {
@@ -106,28 +128,13 @@ function hasSharedObjectInput(input: unknown): boolean {
 }
 
 function reviewInputs(inputs: unknown[]): TransactionRiskFinding[] {
-  return inputs.some(hasSharedObjectInput)
-    ? [
-        {
-          severity: 'warning',
-          title: 'Uses shared objects',
-          detail:
-            'Shared object calls can change state used by other accounts.',
-        },
-      ]
-    : []
-}
-
-const UNVERIFIED_FINDING: TransactionRiskFinding = {
-  severity: 'danger',
-  title: 'Unverified transaction format',
-  detail: 'The transaction payload could not be decoded for review.',
+  return inputs.some(hasSharedObjectInput) ? [FINDINGS.sharedObject] : []
 }
 
 export function reviewTransaction(
   transaction: unknown,
 ): TransactionRiskFinding[] {
-  if (!isRecord(transaction)) return [UNVERIFIED_FINDING]
+  if (!isRecord(transaction)) return [FINDINGS.unverified]
 
   const commands = findTransactionArray(transaction, 'commands')
   const inputs = findTransactionArray(transaction, 'inputs')
@@ -138,7 +145,7 @@ export function reviewTransaction(
   // as unverified (danger) rather than silently "safe" — this is the fail-safe
   // that stops an unrecognized payload from bypassing the approval gate.
   if (commands === undefined && inputs === undefined) {
-    return [UNVERIFIED_FINDING]
+    return [FINDINGS.unverified]
   }
 
   return dedupeFindings([

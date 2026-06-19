@@ -10,9 +10,6 @@ import { SENSITIVE_FIELDS } from '../redact'
  * known-sensitive identifier as an argument. Literal text is ignored so log
  * *messages* mentioning these words don't trip it — only values do.
  *
- * The sensitive-identifier list is SENSITIVE_FIELDS from redact.ts, so this
- * guard and the runtime redactor can never drift apart.
- *
  * Extend GUARDED_FILES as new secret-handling modules are added.
  */
 const GUARDED_FILES = [
