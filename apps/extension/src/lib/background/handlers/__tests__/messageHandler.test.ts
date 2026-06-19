@@ -80,7 +80,7 @@ function installChromeMock() {
       id: 'extension-id',
     },
     tabs: {
-      query: vi.fn((callback) => callback([{ id: 1 }, { id: 2 }])),
+      query: vi.fn((_queryInfo, callback) => callback([{ id: 1 }, { id: 2 }])),
       sendMessage: vi.fn(() => Promise.resolve()),
     },
   } as unknown as typeof chrome)
@@ -385,5 +385,79 @@ describe('handleMessage route policy', () => {
       type: 'disconnect_error',
       error: { message: 'revocation failed' },
     })
+  })
+
+  it('sends disconnect_error when handleDappDisconnect throws unexpectedly', async () => {
+    mocks.revokeDappPermission.mockRejectedValueOnce(new Error('DB exploded'))
+    const sendResponse = vi.fn()
+
+    handleMessage(
+      { type: WalletStandardMessageTypes.DISCONNECT, id: 'disc-err' },
+      dappSender(),
+      sendResponse,
+    )
+
+    await vi.waitFor(() => {
+      expect(sendResponse).toHaveBeenCalledWith({
+        id: 'disc-err',
+        type: 'disconnect_error',
+        error: { message: 'DB exploded' },
+      })
+    })
+  })
+
+  it('sends disconnect_error with Unknown error occurred for non-Error throws', async () => {
+    mocks.revokeDappPermission.mockRejectedValueOnce('plain string')
+    const sendResponse = vi.fn()
+
+    handleMessage(
+      { type: WalletStandardMessageTypes.DISCONNECT, id: 'disc-str' },
+      dappSender(),
+      sendResponse,
+    )
+
+    await vi.waitFor(() => {
+      expect(sendResponse).toHaveBeenCalledWith({
+        id: 'disc-str',
+        type: 'disconnect_error',
+        error: { message: 'Unknown error occurred' },
+      })
+    })
+  })
+
+  it('broadcasts change events to all tabs when sent by extension', () => {
+    const sendResponse = vi.fn()
+    const result = handleMessage(
+      { event: 'change', payload: { accounts: ['0xabc'] } },
+      extensionSender(),
+      sendResponse,
+    )
+
+    expect(result).toBe(true)
+    expect(chrome.tabs.query).toHaveBeenCalled()
+    // tabs.query callback runs synchronously in the mock, so sendMessage is already called
+    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({
+        event: 'change',
+        payload: { accounts: ['0xabc'] },
+      }),
+    )
+    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(
+      2,
+      expect.objectContaining({ event: 'change' }),
+    )
+  })
+
+  it('returns undefined for messages with no matching route and no change event', () => {
+    const sendResponse = vi.fn()
+    const result = handleMessage(
+      { type: 'totally_unknown' } as Parameters<typeof handleMessage>[0],
+      extensionSender(),
+      sendResponse,
+    )
+
+    expect(result).toBeUndefined()
+    expect(sendResponse).not.toHaveBeenCalled()
   })
 })
