@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
 import { describe, expect, it } from 'vitest'
+import { SENSITIVE_FIELDS } from '../redact'
 
 /**
  * Regression guard for audit finding "secrets and proof material are logged".
@@ -16,21 +17,8 @@ const GUARDED_FILES = [
   '../../stores/deviceStore/actions/proofHelpers.ts',
 ]
 
-const SENSITIVE_IDENTIFIERS = [
-  'pin',
-  'hashedSecretKey',
-  'secretKey',
-  'privateKey',
-  'private_key',
-  'mnemonic',
-  'seed',
-  'zkProof',
-  'userSignature',
-  'msgBytes',
-]
-
 const LOGGER_METHODS = new Set(['debug', 'info', 'warn', 'error'])
-const SENSITIVE_IDENTIFIER_SET = new Set(SENSITIVE_IDENTIFIERS)
+const SENSITIVE_IDENTIFIER_SET = SENSITIVE_FIELDS
 
 function findSensitiveLoggerArgs(source: string): string[] {
   const sourceFile = ts.createSourceFile(

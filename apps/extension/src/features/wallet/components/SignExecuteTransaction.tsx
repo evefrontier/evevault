@@ -10,7 +10,7 @@ function SignAndExecuteTransaction() {
   return (
     <SignTransactionFlow
       title="Sign and Execute Transaction"
-      onSign={async ({ bytes, signature, txb, windowId }) => {
+      onSign={async ({ bytes, signature, txb }, storeResult) => {
         const execResult = await suiClient.executeTransaction({
           transaction: txb,
           signatures: [signature],
@@ -19,16 +19,19 @@ function SignAndExecuteTransaction() {
 
         const { digest, effects } = parseExecResult(execResult)
 
-        await chrome.storage.local.set({
-          transactionResult: {
-            windowId,
-            status: 'signed_and_executed',
-            bytes,
-            signature,
-            digest,
-            effects,
-          },
+        const stored = await storeResult({
+          status: 'signed_and_executed',
+          bytes,
+          signature,
+          digest,
+          effects,
         })
+        // A refused write (e.g. missing requestId) must surface as an error.
+        if (!stored) {
+          throw new Error(
+            'Failed to record the signing result. Please try again.',
+          )
+        }
 
         // Don't await so close isn't delayed
         queryClient.invalidateQueries({ queryKey: ['coin-balance'] })

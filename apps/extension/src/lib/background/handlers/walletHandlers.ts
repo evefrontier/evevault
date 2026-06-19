@@ -1,5 +1,5 @@
 import { WalletStandardMessageTypes } from '@evevault/shared'
-import { createLogger, toErrorMessage } from '@evevault/shared/utils'
+import { createLogger, isRecord, toErrorMessage } from '@evevault/shared/utils'
 import type { SuiChain } from '@mysten/wallet-standard'
 import {
   type SigningErrorType,
@@ -10,6 +10,21 @@ import type { WalletActionMessage } from '@/lib/background/types'
 import { requireSigningPermission } from './signingPermissions'
 
 const log = createLogger()
+
+// Binds the popup's result to this specific request: the windowId must match and
+// the popup must echo back the requestId minted when the popup was opened. This
+// prevents a stale/forged result for a reused windowId from settling the request.
+function isApprovalResultForRequest(
+  result: unknown,
+  windowId: number,
+  requestId: string,
+): result is Record<string, unknown> {
+  return (
+    isRecord(result) &&
+    result.windowId === windowId &&
+    result.requestId === requestId
+  )
+}
 
 // Maps a wallet action string to its corresponding error message type so
 // the dApp's listener can route the rejection correctly.
@@ -155,10 +170,13 @@ async function handleApprovePopup(
       throw new Error('Failed to open approval popup')
     }
 
+    const requestId = crypto.randomUUID()
+
     await chrome.storage.local.set({
       pendingAction: {
         ...message,
         windowId,
+        requestId,
         senderTabId,
         timestamp: Date.now(),
         dapp: permission.context,
@@ -182,6 +200,8 @@ async function handleApprovePopup(
       [key: string]: chrome.storage.StorageChange
     }) => {
       const result = changes.transactionResult?.newValue
+      if (!isApprovalResultForRequest(result, windowId, requestId)) return
+
       const isSuccess =
         result?.status === 'signed' || result?.status === 'signed_and_executed'
 

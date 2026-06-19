@@ -232,6 +232,8 @@ export class EveVaultWallet implements Wallet {
       let timeoutId: ReturnType<typeof setTimeout> | undefined
 
       const onMsg = async (e: MessageEvent) => {
+        // Only accept responses posted by this same page window.
+        if (e.source !== window || e.origin !== window.location.origin) return
         const m: Record<string, unknown> = e.data || {}
         if (m.__from !== 'Eve Vault' || m.id !== id) return
         if (trySettle(state, onMsg, timeoutId)) {

@@ -23,6 +23,7 @@ export interface PendingTransaction extends VaultMessage {
 
 export interface ParsedTransactionWithDisplay extends PendingTransaction {
   displayValue: string
+  reviewValue?: unknown
 }
 
 export interface PendingPersonalMessage extends VaultMessage {
@@ -43,6 +44,13 @@ export interface PendingSponsoredTransaction {
   senderTabId?: number
   timestamp: number
   windowId: number
+  /**
+   * Per-approval id minted by the background when the popup is opened. The popup
+   * echoes it back in transactionResult so the background can settle only the
+   * request the result actually belongs to. Required: a result with no matching
+   * requestId is dropped, so an unstamped request can never settle.
+   */
+  requestId: string
   sponsoredTxB64: string
   preparationId: string
   chain: SuiChain
@@ -64,6 +72,13 @@ export interface VaultMessage {
   senderTabId: number
   timestamp: number
   windowId: number
+  /**
+   * Per-approval id minted by the background when the popup is opened. The popup
+   * echoes it back in transactionResult so the background can bind the result to
+   * this specific request (not just a reused windowId). Required: a result with
+   * no matching requestId is dropped, so an unstamped request can never settle.
+   */
+  requestId: string
   __to: 'Eve Vault'
   dapp?: DappRequestContext
 }

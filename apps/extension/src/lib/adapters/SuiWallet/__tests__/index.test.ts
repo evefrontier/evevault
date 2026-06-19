@@ -50,9 +50,13 @@ describe('EveVaultWallet', () => {
     return calls[calls.length - 1][0] as Record<string, unknown>
   }
 
+  // Same-origin and posted by the page window itself, matching the connect
+  // listener's source+origin guard.
   function dispatchVaultMessage(data: Record<string, unknown>) {
     window.dispatchEvent(
       new MessageEvent('message', {
+        origin: window.location.origin,
+        source: window,
         data: {
           __from: 'Eve Vault',
           id: 'request-id',
@@ -185,6 +189,41 @@ describe('EveVaultWallet', () => {
         },
       }),
     )
+    dispatchVaultMessage({
+      type: 'auth_success',
+      chain: SUI_LOCALNET_CHAIN,
+      address: '0xlocal',
+    })
+
+    await expect(promise).resolves.toEqual({
+      accounts: expect.arrayContaining([
+        expect.objectContaining({ address: '0xlocal' }),
+      ]),
+    })
+  })
+
+  it('ignores a same-origin connect response from a different window source', async () => {
+    const wallet = new EveVaultWallet()
+    const promise = wallet.features[StandardConnect].connect()
+
+    const iframe = document.createElement('iframe')
+    document.body.appendChild(iframe)
+    // Shares the page origin but comes from the iframe window, so it must not be
+    // able to inject account metadata into the connect flow.
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        origin: window.location.origin,
+        source: iframe.contentWindow,
+        data: {
+          __from: 'Eve Vault',
+          id: 'request-id',
+          type: 'auth_success',
+          chain: SUI_LOCALNET_CHAIN,
+          address: '0xspoofed',
+        },
+      }),
+    )
+    // The genuine same-window response still settles the connect.
     dispatchVaultMessage({
       type: 'auth_success',
       chain: SUI_LOCALNET_CHAIN,

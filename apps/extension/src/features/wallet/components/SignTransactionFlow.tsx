@@ -1,12 +1,20 @@
 import { Text } from '@evevault/shared/components'
 import Json from '@evevault/shared/components/Json'
 import { useTransactionSigning } from '@/features/wallet/hooks'
-import type { SignResult } from '@/features/wallet/hooks/useTransactionSigning'
+import type {
+  SignResult,
+  StoreResult,
+} from '@/features/wallet/hooks/useTransactionSigning'
+import {
+  requiresAcknowledgement,
+  reviewTransaction,
+} from '../transactionRiskReview'
 import { SignRequestView } from './SignRequestView'
+import { TransactionRiskPanel } from './TransactionRiskPanel'
 
 interface SignTransactionFlowProps {
   title: string
-  onSign: (result: SignResult) => Promise<void>
+  onSign: (result: SignResult, storeResult: StoreResult) => Promise<void>
 }
 
 export function SignTransactionFlow({
@@ -20,9 +28,14 @@ export function SignTransactionFlow({
     auth,
     handleReject,
     withSigning,
+    storeResult,
   } = useTransactionSigning()
 
-  const handleApprove = () => withSigning(onSign)
+  const handleApprove = () =>
+    withSigning((result) => onSign(result, storeResult))
+  const riskFindings = pendingTransaction
+    ? reviewTransaction(pendingTransaction.reviewValue)
+    : []
 
   return (
     <SignRequestView
@@ -36,11 +49,13 @@ export function SignTransactionFlow({
       dapp={pendingTransaction?.dapp}
       accountAddress={pendingTransaction?.account.address}
       requestKind={title}
+      requireAcknowledgement={requiresAcknowledgement(riskFindings)}
       onApprove={handleApprove}
       onReject={handleReject}
     >
       {pendingTransaction && (
         <div className="flex w-full flex-col items-center gap-2">
+          <TransactionRiskPanel findings={riskFindings} />
           <Text size="small" color="grey-neutral">
             Transaction payload
           </Text>
