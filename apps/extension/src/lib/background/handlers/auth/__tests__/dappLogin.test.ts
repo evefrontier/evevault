@@ -188,4 +188,162 @@ describe('handleDappLogin', () => {
       }),
     )
   })
+
+  it('sends auth_error to the tab when dapp context is invalid (non-web origin)', async () => {
+    await handleDappLogin(
+      { id: 'ext-req' },
+      {
+        origin: 'chrome-extension://extension-id',
+      } as chrome.runtime.MessageSender,
+      vi.fn(),
+      undefined,
+    )
+
+    expect(chrome.tabs.sendMessage).not.toHaveBeenCalled()
+    // No tab to send to — the call silently returns
+  })
+
+  it('sends auth_error to the tab when the keeper is locked and there is no device data', async () => {
+    mocks.deviceState.ephemeralKeyPairSecretKey = null
+    mockCheckKeeperUnlocked.mockResolvedValue({ unlocked: false })
+    mocks.openPopupWindow.mockResolvedValue(55)
+
+    await handleDappLogin(
+      { id: 'locked-req' },
+      {
+        origin: 'https://dapp.example',
+        tab: { id: 10, url: 'https://dapp.example/' },
+      } as chrome.runtime.MessageSender,
+      vi.fn(),
+      10,
+    )
+
+    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(
+      10,
+      expect.objectContaining({
+        id: 'locked-req',
+        type: 'auth_error',
+        error: expect.objectContaining({ vaultOpened: true }),
+      }),
+    )
+  })
+
+  it('deduplicates a second connect from the same tab when one is already pending', async () => {
+    mockCheckKeeperUnlocked.mockResolvedValue({ unlocked: false })
+    mocks.deviceState.ephemeralKeyPairSecretKey = { iv: 'iv', data: 'data' }
+    mocks.getPending.mockReturnValue({ type: 'dapp', tabId: 20 })
+    mocks.addPendingDappId.mockReturnValue(true)
+
+    await handleDappLogin(
+      { id: 'dup-req' },
+      {
+        origin: 'https://dapp.example',
+        tab: { id: 20, url: 'https://dapp.example/' },
+      } as chrome.runtime.MessageSender,
+      vi.fn(),
+      20,
+    )
+
+    expect(mocks.openPopupWindow).not.toHaveBeenCalled()
+    expect(chrome.tabs.sendMessage).not.toHaveBeenCalled()
+  })
+
+  it('sends auth_error when the popup window fails to open (no device data)', async () => {
+    mocks.deviceState.ephemeralKeyPairSecretKey = null
+    mockCheckKeeperUnlocked.mockResolvedValue({ unlocked: false })
+    mocks.openPopupWindow.mockResolvedValue(undefined)
+
+    await handleDappLogin(
+      { id: 'popup-fail' },
+      {
+        origin: 'https://dapp.example',
+        tab: { id: 7, url: 'https://dapp.example/' },
+      } as chrome.runtime.MessageSender,
+      vi.fn(),
+      7,
+    )
+
+    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(
+      7,
+      expect.objectContaining({
+        type: 'auth_error',
+        error: expect.objectContaining({
+          message: expect.stringContaining('Failed to open vault window'),
+        }),
+      }),
+    )
+  })
+
+  it('retries keeper check and succeeds when unlocked on retry', async () => {
+    mocks.deviceState.ephemeralKeyPairSecretKey = { iv: 'iv', data: 'data' }
+    mockCheckKeeperUnlocked
+      .mockResolvedValueOnce({ unlocked: false })
+      .mockResolvedValueOnce({ unlocked: true, publicKeyBytes: undefined })
+    mocks.deviceState.ephemeralPublicKey = { flag: vi.fn() }
+
+    await handleDappLogin(
+      { id: 'retry-req' },
+      {
+        origin: 'https://dapp.example',
+        tab: { id: 42, url: 'https://dapp.example/' },
+      } as chrome.runtime.MessageSender,
+      vi.fn(),
+      42,
+    )
+
+    expect(mockCheckKeeperUnlocked).toHaveBeenCalledTimes(2)
+    expect(mocks.openPopupWindow).not.toHaveBeenCalled()
+  })
+
+  it('sends auth_error when zkLogin address lookup fails', async () => {
+    mockGetZkLoginAddress.mockResolvedValue({
+      data: undefined,
+      error: { message: 'Enoki lookup failed' },
+    })
+
+    await handleDappLogin(
+      { id: 'zk-fail' },
+      {
+        origin: 'https://dapp.example',
+        tab: { id: 42, url: 'https://dapp.example/' },
+      } as chrome.runtime.MessageSender,
+      vi.fn(),
+      42,
+    )
+
+    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(
+      42,
+      expect.objectContaining({
+        type: 'auth_error',
+        error: expect.objectContaining({ message: 'Enoki lookup failed' }),
+      }),
+    )
+  })
+
+  it('sends auth_error when zkLogin address is missing from the response', async () => {
+    mockGetZkLoginAddress.mockResolvedValue({
+      data: { address: undefined, publicKey: undefined },
+      error: undefined,
+    })
+
+    await handleDappLogin(
+      { id: 'zk-no-addr' },
+      {
+        origin: 'https://dapp.example',
+        tab: { id: 42, url: 'https://dapp.example/' },
+      } as chrome.runtime.MessageSender,
+      vi.fn(),
+      42,
+    )
+
+    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(
+      42,
+      expect.objectContaining({
+        type: 'auth_error',
+        error: expect.objectContaining({
+          message: expect.stringContaining('account metadata'),
+        }),
+      }),
+    )
+  })
 })
