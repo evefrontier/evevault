@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { handleUnlockVault } from '@/lib/background/handlers/vaultHandlers'
 import type { VaultMessage } from '@/lib/background/types'
+import { captureKeeperMessage } from './vaultHandlers.test-utils'
 
 vi.mock('@/lib/background/handlers/authHandlers', () => ({
   checkPendingAuthAfterUnlock: vi.fn(),
@@ -64,12 +65,6 @@ function stubKeeperBridge(
       lastError: undefined,
     },
   } as unknown as typeof chrome)
-}
-
-function captureKeeperMessage(): Record<string, unknown> | undefined {
-  const calls = (chrome.runtime.sendMessage as ReturnType<typeof vi.fn>).mock
-    .calls
-  return calls[0]?.[0] as Record<string, unknown> | undefined
 }
 
 describe('handleUnlockVault — localnet key forwarding', () => {

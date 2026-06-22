@@ -2,6 +2,7 @@ import { User } from 'oidc-client-ts'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AuthStoreMockHandles } from './authStoreTestMocks'
 import {
+  FUTURE,
   makeAdaptersMock,
   makeAuthCleanupMock,
   makeAuthConfigMock,
@@ -12,9 +13,11 @@ import {
   makeLoggerMock,
   makeOAuthTokenResponseMock,
   makeStorageServiceMock,
+  makeStoredJwt,
   makeStoresMock,
   makeTenantConfigMock,
   makeTenantStoreMock,
+  makeUser,
   makeUserJwtSyncMock,
   makeUserToJwtResponseMock,
   makeVaultServiceMock,
@@ -72,36 +75,7 @@ import { makeJwt } from '#/testing'
 
 // ─── helpers ──────────────────────────────────────────────────────────────
 
-const FUTURE = Math.floor(Date.now() / 1000) + 3600
 const PAST = Math.floor(Date.now() / 1000) - 60
-
-function makeStoredJwt(overrides: Record<string, unknown> = {}) {
-  return {
-    id_token: makeJwt({ sub: 'user-1', iat: 1000, exp: FUTURE }),
-    access_token: 'at',
-    token_type: 'Bearer',
-    scope: 'openid',
-    refresh_token: 'rt',
-    expires_in: 3600,
-    expires_at: FUTURE,
-    ...overrides,
-  }
-}
-
-function makeUser(
-  overrides: Partial<ConstructorParameters<typeof User>[0]> = {},
-) {
-  return new User({
-    id_token: makeJwt({ sub: 'user-1', iat: 1000, exp: FUTURE }),
-    access_token: 'at',
-    token_type: 'Bearer',
-    scope: 'openid',
-    refresh_token: 'rt',
-    profile: { sub: 'user-1' } as User['profile'],
-    expires_at: FUTURE,
-    ...overrides,
-  })
-}
 
 describe('authStore.initialize() (web path)', () => {
   beforeEach(() => {
