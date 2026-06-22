@@ -299,7 +299,10 @@ function parseDappZkLoginAccount(
 
   const hasLookupError = !!zkLoginResponse.error
   if (hasLookupError) {
-    return { ok: false, error: zkLoginResponse?.error?.message ?? '' }
+    return {
+      ok: false,
+      error: zkLoginResponse?.error?.message ?? 'Unknown authentication error',
+    }
   }
 
   const address = zkLoginResponse.data?.address

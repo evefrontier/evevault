@@ -39,7 +39,12 @@ function isTrustedPageEvent(event: MessageEvent): boolean {
 }
 
 function hasObjectAccount(data: Record<string, unknown>): boolean {
-  return isRecord(data.account)
+  const account = data.account
+  return (
+    isRecord(account) &&
+    typeof account.address === 'string' &&
+    account.address.length > 0
+  )
 }
 
 function hasStringFields(
@@ -71,10 +76,19 @@ function isDisconnectMessage(data: Record<string, unknown>): boolean {
   )
 }
 
+function isMessageBytes(value: unknown): boolean {
+  if (Array.isArray(value)) return value.every((v) => typeof v === 'number')
+  if (!isRecord(value)) return false
+  return (
+    Object.keys(value).every((k) => /^\d+$/.test(k)) &&
+    Object.values(value).every((v) => typeof v === 'number')
+  )
+}
+
 function isPersonalMessageRequest(data: Record<string, unknown>): boolean {
   return (
     isValidRequestId(data.id) &&
-    data.message !== undefined &&
+    isMessageBytes(data.message) &&
     hasObjectAccount(data)
   )
 }

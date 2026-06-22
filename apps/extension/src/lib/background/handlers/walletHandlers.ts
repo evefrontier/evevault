@@ -83,7 +83,7 @@ function sendApprovalSuccess(
     if (!hasRequired) {
       sendToTab(senderTabId, {
         type: 'sign_and_execute_transaction_error',
-        error: 'Missing bytes or signature in transaction result',
+        error: 'Missing required fields in sign_and_execute transaction result',
         id: messageId,
       })
     } else {

@@ -23,7 +23,12 @@ export const TOKEN_MATERIAL_FIELDS: ReadonlySet<string> = new Set<string>([
 ])
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === 'object' && !Array.isArray(value)
+  return (
+    !!value &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    !ArrayBuffer.isView(value)
+  )
 }
 
 /**

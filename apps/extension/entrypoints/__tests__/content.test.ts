@@ -299,12 +299,36 @@ describe('content bridge message validation', () => {
         __to: 'Eve Vault',
         id: 'pm-id',
         action: WalletStandardMessageTypes.SIGN_PERSONAL_MESSAGE,
-        message: 'hello',
+        message: [104, 101, 108, 108, 111],
       }),
     ).toBe(false)
   })
 
-  it('allows a personal message request with a valid account', () => {
+  it('allows a personal message request with a bytes array message', () => {
+    expect(
+      content.isAllowedPageMessage({
+        __to: 'Eve Vault',
+        id: 'pm-id',
+        action: WalletStandardMessageTypes.SIGN_PERSONAL_MESSAGE,
+        message: [104, 101, 108, 108, 111],
+        account: { address: '0xabc' },
+      }),
+    ).toBe(true)
+  })
+
+  it('allows a personal message request with a serialized Uint8Array message', () => {
+    expect(
+      content.isAllowedPageMessage({
+        __to: 'Eve Vault',
+        id: 'pm-id',
+        action: WalletStandardMessageTypes.SIGN_PERSONAL_MESSAGE,
+        message: { '0': 104, '1': 101, '2': 108, '3': 108, '4': 111 },
+        account: { address: '0xabc' },
+      }),
+    ).toBe(true)
+  })
+
+  it('rejects a personal message request with a string message', () => {
     expect(
       content.isAllowedPageMessage({
         __to: 'Eve Vault',
@@ -313,7 +337,7 @@ describe('content bridge message validation', () => {
         message: 'hello',
         account: { address: '0xabc' },
       }),
-    ).toBe(true)
+    ).toBe(false)
   })
 
   it('rejects messages from cross-origin sources', () => {
