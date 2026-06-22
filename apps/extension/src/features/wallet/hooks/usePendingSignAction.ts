@@ -4,6 +4,27 @@ import { useSignPopupAuth } from './useSignPopupAuth'
 
 const log = createLogger()
 
+/**
+ * The shapes a popup may write as its result. `storeResult` stamps `windowId`
+ * and `requestId` on top of these, so call sites never spell those out — and a
+ * typo'd `status` or a missing field is now a compile error rather than a value
+ * the background silently fails to recognize.
+ */
+export type PopupResultPayload =
+  | { status: 'signed'; bytes: string; signature: string }
+  | { status: 'signed'; zkSignature: string; preparationId: string }
+  | {
+      status: 'signed_and_executed'
+      bytes: string
+      signature: string
+      digest: string
+      effects: string
+    }
+  | { status: 'error'; error: string }
+
+/** Resolves true when the result was written, false when it was refused. */
+export type StoreResult = (result: PopupResultPayload) => Promise<boolean>
+
 type PendingParser<TPending> = (
   pendingAction: unknown,
 ) => TPending | Promise<TPending>
@@ -21,7 +42,7 @@ function errorMessageFrom(error: unknown): string {
   return error instanceof Error ? error.message : 'Unknown error occurred'
 }
 
-export function usePendingSignAction<TPending>({
+export function usePendingSignAction<TPending extends { requestId?: string }>({
   parsePending,
   missingError,
   rejectError,
@@ -55,27 +76,54 @@ export function usePendingSignAction<TPending>({
       })
   }, [missingError, parsePending])
 
-  const storeErrorResult = async (
-    errorMessage: string,
+  // Writes the popup's result to storage, always stamping the windowId and the
+  // per-request id so the background can bind the result to the request that
+  // opened this popup. All result writers must go through here.
+  const storeResult = async (
+    result: PopupResultPayload,
     targetPending = pending,
-  ) => {
-    if (!targetPending) return
+  ): Promise<boolean> => {
+    if (!targetPending) return false
+
+    const { requestId } = targetPending
+    if (!requestId) {
+      // The background drops any result whose requestId doesn't match the
+      // request, so writing one without a requestId would leave the request
+      // hanging forever with no error. Fail loud instead of failing silently.
+      log.error(
+        'Refusing to store sign result: pending action has no requestId',
+      )
+      return false
+    }
 
     await chrome.storage.local.set({
       transactionResult: {
+        ...result,
         windowId: getWindowId(targetPending),
-        status: 'error',
-        error: errorMessage,
+        requestId,
       },
     })
+    return true
+  }
+
+  const storeErrorResult = async (
+    errorMessage: string,
+    targetPending = pending,
+  ): Promise<boolean> => {
+    return storeResult({ status: 'error', error: errorMessage }, targetPending)
   }
 
   const handleReject = async () => {
     if (!pending) return
 
     try {
-      await storeErrorResult(rejectError, pending)
-      window.close()
+      // Only close once the rejection is actually recorded; closing on a
+      // refused write would leave the dApp request hanging with no response.
+      if (await storeErrorResult(rejectError, pending)) {
+        window.close()
+        return
+      }
+      setError(rejectFailureError)
     } catch (err) {
       log.error(rejectLogMessage, err)
       setError(rejectFailureError)
@@ -90,6 +138,7 @@ export function usePendingSignAction<TPending>({
     setError,
     auth,
     handleReject,
+    storeResult,
     storeErrorResult,
   }
 }

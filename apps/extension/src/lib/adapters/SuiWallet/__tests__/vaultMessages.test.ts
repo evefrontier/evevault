@@ -1,6 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { APPROVAL_TIMEOUT_MS, waitForVaultMessage } from '../vaultMessages'
 
+// Same-origin and posted by the page window itself by default, matching the
+// listener's source+origin guard. Negative tests override origin or source.
+function dispatchVaultMessage(
+  data: Record<string, unknown>,
+  origin = window.location.origin,
+  source: MessageEventSource | null = window,
+) {
+  window.dispatchEvent(new MessageEvent('message', { origin, source, data }))
+}
+
 describe('waitForVaultMessage', () => {
   beforeEach(() => {
     vi.spyOn(window, 'postMessage').mockImplementation(() => undefined)
@@ -21,41 +31,29 @@ describe('waitForVaultMessage', () => {
       timeoutMessage: 'timed out',
     })
 
-    window.dispatchEvent(
-      new MessageEvent('message', {
-        data: {
-          __from: 'Elsewhere',
-          id: 'request-1',
-          type: 'ok',
-          result: 'ignored',
-        },
-      }),
-    )
-    window.dispatchEvent(
-      new MessageEvent('message', {
-        data: {
-          __from: 'Eve Vault',
-          id: 'other-request',
-          type: 'ok',
-          result: 'ignored',
-        },
-      }),
-    )
-    window.dispatchEvent(
-      new MessageEvent('message', {
-        data: {
-          __from: 'Eve Vault',
-          id: 'request-1',
-          type: 'ok',
-          result: 'signed',
-        },
-      }),
-    )
+    dispatchVaultMessage({
+      __from: 'Elsewhere',
+      id: 'request-1',
+      type: 'ok',
+      result: 'ignored',
+    })
+    dispatchVaultMessage({
+      __from: 'Eve Vault',
+      id: 'other-request',
+      type: 'ok',
+      result: 'ignored',
+    })
+    dispatchVaultMessage({
+      __from: 'Eve Vault',
+      id: 'request-1',
+      type: 'ok',
+      result: 'signed',
+    })
 
     await expect(promise).resolves.toBe('signed')
     expect(window.postMessage).toHaveBeenCalledWith(
       { __to: 'Eve Vault', id: 'request-1' },
-      '*',
+      window.location.origin,
     )
   })
 
@@ -69,16 +67,12 @@ describe('waitForVaultMessage', () => {
       timeoutMessage: 'timed out',
     })
 
-    window.dispatchEvent(
-      new MessageEvent('message', {
-        data: {
-          __from: 'Eve Vault',
-          id: 'request-2',
-          type: 'error',
-          error: 'rejected',
-        },
-      }),
-    )
+    dispatchVaultMessage({
+      __from: 'Eve Vault',
+      id: 'request-2',
+      type: 'error',
+      error: 'rejected',
+    })
 
     await expect(promise).rejects.toThrow('rejected')
   })
@@ -93,18 +87,54 @@ describe('waitForVaultMessage', () => {
       timeoutMessage: 'timed out',
     })
 
-    window.dispatchEvent(
-      new MessageEvent('message', {
-        data: {
-          __from: 'Eve Vault',
-          id: 'request-structured-error',
-          type: 'error',
-          error: { message: 'structured rejection' },
-        },
-      }),
-    )
+    dispatchVaultMessage({
+      __from: 'Eve Vault',
+      id: 'request-structured-error',
+      type: 'error',
+      error: { message: 'structured rejection' },
+    })
 
     await expect(promise).rejects.toThrow('structured rejection')
+  })
+
+  it('uses nested messages from structured error responses', async () => {
+    const promise = waitForVaultMessage({
+      id: 'request-nested-error',
+      successType: 'ok',
+      errorType: 'error',
+      outbound: { __to: 'Eve Vault', id: 'request-nested-error' },
+      mapSuccess: (message) => message,
+      timeoutMessage: 'timed out',
+    })
+
+    dispatchVaultMessage({
+      __from: 'Eve Vault',
+      id: 'request-nested-error',
+      type: 'error',
+      error: { error: { message: 'nested rejection' } },
+    })
+
+    await expect(promise).rejects.toThrow('nested rejection')
+  })
+
+  it('does not surface object-string error messages', async () => {
+    const promise = waitForVaultMessage({
+      id: 'request-object-string-error',
+      successType: 'ok',
+      errorType: 'error',
+      outbound: { __to: 'Eve Vault', id: 'request-object-string-error' },
+      mapSuccess: (message) => message,
+      timeoutMessage: 'timed out',
+    })
+
+    dispatchVaultMessage({
+      __from: 'Eve Vault',
+      id: 'request-object-string-error',
+      type: 'error',
+      error: '[object Object]',
+    })
+
+    await expect(promise).rejects.toThrow('Request failed')
   })
 
   it('uses a fallback message when error responses have no message', async () => {
@@ -117,18 +147,74 @@ describe('waitForVaultMessage', () => {
       timeoutMessage: 'timed out',
     })
 
-    window.dispatchEvent(
-      new MessageEvent('message', {
-        data: {
-          __from: 'Eve Vault',
-          id: 'request-empty-error',
-          type: 'error',
-          error: {},
-        },
-      }),
-    )
+    dispatchVaultMessage({
+      __from: 'Eve Vault',
+      id: 'request-empty-error',
+      type: 'error',
+      error: {},
+    })
 
     await expect(promise).rejects.toThrow('Request failed')
+  })
+
+  it('ignores a matching response from a different origin', async () => {
+    vi.useFakeTimers()
+    const promise = waitForVaultMessage({
+      id: 'request-cross-origin',
+      successType: 'ok',
+      errorType: 'error',
+      outbound: { __to: 'Eve Vault', id: 'request-cross-origin' },
+      mapSuccess: (message) => message.result as string,
+      timeoutMessage: 'timed out',
+    })
+    const expectation = expect(promise).rejects.toThrow('timed out')
+
+    dispatchVaultMessage(
+      {
+        __from: 'Eve Vault',
+        id: 'request-cross-origin',
+        type: 'ok',
+        result: 'spoofed',
+      },
+      'https://evil.example',
+    )
+
+    await vi.advanceTimersByTimeAsync(APPROVAL_TIMEOUT_MS)
+    await expectation
+  })
+
+  it('ignores a same-origin response from a different window source', async () => {
+    const promise = waitForVaultMessage({
+      id: 'request-source',
+      successType: 'ok',
+      errorType: 'error',
+      outbound: { __to: 'Eve Vault', id: 'request-source' },
+      mapSuccess: (message) => message.result as string,
+      timeoutMessage: 'timed out',
+    })
+
+    const iframe = document.createElement('iframe')
+    document.body.appendChild(iframe)
+    // Shares the page origin but comes from the iframe window: must be ignored.
+    dispatchVaultMessage(
+      {
+        __from: 'Eve Vault',
+        id: 'request-source',
+        type: 'ok',
+        result: 'spoofed',
+      },
+      window.location.origin,
+      iframe.contentWindow,
+    )
+    // The genuine same-window response still settles the request.
+    dispatchVaultMessage({
+      __from: 'Eve Vault',
+      id: 'request-source',
+      type: 'ok',
+      result: 'genuine',
+    })
+
+    await expect(promise).resolves.toBe('genuine')
   })
 
   it('rejects when no matching response arrives before the timeout', async () => {

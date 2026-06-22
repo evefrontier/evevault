@@ -39,6 +39,7 @@ describe('parseTransactionBytes', () => {
 
       expect(result).toEqual({
         displayValue: input,
+        reviewValue: { kind: 'ProgrammableTransaction' },
       })
       expect(mockFrom).not.toHaveBeenCalled()
     })
@@ -49,6 +50,7 @@ describe('parseTransactionBytes', () => {
 
       expect(result.displayValue).toBe(input)
       expect(result.transactionForSigning).toBeUndefined()
+      expect(result.reviewValue).toEqual({ x: 1 })
     })
   })
 
@@ -59,6 +61,7 @@ describe('parseTransactionBytes', () => {
 
       expect(result).toEqual({
         displayValue: JSON.stringify(input, null, 2),
+        reviewValue: input,
         transactionForSigning: JSON.stringify(input),
       })
       expect(mockFrom).not.toHaveBeenCalled()
@@ -85,6 +88,10 @@ describe('parseTransactionBytes', () => {
           2,
         ),
       )
+      expect(result.reviewValue).toEqual({
+        kind: 'ProgrammableTransaction',
+        data: { inputs: [] },
+      })
       expect(result.transactionForSigning).toBe(
         Buffer.from(expectedBytes).toString('base64'),
       )
@@ -99,6 +106,7 @@ describe('parseTransactionBytes', () => {
       expect(result.displayValue).toBe(
         JSON.stringify({ trimmed: true }, null, 2),
       )
+      expect(result.reviewValue).toEqual({ trimmed: true })
       expect(result.transactionForSigning).toBe('AAEC')
     })
 
@@ -181,6 +189,10 @@ describe('parseTransactionBytes', () => {
           2,
         ),
       )
+      expect(result.reviewValue).toEqual({
+        kind: 'ProgrammableTransaction',
+        fromBase64: true,
+      })
       expect(result.transactionForSigning).toBe(base64Input)
     })
 
@@ -220,6 +232,7 @@ describe('parseTransactionBytes', () => {
       expect(result.displayValue).toBe(
         JSON.stringify({ normalized: true }, null, 2),
       )
+      expect(result.reviewValue).toEqual({ normalized: true })
     })
   })
 

@@ -7,18 +7,35 @@ const COMMA_SEPARATED_BYTES = /^\d+(\s*,\s*\d+)*$/
 export type ParseTransactionBytesResult = {
   /** Display-ready string for the Json component */
   displayValue: string
+  /** Parsed transaction-like value for review logic. Display formatting must not affect this. */
+  reviewValue?: unknown
   /** Signing-ready transaction string for Transaction.from() - base64 for bytes, JSON for objects, trimmed/normalized for strings */
   transactionForSigning?: string
 }
 
-async function bytesToDisplayJson(bytes: Uint8Array): Promise<string> {
+async function bytesToReviewValue(bytes: Uint8Array): Promise<unknown> {
   const tx = Transaction.from(bytes)
   const json = await tx.toJSON()
-  const parsed = (typeof json === 'string' ? JSON.parse(json) : json) as Record<
-    string,
-    unknown
-  >
-  return JSON.stringify(parsed, null, 2)
+  return typeof json === 'string' ? JSON.parse(json) : json
+}
+
+function parseJsonString(value: string): { ok: true; value: unknown } | null {
+  try {
+    return { ok: true, value: JSON.parse(value) }
+  } catch {
+    return null
+  }
+}
+
+function toDisplayResult(
+  reviewValue: unknown,
+  transactionForSigning?: string,
+): ParseTransactionBytesResult {
+  return {
+    displayValue: JSON.stringify(reviewValue, null, 2),
+    reviewValue,
+    ...(transactionForSigning && { transactionForSigning }),
+  }
 }
 
 /**
@@ -39,11 +56,12 @@ export async function parseTransactionBytes(
 
 const parseTransactionObject = (
   transaction: Record<string, unknown>,
-): ParseTransactionBytesResult => ({
-  displayValue: JSON.stringify(transaction, null, 2),
-  // Transaction.from() can accept serialized transaction objects as JSON strings.
-  transactionForSigning: JSON.stringify(transaction),
-})
+): ParseTransactionBytesResult =>
+  toDisplayResult(
+    transaction,
+    // Transaction.from() can accept serialized transaction objects as JSON strings.
+    JSON.stringify(transaction),
+  )
 
 const parseTransactionString = async (
   transaction: string,
@@ -53,7 +71,13 @@ const parseTransactionString = async (
     ? parseCommaSeparatedBytes
     : parseBase64Bytes
 
-  return parser(trimmed, transaction)
+  const result = await parser(trimmed, transaction)
+  if (result.transactionForSigning || result.reviewValue !== undefined) {
+    return result
+  }
+
+  const parsed = parseJsonString(transaction)
+  return parsed ? { ...result, reviewValue: parsed.value } : result
 }
 
 const parseCommaSeparatedBytes = async (
@@ -62,10 +86,7 @@ const parseCommaSeparatedBytes = async (
 ): Promise<ParseTransactionBytesResult> => {
   try {
     const bytes = new Uint8Array(trimmed.split(',').map(parseByteValue))
-    return {
-      displayValue: await bytesToDisplayJson(bytes),
-      transactionForSigning: toBase64(bytes),
-    }
+    return toDisplayResult(await bytesToReviewValue(bytes), toBase64(bytes))
   } catch {
     return { displayValue: original }
   }
@@ -76,10 +97,10 @@ const parseBase64Bytes = async (
   original: string,
 ): Promise<ParseTransactionBytesResult> => {
   try {
-    return {
-      displayValue: await bytesToDisplayJson(fromBase64(trimmed)),
-      transactionForSigning: trimmed,
-    }
+    return toDisplayResult(
+      await bytesToReviewValue(fromBase64(trimmed)),
+      trimmed,
+    )
   } catch {
     return { displayValue: original }
   }

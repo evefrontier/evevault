@@ -1,7 +1,249 @@
-import { createLogger } from '@evevault/shared/utils'
+import { WalletStandardMessageTypes } from '@evevault/shared/types'
+import { createLogger, hasNoTokenMaterial } from '@evevault/shared/utils'
 import { CONTEXT_STORAGE_KEY } from '@evevault/shared/utils/storageKeys'
 
 const log = createLogger()
+const PUBLIC_WALLET_ACTIONS = new Set<string>([
+  WalletStandardMessageTypes.SIGN_PERSONAL_MESSAGE,
+  WalletStandardMessageTypes.SIGN_TRANSACTION,
+  WalletStandardMessageTypes.SIGN_AND_EXECUTE_TRANSACTION,
+  WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION,
+])
+const SPONSORED_MESSAGE_STRING_FIELDS = [
+  'action',
+  'assembly',
+  'assemblyType',
+] as const
+
+type PageMessageValidator = (data: Record<string, unknown>) => boolean
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value)
+}
+
+function isValidRequestId(value: unknown): value is string {
+  if (typeof value !== 'string') return false
+
+  return value.length > 0 && value.length <= 128
+}
+
+function getPageTargetOrigin(): string | null {
+  const origin = window.location.origin
+  return origin && origin !== 'null' ? origin : null
+}
+
+function isTrustedPageEvent(event: MessageEvent): boolean {
+  const origin = getPageTargetOrigin()
+
+  return event.source === window && !!origin && event.origin === origin
+}
+
+function hasObjectAccount(data: Record<string, unknown>): boolean {
+  const account = data.account
+  return (
+    isRecord(account) &&
+    typeof account.address === 'string' &&
+    account.address.length > 0
+  )
+}
+
+function hasStringFields(
+  data: Record<string, unknown>,
+  fields: readonly string[],
+): boolean {
+  return fields.every((field) => typeof data[field] === 'string')
+}
+
+function hasOptionalObjectMetadata(data: Record<string, unknown>): boolean {
+  return data.metadata === undefined || isRecord(data.metadata)
+}
+
+function isEveVaultRequest(data: unknown): data is Record<string, unknown> {
+  return isRecord(data) && data.__to === 'Eve Vault'
+}
+
+function isConnectMessage(data: Record<string, unknown>): boolean {
+  return (
+    data.type === WalletStandardMessageTypes.CONNECT &&
+    isValidRequestId(data.id)
+  )
+}
+
+function isDisconnectMessage(data: Record<string, unknown>): boolean {
+  return (
+    data.type === WalletStandardMessageTypes.DISCONNECT &&
+    isValidRequestId(data.id)
+  )
+}
+
+function isMessageBytes(value: unknown): boolean {
+  if (Array.isArray(value)) return value.every((v) => typeof v === 'number')
+  if (!isRecord(value)) return false
+  return (
+    Object.keys(value).every((k) => /^\d+$/.test(k)) &&
+    Object.values(value).every((v) => typeof v === 'number')
+  )
+}
+
+function isPersonalMessageRequest(data: Record<string, unknown>): boolean {
+  return (
+    isValidRequestId(data.id) &&
+    isMessageBytes(data.message) &&
+    hasObjectAccount(data)
+  )
+}
+
+function isTransactionRequest(data: Record<string, unknown>): boolean {
+  return (
+    isValidRequestId(data.id) &&
+    typeof data.transaction === 'string' &&
+    hasObjectAccount(data)
+  )
+}
+
+function isSponsoredTransactionRequest(data: Record<string, unknown>): boolean {
+  const message = data.message
+  if (!isRecord(message)) return false
+
+  return (
+    isValidRequestId(data.id) &&
+    hasStringFields(message, SPONSORED_MESSAGE_STRING_FIELDS) &&
+    hasOptionalObjectMetadata(message)
+  )
+}
+
+const WALLET_ACTION_VALIDATORS: Partial<Record<string, PageMessageValidator>> =
+  {
+    [WalletStandardMessageTypes.SIGN_PERSONAL_MESSAGE]:
+      isPersonalMessageRequest,
+    [WalletStandardMessageTypes.SIGN_TRANSACTION]: isTransactionRequest,
+    [WalletStandardMessageTypes.SIGN_AND_EXECUTE_TRANSACTION]:
+      isTransactionRequest,
+    [WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION]:
+      isSponsoredTransactionRequest,
+  }
+
+function isAllowedWalletAction(data: Record<string, unknown>): boolean {
+  const action = typeof data.action === 'string' ? data.action : ''
+  const validator = WALLET_ACTION_VALIDATORS[action]
+
+  return PUBLIC_WALLET_ACTIONS.has(action) && !!validator?.(data)
+}
+
+function isAllowedBridgePayload(data: Record<string, unknown>): boolean {
+  if (data.type === WalletStandardMessageTypes.CONNECT)
+    return isConnectMessage(data)
+  if (data.type === WalletStandardMessageTypes.DISCONNECT)
+    return isDisconnectMessage(data)
+
+  return isAllowedWalletAction(data)
+}
+
+export function isAllowedPageMessage(
+  data: unknown,
+): data is Record<string, unknown> {
+  if (!isEveVaultRequest(data)) return false
+
+  return isAllowedBridgePayload(data)
+}
+
+function hasStringIdAndType(data: Record<string, unknown>): boolean {
+  return isValidRequestId(data.id) && typeof data.type === 'string'
+}
+
+function isPublicAuthSuccess(data: Record<string, unknown>): boolean {
+  return (
+    hasStringIdAndType(data) &&
+    data.type === 'auth_success' &&
+    // chain/address are present on dApp connect success but absent on the bare
+    // web-unlock auth_success ({ id, type }); both are valid, token-free shapes.
+    (data.chain === undefined || typeof data.chain === 'string') &&
+    (data.address === undefined || typeof data.address === 'string') &&
+    (data.publicKey === undefined || typeof data.publicKey === 'string')
+  )
+}
+
+function isPublicAuthError(data: Record<string, unknown>): boolean {
+  return (
+    hasStringIdAndType(data) &&
+    data.type === 'auth_error' &&
+    data.error !== undefined
+  )
+}
+
+function isSignatureSuccess(data: Record<string, unknown>): boolean {
+  return (
+    hasStringIdAndType(data) &&
+    data.type === 'sign_success' &&
+    (typeof data.bytes === 'string' || typeof data.digest === 'string') &&
+    (typeof data.signature === 'string' || typeof data.effects === 'string')
+  )
+}
+
+function isSignAndExecuteSuccess(data: Record<string, unknown>): boolean {
+  return (
+    hasStringIdAndType(data) &&
+    data.type === 'sign_and_execute_transaction_success' &&
+    isRecord(data.result)
+  )
+}
+
+const PUBLIC_ERROR_TYPES = new Set([
+  'sign_error',
+  'sign_personal_message_error',
+  'sign_transaction_error',
+  'sign_and_execute_transaction_error',
+  'sign_sponsored_transaction_error',
+])
+
+function isPublicErrorType(value: unknown): value is string {
+  return typeof value === 'string' && PUBLIC_ERROR_TYPES.has(value)
+}
+
+function isPublicSigningError(data: Record<string, unknown>): boolean {
+  return (
+    hasStringIdAndType(data) &&
+    isPublicErrorType(data.type) &&
+    data.error !== undefined
+  )
+}
+
+function isPublicDisconnectResponse(data: Record<string, unknown>): boolean {
+  if (!hasStringIdAndType(data)) return false
+  if (data.type === 'disconnect_success') return true
+
+  return data.type === 'disconnect_error' && data.error !== undefined
+}
+
+function isPublicChangeEvent(data: Record<string, unknown>): boolean {
+  return data.event === 'change' && isRecord(data.payload)
+}
+
+const PUBLIC_EXTENSION_MESSAGE_VALIDATORS: readonly PageMessageValidator[] = [
+  isPublicAuthSuccess,
+  isPublicAuthError,
+  isSignatureSuccess,
+  isSignAndExecuteSuccess,
+  isPublicSigningError,
+  isPublicDisconnectResponse,
+  isPublicChangeEvent,
+]
+
+export function isAllowedExtensionMessage(
+  data: unknown,
+): data is Record<string, unknown> {
+  if (!isRecord(data) || !hasNoTokenMaterial(data)) return false
+
+  return PUBLIC_EXTENSION_MESSAGE_VALIDATORS.some((validator) =>
+    validator(data),
+  )
+}
+
+function postToPage(message: Record<string, unknown>): void {
+  const targetOrigin = getPageTargetOrigin()
+  if (!targetOrigin) return
+  window.postMessage(message, targetOrigin)
+}
 
 function resolveCurrentChain(): Promise<string> {
   return new Promise((resolve) => {
@@ -24,14 +266,15 @@ function resolveCurrentChain(): Promise<string> {
 
 async function handleGetCurrentChain() {
   const chain = await resolveCurrentChain()
-  window.postMessage(
-    { __from: 'Eve Vault', event: 'change', payload: { chains: [chain] } },
-    '*',
-  )
+  postToPage({
+    __from: 'Eve Vault',
+    event: 'change',
+    payload: { chains: [chain] },
+  })
 }
 
-function handleWindowMessage(event: MessageEvent) {
-  if (event.source !== window) return
+export function handleWindowMessage(event: MessageEvent) {
+  if (!isTrustedPageEvent(event)) return
 
   const data = (event.data || {}) as Record<string, unknown>
   if (data.__from === 'Eve Vault') return
@@ -41,15 +284,19 @@ function handleWindowMessage(event: MessageEvent) {
     return
   }
 
-  if (typeof data.type === 'string' || typeof data.action === 'string') {
+  if (isAllowedPageMessage(data)) {
     chrome.runtime.sendMessage(data)
   }
 }
 
-function forwardToPage(message: Record<string, unknown>) {
+export function forwardToPage(message: Record<string, unknown>) {
+  if (!isAllowedExtensionMessage(message)) return
+
   const id = (message.id as string) || undefined
   const type = (message.type as string) || ''
-  window.postMessage({ __from: 'Eve Vault', id, type, ...message }, '*')
+  // Spread first so the forwarded message can never override the authenticity
+  // marker (__from) or the normalized id/type the page relies on.
+  postToPage({ ...message, __from: 'Eve Vault', id, type })
 }
 
 export default defineContentScript({

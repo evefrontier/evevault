@@ -54,7 +54,6 @@ const getCachedZkProof = async (
     const zkProof = await zkProofService.getZkProof(currentChain)
     if (zkProof != null && zkProof.error === undefined) {
       log.info('Max epoch not yet expired, reusing ZK proof from keeper')
-      log.debug('Using cached ZK proof', { zkProof })
       return zkProof
     }
   } catch (error) {

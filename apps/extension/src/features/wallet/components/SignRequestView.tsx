@@ -1,13 +1,19 @@
 import {
   Button,
+  Checkbox,
   Heading,
   NetworkSelector,
   Text,
 } from '@evevault/shared/components'
+import type { DappRequestContext } from '@evevault/shared/types'
+import { formatAddress } from '@evevault/shared/utils'
 import type { SuiChain } from '@mysten/wallet-standard'
-import type { ReactNode } from 'react'
+import { type ReactNode, useState } from 'react'
 import type { useSignPopupAuth } from '@/features/wallet/hooks'
 import { SignPopupAuthGate } from './SignPopupAuthGate'
+
+const DEFAULT_ACKNOWLEDGEMENT_LABEL =
+  'I understand the risks and want to approve this request.'
 
 type SignRequestViewProps = {
   auth: ReturnType<typeof useSignPopupAuth>
@@ -17,9 +23,79 @@ type SignRequestViewProps = {
   error: string | null
   loadingMessage: string
   chain?: SuiChain
+  dapp?: DappRequestContext
+  accountAddress?: string
+  requestKind?: string
+  /** When true, Approve stays disabled until the user ticks the acknowledgement. */
+  requireAcknowledgement?: boolean
+  acknowledgementLabel?: string
   onApprove: () => void | Promise<void>
   onReject: () => void | Promise<void>
   children: ReactNode
+}
+
+function formatConnectedAt(connectedAt: number | undefined): string | null {
+  if (!connectedAt) return null
+  return new Date(connectedAt).toLocaleString(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  })
+}
+
+function ContextRow({
+  label,
+  value,
+  title,
+}: {
+  label: string
+  value: string
+  title?: string
+}) {
+  return (
+    <div className="grid grid-cols-[72px_minmax(0,1fr)] gap-2 items-baseline">
+      <span className="text-[10px] uppercase text-(--grey-neutral)">
+        {label}
+      </span>
+      <span
+        className="text-xs leading-4 text-(--neutral) truncate"
+        title={title ?? value}
+      >
+        {value}
+      </span>
+    </div>
+  )
+}
+
+function RequestContextPanel({
+  dapp,
+  accountAddress,
+  requestKind,
+}: {
+  dapp?: DappRequestContext
+  accountAddress?: string
+  requestKind?: string
+}) {
+  const connectedAt = formatConnectedAt(dapp?.connectedAt)
+  if (!dapp && !accountAddress && !requestKind) return null
+
+  return (
+    <div className="w-[320px] max-w-[88vw] border border-(--matter-05) p-3">
+      <div className="flex flex-col gap-2">
+        {dapp && (
+          <ContextRow label="Site" value={dapp.origin} title={dapp.url} />
+        )}
+        {accountAddress && (
+          <ContextRow
+            label="Account"
+            value={formatAddress(accountAddress, 10, 8)}
+            title={accountAddress}
+          />
+        )}
+        {requestKind && <ContextRow label="Request" value={requestKind} />}
+        {connectedAt && <ContextRow label="Connected" value={connectedAt} />}
+      </div>
+    </div>
+  )
 }
 
 export function SignRequestView({
@@ -30,10 +106,17 @@ export function SignRequestView({
   error,
   loadingMessage,
   chain,
+  dapp,
+  accountAddress,
+  requestKind,
+  requireAcknowledgement = false,
+  acknowledgementLabel = DEFAULT_ACKNOWLEDGEMENT_LABEL,
   onApprove,
   onReject,
   children,
 }: SignRequestViewProps) {
+  const [acknowledged, setAcknowledged] = useState(false)
+  const approveDisabled = loading || (requireAcknowledgement && !acknowledged)
   return (
     <SignPopupAuthGate
       isLocked={auth.isLocked}
@@ -53,21 +136,41 @@ export function SignRequestView({
         </div>
       ) : (
         <div className="flex flex-col items-center justify-between h-full">
-          <div className="flex flex-col items-center justify-center gap-10">
+          <div className="flex flex-col items-center justify-center gap-6">
             <img src="/images/logo.png" alt="EVE Vault" className="h-20" />
-            <div className="flex flex-col items-center justify-center gap-4">
+            <div className="flex flex-col items-center justify-center gap-3">
               <Heading level={2}>{title}</Heading>
+              <RequestContextPanel
+                dapp={dapp}
+                accountAddress={accountAddress}
+                requestKind={requestKind}
+              />
               {children}
             </div>
 
             {error && (
-              <div style={{ marginBottom: '20px' }}>
+              <div className="mb-5">
                 <Text color="error">Error: {error}</Text>
               </div>
             )}
 
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <Button onClick={onApprove} disabled={loading} variant="primary">
+            {requireAcknowledgement && (
+              <Checkbox
+                name="acknowledge-risk"
+                isChecked={acknowledged}
+                isDisabled={loading}
+                text={acknowledgementLabel}
+                onChange={setAcknowledged}
+                containerStyle={{ maxWidth: 320 }}
+              />
+            )}
+
+            <div className="flex gap-2">
+              <Button
+                onClick={onApprove}
+                disabled={approveDisabled}
+                variant="primary"
+              >
                 {loading ? 'Signing...' : 'Approve'}
               </Button>
 

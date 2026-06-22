@@ -73,6 +73,24 @@ describe('signForChain — localnet path', () => {
     ).rejects.toThrow('keeper locked')
   })
 
+  it('unwraps structured response errors instead of stringifying objects', async () => {
+    setChrome(
+      vi.fn().mockResolvedValue({
+        ok: false,
+        error: { message: 'keeper object failure' },
+      }),
+    )
+
+    await expect(
+      signForChain('PersonalMessage', MSG, {
+        chain: LOCALNET,
+        user: null,
+        getZkProof: null,
+        localnetAddress: LOCAL_ADDR,
+      }),
+    ).rejects.toThrow('keeper object failure')
+  })
+
   it("throws 'Failed to sign bytes' when ok is false and no error field", async () => {
     setChrome(vi.fn().mockResolvedValue({ ok: false }))
 

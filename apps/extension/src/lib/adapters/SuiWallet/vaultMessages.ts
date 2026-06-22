@@ -1,4 +1,6 @@
+import { toErrorMessage } from '@evevault/shared/utils'
 import { trySettle } from '@/lib/util/timeoutGuard'
+import { postToEveVaultBridge } from './bridgeTargetOrigin'
 
 type VaultMessageOpts<T> = {
   id: string
@@ -29,6 +31,12 @@ export function waitForVaultMessage<T>({
     let timeoutId: ReturnType<typeof setTimeout> | undefined
 
     function onMsg(e: MessageEvent) {
+      // The content-script bridge re-posts responses to the page with the page's
+      // own origin (see content.ts / bridgeTargetOrigin). Require the message to
+      // come from this same window object too: a same-origin iframe shares the
+      // origin but is a different source, so the origin check alone wouldn't stop
+      // it from spoofing a vault response.
+      if (e.source !== window || e.origin !== window.location.origin) return
       const m: Record<string, unknown> = e.data || {}
       if (m.__from !== 'Eve Vault' || m.id !== id) return
       if (m.type === successType && trySettle(state, onMsg, timeoutId)) {
@@ -36,7 +44,7 @@ export function waitForVaultMessage<T>({
         return
       }
       if (m.type === errorType && trySettle(state, onMsg, timeoutId)) {
-        reject(new Error(getVaultMessageErrorMessage(m.error)))
+        reject(new Error(toErrorMessage(m.error, 'Request failed')))
       }
     }
 
@@ -44,19 +52,6 @@ export function waitForVaultMessage<T>({
     timeoutId = setTimeout(() => {
       if (trySettle(state, onMsg)) reject(new Error(timeoutMessage))
     }, APPROVAL_TIMEOUT_MS)
-    window.postMessage(outbound, '*')
+    postToEveVaultBridge(outbound)
   })
-}
-
-/**
- * Accepts both legacy string errors and structured error objects because the
- * extension bridge has emitted both shapes across wallet-standard flows.
- */
-function getVaultMessageErrorMessage(error: unknown): string {
-  if (typeof error === 'string' && error.length > 0) return error
-  if (error && typeof error === 'object' && 'message' in error) {
-    const { message } = error as { message?: unknown }
-    if (typeof message === 'string' && message.length > 0) return message
-  }
-  return 'Request failed'
 }

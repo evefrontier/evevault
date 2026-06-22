@@ -1,6 +1,6 @@
 import { Text } from '@evevault/shared/components'
 import type { PendingPersonalMessage } from '@evevault/shared/types'
-import { createLogger } from '@evevault/shared/utils'
+import { createLogger, toErrorMessage } from '@evevault/shared/utils'
 import { useWalletSigningContext } from '@evevault/shared/wallet'
 import { SUI_TESTNET_CHAIN } from '@mysten/wallet-standard'
 import { usePendingSignAction } from '@/features/wallet/hooks'
@@ -56,6 +56,7 @@ function SignPersonalMessage() {
     setError,
     auth,
     handleReject,
+    storeResult,
     storeErrorResult,
   } = usePendingSignAction({
     parsePending: parsePendingMessage,
@@ -75,7 +76,7 @@ function SignPersonalMessage() {
       setLoading(true)
       setError(null)
 
-      const { message, windowId } = pendingMessage
+      const { message } = pendingMessage
 
       assertCanSign(auth, isLocalnet)
 
@@ -85,22 +86,20 @@ function SignPersonalMessage() {
 
       const { bytes, signature } = await sign('PersonalMessage', messageBytes)
 
-      await chrome.storage.local.set({
-        transactionResult: {
-          windowId,
-          status: 'signed',
-          bytes,
-          signature,
-        },
-      })
+      const stored = await storeResult({ status: 'signed', bytes, signature })
+      // A refused write (e.g. missing requestId) would strand the dApp request,
+      // so keep the popup open and surface the error instead of closing.
+      if (!stored) {
+        setError('Failed to record the signing result. Please try again.')
+        return
+      }
 
       log.debug('Signed personal message')
 
       window.close()
     } catch (err) {
       log.error('Personal message signing failed', err)
-      const errorMessage =
-        err instanceof Error ? err.message : 'Unknown error occurred'
+      const errorMessage = toErrorMessage(err, 'Unknown error occurred')
       setError(errorMessage)
       await storeErrorResult(errorMessage)
     } finally {
@@ -117,13 +116,21 @@ function SignPersonalMessage() {
       error={error}
       loadingMessage="Loading message..."
       chain={chain || SUI_TESTNET_CHAIN}
+      dapp={pendingMessage?.dapp}
+      accountAddress={pendingMessage?.account?.address}
+      requestKind="Personal message"
       onApprove={handleSignPersonalMessage}
       onReject={handleReject}
     >
       {pendingMessage && (
-        <Text>
-          {decodeMessageBytes(toMessageBytes(pendingMessage.message))}
-        </Text>
+        <div className="w-[320px] max-w-[88vw] border border-(--matter-05) p-3">
+          <Text size="small" color="grey-neutral">
+            Message
+          </Text>
+          <Text className="mt-2 max-h-28 overflow-y-auto wrap-break-word text-left">
+            {decodeMessageBytes(toMessageBytes(pendingMessage.message))}
+          </Text>
+        </div>
       )}
     </SignRequestView>
   )

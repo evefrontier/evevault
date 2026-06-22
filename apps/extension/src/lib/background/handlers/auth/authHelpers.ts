@@ -1,23 +1,37 @@
 import { useContextStore } from '@evevault/shared/stores'
-import type { AuthSuccessToken, JwtResponse } from '@evevault/shared/types'
 import {
-  CONTEXT_STORAGE_KEY,
-  createLogger,
-  type Logger,
-} from '@evevault/shared/utils'
+  AuthMessageTypes,
+  type AuthSuccessToken,
+  type DappConnectSuccessMessage,
+  type ExtensionAuthSuccessMessage,
+  type JwtResponse,
+} from '@evevault/shared/types'
+import { CONTEXT_STORAGE_KEY, createLogger } from '@evevault/shared/utils'
 import type { SuiChain } from '@mysten/wallet-standard'
 import { decodeJwt } from 'jose'
 import type { IdTokenClaims } from 'oidc-client-ts'
+import { sendToTab } from '@/lib/background/messaging/tabMessaging'
 import type { MessageWithId } from '@/lib/background/types'
 
 const log = createLogger()
 
-export function buildAuthSuccessToken(jwt: JwtResponse): AuthSuccessToken {
-  return {
-    ...jwt,
+export function buildExtensionAuthSuccessToken(
+  jwt: JwtResponse,
+): AuthSuccessToken {
+  const token: AuthSuccessToken = {
+    access_token: jwt.access_token,
+    id_token: jwt.id_token,
+    expires_in: jwt.expires_in,
+    scope: jwt.scope,
+    token_type: jwt.token_type,
+    refresh_token: jwt.refresh_token,
+    refresh_token_id: jwt.refresh_token_id,
+    expires_at: jwt.expires_at,
     email: extractEmailFromJwt(jwt),
-    userId: extractUserIdFromJwt(jwt),
+    userId: jwt.userId ?? extractUserIdFromJwt(jwt),
   }
+
+  return token
 }
 
 export function ensureMessageId(message: MessageWithId): string {
@@ -68,25 +82,36 @@ export function extractAuthCode(responseUrl: string): string | null {
   return new URL(responseUrl).searchParams.get('code')
 }
 
-export function sendAuthSuccess(id: string, jwt: JwtResponse): void {
-  const token = buildAuthSuccessToken(jwt)
-  chrome.runtime.sendMessage({ id, type: 'auth_success', token })
+export function sendExtensionAuthSuccess(id: string, jwt: JwtResponse): void {
+  const token = buildExtensionAuthSuccessToken(jwt)
+  const message: ExtensionAuthSuccessMessage = {
+    id,
+    type: AuthMessageTypes.AUTH_SUCCESS,
+    token,
+  }
+  chrome.runtime.sendMessage(message)
 }
 
-export function sendAuthSuccessToTab(
+export function sendDappConnectSuccessToTab(
   tabId: number,
   ids: string[],
-  token: AuthSuccessToken,
-  opts: { chain: SuiChain; address?: string; logger?: Logger },
+  opts: {
+    chain: SuiChain
+    address: string
+    publicKey?: string
+  },
 ): void {
-  const { chain, address, logger } = opts
-  const logErr = logger ?? log
+  const { chain, address, publicKey } = opts
   for (const id of ids) {
-    chrome.tabs
-      .sendMessage(tabId, { id, type: 'auth_success', token, chain, address })
-      .catch((err) => {
-        logErr.error('Failed to send auth_success to tab', { tabId, id, err })
-      })
+    const message: DappConnectSuccessMessage = {
+      id,
+      type: AuthMessageTypes.AUTH_SUCCESS,
+      chain,
+      address,
+      ...(publicKey && { publicKey }),
+    }
+
+    sendToTab(tabId, message)
   }
 }
 

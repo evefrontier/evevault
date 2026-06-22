@@ -10,6 +10,7 @@ import type {
   IdentifierRecord,
   StandardConnectMethod,
   StandardConnectOutput,
+  StandardDisconnectMethod,
   StandardEventsOnMethod,
   SuiChain,
   SuiSignAndExecuteTransactionInput,
@@ -35,6 +36,7 @@ import {
 } from '@mysten/wallet-standard'
 import type { WalletEventListener } from '@/lib/background/types'
 import { trySettle } from '@/lib/util/timeoutGuard'
+import { postToEveVaultBridge } from './bridgeTargetOrigin'
 import { getAccountsFromAuthSuccess } from './connectAuth'
 import { APPROVAL_TIMEOUT_MS, waitForVaultMessage } from './vaultMessages'
 import { WALLET_FEATURES } from './walletFeatures'
@@ -87,7 +89,7 @@ export class EveVaultWallet implements Wallet {
       },
       [StandardDisconnect]: {
         version: '1.0.0',
-        disconnect: async () => this.disconnect(),
+        disconnect: this.#disconnect,
       },
       [StandardEvents]: {
         version: '1.0.0',
@@ -200,6 +202,24 @@ export class EveVaultWallet implements Wallet {
     }
   }
 
+  #disconnect: StandardDisconnectMethod = async () => {
+    const id = crypto.randomUUID()
+    await waitForVaultMessage({
+      id,
+      successType: 'disconnect_success',
+      errorType: 'disconnect_error',
+      outbound: {
+        __to: 'Eve Vault',
+        id,
+        type: WalletStandardMessageTypes.DISCONNECT,
+      },
+      mapSuccess: () => undefined,
+      timeoutMessage: 'Disconnect timed out',
+    })
+
+    this.disconnect()
+  }
+
   // Not authenticated, trigger login flow
   #connect: StandardConnectMethod = async (input) => {
     if (input?.silent && this.#accounts.length > 0) {
@@ -212,6 +232,8 @@ export class EveVaultWallet implements Wallet {
       let timeoutId: ReturnType<typeof setTimeout> | undefined
 
       const onMsg = async (e: MessageEvent) => {
+        // Only accept responses posted by this same page window.
+        if (e.source !== window || e.origin !== window.location.origin) return
         const m: Record<string, unknown> = e.data || {}
         if (m.__from !== 'Eve Vault' || m.id !== id) return
         if (trySettle(state, onMsg, timeoutId)) {
@@ -243,7 +265,7 @@ export class EveVaultWallet implements Wallet {
           reject(new Error('Connection request timed out'))
         }
       }, APPROVAL_TIMEOUT_MS)
-      window.postMessage({ __to: 'Eve Vault', type: 'connect', id }, '*')
+      postToEveVaultBridge({ __to: 'Eve Vault', type: 'connect', id })
     })
   }
 
@@ -341,7 +363,7 @@ export class EveVaultWallet implements Wallet {
           WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION,
         message: {
           action: input.txAction,
-          assembly: input.assembly,
+          assembly: String(input.assembly),
           assemblyType: input.assemblyType,
           ...(hasMetadata && {
             metadata: {

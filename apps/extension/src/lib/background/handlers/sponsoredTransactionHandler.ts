@@ -1,35 +1,19 @@
-import { WalletStandardMessageTypes } from '@evevault/shared'
+import {
+  type PendingSponsoredTransaction,
+  WalletActions,
+  WalletStandardMessageTypes,
+} from '@evevault/shared'
 import { getApiContext, getJwt, getStoredChain } from '@evevault/shared/auth'
 import { createLogger } from '@evevault/shared/utils'
+import { sendToTab } from '@/lib/background/messaging/tabMessaging'
 import { openPopupWindow } from '@/lib/background/services/popupWindow'
 import type {
   EveFrontierSponsoredTransactionMessage,
   SponsoredTxReturn,
 } from '@/lib/background/types'
+import { requireSigningPermission } from './signingPermissions'
 
 const log = createLogger()
-
-// Sends a sign_sponsored_transaction_error to the originating tab, or logs a
-// warning if there's no tab to send to (e.g. request came from a background context).
-function sendSponsoredError(
-  senderTabId: number | undefined,
-  messageId: string,
-  error: string,
-): void {
-  if (senderTabId != null) {
-    chrome.tabs
-      .sendMessage(senderTabId, {
-        type: 'sign_sponsored_transaction_error',
-        error,
-        id: messageId,
-      })
-      .catch((err) => {
-        log.error('Failed to send error message to tab', err)
-      })
-  } else {
-    log.warn('No sender tab id, cannot send error to page', { error })
-  }
-}
 
 // Options for executeSponsoredTx — bundles the API context and the signed result
 // so the function signature stays below qlty's parameter count threshold.
@@ -41,6 +25,24 @@ type ExecuteSponsoredTxOptions = {
   zkSignature: string
   senderTabId: number
   messageId: string
+}
+
+// Sends a sign_sponsored_transaction_error to the originating tab, or logs a
+// warning if there's no tab to send to (e.g. request came from a background context).
+function sendSponsoredError(
+  senderTabId: number | undefined,
+  messageId: string,
+  error: string,
+): void {
+  if (senderTabId != null) {
+    sendToTab(senderTabId, {
+      type: 'sign_sponsored_transaction_error',
+      error,
+      id: messageId,
+    })
+  } else {
+    log.warn('No sender tab id, cannot send error to page', { error })
+  }
 }
 
 // POSTs the signed sponsored transaction to the backend execute endpoint and
@@ -81,27 +83,19 @@ async function executeSponsoredTx({
       digest?: string
       effects?: string
     }
-    chrome.tabs
-      .sendMessage(senderTabId, {
-        type: 'sign_success',
-        digest: result.digest ?? '0x0',
-        effects: result.effects ?? '0x0',
-        id: messageId,
-      })
-      .catch((err) => {
-        log.error('Failed to send success message to tab', err)
-      })
+    sendToTab(senderTabId, {
+      type: 'sign_success',
+      digest: result.digest ?? '0x0',
+      effects: result.effects ?? '0x0',
+      id: messageId,
+    })
   } catch (err) {
     log.error('Sponsored execute failed', err)
-    chrome.tabs
-      .sendMessage(senderTabId, {
-        type: 'sign_sponsored_transaction_error',
-        error: err instanceof Error ? err.message : 'Unknown error occurred',
-        id: messageId,
-      })
-      .catch((sendErr) => {
-        log.error('Failed to send error message to tab', sendErr)
-      })
+    sendToTab(senderTabId, {
+      type: 'sign_sponsored_transaction_error',
+      error: err instanceof Error ? err.message : 'Unknown error occurred',
+      id: messageId,
+    })
   }
 }
 
@@ -125,8 +119,14 @@ async function handleSponsoredTransaction(
       return true
     }
 
-    if (!assembly || !assemblyType) {
+    if (assembly == null || !assemblyType) {
       throw new Error(`Assembly not found: ${assembly}, ${assemblyType}`)
+    }
+
+    const permission = await requireSigningPermission(sender, chain)
+    if (!permission.allowed) {
+      sendSponsoredError(senderTabId, message.id, permission.error)
+      return true
     }
 
     log.info('Eve Frontier sponsored transaction request received', {
@@ -150,7 +150,7 @@ async function handleSponsoredTransaction(
     const { apiBaseUrl, tenant } = getApiContext(jwt.id_token)
 
     const response = await fetch(
-      `${apiBaseUrl}/transactions/sponsored/${encodedAssemblyType}/${encodedAction}`,
+      `${apiBaseUrl}/v2/transactions/sponsored/${encodedAssemblyType}/${encodedAction}`,
       {
         method: 'POST',
         body: JSON.stringify({
@@ -192,18 +192,26 @@ async function handleSponsoredTransaction(
       throw new Error('Failed to open sponsored transaction popup')
     }
 
-    await chrome.storage.local.set({
-      pendingAction: {
-        action: actionType,
-        id: message.id,
-        senderTabId,
-        timestamp: Date.now(),
-        windowId,
-        sponsoredTxB64: sponsoredTxReturn.bcsDataB64Bytes,
-        preparationId: sponsoredTxReturn.preparationId,
-        chain,
-      },
-    })
+    const requestId = crypto.randomUUID()
+
+    const pendingAction: PendingSponsoredTransaction = {
+      action: WalletActions.SIGN_SPONSORED_TRANSACTION,
+      id: message.id,
+      senderTabId,
+      timestamp: Date.now(),
+      windowId,
+      requestId,
+      sponsoredTxB64: sponsoredTxReturn.bcsDataB64Bytes,
+      preparationId: sponsoredTxReturn.preparationId,
+      chain,
+      dapp: permission.context,
+      sponsoredAction: action,
+      assembly,
+      assemblyType,
+      metadata,
+    }
+
+    await chrome.storage.local.set({ pendingAction })
 
     let timeoutId: ReturnType<typeof setTimeout>
     let registeredListener: (changes: {
@@ -219,7 +227,12 @@ async function handleSponsoredTransaction(
       [key: string]: chrome.storage.StorageChange
     }) => {
       const result = changes.transactionResult?.newValue
-      if (!result || result.windowId !== windowId) return
+      if (
+        !result ||
+        result.windowId !== windowId ||
+        result.requestId !== requestId
+      )
+        return
 
       detachSponsoredListener()
       chrome.storage.local.remove(['pendingAction', 'transactionResult'])

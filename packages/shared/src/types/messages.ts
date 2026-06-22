@@ -1,4 +1,5 @@
-import type { JwtResponse } from './authTypes'
+import type { SuiChain } from '@mysten/wallet-standard'
+import type { AuthSuccessToken } from './authTypes'
 import type { ZkProofResponse } from './enoki'
 import type { StoredSecretKey } from './stores'
 
@@ -9,13 +10,36 @@ export enum AuthMessageTypes {
   REFRESH_TOKEN = 'refresh_token',
 }
 
-export type AuthMessage = {
-  type: AuthMessageTypes | string
-  /** JWT response from OAuth/OIDC provider */
-  token?: JwtResponse
+export type ExtensionAuthSuccessMessage = {
+  type: AuthMessageTypes.AUTH_SUCCESS
+  id?: string
+  /** Token material for extension-internal auth only; never page-facing. */
+  token: AuthSuccessToken
+}
+
+export type DappConnectSuccessMessage = {
+  type: AuthMessageTypes.AUTH_SUCCESS
+  id: string
+  chain: SuiChain
+  address: string
+  publicKey?: string
+}
+
+export type AuthErrorMessage = {
+  type: AuthMessageTypes.AUTH_ERROR
   error?: unknown
   id?: string
 }
+
+export type AuthMessage =
+  | ExtensionAuthSuccessMessage
+  | AuthErrorMessage
+  | {
+      type: AuthMessageTypes | string
+      id?: string
+      token?: AuthSuccessToken
+      error?: unknown
+    }
 
 export enum VaultMessageTypes {
   UNLOCK_VAULT = 'UNLOCK_VAULT',
@@ -34,6 +58,8 @@ export enum VaultMessageTypes {
 }
 
 export enum WalletStandardMessageTypes {
+  CONNECT = 'connect',
+  DISCONNECT = 'disconnect',
   SIGN_PERSONAL_MESSAGE = 'sign_personal_message',
   SIGN_TRANSACTION = 'sign_transaction',
   SIGN_AND_EXECUTE_TRANSACTION = 'sign_and_execute_transaction',

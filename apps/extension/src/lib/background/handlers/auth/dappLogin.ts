@@ -1,23 +1,32 @@
 import { storeJwt } from '@evevault/shared'
-import { exchangeCodeForToken, getJwt } from '@evevault/shared/auth'
+import {
+  exchangeCodeForToken,
+  getJwt,
+  getZkLoginAddress,
+} from '@evevault/shared/auth'
 import { useContextStore, useDeviceStore } from '@evevault/shared/stores'
+import type { DappRequestContext, JwtResponse } from '@evevault/shared/types'
 import {
   isLocalnetChain,
   isZkLoginSuiChain,
   KeeperMessageTypes,
 } from '@evevault/shared/types'
-import { createLogger } from '@evevault/shared/utils'
+import { createLogger, toErrorMessage } from '@evevault/shared/utils'
 import { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519'
+import { sendToTab } from '@/lib/background/messaging/tabMessaging'
+import {
+  getDappRequestContext,
+  grantDappPermission,
+} from '@/lib/background/services/dappPermissions'
 import { getAuthRequest } from '@/lib/background/services/oauthService'
 import { openPopupWindow } from '@/lib/background/services/popupWindow'
 import type { MessageWithId } from '@/lib/background/types'
 import { sendToKeeper } from '../vaultHandlers'
 import {
-  buildAuthSuccessToken,
   ensureMessageId,
   extractAuthCode,
   getCurrentChain,
-  sendAuthSuccessToTab,
+  sendDappConnectSuccessToTab,
 } from './authHelpers'
 import {
   checkKeeperUnlocked,
@@ -37,8 +46,54 @@ const log = createLogger()
 const delay = (ms: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, ms))
 
+// The background can wake before the keeper is ready. When device data exists we
+// re-check after a short delay, then a second, longer one for the slower races
+// the first misses, before falling back to opening the unlock popup.
+const KEEPER_WAKE_RETRY_DELAY_MS = 300
+const KEEPER_UNLOCK_RETRY_DELAYS_MS = [
+  KEEPER_RETRY_DELAY_MS,
+  KEEPER_WAKE_RETRY_DELAY_MS,
+]
+
+// Discriminated union so callers can access publicKeyBytes only when ready.
+type KeeperReadyResult =
+  | { ready: true; publicKeyBytes?: number[] }
+  | { ready: false }
+
+type DappAccountMetadata = {
+  address: string
+  publicKey?: string
+}
+
+type DappConnectAccountResult =
+  | { ok: true; account: DappAccountMetadata }
+  | { ok: false; error: string }
+
+type ZkLoginAddressResult = Awaited<ReturnType<typeof getZkLoginAddress>>
+
+type DappConnectCompletionOptions = {
+  tabId: number
+  ids: string[]
+  jwt: JwtResponse
+  chain: ReturnType<typeof getCurrentChain>
+  dappContext: DappRequestContext
+}
+
+// Context threaded into the launchWebAuthFlow callback, which runs outside the
+// normal async scope and can't capture variables from the surrounding await chain.
+type OAuthCallbackContext = {
+  id: string
+  additionalIds: string[]
+  chain: ReturnType<typeof getCurrentChain>
+  chromeRedirectUri: string
+  tenant: string
+  codeVerifier: string
+  tabId: number | undefined
+  dappContext: DappRequestContext
+}
+
 // Sends an auth_error to the tab if tabId is defined, otherwise does nothing.
-// Centralises the repeated `if (typeof tabId === 'number') chrome.tabs.sendMessage` pattern.
+// Centralises guarded tab-bound auth errors through sendToTab.
 function sendAuthErrorToTab(
   tabId: number | undefined,
   id: string,
@@ -46,28 +101,31 @@ function sendAuthErrorToTab(
   extra?: Record<string, unknown>,
 ): void {
   if (typeof tabId !== 'number') return
-  chrome.tabs
-    .sendMessage(tabId, {
-      id,
-      type: 'auth_error',
-      error: { message, ...extra },
-    })
-    .catch((err) => {
-      log.error('Failed to send auth error to tab', err)
-    })
+  sendToTab(tabId, {
+    id,
+    type: 'auth_error',
+    error: { message, ...extra },
+  })
+}
+
+function sendAuthErrorToTabIds(
+  tabId: number | undefined,
+  ids: string[],
+  message: string,
+): void {
+  ids.forEach((id) => {
+    sendAuthErrorToTab(tabId, id, message)
+  })
 }
 
 // Returns true if the device store contains a persisted encrypted secret key,
 // indicating the vault has been set up and can be unlocked without a fresh setup flow.
 function checkHasDeviceData(): boolean {
   const key = useDeviceStore.getState().ephemeralKeyPairSecretKey
-  return !!(key && typeof key === 'object' && 'iv' in key && 'data' in key)
-}
+  if (!key || typeof key !== 'object') return false
 
-// Discriminated union so callers can access publicKeyBytes only when ready.
-type KeeperReadyResult =
-  | { ready: true; publicKeyBytes?: number[] }
-  | { ready: false }
+  return ['iv', 'data'].every((field) => field in key)
+}
 
 // Checks that the keeper is unlocked, retrying briefly if device data exists
 // (handles the race where the background script wakes before keeper is ready).
@@ -81,11 +139,10 @@ async function ensureKeeperReady(
   let keeperStatus = await checkKeeperUnlocked()
 
   if (!keeperStatus.unlocked && hasDeviceData) {
-    await delay(KEEPER_RETRY_DELAY_MS)
-    keeperStatus = await checkKeeperUnlocked()
-    if (!keeperStatus.unlocked) {
-      await delay(300)
+    for (const ms of KEEPER_UNLOCK_RETRY_DELAYS_MS) {
+      await delay(ms)
       keeperStatus = await checkKeeperUnlocked()
+      if (keeperStatus.unlocked) break
     }
   }
 
@@ -177,6 +234,123 @@ async function syncPublicKeyFromKeeper(
   }
 }
 
+async function resolveDappConnectAccount(
+  jwt: JwtResponse,
+  chain: ReturnType<typeof getCurrentChain>,
+): Promise<DappConnectAccountResult> {
+  return isLocalnetChain(chain)
+    ? resolveLocalnetDappConnectAccount()
+    : resolveZkLoginDappConnectAccount(jwt)
+}
+
+async function resolveLocalnetDappConnectAccount(): Promise<DappConnectAccountResult> {
+  const response = await sendToKeeper({
+    type: KeeperMessageTypes.LOCALNET_GET_ADDRESS,
+  })
+  const address = response?.ok ? response.address : undefined
+
+  if (!address) {
+    return {
+      ok: false,
+      error: 'Could not retrieve localnet address',
+    }
+  }
+
+  return { ok: true, account: { address } }
+}
+
+async function resolveZkLoginDappConnectAccount(
+  jwt: Awaited<ReturnType<typeof getJwt>>,
+): Promise<DappConnectAccountResult> {
+  const accessToken = jwt?.access_token
+  if (!accessToken) {
+    return {
+      ok: false,
+      error: 'Authentication response missing account metadata.',
+    }
+  }
+
+  const zkLoginResponse = await fetchDappZkLoginAddress(accessToken)
+
+  return parseDappZkLoginAccount(zkLoginResponse)
+}
+
+async function fetchDappZkLoginAddress(
+  accessToken: string,
+): Promise<ZkLoginAddressResult | null> {
+  return getZkLoginAddress({
+    jwt: accessToken,
+    enokiApiKey: import.meta.env.VITE_ENOKI_API_KEY ?? '',
+  }).catch((error) => {
+    log.error('Failed to resolve dApp account metadata', error)
+    return null
+  })
+}
+
+function parseDappZkLoginAccount(
+  zkLoginResponse: ZkLoginAddressResult | null,
+): DappConnectAccountResult {
+  if (!zkLoginResponse) {
+    return {
+      ok: false,
+      error: 'Could not resolve wallet account metadata.',
+    }
+  }
+
+  const hasLookupError = !!zkLoginResponse.error
+  if (hasLookupError) {
+    return {
+      ok: false,
+      error: zkLoginResponse?.error?.message ?? 'Unknown authentication error',
+    }
+  }
+
+  const address = zkLoginResponse.data?.address
+  const publicKey = zkLoginResponse.data?.publicKey
+  const account = buildDappAccountMetadata(address, publicKey)
+  if (!account) {
+    return {
+      ok: false,
+      error: 'Could not resolve wallet account metadata.',
+    }
+  }
+
+  return { ok: true, account }
+}
+
+function buildDappAccountMetadata(
+  address?: string,
+  publicKey?: string,
+): DappAccountMetadata | null {
+  if (!address || !publicKey) return null
+
+  return { address, publicKey }
+}
+
+async function completeDappConnect({
+  tabId,
+  ids,
+  jwt,
+  chain,
+  dappContext,
+}: DappConnectCompletionOptions): Promise<void> {
+  const result = await resolveDappConnectAccount(jwt, chain)
+  if (!result.ok) {
+    sendAuthErrorToTabIds(tabId, ids, result.error)
+    return
+  }
+
+  log.debug('Connect: sending auth_success with account metadata', {
+    chain,
+  })
+  await grantDappPermission(dappContext, chain)
+  sendDappConnectSuccessToTab(tabId, ids, {
+    chain,
+    address: result.account.address,
+    publicKey: result.account.publicKey,
+  })
+}
+
 // If the tab already has a valid JWT, sends auth_success immediately without
 // going through the OAuth flow. Returns true if handled (caller should return).
 async function checkExistingAuth(
@@ -184,34 +358,19 @@ async function checkExistingAuth(
   id: string,
   additionalIds: string[],
   chain: ReturnType<typeof getCurrentChain>,
+  dappContext: DappRequestContext,
 ): Promise<boolean> {
   const existingJwt = await getJwt()
   if (!existingJwt?.id_token) return false
 
   log.debug('Connect: already connected, sending auth_success without OIDC')
-  const token = buildAuthSuccessToken(existingJwt)
-
-  if (isLocalnetChain(chain)) {
-    const response = await sendToKeeper({
-      type: KeeperMessageTypes.LOCALNET_GET_ADDRESS,
-    })
-    log.debug('Connect: localnet, sending auth_success with localnet address')
-    if (response?.ok && response?.address) {
-      sendAuthSuccessToTab(tabId, [id, ...additionalIds], token, {
-        chain,
-        address: response.address,
-      })
-    } else {
-      chrome.tabs.sendMessage(tabId, {
-        id,
-        type: 'auth_error',
-        error: { message: 'Could not retrieve localnet address' },
-      })
-    }
-    return true
-  }
-
-  sendAuthSuccessToTab(tabId, [id, ...additionalIds], token, { chain })
+  await completeDappConnect({
+    tabId,
+    ids: [id, ...additionalIds],
+    jwt: existingJwt,
+    chain,
+    dappContext,
+  })
   return true
 }
 
@@ -251,18 +410,6 @@ async function ensureNonce(
   return nonce
 }
 
-// Context threaded into the launchWebAuthFlow callback, which runs outside the
-// normal async scope and can't capture variables from the surrounding await chain.
-type OAuthCallbackContext = {
-  id: string
-  additionalIds: string[]
-  chain: ReturnType<typeof getCurrentChain>
-  chromeRedirectUri: string
-  tenant: string
-  codeVerifier: string
-  tabId: number | undefined
-}
-
 // Processes the redirect URL from chrome.identity.launchWebAuthFlow: exchanges
 // the auth code for a JWT, stores it, and sends auth_success to the originating tab.
 async function handleOAuthCallback(
@@ -277,29 +424,30 @@ async function handleOAuthCallback(
     tenant,
     codeVerifier,
     tabId,
+    dappContext,
   } = ctx
+  // The success path notifies the dApp via the tab; every failure path must do
+  // the same, or the dApp's connect request hangs until it times out.
+  const ids = [id, ...additionalIds]
 
   if (chrome.runtime.lastError || !responseUrl) {
-    chrome.runtime.sendMessage({
-      id,
-      auth_success: false,
-      error: chrome.runtime.lastError?.message || 'responseUrl not found',
-    })
-    chrome.runtime.sendMessage({
-      id,
-      type: 'auth_error',
-      error: chrome.runtime.lastError,
-    })
+    log.error('Auth flow returned no response', chrome.runtime.lastError)
+    sendAuthErrorToTabIds(
+      tabId,
+      ids,
+      chrome.runtime.lastError?.message ??
+        'Sign-in did not complete. Please try again.',
+    )
     return
   }
 
   const authCode = extractAuthCode(responseUrl)
   if (!authCode) {
-    chrome.runtime.sendMessage({
-      id,
-      auth_success: false,
-      error: 'Authorization code not found in response.',
-    })
+    sendAuthErrorToTabIds(
+      tabId,
+      ids,
+      'Authorization code not found in response.',
+    )
     return
   }
 
@@ -315,40 +463,41 @@ async function handleOAuthCallback(
     await storeJwt(jwtResponse)
 
     if (typeof tabId === 'number') {
-      const token = buildAuthSuccessToken(jwtResponse)
-      if (isLocalnetChain(chain)) {
-        const addrResponse = await sendToKeeper({
-          type: KeeperMessageTypes.LOCALNET_GET_ADDRESS,
-        })
-        sendAuthSuccessToTab(tabId, [id, ...additionalIds], token, {
-          chain,
-          address: addrResponse?.address,
-          logger: log,
-        })
-      } else {
-        sendAuthSuccessToTab(tabId, [id, ...additionalIds], token, {
-          chain,
-          logger: log,
-        })
-      }
+      await completeDappConnect({
+        tabId,
+        ids,
+        jwt: jwtResponse,
+        chain,
+        dappContext,
+      })
     }
   } catch (error) {
     log.error('Token exchange failed', error)
-    chrome.runtime.sendMessage({
-      id,
-      auth_success: false,
-      error: error instanceof Error ? error.message : String(error),
-    })
+    sendAuthErrorToTabIds(
+      tabId,
+      ids,
+      toErrorMessage(error, 'Sign-in failed. Please try again.'),
+    )
   }
 }
 
 export async function handleDappLogin(
   message: MessageWithId,
-  _sender: chrome.runtime.MessageSender,
+  sender: chrome.runtime.MessageSender,
   _sendResponse: (response?: unknown) => void,
   tabId?: number,
 ): Promise<void> {
   const id = ensureMessageId(message)
+  const dappContext = getDappRequestContext(sender)
+  if (!dappContext) {
+    sendAuthErrorToTab(
+      tabId,
+      id,
+      'Connect requests must come from a valid web page origin.',
+    )
+    return
+  }
+
   const additionalIds =
     (message as MessageWithId & { additionalIds?: string[] }).additionalIds ??
     []
@@ -376,7 +525,8 @@ export async function handleDappLogin(
   }
 
   if (typeof tabId === 'number') {
-    if (await checkExistingAuth(tabId, id, additionalIds, chain)) return
+    if (await checkExistingAuth(tabId, id, additionalIds, chain, dappContext))
+      return
   }
 
   const nonce = await ensureNonce(chain, id, tabId)
@@ -398,6 +548,7 @@ export async function handleDappLogin(
         tenant,
         codeVerifier,
         tabId,
+        dappContext,
       }),
   )
 }

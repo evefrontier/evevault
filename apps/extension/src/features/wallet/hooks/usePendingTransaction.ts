@@ -18,6 +18,9 @@ async function parsePendingTransaction(
     ...(pendingAction as PendingTransaction),
     transaction: parsedTx.transactionForSigning ?? pending.transaction,
     displayValue: parsedTx.displayValue,
+    ...(parsedTx.reviewValue !== undefined && {
+      reviewValue: parsedTx.reviewValue,
+    }),
   }
 }
 

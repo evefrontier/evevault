@@ -9,7 +9,7 @@ export default function MobileBottomTabBar({ items }: NavigationBarProps) {
   const location = useLocation()
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 flex  items-center justify-around border-t border-[var(--matter-04)] bg-[var(--crude)]">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 flex  items-center justify-around border-t border-(--matter-04) bg-(--crude)">
       {items.map((item) => {
         const isActive = location.pathname === item.path
 

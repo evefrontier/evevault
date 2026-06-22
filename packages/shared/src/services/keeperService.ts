@@ -43,7 +43,7 @@ export const ephKeyService = {
       )
     }
 
-    log.debug('[ephKeyService] Unlocking vault', hashedSecretKey, pin)
+    log.debug('[ephKeyService] Unlocking vault')
 
     const res = (await chrome.runtime?.sendMessage?.({
       type: VaultMessageTypes.UNLOCK_VAULT,
@@ -87,7 +87,7 @@ export const ephKeyService = {
     hashedSecretKey: StoredSecretKey
     publicKey: Ed25519PublicKey
   }> {
-    log.debug('[ephKeyService] Creating ephemeral key pair with pin', pin)
+    log.debug('[ephKeyService] Creating ephemeral key pair')
 
     const res = (await chrome.runtime?.sendMessage?.({
       type: VaultMessageTypes.CREATE_KEYPAIR,

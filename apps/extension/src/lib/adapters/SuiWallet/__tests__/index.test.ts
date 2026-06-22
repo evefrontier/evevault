@@ -35,7 +35,9 @@ vi.mock('@evevault/shared/utils', async (importOriginal) => {
 describe('EveVaultWallet', () => {
   beforeEach(() => {
     vi.spyOn(window, 'postMessage').mockImplementation(() => undefined)
-    vi.spyOn(crypto, 'randomUUID').mockReturnValue('request-id')
+    vi.spyOn(crypto, 'randomUUID').mockReturnValue(
+      'request-id' as `${string}-${string}-${string}-${string}-${string}`,
+    )
   })
 
   afterEach(() => {
@@ -48,9 +50,13 @@ describe('EveVaultWallet', () => {
     return calls[calls.length - 1][0] as Record<string, unknown>
   }
 
+  // Same-origin and posted by the page window itself, matching the connect
+  // listener's source+origin guard.
   function dispatchVaultMessage(data: Record<string, unknown>) {
     window.dispatchEvent(
       new MessageEvent('message', {
+        origin: window.location.origin,
+        source: window,
         data: {
           __from: 'Eve Vault',
           id: 'request-id',
@@ -196,6 +202,41 @@ describe('EveVaultWallet', () => {
     })
   })
 
+  it('ignores a same-origin connect response from a different window source', async () => {
+    const wallet = new EveVaultWallet()
+    const promise = wallet.features[StandardConnect].connect()
+
+    const iframe = document.createElement('iframe')
+    document.body.appendChild(iframe)
+    // Shares the page origin but comes from the iframe window, so it must not be
+    // able to inject account metadata into the connect flow.
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        origin: window.location.origin,
+        source: iframe.contentWindow,
+        data: {
+          __from: 'Eve Vault',
+          id: 'request-id',
+          type: 'auth_success',
+          chain: SUI_LOCALNET_CHAIN,
+          address: '0xspoofed',
+        },
+      }),
+    )
+    // The genuine same-window response still settles the connect.
+    dispatchVaultMessage({
+      type: 'auth_success',
+      chain: SUI_LOCALNET_CHAIN,
+      address: '0xlocal',
+    })
+
+    await expect(promise).resolves.toEqual({
+      accounts: expect.arrayContaining([
+        expect.objectContaining({ address: '0xlocal' }),
+      ]),
+    })
+  })
+
   it('emits chain and feature changes to subscribed listeners', () => {
     const wallet = new EveVaultWallet()
     const listener = vi.fn()
@@ -243,15 +284,37 @@ describe('EveVaultWallet', () => {
     )
   })
 
-  it('emits one account change when disconnecting and treats repeated disconnects as no-ops', async () => {
+  it('revokes dApp permission and emits one account change when disconnecting', async () => {
     const wallet = new EveVaultWallet()
     await connectLocalnet(wallet)
     const listener = vi.fn()
     wallet.features[StandardEvents].on('change', listener)
 
-    await wallet.features[StandardDisconnect].disconnect()
-    // Repeated disconnects should be no-ops once accounts are already cleared.
-    await wallet.features[StandardDisconnect].disconnect()
+    vi.mocked(window.postMessage).mockClear()
+    const disconnect = wallet.features[StandardDisconnect].disconnect()
+
+    expect(lastPostedMessage()).toEqual({
+      __to: 'Eve Vault',
+      id: 'request-id',
+      type: WalletStandardMessageTypes.DISCONNECT,
+    })
+
+    dispatchVaultMessage({ type: 'disconnect_success' })
+    await disconnect
+
+    // Repeated disconnects still revoke stored origin permission, but should
+    // not emit another account-change event once accounts are already cleared.
+    vi.mocked(window.postMessage).mockClear()
+    const repeatedDisconnect = wallet.features[StandardDisconnect].disconnect()
+
+    expect(lastPostedMessage()).toEqual({
+      __to: 'Eve Vault',
+      id: 'request-id',
+      type: WalletStandardMessageTypes.DISCONNECT,
+    })
+
+    dispatchVaultMessage({ type: 'disconnect_success' })
+    await repeatedDisconnect
 
     expect(listener).toHaveBeenCalledTimes(1)
     expect(listener).toHaveBeenCalledWith(
@@ -259,6 +322,25 @@ describe('EveVaultWallet', () => {
         accounts: [],
       }),
     )
+  })
+
+  it('keeps accounts connected when permission revocation fails', async () => {
+    const wallet = new EveVaultWallet()
+    await connectLocalnet(wallet)
+    const listener = vi.fn()
+    wallet.features[StandardEvents].on('change', listener)
+
+    const disconnect = wallet.features[StandardDisconnect].disconnect()
+    dispatchVaultMessage({
+      type: 'disconnect_error',
+      error: { message: 'revocation failed' },
+    })
+
+    await expect(disconnect).rejects.toThrow('revocation failed')
+    expect(wallet.accounts).toEqual(
+      expect.arrayContaining([expect.objectContaining({ address: '0xlocal' })]),
+    )
+    expect(listener).not.toHaveBeenCalled()
   })
 
   it('signs a personal message by posting the expected request and mapping the response', async () => {
@@ -388,7 +470,7 @@ describe('EveVaultWallet', () => {
       EVEFRONTIER_SPONSORED_TRANSACTION
     ].signSponsoredTransaction({
       txAction: 'mine',
-      assembly: 'assembly',
+      assembly: '1',
       assemblyType: 'type',
       metadata: {
         name: 'Name',
@@ -403,7 +485,7 @@ describe('EveVaultWallet', () => {
       action: WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION,
       message: {
         action: 'mine',
-        assembly: 'assembly',
+        assembly: '1',
         assemblyType: 'type',
         metadata: {
           name: 'Name',
@@ -431,7 +513,7 @@ describe('EveVaultWallet', () => {
       EVEFRONTIER_SPONSORED_TRANSACTION
     ].signSponsoredTransaction({
       txAction: 'mine',
-      assembly: 'assembly',
+      assembly: '1',
       assemblyType: 'type',
       metadata: {},
     })
@@ -442,8 +524,36 @@ describe('EveVaultWallet', () => {
       action: WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION,
       message: {
         action: 'mine',
-        assembly: 'assembly',
+        assembly: '1',
         assemblyType: 'type',
+      },
+    })
+
+    dispatchVaultMessage({
+      type: 'sign_success',
+      digest: 'digest',
+      effects: 'effects',
+    })
+
+    await expect(promise).resolves.toEqual({
+      digest: 'digest',
+      effects: 'effects',
+    })
+  })
+
+  it('normalizes sponsored transaction assembly ids to strings', async () => {
+    const wallet = new EveVaultWallet()
+    const promise = wallet.features[
+      EVEFRONTIER_SPONSORED_TRANSACTION
+    ].signSponsoredTransaction({
+      txAction: 'mine',
+      assembly: 1 as unknown as string,
+      assemblyType: 'type',
+    })
+
+    expect(lastPostedMessage()).toMatchObject({
+      message: {
+        assembly: '1',
       },
     })
 

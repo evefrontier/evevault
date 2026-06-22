@@ -5,6 +5,7 @@ import {
   registerWallet,
   type SuiChain,
 } from '@mysten/wallet-standard'
+import { postToEveVaultBridge } from './bridgeTargetOrigin'
 import { EveVaultWallet } from './index'
 
 type EveVaultRegistrationWindow = Window & {
@@ -81,5 +82,5 @@ function onWalletMessage(walletInstance: EveVaultWallet) {
  * connect early see the same chain as the extension UI.
  */
 function requestPersistedChain() {
-  window.postMessage({ __to: 'Eve Vault', type: 'get_current_chain' }, '*')
+  postToEveVaultBridge({ __to: 'Eve Vault', type: 'get_current_chain' })
 }

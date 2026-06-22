@@ -276,8 +276,9 @@ describe('zkSignAny', () => {
         maxEpoch: 5,
         partialZkLoginSignature: validProofData,
         userSalt: 'user-salt',
-        tokenClaimSub: 'user-sub',
-        tokenClaimAud: 'user-aud',
+        keyClaimName: 'sub',
+        keyClaimValue: 'user-sub',
+        aud: 'user-aud',
       })
       expect(mockSignPersonalMessage).toHaveBeenCalledWith(new Uint8Array([1]))
       expect(result).toEqual({ bytes: 'b64bytes', zkSignature: 'zkSig123' })
@@ -362,6 +363,20 @@ describe('zkSignAny', () => {
           getZkProof: vi.fn().mockResolvedValue({ data: validProofData }),
         }),
       ).rejects.toThrow('signing failed')
+    })
+
+    it('unwraps structured background errors instead of stringifying objects', async () => {
+      mockSendMessage.mockResolvedValue({
+        ok: false,
+        error: { message: 'background object failure' },
+      })
+
+      await expect(
+        zkSignAny('PersonalMessage', new Uint8Array([1]), {
+          user: minimalUser,
+          getZkProof: vi.fn().mockResolvedValue({ data: validProofData }),
+        }),
+      ).rejects.toThrow('background object failure')
     })
 
     it('throws with default message when response.ok is false and no error provided', async () => {

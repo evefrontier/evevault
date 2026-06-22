@@ -1,19 +1,69 @@
 import { WalletStandardMessageTypes } from '@evevault/shared'
-import { createLogger } from '@evevault/shared/utils'
+import { createLogger, isRecord, toErrorMessage } from '@evevault/shared/utils'
+import type { SuiChain } from '@mysten/wallet-standard'
+import {
+  type SigningErrorType,
+  sendToTab,
+} from '@/lib/background/messaging/tabMessaging'
 import { openPopupWindow } from '@/lib/background/services/popupWindow'
 import type { WalletActionMessage } from '@/lib/background/types'
+import { requireSigningPermission } from './signingPermissions'
 
 const log = createLogger()
 
+// Binds the popup's result to this specific request: the windowId must match and
+// the popup must echo back the requestId minted when the popup was opened. This
+// prevents a stale/forged result for a reused windowId from settling the request.
+function isApprovalResultForRequest(
+  result: unknown,
+  windowId: number,
+  requestId: string,
+): result is Record<string, unknown> {
+  return (
+    isRecord(result) &&
+    result.windowId === windowId &&
+    result.requestId === requestId
+  )
+}
+
 // Maps a wallet action string to its corresponding error message type so
 // the dApp's listener can route the rejection correctly.
-function getSignErrorType(action: string): string {
+function getSignErrorType(action: string): SigningErrorType {
   if (action === WalletStandardMessageTypes.SIGN_TRANSACTION)
     return 'sign_transaction_error'
   if (action === WalletStandardMessageTypes.SIGN_PERSONAL_MESSAGE)
     return 'sign_personal_message_error'
   log.warn('Unknown action', { action })
   return 'sign_error'
+}
+
+function getRequestedChain(message: WalletActionMessage): SuiChain | undefined {
+  return typeof message.chain === 'string'
+    ? (message.chain as SuiChain)
+    : undefined
+}
+
+function getImmediateSigningErrorType(action: string): SigningErrorType {
+  return action === WalletStandardMessageTypes.SIGN_AND_EXECUTE_TRANSACTION
+    ? 'sign_and_execute_transaction_error'
+    : getSignErrorType(action)
+}
+
+function sendImmediateSigningError(
+  senderTabId: number | undefined,
+  action: string,
+  messageId: string | undefined,
+  error: string,
+): void {
+  const errorType = getImmediateSigningErrorType(action)
+
+  if (typeof senderTabId !== 'number' || !messageId) return
+
+  sendToTab(senderTabId, {
+    type: errorType,
+    error,
+    id: messageId,
+  })
 }
 
 // Sends the signed result back to the originating tab. Sign-and-execute has a
@@ -31,38 +81,30 @@ function sendApprovalSuccess(
       result.digest != null &&
       result.effects != null
     if (!hasRequired) {
-      chrome.tabs
-        .sendMessage(senderTabId, {
-          type: 'sign_and_execute_transaction_error',
-          error: 'Missing bytes or signature in transaction result',
-          id: messageId,
-        })
-        .catch((err) => log.error('Failed to send sign_and_execute error', err))
-    } else {
-      chrome.tabs
-        .sendMessage(senderTabId, {
-          type: 'sign_and_execute_transaction_success',
-          result: {
-            bytes: result.bytes,
-            signature: result.signature,
-            digest: result.digest,
-            effects: result.effects,
-          },
-          id: messageId,
-        })
-        .catch((err) =>
-          log.error('Failed to send sign_and_execute success', err),
-        )
-    }
-  } else {
-    chrome.tabs
-      .sendMessage(senderTabId, {
-        type: 'sign_success',
-        bytes: result.bytes,
-        signature: result.signature,
+      sendToTab(senderTabId, {
+        type: 'sign_and_execute_transaction_error',
+        error: 'Missing required fields in sign_and_execute transaction result',
         id: messageId,
       })
-      .catch((err) => log.error('Failed to send success message', err))
+    } else {
+      sendToTab(senderTabId, {
+        type: 'sign_and_execute_transaction_success',
+        result: {
+          bytes: result.bytes,
+          signature: result.signature,
+          digest: result.digest,
+          effects: result.effects,
+        },
+        id: messageId,
+      })
+    }
+  } else {
+    sendToTab(senderTabId, {
+      type: 'sign_success',
+      bytes: result.bytes,
+      signature: result.signature,
+      id: messageId,
+    })
   }
 }
 
@@ -75,23 +117,20 @@ function sendApprovalError(
   action: string,
   messageId: string,
 ): void {
-  if (isSignAndExecute && senderTabId) {
-    chrome.tabs
-      .sendMessage(senderTabId, {
-        type: 'sign_and_execute_transaction_error',
-        error: result.error,
-        id: messageId,
-      })
-      .catch((err) => log.error('Failed to send sign_and_execute error', err))
+  const error = toErrorMessage(result.error, 'Unknown error occurred')
+  if (isSignAndExecute && typeof senderTabId === 'number') {
+    sendToTab(senderTabId, {
+      type: 'sign_and_execute_transaction_error',
+      error,
+      id: messageId,
+    })
   } else if (typeof senderTabId === 'number') {
     const errorType = getSignErrorType(action)
-    chrome.tabs
-      .sendMessage(senderTabId, {
-        type: errorType,
-        error: result.error,
-        id: messageId,
-      })
-      .catch((err) => log.error(`Failed to send ${errorType} error`, err))
+    sendToTab(senderTabId, {
+      type: errorType,
+      error,
+      id: messageId,
+    })
   }
 }
 
@@ -106,18 +145,41 @@ async function handleApprovePopup(
     log.info('Wallet action request received', { action: message.action })
 
     const senderTabId = sender.tab?.id
+    const permission = await requireSigningPermission(
+      sender,
+      getRequestedChain(message),
+    )
+    if (!permission.allowed) {
+      sendImmediateSigningError(
+        senderTabId,
+        action,
+        message.id,
+        permission.error,
+      )
+      sendResponse({
+        type: getImmediateSigningErrorType(action),
+        error: permission.error,
+        id: message.id,
+      })
+      return false
+    }
+
     const windowId = await openPopupWindow(action)
 
     if (!windowId) {
       throw new Error('Failed to open approval popup')
     }
 
+    const requestId = crypto.randomUUID()
+
     await chrome.storage.local.set({
       pendingAction: {
         ...message,
         windowId,
+        requestId,
         senderTabId,
         timestamp: Date.now(),
+        dapp: permission.context,
       },
     })
 
@@ -138,10 +200,12 @@ async function handleApprovePopup(
       [key: string]: chrome.storage.StorageChange
     }) => {
       const result = changes.transactionResult?.newValue
+      if (!isApprovalResultForRequest(result, windowId, requestId)) return
+
       const isSuccess =
         result?.status === 'signed' || result?.status === 'signed_and_executed'
 
-      if (isSuccess && senderTabId) {
+      if (isSuccess && typeof senderTabId === 'number') {
         sendApprovalSuccess(result, isSignAndExecute, senderTabId, message.id)
         chrome.storage.local.remove(['pendingAction', 'transactionResult'])
         detachApprovalListener()
@@ -179,9 +243,12 @@ async function handleApprovePopup(
     return true
   } catch (error) {
     log.error('Transaction signing failed', error)
+    const errorMessage = toErrorMessage(error, 'Unknown error occurred')
+    sendImmediateSigningError(sender.tab?.id, action, message.id, errorMessage)
     sendResponse({
-      type: 'sign_transaction_error',
-      error: error instanceof Error ? error.message : 'Unknown error occurred',
+      type: getImmediateSigningErrorType(action),
+      error: errorMessage,
+      id: message.id,
     })
     return false
   }

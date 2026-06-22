@@ -143,5 +143,12 @@ export default defineConfig(() => {
           "script-src 'self'; object-src 'self'; img-src 'self' data: http://localhost:3000",
       },
     },
+    hooks: {
+      'build:manifestGenerated'(_wxt, manifest) {
+        manifest.permissions = manifest.permissions?.filter(
+          (p) => p !== 'scripting',
+        )
+      },
+    },
   }
 })
