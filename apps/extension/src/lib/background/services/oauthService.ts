@@ -6,15 +6,19 @@ import { base64UrlEncode } from '@/lib/util/b64UrlEncode'
 async function createPkcePair(): Promise<{
   codeVerifier: string
   codeChallenge: string
+  state: string
 }> {
-  const randomBytes = new Uint8Array(32)
-  crypto.getRandomValues(randomBytes)
-  const codeVerifier = base64UrlEncode(randomBytes)
+  const verifierBytes = new Uint8Array(32)
+  const stateBytes = new Uint8Array(16)
+  crypto.getRandomValues(verifierBytes)
+  crypto.getRandomValues(stateBytes)
+  const codeVerifier = base64UrlEncode(verifierBytes)
   const challengeBytes = await sha256(codeVerifier)
 
   return {
     codeVerifier,
     codeChallenge: base64UrlEncode(challengeBytes),
+    state: base64UrlEncode(stateBytes),
   }
 }
 
@@ -22,6 +26,7 @@ function getAuthUrl(params: {
   tenantId: TenantId
   nonce: string
   codeChallenge?: string
+  state?: string
 }) {
   const tenantConfig = getTenantConfig(params.tenantId)
 
@@ -44,15 +49,19 @@ function getAuthUrl(params: {
     url.searchParams.set('code_challenge', params.codeChallenge)
     url.searchParams.set('code_challenge_method', 'S256')
   }
+  if (params.state) {
+    url.searchParams.set('state', params.state)
+  }
 
   return url
 }
 
 async function getAuthRequest(params: { tenantId: TenantId; nonce: string }) {
-  const { codeVerifier, codeChallenge } = await createPkcePair()
+  const { codeVerifier, codeChallenge, state } = await createPkcePair()
   return {
-    authUrl: getAuthUrl({ ...params, codeChallenge }),
+    authUrl: getAuthUrl({ ...params, codeChallenge, state }),
     codeVerifier,
+    state,
   }
 }
 

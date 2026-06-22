@@ -1,6 +1,7 @@
 import { ZKEd25519Keypair } from '@evefrontier/wallet-core/crypto'
 import type { ZKProofData } from '@evefrontier/wallet-core/types'
 import { encrypt, encryptWithKey, type HashedData } from '@evevault/shared'
+import { createLogger } from '@evevault/shared/utils'
 import type { BackgroundMessage } from '@/lib/background/types'
 import {
   cacheSessionKey,
@@ -18,6 +19,8 @@ import {
   unlockVaultWithKeypair,
 } from './keeperState'
 import type { KeeperSendResponse } from './keeperTypes'
+
+const log = createLogger()
 
 export function handleCreateKeypair(
   message: BackgroundMessage,
@@ -59,7 +62,7 @@ export function handleUnlockVault(
     try {
       secretKey = await decryptVaultSecret(hashedSecretKey, pin)
     } catch (error) {
-      console.error('[Keeper] Decryption failed:', error)
+      log.error('[Keeper] Decryption failed', { error: getErrorMessage(error) })
       lockVault()
       sendResponse({
         ok: false,
@@ -72,7 +75,9 @@ export function handleUnlockVault(
       await restoreUnlockedVault(message, secretKey, hashedSecretKey, pin)
       sendResponse({ ok: true })
     } catch (error) {
-      console.error('[Keeper] Keypair creation failed:', error)
+      log.error('[Keeper] Keypair creation failed', {
+        error: getErrorMessage(error),
+      })
       lockVault()
       sendResponse({
         ok: false,

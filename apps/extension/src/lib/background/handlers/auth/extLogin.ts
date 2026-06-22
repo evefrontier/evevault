@@ -13,6 +13,7 @@ import type { MessageWithId } from '@/lib/background/types'
 import {
   ensureMessageId,
   extractAuthCode,
+  extractState,
   getCurrentChain,
   getCurrentChainFromStorage,
   sendAuthError,
@@ -70,8 +71,11 @@ export async function handleExtLogin(
   const nonce = await getNonceForChain(id, currentChain)
   if (!nonce) return
 
-  const { authUrl, codeVerifier } = await getAuthRequest({ tenantId, nonce })
-  launchOAuthLogin({ id, authUrl, codeVerifier, currentChain, tenantId })
+  const { authUrl, codeVerifier, state } = await getAuthRequest({
+    tenantId,
+    nonce,
+  })
+  launchOAuthLogin({ id, authUrl, codeVerifier, state, currentChain, tenantId })
 }
 
 /**
@@ -255,12 +259,14 @@ async function handleOAuthResponse({
   id,
   responseUrl,
   codeVerifier,
+  state,
   currentChain,
   tenantId,
 }: {
   id: string
   responseUrl: string | undefined
   codeVerifier: string
+  state: string
   currentChain: StoredChain
   tenantId: TenantId
 }) {
@@ -271,6 +277,11 @@ async function handleOAuthResponse({
 
   if (!responseUrl) {
     sendAuthError(id, { message: 'No response URL received' })
+    return
+  }
+
+  if (extractState(responseUrl) !== state) {
+    sendAuthError(id, { message: 'Invalid OAuth response (state mismatch)' })
     return
   }
 
@@ -320,12 +331,14 @@ function launchOAuthLogin({
   id,
   authUrl,
   codeVerifier,
+  state,
   currentChain,
   tenantId,
 }: {
   id: string
   authUrl: URL
   codeVerifier: string
+  state: string
   currentChain: StoredChain
   tenantId: TenantId
 }) {
@@ -336,6 +349,7 @@ function launchOAuthLogin({
         id,
         responseUrl,
         codeVerifier,
+        state,
         currentChain,
         tenantId,
       })

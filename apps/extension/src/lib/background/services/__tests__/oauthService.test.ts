@@ -32,8 +32,8 @@ describe('getAuthRequest', () => {
     vi.clearAllMocks()
   })
 
-  it('builds a well-formed auth URL with nonce and PKCE', async () => {
-    const { authUrl, codeVerifier } = await getAuthRequest({
+  it('builds a well-formed auth URL with nonce, PKCE, and state', async () => {
+    const { authUrl, codeVerifier, state } = await getAuthRequest({
       tenantId: TenantId.STILLNESS,
       nonce: 'test-nonce',
     })
@@ -51,5 +51,7 @@ describe('getAuthRequest', () => {
     expect(codeVerifier).toMatch(BASE64URL)
     expect(authUrl.searchParams.get('code_challenge')).toMatch(BASE64URL)
     expect(authUrl.searchParams.get('code_challenge_method')).toBe('S256')
+    expect(state).toMatch(BASE64URL)
+    expect(authUrl.searchParams.get('state')).toBe(state)
   })
 })

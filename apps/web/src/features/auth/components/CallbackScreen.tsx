@@ -66,17 +66,24 @@ const completeOAuthCallback = async (): Promise<RoutePath> => {
 
   const { salt, address } = zkLoginResponse.data
 
-  // Update user profile with zkLogin address
+  // Update user profile with zkLogin address.
+  // salt is kept in-memory (Zustand) for signing but stripped from sessionStorage
+  // so it never sits in browser-accessible storage.
   const updatedUser = new User({
     ...user,
-    profile: {
-      ...user.profile,
-      sui_address: address,
-      salt,
-    },
+    profile: { ...user.profile, sui_address: address, salt },
   })
 
-  await userManager.storeUser(updatedUser)
+  const { salt: _s, ...profileWithoutSalt } = updatedUser.profile as Record<
+    string,
+    unknown
+  >
+  await userManager.storeUser(
+    new User({
+      ...updatedUser,
+      profile: profileWithoutSalt as User['profile'],
+    }),
+  )
   useAuthStore.getState().setUser(updatedUser)
 
   log.info('FusionAuth callback successful')

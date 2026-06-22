@@ -13,9 +13,9 @@ import { handleKeeperMessage, type KeeperSendResponse } from './keeperHandlers'
 chrome.runtime.onMessage.addListener(
   (
     message: BackgroundMessage,
-    _sender: chrome.runtime.MessageSender,
+    sender: chrome.runtime.MessageSender,
     sendResponse: KeeperSendResponse,
-  ) => handleKeeperMessage(message, sendResponse),
+  ) => handleKeeperMessage(message, sender, sendResponse),
 )
 
 console.log('Keeper offscreen document initialized')

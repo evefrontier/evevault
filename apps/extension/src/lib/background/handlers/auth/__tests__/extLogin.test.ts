@@ -91,6 +91,7 @@ vi.mock('@/lib/background/services/popupWindow', () => ({
 vi.mock('../authHelpers', () => ({
   ensureMessageId: mocks.ensureMessageId,
   extractAuthCode: mocks.extractAuthCode,
+  extractState: (url: string) => new URL(url).searchParams.get('state'),
   getCurrentChain: mocks.getCurrentChain,
   getCurrentChainFromStorage: mocks.getCurrentChainFromStorage,
   sendAuthError: mocks.sendAuthError,
@@ -157,12 +158,13 @@ describe('handleExtLogin', () => {
     mockGetAuthRequest.mockResolvedValue({
       authUrl: new URL('https://auth.example/login'),
       codeVerifier: 'verifier',
+      state: 'test-state',
     })
     mocks.extractAuthCode.mockReturnValue('auth-code')
     mockExchangeCodeForToken.mockResolvedValue({ id_token: 'id-token' })
     mockStoreJwt.mockResolvedValue(undefined)
     installChromeIdentityMock(
-      'https://extension.example/callback?code=auth-code',
+      'https://extension.example/callback?code=auth-code&state=test-state',
     )
   })
 
