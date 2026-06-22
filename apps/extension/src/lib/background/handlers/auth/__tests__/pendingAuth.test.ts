@@ -75,18 +75,21 @@ describe('sendPendingAuthError', () => {
       additionalIds: ['extra-1', 'extra-2'],
     })
     expect(mockSendToTab).toHaveBeenCalledTimes(3)
-    expect(mockSendToTab).toHaveBeenCalledWith(
-      3,
-      expect.objectContaining({ id: 'primary-id' }),
-    )
-    expect(mockSendToTab).toHaveBeenCalledWith(
-      3,
-      expect.objectContaining({ id: 'extra-1' }),
-    )
-    expect(mockSendToTab).toHaveBeenCalledWith(
-      3,
-      expect.objectContaining({ id: 'extra-2' }),
-    )
+    expect(mockSendToTab).toHaveBeenCalledWith(3, {
+      id: 'primary-id',
+      type: 'auth_error',
+      error: { message: 'Vault unlock was cancelled or timed out.' },
+    })
+    expect(mockSendToTab).toHaveBeenCalledWith(3, {
+      id: 'extra-1',
+      type: 'auth_error',
+      error: { message: 'Vault unlock was cancelled or timed out.' },
+    })
+    expect(mockSendToTab).toHaveBeenCalledWith(3, {
+      id: 'extra-2',
+      type: 'auth_error',
+      error: { message: 'Vault unlock was cancelled or timed out.' },
+    })
   })
 
   it('does nothing for dapp type without tabId', () => {
@@ -168,8 +171,8 @@ describe('setPendingAuthWindowId', () => {
   })
 
   it('ignores the update when there is no pending auth', () => {
-    // Should not throw
-    setPendingAuthWindowId('ghost-id', 1)
+    expect(() => setPendingAuthWindowId('ghost-id', 1)).not.toThrow()
+    expect(getPending()).toBeNull()
   })
 
   it('ignores the update when the pending id does not match (stale caller)', () => {

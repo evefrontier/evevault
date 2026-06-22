@@ -27,6 +27,8 @@ describe('hasNoTokenMaterial', () => {
     for (const field of TOKEN_MATERIAL_FIELDS) {
       expect(hasNoTokenMaterial({ [field]: 'value' })).toBe(false)
     }
+    // A value that happens to equal a token field name is not a violation — only keys matter
+    expect(hasNoTokenMaterial({ data: 'access_token' })).toBe(true)
   })
 
   it('returns false when a token field is nested inside an object', () => {

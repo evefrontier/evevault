@@ -11,22 +11,31 @@ vi.mock('@/features/wallet/hooks', () => ({
 
 vi.mock('@/features/wallet/components/SignRequestView', () => ({
   SignRequestView: ({
+    children,
     title,
     hasPending,
     loadingMessage,
+    error,
+    requireAcknowledgement,
     onApprove,
     onReject,
   }: {
-    title: string
+    children: React.ReactNode
+    title?: string
     hasPending: boolean
     loadingMessage: string
-    children: React.ReactNode
+    error?: string | null
+    requireAcknowledgement?: boolean
     onApprove?: () => void
     onReject?: () => void
   }) => (
     <div>
-      <span data-testid="title">{title}</span>
-      {!hasPending && <span>{loadingMessage}</span>}
+      {title && <span data-testid="title">{title}</span>}
+      {!hasPending ? <span>{loadingMessage}</span> : children}
+      {error && <span data-testid="error">{error}</span>}
+      {requireAcknowledgement && (
+        <span data-testid="ack-required">ack-required</span>
+      )}
       <button data-testid="approve-btn" type="button" onClick={onApprove}>
         Approve
       </button>
@@ -81,10 +90,6 @@ describe('SignTransaction', () => {
   it('renders loading state when there is no pending transaction', () => {
     render(<SignTransaction />)
     expect(screen.getByText('Loading transaction...')).toBeInTheDocument()
-  })
-
-  it('renders with the correct title', () => {
-    render(<SignTransaction />)
     expect(screen.getByTestId('title')).toHaveTextContent('Sign Transaction')
   })
 
@@ -114,13 +119,18 @@ describe('SignTransaction', () => {
     })
   })
 
-  it('throws when storeResult returns false', async () => {
+  it('sets error when storeResult returns false', async () => {
     const storeResult = vi.fn(() => Promise.resolve(false))
-    const withSigning = vi.fn().mockImplementation(async (cb) => {
-      await expect(
-        cb({ bytes: 'b64bytes', signature: 'mysig', txb: {}, windowId: 1 }),
-      ).rejects.toThrow('Failed to record the signing result')
-    })
+    let capturedCb:
+      | ((result: Record<string, unknown>) => Promise<void>)
+      | undefined
+    const withSigning = vi
+      .fn()
+      .mockImplementation(
+        async (cb: (r: Record<string, unknown>) => Promise<void>) => {
+          capturedCb = cb
+        },
+      )
     mockUseTransactionSigning.mockReturnValue({
       pendingTransaction: PENDING_TX,
       loading: false,
@@ -133,8 +143,19 @@ describe('SignTransaction', () => {
     })
     render(<SignTransaction />)
     fireEvent.click(screen.getByTestId('approve-btn'))
-    await waitFor(() => {
-      expect(storeResult).toHaveBeenCalled()
+    await waitFor(() => expect(capturedCb).toBeDefined())
+    await expect(
+      capturedCb!({
+        bytes: 'b64bytes',
+        signature: 'mysig',
+        txb: {},
+        windowId: 1,
+      }),
+    ).rejects.toThrow('Failed to record the signing result')
+    expect(storeResult).toHaveBeenCalledWith({
+      status: 'signed',
+      bytes: 'b64bytes',
+      signature: 'mysig',
     })
   })
 })

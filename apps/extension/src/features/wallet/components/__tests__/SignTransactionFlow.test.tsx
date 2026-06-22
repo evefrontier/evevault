@@ -12,24 +12,27 @@ vi.mock('@/features/wallet/hooks', () => ({
 vi.mock('@/features/wallet/components/SignRequestView', () => ({
   SignRequestView: ({
     children,
+    title,
     hasPending,
     loadingMessage,
+    error,
     requireAcknowledgement,
-    title,
     onApprove,
     onReject,
   }: {
     children: React.ReactNode
+    title?: string
     hasPending: boolean
     loadingMessage: string
+    error?: string | null
     requireAcknowledgement?: boolean
-    title: string
     onApprove?: () => void
     onReject?: () => void
   }) => (
     <div>
-      <span data-testid="title">{title}</span>
+      {title && <span data-testid="title">{title}</span>}
       {!hasPending ? <span>{loadingMessage}</span> : children}
+      {error && <span data-testid="error">{error}</span>}
       {requireAcknowledgement && (
         <span data-testid="ack-required">ack-required</span>
       )}
@@ -85,7 +88,7 @@ describe('SignTransactionFlow', () => {
     expect(screen.getByText('Loading transaction...')).toBeInTheDocument()
   })
 
-  it('shows the transaction payload when pending', () => {
+  it('shows the risk panel and payload label when a transaction is pending', () => {
     stubSigning({
       pendingTransaction: {
         windowId: 1,
@@ -136,6 +139,24 @@ describe('SignTransactionFlow', () => {
     stubSigning()
     render(<SignTransactionFlow title="Custom Title" onSign={vi.fn()} />)
     expect(screen.getByTestId('title')).toHaveTextContent('Custom Title')
+  })
+
+  it('calls handleReject when Reject is clicked', () => {
+    const handleReject = vi.fn()
+    stubSigning({
+      pendingTransaction: {
+        windowId: 1,
+        requestId: 'r1',
+        reviewValue: { commands: [], inputs: [] },
+        displayValue: '{}',
+        chain: 'sui:testnet',
+        account: { address: '0xabc' },
+      },
+      handleReject,
+    })
+    render(<SignTransactionFlow title="Sign Transaction" onSign={vi.fn()} />)
+    fireEvent.click(screen.getByTestId('reject-btn'))
+    expect(handleReject).toHaveBeenCalledTimes(1)
   })
 
   it('calls withSigning (via handleApprove) when Approve is clicked', () => {

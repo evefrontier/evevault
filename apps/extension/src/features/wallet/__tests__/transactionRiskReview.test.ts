@@ -24,18 +24,21 @@ describe('reviewTransaction', () => {
 
     expect(findings).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({
+        {
           severity: 'danger',
           title: 'Transfers objects',
-        }),
-        expect.objectContaining({
+          detail: 'This can move owned objects or tokens out of your account.',
+        },
+        {
           severity: 'warning',
           title: 'Calls Move code',
-        }),
-        expect.objectContaining({
+          detail: 'Review the package, module, and function before approving.',
+        },
+        {
           severity: 'warning',
           title: 'Builds object vectors',
-        }),
+          detail: 'This can pass multiple objects into a Move call.',
+        },
       ]),
     )
   })
@@ -47,14 +50,17 @@ describe('reviewTransaction', () => {
 
     expect(findings).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({
+        {
           severity: 'danger',
           title: 'Publishes Move code',
-        }),
-        expect.objectContaining({
+          detail: 'This can add new on-chain package code from your account.',
+        },
+        {
           severity: 'danger',
           title: 'Upgrades Move code',
-        }),
+          detail:
+            'This can change package behavior controlled by your account.',
+        },
       ]),
     )
   })
@@ -74,20 +80,20 @@ describe('reviewTransaction', () => {
       ],
     })
 
-    expect(findings).toContainEqual(
-      expect.objectContaining({
-        severity: 'warning',
-        title: 'Uses shared objects',
-      }),
-    )
+    expect(findings).toContainEqual({
+      severity: 'warning',
+      title: 'Uses shared objects',
+      detail: 'Shared object calls can change state used by other accounts.',
+    })
   })
 
   it('flags an undecodable transaction as danger', () => {
     expect(reviewTransaction(undefined)).toEqual([
-      expect.objectContaining({
+      {
         severity: 'danger',
         title: 'Unverified transaction format',
-      }),
+        detail: 'The transaction payload could not be decoded for review.',
+      },
     ])
   })
 
@@ -103,10 +109,11 @@ describe('reviewTransaction', () => {
         },
       }),
     ).toEqual([
-      expect.objectContaining({
+      {
         severity: 'danger',
         title: 'Unverified transaction format',
-      }),
+        detail: 'The transaction payload could not be decoded for review.',
+      },
     ])
   })
 
@@ -117,12 +124,11 @@ describe('reviewTransaction', () => {
           commands: [{ kind: 'MoveCall' }],
         },
       }),
-    ).toContainEqual(
-      expect.objectContaining({
-        severity: 'warning',
-        title: 'Calls Move code',
-      }),
-    )
+    ).toContainEqual({
+      severity: 'warning',
+      title: 'Calls Move code',
+      detail: 'Review the package, module, and function before approving.',
+    })
   })
 })
 

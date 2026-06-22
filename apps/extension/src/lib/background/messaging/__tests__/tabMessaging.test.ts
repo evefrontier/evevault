@@ -44,13 +44,15 @@ describe('sendToTab', () => {
     })
   })
 
-  it('delivers a disconnect_success message', () => {
-    sendToTab(10, { type: 'disconnect_success', id: 'disc-1' })
-
-    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(10, {
-      type: 'disconnect_success',
-      id: 'disc-1',
-    })
+  it('forwards the exact message object to the target tab id', () => {
+    const msg = {
+      type: 'auth_success' as const,
+      id: 'fwd-1',
+      chain: 'sui:testnet' as const,
+      address: '0xabc',
+    }
+    sendToTab(99, msg)
+    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(99, msg)
   })
 
   it('logs an error when chrome.tabs.sendMessage rejects', async () => {
@@ -63,7 +65,7 @@ describe('sendToTab', () => {
 
     expect(logger.error).toHaveBeenCalledWith(
       'Failed to send message to tab',
-      expect.objectContaining({ tabId: 7 }),
+      expect.objectContaining({ tabId: 7, err: expect.any(Error) }),
     )
   })
 
@@ -83,7 +85,7 @@ describe('sendToTab', () => {
     )
     expect(logger.error).toHaveBeenCalledWith(
       'Blocked tab-bound message containing token material',
-      expect.any(Object),
+      { type: 'auth_error' },
     )
     expect(chrome.tabs.sendMessage).not.toHaveBeenCalled()
   })

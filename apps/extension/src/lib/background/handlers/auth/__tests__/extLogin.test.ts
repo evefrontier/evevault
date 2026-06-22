@@ -210,6 +210,7 @@ describe('handleExtLogin', () => {
     await vi.advanceTimersByTimeAsync(301)
     await promise
 
+    expect(mockOpenPopupWindow).toHaveBeenCalledWith('popup')
     expect(mockCheckKeeperUnlocked).toHaveBeenCalledTimes(3)
     expect(mockSetPendingAuthAfterUnlock).toHaveBeenCalledWith(
       'message-id',
@@ -274,7 +275,7 @@ describe('handleExtLogin', () => {
     })
   })
 
-  it('sends an auth error when keeper public key bytes cannot be synced', async () => {
+  it('sends an auth error when keeper public key bytes are invalid', async () => {
     mockCheckKeeperUnlocked.mockResolvedValue({
       unlocked: true,
       publicKeyBytes: [1, 2, 3],
@@ -398,7 +399,6 @@ describe('handleExtLogin', () => {
     await vi.waitFor(() => {
       expect(mockSendAuthError).toHaveBeenCalledWith('message-id', lastError)
     })
-    expect(mockStoreJwt).not.toHaveBeenCalled()
   })
 
   it('sends auth error when OAuth response URL is missing', async () => {

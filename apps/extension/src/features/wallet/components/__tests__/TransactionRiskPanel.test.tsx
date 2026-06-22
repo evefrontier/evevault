@@ -28,6 +28,7 @@ describe('TransactionRiskPanel', () => {
     expect(screen.getByText('Calls Move code')).toBeInTheDocument()
     expect(screen.getByText('Transfers objects')).toBeInTheDocument()
     expect(screen.getByText('Review the package.')).toBeInTheDocument()
+    expect(screen.getByText('This can move owned objects.')).toBeInTheDocument()
   })
 
   it('renders the panel header for non-empty findings', () => {

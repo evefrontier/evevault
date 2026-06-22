@@ -1,5 +1,9 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  getSponsoredApproveError,
+  parsePendingSponsoredAction,
+} from '../SignSponsoredTransaction'
 
 const { mockUsePendingSignAction, mockUseWalletSigningContext } = vi.hoisted(
   () => ({
@@ -86,6 +90,7 @@ const AUTH_STUB = {
   user: { id_token: 'tok' },
   ephemeralPublicKey: {},
   maxEpoch: 100,
+  getZkProof: vi.fn(),
 }
 
 function stubPending(
@@ -112,6 +117,10 @@ beforeEach(() => {
     isLocalnet: false,
     sign: vi.fn(),
   })
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
 })
 
 async function renderSignSponsored() {
@@ -164,7 +173,7 @@ describe('SignSponsoredTransaction', () => {
     expect(screen.getByText('Desc')).toBeInTheDocument()
   })
 
-  it('requires acknowledgement when riskFindings include danger', async () => {
+  it('shows acknowledgement gate when parsed transaction cannot be verified', async () => {
     // reviewTransaction returns unverified (danger) for undefined reviewValue
     stubPending({
       windowId: 1,
@@ -221,9 +230,11 @@ describe('SignSponsoredTransaction — signing', () => {
     await renderSignSponsored()
     fireEvent.click(screen.getByTestId('approve-btn'))
     await waitFor(() => {
-      expect(storeResult).toHaveBeenCalledWith(
-        expect.objectContaining({ status: 'signed', zkSignature: 'zksig' }),
-      )
+      expect(storeResult).toHaveBeenCalledWith({
+        status: 'signed',
+        zkSignature: 'zksig',
+        preparationId: 'prep-sign',
+      })
     })
     expect(window.close).toHaveBeenCalled()
   })
@@ -295,5 +306,60 @@ describe('SignSponsoredTransaction — signing', () => {
         'Sponsored transactions are not available on localnet.',
       )
     })
+  })
+})
+
+describe('getSponsoredApproveError', () => {
+  const VALID_AUTH = { user: {}, ephemeralPublicKey: {}, maxEpoch: 100 }
+
+  it('returns null when all fields are valid', () => {
+    expect(getSponsoredApproveError(false, VALID_AUTH)).toBeNull()
+  })
+
+  it('returns localnet error before auth checks', () => {
+    expect(getSponsoredApproveError(true, VALID_AUTH)).toBe(
+      'Sponsored transactions are not available on localnet.',
+    )
+  })
+
+  it('returns sign-in error when user is missing', () => {
+    expect(getSponsoredApproveError(false, { ...VALID_AUTH, user: null })).toBe(
+      'Sign in and try again.',
+    )
+  })
+
+  it('returns device-key error when ephemeralPublicKey is missing', () => {
+    expect(
+      getSponsoredApproveError(false, {
+        ...VALID_AUTH,
+        ephemeralPublicKey: null,
+      }),
+    ).toBe('Device key not found. Unlock the wallet and try again.')
+  })
+
+  it('returns re-auth error when maxEpoch is 0', () => {
+    expect(
+      getSponsoredApproveError(false, { ...VALID_AUTH, maxEpoch: 0 }),
+    ).toBe('Max epoch not set. Re-authenticate and try again.')
+  })
+})
+
+describe('parsePendingSponsoredAction', () => {
+  it('throws when sponsoredTxB64 is missing', async () => {
+    await expect(
+      parsePendingSponsoredAction({ preparationId: 'prep-1' }),
+    ).rejects.toThrow('No pending sponsored transaction found')
+  })
+
+  it('throws when preparationId is missing', async () => {
+    await expect(
+      parsePendingSponsoredAction({ sponsoredTxB64: btoa('bytes') }),
+    ).rejects.toThrow('No pending sponsored transaction found')
+  })
+
+  it('throws when both sponsoredTxB64 and preparationId are missing', async () => {
+    await expect(parsePendingSponsoredAction({})).rejects.toThrow(
+      'No pending sponsored transaction found',
+    )
   })
 })

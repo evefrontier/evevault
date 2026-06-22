@@ -268,7 +268,7 @@ describe('content bridge message validation', () => {
     })
 
     expect(postMessage).toHaveBeenCalledWith(
-      expect.objectContaining({ __from: 'Eve Vault' }),
+      { __from: 'Eve Vault', id: 'unlock-id', type: 'auth_success' },
       window.location.origin,
     )
   })
@@ -365,11 +365,11 @@ describe('content bridge message validation', () => {
     await new Promise((r) => setTimeout(r, 0))
 
     expect(postMessage).toHaveBeenCalledWith(
-      expect.objectContaining({
+      {
         __from: 'Eve Vault',
         event: 'change',
         payload: { chains: ['sui:mainnet'] },
-      }),
+      },
       window.location.origin,
     )
   })
@@ -387,7 +387,37 @@ describe('content bridge message validation', () => {
     })
 
     expect(postMessage).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'sign_success', id: 'sign-id' }),
+      {
+        __from: 'Eve Vault',
+        id: 'sign-id',
+        type: 'sign_success',
+        bytes: 'dGVzdA==',
+        signature: 'c2ln',
+      },
+      window.location.origin,
+    )
+  })
+
+  it('forwards sign_success with digest and effects instead of bytes and signature', () => {
+    const postMessage = vi
+      .spyOn(window, 'postMessage')
+      .mockImplementation(() => undefined)
+
+    content.forwardToPage({
+      id: 'sign-id',
+      type: 'sign_success',
+      digest: 'dGVzdA==',
+      effects: 'ZWZm',
+    })
+
+    expect(postMessage).toHaveBeenCalledWith(
+      {
+        __from: 'Eve Vault',
+        id: 'sign-id',
+        type: 'sign_success',
+        digest: 'dGVzdA==',
+        effects: 'ZWZm',
+      },
       window.location.origin,
     )
   })
@@ -414,7 +444,12 @@ describe('content bridge message validation', () => {
     })
 
     expect(postMessage).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'sign_and_execute_transaction_success' }),
+      {
+        __from: 'Eve Vault',
+        id: 'exec-id',
+        type: 'sign_and_execute_transaction_success',
+        result: { bytes: 'b', signature: 's', digest: 'd', effects: 'e' },
+      },
       window.location.origin,
     )
   })
@@ -448,7 +483,11 @@ describe('content bridge message validation', () => {
         .mockImplementation(() => undefined)
       content.forwardToPage({ id: 'err-id', type, error: 'User rejected' })
       expect(postMessage).toHaveBeenCalledWith(
-        expect.objectContaining({ type }),
+        expect.objectContaining({
+          type,
+          error: 'User rejected',
+          __from: 'Eve Vault',
+        }),
         window.location.origin,
       )
     }
@@ -480,7 +519,11 @@ describe('content bridge message validation', () => {
     })
 
     expect(postMessage).toHaveBeenCalledWith(
-      expect.objectContaining({ event: 'change' }),
+      expect.objectContaining({
+        __from: 'Eve Vault',
+        event: 'change',
+        payload: { chains: ['sui:testnet'] },
+      }),
       window.location.origin,
     )
   })

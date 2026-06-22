@@ -94,7 +94,7 @@ describe('prepareAndSignTransaction', () => {
       auth: baseAuth({ ephemeralPublicKey: undefined, maxEpoch: undefined }),
     })
     await expect(prepareAndSignTransaction(args)).rejects.toThrow(
-      'No localnet keypair loaded',
+      'No localnet keypair loaded. Enter your private key in the network selector.',
     )
   })
 
@@ -117,16 +117,17 @@ describe('prepareAndSignTransaction', () => {
       Promise.resolve({ bytes: 'b64bytes', signature: 'sig' }),
     )
     const getSenderAddress = vi.fn(() => Promise.resolve('0xsender'))
+    const suiClient = { client: 'mock-ref' }
 
     const result = await prepareAndSignTransaction(
-      baseArgs({ sign, getSenderAddress }),
+      baseArgs({ sign, getSenderAddress, suiClient }),
     )
 
     expect(mockTransactionFrom).toHaveBeenCalledWith(BASE_PENDING.transaction)
     expect(mockBuildTxBytes).toHaveBeenCalledWith(
       fakeTxObject,
       '0xsender',
-      expect.any(Object),
+      suiClient,
     )
     expect(sign).toHaveBeenCalledWith('TransactionData', fakeTxb)
     expect(result).toEqual({

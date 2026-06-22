@@ -98,6 +98,10 @@ describe('buildExtensionAuthSuccessToken', () => {
   }
 
   it('maps JWT fields onto the token shape', () => {
+    mockDecodeJwt.mockReturnValue({
+      email: 'mapped@example.com',
+      sub: 'mapped-sub',
+    })
     const token = buildExtensionAuthSuccessToken({
       ...baseJwt,
       userId: 'explicit-user-id',
@@ -111,29 +115,36 @@ describe('buildExtensionAuthSuccessToken', () => {
       refresh_token: 'refresh-tok',
       refresh_token_id: 'rid-1',
       expires_at: 9999999,
-      email: 'user@example.com',
+      email: 'mapped@example.com',
       userId: 'explicit-user-id',
     })
   })
 
   it('falls back to decodeJwt sub when userId is absent from JWT', () => {
+    mockDecodeJwt.mockReturnValue({
+      email: 'other@example.com',
+      sub: 'sub-from-jwt',
+    })
     const token = buildExtensionAuthSuccessToken({
       ...baseJwt,
       userId: undefined,
     })
-    expect(token.userId).toBe('user-sub-123')
+    expect(token.userId).toBe('sub-from-jwt')
+    expect(token.userId).not.toBe('other@example.com')
     expect(mockDecodeJwt).toHaveBeenCalled()
   })
 
   it('uses the explicit userId without calling sub extraction when present', () => {
-    mockDecodeJwt.mockClear()
-    buildExtensionAuthSuccessToken({ ...baseJwt, userId: 'explicit-user-id' })
-    // decodeJwt is still called for the email extraction, but sub should not be used
+    mockDecodeJwt.mockReturnValue({
+      email: 'other@example.com',
+      sub: 'sub-from-jwt',
+    })
     const token = buildExtensionAuthSuccessToken({
       ...baseJwt,
       userId: 'explicit-user-id',
     })
     expect(token.userId).toBe('explicit-user-id')
+    expect(token.userId).not.toBe('sub-from-jwt')
   })
 })
 
@@ -163,7 +174,7 @@ describe('getCurrentChainFromStorage', () => {
   })
 
   it('falls back to Zustand when storage returns nothing', async () => {
-    mockGetChain.mockReturnValue('sui:testnet')
+    mockGetChain.mockReturnValue('sui:mainnet')
     ;(chrome.storage.local.get as ReturnType<typeof vi.fn>).mockImplementation(
       (_keys: unknown, callback: (result: Record<string, unknown>) => void) => {
         callback({})
@@ -171,11 +182,11 @@ describe('getCurrentChainFromStorage', () => {
     )
 
     const chain = await getCurrentChainFromStorage()
-    expect(chain).toBe('sui:testnet')
+    expect(chain).toBe('sui:mainnet')
   })
 
   it('falls back to Zustand when stored value has no chain field', async () => {
-    mockGetChain.mockReturnValue('sui:testnet')
+    mockGetChain.mockReturnValue('sui:devnet')
     ;(chrome.storage.local.get as ReturnType<typeof vi.fn>).mockImplementation(
       (_keys: unknown, callback: (result: Record<string, unknown>) => void) => {
         callback({ [CONTEXT_STORAGE_KEY]: { state: {} } })
@@ -183,11 +194,11 @@ describe('getCurrentChainFromStorage', () => {
     )
 
     const chain = await getCurrentChainFromStorage()
-    expect(chain).toBe('sui:testnet')
+    expect(chain).toBe('sui:devnet')
   })
 
   it('falls back to Zustand when JSON.parse throws', async () => {
-    mockGetChain.mockReturnValue('sui:testnet')
+    mockGetChain.mockReturnValue('sui:localnet')
     ;(chrome.storage.local.get as ReturnType<typeof vi.fn>).mockImplementation(
       (_keys: unknown, callback: (result: Record<string, unknown>) => void) => {
         callback({ [CONTEXT_STORAGE_KEY]: 'not-valid-json{{{' })
@@ -195,7 +206,7 @@ describe('getCurrentChainFromStorage', () => {
     )
 
     const chain = await getCurrentChainFromStorage()
-    expect(chain).toBe('sui:testnet')
+    expect(chain).toBe('sui:localnet')
   })
 })
 
@@ -219,7 +230,17 @@ describe('sendExtensionAuthSuccess', () => {
       expect.objectContaining({
         id: 'msg-id',
         type: 'auth_success',
-        token: expect.objectContaining({ access_token: 'a' }),
+        token: expect.objectContaining({
+          access_token: 'a',
+          id_token: 'i',
+          expires_in: 3600,
+          scope: 'openid',
+          token_type: 'Bearer',
+          refresh_token: 'r',
+          refresh_token_id: 'rid',
+          expires_at: 0,
+          userId: 'u-1',
+        }),
       }),
     )
   })
@@ -257,7 +278,13 @@ describe('sendDappConnectSuccessToTab', () => {
     )
     expect(mockSendToTab).toHaveBeenCalledWith(
       5,
-      expect.objectContaining({ id: 'id-b' }),
+      expect.objectContaining({
+        id: 'id-b',
+        type: 'auth_success',
+        chain: 'sui:testnet',
+        address: '0xabc',
+        publicKey: 'AQID',
+      }),
     )
   })
 

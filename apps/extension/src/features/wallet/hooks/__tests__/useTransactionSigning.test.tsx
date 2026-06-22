@@ -1,5 +1,5 @@
 import { act, renderHook } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { mockUsePendingTransaction, mockUseWalletSigningContext, mockPrepare } =
   vi.hoisted(() => ({
@@ -77,6 +77,10 @@ beforeEach(() => {
   vi.spyOn(window, 'close').mockImplementation(() => {})
 })
 
+afterEach(() => {
+  vi.restoreAllMocks()
+})
+
 import { useTransactionSigning } from '../useTransactionSigning'
 
 describe('useTransactionSigning', () => {
@@ -92,8 +96,8 @@ describe('useTransactionSigning', () => {
         withSigning: expect.any(Function),
         storeResult: expect.any(Function),
         handleReject: expect.any(Function),
-        suiClient: expect.any(Object),
       })
+      expect(result.current.suiClient).toBe(SIGNING_CONTEXT_STUB.suiClient)
     })
   })
 
@@ -120,7 +124,13 @@ describe('useTransactionSigning', () => {
       expect(setLoading).toHaveBeenCalledWith(true)
       expect(setError).toHaveBeenCalledWith(null)
       expect(mockPrepare).toHaveBeenCalledWith(
-        expect.objectContaining({ pendingTransaction: PENDING_TX_STUB }),
+        expect.objectContaining({
+          pendingTransaction: PENDING_TX_STUB,
+          auth: expect.objectContaining({ user: { id_token: 'tok' } }),
+          isLocalnet: SIGNING_CONTEXT_STUB.isLocalnet,
+          sign: SIGNING_CONTEXT_STUB.sign,
+          suiClient: SIGNING_CONTEXT_STUB.suiClient,
+        }),
       )
       expect(onSigned).toHaveBeenCalledWith(signResult)
       expect(setLoading).toHaveBeenLastCalledWith(false)
@@ -131,13 +141,15 @@ describe('useTransactionSigning', () => {
         stubPendingTransaction()
       mockPrepare.mockRejectedValue(new Error('signing failed'))
 
+      const onSigned = vi.fn()
       const { result } = renderHook(() => useTransactionSigning())
 
-      await act(() => result.current.withSigning(vi.fn()))
+      await act(() => result.current.withSigning(onSigned))
 
       expect(setError).toHaveBeenCalledWith('signing failed')
       expect(storeErrorResult).toHaveBeenCalledWith('signing failed')
       expect(setLoading).toHaveBeenLastCalledWith(false)
+      expect(onSigned).not.toHaveBeenCalled()
     })
 
     it('uses "Unknown error occurred" message for non-Error throws', async () => {

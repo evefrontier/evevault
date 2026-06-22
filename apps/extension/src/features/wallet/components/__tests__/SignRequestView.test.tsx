@@ -89,6 +89,7 @@ describe('SignRequestView', () => {
         {...defaultProps({ hasPending: false, error: 'Something went wrong' })}
       />,
     )
+    expect(screen.getByText('Loading transaction...')).toBeInTheDocument()
     expect(screen.getByText(/Something went wrong/)).toBeInTheDocument()
   })
 
@@ -115,6 +116,7 @@ describe('SignRequestView', () => {
       <SignRequestView {...defaultProps({ requireAcknowledgement: false })} />,
     )
     expect(screen.getByRole('button', { name: 'Approve' })).not.toBeDisabled()
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
   })
 
   it('Approve is disabled when requireAcknowledgement is true and not yet acknowledged', () => {
@@ -135,7 +137,7 @@ describe('SignRequestView', () => {
 
   it('shows inline error text when hasPending is true and error is set', () => {
     render(<SignRequestView {...defaultProps({ error: 'Signing failed' })} />)
-    expect(screen.getByText(/Signing failed/)).toBeInTheDocument()
+    expect(screen.getByText('Error: Signing failed')).toBeInTheDocument()
   })
 
   it('renders children inside the pending view', () => {

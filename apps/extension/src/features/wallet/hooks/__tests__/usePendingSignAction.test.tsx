@@ -1,5 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { usePendingSignAction } from '../usePendingSignAction'
 
 const { mockUseSignPopupAuth } = vi.hoisted(() => ({
@@ -32,6 +32,7 @@ const AUTH_STUB = {
   login: vi.fn(),
   ephemeralPublicKey: {},
   maxEpoch: 100,
+  getZkProof: vi.fn(),
 }
 
 function makeOptions(parsePending = vi.fn(async (a: unknown) => a)) {
@@ -61,6 +62,11 @@ beforeEach(() => {
   mockUseSignPopupAuth.mockReturnValue(AUTH_STUB)
 })
 
+afterEach(() => {
+  vi.restoreAllMocks()
+  vi.unstubAllGlobals()
+})
+
 describe('usePendingSignAction', () => {
   describe('initial load', () => {
     it('sets error to missingError when pendingAction is absent', async () => {
@@ -73,12 +79,20 @@ describe('usePendingSignAction', () => {
       expect(result.current.pending).toBeNull()
     })
 
-    it('sets pending after parsePending resolves', async () => {
-      const action = { windowId: 1, requestId: 'req-1' }
-      stubStorage(action)
-      const { result } = renderHook(() => usePendingSignAction(makeOptions()))
+    it('sets pending after parsePending resolves with the transformed value', async () => {
+      const raw = { windowId: 1, requestId: 'req-1' }
+      stubStorage(raw)
+      const parsePending = vi.fn(async (input: unknown) => ({
+        ...(input as object),
+        parsed: true as const,
+      }))
+      const { result } = renderHook(() =>
+        usePendingSignAction(makeOptions(parsePending)),
+      )
 
-      await waitFor(() => expect(result.current.pending).toEqual(action))
+      await waitFor(() =>
+        expect(result.current.pending).toEqual({ ...raw, parsed: true }),
+      )
       expect(result.current.error).toBeNull()
     })
 
@@ -207,14 +221,14 @@ describe('usePendingSignAction', () => {
 
       await act(() => result.current.handleReject())
 
-      expect(chrome.storage.local.set).toHaveBeenCalledWith(
-        expect.objectContaining({
-          transactionResult: expect.objectContaining({
-            status: 'error',
-            error: 'User rejected',
-          }),
-        }),
-      )
+      expect(chrome.storage.local.set).toHaveBeenCalledWith({
+        transactionResult: {
+          status: 'error',
+          error: 'User rejected',
+          windowId: 2,
+          requestId: 'req-close',
+        },
+      })
       expect(closeSpy).toHaveBeenCalled()
     })
 

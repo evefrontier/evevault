@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { mockUsePendingSignAction, mockUseWalletSigningContext } = vi.hoisted(
   () => ({
@@ -60,7 +60,12 @@ vi.mock('@evevault/shared/utils', async (importOriginal) => {
   }
 })
 
-const AUTH_STUB = { user: {}, ephemeralPublicKey: {}, maxEpoch: 100 }
+const AUTH_STUB = {
+  user: {},
+  ephemeralPublicKey: {},
+  maxEpoch: 100,
+  getZkProof: vi.fn(),
+}
 
 function stubPending(
   pending: Record<string, unknown> | null,
@@ -87,6 +92,10 @@ beforeEach(() => {
     isLocalnet: false,
     sign: vi.fn(),
   })
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
 })
 
 // Lazy import the component after mocks are set up
@@ -167,7 +176,10 @@ describe('SignPersonalMessage — signing', () => {
   it('signs successfully and closes the window', async () => {
     const message = new TextEncoder().encode('hello')
     const storeResult = vi.fn(() => Promise.resolve(true))
-    const sign = vi.fn().mockResolvedValue({ bytes: 'b64', signature: 'sig' })
+    const sign = vi.fn().mockResolvedValue({
+      bytes: 'bytes-from-signer',
+      signature: 'sig-from-signer',
+    })
     mockUseWalletSigningContext.mockReturnValue({
       chain: 'sui:testnet',
       isLocalnet: false,
@@ -189,11 +201,12 @@ describe('SignPersonalMessage — signing', () => {
     await waitFor(() => {
       expect(storeResult).toHaveBeenCalledWith({
         status: 'signed',
-        bytes: 'b64',
-        signature: 'sig',
+        bytes: 'bytes-from-signer',
+        signature: 'sig-from-signer',
       })
     })
     expect(window.close).toHaveBeenCalled()
+    expect(sign).toHaveBeenCalledWith('PersonalMessage', expect.any(Uint8Array))
   })
 
   it('sets error when storeResult returns false', async () => {
@@ -225,9 +238,10 @@ describe('SignPersonalMessage — signing', () => {
         'Failed to record the signing result. Please try again.',
       )
     })
+    expect(window.close).not.toHaveBeenCalled()
   })
 
-  it('sets error when signing fails', async () => {
+  it('sets error and records error result when signing fails', async () => {
     const setError = vi.fn()
     const storeErrorResult = vi.fn(() => Promise.resolve(true))
     const sign = vi.fn().mockRejectedValue(new Error('hw error'))
@@ -256,5 +270,6 @@ describe('SignPersonalMessage — signing', () => {
       expect(setError).toHaveBeenCalledWith('hw error')
       expect(storeErrorResult).toHaveBeenCalledWith('hw error')
     })
+    expect(window.close).not.toHaveBeenCalled()
   })
 })

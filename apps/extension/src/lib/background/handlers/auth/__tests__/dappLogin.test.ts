@@ -189,7 +189,7 @@ describe('handleDappLogin', () => {
     )
   })
 
-  it('sends auth_error to the tab when dapp context is invalid (non-web origin)', async () => {
+  it('silently returns without sending to tab when sender has no tab id', async () => {
     await handleDappLogin(
       { id: 'ext-req' },
       {
@@ -200,7 +200,6 @@ describe('handleDappLogin', () => {
     )
 
     expect(chrome.tabs.sendMessage).not.toHaveBeenCalled()
-    // No tab to send to — the call silently returns
   })
 
   it('sends auth_error to the tab when the keeper is locked and there is no device data', async () => {
@@ -223,7 +222,10 @@ describe('handleDappLogin', () => {
       expect.objectContaining({
         id: 'locked-req',
         type: 'auth_error',
-        error: expect.objectContaining({ vaultOpened: true }),
+        error: expect.objectContaining({
+          vaultOpened: true,
+          message: expect.stringContaining('set up or unlock'),
+        }),
       }),
     )
   })
@@ -244,6 +246,7 @@ describe('handleDappLogin', () => {
       20,
     )
 
+    expect(mocks.addPendingDappId).toHaveBeenCalledWith(20, 'dup-req')
     expect(mocks.openPopupWindow).not.toHaveBeenCalled()
     expect(chrome.tabs.sendMessage).not.toHaveBeenCalled()
   })
@@ -293,6 +296,10 @@ describe('handleDappLogin', () => {
 
     expect(mockCheckKeeperUnlocked).toHaveBeenCalledTimes(2)
     expect(mocks.openPopupWindow).not.toHaveBeenCalled()
+    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(
+      42,
+      expect.objectContaining({ type: 'auth_success' }),
+    )
   })
 
   it('sends auth_error when zkLogin address lookup fails', async () => {
@@ -311,13 +318,11 @@ describe('handleDappLogin', () => {
       42,
     )
 
-    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(
-      42,
-      expect.objectContaining({
-        type: 'auth_error',
-        error: expect.objectContaining({ message: 'Enoki lookup failed' }),
-      }),
-    )
+    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(42, {
+      id: 'zk-fail',
+      type: 'auth_error',
+      error: expect.objectContaining({ message: 'Enoki lookup failed' }),
+    })
   })
 
   it('sends auth_error when zkLogin address is missing from the response', async () => {

@@ -60,15 +60,16 @@ beforeEach(() => {
 
 describe('handleWebUnlock', () => {
   it('stores the JWT and sends auth_success to the tab', async () => {
+    mockEnsureMessageId.mockReturnValueOnce('ensured-id')
     await handleWebUnlock(
-      makeMessage(),
+      makeMessage({ id: 'original-id' }),
       {} as chrome.runtime.MessageSender,
       vi.fn(),
     )
 
     expect(mockStoreJwt).toHaveBeenCalledWith(fakeJwt)
     expect(mockSendToTab).toHaveBeenCalledWith(5, {
-      id: 'msg-id',
+      id: 'ensured-id',
       type: 'auth_success',
     })
   })
@@ -86,15 +87,16 @@ describe('handleWebUnlock', () => {
 
   it('sends auth_error to the tab when storeJwt throws', async () => {
     mockStoreJwt.mockRejectedValue(new Error('storage full'))
+    mockEnsureMessageId.mockReturnValueOnce('ensured-err-id')
 
     await handleWebUnlock(
-      makeMessage(),
+      makeMessage({ id: 'original-id' }),
       {} as chrome.runtime.MessageSender,
       vi.fn(),
     )
 
     expect(mockSendToTab).toHaveBeenCalledWith(5, {
-      id: 'msg-id',
+      id: 'ensured-err-id',
       type: 'auth_error',
       error: 'storage full',
     })
@@ -114,15 +116,16 @@ describe('handleWebUnlock', () => {
 
   it('uses a generic error message when the thrown value is not an Error', async () => {
     mockStoreJwt.mockRejectedValue('non-error string')
+    mockEnsureMessageId.mockReturnValueOnce('ensured-generic-id')
 
     await handleWebUnlock(
-      makeMessage(),
+      makeMessage({ id: 'original-id' }),
       {} as chrome.runtime.MessageSender,
       vi.fn(),
     )
 
     expect(mockSendToTab).toHaveBeenCalledWith(5, {
-      id: 'msg-id',
+      id: 'ensured-generic-id',
       type: 'auth_error',
       error: 'Failed to complete web unlock',
     })
