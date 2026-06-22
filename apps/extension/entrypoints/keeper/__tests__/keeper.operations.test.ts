@@ -1,5 +1,5 @@
+import type { ZKProofData } from '@evefrontier/wallet-core/crypto'
 import { ZKEd25519Keypair } from '@evefrontier/wallet-core/crypto'
-import type { ZKProofData } from '@evefrontier/wallet-core/types'
 import {
   decrypt,
   encrypt,

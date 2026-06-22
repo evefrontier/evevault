@@ -1,4 +1,4 @@
-import { isEveCoinType } from '@evefrontier/wallet-core/definitions'
+import { isEveCoinType } from '@evefrontier/wallet-core/eve-token'
 import { SUI_LOCALNET_CHAIN } from '@mysten/wallet-standard'
 import { createSuiClient } from '#/sui'
 import type { createSuiGraphQLClient } from '#/sui/graphqlClient'

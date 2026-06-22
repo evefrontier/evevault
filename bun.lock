@@ -5,7 +5,7 @@
     "": {
       "name": "eve-frontier-vault",
       "dependencies": {
-        "@evefrontier/wallet-core": "0.0.1-alpha.9",
+        "@evefrontier/wallet-core": "0.0.1",
         "@mysten/sui": "^2.17.0",
         "@mysten/wallet-standard": "^0.20.3",
         "jose": "6.0.12",
@@ -452,7 +452,7 @@
 
     "@esbuild/win32-x64": ["@esbuild/win32-x64@0.28.1", "", { "os": "win32", "cpu": "x64" }, "sha512-bm4Mowrv+GXMlpWX++EcXw/iLyd1o3+bJkC2DkWXYVvgZCqD/bSj9ctZeAMC3cIxgjRVR2Dufaiu4YPxr5gW1A=="],
 
-    "@evefrontier/wallet-core": ["@evefrontier/wallet-core@0.0.1-alpha.9", "https://npm.pkg.github.com/download/@evefrontier/wallet-core/0.0.1-alpha.9/f0e5d5910600ce7579b8db75418ee156345c27f9", { "dependencies": { "@mysten/sui": "^2.16.3", "@mysten/wallet-standard": "^0.20.3", "@mysten/webcrypto-signer": "^0.1.2" } }, "sha512-wZ27MI2wVjQmpDr73tBo2POLwlkvs8fFFh2fJPylvu4UXDC6GHepCdE5RnR+JnuaWa6M+9JFZPKKMtDvKhOtuQ=="],
+    "@evefrontier/wallet-core": ["@evefrontier/wallet-core@0.0.1", "https://npm.pkg.github.com/download/@evefrontier/wallet-core/0.0.1/c52563aa24279c0a59c9ce913e3f654358ae6411", { "dependencies": { "@mysten/sui": "^2.16.3", "@mysten/wallet-standard": "^0.20.3", "@mysten/webcrypto-signer": "^0.1.2" } }, "sha512-9g4pIBVG+2xo4Kfz5jrA9b8RtsH2ZCvd2UPpImDnYTi/11G0tlHBlshnT0EY30v7V+ASJa1qGw7FAFaLwVYJyw=="],
 
     "@evevault/extension": ["@evevault/extension@workspace:apps/extension"],
 

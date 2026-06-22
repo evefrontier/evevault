@@ -1,4 +1,4 @@
-import type { TenantId } from '@evefrontier/wallet-core/definitions'
+import type { TenantId } from '@evefrontier/wallet-core/tenant'
 import { HeaderMobile, LockScreen, NetworkSelector } from '@evevault/shared'
 import { switchTenantAndReload, useAuth } from '@evevault/shared/auth'
 import {

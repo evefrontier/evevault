@@ -1,5 +1,5 @@
+import type { ZKProofData } from '@evefrontier/wallet-core/crypto'
 import { ZKEd25519Keypair } from '@evefrontier/wallet-core/crypto'
-import type { ZKProofData } from '@evefrontier/wallet-core/types'
 import { encrypt, encryptWithKey, type HashedData } from '@evevault/shared'
 import { createLogger } from '@evevault/shared/utils'
 import type { BackgroundMessage } from '@/lib/background/types'

@@ -1,4 +1,4 @@
-import type { TenantId } from '@evefrontier/wallet-core/definitions'
+import type { TenantId } from '@evefrontier/wallet-core/tenant'
 import type { SuiChain } from '@mysten/wallet-standard'
 import type { User } from 'oidc-client-ts'
 import type {

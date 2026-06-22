@@ -1,4 +1,4 @@
-import { EVEFRONTIER_SPONSORED_TRANSACTION } from '@evefrontier/wallet-core/wallet-standard-extensions'
+import { EVEFRONTIER_SPONSORED_TRANSACTION } from '@evefrontier/wallet-core/wallet-features'
 import { WalletStandardMessageTypes } from '@evevault/shared'
 import {
   StandardConnect,

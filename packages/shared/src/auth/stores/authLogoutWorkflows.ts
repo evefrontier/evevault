@@ -1,4 +1,4 @@
-import type { TenantId } from '@evefrontier/wallet-core/definitions'
+import type { TenantId } from '@evefrontier/wallet-core/tenant'
 import { clearZkLoginAddressCache } from '#/auth/getZkLoginAddress'
 import { clearAllJwts } from '#/auth/storageService'
 import { zkProofService } from '#/services/vaultService'

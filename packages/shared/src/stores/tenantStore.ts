@@ -1,4 +1,4 @@
-import type { TenantId } from '@evefrontier/wallet-core/definitions'
+import type { TenantId } from '@evefrontier/wallet-core/tenant'
 import { isWeb } from '#/utils/environment'
 import { isAvailableTenantId } from '#/utils/tenantConfig'
 import { getCurrentContextTenantId, useContextStore } from './contextStore'

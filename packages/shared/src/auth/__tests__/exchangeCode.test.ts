@@ -1,4 +1,4 @@
-import { TenantId } from '@evefrontier/wallet-core/definitions'
+import { TenantId } from '@evefrontier/wallet-core/tenant'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { makeJwt } from '#/testing'
 
