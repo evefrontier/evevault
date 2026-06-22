@@ -80,7 +80,7 @@ function installChromeMock() {
       id: 'extension-id',
     },
     tabs: {
-      query: vi.fn((callback) => callback([{ id: 1 }, { id: 2 }])),
+      query: vi.fn((_queryInfo, callback) => callback([{ id: 1 }, { id: 2 }])),
       sendMessage: vi.fn(() => Promise.resolve()),
     },
   } as unknown as typeof chrome)
@@ -142,17 +142,16 @@ describe('handleMessage route policy', () => {
 
   it('allows public dApp connect messages from tab senders', () => {
     const sendResponse = vi.fn()
-
+    const sender = dappSender()
     const result = handleMessage(
       { type: 'connect', id: 'connect-id' },
-      dappSender(),
+      sender,
       sendResponse,
     )
-
     expect(result).toBe(true)
     expect(mocks.handleDappLogin).toHaveBeenCalledWith(
       { type: 'connect', id: 'connect-id' },
-      expect.objectContaining({ tab: expect.objectContaining({ id: 42 }) }),
+      sender,
       sendResponse,
       42,
     )
@@ -211,34 +210,36 @@ describe('handleMessage route policy', () => {
 
   it('allows vault messages from extension senders', () => {
     const sendResponse = vi.fn()
+    const sender = extensionSender()
 
     const result = handleMessage(
       { type: VaultMessageTypes.LOCK },
-      extensionSender(),
+      sender,
       sendResponse,
     )
 
     expect(result).toBe(true)
     expect(mocks.handleLock).toHaveBeenCalledWith(
       { type: VaultMessageTypes.LOCK },
-      extensionSender(),
+      sender,
       sendResponse,
     )
   })
 
   it('allows vault messages from extension tab senders', () => {
     const sendResponse = vi.fn()
+    const sender = extensionTabSender()
 
     const result = handleMessage(
       { type: VaultMessageTypes.ZK_EPH_SIGN_BYTES },
-      extensionTabSender(),
+      sender,
       sendResponse,
     )
 
     expect(result).toBe(true)
     expect(mocks.handleZkEphSignBytes).toHaveBeenCalledWith(
       { type: VaultMessageTypes.ZK_EPH_SIGN_BYTES },
-      extensionTabSender(),
+      sender,
       sendResponse,
     )
   })
@@ -291,62 +292,51 @@ describe('handleMessage route policy', () => {
 
   it('routes wallet signing actions from tab senders without resolving dApp context', () => {
     const sendResponse = vi.fn()
-
+    const sender = { tab: { id: 42 } } as chrome.runtime.MessageSender
     expect(
       handleMessage(
         { action: WalletStandardMessageTypes.SIGN_TRANSACTION, id: 'sign-id' },
-        { tab: { id: 42 } } as chrome.runtime.MessageSender,
+        sender,
         sendResponse,
       ),
     ).toBe(true)
-
     expect(mocks.handleApprovePopup).toHaveBeenCalledWith(
       { action: WalletStandardMessageTypes.SIGN_TRANSACTION, id: 'sign-id' },
-      expect.objectContaining({ tab: expect.objectContaining({ id: 42 }) }),
+      sender,
       sendResponse,
     )
     expect(mocks.getDappRequestContext).not.toHaveBeenCalled()
-    expect(sendResponse).not.toHaveBeenCalledWith({
-      type: 'auth_error',
-      error: { message: 'Unauthorized message sender' },
-    })
+    expect(sendResponse).not.toHaveBeenCalled()
   })
 
   it('routes sponsored signing actions through the async route wrapper', () => {
     const sendResponse = vi.fn()
+    const sender = dappSender()
     const message = {
       action: WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION,
       id: 'sponsored-id',
-      message: {
-        action: 'mine',
-        assembly: '1',
-        assemblyType: 'type',
-      },
+      message: { action: 'mine', assembly: '1', assemblyType: 'type' },
     }
-
-    expect(handleMessage(message, dappSender(), sendResponse)).toBe(true)
+    expect(handleMessage(message, sender, sendResponse)).toBe(true)
     expect(mocks.handleSponsoredTransaction).toHaveBeenCalledWith(
       message,
-      expect.objectContaining({ tab: expect.objectContaining({ id: 42 }) }),
+      sender,
       sendResponse,
     )
   })
 
   it('revokes dApp permission and sends disconnect success to the page', async () => {
     const sendResponse = vi.fn()
-
+    const sender = dappSender()
     expect(
       handleMessage(
         { type: WalletStandardMessageTypes.DISCONNECT, id: 'disconnect-id' },
-        dappSender(),
+        sender,
         sendResponse,
       ),
     ).toBe(true)
-
     await vi.waitFor(() => {
-      expect(mocks.revokeDappPermission).toHaveBeenCalledWith(
-        expect.objectContaining({ tab: expect.objectContaining({ id: 42 }) }),
-      )
+      expect(mocks.revokeDappPermission).toHaveBeenCalledWith(sender)
     })
     expect(sendResponse).toHaveBeenCalledWith({
       id: 'disconnect-id',
@@ -385,5 +375,79 @@ describe('handleMessage route policy', () => {
       type: 'disconnect_error',
       error: { message: 'revocation failed' },
     })
+  })
+
+  it('sends disconnect_error when handleDappDisconnect throws unexpectedly', async () => {
+    mocks.revokeDappPermission.mockRejectedValueOnce(new Error('DB exploded'))
+    const sendResponse = vi.fn()
+
+    handleMessage(
+      { type: WalletStandardMessageTypes.DISCONNECT, id: 'disc-err' },
+      dappSender(),
+      sendResponse,
+    )
+
+    await vi.waitFor(() => {
+      expect(sendResponse).toHaveBeenCalledWith({
+        id: 'disc-err',
+        type: 'disconnect_error',
+        error: { message: 'DB exploded' },
+      })
+    })
+  })
+
+  it('sends disconnect_error with Unknown error occurred for non-Error throws', async () => {
+    mocks.revokeDappPermission.mockRejectedValueOnce('plain string')
+    const sendResponse = vi.fn()
+
+    handleMessage(
+      { type: WalletStandardMessageTypes.DISCONNECT, id: 'disc-str' },
+      dappSender(),
+      sendResponse,
+    )
+
+    await vi.waitFor(() => {
+      expect(sendResponse).toHaveBeenCalledWith({
+        id: 'disc-str',
+        type: 'disconnect_error',
+        error: { message: 'Unknown error occurred' },
+      })
+    })
+  })
+
+  it('broadcasts change events to all tabs when sent by extension', () => {
+    const sendResponse = vi.fn()
+    const result = handleMessage(
+      { event: 'change', payload: { accounts: ['0xabc'] } },
+      extensionSender(),
+      sendResponse,
+    )
+
+    expect(result).toBe(true)
+    expect(chrome.tabs.query).toHaveBeenCalled()
+    // tabs.query callback runs synchronously in the mock, so sendMessage is already called
+    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({
+        event: 'change',
+        payload: { accounts: ['0xabc'] },
+      }),
+    )
+    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(
+      2,
+      expect.objectContaining({ event: 'change' }),
+    )
+  })
+
+  it('returns undefined for messages with no matching route and no change event', () => {
+    const sendResponse = vi.fn()
+    const result = handleMessage(
+      { type: 'totally_unknown' } as Parameters<typeof handleMessage>[0],
+      extensionSender(),
+      sendResponse,
+    )
+
+    expect(result).toBeUndefined()
+    expect(sendResponse).not.toHaveBeenCalled()
   })
 })

@@ -23,7 +23,7 @@ type ParsedSponsoredTransaction = PendingSponsoredTransaction & {
   reviewValue?: unknown
 }
 
-async function parsePendingSponsoredAction(
+export async function parsePendingSponsoredAction(
   pendingAction: unknown,
 ): Promise<ParsedSponsoredTransaction> {
   const action = pendingAction as Partial<PendingSponsoredTransaction>
@@ -41,7 +41,7 @@ async function parsePendingSponsoredAction(
   }
 }
 
-function getSponsoredApproveError(
+export function getSponsoredApproveError(
   isLocalnet: boolean,
   auth: { user: unknown; ephemeralPublicKey: unknown; maxEpoch: unknown },
 ): string | null {

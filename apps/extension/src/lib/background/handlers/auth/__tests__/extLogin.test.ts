@@ -210,6 +210,7 @@ describe('handleExtLogin', () => {
     await vi.advanceTimersByTimeAsync(301)
     await promise
 
+    expect(mockOpenPopupWindow).toHaveBeenCalledWith('popup')
     expect(mockCheckKeeperUnlocked).toHaveBeenCalledTimes(3)
     expect(mockSetPendingAuthAfterUnlock).toHaveBeenCalledWith(
       'message-id',
@@ -274,7 +275,7 @@ describe('handleExtLogin', () => {
     })
   })
 
-  it('sends an auth error when keeper public key bytes cannot be synced', async () => {
+  it('sends an auth error when keeper public key bytes are invalid', async () => {
     mockCheckKeeperUnlocked.mockResolvedValue({
       unlocked: true,
       publicKeyBytes: [1, 2, 3],
@@ -373,5 +374,124 @@ describe('handleExtLogin', () => {
     })
     expect(mockStoreJwt).not.toHaveBeenCalled()
     expect(mockSendExtensionAuthSuccess).not.toHaveBeenCalled()
+  })
+
+  it('sends auth error when chrome.runtime.lastError is set', async () => {
+    mocks.deviceState.ephemeralPublicKey = { existing: true }
+    mocks.deviceState.networkData = { 'sui:testnet': { nonce: 'nonce-value' } }
+    const lastError = { message: 'User cancelled' }
+    vi.stubGlobal('chrome', {
+      runtime: { lastError },
+      identity: {
+        getRedirectURL: vi.fn(() => 'https://extension.example/callback'),
+        launchWebAuthFlow: vi.fn((_details, callback) =>
+          callback('https://extension.example/callback?code=abc'),
+        ),
+      },
+    } as unknown as typeof chrome)
+
+    await handleExtLogin(
+      makeMessage(),
+      {} as chrome.runtime.MessageSender,
+      vi.fn(),
+    )
+
+    await vi.waitFor(() => {
+      expect(mockSendAuthError).toHaveBeenCalledWith('message-id', lastError)
+    })
+  })
+
+  it('sends auth error when OAuth response URL is missing', async () => {
+    mocks.deviceState.ephemeralPublicKey = { existing: true }
+    mocks.deviceState.networkData = { 'sui:testnet': { nonce: 'nonce-value' } }
+    installChromeIdentityMock(undefined)
+
+    await handleExtLogin(
+      makeMessage(),
+      {} as chrome.runtime.MessageSender,
+      vi.fn(),
+    )
+
+    await vi.waitFor(() => {
+      expect(mockSendAuthError).toHaveBeenCalledWith('message-id', {
+        message: 'No response URL received',
+      })
+    })
+  })
+
+  it('sends auth error when no auth code is found in the response URL', async () => {
+    mocks.deviceState.ephemeralPublicKey = { existing: true }
+    mocks.deviceState.networkData = { 'sui:testnet': { nonce: 'nonce-value' } }
+    mocks.extractAuthCode.mockReturnValue(null)
+
+    await handleExtLogin(
+      makeMessage(),
+      {} as chrome.runtime.MessageSender,
+      vi.fn(),
+    )
+
+    await vi.waitFor(() => {
+      expect(mockSendAuthError).toHaveBeenCalledWith('message-id', {
+        message: 'No authorization code received',
+      })
+    })
+    expect(mockExchangeCodeForToken).not.toHaveBeenCalled()
+  })
+
+  it('sends auth error when token exchange throws', async () => {
+    mocks.deviceState.ephemeralPublicKey = { existing: true }
+    mocks.deviceState.networkData = { 'sui:testnet': { nonce: 'nonce-value' } }
+    mockExchangeCodeForToken.mockRejectedValue(new Error('network error'))
+
+    await handleExtLogin(
+      makeMessage(),
+      {} as chrome.runtime.MessageSender,
+      vi.fn(),
+    )
+
+    await vi.waitFor(() => {
+      expect(mockSendAuthError).toHaveBeenCalledWith(
+        'message-id',
+        new Error('network error'),
+      )
+    })
+    expect(mockStoreJwt).not.toHaveBeenCalled()
+  })
+
+  it('sends auth error when nonce initialization fails', async () => {
+    mocks.deviceState.ephemeralPublicKey = { existing: true }
+    mocks.deviceState.networkData = {}
+    mocks.deviceState.initializeForChain = vi
+      .fn()
+      .mockRejectedValue(new Error('init failed'))
+
+    await handleExtLogin(
+      makeMessage(),
+      {} as chrome.runtime.MessageSender,
+      vi.fn(),
+    )
+
+    expect(mockSendAuthError).toHaveBeenCalledWith('message-id', {
+      message: 'Could not prepare sign-in. Please try again.',
+    })
+    expect(mockGetAuthRequest).not.toHaveBeenCalled()
+  })
+
+  it('sends auth error when nonce is still null after initialization', async () => {
+    mocks.deviceState.ephemeralPublicKey = { existing: true }
+    mocks.deviceState.networkData = {}
+    mocks.deviceState.initializeForChain = vi.fn(async () => {
+      // initializeForChain succeeds but leaves networkData empty
+    })
+
+    await handleExtLogin(
+      makeMessage(),
+      {} as chrome.runtime.MessageSender,
+      vi.fn(),
+    )
+
+    expect(mockSendAuthError).toHaveBeenCalledWith('message-id', {
+      message: 'Could not prepare sign-in. Please try again.',
+    })
   })
 })

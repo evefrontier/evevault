@@ -80,8 +80,6 @@ jobs:
 
       - name: Check coverage did not drop
         if: github.event_name == 'pull_request' && steps.download-baseline.outputs.has-baseline == 'true'
-        env:
-          COVERAGE_TOLERANCE: 0.2
         run: node scripts/check-coverage-regression.mjs coverage-baseline .
 
       - name: Report @evevault/shared coverage
