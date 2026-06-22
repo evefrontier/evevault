@@ -5,7 +5,7 @@ const { mockBuildTxBytes, mockTransactionFrom } = vi.hoisted(() => ({
   mockTransactionFrom: vi.fn(),
 }))
 
-vi.mock('@evefrontier/wallet-core/utils', () => ({
+vi.mock('@evefrontier/wallet-core/crypto', () => ({
   buildTransactionBytes: mockBuildTxBytes,
 }))
 
@@ -77,7 +77,7 @@ describe('prepareAndSignTransaction', () => {
       ),
       suiClient: {},
       ...overrides,
-    } as Parameters<typeof prepareAndSignTransaction>[0]
+    } as unknown as Parameters<typeof prepareAndSignTransaction>[0]
   }
 
   it('throws when assertCanSign fails (no user)', async () => {
