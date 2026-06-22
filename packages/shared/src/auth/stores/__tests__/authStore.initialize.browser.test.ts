@@ -211,8 +211,11 @@ describe('authStore.initialize() (extension path)', () => {
       expect((h.mockStoreUser.mock.calls[0][0] as User).refresh_token).toBe(
         'rt',
       )
-      // Second storeUser persisted the refreshed user
-      expect(h.mockStoreUser.mock.calls[1][0]).toBe(refreshedUser)
+      // Second storeUser persisted the refreshed user (salt stripped from profile)
+      expect(h.mockStoreUser.mock.calls[1][0]).toBeInstanceOf(User)
+      expect((h.mockStoreUser.mock.calls[1][0] as User).access_token).toBe(
+        refreshedUser.access_token,
+      )
       expect(h.mockEnrichUser).toHaveBeenCalledWith(
         expect.any(User),
         expect.any(Function),

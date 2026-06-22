@@ -64,9 +64,19 @@ export async function persistEnrichedUser(
    * Enrichment may add zkLogin address/salt claims. Persist the enriched user in
    * OIDC storage and mirror its primary JWT so extension and web call sites read
    * the same session snapshot.
+   *
+   * Salt is stripped before storage: on web the userStore is sessionStorage, and
+   * salt must not sit in browser-accessible storage. Signing always re-derives
+   * salt on demand via getUserForNetwork so nothing breaks at runtime.
    */
   const enrichedUser = await enrichUserWithZkLoginIfNeeded(user, getEnokiApiKey)
-  await userManager.storeUser(enrichedUser)
+  const { salt: _stripped, ...profileWithoutSalt } = (enrichedUser.profile ??
+    {}) as Record<string, unknown>
+  const userToStore = new User({
+    ...enrichedUser,
+    profile: profileWithoutSalt as User['profile'],
+  })
+  await userManager.storeUser(userToStore)
   await syncPrimaryJwtFromUser(enrichedUser)
   return enrichedUser
 }

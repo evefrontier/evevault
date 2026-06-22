@@ -50,8 +50,10 @@ export function createKeeperTestContext(): {
     msg: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     return new Promise((resolve) => {
-      handler({ target: 'KEEPER', ...msg }, {}, (resp) =>
-        resolve((resp ?? {}) as Record<string, unknown>),
+      handler(
+        { target: 'KEEPER', ...msg },
+        { url: 'chrome-extension://test-extension-id/offscreen.html' },
+        (resp) => resolve((resp ?? {}) as Record<string, unknown>),
       )
     })
   }
@@ -102,6 +104,7 @@ export function setupKeeperSuite(
     // chrome.runtime.onMessage.addListener() at module scope.
     vi.stubGlobal('chrome', {
       runtime: {
+        id: 'test-extension-id',
         onMessage: { addListener: ctx.captureHandler },
         sendMessage: vi.fn().mockResolvedValue(undefined),
       },

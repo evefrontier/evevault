@@ -1,6 +1,10 @@
 import { KeeperMessageTypes } from '@evevault/shared'
+import { isExtensionSender } from '@/lib/background/senderGuard'
 import type { BackgroundMessage } from '@/lib/background/types'
 import type { KeeperHandler, KeeperSendResponse } from './keeperTypes'
+
+type MsgSender = chrome.runtime.MessageSender
+
 import {
   handleLocalnetGetAddress,
   handleLocalnetSetKeypair,
@@ -41,8 +45,12 @@ const keeperHandlers: Partial<Record<KeeperMessageTypes, KeeperHandler>> = {
  */
 export function handleKeeperMessage(
   message: BackgroundMessage,
+  sender: MsgSender,
   sendResponse: KeeperSendResponse,
 ): boolean {
+  if (!isExtensionSender(sender)) {
+    return false
+  }
   if (message.target !== 'KEEPER') {
     return false
   }

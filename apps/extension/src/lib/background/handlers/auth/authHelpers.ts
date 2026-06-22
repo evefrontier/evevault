@@ -82,6 +82,10 @@ export function extractAuthCode(responseUrl: string): string | null {
   return new URL(responseUrl).searchParams.get('code')
 }
 
+export function extractState(responseUrl: string): string | null {
+  return new URL(responseUrl).searchParams.get('state')
+}
+
 export function sendExtensionAuthSuccess(id: string, jwt: JwtResponse): void {
   const token = buildExtensionAuthSuccessToken(jwt)
   const message: ExtensionAuthSuccessMessage = {

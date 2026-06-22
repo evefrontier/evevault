@@ -131,7 +131,16 @@ describe('Build user from JWT', () => {
       )
 
       expect(result).toBe(enrichedUser)
-      expect(h.mockStoreUser).toHaveBeenCalledWith(enrichedUser)
+      // Salt must be stripped from the stored user — it must not sit in sessionStorage.
+      const storedUser = h.mockStoreUser.mock.calls[0]?.[0] as User
+      expect(storedUser).toBeDefined()
+      expect(
+        (storedUser.profile as Record<string, unknown>).salt,
+      ).toBeUndefined()
+      expect((storedUser.profile as Record<string, unknown>).sui_address).toBe(
+        '0xenriched',
+      )
+      // The full enriched user (with salt) is returned and used for JWT sync.
       expect(h.mockSyncPrimaryJwt).toHaveBeenCalledWith(enrichedUser)
     })
   })

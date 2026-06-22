@@ -25,6 +25,7 @@ import { sendToKeeper } from '../vaultHandlers'
 import {
   ensureMessageId,
   extractAuthCode,
+  extractState,
   getCurrentChain,
   sendDappConnectSuccessToTab,
 } from './authHelpers'
@@ -88,6 +89,7 @@ type OAuthCallbackContext = {
   chromeRedirectUri: string
   tenant: string
   codeVerifier: string
+  state: string
   tabId: number | undefined
   dappContext: DappRequestContext
 }
@@ -423,6 +425,7 @@ async function handleOAuthCallback(
     chromeRedirectUri,
     tenant,
     codeVerifier,
+    state,
     tabId,
     dappContext,
   } = ctx
@@ -438,6 +441,11 @@ async function handleOAuthCallback(
       chrome.runtime.lastError?.message ??
         'Sign-in did not complete. Please try again.',
     )
+    return
+  }
+
+  if (extractState(responseUrl) !== state) {
+    sendAuthErrorToTabIds(tabId, ids, 'Invalid OAuth response (state mismatch)')
     return
   }
 
@@ -533,7 +541,7 @@ export async function handleDappLogin(
   if (!nonce) return
 
   const chromeRedirectUri = chrome.identity.getRedirectURL()
-  const { authUrl, codeVerifier } = await getAuthRequest({
+  const { authUrl, codeVerifier, state } = await getAuthRequest({
     tenantId: tenant,
     nonce,
   })
@@ -547,6 +555,7 @@ export async function handleDappLogin(
         chromeRedirectUri,
         tenant,
         codeVerifier,
+        state,
         tabId,
         dappContext,
       }),
