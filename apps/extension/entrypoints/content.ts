@@ -38,13 +38,12 @@ function isTrustedPageEvent(event: MessageEvent): boolean {
   return event.source === window && !!origin && event.origin === origin
 }
 
-function hasObjectAccount(data: Record<string, unknown>): boolean {
-  const account = data.account
-  return (
-    isRecord(account) &&
-    typeof account.address === 'string' &&
-    account.address.length > 0
-  )
+// Crash guard: the popup dereferences account.address without optional chaining, so
+// account must be present and non-null.  The field always arrives as {} after
+// window.postMessage's structured clone strips ReadonlyWalletAccount's prototype
+// getters — isRecord({}) is true, so valid dapp requests still pass.
+function hasNonNullAccount(data: Record<string, unknown>): boolean {
+  return isRecord(data.account)
 }
 
 function hasStringFields(
@@ -89,7 +88,7 @@ function isPersonalMessageRequest(data: Record<string, unknown>): boolean {
   return (
     isValidRequestId(data.id) &&
     isMessageBytes(data.message) &&
-    hasObjectAccount(data)
+    hasNonNullAccount(data)
   )
 }
 
@@ -97,7 +96,7 @@ function isTransactionRequest(data: Record<string, unknown>): boolean {
   return (
     isValidRequestId(data.id) &&
     typeof data.transaction === 'string' &&
-    hasObjectAccount(data)
+    hasNonNullAccount(data)
   )
 }
 

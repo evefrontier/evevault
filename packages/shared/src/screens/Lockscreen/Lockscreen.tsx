@@ -73,7 +73,7 @@ export default function LockScreen({
 
   return (
     <div className="flex flex-col items-center justify-between gap-4 w-full h-full">
-      <section className="flex flex-col items-center gap-10 w-full flex-1">
+      <section className="flex flex-col items-center gap-10 w-full flex-1 justify-between">
         <img
           src="/images/logo.png"
           alt="Evevault Logo"

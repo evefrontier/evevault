@@ -50,8 +50,28 @@ describe('enrichUserWithZkLoginIfNeeded', () => {
     expect(mockGetZkLoginAddress).not.toHaveBeenCalled()
   })
 
-  it('returns the same user when profile.sui_address is already set', async () => {
+  it('returns the same user when profile has both sui_address and salt', async () => {
     const { enrichUserWithZkLoginIfNeeded } = await import('#/auth/userJwtSync')
+    const user = baseUser({
+      profile: {
+        sub: 'user-1',
+        sui_address: '0xsui',
+        salt: 'salt-abc',
+      } as unknown as User['profile'],
+    })
+
+    const out = await enrichUserWithZkLoginIfNeeded(user, () => 'enoki-key')
+
+    expect(out).toBe(user)
+    expect(mockGetZkLoginAddress).not.toHaveBeenCalled()
+  })
+
+  it('calls Enoki to re-derive salt when sui_address is present but salt is missing (stripped from sessionStorage)', async () => {
+    const { enrichUserWithZkLoginIfNeeded } = await import('#/auth/userJwtSync')
+    mockGetZkLoginAddress.mockResolvedValue({
+      data: { address: '0xsui', salt: 'salt-re-derived' },
+      error: undefined,
+    })
     const user = baseUser({
       profile: {
         sub: 'user-1',
@@ -61,8 +81,8 @@ describe('enrichUserWithZkLoginIfNeeded', () => {
 
     const out = await enrichUserWithZkLoginIfNeeded(user, () => 'enoki-key')
 
-    expect(out).toBe(user)
-    expect(mockGetZkLoginAddress).not.toHaveBeenCalled()
+    expect(mockGetZkLoginAddress).toHaveBeenCalledOnce()
+    expect(out.profile?.salt).toBe('salt-re-derived')
   })
 
   it('calls Enoki and merges sui_address and salt when sui_address is missing', async () => {

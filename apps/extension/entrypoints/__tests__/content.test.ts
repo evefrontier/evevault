@@ -293,13 +293,36 @@ describe('content bridge message validation', () => {
     ).toBe(false)
   })
 
-  it('rejects a personal message request without an account', () => {
+  it('allows a personal message request with an empty account object (ReadonlyWalletAccount loses prototype getters over postMessage; address is not validated at the content-script boundary)', () => {
     expect(
       content.isAllowedPageMessage({
         __to: 'Eve Vault',
         id: 'pm-id',
         action: WalletStandardMessageTypes.SIGN_PERSONAL_MESSAGE,
         message: [104, 101, 108, 108, 111],
+        account: {},
+      }),
+    ).toBe(true)
+  })
+
+  it('rejects a personal message request with no account field (popup would crash dereferencing account.address)', () => {
+    expect(
+      content.isAllowedPageMessage({
+        __to: 'Eve Vault',
+        id: 'pm-id',
+        action: WalletStandardMessageTypes.SIGN_PERSONAL_MESSAGE,
+        message: [104, 101, 108, 108, 111],
+      }),
+    ).toBe(false)
+  })
+
+  it('rejects a transaction request with no account field', () => {
+    expect(
+      content.isAllowedPageMessage({
+        __to: 'Eve Vault',
+        id: 'tx-id',
+        action: WalletStandardMessageTypes.SIGN_TRANSACTION,
+        transaction: 'tx-json',
       }),
     ).toBe(false)
   })
