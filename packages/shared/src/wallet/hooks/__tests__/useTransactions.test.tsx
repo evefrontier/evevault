@@ -1,4 +1,5 @@
-import { getEveCoinType, TenantId } from '@evefrontier/wallet-core/definitions'
+import { getEveCoinType } from '@evefrontier/wallet-core/eve-token'
+import { TenantId } from '@evefrontier/wallet-core/tenant'
 import { SUI_DEVNET_CHAIN } from '@mysten/wallet-standard'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'

@@ -1,5 +1,4 @@
-import { loadZkProof } from '@evefrontier/wallet-core/crypto'
-import type { ZKProofData } from '@evefrontier/wallet-core/types'
+import { loadZkProof, type ZKProofData } from '@evefrontier/wallet-core/crypto'
 import type { IntentScope } from '@mysten/sui/cryptography'
 import type { ZkSignAnyParams } from '#/types/wallet'
 import { createLogger } from '#/utils/logger'

@@ -1,4 +1,4 @@
-import type { TenantId } from '@evefrontier/wallet-core/definitions'
+import type { TenantId } from '@evefrontier/wallet-core/tenant'
 import { Button, Heading, TenantSelector } from '@evevault/shared/components'
 import Icon from '@evevault/shared/components/Icon'
 

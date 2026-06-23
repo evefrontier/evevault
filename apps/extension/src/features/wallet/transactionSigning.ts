@@ -1,17 +1,20 @@
-import { buildTransactionBytes } from '@evefrontier/wallet-core/utils'
+import { buildTransactionBytes } from '@evefrontier/wallet-core/crypto'
 import type { ParsedTransactionWithDisplay } from '@evevault/shared/types'
 import type { SuiGrpcClient } from '@mysten/sui/grpc'
 import { Transaction } from '@mysten/sui/transactions'
-import type { useSignPopupAuth } from './hooks/useSignPopupAuth'
 
-type SignPopupAuth = ReturnType<typeof useSignPopupAuth>
+type SignAuth = {
+  user: unknown
+  ephemeralPublicKey: unknown
+  maxEpoch: unknown
+}
 
 type SignTransactionData = (
   scope: 'TransactionData',
   msgBytes: Uint8Array,
 ) => Promise<{ bytes: string; signature: string }>
 
-export function assertCanSign(auth: SignPopupAuth, isLocalnet: boolean) {
+export function assertCanSign(auth: SignAuth, isLocalnet: boolean) {
   if (!auth.user) {
     throw new Error('No user found')
   }
@@ -35,7 +38,7 @@ export async function prepareAndSignTransaction({
   suiClient,
 }: {
   pendingTransaction: ParsedTransactionWithDisplay
-  auth: SignPopupAuth
+  auth: SignAuth
   getSenderAddress: () => Promise<string | null>
   isLocalnet: boolean
   sign: SignTransactionData

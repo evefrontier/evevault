@@ -1,4 +1,5 @@
-import { getEveCoinType, TenantId } from '@evefrontier/wallet-core/definitions'
+import { getEveCoinType } from '@evefrontier/wallet-core/eve-token'
+import { TenantId } from '@evefrontier/wallet-core/tenant'
 import {
   SUI_DEVNET_CHAIN,
   SUI_LOCALNET_CHAIN,

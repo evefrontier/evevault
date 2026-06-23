@@ -5,7 +5,7 @@ import Icon from '#/components/Icon'
 import Text from '#/components/Text'
 import { getTenantLabel } from '#/utils/tenantConfig'
 import './TenantSelector.css'
-import type { TenantId } from '@evefrontier/wallet-core/definitions'
+import type { TenantId } from '@evefrontier/wallet-core/tenant'
 import type {
   TenantSelectorInteractiveProps,
   TenantSelectorProps,

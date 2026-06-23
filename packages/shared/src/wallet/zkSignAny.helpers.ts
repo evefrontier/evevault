@@ -1,4 +1,4 @@
-import type { ZKProofData } from '@evefrontier/wallet-core/types'
+import type { ZKProofData } from '@evefrontier/wallet-core/crypto'
 import type { IntentScope } from '@mysten/sui/cryptography'
 import { ephKeyService } from '#/services/vaultService'
 import { useContextStore } from '#/stores/contextStore'

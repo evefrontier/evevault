@@ -1,4 +1,4 @@
-import type { TenantId } from '@evefrontier/wallet-core/definitions'
+import type { TenantId } from '@evefrontier/wallet-core/tenant'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { chromeStorageAdapter, localStorageAdapter } from '#/adapters'

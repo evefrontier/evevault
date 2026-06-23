@@ -6,11 +6,9 @@ vi.mock('#/utils/environment', () => ({
   isExtension: vi.fn(() => false),
 }))
 
-vi.mock('@evefrontier/wallet-core/definitions', async (importOriginal) => {
+vi.mock('@evefrontier/wallet-core/eve-token', async (importOriginal) => {
   const actual =
-    await importOriginal<
-      typeof import('@evefrontier/wallet-core/definitions')
-    >()
+    await importOriginal<typeof import('@evefrontier/wallet-core/eve-token')>()
 
   return {
     ...actual,

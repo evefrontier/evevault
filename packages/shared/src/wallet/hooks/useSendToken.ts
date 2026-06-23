@@ -1,4 +1,4 @@
-import { isEveCoinType } from '@evefrontier/wallet-core/definitions'
+import { isEveCoinType } from '@evefrontier/wallet-core/eve-token'
 import { isValidSuiAddress } from '@mysten/sui/utils'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useMemo, useState } from 'react'

@@ -1,4 +1,4 @@
-import { TenantId } from '@evefrontier/wallet-core/definitions'
+import { TenantId } from '@evefrontier/wallet-core/tenant'
 import type { TenantConfig } from '#/types'
 import { TENANT_KEYS } from './constants'
 import { isWeb } from './environment'

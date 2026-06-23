@@ -1,4 +1,4 @@
-import { DEFAULT_TENANT, TenantId } from '@evefrontier/wallet-core/definitions'
+import { DEFAULT_TENANT, TenantId } from '@evefrontier/wallet-core/tenant'
 import {
   applyTenantFromUrl,
   getCurrentTenantId,

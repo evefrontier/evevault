@@ -1,4 +1,4 @@
-import type { TenantId } from '@evefrontier/wallet-core/definitions'
+import type { TenantId } from '@evefrontier/wallet-core/tenant'
 import type { OAuthTokenResponse } from '#/types'
 import { getTenantConfig } from '#/utils/tenantConfig'
 import { parseOAuthTokenResponse } from './oauthTokenResponse'

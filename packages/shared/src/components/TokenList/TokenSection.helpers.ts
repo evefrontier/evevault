@@ -1,7 +1,7 @@
 import {
   getEveCoinType,
   isEveCoinType,
-} from '@evefrontier/wallet-core/definitions'
+} from '@evefrontier/wallet-core/eve-token'
 import type { SuiChain } from '@mysten/wallet-standard'
 import type { QueryClient } from '@tanstack/react-query'
 import type React from 'react'

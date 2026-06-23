@@ -1,4 +1,4 @@
-import { isEveCoinType } from '@evefrontier/wallet-core/definitions'
+import { isEveCoinType } from '@evefrontier/wallet-core/eve-token'
 import { SUI_COIN_TYPE } from '#/utils'
 import type { BalanceMetadata } from '#/wallet/types/hooks'
 

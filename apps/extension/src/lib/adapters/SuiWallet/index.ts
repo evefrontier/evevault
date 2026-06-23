@@ -1,9 +1,11 @@
+import type {
+  SponsoredTransactionInput,
+  SponsoredTransactionMethod,
+} from '@evefrontier/wallet-core/sponsored-transaction'
 import {
   EVEFRONTIER_SPONSORED_TRANSACTION,
   type EveVaultWalletFeatures,
-  type SponsoredTransactionInput,
-  type SponsoredTransactionMethod,
-} from '@evefrontier/wallet-core/wallet-standard-extensions'
+} from '@evefrontier/wallet-core/wallet-features'
 import { WalletStandardMessageTypes } from '@evevault/shared'
 import { createLogger } from '@evevault/shared/utils'
 import type {

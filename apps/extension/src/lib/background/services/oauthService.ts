@@ -1,4 +1,4 @@
-import type { TenantId } from '@evefrontier/wallet-core/definitions'
+import type { TenantId } from '@evefrontier/wallet-core/tenant'
 import { getTenantConfig } from '@evevault/shared'
 import { sha256 } from '@evevault/shared/utils'
 import { base64UrlEncode } from '@/lib/util/b64UrlEncode'
