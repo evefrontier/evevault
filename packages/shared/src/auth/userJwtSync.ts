@@ -22,7 +22,16 @@ export async function enrichUserWithZkLoginIfNeeded(
   }
 
   const sui = user.profile?.sui_address
-  if (typeof sui === 'string' && sui.trim()) {
+  const existingSalt = (user.profile as Record<string, unknown> | undefined)
+    ?.salt
+  // Require both address and salt — salt is stripped from sessionStorage
+  // so a user loaded from storage may have sui_address but no salt.
+  if (
+    typeof sui === 'string' &&
+    sui.trim() &&
+    typeof existingSalt === 'string' &&
+    existingSalt.trim()
+  ) {
     return user
   }
 

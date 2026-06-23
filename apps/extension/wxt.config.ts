@@ -144,10 +144,15 @@ export default defineConfig(() => {
       },
     },
     hooks: {
+      // WXT adds `scripting` in dev for HMR content-script registration but
+      // uses a static content_scripts entry in production. Strip it from
+      // release builds only so the Web Store doesn't flag it as unused.
       'build:manifestGenerated'(_wxt, manifest) {
-        manifest.permissions = manifest.permissions?.filter(
-          (p) => p !== 'scripting',
-        )
+        if (process.env.NODE_ENV !== 'development') {
+          manifest.permissions = manifest.permissions?.filter(
+            (p) => p !== 'scripting',
+          )
+        }
       },
     },
   }

@@ -32,7 +32,14 @@ export async function initializeWebSession(
   const isExpired = !webJwt || now >= resolveExpiresAt(webJwt)
 
   if (!isExpired) {
-    return webUser ?? null
+    if (!webUser) return null
+    // Salt is stripped from sessionStorage for security. The user is loaded
+    // from storage without salt, so it is re-derived via Enoki before returning
+    // so the in-memory auth store is always fully enriched for signing.
+    const hasSalt =
+      typeof (webUser.profile as Record<string, unknown>)?.salt === 'string'
+    if (!hasSalt) return persistEnrichedUser(new User(webUser), webUserManager)
+    return webUser
   }
 
   if (!webUser?.refresh_token?.trim()) {

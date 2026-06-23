@@ -87,8 +87,14 @@ describe('authStore.initialize() (web path)', () => {
     vi.clearAllMocks()
   })
 
-  it('sets user to webUser when the token is still valid', async () => {
-    const user = makeUser()
+  it('sets user to webUser directly when the token is valid and salt is present', async () => {
+    const user = makeUser({
+      profile: {
+        sub: 'user-1',
+        sui_address: '0xsui',
+        salt: 'abc',
+      } as User['profile'],
+    })
     h.mockGetUser.mockResolvedValue(user)
     h.mockUserToJwtResponse.mockReturnValue(makeStoredJwt())
     h.mockResolveExpiresAt.mockReturnValue(FUTURE)
@@ -96,6 +102,24 @@ describe('authStore.initialize() (web path)', () => {
     await useAuthStore.getState().initialize()
 
     expect(useAuthStore.getState().user).toBe(user)
+    expect(useAuthStore.getState().loading).toBe(false)
+    expect(h.mockSigninSilent).not.toHaveBeenCalled()
+    expect(h.mockEnrichUser).not.toHaveBeenCalled()
+  })
+
+  it('re-enriches via Enoki when the token is valid but salt was stripped from sessionStorage', async () => {
+    const user = makeUser({
+      profile: { sub: 'user-1', sui_address: '0xsui' } as User['profile'],
+    })
+    h.mockGetUser.mockResolvedValue(user)
+    h.mockUserToJwtResponse.mockReturnValue(makeStoredJwt())
+    h.mockResolveExpiresAt.mockReturnValue(FUTURE)
+
+    await useAuthStore.getState().initialize()
+
+    expect(h.mockEnrichUser).toHaveBeenCalledOnce()
+    expect(h.mockStoreUser).toHaveBeenCalledOnce()
+    expect(h.mockSyncPrimaryJwt).toHaveBeenCalledOnce()
     expect(useAuthStore.getState().loading).toBe(false)
     expect(h.mockSigninSilent).not.toHaveBeenCalled()
   })
