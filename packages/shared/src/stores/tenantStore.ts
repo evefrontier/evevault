@@ -28,7 +28,10 @@ export async function applyTenantFromUrl(): Promise<{
   if (!fromUrl || !isAvailableTenantId(fromUrl, true)) {
     return { tenantId: current, changed: false }
   }
-  if (fromUrl === current) {
+  // isDev tenants are stored but filtered out of getCurrentTenantId() when devMode=false,
+  // so compare against the raw stored value to avoid an infinite redirect loop.
+  const rawStoredTenantId = useContextStore.getState().tenantId
+  if (fromUrl === rawStoredTenantId) {
     return { tenantId: current, changed: false }
   }
   await setCurrentTenantId(fromUrl)
