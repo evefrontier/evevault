@@ -41,7 +41,7 @@
   },
   "dependencies": {
     "@evefrontier/wallet-core": "0.0.4",
-    "@mysten/sui": "^2.17.0",
+    "@mysten/sui": "^2.20.0",
     "@mysten/wallet-standard": "^0.20.3",
     "jose": "6.0.12",
     "react": "^19.2.7",
