@@ -74,7 +74,9 @@ export function isAvailableTenantId(
 /** Display labels for server (tenant) ids in the UI. "default" shows as "Utopia" (server name). */
 const TENANT_LABELS: Record<TenantId, string> = {
   stillness: 'Stillness',
+  liminality: 'Liminality',
   utopia: 'Utopia',
+  umbra: 'Umbra',
   tauceti: 'Tauceti',
   tesseract: 'Tesseract',
   tetra: 'Tetra',

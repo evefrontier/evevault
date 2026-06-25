@@ -1,5 +1,11 @@
 # @evevault/shared
 
+## 0.0.12
+
+### Patch Changes
+
+- server updates
+
 ## 0.0.11
 
 ### Patch Changes
