@@ -139,8 +139,10 @@ export default defineConfig(() => {
         },
       ],
       content_security_policy: {
+        // 'wasm-unsafe-eval' is required for the keeper's Argon2id (hash-wasm)
+        // to instantiate its inline WebAssembly in the MV3 service worker.
         extension_pages:
-          "script-src 'self'; object-src 'self'; img-src 'self' data: http://localhost:3000",
+          "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; img-src 'self' data: http://localhost:3000",
       },
     },
     hooks: {

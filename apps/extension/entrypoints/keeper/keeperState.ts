@@ -23,7 +23,7 @@ export const localnetState: LocalnetState = { localnetKey: null }
  * raw PIN-derived key bytes stay inside WebCrypto.
  */
 let sessionDerivedKey: CryptoKey | null = null
-let sessionSalt: string | null = null // base64 PBKDF2 salt from the stored HashedData
+let sessionSalt: string | null = null // base64 Argon2id salt from the stored HashedData
 
 let _vaultUnlocked = false
 let _vaultUnlockExpiry: number | null = null
