@@ -1,5 +1,5 @@
 import type { ZKEd25519Keypair } from '@evefrontier/wallet-core/crypto'
-import { VAULT_UNLOCK_MS, type ZkProofResponse } from '@evevault/shared'
+import { VaultSession, type ZkProofResponse } from '@evevault/shared'
 import type { SuiChain } from '@mysten/wallet-standard'
 import type { LocalnetState } from './local'
 
@@ -25,8 +25,10 @@ export const localnetState: LocalnetState = { localnetKey: null }
 let sessionDerivedKey: CryptoKey | null = null
 let sessionSalt: string | null = null // base64 Argon2id salt from the stored HashedData
 
-let _vaultUnlocked = false
-let _vaultUnlockExpiry: number | null = null
+// Unlock-window timing lives in the shared VaultSession (see
+// @evevault/shared utils/vaultSession). The web vault (webVaultService) uses
+// the same class, so the expiry rule stays identical across both surfaces.
+const session = new VaultSession()
 
 // zkProofs are chain-specific and tied to the in-memory ephemeral key.
 let zkProofs: Partial<Record<SuiChain, ZkProofResponse | null>> =
@@ -46,14 +48,12 @@ export function lockVault(): void {
   localnetState.localnetKey = null
   sessionDerivedKey = null
   sessionSalt = null
-  _vaultUnlocked = false
-  _vaultUnlockExpiry = null
+  session.clear()
 }
 
 export function unlockVaultWithKeypair(keypair: ZKEd25519Keypair): void {
   ephemeralKey = keypair
-  _vaultUnlocked = true
-  _vaultUnlockExpiry = Date.now() + VAULT_UNLOCK_MS
+  session.unlock()
 }
 
 export function keeperReplaceEphemeralKey(keypair: ZKEd25519Keypair): void {
@@ -86,7 +86,7 @@ export function enforceExpiry(): boolean {
     return true // Already locked
   }
 
-  if (_vaultUnlockExpiry && Date.now() > _vaultUnlockExpiry) {
+  if (!session.isActive()) {
     lockVault()
     return true // Now locked
   }
