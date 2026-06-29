@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { AES_IV_LENGTH, PBKDF2_SALT_LENGTH } from './constants'
+import { AES_IV_LENGTH, KDF_SALT_LENGTH } from './constants'
 import { decrypt } from './decrypt'
 import { encrypt } from './encrypt'
 
@@ -32,7 +32,7 @@ describe('encrypt', () => {
   it('generates a 16-byte salt', async () => {
     const result = await encrypt('test', 'pin')
     const saltBytes = Uint8Array.from(atob(result.salt), (c) => c.charCodeAt(0))
-    expect(saltBytes.length).toBe(PBKDF2_SALT_LENGTH)
+    expect(saltBytes.length).toBe(KDF_SALT_LENGTH)
   })
 
   it('produces different ciphertext for same input (random iv/salt)', async () => {
@@ -45,7 +45,7 @@ describe('encrypt', () => {
   })
 })
 
-describe('decrypt with PBKDF2 (new format with salt)', () => {
+describe('decrypt with Argon2id (format with salt)', () => {
   it('round-trips plaintext through encrypt/decrypt', async () => {
     const plaintext = 'super secret key material'
     const pin = '123456'
