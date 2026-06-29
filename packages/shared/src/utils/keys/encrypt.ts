@@ -1,13 +1,6 @@
 import { argon2id } from 'hash-wasm'
 import { bytesToB64 } from '../base64'
-import {
-  AES_IV_LENGTH,
-  ARGON2_HASH_LENGTH,
-  ARGON2_ITERATIONS,
-  ARGON2_MEMORY_KIB,
-  ARGON2_PARALLELISM,
-  KDF_SALT_LENGTH,
-} from './constants'
+import { AES_IV_LENGTH, ARGON2_PARAMS, KDF_SALT_LENGTH } from './constants'
 
 const cryptoApi =
   typeof crypto !== 'undefined' ? crypto : (window as Window).crypto
@@ -25,10 +18,7 @@ export async function deriveAesKey(
   const rawKey = await argon2id({
     password: pin,
     salt,
-    iterations: ARGON2_ITERATIONS,
-    parallelism: ARGON2_PARALLELISM,
-    memorySize: ARGON2_MEMORY_KIB,
-    hashLength: ARGON2_HASH_LENGTH,
+    ...ARGON2_PARAMS,
     outputType: 'binary',
   })
   // Copy into a fresh ArrayBuffer-backed view so the type is BufferSource

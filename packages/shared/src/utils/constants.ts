@@ -14,6 +14,13 @@ export const DEFAULT_LOCALNET_URL = 'http://127.0.0.1:9000'
 /** Default epoch duration (24h in ms) when endTimestamp is not yet set for current epoch */
 export const DEFAULT_EPOCH_DURATION_MS = 86_400_000
 
+/**
+ * How long the vault stays unlocked after a successful PIN entry (10 minutes).
+ * Shared by the extension keeper and the web vault so both honour the same
+ * session lifetime.
+ */
+export const VAULT_UNLOCK_MS = 10 * 60 * 1000
+
 /** Message shown on every transfer screen: network fee is paid in SUI. */
 export const GAS_FEE_WARNING_MESSAGE =
   'This transfer will incur a network fee (gas) paid in SUI.'

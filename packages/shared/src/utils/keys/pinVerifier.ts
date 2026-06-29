@@ -1,11 +1,5 @@
 import { argon2id, argon2Verify } from 'hash-wasm'
-import {
-  ARGON2_HASH_LENGTH,
-  ARGON2_ITERATIONS,
-  ARGON2_MEMORY_KIB,
-  ARGON2_PARALLELISM,
-  KDF_SALT_LENGTH,
-} from './constants'
+import { ARGON2_PARAMS, KDF_SALT_LENGTH } from './constants'
 
 const cryptoApi =
   typeof crypto !== 'undefined' ? crypto : (window as Window).crypto
@@ -22,10 +16,7 @@ export async function createPinVerifier(pin: string): Promise<string> {
   return argon2id({
     password: pin,
     salt,
-    iterations: ARGON2_ITERATIONS,
-    parallelism: ARGON2_PARALLELISM,
-    memorySize: ARGON2_MEMORY_KIB,
-    hashLength: ARGON2_HASH_LENGTH,
+    ...ARGON2_PARAMS,
     outputType: 'encoded',
   })
 }

@@ -37,12 +37,20 @@ applications:
 # The CSP is shipped as Report-Only first (per rollout plan): it reports
 # violations without breaking the app. Once the reports are clean, rename the
 # key to `Content-Security-Policy` to enforce it.
+# TODO(tracking issue): file an issue to own the Report-Only -> enforce flip so
+# this doesn't silently live in Report-Only forever. Link it here.
 #
 # Notes:
 # - 'wasm-unsafe-eval' is required for Argon2id (hash-wasm) WebAssembly.
+# - This is the WEB CSP. The extension has its own CSP in
+#   apps/extension/wxt.config.ts (manifest content_security_policy). The two are
+#   separate surfaces in different formats, but share the same allowed-host list
+#   and 'wasm-unsafe-eval' grant — change both together.
 # - connect-src is scoped to the EVE, Sui and Mysten (Enoki/prover) orgs the
 #   app talks to. Keep this list in sync with deployed environments; once the
 #   Enoki call moves behind a server-side proxy, add that host here.
+#   TODO(tracking issue): link the Enoki-proxy work item so this connect-src
+#   entry is revisited when the proxy lands.
 # - require-trusted-types-for 'script' enables Trusted Types enforcement.
 customHeaders:
   - pattern: "**"

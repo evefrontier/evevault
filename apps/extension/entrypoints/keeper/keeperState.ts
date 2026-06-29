@@ -1,9 +1,7 @@
 import type { ZKEd25519Keypair } from '@evefrontier/wallet-core/crypto'
-import type { ZkProofResponse } from '@evevault/shared'
+import { VAULT_UNLOCK_MS, type ZkProofResponse } from '@evevault/shared'
 import type { SuiChain } from '@mysten/wallet-standard'
 import type { LocalnetState } from './local'
-
-const VAULT_UNLOCK_MS = 10 * 60 * 1000
 
 /*
  * This module is loaded by the offscreen keeper document and is intentionally

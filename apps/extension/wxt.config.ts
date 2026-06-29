@@ -34,7 +34,8 @@ export default defineConfig(() => {
   const includeExtensionKey =
     process.env.WXT_WEBSTORE_BUILD !== 'true' && !!envVars.EXTENSION_ID
 
-  // Debug: Log to verify env loading (remove in production)
+  // Debug: log loaded env vars to aid local setup. Gated to non-production so
+  // it never runs in release builds.
   if (process.env.NODE_ENV !== 'production') {
     logger.info('Env vars loaded', {
       hasFusionAuthRedirectUri: !!envVars.VITE_FUSIONAUTH_REDIRECT_URI,
@@ -141,6 +142,10 @@ export default defineConfig(() => {
       content_security_policy: {
         // 'wasm-unsafe-eval' is required for the keeper's Argon2id (hash-wasm)
         // to instantiate its inline WebAssembly in the MV3 service worker.
+        // This is the EXTENSION CSP. The web app has its own CSP in
+        // amplify.yml (customHeaders). The two are separate surfaces in
+        // different formats but share the same allowed-host list and
+        // 'wasm-unsafe-eval' grant — change both together.
         extension_pages:
           "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'; img-src 'self' data: http://localhost:3000",
       },
