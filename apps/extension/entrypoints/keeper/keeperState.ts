@@ -19,8 +19,10 @@ export const localnetState: LocalnetState = { localnetKey: null }
 
 /*
  * Rotation re-encrypts a new ephemeral secret key without asking for the PIN
- * again. We cache only a non-extractable CryptoKey plus the original salt; the
- * raw PIN-derived key bytes stay inside WebCrypto.
+ * again. We cache only a non-extractable CryptoKey plus the original salt — the
+ * PIN itself is never cached. Argon2id derivation briefly materialises the
+ * derived key bytes in JS before importKey(); those bytes are zeroed right
+ * after import (see deriveAesKey).
  */
 let sessionDerivedKey: CryptoKey | null = null
 let sessionSalt: string | null = null // base64 Argon2id salt from the stored HashedData

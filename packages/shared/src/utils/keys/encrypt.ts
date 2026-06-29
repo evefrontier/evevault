@@ -33,13 +33,22 @@ export async function deriveAesKey(
   })
   // Copy into a fresh ArrayBuffer-backed view so the type is BufferSource
   // (hash-wasm returns Uint8Array<ArrayBufferLike>).
-  return cryptoApi.subtle.importKey(
-    'raw',
-    new Uint8Array(rawKey),
-    'AES-GCM',
-    false,
-    usage,
-  )
+  const keyBytes = new Uint8Array(rawKey)
+  try {
+    // importKey copies the bytes into the opaque CryptoKey, so once it resolves
+    // we zero our copies to minimise how long raw key material lives in JS
+    // memory (best-effort defense-in-depth).
+    return await cryptoApi.subtle.importKey(
+      'raw',
+      keyBytes,
+      'AES-GCM',
+      false,
+      usage,
+    )
+  } finally {
+    keyBytes.fill(0)
+    rawKey.fill(0)
+  }
 }
 
 export async function encrypt(string: string, pin: string) {

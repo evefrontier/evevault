@@ -57,7 +57,7 @@ class WebVaultService {
     this.unlockExpiry = Date.now() + 10 * 60 * 1000
 
     log.info(
-      '[web-vault] Created new Secp256r1 ephemeral keypair (PIN hash stored)',
+      '[web-vault] Created new Secp256r1 ephemeral keypair (PIN verifier stored)',
     )
     return this.signer.getPublicKey()
   }
