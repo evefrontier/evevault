@@ -3,6 +3,7 @@ import type { SuiChain } from '@mysten/wallet-standard'
 import type { ZkProofResponse } from '#/types/enoki'
 import { VaultMessageTypes, type VaultResponse } from '#/types/messages'
 import type { StoredSecretKey } from '#/types/stores'
+import { VAULT_UNLOCK_MS } from '#/utils/constants'
 import { createLogger } from '#/utils/logger'
 
 const log = createLogger()
@@ -49,7 +50,7 @@ export const ephKeyService = {
       type: VaultMessageTypes.UNLOCK_VAULT,
       hashedSecretKey: hashedSecretKey,
       pin: pin,
-      unlockDurationMs: 10 * 60 * 1000, // 10 minutes
+      unlockDurationMs: VAULT_UNLOCK_MS,
     })) as VaultResponse | undefined
 
     if (res?.ok) {

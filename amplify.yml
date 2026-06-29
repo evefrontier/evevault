@@ -25,3 +25,58 @@ applications:
         baseDirectory: apps/web/dist
         files:
           - "**/*"
+
+# Security response headers applied to all served paths.
+# customHeaders is a ROOT-level key (sibling of `version`/`applications`) — this
+# is the location AWS Amplify documents for the build spec; nesting it under an
+# application or under `frontend` causes Amplify to silently ignore it.
+# NOTE: monorepo build specs fail silently if this is misplaced — verify after
+# deploy with `curl -sI https://<app-url> | grep -i content-security-policy`,
+# and fall back to the Amplify Console custom-headers UI if they don't appear.
+#
+# The CSP is shipped as Report-Only first (per rollout plan): it reports
+# violations without breaking the app. Once the reports are clean, rename the
+# key to `Content-Security-Policy` to enforce it.
+# TODO(tracking issue): file an issue to own the Report-Only -> enforce flip so
+# this doesn't silently live in Report-Only forever. Link it here.
+#
+# Notes:
+# - 'wasm-unsafe-eval' is required for Argon2id (hash-wasm) WebAssembly.
+# - This is the WEB CSP. The extension has its own CSP in
+#   apps/extension/wxt.config.ts (manifest content_security_policy). The two are
+#   separate surfaces in different formats, but share the same allowed-host list
+#   and 'wasm-unsafe-eval' grant — change both together.
+# - connect-src is scoped to the EVE, Sui and Mysten (Enoki/prover) orgs the
+#   app talks to. Keep this list in sync with deployed environments; once the
+#   Enoki call moves behind a server-side proxy, add that host here.
+#   TODO(tracking issue): link the Enoki-proxy work item so this connect-src
+#   entry is revisited when the proxy lands.
+# - require-trusted-types-for 'script' enables Trusted Types enforcement.
+customHeaders:
+  - pattern: "**"
+    headers:
+      - key: "Content-Security-Policy-Report-Only"
+        value: >-
+          default-src 'self';
+          script-src 'self' 'wasm-unsafe-eval';
+          style-src 'self' 'unsafe-inline';
+          img-src 'self' data: blob:;
+          font-src 'self' data:;
+          connect-src 'self' https://*.sui.io https://*.evefrontier.com https://*.mystenlabs.com;
+          worker-src 'self';
+          manifest-src 'self';
+          object-src 'none';
+          base-uri 'self';
+          form-action 'self';
+          frame-ancestors 'none';
+          require-trusted-types-for 'script'
+      - key: "X-Content-Type-Options"
+        value: "nosniff"
+      - key: "X-Frame-Options"
+        value: "DENY"
+      - key: "Referrer-Policy"
+        value: "strict-origin-when-cross-origin"
+      - key: "Strict-Transport-Security"
+        value: "max-age=63072000; includeSubDomains; preload"
+      - key: "Permissions-Policy"
+        value: "camera=(), microphone=(), geolocation=(), payment=()"

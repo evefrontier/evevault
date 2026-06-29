@@ -1,9 +1,7 @@
 import type { ZKEd25519Keypair } from '@evefrontier/wallet-core/crypto'
-import type { ZkProofResponse } from '@evevault/shared'
+import { VAULT_UNLOCK_MS, type ZkProofResponse } from '@evevault/shared'
 import type { SuiChain } from '@mysten/wallet-standard'
 import type { LocalnetState } from './local'
-
-const VAULT_UNLOCK_MS = 10 * 60 * 1000
 
 /*
  * This module is loaded by the offscreen keeper document and is intentionally
@@ -19,11 +17,13 @@ export const localnetState: LocalnetState = { localnetKey: null }
 
 /*
  * Rotation re-encrypts a new ephemeral secret key without asking for the PIN
- * again. We cache only a non-extractable CryptoKey plus the original salt; the
- * raw PIN-derived key bytes stay inside WebCrypto.
+ * again. We cache only a non-extractable CryptoKey plus the original salt — the
+ * PIN itself is never cached. Argon2id derivation briefly materialises the
+ * derived key bytes in JS before importKey(); those bytes are zeroed right
+ * after import (see deriveAesKey).
  */
 let sessionDerivedKey: CryptoKey | null = null
-let sessionSalt: string | null = null // base64 PBKDF2 salt from the stored HashedData
+let sessionSalt: string | null = null // base64 Argon2id salt from the stored HashedData
 
 let _vaultUnlocked = false
 let _vaultUnlockExpiry: number | null = null

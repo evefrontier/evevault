@@ -178,21 +178,22 @@ describe('WebVaultService', () => {
       expect(publicKey.toRawBytes()).toBeInstanceOf(Uint8Array)
     })
 
-    it('stores PIN hash for verification', async () => {
+    it('stores an Argon2id PIN verifier for verification', async () => {
       const pin = '123456'
       await webVaultService.createEphemeralKeyPair(pin)
 
-      // Verify PIN hash was stored
+      // Verify PIN verifier was stored
       expect(mockSetFn).toHaveBeenCalledWith(
-        'evevault:web-pin-hash',
+        'evevault:web-pin-verifier',
         expect.any(String),
       )
 
-      // Verify the stored hash is 64 chars (SHA-256 hex)
-      const pinHashCall = mockSetFn.mock.calls.find(
-        (call) => call[0] === 'evevault:web-pin-hash',
+      // Verify the stored value is an Argon2id encoded verifier (salt + params
+      // embedded).
+      const pinVerifierCall = mockSetFn.mock.calls.find(
+        (call) => call[0] === 'evevault:web-pin-verifier',
       )
-      expect(pinHashCall?.[1]).toHaveLength(64)
+      expect(pinVerifierCall?.[1]).toMatch(/^\$argon2id\$/)
     })
 
     it('throws if PIN is empty', async () => {
@@ -224,7 +225,7 @@ describe('WebVaultService', () => {
       webVaultService.lock()
     })
 
-    it('verifies PIN hash and recovers keypair', async () => {
+    it('verifies PIN verifier and recovers keypair', async () => {
       const result = await webVaultService.unlock(testPin)
 
       expect(result).toBe(true)
@@ -254,9 +255,9 @@ describe('WebVaultService', () => {
       )
     })
 
-    it('returns false if no PIN hash exists', async () => {
-      // Clear the store to simulate no PIN hash
-      mockStore.delete('evevault:web-pin-hash')
+    it('returns false if no PIN verifier exists', async () => {
+      // Clear the store to simulate no PIN verifier
+      mockStore.delete('evevault:web-pin-verifier')
 
       const result = await webVaultService.unlock(testPin)
       expect(result).toBe(false)
@@ -363,7 +364,7 @@ describe('WebVaultService', () => {
 
       // Verify IndexedDB items were deleted
       expect(mockStore.has('evevault:web-ephemeral-keypair')).toBe(false)
-      expect(mockStore.has('evevault:web-pin-hash')).toBe(false)
+      expect(mockStore.has('evevault:web-pin-verifier')).toBe(false)
     })
   })
 

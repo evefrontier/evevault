@@ -1,5 +1,6 @@
 import { ephKeyService } from '#/services/vaultService'
 import { type DeviceState, KEY_FLAG_SECP256R1 } from '#/types'
+import { isWebCryptoMarker } from '#/types/wallet'
 import { isWeb } from '#/utils/environment'
 import { createLogger } from '#/utils/logger'
 import { createEmptyLocalnetDeviceData } from './constants'
@@ -96,7 +97,7 @@ const updateWebLockState = (state: DeviceState | undefined) => {
 }
 
 const isValidStoredSecretKey = (key: object): boolean => {
-  return 'iv' in key && 'data' in key
+  return isWebCryptoMarker(key) || ('iv' in key && 'data' in key)
 }
 
 const clearPublicKeyState = (state: DeviceState) => {

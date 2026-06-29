@@ -97,7 +97,8 @@
     "test:coverage": "vitest run --config ./vitest.config.mts --coverage"
   },
   "dependencies": {
-    "@mysten/signers": "^1.0.5"
+    "@mysten/signers": "^1.0.5",
+    "hash-wasm": "4.12.0"
   },
   "peerDependencies": {
     "@mysten/sui": "^2.17.0",

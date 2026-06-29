@@ -17,7 +17,14 @@ export interface StorageAdapter {
 
 export type HashedData = { iv: string; data: string; salt: string }
 
-export type StoredSecretKey = HashedData | null
+/**
+ * Sentinel stored in place of a secret key on web. The real signing key is a
+ * non-extractable WebCrypto handle held in IndexedDB and is never serialized,
+ * so this marker carries no key material — it only signals "a vault exists".
+ */
+export type WebCryptoKeyMarker = { webCryptoNonExtractable: true }
+
+export type StoredSecretKey = HashedData | WebCryptoKeyMarker | null
 
 export interface LocalnetDeviceData {
   encryptedKey: string | null

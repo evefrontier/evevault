@@ -65,8 +65,7 @@ vi.mock('#/services/keeperService', () => ({
 // Mock wallet types
 vi.mock('#/types/wallet', () => ({
   createWebCryptoPlaceholder: vi.fn(() => ({
-    iv: 'web-placeholder',
-    data: 'web-placeholder',
+    webCryptoNonExtractable: true,
   })),
 }))
 
@@ -130,10 +129,9 @@ describe('ephKeyService routing', () => {
       )
       expect(result).toHaveProperty('hashedSecretKey')
       expect(result).toHaveProperty('publicKey')
-      // Web uses placeholder for hashedSecretKey
+      // Web uses an inert marker for hashedSecretKey
       expect(result.hashedSecretKey).toEqual({
-        iv: 'web-placeholder',
-        data: 'web-placeholder',
+        webCryptoNonExtractable: true,
       })
     })
 

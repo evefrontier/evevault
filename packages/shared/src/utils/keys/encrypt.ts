@@ -1,48 +1,49 @@
+import { argon2id } from 'hash-wasm'
 import { bytesToB64 } from '../base64'
-import {
-  AES_IV_LENGTH,
-  AES_KEY_LENGTH,
-  PBKDF2_HASH_ALGORITHM,
-  PBKDF2_ITERATIONS,
-  PBKDF2_SALT_LENGTH,
-} from './constants'
+import { AES_IV_LENGTH, ARGON2_PARAMS, KDF_SALT_LENGTH } from './constants'
 
 const cryptoApi =
   typeof crypto !== 'undefined' ? crypto : (window as Window).crypto
 
 /**
- * Derives a non-extractable AES-GCM key from a PIN and salt using PBKDF2.
- * The returned CryptoKey is an opaque browser handle.
+ * Derives a non-extractable AES-GCM key from a PIN and salt using Argon2id.
+ * Argon2id is memory-hard, so each guess is expensive even on GPUs — the key
+ * defense for a low-entropy PIN. The returned CryptoKey is an opaque handle.
  */
 export async function deriveAesKey(
   pin: string,
   salt: Uint8Array<ArrayBuffer>,
   usage: KeyUsage[],
 ): Promise<CryptoKey> {
-  const keyMaterial = await cryptoApi.subtle.importKey(
-    'raw',
-    new TextEncoder().encode(pin),
-    { name: 'PBKDF2' },
-    false,
-    ['deriveKey'],
-  )
-  return cryptoApi.subtle.deriveKey(
-    {
-      name: 'PBKDF2',
-      salt,
-      iterations: PBKDF2_ITERATIONS,
-      hash: PBKDF2_HASH_ALGORITHM,
-    },
-    keyMaterial,
-    { name: 'AES-GCM', length: AES_KEY_LENGTH },
-    false,
-    usage,
-  )
+  const rawKey = await argon2id({
+    password: pin,
+    salt,
+    ...ARGON2_PARAMS,
+    outputType: 'binary',
+  })
+  // Copy into a fresh ArrayBuffer-backed view so the type is BufferSource
+  // (hash-wasm returns Uint8Array<ArrayBufferLike>).
+  const keyBytes = new Uint8Array(rawKey)
+  try {
+    // importKey copies the bytes into the opaque CryptoKey, so once it resolves
+    // we zero our copies to minimise how long raw key material lives in JS
+    // memory (best-effort defense-in-depth).
+    return await cryptoApi.subtle.importKey(
+      'raw',
+      keyBytes,
+      'AES-GCM',
+      false,
+      usage,
+    )
+  } finally {
+    keyBytes.fill(0)
+    rawKey.fill(0)
+  }
 }
 
 export async function encrypt(string: string, pin: string) {
-  // Generate a random salt for PBKDF2 key derivation
-  const salt = cryptoApi.getRandomValues(new Uint8Array(PBKDF2_SALT_LENGTH))
+  // Generate a random salt for Argon2id key derivation
+  const salt = cryptoApi.getRandomValues(new Uint8Array(KDF_SALT_LENGTH))
   const aesKey = await deriveAesKey(pin, salt, ['encrypt'])
 
   const iv = cryptoApi.getRandomValues(new Uint8Array(AES_IV_LENGTH))
@@ -60,7 +61,7 @@ export async function encrypt(string: string, pin: string) {
 }
 
 /**
- * Encrypts using a pre-derived CryptoKey, skipping the PBKDF2 step.
+ * Encrypts using a pre-derived CryptoKey, skipping the Argon2id step.
  * The original salt is preserved in the output so that decrypt(result, pin)
  * can re-derive the same key on next unlock.
  */
