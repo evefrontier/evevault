@@ -211,9 +211,7 @@ describe('createInitActions', () => {
       expect(clearAllZkLoginJwtsMock).toHaveBeenCalledOnce()
       expect(clearZkProofsMock).toHaveBeenCalledOnce()
       expect(state.ephemeralKeyPairSecretKey).toEqual({
-        iv: 'web-crypto-signer',
-        data: 'non-extractable-key',
-        salt: 'web-crypto-salt',
+        webCryptoNonExtractable: true,
       })
       expect(state.networkData[SUI_DEVNET_CHAIN]?.maxEpoch).toBe('777')
       expect(state.networkData[SUI_DEVNET_CHAIN]?.nonce).toEqual(

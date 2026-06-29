@@ -3,8 +3,7 @@
 
 export {
   createWebCryptoPlaceholder,
-  WEB_CRYPTO_PLACEHOLDER_DATA,
-  WEB_CRYPTO_PLACEHOLDER_IV,
+  isWebCryptoMarker,
 } from '../types/wallet'
 export { useActiveSuiAddress } from './hooks/useActiveSuiAddress'
 export { useBalance } from './hooks/useBalance'

@@ -5,19 +5,24 @@ import type { SuiChain } from '@mysten/wallet-standard'
 import type { DeviceState, NetworkDataMap, StoredSecretKey } from '#/types'
 import { isLocalnetChain, isZkLoginSuiChain } from '#/types/networks'
 import { KEY_FLAG_SECP256R1 } from '#/types/stores'
+import { isWebCryptoMarker } from '#/types/wallet'
 import { createLogger } from '#/utils/logger'
 
 type LocalnetData = DeviceState['localnet']
 
 const log = createLogger()
 
-/** A configured PIN produces an encrypted key object with `{ iv, data }`; a raw/null key means no PIN was set. */
+/**
+ * A configured PIN is signalled either by an encrypted key object with
+ * `{ iv, data }` (extension) or by the inert web-crypto marker (web, where the
+ * real key lives non-extractably in IndexedDB). A raw/null key means no PIN.
+ */
 export const isPinConfigured = (secretKey: StoredSecretKey): boolean => {
   return Boolean(
     secretKey &&
       typeof secretKey === 'object' &&
-      'iv' in secretKey &&
-      'data' in secretKey,
+      (isWebCryptoMarker(secretKey) ||
+        ('iv' in secretKey && 'data' in secretKey)),
   )
 }
 

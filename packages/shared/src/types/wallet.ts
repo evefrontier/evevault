@@ -3,19 +3,26 @@ import type { PublicKey, Signer } from '@mysten/sui/cryptography'
 import type { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519'
 import type { User } from 'oidc-client-ts'
 import type { ZkProofResponse } from './enoki'
-import type { StoredSecretKey } from './stores'
+import type { WebCryptoKeyMarker } from './stores'
 
-// Web crypto placeholder constants - used when the actual key is stored in IndexedDB
-// and managed by WebCryptoSigner (non-extractable)
-export const WEB_CRYPTO_PLACEHOLDER_IV = 'web-crypto-signer'
-export const WEB_CRYPTO_PLACEHOLDER_DATA = 'non-extractable-key'
-export const WEB_CRYPTO_PLACEHOLDER_SALT = 'web-crypto-salt'
-
-export const createWebCryptoPlaceholder = (): StoredSecretKey => ({
-  iv: WEB_CRYPTO_PLACEHOLDER_IV,
-  data: WEB_CRYPTO_PLACEHOLDER_DATA,
-  salt: WEB_CRYPTO_PLACEHOLDER_SALT,
+/**
+ * Inert marker stored as the web vault's "secret key". The real key is a
+ * non-extractable WebCrypto handle held in IndexedDB (managed by
+ * WebCryptoSigner), so nothing sensitive is serialized — this marker only
+ * signals that a vault exists.
+ */
+export const createWebCryptoPlaceholder = (): WebCryptoKeyMarker => ({
+  webCryptoNonExtractable: true,
 })
+
+/** Type guard for the web vault's inert non-extractable-key marker. */
+export const isWebCryptoMarker = (
+  value: unknown,
+): value is WebCryptoKeyMarker =>
+  typeof value === 'object' &&
+  value !== null &&
+  (value as { webCryptoNonExtractable?: unknown }).webCryptoNonExtractable ===
+    true
 
 export interface ZkSignAnyParams {
   user: User
