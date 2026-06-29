@@ -3,7 +3,7 @@ import type { PublicKey } from '@mysten/sui/cryptography'
 import type { SuiChain } from '@mysten/wallet-standard'
 import type { ZkProofResponse } from '#/types/enoki'
 import { del, get, set } from '#/utils/indexedDbKeyval'
-import { sha256Hex } from '#/utils/keys/sha256'
+import { createPinVerifier, verifyPin } from '#/utils/keys/pinVerifier'
 import { createLogger } from '#/utils/logger'
 
 const log = createLogger()
@@ -18,7 +18,7 @@ const ZKPROOF_STORAGE_PREFIX = 'evevault:web-zkproof:'
  * Security model:
  * - Keys are non-extractable CryptoKeys (hardware-backed security)
  * - The exported keypair handle is stored directly in IndexedDB (required by WebCryptoSigner)
- * - PIN hash is stored separately for UX-level lock/unlock verification
+ * - An Argon2id PIN verifier is stored separately for UX-level lock/unlock verification
  * - True security comes from the non-extractable nature of the CryptoKey
  */
 class WebVaultService {
@@ -50,9 +50,9 @@ class WebVaultService {
     const exported = this.signer.export()
     await set(KEYPAIR_STORAGE_KEY, exported)
 
-    // Store the PIN hash for verification
-    const pinHash = await sha256Hex(pin)
-    await set(PIN_HASH_STORAGE_KEY, pinHash)
+    // Store an Argon2id PIN verifier (salt + params embedded) for unlock checks
+    const pinVerifier = await createPinVerifier(pin)
+    await set(PIN_HASH_STORAGE_KEY, pinVerifier)
 
     this.unlockExpiry = Date.now() + 10 * 60 * 1000
 
@@ -77,15 +77,15 @@ class WebVaultService {
       return true
     }
 
-    // Verify PIN hash
-    const storedPinHash = await get(PIN_HASH_STORAGE_KEY)
-    if (!storedPinHash) {
-      log.error('[web-vault] No PIN hash found')
+    // Verify PIN against the stored Argon2id verifier
+    const storedPinVerifier = await get<string>(PIN_HASH_STORAGE_KEY)
+    if (!storedPinVerifier) {
+      log.error('[web-vault] No PIN verifier found')
       return false
     }
 
-    const providedPinHash = await sha256Hex(pin)
-    if (providedPinHash !== storedPinHash) {
+    const pinValid = await verifyPin(pin, storedPinVerifier)
+    if (!pinValid) {
       log.error('[web-vault] Invalid PIN')
       throw new Error('Invalid PIN')
     }

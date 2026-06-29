@@ -178,21 +178,22 @@ describe('WebVaultService', () => {
       expect(publicKey.toRawBytes()).toBeInstanceOf(Uint8Array)
     })
 
-    it('stores PIN hash for verification', async () => {
+    it('stores an Argon2id PIN verifier for verification', async () => {
       const pin = '123456'
       await webVaultService.createEphemeralKeyPair(pin)
 
-      // Verify PIN hash was stored
+      // Verify PIN verifier was stored
       expect(mockSetFn).toHaveBeenCalledWith(
         'evevault:web-pin-hash',
         expect.any(String),
       )
 
-      // Verify the stored hash is 64 chars (SHA-256 hex)
+      // Verify the stored value is an Argon2id encoded verifier (salt + params
+      // embedded).
       const pinHashCall = mockSetFn.mock.calls.find(
         (call) => call[0] === 'evevault:web-pin-hash',
       )
-      expect(pinHashCall?.[1]).toHaveLength(64)
+      expect(pinHashCall?.[1]).toMatch(/^\$argon2id\$/)
     })
 
     it('throws if PIN is empty', async () => {
