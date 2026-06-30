@@ -196,7 +196,7 @@ const WalletDashboard = ({
   // Defined chain (testnet fallback) so balance and token list use the same
   // network and we avoid cross-network transfer/balance errors
   const resolvedChain = chain ?? SUI_TESTNET_CHAIN
-  // Dev-only: live countdown of the vault unlock window.
+  // Display only of the vault unlock window.
   const unlockRemainingLabel = useUnlockTimeRemaining(devMode) ?? undefined
 
   return (

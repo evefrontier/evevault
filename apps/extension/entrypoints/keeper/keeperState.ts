@@ -1,5 +1,9 @@
 import type { ZKEd25519Keypair } from '@evefrontier/wallet-core/crypto'
-import { VaultSession, type ZkProofResponse } from '@evevault/shared'
+import {
+  VAULT_UNLOCK_MS,
+  VaultSession,
+  type ZkProofResponse,
+} from '@evevault/shared'
 import type { SuiChain } from '@mysten/wallet-standard'
 import type { LocalnetState } from './local'
 
@@ -30,6 +34,11 @@ let sessionSalt: string | null = null // base64 Argon2id salt from the stored Ha
 // the same class, so the expiry rule stays identical across both surfaces.
 const session = new VaultSession()
 
+// Proactive auto-lock: the offscreen keeper outlives the popup, so it must lock
+// itself at expiry rather than waiting for the next operation. Scheduled on
+// unlock, cleared on lock. (The popup's useVaultAutoLock handles the UI.)
+let autoLockTimer: ReturnType<typeof setTimeout> | null = null
+
 // zkProofs are chain-specific and tied to the in-memory ephemeral key.
 let zkProofs: Partial<Record<SuiChain, ZkProofResponse | null>> =
   emptyZkProofs()
@@ -49,11 +58,17 @@ export function lockVault(): void {
   sessionDerivedKey = null
   sessionSalt = null
   session.clear()
+  if (autoLockTimer !== null) {
+    clearTimeout(autoLockTimer)
+    autoLockTimer = null
+  }
 }
 
 export function unlockVaultWithKeypair(keypair: ZKEd25519Keypair): void {
   ephemeralKey = keypair
   session.unlock()
+  if (autoLockTimer !== null) clearTimeout(autoLockTimer)
+  autoLockTimer = setTimeout(lockVault, VAULT_UNLOCK_MS)
 }
 
 export function keeperReplaceEphemeralKey(keypair: ZKEd25519Keypair): void {

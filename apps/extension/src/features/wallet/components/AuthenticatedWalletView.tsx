@@ -81,7 +81,7 @@ export function AuthenticatedWalletView({
   const openFaucet = faucetUrl
     ? () => window.open(faucetUrl, '_blank', 'noopener,noreferrer')
     : undefined
-  // Dev-only: live countdown of the vault unlock window (queries the keeper).
+  // Display only of the vault unlock window.
   const unlockRemainingLabel = useUnlockTimeRemaining(devMode) ?? undefined
 
   return (

@@ -21,7 +21,8 @@ const formatMmSs = (ms: number): string => {
  *   time it opens, which re-syncs the anchor — so we avoid pinging the keeper
  *   every second.
  *
- * NOTE: throwaway dev-only helper.
+ * Display only — actually locking the vault on expiry is owned by
+ * useVaultAutoLock.
  */
 export const useUnlockTimeRemaining = (enabled: boolean): string | null => {
   const [remainingMs, setRemainingMs] = useState(0)
@@ -33,12 +34,12 @@ export const useUnlockTimeRemaining = (enabled: boolean): string | null => {
     }
 
     let cancelled = false
+    const apply = (ms: number) => {
+      if (!cancelled) setRemainingMs(ms)
+    }
 
     if (isWeb()) {
-      const tick = async () => {
-        const ms = await ephKeyService.getUnlockRemainingMs()
-        if (!cancelled) setRemainingMs(ms)
-      }
+      const tick = async () => apply(await ephKeyService.getUnlockRemainingMs())
       void tick()
       const id = setInterval(() => void tick(), 1000)
       return () => {
@@ -50,13 +51,12 @@ export const useUnlockTimeRemaining = (enabled: boolean): string | null => {
     // Extension: fetch once, then count down locally from the anchor.
     let anchorExpiry: number | null = null
     void ephKeyService.getUnlockRemainingMs().then((ms) => {
-      if (cancelled) return
       anchorExpiry = ms > 0 ? Date.now() + ms : null
-      setRemainingMs(ms)
+      apply(ms)
     })
     const id = setInterval(() => {
       if (anchorExpiry !== null) {
-        setRemainingMs(Math.max(0, anchorExpiry - Date.now()))
+        apply(Math.max(0, anchorExpiry - Date.now()))
       }
     }, 1000)
     return () => {

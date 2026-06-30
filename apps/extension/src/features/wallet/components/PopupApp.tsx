@@ -11,7 +11,12 @@ import {
   useAuth,
 } from '@evevault/shared/auth'
 import { Button, Heading, Text } from '@evevault/shared/components'
-import { useContext, useDevice, useDevMode } from '@evevault/shared/hooks'
+import {
+  useContext,
+  useDevice,
+  useDevMode,
+  useVaultAutoLock,
+} from '@evevault/shared/hooks'
 import { LockScreen } from '@evevault/shared/screens'
 import { localnetKeyService } from '@evevault/shared/services/vaultService'
 import { getFaucetUrlForChain } from '@evevault/shared/sui'
@@ -93,6 +98,7 @@ function App() {
     localnetUrl,
   } = useDevice()
   const faucetUrl = getFaucetUrlForChain(chain)
+  useVaultAutoLock()
   const { handleLogin } = useLogin()
   const { handleTestTransaction, txDigest, handleRotateEphKey } = useDevMode()
   const activeAddress = useActiveSuiAddress()
