@@ -6,6 +6,7 @@ import { VAULT_UNLOCK_MS } from '#/utils/constants'
 import { del, get, set } from '#/utils/indexedDbKeyval'
 import { createPinVerifier, verifyPin } from '#/utils/keys/pinVerifier'
 import { createLogger } from '#/utils/logger'
+import { VaultSession } from '#/utils/vaultSession'
 
 const log = createLogger()
 
@@ -24,7 +25,10 @@ const ZKPROOF_STORAGE_PREFIX = 'evevault:web-zkproof:'
  */
 class WebVaultService {
   private signer: ZKWebCryptoSigner | null = null
-  private unlockExpiry: number | null = null
+  // Unlock-window timing lives in the shared VaultSession (see
+  // utils/vaultSession). The extension keeper (keeperState) uses the same class,
+  // so the expiry rule stays identical across both surfaces.
+  private session = new VaultSession()
   private initialized = false
 
   /**
@@ -55,7 +59,7 @@ class WebVaultService {
     const pinVerifier = await createPinVerifier(pin)
     await set(PIN_VERIFIER_STORAGE_KEY, pinVerifier)
 
-    this.unlockExpiry = Date.now() + VAULT_UNLOCK_MS
+    this.session.unlock()
 
     log.info(
       '[web-vault] Created new Secp256r1 ephemeral keypair (PIN verifier stored)',
@@ -72,8 +76,8 @@ class WebVaultService {
     }
 
     // If already unlocked with valid signer, just extend the expiry
-    if (this.signer && this.unlockExpiry && Date.now() < this.unlockExpiry) {
-      this.unlockExpiry = Date.now() + durationMs
+    if (this.signer && this.session.isActive()) {
+      this.session.unlock(durationMs)
       log.debug('[web-vault] Vault already unlocked, extended expiry')
       return true
     }
@@ -104,7 +108,7 @@ class WebVaultService {
         exported.privateKey,
         exported.publicKey,
       )
-      this.unlockExpiry = Date.now() + durationMs
+      this.session.unlock(durationMs)
 
       log.info(
         `[web-vault] Vault unlocked for ${durationMs / 1000 / 60} minutes`,
@@ -134,7 +138,8 @@ class WebVaultService {
   isUnlocked(): boolean {
     if (!this.signer) return false
 
-    if (this.unlockExpiry && Date.now() > this.unlockExpiry) {
+    // Lazily lock (and drop the signer) the moment the window has elapsed.
+    if (!this.session.isActive()) {
       this.lock()
       return false
     }
@@ -143,9 +148,14 @@ class WebVaultService {
   }
 
   lock(): void {
-    this.unlockExpiry = null
+    this.session.clear()
     this.signer = null
     log.debug('[web-vault] Vault locked')
+  }
+
+  /** Milliseconds left on the unlock window; 0 when locked. */
+  getUnlockRemainingMs(): number {
+    return this.signer ? this.session.remainingMs() : 0
   }
 
   /**
@@ -159,7 +169,7 @@ class WebVaultService {
 
   async clear(): Promise<void> {
     this.signer = null
-    this.unlockExpiry = null
+    this.session.clear()
     await del(KEYPAIR_STORAGE_KEY)
     await del(PIN_VERIFIER_STORAGE_KEY)
     log.info('[web-vault] Cleared keypair and PIN verifier')

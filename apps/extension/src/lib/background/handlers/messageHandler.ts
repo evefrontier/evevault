@@ -20,6 +20,7 @@ import {
   _handleClearZkProof,
   _handleCreateKeypair,
   _handleGetPublicKey,
+  _handleGetUnlockRemaining,
   _handleGetZkProof,
   _handleLocalnetGetAddress,
   _handleLocalnetSetKeypair,
@@ -221,6 +222,9 @@ const MESSAGE_ROUTES: Record<string, MessageRoute> = {
     vaultRoute(_handleRotateKeypair),
   [routeKey('type', VaultMessageTypes.GET_PUBLIC_KEY)]:
     vaultRoute(_handleGetPublicKey),
+  [routeKey('type', VaultMessageTypes.GET_UNLOCK_REMAINING)]: vaultRoute(
+    _handleGetUnlockRemaining,
+  ),
   [routeKey('type', VaultMessageTypes.ZK_EPH_SIGN_BYTES)]: vaultRoute(
     _handleZkEphSignBytes,
   ),

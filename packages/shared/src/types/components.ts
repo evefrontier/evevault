@@ -209,6 +209,8 @@ export interface HeaderMobileProps {
   currentTenantId?: string
   /** Callback when user selects a different Server (tenant) in dev mode */
   onServerChange?: (tenantId: TenantId) => void
+  /** Dev-mode display: vault unlock time remaining, formatted m:ss */
+  unlockRemainingLabel?: string
 }
 
 export type CornersColor =

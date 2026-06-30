@@ -56,6 +56,7 @@ interface DropdownItemsParams {
   devHandlers: Partial<Record<DevActionHandlerKey, () => void>>
   onTransactionsClick?: () => void
   version?: string
+  unlockRemainingLabel?: string
   copy: (value: string) => void
   lock: () => void
   logout: () => void
@@ -84,6 +85,7 @@ const buildDropdownItems = ({
   devHandlers,
   onTransactionsClick,
   version,
+  unlockRemainingLabel,
   copy,
   lock,
   logout,
@@ -136,6 +138,16 @@ const buildDropdownItems = ({
     { label: 'Logout', icon: 'Close', onClick: logout },
   )
 
+  // Vault unlock countdown (dev only, display-only)
+  if (showDevActions && unlockRemainingLabel) {
+    items.push({
+      label: `Unlock expires in ${unlockRemainingLabel}`,
+      icon: 'HideEye',
+      onClick: () => {},
+      preventCloseOnClick: true,
+    })
+  }
+
   // App version (dev only, display-only)
   if (showDevActions && version) {
     items.push({
@@ -161,6 +173,7 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
   onFaucetTestSuiClick,
   onLocalnetSettingsClick,
   version,
+  unlockRemainingLabel,
 }) => {
   const { copy } = useCopyToClipboard()
   const { lock } = useDevice()
@@ -180,6 +193,7 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
         },
         onTransactionsClick,
         version,
+        unlockRemainingLabel,
         copy,
         lock,
         logout,
@@ -197,6 +211,7 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
       lock,
       logout,
       version,
+      unlockRemainingLabel,
     ],
   )
 

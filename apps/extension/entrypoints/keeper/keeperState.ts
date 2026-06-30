@@ -1,5 +1,5 @@
 import type { ZKEd25519Keypair } from '@evefrontier/wallet-core/crypto'
-import { VAULT_UNLOCK_MS, type ZkProofResponse } from '@evevault/shared'
+import { VaultSession, type ZkProofResponse } from '@evevault/shared'
 import type { SuiChain } from '@mysten/wallet-standard'
 import type { LocalnetState } from './local'
 
@@ -25,8 +25,16 @@ export const localnetState: LocalnetState = { localnetKey: null }
 let sessionDerivedKey: CryptoKey | null = null
 let sessionSalt: string | null = null // base64 Argon2id salt from the stored HashedData
 
-let _vaultUnlocked = false
-let _vaultUnlockExpiry: number | null = null
+// Unlock-window timing lives in the shared VaultSession (see
+// @evevault/shared utils/vaultSession). The web vault (webVaultService) uses
+// the same class, so the expiry rule stays identical across both surfaces.
+const session = new VaultSession()
+
+// Proactive auto-lock: the keeper outlives the popup, so it locks itself at
+// expiry rather than waiting for the next operation. The popup's
+// useVaultAutoLock handles the UI lock; keep both in step (shared
+// VAULT_UNLOCK_MS window). Scheduled on unlock, cleared on lock.
+let autoLockTimer: ReturnType<typeof setTimeout> | null = null
 
 // zkProofs are chain-specific and tied to the in-memory ephemeral key.
 let zkProofs: Partial<Record<SuiChain, ZkProofResponse | null>> =
@@ -46,14 +54,20 @@ export function lockVault(): void {
   localnetState.localnetKey = null
   sessionDerivedKey = null
   sessionSalt = null
-  _vaultUnlocked = false
-  _vaultUnlockExpiry = null
+  session.clear()
+  if (autoLockTimer !== null) {
+    clearTimeout(autoLockTimer)
+    autoLockTimer = null
+  }
 }
 
 export function unlockVaultWithKeypair(keypair: ZKEd25519Keypair): void {
   ephemeralKey = keypair
-  _vaultUnlocked = true
-  _vaultUnlockExpiry = Date.now() + VAULT_UNLOCK_MS
+  session.unlock()
+  if (autoLockTimer !== null) clearTimeout(autoLockTimer)
+  // Derive the delay from the session so the timer can't diverge from the
+  // window the session actually holds.
+  autoLockTimer = setTimeout(lockVault, session.remainingMs())
 }
 
 export function keeperReplaceEphemeralKey(keypair: ZKEd25519Keypair): void {
@@ -81,12 +95,20 @@ export function getSessionKey(): {
   return { derivedKey: sessionDerivedKey, salt: sessionSalt }
 }
 
+/** Ms left on the unlock window; 0 when no key is loaded or the window elapsed. */
+export function getUnlockRemainingMs(): number {
+  if (!ephemeralKey && !localnetState.localnetKey) {
+    return 0
+  }
+  return session.remainingMs()
+}
+
 export function enforceExpiry(): boolean {
   if (!ephemeralKey && !localnetState.localnetKey) {
     return true // Already locked
   }
 
-  if (_vaultUnlockExpiry && Date.now() > _vaultUnlockExpiry) {
+  if (!session.isActive()) {
     lockVault()
     return true // Now locked
   }

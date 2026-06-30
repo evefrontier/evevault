@@ -10,7 +10,11 @@ import {
   TokenListSection,
 } from '@evevault/shared/components'
 import Icon from '@evevault/shared/components/Icon'
-import { useContext, useDevice } from '@evevault/shared/hooks'
+import {
+  useContext,
+  useDevice,
+  useUnlockTimeRemaining,
+} from '@evevault/shared/hooks'
 import { getCurrentTenantId, getTenantLabel } from '@evevault/shared/stores'
 import { createSuiClient, getFaucetUrlForChain } from '@evevault/shared/sui'
 import { createLogger, getSuiscanUrl, WEB_ROUTES } from '@evevault/shared/utils'
@@ -192,6 +196,8 @@ const WalletDashboard = ({
   // Defined chain (testnet fallback) so balance and token list use the same
   // network and we avoid cross-network transfer/balance errors
   const resolvedChain = chain ?? SUI_TESTNET_CHAIN
+  // Display only of the vault unlock window.
+  const unlockRemainingLabel = useUnlockTimeRemaining(devMode) ?? undefined
 
   return (
     <div>
@@ -212,6 +218,7 @@ const WalletDashboard = ({
           switchTenantAndReload(nextTenantId)
         }
         version={APP_VERSION}
+        unlockRemainingLabel={unlockRemainingLabel}
       />
       <TokenListSection
         user={user}

@@ -155,6 +155,16 @@ export const ephKeyService = {
       return null
     }
   },
+
+  /**
+   * Ms left on the keeper's unlock window (0 if locked/unavailable).
+   */
+  async getUnlockRemainingMs(): Promise<number> {
+    const res = (await chrome.runtime?.sendMessage?.({
+      type: VaultMessageTypes.GET_UNLOCK_REMAINING,
+    })) as VaultResponse | undefined
+    return res?.ok ? (res.remainingMs ?? 0) : 0
+  },
 }
 
 export const zkProofService = {

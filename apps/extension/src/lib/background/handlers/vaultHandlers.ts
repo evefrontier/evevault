@@ -205,6 +205,21 @@ export function _handleGetPublicKey(
   )
 }
 
+/**
+ * Returns ms left on the keeper's unlock window (used by useVaultAutoLock).
+ */
+export function _handleGetUnlockRemaining(
+  _message: VaultMessage,
+  _sender: chrome.runtime.MessageSender,
+  sendResponse: (response?: unknown) => void,
+): Promise<boolean> {
+  return forwardToKeeper(
+    sendResponse,
+    { type: KeeperMessageTypes.GET_UNLOCK_REMAINING },
+    (r) => ({ ok: true, remainingMs: r?.ok ? (r.remainingMs ?? 0) : 0 }),
+  )
+}
+
 export function _handleZkEphSignBytes(
   message: VaultMessage,
   _sender: chrome.runtime.MessageSender,

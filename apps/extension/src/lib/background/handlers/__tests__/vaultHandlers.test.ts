@@ -3,6 +3,7 @@ import {
   _handleClearZkProof,
   _handleCreateKeypair,
   _handleGetPublicKey,
+  _handleGetUnlockRemaining,
   _handleGetZkProof,
   _handleRotateKeypair,
   _handleSetZkProof,
@@ -245,6 +246,37 @@ describe('_handleGetPublicKey', () => {
       ok: false,
       error: 'EVE Vault is LOCKED',
     })
+  })
+})
+
+describe('_handleGetUnlockRemaining', () => {
+  afterEach(() => vi.clearAllMocks())
+
+  it('returns remainingMs when keeper is unlocked', async () => {
+    stubKeeperBridge({ ok: true, remainingMs: 42_000 })
+    const sendResponse = vi.fn()
+
+    await _handleGetUnlockRemaining(makeMessage(), mockSender, sendResponse)
+
+    expect(sendResponse).toHaveBeenCalledWith({ ok: true, remainingMs: 42_000 })
+  })
+
+  it('returns 0 when keeper is ok but reports no remaining time', async () => {
+    stubKeeperBridge({ ok: true })
+    const sendResponse = vi.fn()
+
+    await _handleGetUnlockRemaining(makeMessage(), mockSender, sendResponse)
+
+    expect(sendResponse).toHaveBeenCalledWith({ ok: true, remainingMs: 0 })
+  })
+
+  it('returns 0 when keeper reports locked', async () => {
+    stubKeeperBridge({ error: 'LOCKED' })
+    const sendResponse = vi.fn()
+
+    await _handleGetUnlockRemaining(makeMessage(), mockSender, sendResponse)
+
+    expect(sendResponse).toHaveBeenCalledWith({ ok: true, remainingMs: 0 })
   })
 })
 

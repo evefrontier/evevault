@@ -16,6 +16,7 @@ import {
   enforceExpiry,
   getEphemeralKey,
   getSessionKey,
+  getUnlockRemainingMs,
   keeperReplaceEphemeralKey,
   lockVault,
   unlockVaultWithKeypair,
@@ -101,6 +102,15 @@ export function handleGetPublicKey(
   }
 
   sendResponse({ ok: true, publicKeyBytes: publicKeyBytes(getEphemeralKey()) })
+  return false
+}
+
+/** Reports ms left on the unlock window (0 when locked/expired). */
+export function handleGetUnlockRemaining(
+  _message: BackgroundMessage,
+  sendResponse: KeeperSendResponse,
+): boolean {
+  sendResponse({ ok: true, remainingMs: getUnlockRemainingMs() })
   return false
 }
 
