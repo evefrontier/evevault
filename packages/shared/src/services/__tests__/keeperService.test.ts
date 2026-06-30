@@ -84,3 +84,36 @@ describe('ephKeyService.rotateEphemeralKeyPair()', () => {
     expect(result.publicKey).toBeDefined()
   })
 })
+
+describe('ephKeyService.getUnlockRemainingMs()', () => {
+  afterEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('returns remainingMs from an ok response', async () => {
+    mockSendMessage.mockResolvedValueOnce({ ok: true, remainingMs: 42_000 })
+
+    await expect(ephKeyService.getUnlockRemainingMs()).resolves.toBe(42_000)
+    expect(mockSendMessage).toHaveBeenCalledWith({
+      type: VaultMessageTypes.GET_UNLOCK_REMAINING,
+    })
+  })
+
+  it('returns 0 when ok but remainingMs is missing', async () => {
+    mockSendMessage.mockResolvedValueOnce({ ok: true })
+
+    await expect(ephKeyService.getUnlockRemainingMs()).resolves.toBe(0)
+  })
+
+  it('returns 0 when the response is not ok', async () => {
+    mockSendMessage.mockResolvedValueOnce({ ok: false })
+
+    await expect(ephKeyService.getUnlockRemainingMs()).resolves.toBe(0)
+  })
+
+  it('returns 0 when the keeper response is undefined', async () => {
+    mockSendMessage.mockResolvedValueOnce(undefined)
+
+    await expect(ephKeyService.getUnlockRemainingMs()).resolves.toBe(0)
+  })
+})
