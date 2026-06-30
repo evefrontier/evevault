@@ -81,6 +81,14 @@ export function getSessionKey(): {
   return { derivedKey: sessionDerivedKey, salt: sessionSalt }
 }
 
+/** Dev-only: ms left on the unlock window; 0 when no key is loaded. */
+export function getSessionRemainingMs(): number {
+  if (!ephemeralKey && !localnetState.localnetKey) {
+    return 0
+  }
+  return session.remainingMs()
+}
+
 export function enforceExpiry(): boolean {
   if (!ephemeralKey && !localnetState.localnetKey) {
     return true // Already locked

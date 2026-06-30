@@ -145,6 +145,17 @@ export const ephKeyService = {
   },
 
   /**
+   * Dev-only: milliseconds left on the unlock window. Web reads the in-process
+   * session synchronously; extension queries the offscreen keeper.
+   */
+  async getUnlockRemainingMs(): Promise<number> {
+    if (isWeb()) {
+      return webVaultService.getUnlockRemainingMs()
+    }
+    return keeperEphKeyService.getUnlockRemainingMs()
+  },
+
+  /**
    * Checks if a keypair exists
    */
   async hasKeypair(): Promise<boolean> {

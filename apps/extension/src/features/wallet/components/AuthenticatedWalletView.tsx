@@ -6,6 +6,7 @@ import {
   Text,
   TokenListSection,
 } from '@evevault/shared/components'
+import { useUnlockTimeRemaining } from '@evevault/shared/hooks'
 import { EXTENSION_ROUTES, getSuiscanUrl } from '@evevault/shared/utils'
 import type { SuiChain } from '@mysten/wallet-standard'
 import { useNavigate } from '@tanstack/react-router'
@@ -80,6 +81,8 @@ export function AuthenticatedWalletView({
   const openFaucet = faucetUrl
     ? () => window.open(faucetUrl, '_blank', 'noopener,noreferrer')
     : undefined
+  // Dev-only: live countdown of the vault unlock window (queries the keeper).
+  const unlockRemainingLabel = useUnlockTimeRemaining(devMode) ?? undefined
 
   return (
     <div className="flex flex-col h-full">
@@ -100,6 +103,7 @@ export function AuthenticatedWalletView({
             : undefined
         }
         version={APP_VERSION}
+        unlockRemainingLabel={unlockRemainingLabel}
       />
 
       <TokenListSection

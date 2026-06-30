@@ -15,6 +15,7 @@ import {
   handleCreateKeypair,
   handleEphSign,
   handleGetPublicKey,
+  handleGetUnlockRemaining,
   handleRotateKeypair,
   handleUnlockVault,
 } from './vaultHandlers'
@@ -28,6 +29,7 @@ const keeperHandlers: Partial<Record<KeeperMessageTypes, KeeperHandler>> = {
   [KeeperMessageTypes.CREATE_KEYPAIR]: handleCreateKeypair,
   [KeeperMessageTypes.UNLOCK_VAULT]: handleUnlockVault,
   [KeeperMessageTypes.GET_PUBLIC_KEY]: handleGetPublicKey,
+  [KeeperMessageTypes.GET_UNLOCK_REMAINING]: handleGetUnlockRemaining,
   [KeeperMessageTypes.ROTATE_KEYPAIR]: handleRotateKeypair,
   [KeeperMessageTypes.EPH_SIGN]: handleEphSign,
   [KeeperMessageTypes.SET_ZKPROOF]: handleSetZkProof,

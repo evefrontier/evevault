@@ -26,6 +26,12 @@ export class VaultSession {
     return this.expiry !== null && Date.now() < this.expiry
   }
 
+  /** Milliseconds left in the window; 0 if locked or already expired. */
+  remainingMs(): number {
+    if (this.expiry === null) return 0
+    return Math.max(0, this.expiry - Date.now())
+  }
+
   /** End the session immediately. */
   clear(): void {
     this.expiry = null

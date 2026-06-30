@@ -153,6 +153,11 @@ class WebVaultService {
     log.debug('[web-vault] Vault locked')
   }
 
+  /** Milliseconds left on the unlock window; 0 when locked. */
+  getUnlockRemainingMs(): number {
+    return this.signer ? this.session.remainingMs() : 0
+  }
+
   /**
    * Checks if a keypair exists in IndexedDB.
    */

@@ -47,6 +47,7 @@ export enum VaultMessageTypes {
   CREATE_KEYPAIR = 'CREATE_KEYPAIR',
   ROTATE_KEYPAIR = 'ROTATE_KEYPAIR',
   GET_PUBLIC_KEY = 'GET_PUBLIC_KEY',
+  GET_UNLOCK_REMAINING = 'GET_UNLOCK_REMAINING',
   ZK_EPH_SIGN_BYTES = 'ZK_EPH_SIGN_BYTES',
   SET_ZKPROOF = 'SET_ZKPROOF',
   GET_ZKPROOF = 'GET_ZKPROOF',
@@ -72,6 +73,7 @@ export enum KeeperMessageTypes {
   ROTATE_KEYPAIR = 'KEEPER_ROTATE_KEYPAIR',
   UNLOCK_VAULT = 'KEEPER_UNLOCK_VAULT',
   GET_PUBLIC_KEY = 'KEEPER_GET_KEY',
+  GET_UNLOCK_REMAINING = 'KEEPER_GET_UNLOCK_REMAINING',
   EPH_SIGN = 'KEEPER_EPH_SIGN',
   CLEAR_EPHKEY = 'KEEPER_CLEAR_EPHKEY',
   SET_ZKPROOF = 'KEEPER_SET_ZKPROOF',
@@ -90,4 +92,5 @@ export interface VaultResponse {
   hashedSecretKey?: StoredSecretKey
   publicKeyBytes?: number[]
   zkProof?: ZkProofResponse
+  remainingMs?: number
 }
