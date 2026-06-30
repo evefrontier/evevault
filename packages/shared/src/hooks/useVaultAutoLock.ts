@@ -1,20 +1,21 @@
 import { useEffect } from 'react'
 import { ephKeyService } from '#/services/vaultService'
 import { useDeviceStore } from '#/stores/deviceStore'
+import { createLogger } from '#/utils/logger'
+
+const log = createLogger()
 
 /**
- * Locks the vault a fixed VAULT_UNLOCK_MS after unlock, regardless of
- * activity. Mount once, high in the app tree (web `__root`,
- * extension `PopupApp`).
+ * Locks the vault a fixed VAULT_UNLOCK_MS after unlock.
+ * Re-arms on re-unlock and on tab/popup visibility, so a throttled
+ * or slept timer still locks promptly on return.
  *
- * Re-arms whenever the vault is (re)unlocked and whenever the tab/popup regains
- * visibility, so a timer that was throttled while hidden — or an expiry that
- * elapsed while the app was backgrounded — still locks promptly on return.
+ * Mount once per app (web `__root`, extension `PopupApp`) — there's no registry,
+ * so a new entrypoint that forgets it silently loses auto-lock.
  *
- * Web is fully self-contained: the vault lives in the page context, so locking
- * here is the lock. On the extension this drives the UI to the lock screen
- * while the popup is open; the offscreen keeper locks itself independently
- * (see keeperState) for the case where no popup is open.
+ * On the extension this only locks the UI while the popup is open; the keeper
+ * locks itself for the no-popup case (keeperState). Keep both in step — they
+ * share the VAULT_UNLOCK_MS window.
  */
 export const useVaultAutoLock = (): void => {
   const isLocked = useDeviceStore((s) => s.isLocked)
@@ -37,11 +38,12 @@ export const useVaultAutoLock = (): void => {
       if (cancelled) return
       clearTimer()
       if (remaining <= 0) {
-        void lock()
+        // Surface a failed lock rather than swallowing it — this is a security
+        // control, so a silent failure is the dangerous case.
+        lock().catch((error) => log.error('[auto-lock] failed to lock', error))
         return
       }
-      // Re-arm on fire rather than locking blindly, so a timer that fired
-      // early (clock drift / throttling) re-checks against the real expiry.
+      // Re-check on fire (not lock blindly) — guards against an early timer.
       timer = setTimeout(() => void arm(), remaining)
     }
 

@@ -157,7 +157,7 @@ export const ephKeyService = {
   },
 
   /**
-   * Dev-only: ms left on the keeper's unlock window (0 if locked/unavailable).
+   * Ms left on the keeper's unlock window (0 if locked/unavailable).
    */
   async getUnlockRemainingMs(): Promise<number> {
     const res = (await chrome.runtime?.sendMessage?.({

@@ -209,7 +209,7 @@ export interface HeaderMobileProps {
   currentTenantId?: string
   /** Callback when user selects a different Server (tenant) in dev mode */
   onServerChange?: (tenantId: TenantId) => void
-  /** Dev-only: vault unlock time remaining, formatted m:ss (web throwaway helper) */
+  /** Dev-mode display: vault unlock time remaining, formatted m:ss */
   unlockRemainingLabel?: string
 }
 

@@ -10,9 +10,9 @@ import { useVaultAutoLock } from '#/hooks/useVaultAutoLock'
 import { ephKeyService } from '#/services/vaultService'
 import { useDeviceStore } from '#/stores/deviceStore'
 
-const lock = vi.fn()
+const lock = vi.fn(async () => {})
 
-type StoreSlice = { isLocked: boolean; lock: () => void }
+type StoreSlice = { isLocked: boolean; lock: () => Promise<void> }
 
 const setStore = (isLocked: boolean) =>
   vi

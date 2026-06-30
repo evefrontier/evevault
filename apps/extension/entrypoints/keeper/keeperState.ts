@@ -1,9 +1,5 @@
 import type { ZKEd25519Keypair } from '@evefrontier/wallet-core/crypto'
-import {
-  VAULT_UNLOCK_MS,
-  VaultSession,
-  type ZkProofResponse,
-} from '@evevault/shared'
+import { VaultSession, type ZkProofResponse } from '@evevault/shared'
 import type { SuiChain } from '@mysten/wallet-standard'
 import type { LocalnetState } from './local'
 
@@ -34,9 +30,10 @@ let sessionSalt: string | null = null // base64 Argon2id salt from the stored Ha
 // the same class, so the expiry rule stays identical across both surfaces.
 const session = new VaultSession()
 
-// Proactive auto-lock: the offscreen keeper outlives the popup, so it must lock
-// itself at expiry rather than waiting for the next operation. Scheduled on
-// unlock, cleared on lock. (The popup's useVaultAutoLock handles the UI.)
+// Proactive auto-lock: the keeper outlives the popup, so it locks itself at
+// expiry rather than waiting for the next operation. The popup's
+// useVaultAutoLock handles the UI lock; keep both in step (shared
+// VAULT_UNLOCK_MS window). Scheduled on unlock, cleared on lock.
 let autoLockTimer: ReturnType<typeof setTimeout> | null = null
 
 // zkProofs are chain-specific and tied to the in-memory ephemeral key.
@@ -68,7 +65,9 @@ export function unlockVaultWithKeypair(keypair: ZKEd25519Keypair): void {
   ephemeralKey = keypair
   session.unlock()
   if (autoLockTimer !== null) clearTimeout(autoLockTimer)
-  autoLockTimer = setTimeout(lockVault, VAULT_UNLOCK_MS)
+  // Derive the delay from the session so the timer can't diverge from the
+  // window the session actually holds.
+  autoLockTimer = setTimeout(lockVault, session.remainingMs())
 }
 
 export function keeperReplaceEphemeralKey(keypair: ZKEd25519Keypair): void {
@@ -96,8 +95,8 @@ export function getSessionKey(): {
   return { derivedKey: sessionDerivedKey, salt: sessionSalt }
 }
 
-/** Dev-only: ms left on the unlock window; 0 when no key is loaded. */
-export function getSessionRemainingMs(): number {
+/** Ms left on the unlock window; 0 when no key is loaded or the window elapsed. */
+export function getUnlockRemainingMs(): number {
   if (!ephemeralKey && !localnetState.localnetKey) {
     return 0
   }

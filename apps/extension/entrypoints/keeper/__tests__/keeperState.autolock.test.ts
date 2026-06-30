@@ -3,7 +3,7 @@ import { VAULT_UNLOCK_MS } from '@evevault/shared'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   getEphemeralKey,
-  getSessionRemainingMs,
+  getUnlockRemainingMs,
   lockVault,
   unlockVaultWithKeypair,
 } from '../keeperState'
@@ -26,12 +26,12 @@ describe('keeper proactive auto-lock', () => {
   it('locks itself once VAULT_UNLOCK_MS elapses, with nothing else triggering it', () => {
     unlockVaultWithKeypair(ZKEd25519Keypair.generate())
     expect(getEphemeralKey()).not.toBeNull()
-    expect(getSessionRemainingMs()).toBeGreaterThan(0)
+    expect(getUnlockRemainingMs()).toBeGreaterThan(0)
 
     vi.advanceTimersByTime(VAULT_UNLOCK_MS + 1)
 
     expect(getEphemeralKey()).toBeNull()
-    expect(getSessionRemainingMs()).toBe(0)
+    expect(getUnlockRemainingMs()).toBe(0)
   })
 
   it('does not lock before the window elapses', () => {

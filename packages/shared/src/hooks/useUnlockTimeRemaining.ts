@@ -11,8 +11,10 @@ const formatMmSs = (ms: number): string => {
 }
 
 /**
- * Live countdown of the vault unlock window, for the dev-mode dropdown.
- * Returns a `m:ss` label, or null when locked / nothing to show.
+ * Live countdown of the vault unlock window, shown in the dev-mode dropdown.
+ * Returns a `m:ss` label while a window is active, or null when there is
+ * nothing to show (locked / disabled). `enabled` gates the polling so it only
+ * runs when the readout is actually visible (dev mode on).
  *
  * - Web: the session is in-process, so we read it each tick (reflects
  *   unlock/extend/lock immediately).

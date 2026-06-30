@@ -21,12 +21,20 @@ export class VaultSession {
     this.expiry = Date.now() + durationMs
   }
 
-  /** True while the unlock window is still open. */
+  /**
+   * True while the unlock window is still open. The boundary is strict: at
+   * exactly `expiry` the window is considered closed (`now < expiry`).
+   */
   isActive(): boolean {
     return this.expiry !== null && Date.now() < this.expiry
   }
 
-  /** Milliseconds left in the window; 0 if locked or already expired. */
+  /**
+   * Milliseconds left in the window. Returns 0 whenever there is no active
+   * window — i.e. never unlocked, cleared, OR expired. 0 does NOT specifically
+   * mean "expired"; pair with isActive()/unlock state if you need to tell
+   * "never unlocked" apart from "elapsed".
+   */
   remainingMs(): number {
     if (this.expiry === null) return 0
     return Math.max(0, this.expiry - Date.now())

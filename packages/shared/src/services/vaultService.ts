@@ -145,8 +145,10 @@ export const ephKeyService = {
   },
 
   /**
-   * Dev-only: milliseconds left on the unlock window. Web reads the in-process
-   * session synchronously; extension queries the offscreen keeper.
+   * Milliseconds left on the unlock window (used by useVaultAutoLock). Web
+   * reads the in-process session; extension queries the offscreen keeper.
+   * Returns 0 when there is no active window (locked, never unlocked, or
+   * elapsed) — see VaultSession.remainingMs.
    */
   async getUnlockRemainingMs(): Promise<number> {
     if (isWeb()) {

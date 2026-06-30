@@ -206,7 +206,7 @@ export function _handleGetPublicKey(
 }
 
 /**
- * Dev-only: returns ms left on the keeper's unlock window.
+ * Returns ms left on the keeper's unlock window (used by useVaultAutoLock).
  */
 export function _handleGetUnlockRemaining(
   _message: VaultMessage,
