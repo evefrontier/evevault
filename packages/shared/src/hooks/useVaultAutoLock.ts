@@ -40,7 +40,9 @@ export const useVaultAutoLock = (): void => {
       if (remaining <= 0) {
         // Surface a failed lock rather than swallowing it — this is a security
         // control, so a silent failure is the dangerous case.
-        lock().catch((error) => log.error('[auto-lock] failed to lock', error))
+        void Promise.resolve(lock()).catch((error: unknown) =>
+          log.error('[auto-lock] failed to lock', error),
+        )
         return
       }
       // Re-check on fire (not lock blindly) — guards against an early timer.
