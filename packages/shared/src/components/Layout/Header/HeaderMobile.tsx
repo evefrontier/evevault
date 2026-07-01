@@ -55,6 +55,7 @@ interface DropdownItemsParams {
   onDevModeToggle?: () => void | Promise<void>
   devHandlers: Partial<Record<DevActionHandlerKey, () => void>>
   onTransactionsClick?: () => void
+  onAliasesClick?: () => void
   version?: string
   unlockRemainingLabel?: string
   copy: (value: string) => void
@@ -84,6 +85,7 @@ const buildDropdownItems = ({
   onDevModeToggle,
   devHandlers,
   onTransactionsClick,
+  onAliasesClick,
   version,
   unlockRemainingLabel,
   copy,
@@ -96,7 +98,6 @@ const buildDropdownItems = ({
   if (onDevModeToggle) {
     items.push({
       label: 'Dev mode',
-      icon: 'Settings',
       onClick: () => {},
       preventCloseOnClick: true,
       customContent: (
@@ -108,18 +109,9 @@ const buildDropdownItems = ({
     })
   }
 
-  // Dev-only actions (only those whose handler is provided), under Dev mode
-  if (showDevActions) {
-    for (const { handlerKey, label, icon } of DEV_DROPDOWN_ACTIONS) {
-      const onClick = devHandlers[handlerKey]
-      if (onClick) items.push({ label, icon, onClick })
-    }
-  }
-
   // Copy Address (always)
   items.push({
     label: 'Copy Address',
-    icon: 'Copy',
     onClick: () => copy(address),
   })
 
@@ -127,34 +119,48 @@ const buildDropdownItems = ({
   if (onTransactionsClick) {
     items.push({
       label: 'Transaction History',
-      icon: 'History',
       onClick: onTransactionsClick,
     })
   }
 
-  // Lock Wallet and Logout (always)
-  items.push(
-    { label: 'Lock Wallet', icon: 'HideEye', onClick: lock },
-    { label: 'Logout', icon: 'Close', onClick: logout },
-  )
-
-  // Vault unlock countdown (dev only, display-only)
-  if (showDevActions && unlockRemainingLabel) {
-    items.push({
-      label: `Unlock expires in ${unlockRemainingLabel}`,
-      icon: 'HideEye',
-      onClick: () => {},
-      preventCloseOnClick: true,
-    })
+  // Manage Aliases (optional)
+  if (onAliasesClick) {
+    items.push({ label: 'Manage Aliases', onClick: onAliasesClick })
   }
 
-  // App version (dev only, display-only)
-  if (showDevActions && version) {
-    items.push({
-      label: `v${version}`,
-      onClick: () => {},
-      preventCloseOnClick: true,
-    })
+  // Lock Wallet and Logout (always)
+  items.push(
+    { label: 'Lock Wallet', onClick: lock },
+    { label: 'Logout', onClick: logout },
+  )
+
+  // Dev-only actions (only those whose handler is provided), under Dev mode
+  if (showDevActions) {
+    for (const { handlerKey, label, icon } of DEV_DROPDOWN_ACTIONS) {
+      const onClick = devHandlers[handlerKey]
+      if (onClick) items.push({ label, icon, onClick, devMode: true })
+    }
+
+    if (unlockRemainingLabel) {
+      // Vault unlock countdown (dev only, display-only)
+      items.push({
+        label: `Unlock expires in ${unlockRemainingLabel}`,
+        icon: 'HideEye',
+        onClick: () => {},
+        preventCloseOnClick: true,
+        devMode: true,
+      })
+    }
+
+    // App version (dev only, display-only)
+    if (version) {
+      items.push({
+        label: `v${version}`,
+        onClick: () => {},
+        preventCloseOnClick: true,
+        devMode: true,
+      })
+    }
   }
 
   return items
@@ -166,6 +172,7 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
   logoSrc = '/images/logo.png',
   identicon = 0,
   onTransactionsClick,
+  onAliasesClick,
   showDevActions = false,
   onDevModeToggle,
   onSignSubmitTxClick,
@@ -192,6 +199,7 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
           onLocalnetSettingsClick,
         },
         onTransactionsClick,
+        onAliasesClick,
         version,
         unlockRemainingLabel,
         copy,
@@ -200,6 +208,7 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
       }),
     [
       onTransactionsClick,
+      onAliasesClick,
       showDevActions,
       onDevModeToggle,
       onSignSubmitTxClick,

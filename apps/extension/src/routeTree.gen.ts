@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from "./routes/__root"
 import { Route as TransactionsRouteImport } from "./routes/transactions"
 import { Route as SendTokenRouteImport } from "./routes/send-token"
 import { Route as LocalnetSettingsRouteImport } from "./routes/localnet-settings"
+import { Route as AliasesRouteImport } from "./routes/aliases"
 import { Route as AddTokenRouteImport } from "./routes/add-token"
 import { Route as IndexRouteImport } from "./routes/index"
 
@@ -30,6 +31,11 @@ const LocalnetSettingsRoute = LocalnetSettingsRouteImport.update({
   path: "/localnet-settings",
   getParentRoute: () => rootRouteImport,
 } as any)
+const AliasesRoute = AliasesRouteImport.update({
+  id: "/aliases",
+  path: "/aliases",
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AddTokenRoute = AddTokenRouteImport.update({
   id: "/add-token",
   path: "/add-token",
@@ -44,6 +50,7 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute
   "/add-token": typeof AddTokenRoute
+  "/aliases": typeof AliasesRoute
   "/localnet-settings": typeof LocalnetSettingsRoute
   "/send-token": typeof SendTokenRoute
   "/transactions": typeof TransactionsRoute
@@ -51,6 +58,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   "/": typeof IndexRoute
   "/add-token": typeof AddTokenRoute
+  "/aliases": typeof AliasesRoute
   "/localnet-settings": typeof LocalnetSettingsRoute
   "/send-token": typeof SendTokenRoute
   "/transactions": typeof TransactionsRoute
@@ -59,6 +67,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   "/": typeof IndexRoute
   "/add-token": typeof AddTokenRoute
+  "/aliases": typeof AliasesRoute
   "/localnet-settings": typeof LocalnetSettingsRoute
   "/send-token": typeof SendTokenRoute
   "/transactions": typeof TransactionsRoute
@@ -68,6 +77,7 @@ export interface FileRouteTypes {
   fullPaths:
     | "/"
     | "/add-token"
+    | "/aliases"
     | "/localnet-settings"
     | "/send-token"
     | "/transactions"
@@ -75,6 +85,7 @@ export interface FileRouteTypes {
   to:
     | "/"
     | "/add-token"
+    | "/aliases"
     | "/localnet-settings"
     | "/send-token"
     | "/transactions"
@@ -82,6 +93,7 @@ export interface FileRouteTypes {
     | "__root__"
     | "/"
     | "/add-token"
+    | "/aliases"
     | "/localnet-settings"
     | "/send-token"
     | "/transactions"
@@ -90,6 +102,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AddTokenRoute: typeof AddTokenRoute
+  AliasesRoute: typeof AliasesRoute
   LocalnetSettingsRoute: typeof LocalnetSettingsRoute
   SendTokenRoute: typeof SendTokenRoute
   TransactionsRoute: typeof TransactionsRoute
@@ -118,6 +131,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof LocalnetSettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/aliases": {
+      id: "/aliases"
+      path: "/aliases"
+      fullPath: "/aliases"
+      preLoaderRoute: typeof AliasesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/add-token": {
       id: "/add-token"
       path: "/add-token"
@@ -138,6 +158,7 @@ declare module "@tanstack/react-router" {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AddTokenRoute: AddTokenRoute,
+  AliasesRoute: AliasesRoute,
   LocalnetSettingsRoute: LocalnetSettingsRoute,
   SendTokenRoute: SendTokenRoute,
   TransactionsRoute: TransactionsRoute,

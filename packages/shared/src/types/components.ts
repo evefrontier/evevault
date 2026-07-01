@@ -191,6 +191,8 @@ export interface HeaderMobileProps {
   identicon?: number
   /** Callback when "Transaction History" menu item is clicked */
   onTransactionsClick?: () => void
+  /** Callback when "Manage Aliases" menu item is clicked */
+  onAliasesClick?: () => void
   /** When true, show "Sign and submit test" (when callbacks provided) */
   showDevActions?: boolean
   /** Callback when "Dev mode" toggle menu item is clicked (may be async). */
@@ -270,6 +272,8 @@ export interface DropdownItem {
   preventCloseOnClick?: boolean
   /** When set, renders this instead of default icon + label (e.g. for a row with a toggle) */
   customContent?: ReactNode
+  /** When true, renders the label in warning color (used for dev-only actions) */
+  devMode?: boolean
 }
 
 export interface DropdownSelectProps {
@@ -403,6 +407,10 @@ export type TransactionStatusMessage = {
 export interface TransactionsScreenProps {
   user: User
   chain: string
+  onBack: () => void
+}
+
+export interface AliasesScreenProps {
   onBack: () => void
 }
 

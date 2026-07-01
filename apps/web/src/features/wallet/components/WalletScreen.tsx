@@ -78,6 +78,7 @@ interface WalletDashboardActions {
   onDevModeToggle: () => void
   onSignSubmitTx: () => void | Promise<void>
   onTransactions: () => void
+  onAliases: () => void
   onAddToken: () => void
   onSendToken: (coinType: string) => void
 }
@@ -205,6 +206,7 @@ const WalletDashboard = ({
         address={address}
         email={user.profile?.email as string}
         onTransactionsClick={actions.onTransactions}
+        onAliasesClick={actions.onAliases}
         showDevActions={devMode}
         onDevModeToggle={actions.onDevModeToggle}
         onSignSubmitTxClick={devMode ? actions.onSignSubmitTx : undefined}
@@ -386,6 +388,7 @@ export const WalletScreen = () => {
         onDevModeToggle: handleDevModeToggle,
         onSignSubmitTx: handleSignAndSubmitTx,
         onTransactions: () => navigate({ to: WEB_ROUTES.WALLET_TRANSACTIONS }),
+        onAliases: () => navigate({ to: WEB_ROUTES.WALLET_ALIASES }),
         onAddToken: () => navigate({ to: WEB_ROUTES.WALLET_ADD_TOKEN }),
         onSendToken: (coinType) =>
           navigate({

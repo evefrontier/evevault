@@ -72,6 +72,7 @@ function DropdownSelectItem({
   item: DropdownItem
   itemIdenticon: number
   onItemClick: (item: DropdownItem) => void
+  devMode?: boolean
 }) {
   return (
     <div
@@ -86,7 +87,9 @@ function DropdownSelectItem({
       {item.customContent ?? (
         <>
           {getIdenticon(itemIdenticon)}
-          <Text variant="label">{item.label}</Text>
+          <Text variant="label" color={item.devMode ? 'quantum' : undefined}>
+            {item.label}
+          </Text>
         </>
       )}
     </div>

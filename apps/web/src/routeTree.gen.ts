@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from "./routes/index"
 import { Route as WalletIndexRouteImport } from "./routes/wallet/index"
 import { Route as WalletTransactionsRouteImport } from "./routes/wallet.transactions"
 import { Route as WalletSendTokenRouteImport } from "./routes/wallet.send-token"
+import { Route as WalletAliasesRouteImport } from "./routes/wallet.aliases"
 import { Route as WalletAddTokenRouteImport } from "./routes/wallet/add-token"
 
 const NotFoundRoute = NotFoundRouteImport.update({
@@ -47,6 +48,11 @@ const WalletSendTokenRoute = WalletSendTokenRouteImport.update({
   path: "/wallet/send-token",
   getParentRoute: () => rootRouteImport,
 } as any)
+const WalletAliasesRoute = WalletAliasesRouteImport.update({
+  id: "/wallet/aliases",
+  path: "/wallet/aliases",
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WalletAddTokenRoute = WalletAddTokenRouteImport.update({
   id: "/wallet/add-token",
   path: "/wallet/add-token",
@@ -58,6 +64,7 @@ export interface FileRoutesByFullPath {
   "/callback": typeof CallbackRoute
   "/not-found": typeof NotFoundRoute
   "/wallet/add-token": typeof WalletAddTokenRoute
+  "/wallet/aliases": typeof WalletAliasesRoute
   "/wallet/send-token": typeof WalletSendTokenRoute
   "/wallet/transactions": typeof WalletTransactionsRoute
   "/wallet/": typeof WalletIndexRoute
@@ -67,6 +74,7 @@ export interface FileRoutesByTo {
   "/callback": typeof CallbackRoute
   "/not-found": typeof NotFoundRoute
   "/wallet/add-token": typeof WalletAddTokenRoute
+  "/wallet/aliases": typeof WalletAliasesRoute
   "/wallet/send-token": typeof WalletSendTokenRoute
   "/wallet/transactions": typeof WalletTransactionsRoute
   "/wallet": typeof WalletIndexRoute
@@ -77,6 +85,7 @@ export interface FileRoutesById {
   "/callback": typeof CallbackRoute
   "/not-found": typeof NotFoundRoute
   "/wallet/add-token": typeof WalletAddTokenRoute
+  "/wallet/aliases": typeof WalletAliasesRoute
   "/wallet/send-token": typeof WalletSendTokenRoute
   "/wallet/transactions": typeof WalletTransactionsRoute
   "/wallet/": typeof WalletIndexRoute
@@ -88,6 +97,7 @@ export interface FileRouteTypes {
     | "/callback"
     | "/not-found"
     | "/wallet/add-token"
+    | "/wallet/aliases"
     | "/wallet/send-token"
     | "/wallet/transactions"
     | "/wallet/"
@@ -97,6 +107,7 @@ export interface FileRouteTypes {
     | "/callback"
     | "/not-found"
     | "/wallet/add-token"
+    | "/wallet/aliases"
     | "/wallet/send-token"
     | "/wallet/transactions"
     | "/wallet"
@@ -106,6 +117,7 @@ export interface FileRouteTypes {
     | "/callback"
     | "/not-found"
     | "/wallet/add-token"
+    | "/wallet/aliases"
     | "/wallet/send-token"
     | "/wallet/transactions"
     | "/wallet/"
@@ -116,6 +128,7 @@ export interface RootRouteChildren {
   CallbackRoute: typeof CallbackRoute
   NotFoundRoute: typeof NotFoundRoute
   WalletAddTokenRoute: typeof WalletAddTokenRoute
+  WalletAliasesRoute: typeof WalletAliasesRoute
   WalletSendTokenRoute: typeof WalletSendTokenRoute
   WalletTransactionsRoute: typeof WalletTransactionsRoute
   WalletIndexRoute: typeof WalletIndexRoute
@@ -165,6 +178,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof WalletSendTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/wallet/aliases": {
+      id: "/wallet/aliases"
+      path: "/wallet/aliases"
+      fullPath: "/wallet/aliases"
+      preLoaderRoute: typeof WalletAliasesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/wallet/add-token": {
       id: "/wallet/add-token"
       path: "/wallet/add-token"
@@ -180,6 +200,7 @@ const rootRouteChildren: RootRouteChildren = {
   CallbackRoute: CallbackRoute,
   NotFoundRoute: NotFoundRoute,
   WalletAddTokenRoute: WalletAddTokenRoute,
+  WalletAliasesRoute: WalletAliasesRoute,
   WalletSendTokenRoute: WalletSendTokenRoute,
   WalletTransactionsRoute: WalletTransactionsRoute,
   WalletIndexRoute: WalletIndexRoute,

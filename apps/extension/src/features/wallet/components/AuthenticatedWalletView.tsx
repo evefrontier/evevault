@@ -92,6 +92,7 @@ export function AuthenticatedWalletView({
         onTransactionsClick={() =>
           navigate({ to: EXTENSION_ROUTES.TRANSACTIONS })
         }
+        onAliasesClick={() => navigate({ to: EXTENSION_ROUTES.ALIASES })}
         showDevActions={devMode}
         onDevModeToggle={onDevModeToggle}
         onSignSubmitTxClick={devMode ? onTestTransaction : undefined}
