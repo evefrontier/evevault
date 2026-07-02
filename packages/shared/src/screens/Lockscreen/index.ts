@@ -1,3 +1,1 @@
-import { default as LockScreen } from './Lockscreen'
-
-export default LockScreen
+export { LockScreen } from './Lockscreen'
