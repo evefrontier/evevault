@@ -32,8 +32,10 @@ export const AliasesScreen: React.FC<AliasesScreenProps> = ({
   const atMax = aliases.length >= MAX_ALIASES
 
   const handleAdd = async () => {
-    await addAlias(newAlias)
-    setNewAlias('')
+    const added = await addAlias(newAlias)
+    if (added) {
+      setNewAlias('')
+    }
   }
 
   const { email, address } = getHeaderIdentity(user)

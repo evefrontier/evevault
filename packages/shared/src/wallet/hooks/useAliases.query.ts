@@ -43,7 +43,10 @@ export async function getAddressAliases(
 function parseAliases(json: Record<string, unknown> | null): string[] {
   const aliases = (json?.aliases as { contents?: unknown } | undefined)
     ?.contents
-  return Array.isArray(aliases) ? (aliases as string[]) : []
+  if (!Array.isArray(aliases)) {
+    return []
+  }
+  return aliases.filter((alias): alias is string => typeof alias === 'string')
 }
 
 /**

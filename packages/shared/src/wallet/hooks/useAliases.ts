@@ -24,7 +24,8 @@ interface UseAliasesResult {
 
   // Actions
   enable: () => Promise<void>
-  addAlias: (alias: string) => Promise<void>
+  /** Resolves `true` when the alias was submitted successfully. */
+  addAlias: (alias: string) => Promise<boolean>
   refresh: () => Promise<void>
 
   // Write status
@@ -104,22 +105,22 @@ export function useAliases(): UseAliasesResult {
   }, [senderAddress, run, setError, suiClient, getSenderAddress, sign, refetch])
 
   const addAlias = useCallback(
-    async (alias: string) => {
+    async (alias: string): Promise<boolean> => {
       if (!senderAddress) {
         setError('Connect wallet first')
-        return
+        return false
       }
       if (!objectId) {
         setError('Enable aliasing first')
-        return
+        return false
       }
       const validationError = validateNewAlias({ alias, existing: aliases })
       if (validationError) {
         setError(validationError)
-        return
+        return false
       }
       const trimmed = alias.trim()
-      await run(
+      const digest = await run(
         () =>
           executeAliasTx({
             suiClient,
@@ -135,6 +136,7 @@ export function useAliases(): UseAliasesResult {
           },
         },
       )
+      return digest !== null
     },
     [
       senderAddress,

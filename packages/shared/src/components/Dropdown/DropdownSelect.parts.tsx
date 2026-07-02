@@ -72,7 +72,6 @@ function DropdownSelectItem({
   item: DropdownItem
   itemIdenticon: number
   onItemClick: (item: DropdownItem) => void
-  devMode?: boolean
 }) {
   return (
     <div

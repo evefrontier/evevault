@@ -65,8 +65,18 @@ export const NAV_ITEMS: readonly {
   icon: string
   label: string
 }[] = [
-  { name: 'tokens', path: '/wallet', icon: 'Tokens', label: 'Tokens' },
-  { name: 'assets', path: '/wallet', icon: 'Assets', label: 'Assets' },
-  { name: 'history', path: '/wallet', icon: 'History', label: 'History' },
-  { name: 'aliases', path: '/wallet', icon: 'Aliases', label: 'Aliases' },
+  { name: 'tokens', path: '/tokens', icon: 'Tokens', label: 'Tokens' },
+  { name: 'assets', path: '/assets', icon: 'Assets', label: 'Assets' },
+  {
+    name: 'history',
+    path: '/history',
+    icon: 'History',
+    label: 'History',
+  },
+  {
+    name: 'aliases',
+    path: '/aliases',
+    icon: 'Network',
+    label: 'Aliases',
+  },
 ] as const

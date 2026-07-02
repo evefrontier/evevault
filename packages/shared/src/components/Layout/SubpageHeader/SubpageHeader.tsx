@@ -15,11 +15,7 @@ export function SubpageHeader({
 }) {
   return (
     <>
-      <HeaderMobile
-        address={address}
-        email={email}
-        onTransactionsClick={onBack}
-      />
+      <HeaderMobile address={address} email={email} />
       <div className="flex items-center gap-4">
         {onBack && (
           <button
