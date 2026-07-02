@@ -39,7 +39,7 @@ export const LoginScreen = () => {
         <header className="flex flex-col items-center gap-4 text-center">
           <Heading level={2}>Sign in</Heading>
         </header>
-        <div className="w-full max-w-[300px]">
+        <div className="w-full max-w-75">
           <Button size="fill" onClick={() => login()} disabled={loading}>
             {loading ? 'Loading...' : 'Login'}
           </Button>

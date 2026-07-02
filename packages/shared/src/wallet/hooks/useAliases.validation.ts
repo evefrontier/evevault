@@ -4,7 +4,6 @@ import { MAX_ALIASES } from './useAliases.config'
 type ValidateAliasParams = {
   alias: string
   existing: string[]
-  max?: number
 }
 
 /**
@@ -14,7 +13,6 @@ type ValidateAliasParams = {
 export const validateNewAlias = ({
   alias,
   existing,
-  max = MAX_ALIASES,
 }: ValidateAliasParams): string | null => {
   const trimmed = alias.trim()
 
@@ -27,8 +25,8 @@ export const validateNewAlias = ({
   if (existing.includes(trimmed)) {
     return 'Address is already an alias'
   }
-  if (existing.length >= max) {
-    return `Maximum of ${max} aliases reached`
+  if (existing.length >= MAX_ALIASES) {
+    return `Maximum of ${MAX_ALIASES} aliases reached`
   }
   return null
 }

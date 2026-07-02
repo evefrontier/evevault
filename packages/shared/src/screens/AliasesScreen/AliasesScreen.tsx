@@ -7,6 +7,7 @@ import { Input } from '#/components/Inputs'
 import Text from '#/components/Text'
 import type { AliasesScreenProps } from '#/types/components'
 import { useAliases } from '#/wallet'
+import { MAX_ALIASES } from '#/wallet/hooks/useAliases.config'
 
 export const AliasesScreen: React.FC<AliasesScreenProps> = ({
   onBack,
@@ -17,7 +18,6 @@ export const AliasesScreen: React.FC<AliasesScreenProps> = ({
     ownerAddress,
     enabled,
     aliases,
-    maxAliases,
     isReading,
     readError,
     enable,
@@ -29,7 +29,7 @@ export const AliasesScreen: React.FC<AliasesScreenProps> = ({
   const [newAlias, setNewAlias] = useState('')
 
   const disabled = isSubmitting || !isAuthenticated || !ownerAddress
-  const atMax = aliases.length >= maxAliases
+  const atMax = aliases.length >= MAX_ALIASES
 
   const handleAdd = async () => {
     await addAlias(newAlias)
@@ -72,7 +72,7 @@ export const AliasesScreen: React.FC<AliasesScreenProps> = ({
       ) : (
         <div className="flex flex-col gap-4 w-full">
           <Text variant="bold" size="small" color="neutral-90">
-            Current aliases ({aliases.length}/{maxAliases})
+            Current aliases ({aliases.length}/{MAX_ALIASES})
           </Text>
 
           {aliases.length === 0 ? (
@@ -95,7 +95,7 @@ export const AliasesScreen: React.FC<AliasesScreenProps> = ({
             <div className="flex-1">
               <Input
                 type="text"
-                placeholder="0x… alias address"
+                placeholder="0x… alias Sui address"
                 value={newAlias}
                 onChange={(event) => setNewAlias(event.target.value)}
               />

@@ -1,6 +1,5 @@
-import { useCallback, useMemo, useState } from 'react'
-import { createLogger } from '#/utils'
-import { MAX_ALIASES } from './useAliases.config'
+import { useCallback, useEffect, useMemo } from 'react'
+import { useToast } from '#/components'
 import { useAddressAliases } from './useAliases.query'
 import {
   addAliasTxBytes,
@@ -8,9 +7,8 @@ import {
   executeAliasTx,
 } from './useAliases.transaction'
 import { validateNewAlias } from './useAliases.validation'
+import { useTransactionWrite } from './useTransactionWrite'
 import { useWalletSigningContext } from './useWalletSigningContext'
-
-const log = createLogger()
 
 interface UseAliasesResult {
   // State
@@ -19,7 +17,6 @@ interface UseAliasesResult {
   ownerAddress: string | null
   enabled: boolean
   aliases: string[]
-  maxAliases: number
 
   // Read status
   isReading: boolean
@@ -42,6 +39,9 @@ interface UseAliasesResult {
  * mirroring the structure of `useSendToken`.
  */
 export function useAliases(): UseAliasesResult {
+  const { showToast } = useToast()
+  const { isSubmitting, error, txDigest, run, setError } = useTransactionWrite()
+
   const {
     chain,
     isAuthenticated,
@@ -52,9 +52,19 @@ export function useAliases(): UseAliasesResult {
     sign,
   } = useWalletSigningContext()
 
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [txDigest, setTxDigest] = useState<string | null>(null)
+  // Show toast when error occurs
+  useEffect(() => {
+    if (error) {
+      showToast('Transaction failed')
+    }
+  }, [error, showToast])
+
+  // Show toast when transaction succeeds
+  useEffect(() => {
+    if (txDigest) {
+      showToast('Transaction confirmed!')
+    }
+  }, [txDigest, showToast])
 
   const {
     data,
@@ -71,44 +81,27 @@ export function useAliases(): UseAliasesResult {
     await refetch()
   }, [refetch])
 
-  const runWrite = useCallback(
-    async (
-      buildBytes: Parameters<typeof executeAliasTx>[0]['buildBytes'],
-      failureMessage: string,
-    ) => {
-      setIsSubmitting(true)
-      setError(null)
-      setTxDigest(null)
-      try {
-        const digest = await executeAliasTx({
-          suiClient,
-          getSenderAddress,
-          sign,
-          buildBytes,
-        })
-        setTxDigest(digest)
-        await refetch()
-      } catch (err) {
-        const message = err instanceof Error ? err.message : failureMessage
-        log.error(failureMessage, err)
-        setError(message)
-      } finally {
-        setIsSubmitting(false)
-      }
-    },
-    [suiClient, getSenderAddress, sign, refetch],
-  )
-
   const enable = useCallback(async () => {
     if (!senderAddress) {
       setError('Connect wallet first')
       return
     }
-    await runWrite(
-      (sender, client) => enableAliasTxBytes(sender, client),
-      'Failed to enable aliasing',
+    await run(
+      () =>
+        executeAliasTx({
+          suiClient,
+          getSenderAddress,
+          sign,
+          buildBytes: enableAliasTxBytes,
+        }),
+      {
+        fallbackMessage: 'Failed to enable aliasing',
+        onSuccess: async () => {
+          await refetch()
+        },
+      },
     )
-  }, [senderAddress, runWrite])
+  }, [senderAddress, run, setError, suiClient, getSenderAddress, sign, refetch])
 
   const addAlias = useCallback(
     async (alias: string) => {
@@ -126,12 +119,34 @@ export function useAliases(): UseAliasesResult {
         return
       }
       const trimmed = alias.trim()
-      await runWrite(
-        (sender, client) => addAliasTxBytes(sender, objectId, trimmed, client),
-        'Failed to add alias',
+      await run(
+        () =>
+          executeAliasTx({
+            suiClient,
+            getSenderAddress,
+            sign,
+            buildBytes: (sender, client) =>
+              addAliasTxBytes(sender, objectId, trimmed, client),
+          }),
+        {
+          fallbackMessage: 'Failed to add alias',
+          onSuccess: async () => {
+            await refetch()
+          },
+        },
       )
     },
-    [senderAddress, objectId, aliases, runWrite],
+    [
+      senderAddress,
+      objectId,
+      aliases,
+      run,
+      setError,
+      suiClient,
+      getSenderAddress,
+      sign,
+      refetch,
+    ],
   )
 
   return {
@@ -140,8 +155,6 @@ export function useAliases(): UseAliasesResult {
     ownerAddress: senderAddress,
     enabled,
     aliases,
-    maxAliases: MAX_ALIASES,
-
     isReading,
     readError:
       readQueryError instanceof Error
