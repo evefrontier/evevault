@@ -1,6 +1,7 @@
-import { Layout, NotFoundScreen } from '@evevault/shared/components'
+import { Layout } from '@evevault/shared/components'
 import { useVaultAutoLock } from '@evevault/shared/hooks'
 import { useDocumentTitle } from '@evevault/shared/router'
+import { NotFoundScreen } from '@evevault/shared/screens'
 import { createRootRoute, Outlet } from '@tanstack/react-router'
 import { RouteErrorBoundary } from '@/lib/router/errorBoundary'
 import { TenantUrlSync } from '@/lib/tenantUrlSync'

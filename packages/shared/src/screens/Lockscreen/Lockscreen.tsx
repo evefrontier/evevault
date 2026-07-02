@@ -14,7 +14,7 @@ import {
 import { useContext } from '#/hooks/useContext'
 import { useDevice } from '#/hooks/useDevice'
 
-export default function LockScreen({
+export function LockScreen({
   isPinSet,
   unlock,
   onResetComplete,

@@ -1,5 +1,5 @@
+import { SUI_DECIMALS } from '@mysten/sui/utils'
 import { describe, expect, it } from 'vitest'
-import { SUI_DECIMALS } from '#/utils/format'
 import {
   buildValidationErrors,
   canSendToken,
