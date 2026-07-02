@@ -51,20 +51,9 @@ const completeOAuthCallback = async (): Promise<RoutePath> => {
   }
 
   // Get zkLogin address
-  const zkLoginResponse = await getZkLoginAddress({
+  const { salt, address } = await getZkLoginAddress({
     jwt: user.id_token,
-    enokiApiKey: import.meta.env.VITE_ENOKI_API_KEY,
   })
-
-  if (zkLoginResponse.error) {
-    throw new Error(zkLoginResponse.error.message)
-  }
-
-  if (!zkLoginResponse.data) {
-    throw new Error('No zkLogin address data received')
-  }
-
-  const { salt, address } = zkLoginResponse.data
 
   // Update user profile with zkLogin address.
   // salt is kept in-memory (Zustand) for signing but stripped from sessionStorage

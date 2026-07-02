@@ -162,10 +162,7 @@ describe('authStore.initialize() (web path)', () => {
       await useAuthStore.getState().initialize()
 
       expect(h.mockSigninSilent).toHaveBeenCalledOnce()
-      expect(h.mockEnrichUser).toHaveBeenCalledWith(
-        expect.any(User),
-        expect.any(Function),
-      )
+      expect(h.mockEnrichUser).toHaveBeenCalledWith(expect.any(User))
       expect(h.mockStoreUser).toHaveBeenCalledWith(refreshed)
       expect(h.mockSyncPrimaryJwt).toHaveBeenCalledWith(refreshed)
       expect(useAuthStore.getState().user).toBe(refreshed)

@@ -183,10 +183,7 @@ describe('authStore.extensionLogin()', () => {
 
       expect(user).toBe(enrichedUser)
       expect(h.mockDecodeJwt).toHaveBeenCalledWith(tokenResponse.id_token)
-      expect(h.mockEnrichUser).toHaveBeenCalledWith(
-        expect.any(User),
-        expect.any(Function),
-      )
+      expect(h.mockEnrichUser).toHaveBeenCalledWith(expect.any(User))
       // storeUser and syncPrimaryJwt must receive the enriched user, not the original
       expect(h.mockStoreUser).toHaveBeenCalledWith(enrichedUser)
       expect(h.mockSyncPrimaryJwt).toHaveBeenCalledWith(enrichedUser)

@@ -146,11 +146,9 @@ describe('handleDappLogin', () => {
       token_type: 'Bearer',
     })
     mockGetZkLoginAddress.mockResolvedValue({
-      data: {
-        address: '0xzk',
-        publicKey: 'AQID',
-      },
-      error: undefined,
+      address: '0xzk',
+      publicKey: 'AQID',
+      salt: '99',
     })
   })
 
@@ -172,7 +170,6 @@ describe('handleDappLogin', () => {
 
     expect(mockGetZkLoginAddress).toHaveBeenCalledWith({
       jwt: 'access-token',
-      enokiApiKey: '',
     })
     expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(42, {
       id: 'connect-id',
@@ -302,11 +299,10 @@ describe('handleDappLogin', () => {
     )
   })
 
-  it('sends auth_error when zkLogin address lookup fails', async () => {
-    mockGetZkLoginAddress.mockResolvedValue({
-      data: undefined,
-      error: { message: 'Enoki lookup failed' },
-    })
+  it('sends auth_error when the zkLogin address lookup throws', async () => {
+    mockGetZkLoginAddress.mockRejectedValue(
+      new Error('zkLogin address request failed (401): unauthorized'),
+    )
 
     await handleDappLogin(
       { id: 'zk-fail' },
@@ -318,18 +314,24 @@ describe('handleDappLogin', () => {
       42,
     )
 
-    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(42, {
-      id: 'zk-fail',
-      type: 'auth_error',
-      error: expect.objectContaining({ message: 'Enoki lookup failed' }),
-    })
+    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(
+      42,
+      expect.objectContaining({
+        id: 'zk-fail',
+        type: 'auth_error',
+        error: expect.objectContaining({
+          message: expect.stringContaining('account metadata'),
+        }),
+      }),
+    )
   })
 
   it('sends auth_error when zkLogin address is missing from the response', async () => {
     mockGetZkLoginAddress.mockResolvedValue({
-      data: { address: undefined, publicKey: undefined },
-      error: undefined,
-    })
+      address: undefined,
+      publicKey: undefined,
+      salt: undefined,
+    } as unknown as Awaited<ReturnType<typeof getZkLoginAddress>>)
 
     await handleDappLogin(
       { id: 'zk-no-addr' },

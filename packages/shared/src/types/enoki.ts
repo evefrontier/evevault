@@ -21,8 +21,5 @@ export interface ZkLoginAddressData {
   publicKey: string
 }
 
-export interface ZkLoginAddressResponse
-  extends EnokiResponse<ZkLoginAddressData> {}
-
 export interface ZkProofResponse
   extends EnokiResponse<ZkLoginSignatureInputs> {}

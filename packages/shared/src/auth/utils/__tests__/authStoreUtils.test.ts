@@ -205,7 +205,7 @@ describe('getUserForNetwork', () => {
     expect(getZkLoginAddress).not.toHaveBeenCalled()
   })
 
-  it('returns null when zkLogin returns error', async () => {
+  it('returns null when the zkLogin request throws', async () => {
     vi.mocked(getJwt).mockResolvedValue({
       access_token: 'a',
       id_token: tokenWithClaims,
@@ -213,25 +213,9 @@ describe('getUserForNetwork', () => {
       scope: 's',
       token_type: 'Bearer',
     })
-    vi.mocked(getZkLoginAddress).mockResolvedValue({
-      data: undefined,
-      error: { message: 'enoki failed' },
-    })
-    await expect(getUserForNetwork('sui:testnet')).resolves.toBeNull()
-  })
-
-  it('returns null when zkLogin has no data', async () => {
-    vi.mocked(getJwt).mockResolvedValue({
-      access_token: 'a',
-      id_token: tokenWithClaims,
-      expires_in: 3600,
-      scope: 's',
-      token_type: 'Bearer',
-    })
-    vi.mocked(getZkLoginAddress).mockResolvedValue({
-      data: undefined,
-      error: undefined,
-    })
+    vi.mocked(getZkLoginAddress).mockRejectedValue(
+      new Error('zkLogin address request failed (401): unauthorized'),
+    )
     await expect(getUserForNetwork('sui:testnet')).resolves.toBeNull()
   })
 
@@ -245,12 +229,9 @@ describe('getUserForNetwork', () => {
       expires_at: 2_000_000_000,
     })
     vi.mocked(getZkLoginAddress).mockResolvedValue({
-      data: {
-        address: '0xsui',
-        salt: '99',
-        publicKey: 'pk',
-      },
-      error: undefined,
+      address: '0xsui',
+      salt: '99',
+      publicKey: 'pk',
     })
 
     const user = await getUserForNetwork('sui:testnet')
@@ -398,8 +379,9 @@ describe('getUserForNetwork — sui_address from claims', () => {
     }).encode()
     vi.mocked(getJwt).mockResolvedValue(storedJwtWith(idToken))
     vi.mocked(getZkLoginAddress).mockResolvedValue({
-      data: { address: '0xzk', salt: '5', publicKey: 'pk' },
-      error: undefined,
+      address: '0xzk',
+      salt: '5',
+      publicKey: 'pk',
     })
 
     const user = await getUserForNetwork('sui:testnet')

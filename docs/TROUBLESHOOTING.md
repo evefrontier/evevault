@@ -265,15 +265,13 @@ Common issues and solutions when working with the EVE Vault extension.
 **Symptoms:**
 
 - Address derivation fails
-- "Enoki API error" message
 
 **Solutions:**
 
-1. Verify `VITE_ENOKI_API_KEY` is set correctly
-2. Check API key is valid and not expired
-3. Verify Enoki API is accessible
+1. Verify JWT passed is set correctly
+2. Check JWT is valid and not expired
+3. Verify API Gateway is accessible
 4. Check rate limits
-5. Review Enoki API documentation
 
 ## Development Issues
 

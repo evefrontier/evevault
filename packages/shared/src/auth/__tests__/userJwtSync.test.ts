@@ -44,7 +44,7 @@ describe('enrichUserWithZkLoginIfNeeded', () => {
     const { enrichUserWithZkLoginIfNeeded } = await import('#/auth/userJwtSync')
     const user = baseUser({ id_token: undefined })
 
-    const out = await enrichUserWithZkLoginIfNeeded(user, () => 'enoki-key')
+    const out = await enrichUserWithZkLoginIfNeeded(user)
 
     expect(out).toBe(user)
     expect(mockGetZkLoginAddress).not.toHaveBeenCalled()
@@ -60,17 +60,18 @@ describe('enrichUserWithZkLoginIfNeeded', () => {
       } as unknown as User['profile'],
     })
 
-    const out = await enrichUserWithZkLoginIfNeeded(user, () => 'enoki-key')
+    const out = await enrichUserWithZkLoginIfNeeded(user)
 
     expect(out).toBe(user)
     expect(mockGetZkLoginAddress).not.toHaveBeenCalled()
   })
 
-  it('calls Enoki to re-derive salt when sui_address is present but salt is missing (stripped from sessionStorage)', async () => {
+  it('re-derives salt when sui_address is present but salt is missing (stripped from sessionStorage)', async () => {
     const { enrichUserWithZkLoginIfNeeded } = await import('#/auth/userJwtSync')
     mockGetZkLoginAddress.mockResolvedValue({
-      data: { address: '0xsui', salt: 'salt-re-derived' },
-      error: undefined,
+      address: '0xsui',
+      salt: 'salt-re-derived',
+      publicKey: 'pk',
     })
     const user = baseUser({
       profile: {
@@ -79,46 +80,45 @@ describe('enrichUserWithZkLoginIfNeeded', () => {
       } as unknown as User['profile'],
     })
 
-    const out = await enrichUserWithZkLoginIfNeeded(user, () => 'enoki-key')
+    const out = await enrichUserWithZkLoginIfNeeded(user)
 
     expect(mockGetZkLoginAddress).toHaveBeenCalledOnce()
     expect(out.profile?.salt).toBe('salt-re-derived')
   })
 
-  it('calls Enoki and merges sui_address and salt when sui_address is missing', async () => {
+  it('fetches and merges sui_address and salt when sui_address is missing', async () => {
     const { enrichUserWithZkLoginIfNeeded } = await import('#/auth/userJwtSync')
     mockGetZkLoginAddress.mockResolvedValue({
-      data: { address: '0xenoki', salt: 'salt-99' },
-      error: undefined,
+      address: '0xenoki',
+      salt: 'salt-99',
+      publicKey: 'pk',
     })
 
     const user = baseUser({
       profile: { sub: 'user-1' } as User['profile'],
     })
 
-    const out = await enrichUserWithZkLoginIfNeeded(user, () => 'enoki-key')
+    const out = await enrichUserWithZkLoginIfNeeded(user)
 
     expect(mockGetZkLoginAddress).toHaveBeenCalledWith({
       jwt: user.id_token,
-      enokiApiKey: 'enoki-key',
     })
     expect(out).not.toBe(user)
     expect(out.profile?.sui_address).toBe('0xenoki')
     expect(out.profile?.salt).toBe('salt-99')
   })
 
-  it('throws when Enoki returns an error', async () => {
+  it('propagates the error when the zkLogin address request fails', async () => {
     const { enrichUserWithZkLoginIfNeeded } = await import('#/auth/userJwtSync')
-    mockGetZkLoginAddress.mockResolvedValue({
-      data: undefined,
-      error: { message: 'Enoki down' },
-    })
+    mockGetZkLoginAddress.mockRejectedValue(
+      new Error('zkLogin address request failed (401): unauthorized'),
+    )
 
     const user = baseUser({})
 
-    await expect(
-      enrichUserWithZkLoginIfNeeded(user, () => 'k'),
-    ).rejects.toThrow('Enoki down')
+    await expect(enrichUserWithZkLoginIfNeeded(user)).rejects.toThrow(
+      /failed \(401\)/,
+    )
   })
 })
 

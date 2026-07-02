@@ -216,10 +216,7 @@ describe('authStore.initialize() (extension path)', () => {
       expect((h.mockStoreUser.mock.calls[1][0] as User).access_token).toBe(
         refreshedUser.access_token,
       )
-      expect(h.mockEnrichUser).toHaveBeenCalledWith(
-        expect.any(User),
-        expect.any(Function),
-      )
+      expect(h.mockEnrichUser).toHaveBeenCalledWith(expect.any(User))
     })
 
     it('sets user to null when silent renew fails', async () => {

@@ -3,7 +3,6 @@ import { decodeJwt } from 'jose'
 import { type IdTokenClaims, User } from 'oidc-client-ts'
 import { getZkLoginAddress } from '#/auth/getZkLoginAddress'
 import { getJwt } from '#/auth/storageService'
-import { getEnokiApiKey } from '#/auth/stores/authStore'
 import { decodeJwtSafely } from '#/auth/utils/jwtUtils'
 import type { JwtResponse } from '#/types/authTypes'
 import { createLogger } from '#/utils/logger'
@@ -90,20 +89,19 @@ export async function getUserForNetwork(chain: SuiChain): Promise<User | null> {
     })
   }
 
-  const zkLoginResponse = await getZkLoginAddress({
-    jwt: storedJwt.id_token,
-    enokiApiKey: getEnokiApiKey(),
-  })
-
-  if (zkLoginResponse.error || !zkLoginResponse.data) {
+  let address: string
+  let salt: string
+  try {
+    ;({ address, salt } = await getZkLoginAddress({
+      jwt: storedJwt.id_token,
+    }))
+  } catch (error) {
     log.error('Failed to get zkLogin address for network JWT', {
       chain,
-      error: zkLoginResponse.error,
+      error,
     })
     return null
   }
-
-  const { address, salt } = zkLoginResponse.data
 
   return new User({
     ...storedJwt,

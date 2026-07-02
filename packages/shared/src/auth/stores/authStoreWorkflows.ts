@@ -12,6 +12,5 @@ export {
   type AuthGet,
   type AuthSet,
   type GetUserManagerInstance,
-  getEnokiApiKey,
   getErrorMessage,
 } from './authWorkflowUtils'

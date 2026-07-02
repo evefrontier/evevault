@@ -55,9 +55,6 @@ Create a `.env` at the **repository root** (WXT loads env from the monorepo root
 # FusionAuth
 VITE_FUSIONAUTH_REDIRECT_URI=
 
-# Enoki
-VITE_ENOKI_API_KEY=
-
 # Extension (when required by your build / OAuth redirect)
 EXTENSION_ID=
 ```
