@@ -14,13 +14,54 @@ vi.mock('#/auth/stores/authStore', () => ({
   getEnokiApiKey: vi.fn(() => 'test-enoki-key'),
 }))
 
+import type { User } from 'oidc-client-ts'
 import { getZkLoginAddress } from '#/auth/getZkLoginAddress'
 import { getJwt } from '#/auth/storageService'
 import {
+  getHeaderIdentity,
   getUserForNetwork,
   isErrorWithMessage,
   resolveExpiresAt,
 } from '#/auth/utils/authStoreUtils'
+
+describe('getHeaderIdentity', () => {
+  const userWith = (profile: unknown): User => ({ profile }) as unknown as User
+
+  it('returns the email and sui_address when both are strings', () => {
+    expect(
+      getHeaderIdentity(
+        userWith({ email: 'a@example.com', sui_address: '0xabc' }),
+      ),
+    ).toEqual({ email: 'a@example.com', address: '0xabc' })
+  })
+
+  it('collapses a missing email to an empty string', () => {
+    expect(getHeaderIdentity(userWith({ sui_address: '0xabc' }))).toEqual({
+      email: '',
+      address: '0xabc',
+    })
+  })
+
+  it('collapses a missing sui_address to an empty string', () => {
+    expect(getHeaderIdentity(userWith({ email: 'a@example.com' }))).toEqual({
+      email: 'a@example.com',
+      address: '',
+    })
+  })
+
+  it('collapses non-string claims to empty strings', () => {
+    expect(
+      getHeaderIdentity(userWith({ email: 123, sui_address: { foo: 1 } })),
+    ).toEqual({ email: '', address: '' })
+  })
+
+  it('returns empty strings when profile is undefined', () => {
+    expect(getHeaderIdentity(userWith(undefined))).toEqual({
+      email: '',
+      address: '',
+    })
+  })
+})
 
 describe('isErrorWithMessage', () => {
   it('returns true for object with string message', () => {
