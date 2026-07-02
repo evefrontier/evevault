@@ -39,9 +39,6 @@ export async function getAddressAliases(
 
 /**
  * Defensive parse of the aliases list out of the object's JSON view.
- *
- * TODO(abi): field path (`aliases.contents`) is unconfirmed — adjust to the
- * real struct layout. Never throws; returns `[]` for any unexpected shape.
  */
 function parseAliases(json: Record<string, unknown> | null): string[] {
   const aliases = (json?.aliases as { contents?: unknown } | undefined)

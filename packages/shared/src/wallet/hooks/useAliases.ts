@@ -3,9 +3,9 @@ import { createLogger } from '#/utils'
 import { MAX_ALIASES } from './useAliases.config'
 import { useAddressAliases } from './useAliases.query'
 import {
-  buildAddAliasTx,
-  buildEnableAliasesTx,
-  executeAliasTransaction,
+  addAliasTxBytes,
+  enableAliasTxBytes,
+  executeAliasTx,
 } from './useAliases.transaction'
 import { validateNewAlias } from './useAliases.validation'
 import { useWalletSigningContext } from './useWalletSigningContext'
@@ -73,14 +73,14 @@ export function useAliases(): UseAliasesResult {
 
   const runWrite = useCallback(
     async (
-      buildBytes: Parameters<typeof executeAliasTransaction>[0]['buildBytes'],
+      buildBytes: Parameters<typeof executeAliasTx>[0]['buildBytes'],
       failureMessage: string,
     ) => {
       setIsSubmitting(true)
       setError(null)
       setTxDigest(null)
       try {
-        const digest = await executeAliasTransaction({
+        const digest = await executeAliasTx({
           suiClient,
           getSenderAddress,
           sign,
@@ -105,7 +105,7 @@ export function useAliases(): UseAliasesResult {
       return
     }
     await runWrite(
-      (sender, client) => buildEnableAliasesTx(sender, client),
+      (sender, client) => enableAliasTxBytes(sender, client),
       'Failed to enable aliasing',
     )
   }, [senderAddress, runWrite])
@@ -127,7 +127,7 @@ export function useAliases(): UseAliasesResult {
       }
       const trimmed = alias.trim()
       await runWrite(
-        (sender, client) => buildAddAliasTx(sender, objectId, trimmed, client),
+        (sender, client) => addAliasTxBytes(sender, objectId, trimmed, client),
         'Failed to add alias',
       )
     },

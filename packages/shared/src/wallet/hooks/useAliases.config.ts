@@ -16,7 +16,6 @@ export const ADDRESS_ALIASES_TYPE = '0x2::address_alias::AddressAliases'
 /** Maximum number of aliases a single address may register. */
 export const MAX_ALIASES = 8
 
-/** CLI examples use a 50,000,000 gas budget. */
 export const ALIAS_GAS_BUDGET = 50_000_000
 
 /** Result of reading the caller's `AddressAliases` owned object. */

@@ -8,8 +8,8 @@ export {
 } from './useAliases.config'
 export { getAddressAliases, useAddressAliases } from './useAliases.query'
 export {
-  buildAddAliasTx,
-  buildEnableAliasesTx,
-  executeAliasTransaction,
+  addAliasTxBytes,
+  enableAliasTxBytes,
+  executeAliasTx,
 } from './useAliases.transaction'
 export { validateNewAlias } from './useAliases.validation'
