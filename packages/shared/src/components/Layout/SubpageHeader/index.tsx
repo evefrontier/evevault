@@ -1,0 +1,1 @@
+export { SubpageHeader } from './SubpageHeader'

@@ -253,13 +253,16 @@ export interface NetworkSelectorProps {
 }
 
 export interface AddTokenScreenProps {
-  user: User | null
+  user: User
   chain: SuiChain | null
-  onSuccess?: () => void
-  onCancel?: () => void
+  onSuccess: () => void
+  onCancel: () => void
 }
 
 export interface SendTokenScreenProps {
+  // Optional: on localnet there is no zkLogin user, only a local key address.
+  // The header falls back to the active Sui address in that case.
+  user?: User | null
   coinType: string
   onCancel?: () => void
 }
@@ -411,6 +414,7 @@ export interface TransactionsScreenProps {
 }
 
 export interface AliasesScreenProps {
+  user: User
   onBack: () => void
 }
 

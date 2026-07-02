@@ -1,11 +1,5 @@
-import {
-  AddTokenScreen,
-  HeaderMobile,
-  useAuthStore,
-  useContext,
-} from '@evevault/shared'
+import { AddTokenScreen, useAuthStore, useContext } from '@evevault/shared'
 import { requireAuth } from '@evevault/shared/router'
-import { EXTENSION_ROUTES } from '@evevault/shared/utils'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 
 function AddTokenPage() {
@@ -17,16 +11,14 @@ function AddTokenPage() {
     navigate({ to: '/' })
   }
 
-  // Note: Layout is provided by popup entrypoint, so we only render content here
+  if (!user) {
+    return null
+  }
+
+  // Note: Layout is provided by popup entrypoint, so we only render content
+  // here. AddTokenScreen renders its own SubpageHeader.
   return (
     <div className="flex flex-col gap-10">
-      <HeaderMobile
-        email={user?.profile?.email as string}
-        address={user?.profile?.sui_address as string}
-        onTransactionsClick={() =>
-          navigate({ to: EXTENSION_ROUTES.TRANSACTIONS })
-        }
-      />
       <AddTokenScreen
         user={user}
         chain={chain || null}

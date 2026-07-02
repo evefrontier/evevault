@@ -1,5 +1,4 @@
 import {
-  HeaderMobile,
   isLocalnetChain,
   SendTokenScreen,
   useAuthStore,
@@ -8,7 +7,6 @@ import type { SendTokenSearch } from '@evevault/shared/router'
 import { localnetKeyService } from '@evevault/shared/services/keeperService'
 import { useContextStore } from '@evevault/shared/stores'
 import { EXTENSION_ROUTES } from '@evevault/shared/utils'
-import { useActiveSuiAddress } from '@evevault/shared/wallet'
 import {
   createFileRoute,
   redirect,
@@ -19,23 +17,21 @@ import {
 function SendTokenPage() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
-  const activeAddress = useActiveSuiAddress()
   const { coinType } = useSearch({ from: '/send-token' })
 
   const handleNavigateBack = () => {
     navigate({ to: '/' })
   }
 
+  // SendTokenScreen renders its own SubpageHeader; user is optional because
+  // localnet has no zkLogin user (the header falls back to the active address).
   return (
     <div className="flex flex-col gap-10">
-      <HeaderMobile
-        email={user?.profile?.email ?? ''}
-        address={activeAddress ?? (user?.profile?.sui_address as string)}
-        onTransactionsClick={() =>
-          navigate({ to: EXTENSION_ROUTES.TRANSACTIONS })
-        }
+      <SendTokenScreen
+        coinType={coinType}
+        user={user}
+        onCancel={handleNavigateBack}
       />
-      <SendTokenScreen coinType={coinType} onCancel={handleNavigateBack} />
     </div>
   )
 }

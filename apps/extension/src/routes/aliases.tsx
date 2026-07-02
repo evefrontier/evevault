@@ -19,7 +19,7 @@ function AliasesPage() {
 
   return (
     <div className="flex flex-col gap-10">
-      <AliasesScreen onBack={handleNavigateBack} />
+      <AliasesScreen onBack={handleNavigateBack} user={user} />
     </div>
   )
 }

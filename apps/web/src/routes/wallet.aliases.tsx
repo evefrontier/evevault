@@ -17,7 +17,7 @@ function AliasesPage() {
     return null
   }
 
-  return <AliasesScreen onBack={handleBack} />
+  return <AliasesScreen onBack={handleBack} user={user} />
 }
 
 export const Route = createFileRoute('/wallet/aliases')({

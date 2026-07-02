@@ -1,13 +1,17 @@
 import type React from 'react'
 import { useState } from 'react'
+import { getHeaderIdentity } from '#/auth'
+import { SubpageHeader } from '#/components'
 import Button from '#/components/Button'
-import Heading from '#/components/Heading'
 import { Input } from '#/components/Inputs'
 import Text from '#/components/Text'
 import type { AliasesScreenProps } from '#/types/components'
 import { useAliases } from '#/wallet'
 
-export const AliasesScreen: React.FC<AliasesScreenProps> = ({ onBack }) => {
+export const AliasesScreen: React.FC<AliasesScreenProps> = ({
+  onBack,
+  user,
+}) => {
   const {
     isAuthenticated,
     ownerAddress,
@@ -32,15 +36,16 @@ export const AliasesScreen: React.FC<AliasesScreenProps> = ({ onBack }) => {
     setNewAlias('')
   }
 
+  const { email, address } = getHeaderIdentity(user)
   return (
     <div className="flex flex-col gap-10">
-      {/* <HeaderMobile
-        address={suiAddress ?? ''}
-        email={email ?? ''}
-        onTransactionsClick={onBack}
-      /> */}
+      <SubpageHeader
+        title="Manage Aliases"
+        email={email}
+        address={address}
+        onBack={onBack}
+      />
       <div className="flex flex-col gap-4">
-        <Heading level={2}>Manage aliases</Heading>
         <Text variant="light" size="large" color="neutral-90">
           An alias is an address allowed to act on behalf of this address.
         </Text>

@@ -1,4 +1,4 @@
-import { SendTokenScreen } from '@evevault/shared'
+import { SendTokenScreen, useAuthStore } from '@evevault/shared'
 import type { SendTokenSearch } from '@evevault/shared/router'
 import { requireAuth } from '@evevault/shared/router'
 import {
@@ -10,13 +10,20 @@ import {
 
 function SendTokenPage() {
   const navigate = useNavigate()
+  const { user } = useAuthStore()
   const { coinType } = useSearch({ from: '/wallet/send-token' })
 
   const handleCancel = () => {
     navigate({ to: '/wallet' })
   }
 
-  return <SendTokenScreen coinType={coinType} onCancel={handleCancel} />
+  if (!user) {
+    return null
+  }
+
+  return (
+    <SendTokenScreen coinType={coinType} user={user} onCancel={handleCancel} />
+  )
 }
 
 export const Route = createFileRoute('/wallet/send-token')({

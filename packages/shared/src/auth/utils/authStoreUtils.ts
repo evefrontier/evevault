@@ -15,6 +15,21 @@ const firstNumber = (...values: unknown[]): number | undefined =>
 
 const nowInSeconds = () => Math.floor(Date.now() / 1000)
 
+/**
+ * Extracts the display identity (email + Sui address) used by header UIs from
+ * an authenticated user. Any claim that is missing or not a string collapses
+ * to an empty string, so presentational headers can render without null checks.
+ */
+export const getHeaderIdentity = (
+  user: User,
+): { email: string; address: string } => ({
+  email: typeof user.profile?.email === 'string' ? user.profile.email : '',
+  address:
+    typeof user.profile?.sui_address === 'string'
+      ? user.profile.sui_address
+      : '',
+})
+
 export const isErrorWithMessage = (
   error: unknown,
 ): error is { message: string } => {

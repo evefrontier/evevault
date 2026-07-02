@@ -1,7 +1,8 @@
 import type React from 'react'
 import { useState } from 'react'
+import { getHeaderIdentity } from '#/auth'
+import { SubpageHeader } from '#/components'
 import Button from '#/components/Button'
-import Heading from '#/components/Heading'
 import { Input } from '#/components/Inputs'
 import Text from '#/components/Text'
 import { useToast } from '#/components/Toast'
@@ -57,18 +58,23 @@ export const AddTokenScreen: React.FC<AddTokenScreenProps> = ({
 
   const canAdd = !!user && !!chain && inputValue.trim().length > 0
 
+  const { email, address } = getHeaderIdentity(user)
+
   return (
     <div className="mt-10 flex flex-col gap-10">
+      <SubpageHeader
+        title="Add custom token"
+        email={email}
+        address={address}
+        onBack={onCancel}
+      />
       <div>
-        <Heading level={2} className="mb-4">
-          Add custom token
-        </Heading>
         <Text variant="light" size="large" className="mb-2">
           Enter the full coin type identifier to track custom token balance.{' '}
         </Text>
         <Text variant="light" size="xsmall">
           Make sure you enter the correct coin type. Invalid or malicious tokens
-          could cause issues. Only add tokens you trust
+          could cause issues. Only add tokens you trust.
         </Text>
       </div>
 
