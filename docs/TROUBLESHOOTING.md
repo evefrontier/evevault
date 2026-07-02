@@ -260,7 +260,7 @@ Common issues and solutions when working with the EVE Vault extension.
 4. Verify network switching works
 5. Check for CORS issues
 
-### Enoki API errors
+### zkLogin address derivation errors
 
 **Symptoms:**
 
@@ -268,7 +268,7 @@ Common issues and solutions when working with the EVE Vault extension.
 
 **Solutions:**
 
-1. Verify JWT passed is set correctly
+1. Verify the JWT is present and passed correctly
 2. Check JWT is valid and not expired
 3. Verify API Gateway is accessible
 4. Check rate limits

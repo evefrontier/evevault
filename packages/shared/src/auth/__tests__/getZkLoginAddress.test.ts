@@ -87,7 +87,15 @@ describe('getZkLoginAddress', () => {
     fetchMock.mockResolvedValue(okResponse({ publicKey: 'pk' }))
 
     await expect(getZkLoginAddress({ jwt: JWT })).rejects.toThrow(
-      /missing salt\/address/,
+      /missing salt\/address\/publicKey/,
+    )
+  })
+
+  it('throws when a 200 response is missing publicKey', async () => {
+    fetchMock.mockResolvedValue(okResponse({ address: '0xabc', salt: '1' }))
+
+    await expect(getZkLoginAddress({ jwt: JWT })).rejects.toThrow(
+      /missing salt\/address\/publicKey/,
     )
   })
 

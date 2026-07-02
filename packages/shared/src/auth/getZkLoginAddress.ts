@@ -51,9 +51,9 @@ export async function getZkLoginAddress(
 
   const responseJson = (await response.json()) as unknown as ZkLoginAddressData
 
-  if (!responseJson.salt || !responseJson.address) {
+  if (!responseJson.salt || !responseJson.address || !responseJson.publicKey) {
     throw new Error(
-      `zkLogin address response missing salt/address: ${JSON.stringify(responseJson)}`,
+      `zkLogin address response missing salt/address/publicKey: ${JSON.stringify(responseJson)}`,
     )
   }
 
