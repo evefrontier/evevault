@@ -1,5 +1,6 @@
-import { AliasesScreen, useAuthStore, useContextStore } from '@evevault/shared'
+import { useAuthStore, useContextStore } from '@evevault/shared'
 import { requireAuth } from '@evevault/shared/router'
+import { AliasesScreen } from '@evevault/shared/screens'
 import { WEB_ROUTES } from '@evevault/shared/utils'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 

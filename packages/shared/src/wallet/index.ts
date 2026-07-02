@@ -6,6 +6,8 @@ export {
   isWebCryptoMarker,
 } from '../types/wallet'
 export { useActiveSuiAddress } from './hooks/useActiveSuiAddress'
+export { useAliases } from './hooks/useAliases'
+export type { AddressAliasesInfo } from './hooks/useAliases.config'
 export { useBalance } from './hooks/useBalance'
 export { useSendToken } from './hooks/useSendToken'
 export { useTransactionHistory } from './hooks/useTransactionHistory'
