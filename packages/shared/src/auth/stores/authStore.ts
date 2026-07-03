@@ -9,7 +9,6 @@ import {
   clearAuthSession,
   createExtensionAuthListener,
   finishExtensionLogout,
-  getEnokiApiKey,
   getErrorMessage,
   initializeExtensionSession,
   initializeWebSession,
@@ -25,8 +24,6 @@ import { AUTH_STORAGE_KEY } from '#/utils/storageKeys'
 
 // biome-ignore lint/suspicious/noExplicitAny: chrome is a global object
 declare const chrome: any
-
-export { getEnokiApiKey }
 
 const log = createLogger()
 

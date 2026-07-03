@@ -1,11 +1,10 @@
-import type { ZkLoginAddressResponse } from '#/types/enoki'
+import type { ZkLoginAddressData } from '#/types/enoki'
+import { getApiContext } from './getApiContext'
 import type { GetZkLoginAddressParams } from './types'
 
-const cache = new Map<string, ZkLoginAddressResponse>()
-
-function cacheKey(params: GetZkLoginAddressParams): string {
-  return `${params.enokiApiKey}:${params.jwt}`
-}
+// Keyed by JWT: the token uniquely identifies the user/session the address
+// is derived for.
+const cache = new Map<string, ZkLoginAddressData>()
 
 /**
  * Clear the in-memory cache of zkLogin address lookups.
@@ -17,29 +16,45 @@ export function clearZkLoginAddressCache(): void {
 
 export async function getZkLoginAddress(
   params: GetZkLoginAddressParams,
-): Promise<ZkLoginAddressResponse> {
-  const key = cacheKey(params)
-  const cached = cache.get(key)
+): Promise<ZkLoginAddressData> {
+  const { jwt } = params
+
+  const cached = cache.get(jwt)
   if (cached !== undefined) {
     return cached
   }
 
-  const { jwt, enokiApiKey } = params
+  const { apiBaseUrl, tenant } = getApiContext(jwt)
 
-  const response = await fetch('https://api.enoki.mystenlabs.com/v1/zklogin', {
+  const response = await fetch(`${apiBaseUrl}/auth/zklogin`, {
     method: 'GET',
     headers: {
-      Authorization: enokiApiKey,
-      'zklogin-jwt': jwt,
+      'X-Tenant': tenant,
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${jwt}`,
     },
   })
 
-  const responseJson =
-    (await response.json()) as unknown as ZkLoginAddressResponse
-
-  if (responseJson.data !== undefined) {
-    cache.set(key, responseJson)
+  if (!response.ok) {
+    // The endpoint returns errors in more than one shape (`{ error: string }`
+    // for proxy/tenant failures, RFC-7807 `{ title, status, detail }` from the
+    // handler). Surface the raw body so the real cause isn't masked by a
+    // generic "no data" error downstream.
+    const body = await response.text()
+    throw new Error(
+      `zkLogin address request failed (${response.status}): ${body}`,
+    )
   }
+
+  const responseJson = (await response.json()) as unknown as ZkLoginAddressData
+
+  if (!responseJson.salt || !responseJson.address || !responseJson.publicKey) {
+    throw new Error(
+      `zkLogin address response missing salt/address/publicKey: ${JSON.stringify(responseJson)}`,
+    )
+  }
+
+  cache.set(jwt, responseJson)
 
   return responseJson
 }

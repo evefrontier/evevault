@@ -4,10 +4,29 @@ import {
   getZkLoginAddress,
 } from '#/auth/getZkLoginAddress'
 
-const ENOKI_URL = 'https://api.enoki.mystenlabs.com/v1/zklogin'
+// A minimally-valid JWT (unsigned) whose payload carries the tenant/tier the
+// URL is derived from. Default tenant + no tier => `test` tier host.
+const b64url = (obj: unknown) =>
+  Buffer.from(JSON.stringify(obj)).toString('base64url')
+const makeJwt = (payload: Record<string, unknown>) =>
+  `${b64url({ alg: 'none' })}.${b64url(payload)}.`
+
+const JWT = makeJwt({ tenant: 'nova', sub: 'user-1' })
+const ZKLOGIN_URL = 'https://api.test.pub.evefrontier.com/auth/zklogin'
 
 const okResponse = (data: unknown) =>
-  ({ json: () => Promise.resolve(data) }) as unknown as Response
+  ({
+    ok: true,
+    status: 200,
+    json: () => Promise.resolve(data),
+  }) as unknown as Response
+
+const errorResponse = (status: number, body: string) =>
+  ({
+    ok: false,
+    status,
+    text: () => Promise.resolve(body),
+  }) as unknown as Response
 
 describe('getZkLoginAddress', () => {
   let fetchMock: ReturnType<typeof vi.fn>
@@ -22,72 +41,83 @@ describe('getZkLoginAddress', () => {
     vi.unstubAllGlobals()
   })
 
-  it('fetches with the API key and JWT headers and returns the response', async () => {
-    const body = { data: { address: '0xabc', salt: '1', publicKey: 'pk' } }
+  it('fetches the tenant-derived URL with bearer + tenant headers and returns the data', async () => {
+    const body = { address: '0xabc', salt: '1', publicKey: 'pk' }
     fetchMock.mockResolvedValue(okResponse(body))
 
-    const result = await getZkLoginAddress({
-      jwt: 'jwt-token',
-      enokiApiKey: 'enoki-key',
-    })
+    const result = await getZkLoginAddress({ jwt: JWT })
 
     expect(result).toEqual(body)
-    expect(fetchMock).toHaveBeenCalledWith(ENOKI_URL, {
+    expect(fetchMock).toHaveBeenCalledWith(ZKLOGIN_URL, {
       method: 'GET',
       headers: {
-        Authorization: 'enoki-key',
-        'zklogin-jwt': 'jwt-token',
+        'X-Tenant': 'nova',
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${JWT}`,
       },
     })
   })
 
   it('caches successful responses so a repeat call does not re-fetch', async () => {
-    const body = { data: { address: '0xabc', salt: '1', publicKey: 'pk' } }
+    const body = { address: '0xabc', salt: '1', publicKey: 'pk' }
     fetchMock.mockResolvedValue(okResponse(body))
 
-    const params = { jwt: 'jwt-token', enokiApiKey: 'enoki-key' }
-    const first = await getZkLoginAddress(params)
-    const second = await getZkLoginAddress(params)
+    const first = await getZkLoginAddress({ jwt: JWT })
+    const second = await getZkLoginAddress({ jwt: JWT })
 
     expect(first).toBe(second)
     expect(fetchMock).toHaveBeenCalledOnce()
   })
 
-  it('does not cache error responses, so a transient failure stays retryable on the next call', async () => {
-    fetchMock.mockResolvedValue(
-      okResponse({ data: undefined, error: { message: 'bad jwt' } }),
+  it('throws with the status and body on a non-ok response, and does not cache it', async () => {
+    fetchMock.mockResolvedValue(errorResponse(401, '{"title":"Unauthorized"}'))
+
+    await expect(getZkLoginAddress({ jwt: JWT })).rejects.toThrow(
+      /failed \(401\).*Unauthorized/,
     )
-
-    const params = { jwt: 'jwt-token', enokiApiKey: 'enoki-key' }
-    const first = await getZkLoginAddress(params)
-    const second = await getZkLoginAddress(params)
-
+    // Not cached — a retry re-fetches.
+    fetchMock.mockResolvedValue(
+      okResponse({ address: '0x1', salt: '1', publicKey: 'pk' }),
+    )
+    await getZkLoginAddress({ jwt: JWT })
     expect(fetchMock).toHaveBeenCalledTimes(2)
-    // The error payload is still returned to the caller on both calls.
-    expect(first.error?.message).toBe('bad jwt')
-    expect(second.error?.message).toBe('bad jwt')
   })
 
-  it('keys the cache by API key + JWT so different params re-fetch', async () => {
+  it('throws when a 200 response is missing salt/address', async () => {
+    fetchMock.mockResolvedValue(okResponse({ publicKey: 'pk' }))
+
+    await expect(getZkLoginAddress({ jwt: JWT })).rejects.toThrow(
+      /missing salt\/address\/publicKey/,
+    )
+  })
+
+  it('throws when a 200 response is missing publicKey', async () => {
+    fetchMock.mockResolvedValue(okResponse({ address: '0xabc', salt: '1' }))
+
+    await expect(getZkLoginAddress({ jwt: JWT })).rejects.toThrow(
+      /missing salt\/address\/publicKey/,
+    )
+  })
+
+  it('keys the cache by JWT so a different token re-fetches', async () => {
     fetchMock.mockResolvedValue(
-      okResponse({ data: { address: '0x1', salt: '1', publicKey: 'pk' } }),
+      okResponse({ address: '0x1', salt: '1', publicKey: 'pk' }),
     )
 
-    await getZkLoginAddress({ jwt: 'jwt-a', enokiApiKey: 'key' })
-    await getZkLoginAddress({ jwt: 'jwt-b', enokiApiKey: 'key' })
+    await getZkLoginAddress({ jwt: makeJwt({ tenant: 'nova', sub: 'a' }) })
+    await getZkLoginAddress({ jwt: makeJwt({ tenant: 'nova', sub: 'b' }) })
 
     expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 
   it('clearZkLoginAddressCache forces the next call to re-fetch', async () => {
     fetchMock.mockResolvedValue(
-      okResponse({ data: { address: '0x1', salt: '1', publicKey: 'pk' } }),
+      okResponse({ address: '0x1', salt: '1', publicKey: 'pk' }),
     )
 
-    const params = { jwt: 'jwt-token', enokiApiKey: 'enoki-key' }
-    await getZkLoginAddress(params)
+    await getZkLoginAddress({ jwt: JWT })
     clearZkLoginAddressCache()
-    await getZkLoginAddress(params)
+    await getZkLoginAddress({ jwt: JWT })
 
     expect(fetchMock).toHaveBeenCalledTimes(2)
   })

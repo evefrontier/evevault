@@ -26,7 +26,6 @@ export type GlobalWithProcessEnv = typeof globalThis & {
 
 export interface GetZkLoginAddressParams {
   jwt: string
-  enokiApiKey: string
 }
 
 export interface AuthState {

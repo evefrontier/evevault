@@ -282,7 +282,6 @@ async function fetchDappZkLoginAddress(
 ): Promise<ZkLoginAddressResult | null> {
   return getZkLoginAddress({
     jwt: accessToken,
-    enokiApiKey: import.meta.env.VITE_ENOKI_API_KEY ?? '',
   }).catch((error) => {
     log.error('Failed to resolve dApp account metadata', error)
     return null
@@ -299,16 +298,7 @@ function parseDappZkLoginAccount(
     }
   }
 
-  const hasLookupError = !!zkLoginResponse.error
-  if (hasLookupError) {
-    return {
-      ok: false,
-      error: zkLoginResponse?.error?.message ?? 'Unknown authentication error',
-    }
-  }
-
-  const address = zkLoginResponse.data?.address
-  const publicKey = zkLoginResponse.data?.publicKey
+  const { address, publicKey } = zkLoginResponse
   const account = buildDappAccountMetadata(address, publicKey)
   if (!account) {
     return {

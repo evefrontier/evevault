@@ -7,7 +7,6 @@ import {
 import { userToJwtResponse } from '#/auth/userToJwtResponse'
 import { resolveExpiresAt } from '#/auth/utils/authStoreUtils'
 import type { JwtResponse, OAuthTokenResponse } from '#/types/authTypes'
-import { getEnokiApiKey } from './authWorkflowUtils'
 
 export function buildUserFromJwt(jwt: JwtResponse): User {
   // Stored JWTs do not include the full oidc-client-ts User shape.
@@ -69,7 +68,7 @@ export async function persistEnrichedUser(
    * salt must not sit in browser-accessible storage. Signing always re-derives
    * salt on demand via getUserForNetwork so nothing breaks at runtime.
    */
-  const enrichedUser = await enrichUserWithZkLoginIfNeeded(user, getEnokiApiKey)
+  const enrichedUser = await enrichUserWithZkLoginIfNeeded(user)
   const { salt: _stripped, ...profileWithoutSalt } = (enrichedUser.profile ??
     {}) as Record<string, unknown>
   const userToStore = new User({

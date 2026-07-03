@@ -260,20 +260,18 @@ Common issues and solutions when working with the EVE Vault extension.
 4. Verify network switching works
 5. Check for CORS issues
 
-### Enoki API errors
+### zkLogin address derivation errors
 
 **Symptoms:**
 
 - Address derivation fails
-- "Enoki API error" message
 
 **Solutions:**
 
-1. Verify `VITE_ENOKI_API_KEY` is set correctly
-2. Check API key is valid and not expired
-3. Verify Enoki API is accessible
+1. Verify the JWT is present and passed correctly
+2. Check JWT is valid and not expired
+3. Verify API Gateway is accessible
 4. Check rate limits
-5. Review Enoki API documentation
 
 ## Development Issues
 

@@ -9,13 +9,10 @@ import { userToJwtResponse } from './userToJwtResponse'
 const log = createLogger()
 
 /**
- * Ensures `profile.sui_address` (and Enoki `salt`) exist by calling Enoki only when
- * `sui_address` is missing on the user profile.
+ * Ensures `profile.sui_address` (and `salt`) exist by calling the zkLogin
+ * address endpoint only when `sui_address` is missing on the user profile.
  */
-export async function enrichUserWithZkLoginIfNeeded(
-  user: User,
-  getEnokiApiKey: () => string,
-): Promise<User> {
+export async function enrichUserWithZkLoginIfNeeded(user: User): Promise<User> {
   const idToken = user.id_token
   if (!idToken) {
     return user
@@ -35,20 +32,9 @@ export async function enrichUserWithZkLoginIfNeeded(
     return user
   }
 
-  const zkLoginResponse = await getZkLoginAddress({
+  const { salt, address } = await getZkLoginAddress({
     jwt: idToken,
-    enokiApiKey: getEnokiApiKey(),
   })
-
-  if (zkLoginResponse.error) {
-    throw new Error(zkLoginResponse.error.message)
-  }
-
-  if (!zkLoginResponse.data) {
-    throw new Error('No zkLogin address data received')
-  }
-
-  const { salt, address } = zkLoginResponse.data
   const decodedJwt = decodeJwt(idToken) as IdTokenClaims
 
   return new User({

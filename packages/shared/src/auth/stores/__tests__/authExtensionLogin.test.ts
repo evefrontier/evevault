@@ -72,10 +72,7 @@ describe('authExtensionLogin()', () => {
       )
 
       expect(user).toBeDefined()
-      expect(h.mockEnrichUser).toHaveBeenCalledWith(
-        expect.any(User),
-        expect.any(Function),
-      )
+      expect(h.mockEnrichUser).toHaveBeenCalledWith(expect.any(User))
       expect(h.mockStoreUser).toHaveBeenCalledWith(expect.any(User))
       expect(h.mockSyncPrimaryJwt).toHaveBeenCalledWith(expect.any(User))
       expect(mockSet).toHaveBeenCalledWith(
