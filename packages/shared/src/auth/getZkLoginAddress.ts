@@ -2,11 +2,9 @@ import type { ZkLoginAddressData } from '#/types/enoki'
 import { getApiContext } from './getApiContext'
 import type { GetZkLoginAddressParams } from './types'
 
+// Keyed by JWT: the token uniquely identifies the user/session the address
+// is derived for.
 const cache = new Map<string, ZkLoginAddressData>()
-
-function cacheKey(params: GetZkLoginAddressParams): string {
-  return `${params.jwt}`
-}
 
 /**
  * Clear the in-memory cache of zkLogin address lookups.
@@ -19,13 +17,12 @@ export function clearZkLoginAddressCache(): void {
 export async function getZkLoginAddress(
   params: GetZkLoginAddressParams,
 ): Promise<ZkLoginAddressData> {
-  const key = cacheKey(params)
-  const cached = cache.get(key)
+  const { jwt } = params
+
+  const cached = cache.get(jwt)
   if (cached !== undefined) {
     return cached
   }
-
-  const { jwt } = params
 
   const { apiBaseUrl, tenant } = getApiContext(jwt)
 
@@ -57,7 +54,7 @@ export async function getZkLoginAddress(
     )
   }
 
-  cache.set(key, responseJson)
+  cache.set(jwt, responseJson)
 
   return responseJson
 }
