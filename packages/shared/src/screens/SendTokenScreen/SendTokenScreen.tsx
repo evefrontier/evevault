@@ -1,24 +1,20 @@
 import type React from 'react'
 import { useEffect, useState } from 'react'
-import { getHeaderIdentity } from '#/auth'
-import { SubpageHeader } from '#/components'
 import { useToast } from '#/components/Toast'
 import { useContext } from '#/hooks/useContext'
 import { useDeviceStore } from '#/stores/deviceStore'
 import { getFaucetUrlForChain } from '#/sui'
 import type { SendTokenScreenProps } from '#/types'
 import { getSuiscanUrl } from '#/utils'
-import { useActiveSuiAddress, useSendToken } from '#/wallet'
+import { useSendToken } from '#/wallet'
 import { TransferForm, TransferSuccessScreen } from './SendTokenScreen.parts'
 
 export const SendTokenScreen: React.FC<SendTokenScreenProps> = ({
-  user,
   coinType,
   onCancel,
 }) => {
   const { showToast } = useToast()
   const { chain: currentChain } = useContext()
-  const activeAddress = useActiveSuiAddress()
   const {
     localnet: { url: localnetUrl },
   } = useDeviceStore()
@@ -108,47 +104,36 @@ export const SendTokenScreen: React.FC<SendTokenScreenProps> = ({
     )
   }
 
-  // On localnet there is no zkLogin user; fall back to the active address.
-  const identity = user ? getHeaderIdentity(user) : { email: '', address: '' }
-
   return (
-    <>
-      <SubpageHeader
-        title="Transfer token"
-        email={identity.email}
-        address={activeAddress ?? identity.address}
-        onBack={onCancel}
-      />
-      <TransferForm
-        values={{
-          recipientAddress,
-          amount,
-          currentBalance,
-          tokenSymbol,
-        }}
-        status={{
-          isValidRecipient,
-          isValidAmount,
-          validationErrors,
-          canSend,
-          isLoading,
-          error,
-        }}
-        notices={{
-          suiForGasWarning,
-          gasFeeWarning,
-          estimatedGasFee,
-          estimatedGasFeeLoading,
-          showFaucetTestSui,
-          faucetUrl,
-        }}
-        actions={{
-          onRecipientChange: handleRecipientChange,
-          onAmountChange: handleAmountChange,
-          onSend: handleSend,
-          onCancel,
-        }}
-      />
-    </>
+    <TransferForm
+      values={{
+        recipientAddress,
+        amount,
+        currentBalance,
+        tokenSymbol,
+      }}
+      status={{
+        isValidRecipient,
+        isValidAmount,
+        validationErrors,
+        canSend,
+        isLoading,
+        error,
+      }}
+      notices={{
+        suiForGasWarning,
+        gasFeeWarning,
+        estimatedGasFee,
+        estimatedGasFeeLoading,
+        showFaucetTestSui,
+        faucetUrl,
+      }}
+      actions={{
+        onRecipientChange: handleRecipientChange,
+        onAmountChange: handleAmountChange,
+        onSend: handleSend,
+        onCancel,
+      }}
+    />
   )
 }
