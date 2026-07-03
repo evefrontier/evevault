@@ -86,7 +86,9 @@ function DropdownSelectItem({
       {item.customContent ?? (
         <>
           {getIdenticon(itemIdenticon)}
-          <Text variant="label">{item.label}</Text>
+          <Text variant="label" color={item.devMode ? 'quantum' : undefined}>
+            {item.label}
+          </Text>
         </>
       )}
     </div>

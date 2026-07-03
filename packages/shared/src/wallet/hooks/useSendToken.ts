@@ -1,7 +1,7 @@
 import { isEveCoinType } from '@evefrontier/wallet-core/eve-token'
 import { isValidSuiAddress } from '@mysten/sui/utils'
 import { useQueryClient } from '@tanstack/react-query'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo } from 'react'
 import { createLogger, GAS_FEE_WARNING_MESSAGE, SUI_COIN_TYPE } from '#/utils'
 import { useBalance } from './useBalance'
 import {
@@ -14,6 +14,7 @@ import {
   useDelayedTransferRefetch,
   useEstimatedGasFee,
 } from './useSendToken.helpers'
+import { useTransactionWrite } from './useTransactionWrite'
 import { useWalletSigningContext } from './useWalletSigningContext'
 
 const log = createLogger()
@@ -85,9 +86,13 @@ export function useSendToken({
   } = useWalletSigningContext()
   const queryClient = useQueryClient()
 
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [txDigest, setTxDigest] = useState<string | null>(null)
+  const {
+    isSubmitting: isLoading,
+    error,
+    txDigest,
+    run,
+    setError,
+  } = useTransactionWrite()
   const scheduleDelayedTransferRefetch = useDelayedTransferRefetch(queryClient)
 
   // Fetch balance for the selected token
@@ -199,41 +204,36 @@ export function useSendToken({
       return
     }
 
-    setIsLoading(true)
-    setError(null)
-    setTxDigest(null)
-
-    try {
-      const digest = await executeTokenTransfer({
-        amount,
-        coinType,
-        decimals,
-        recipientAddress,
-        suiClient,
-        getSenderAddress,
-        sign,
-      })
-
-      log.info('Token transfer executed', {
-        digest,
-        coinType,
-        amount,
-        recipient: recipientAddress,
-      })
-
-      setTxDigest(digest)
-      refetchTransferQueries(queryClient)
-      scheduleDelayedTransferRefetch()
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Failed to send token'
-      log.error('Token transfer failed', err)
-      setError(errorMessage)
-    } finally {
-      setIsLoading(false)
-    }
+    await run(
+      () =>
+        executeTokenTransfer({
+          amount,
+          coinType,
+          decimals,
+          recipientAddress,
+          suiClient,
+          getSenderAddress,
+          sign,
+        }),
+      {
+        fallbackMessage: 'Failed to send token',
+        logLabel: 'Token transfer failed',
+        onSuccess: (digest) => {
+          log.info('Token transfer executed', {
+            digest,
+            coinType,
+            amount,
+            recipient: recipientAddress,
+          })
+          refetchTransferQueries(queryClient)
+          scheduleDelayedTransferRefetch()
+        },
+      },
+    )
   }, [
     canSend,
+    run,
+    setError,
     coinType,
     amount,
     decimals,

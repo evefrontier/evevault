@@ -1,8 +1,6 @@
 import type React from 'react'
 import Button from '#/components/Button'
-import Heading from '#/components/Heading'
 import Icon from '#/components/Icon'
-import { HeaderMobile } from '#/components/Layout'
 import Text from '#/components/Text'
 import type {
   Transaction,
@@ -18,36 +16,6 @@ import {
   getTransactionRowSummary,
   openExternalUrl,
 } from './TransactionsScreen.helpers'
-
-export function TransactionsHeader({
-  email,
-  onBack,
-  suiAddress,
-}: {
-  email?: string
-  onBack: () => void
-  suiAddress?: string
-}) {
-  return (
-    <>
-      <HeaderMobile
-        address={suiAddress ?? ''}
-        email={email ?? ''}
-        onTransactionsClick={onBack}
-      />
-      <div className="flex items-center gap-4">
-        <button
-          type="button"
-          onClick={onBack}
-          className="flex items-center justify-center p-1 bg-transparent border-none cursor-pointer hover:opacity-80"
-        >
-          <Icon name="ArrowLeft" size="medium" color="quantum" />
-        </button>
-        <Heading level={2}>Transactions</Heading>
-      </div>
-    </>
-  )
-}
 
 export function TransactionsTableHeader() {
   return (

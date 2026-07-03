@@ -191,6 +191,8 @@ export interface HeaderMobileProps {
   identicon?: number
   /** Callback when "Transaction History" menu item is clicked */
   onTransactionsClick?: () => void
+  /** Callback when "Manage Address Aliases" menu item is clicked */
+  onAddressAliasesClick?: () => void
   /** When true, show "Sign and submit test" (when callbacks provided) */
   showDevActions?: boolean
   /** Callback when "Dev mode" toggle menu item is clicked (may be async). */
@@ -251,13 +253,16 @@ export interface NetworkSelectorProps {
 }
 
 export interface AddTokenScreenProps {
-  user: User | null
+  user: User
   chain: SuiChain | null
-  onSuccess?: () => void
-  onCancel?: () => void
+  onSuccess: () => void
+  onCancel: () => void
 }
 
 export interface SendTokenScreenProps {
+  // Optional: on localnet there is no zkLogin user, only a local key address.
+  // The header falls back to the active Sui address in that case.
+  user?: User | null
   coinType: string
   onCancel?: () => void
 }
@@ -270,6 +275,8 @@ export interface DropdownItem {
   preventCloseOnClick?: boolean
   /** When set, renders this instead of default icon + label (e.g. for a row with a toggle) */
   customContent?: ReactNode
+  /** When true, renders the label in warning color (used for dev-only actions) */
+  devMode?: boolean
 }
 
 export interface DropdownSelectProps {
@@ -403,6 +410,11 @@ export type TransactionStatusMessage = {
 export interface TransactionsScreenProps {
   user: User
   chain: string
+  onBack: () => void
+}
+
+export interface AddressAliasesScreenProps {
+  user: User
   onBack: () => void
 }
 

@@ -1,9 +1,10 @@
 import {
-  HeaderMobile,
   isLocalnetChain,
   SendTokenScreen,
   useAuthStore,
 } from '@evevault/shared'
+import { getHeaderIdentity } from '@evevault/shared/auth'
+import { SubpageHeader } from '@evevault/shared/components'
 import type { SendTokenSearch } from '@evevault/shared/router'
 import { localnetKeyService } from '@evevault/shared/services/keeperService'
 import { useContextStore } from '@evevault/shared/stores'
@@ -26,16 +27,22 @@ function SendTokenPage() {
     navigate({ to: '/' })
   }
 
+  // On localnet there is no zkLogin user; fall back to the active address.
+  const identity = user ? getHeaderIdentity(user) : { email: '', address: '' }
+
   return (
     <div className="flex flex-col gap-10">
-      <HeaderMobile
-        email={user?.profile?.email ?? ''}
-        address={activeAddress ?? (user?.profile?.sui_address as string)}
-        onTransactionsClick={() =>
-          navigate({ to: EXTENSION_ROUTES.TRANSACTIONS })
-        }
+      <SubpageHeader
+        title="Transfer token"
+        email={identity.email}
+        address={activeAddress ?? identity.address}
+        onBack={handleNavigateBack}
       />
-      <SendTokenScreen coinType={coinType} onCancel={handleNavigateBack} />
+      <SendTokenScreen
+        coinType={coinType}
+        user={user}
+        onCancel={handleNavigateBack}
+      />
     </div>
   )
 }

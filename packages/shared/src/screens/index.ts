@@ -1,3 +1,4 @@
+export * from './AddressAliasesScreen'
 export * from './AddTokenScreen'
 export * from './Lockscreen'
 export * from './NotFoundScreen'

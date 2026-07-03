@@ -1,5 +1,7 @@
 import type React from 'react'
 import { useMemo, useState } from 'react'
+import { getHeaderIdentity } from '#/auth'
+import { SubpageHeader } from '#/components/Layout'
 import { useDeviceStore } from '#/stores/deviceStore'
 import type { TransactionsScreenProps } from '#/types/components'
 import { useActiveSuiAddress, useTransactionHistory } from '#/wallet'
@@ -10,7 +12,6 @@ import {
 } from './TransactionsScreen.helpers'
 import {
   LoadMoreTransactionsButton,
-  TransactionsHeader,
   TransactionsList,
   TransactionsTableHeader,
 } from './TransactionsScreen.parts'
@@ -60,16 +61,15 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
     isError,
     isLoading,
   })
-  const email = typeof user.profile.email === 'string' ? user.profile.email : ''
-  const suiAddress =
-    typeof user.profile.sui_address === 'string' ? user.profile.sui_address : ''
+  const { email, address } = getHeaderIdentity(user)
 
   return (
     <div className="flex flex-col gap-4 w-full">
-      <TransactionsHeader
+      <SubpageHeader
+        title="Transactions"
         email={email}
+        address={address}
         onBack={onBack}
-        suiAddress={suiAddress}
       />
 
       <div className="flex flex-col items-start p-4 px-2 gap-4 w-full min-h-[207px] bg-crude-dark border border-quantum-60">
