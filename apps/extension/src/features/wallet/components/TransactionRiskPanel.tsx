@@ -9,13 +9,17 @@ export function TransactionRiskPanel({
   if (findings.length === 0) return null
 
   return (
-    <div className="w-[80vw] max-h-32 overflow-y-auto border border(--matter-05)] p-2 text-left">
+    <div className="w-[80vw] max-h-32 overflow-y-auto border border-[var(--matter-05)] p-2 text-left">
       <Text size="small" color="grey-neutral">
         Transaction warnings
       </Text>
       <div className="mt-2 flex flex-col gap-2">
-        {findings
-          .sort((a, b) => (a.severity === 'danger' ? -1 : 1))
+        {[...findings]
+          .sort(
+            (a, b) =>
+              (a.severity === 'danger' ? 0 : 1) -
+              (b.severity === 'danger' ? 0 : 1),
+          )
           .map((finding) => (
             <div key={`${finding.severity}:${finding.title}`}>
               <Text

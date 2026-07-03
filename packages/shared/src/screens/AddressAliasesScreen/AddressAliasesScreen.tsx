@@ -90,22 +90,26 @@ export const AddressAliasesScreen: React.FC<AddressAliasesScreenProps> = ({
             <ul className="flex flex-col gap-1 w-full">
               {addressAliases.map((addressAlias) => (
                 <li key={addressAlias} className="break-all">
-                  <Text variant="light" size="small" color="neutral-90">
-                    {addressAlias}{' '}
-                    {addressAlias === ownerAddress && '(This address)'}
-                  </Text>
-
-                  {addressAlias !== ownerAddress && (
-                    <Button
-                      variant="secondary"
-                      size="small"
-                      disabled={disabled}
-                      isLoading={isSubmitting}
-                      onClick={() => removeAddressAlias(addressAlias)}
-                    >
-                      Remove
-                    </Button>
-                  )}
+                  <div
+                    key={addressAlias}
+                    className="break-all justify-start items-center gap-4 inline-flex"
+                  >
+                    <Text variant="light" size="small" color="neutral-90">
+                      {addressAlias}{' '}
+                      {addressAlias === ownerAddress && '(This address)'}
+                    </Text>
+                    {addressAlias !== ownerAddress && (
+                      <Button
+                        variant="secondary"
+                        size="small"
+                        disabled={disabled}
+                        isLoading={isSubmitting}
+                        onClick={() => removeAddressAlias(addressAlias)}
+                      >
+                        Remove
+                      </Button>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>
