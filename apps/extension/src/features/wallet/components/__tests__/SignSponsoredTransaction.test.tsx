@@ -5,12 +5,15 @@ import {
   parsePendingSponsoredAction,
 } from '../SignSponsoredTransaction'
 
-const { mockUsePendingSignAction, mockUseWalletSigningContext } = vi.hoisted(
-  () => ({
-    mockUsePendingSignAction: vi.fn(),
-    mockUseWalletSigningContext: vi.fn(),
-  }),
-)
+const {
+  mockUsePendingSignAction,
+  mockUseWalletSigningContext,
+  mockAddressAliasModule,
+} = vi.hoisted(() => ({
+  mockUsePendingSignAction: vi.fn(),
+  mockUseWalletSigningContext: vi.fn(),
+  mockAddressAliasModule: '0xaddress_alias_module',
+}))
 
 vi.mock('@/features/wallet/hooks', () => ({
   usePendingSignAction: mockUsePendingSignAction,
@@ -18,6 +21,7 @@ vi.mock('@/features/wallet/hooks', () => ({
 
 vi.mock('@evevault/shared/wallet', () => ({
   useWalletSigningContext: mockUseWalletSigningContext,
+  ADDRESS_ALIAS_MODULE: mockAddressAliasModule,
 }))
 
 vi.mock('@evevault/shared/utils', async (importOriginal) => {

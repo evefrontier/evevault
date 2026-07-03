@@ -1,12 +1,15 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { mockUseTransactionSigning, mockUseWalletSigningContext } = vi.hoisted(
-  () => ({
-    mockUseTransactionSigning: vi.fn(),
-    mockUseWalletSigningContext: vi.fn(),
-  }),
-)
+const {
+  mockUseTransactionSigning,
+  mockUseWalletSigningContext,
+  mockAddressAliasModule,
+} = vi.hoisted(() => ({
+  mockUseTransactionSigning: vi.fn(),
+  mockUseWalletSigningContext: vi.fn(),
+  mockAddressAliasModule: '0xaddress_alias_module',
+}))
 
 vi.mock('@/features/wallet/hooks', () => ({
   useTransactionSigning: mockUseTransactionSigning,
@@ -14,6 +17,7 @@ vi.mock('@/features/wallet/hooks', () => ({
 
 vi.mock('@evevault/shared/wallet', () => ({
   useWalletSigningContext: mockUseWalletSigningContext,
+  ADDRESS_ALIAS_MODULE: mockAddressAliasModule,
 }))
 
 vi.mock('@tanstack/react-query', () => ({
