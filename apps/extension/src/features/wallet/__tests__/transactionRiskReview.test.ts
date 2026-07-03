@@ -65,6 +65,27 @@ describe('reviewTransaction', () => {
     )
   })
 
+  it('flags address-alias module calls as dangerous', () => {
+    const findings = reviewTransaction({
+      commands: [
+        {
+          MoveCall: {
+            package:
+              '0x0000000000000000000000000000000000000000000000000000000000000002',
+            module: 'address_alias',
+            function: 'add',
+          },
+        },
+      ],
+    })
+
+    expect(findings).toContainEqual({
+      severity: 'danger',
+      title: 'Modifies address aliases',
+      detail: 'This can add or remove address aliases for your account.',
+    })
+  })
+
   it('flags shared object references', () => {
     const findings = reviewTransaction({
       inputs: [

@@ -1,4 +1,6 @@
 import { isRecord } from '@evevault/shared/utils'
+import { ADDRESS_ALIAS_MODULE } from '@evevault/shared/wallet'
+import { normalizeSuiAddress } from '@mysten/sui/utils'
 
 export type TransactionRiskSeverity = 'danger' | 'warning'
 
@@ -25,6 +27,11 @@ const FINDINGS = {
     severity: 'danger',
     title: 'Transfers objects',
     detail: 'This can move owned objects or tokens out of your account.',
+  },
+  addressAlias: {
+    severity: 'danger',
+    title: 'Modifies address aliases',
+    detail: 'This can add or remove address aliases for your account.',
   },
   moveCall: {
     severity: 'warning',
@@ -57,6 +64,16 @@ const COMMAND_RISK_RULES: Record<string, TransactionRiskFinding> = {
   movecall: FINDINGS.moveCall,
   makemovevec: FINDINGS.makeMoveVec,
 }
+
+// Address-alias operations are plain MoveCalls into `0x2::address_alias`, so
+// they can't be matched by command kind (that's always "MoveCall"). We match on
+// the call target instead. Package addresses may arrive short ("0x2") or fully
+// padded, so compare in normalized form.
+const [ADDRESS_ALIAS_PACKAGE, ADDRESS_ALIAS_MODULE_NAME] =
+  ADDRESS_ALIAS_MODULE.split('::')
+const NORMALIZED_ADDRESS_ALIAS_PACKAGE = normalizeSuiAddress(
+  ADDRESS_ALIAS_PACKAGE,
+)
 
 function normalizeKey(key: string): string {
   return key.toLowerCase().replace(/[^a-z0-9]/g, '')
@@ -110,11 +127,32 @@ function getCommandName(command: unknown): string | null {
   return commandKeys[0] ?? null
 }
 
+// True when the command is a MoveCall into the address-alias module. These
+// calls add/remove aliases, which can hand full control of the account to
+// another address, so they warrant the danger-class finding.
+function isAddressAliasCall(command: unknown): boolean {
+  if (!isRecord(command)) return false
+
+  const moveCall = command.MoveCall ?? command.moveCall
+  if (!isRecord(moveCall)) return false
+
+  const pkg = moveCall.package
+  const module = moveCall.module
+  if (typeof pkg !== 'string' || typeof module !== 'string') return false
+
+  return (
+    normalizeSuiAddress(pkg) === NORMALIZED_ADDRESS_ALIAS_PACKAGE &&
+    module === ADDRESS_ALIAS_MODULE_NAME
+  )
+}
+
 function reviewCommands(commands: unknown[]): TransactionRiskFinding[] {
   return commands.flatMap((command) => {
     const commandName = getCommandName(command)
     const finding = commandName ? COMMAND_RISK_RULES[commandName] : undefined
-    return finding ? [finding] : []
+    const findings = finding ? [finding] : []
+    if (isAddressAliasCall(command)) findings.push(FINDINGS.addressAlias)
+    return findings
   })
 }
 
@@ -144,6 +182,7 @@ export function reviewTransaction(
   // drifted, or the payload isn't a programmable transaction at all). Treat it
   // as unverified (danger) rather than silently "safe" — this is the fail-safe
   // that stops an unrecognized payload from bypassing the approval gate.
+
   if (commands === undefined && inputs === undefined) {
     return [FINDINGS.unverified]
   }

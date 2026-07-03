@@ -21,6 +21,11 @@ describe('TransactionRiskPanel', () => {
         title: 'Transfers objects',
         detail: 'This can move owned objects.',
       },
+      {
+        severity: 'danger',
+        title: 'Modifies address aliases',
+        detail: 'This can add or remove address aliases for your account.',
+      },
     ]
 
     render(<TransactionRiskPanel findings={findings} />)
@@ -29,6 +34,12 @@ describe('TransactionRiskPanel', () => {
     expect(screen.getByText('Transfers objects')).toBeInTheDocument()
     expect(screen.getByText('Review the package.')).toBeInTheDocument()
     expect(screen.getByText('This can move owned objects.')).toBeInTheDocument()
+    expect(screen.getByText('Modifies address aliases')).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'This can add or remove address aliases for your account.',
+      ),
+    ).toBeInTheDocument()
   })
 
   it('renders the panel header for non-empty findings', () => {
