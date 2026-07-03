@@ -1,22 +1,22 @@
 import { useCallback, useEffect, useMemo } from 'react'
 import { useToast } from '#/components'
-import { useAddressAliases } from './useAliases.query'
+import { useAddressAliasesQuery } from './useAddressAliases.query'
 import {
-  addAliasTxBytes,
-  enableAliasTxBytes,
-  executeAliasTx,
-} from './useAliases.transaction'
-import { validateNewAlias } from './useAliases.validation'
+  addAddressAliasTxBytes,
+  enableAddressAliasTxBytes,
+  executeAddressAliasTx,
+} from './useAddressAliases.transaction'
+import { validateNewAddressAlias } from './useAddressAliases.validation'
 import { useTransactionWrite } from './useTransactionWrite'
 import { useWalletSigningContext } from './useWalletSigningContext'
 
-interface UseAliasesResult {
+interface UseAddressAliasesResult {
   // State
   isAuthenticated: boolean
   isWalletUnlocked: boolean
   ownerAddress: string | null
   enabled: boolean
-  aliases: string[]
+  addressAliases: string[]
 
   // Read status
   isReading: boolean
@@ -24,8 +24,8 @@ interface UseAliasesResult {
 
   // Actions
   enable: () => Promise<void>
-  /** Resolves `true` when the alias was submitted successfully. */
-  addAlias: (alias: string) => Promise<boolean>
+  /** Resolves `true` when the address alias was submitted successfully. */
+  addAddressAlias: (addressAlias: string) => Promise<boolean>
   refresh: () => Promise<void>
 
   // Write status
@@ -35,11 +35,9 @@ interface UseAliasesResult {
 }
 
 /**
- * Hook for reading and managing address aliases. Built on
- * `useWalletSigningContext` and composed from the `useAliases.*` helpers,
- * mirroring the structure of `useSendToken`.
+ * Hook for reading and managing address aliases.
  */
-export function useAliases(): UseAliasesResult {
+export function useAddressAliases(): UseAddressAliasesResult {
   const { showToast } = useToast()
   const { isSubmitting, error, txDigest, run, setError } = useTransactionWrite()
 
@@ -72,10 +70,13 @@ export function useAliases(): UseAliasesResult {
     isLoading: isReading,
     error: readQueryError,
     refetch,
-  } = useAddressAliases({ owner: senderAddress, suiClient, chain })
+  } = useAddressAliasesQuery({ owner: senderAddress, suiClient, chain })
 
   const enabled = data?.enabled ?? false
-  const aliases = useMemo(() => data?.aliases ?? [], [data?.aliases])
+  const addressAliases = useMemo(
+    () => data?.addressAliases ?? [],
+    [data?.addressAliases],
+  )
   const objectId = data?.objectId
 
   const refresh = useCallback(async () => {
@@ -89,14 +90,14 @@ export function useAliases(): UseAliasesResult {
     }
     await run(
       () =>
-        executeAliasTx({
+        executeAddressAliasTx({
           suiClient,
           getSenderAddress,
           sign,
-          buildBytes: enableAliasTxBytes,
+          buildBytes: enableAddressAliasTxBytes,
         }),
       {
-        fallbackMessage: 'Failed to enable aliasing',
+        fallbackMessage: 'Failed to enable address aliasing',
         onSuccess: async () => {
           await refetch()
         },
@@ -104,33 +105,36 @@ export function useAliases(): UseAliasesResult {
     )
   }, [senderAddress, run, setError, suiClient, getSenderAddress, sign, refetch])
 
-  const addAlias = useCallback(
-    async (alias: string): Promise<boolean> => {
+  const addAddressAlias = useCallback(
+    async (addressAlias: string): Promise<boolean> => {
       if (!senderAddress) {
         setError('Connect wallet first')
         return false
       }
       if (!objectId) {
-        setError('Enable aliasing first')
+        setError('Enable address aliasing first')
         return false
       }
-      const validationError = validateNewAlias({ alias, existing: aliases })
+      const validationError = validateNewAddressAlias({
+        addressAlias,
+        existing: addressAliases,
+      })
       if (validationError) {
         setError(validationError)
         return false
       }
-      const trimmed = alias.trim()
+      const trimmed = addressAlias.trim()
       const digest = await run(
         () =>
-          executeAliasTx({
+          executeAddressAliasTx({
             suiClient,
             getSenderAddress,
             sign,
             buildBytes: (sender, client) =>
-              addAliasTxBytes(sender, objectId, trimmed, client),
+              addAddressAliasTxBytes(sender, objectId, trimmed, client),
           }),
         {
-          fallbackMessage: 'Failed to add alias',
+          fallbackMessage: 'Failed to add address alias',
           onSuccess: async () => {
             await refetch()
           },
@@ -141,7 +145,7 @@ export function useAliases(): UseAliasesResult {
     [
       senderAddress,
       objectId,
-      aliases,
+      addressAliases,
       run,
       setError,
       suiClient,
@@ -156,17 +160,17 @@ export function useAliases(): UseAliasesResult {
     isWalletUnlocked,
     ownerAddress: senderAddress,
     enabled,
-    aliases,
+    addressAliases,
     isReading,
     readError:
       readQueryError instanceof Error
         ? readQueryError.message
         : readQueryError
-          ? 'Failed to read aliases'
+          ? 'Failed to read address aliases'
           : null,
 
     enable,
-    addAlias,
+    addAddressAlias,
     refresh,
 
     isSubmitting,

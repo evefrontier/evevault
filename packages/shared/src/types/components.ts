@@ -191,8 +191,8 @@ export interface HeaderMobileProps {
   identicon?: number
   /** Callback when "Transaction History" menu item is clicked */
   onTransactionsClick?: () => void
-  /** Callback when "Manage Aliases" menu item is clicked */
-  onAliasesClick?: () => void
+  /** Callback when "Manage Address Aliases" menu item is clicked */
+  onAddressAliasesClick?: () => void
   /** When true, show "Sign and submit test" (when callbacks provided) */
   showDevActions?: boolean
   /** Callback when "Dev mode" toggle menu item is clicked (may be async). */
@@ -413,7 +413,7 @@ export interface TransactionsScreenProps {
   onBack: () => void
 }
 
-export interface AliasesScreenProps {
+export interface AddressAliasesScreenProps {
   user: User
   onBack: () => void
 }

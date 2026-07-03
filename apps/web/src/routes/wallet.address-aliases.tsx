@@ -1,10 +1,10 @@
 import { useAuthStore, useContextStore } from '@evevault/shared'
 import { requireAuth } from '@evevault/shared/router'
-import { AliasesScreen } from '@evevault/shared/screens'
+import { AddressAliasesScreen } from '@evevault/shared/screens'
 import { WEB_ROUTES } from '@evevault/shared/utils'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 
-function AliasesPage() {
+function AddressAliasesPage() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
   const { chain } = useContextStore()
@@ -17,10 +17,10 @@ function AliasesPage() {
     return null
   }
 
-  return <AliasesScreen onBack={handleBack} user={user} />
+  return <AddressAliasesScreen onBack={handleBack} user={user} />
 }
 
-export const Route = createFileRoute('/wallet/aliases')({
+export const Route = createFileRoute('/wallet/address-aliases')({
   beforeLoad: () => requireAuth({ preserveRedirectPath: true }),
-  component: AliasesPage,
+  component: AddressAliasesPage,
 })

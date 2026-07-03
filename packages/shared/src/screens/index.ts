@@ -1,5 +1,5 @@
+export * from './AddressAliasesScreen'
 export * from './AddTokenScreen'
-export * from './AliasesScreen'
 export * from './Lockscreen'
 export * from './NotFoundScreen'
 export * from './SendTokenScreen'

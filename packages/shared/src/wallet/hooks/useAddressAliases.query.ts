@@ -4,11 +4,11 @@ import { createLogger } from '#/utils'
 import {
   ADDRESS_ALIASES_TYPE,
   type AddressAliasesInfo,
-} from './useAliases.config'
+} from './useAddressAliases.config'
 
 const log = createLogger()
 
-const EMPTY: AddressAliasesInfo = { enabled: false, aliases: [] }
+const EMPTY: AddressAliasesInfo = { enabled: false, addressAliases: [] }
 
 /**
  * Reads the caller's `AddressAliases` owned object. Its id isn't known ahead of
@@ -33,27 +33,29 @@ export async function getAddressAliases(
   return {
     enabled: true,
     objectId: object.objectId,
-    aliases: parseAliases(object.json),
+    addressAliases: parseAddressAliases(object.json),
   }
 }
 
 /**
- * Defensive parse of the aliases list out of the object's JSON view.
+ * Defensive parse of the address aliases list out of the object's JSON view.
  */
-function parseAliases(json: Record<string, unknown> | null): string[] {
-  const aliases = (json?.aliases as { contents?: unknown } | undefined)
+function parseAddressAliases(json: Record<string, unknown> | null): string[] {
+  const addressAliases = (json?.aliases as { contents?: unknown } | undefined)
     ?.contents
-  if (!Array.isArray(aliases)) {
+  if (!Array.isArray(addressAliases)) {
     return []
   }
-  return aliases.filter((alias): alias is string => typeof alias === 'string')
+  return addressAliases.filter(
+    (alias): alias is string => typeof alias === 'string',
+  )
 }
 
 /**
  * React-query wrapper around {@link getAddressAliases}, matching the
  * `useBalance` / `useTransactionHistory` read convention.
  */
-export function useAddressAliases({
+export function useAddressAliasesQuery({
   owner,
   suiClient,
   chain,

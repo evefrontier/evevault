@@ -5,11 +5,11 @@ import { SubpageHeader } from '#/components'
 import Button from '#/components/Button'
 import { Input } from '#/components/Inputs'
 import Text from '#/components/Text'
-import type { AliasesScreenProps } from '#/types/components'
-import { useAliases } from '#/wallet'
-import { MAX_ALIASES } from '#/wallet/hooks/useAliases.config'
+import type { AddressAliasesScreenProps } from '#/types/components'
+import { useAddressAliases } from '#/wallet'
+import { MAX_ADDRESS_ALIASES } from '#/wallet/hooks/useAddressAliases.config'
 
-export const AliasesScreen: React.FC<AliasesScreenProps> = ({
+export const AddressAliasesScreen: React.FC<AddressAliasesScreenProps> = ({
   onBack,
   user,
 }) => {
@@ -17,24 +17,24 @@ export const AliasesScreen: React.FC<AliasesScreenProps> = ({
     isAuthenticated,
     ownerAddress,
     enabled,
-    aliases,
+    addressAliases,
     isReading,
     readError,
     enable,
-    addAlias,
+    addAddressAlias,
     isSubmitting,
     error,
-  } = useAliases()
+  } = useAddressAliases()
 
-  const [newAlias, setNewAlias] = useState('')
+  const [newAddressAlias, setNewAddressAlias] = useState('')
 
   const disabled = isSubmitting || !isAuthenticated || !ownerAddress
-  const atMax = aliases.length >= MAX_ALIASES
+  const atMax = addressAliases.length >= MAX_ADDRESS_ALIASES
 
   const handleAdd = async () => {
-    const added = await addAlias(newAlias)
+    const added = await addAddressAlias(newAddressAlias)
     if (added) {
-      setNewAlias('')
+      setNewAddressAlias('')
     }
   }
 
@@ -42,20 +42,24 @@ export const AliasesScreen: React.FC<AliasesScreenProps> = ({
   return (
     <div className="flex flex-col gap-10">
       <SubpageHeader
-        title="Manage Aliases"
+        title="Manage Address Aliases"
         email={email}
         address={address}
         onBack={onBack}
       />
       <div className="flex flex-col gap-4">
         <Text variant="light" size="large" color="neutral-90">
-          An alias is an address allowed to act on behalf of this address.
+          Address aliases let you set which keys are authorized to sign
+          transactions for this Sui address.
         </Text>
       </div>
 
-      <div className="w-full rounded border border-red-10/30 bg-red-10/10 p-2">
-        <Text variant="light" size="xsmall" color="error">
-          Any alias can unilaterally control this address and all its assets.
+      <div className="w-full rounded border border-critical bg-critical/50 p-2">
+        <Text variant="light" size="xsmall">
+          Any alias has complete, unilateral control over the address and can
+          take all of its coins, balances, and other resources. Treat alias
+          changes with extreme caution. A new alias is effectively a co-owner of
+          your address with full access.
         </Text>
       </div>
 
@@ -69,24 +73,24 @@ export const AliasesScreen: React.FC<AliasesScreenProps> = ({
         </Text>
       ) : !enabled ? (
         <Button disabled={disabled} isLoading={isSubmitting} onClick={enable}>
-          Enable aliasing
+          Enable address aliasing
         </Button>
       ) : (
         <div className="flex flex-col gap-4 w-full">
           <Text variant="bold" size="small" color="neutral-90">
-            Current aliases ({aliases.length}/{MAX_ALIASES})
+            Current aliases ({addressAliases.length}/{MAX_ADDRESS_ALIASES})
           </Text>
 
-          {aliases.length === 0 ? (
+          {addressAliases.length === 0 ? (
             <Text variant="light" size="small" color="neutral-90">
-              No aliases yet.
+              No address aliases yet.
             </Text>
           ) : (
             <ul className="flex flex-col gap-1 w-full">
-              {aliases.map((alias) => (
-                <li key={alias} className="break-all">
+              {addressAliases.map((addressAlias) => (
+                <li key={addressAlias} className="break-all">
                   <Text variant="light" size="small" color="neutral-90">
-                    {alias}
+                    {addressAlias}
                   </Text>
                 </li>
               ))}
@@ -97,9 +101,9 @@ export const AliasesScreen: React.FC<AliasesScreenProps> = ({
             <div className="flex-1">
               <Input
                 type="text"
-                placeholder="0x… alias Sui address"
-                value={newAlias}
-                onChange={(event) => setNewAlias(event.target.value)}
+                placeholder="0x… address alias"
+                value={newAddressAlias}
+                onChange={(event) => setNewAddressAlias(event.target.value)}
               />
             </div>
             <Button
@@ -128,4 +132,4 @@ export const AliasesScreen: React.FC<AliasesScreenProps> = ({
   )
 }
 
-export default AliasesScreen
+export default AddressAliasesScreen

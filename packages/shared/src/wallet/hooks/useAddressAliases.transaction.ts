@@ -2,10 +2,10 @@ import type { SuiGrpcClient } from '@mysten/sui/grpc'
 import { Transaction } from '@mysten/sui/transactions'
 import { createLogger } from '#/utils'
 import {
+  ADDRESS_ALIAS_GAS_BUDGET,
   ADDRESS_ALIAS_MODULE,
   ADDRESS_ALIAS_STATE,
-  ALIAS_GAS_BUDGET,
-} from './useAliases.config'
+} from './useAddressAliases.config'
 
 const log = createLogger()
 
@@ -14,11 +14,11 @@ type SignFn = (
   bytes: Uint8Array,
 ) => Promise<{ bytes: string; signature: string }>
 
-type ExecuteAliasTransactionParams = {
+type ExecuteAddressAliasTransactionParams = {
   suiClient: SuiGrpcClient
   getSenderAddress: () => Promise<string | null>
   sign: SignFn
-  /** Builds the transaction bytes for the specific alias action. */
+  /** Builds the transaction bytes for the specific address alias action. */
   buildBytes: (
     senderAddress: string,
     suiClient: SuiGrpcClient,
@@ -26,12 +26,12 @@ type ExecuteAliasTransactionParams = {
 }
 
 /**
- * Enable alias configuration for the sender. Creates the caller's AddressAliases
- * object. Assumes `enable` transfers the object internally (matching the CLI, which
- * does not transfer a returned value). If it instead RETURNS the object, capture the
- * result and `tx.transferObjects([result], sender)`.
+ * Enable address alias configuration for the sender. Creates the caller's
+ * AddressAliases object. Assumes `enable` transfers the object internally
+ * (matching the CLI, which does not transfer a returned value). If it instead
+ * RETURNS the object, capture the result and `tx.transferObjects([result], sender)`.
  */
-export async function enableAliasTxBytes(
+export async function enableAddressAliasTxBytes(
   senderAddress: string,
   suiClient: SuiGrpcClient,
 ): Promise<Uint8Array> {
@@ -43,21 +43,21 @@ export async function enableAliasTxBytes(
   })
 
   tx.setSender(senderAddress)
-  tx.setGasBudget(ALIAS_GAS_BUDGET)
+  tx.setGasBudget(ADDRESS_ALIAS_GAS_BUDGET)
   const txb = await tx.build({ client: suiClient })
   return new Uint8Array(txb)
 }
 
 /**
- * Add a new alias address to the caller's AddressAliases object.
+ * Add a new address alias to the caller's AddressAliases object.
  *
  * @param aliasesObjectId the caller's AddressAliases object id (from the read path)
- * @param alias the address to add as an alias
+ * @param addressAlias the address to add as an address alias
  */
-export async function addAliasTxBytes(
+export async function addAddressAliasTxBytes(
   senderAddress: string,
   aliasesObjectId: string,
-  alias: string,
+  addressAlias: string,
   suiClient: SuiGrpcClient,
 ): Promise<Uint8Array> {
   const tx = new Transaction()
@@ -67,33 +67,33 @@ export async function addAliasTxBytes(
     arguments: [
       // tx.object(ADDRESS_ALIAS_STATE),
       tx.object(aliasesObjectId),
-      tx.pure.address(alias),
+      tx.pure.address(addressAlias),
     ],
   })
 
   tx.setSender(senderAddress)
-  tx.setGasBudget(ALIAS_GAS_BUDGET)
+  tx.setGasBudget(ADDRESS_ALIAS_GAS_BUDGET)
   const txb = await tx.build({ client: suiClient })
   return new Uint8Array(txb)
 }
 
 /**
- * Signs and executes an alias PTB, returning the transaction digest.
+ * Signs and executes an address alias PTB, returning the transaction digest.
  *
  * Mirrors `executeTokenTransfer`: resolve sender → build bytes → sign
  * `TransactionData` → execute via gRPC core → surface the digest.
  */
-export const executeAliasTx = async ({
+export const executeAddressAliasTx = async ({
   suiClient,
   getSenderAddress,
   sign,
   buildBytes,
-}: ExecuteAliasTransactionParams): Promise<string | null> => {
+}: ExecuteAddressAliasTransactionParams): Promise<string | null> => {
   const senderAddress = await requireSenderAddress(getSenderAddress)
   const txBytes = await buildBytes(senderAddress, suiClient)
   const { bytes, signature } = await sign('TransactionData', txBytes)
 
-  log.debug('Alias transaction signed', {
+  log.debug('Address alias transaction signed', {
     bytesLength: bytes.length,
     signatureLength: signature.length,
   })

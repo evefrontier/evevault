@@ -41,7 +41,7 @@ export interface UseTransactionWriteResult {
 /**
  * Shared write-transaction lifecycle for signing hooks. Owns the
  * `isSubmitting` / `error` / `txDigest` state trio and the reset →
- * try/catch/finally flow that `useSendToken` and `useAliases` would otherwise
+ * try/catch/finally flow that `useSendToken` and `useAddressAliases` would otherwise
  * each duplicate. Pre-execution guards stay in the caller and use `setError`.
  */
 export function useTransactionWrite(): UseTransactionWriteResult {
