@@ -5,8 +5,12 @@ import {
   addAddressAliasTxBytes,
   enableAddressAliasTxBytes,
   executeAddressAliasTx,
+  removeAddressAliasTxBytes,
 } from './useAddressAliases.transaction'
-import { validateNewAddressAlias } from './useAddressAliases.validation'
+import {
+  validateExistingAddressAlias,
+  validateNewAddressAlias,
+} from './useAddressAliases.validation'
 import { useTransactionWrite } from './useTransactionWrite'
 import { useWalletSigningContext } from './useWalletSigningContext'
 
@@ -26,6 +30,7 @@ interface UseAddressAliasesResult {
   enable: () => Promise<void>
   /** Resolves `true` when the address alias was submitted successfully. */
   addAddressAlias: (addressAlias: string) => Promise<boolean>
+  removeAddressAlias: (addressAlias: string) => Promise<boolean>
   refresh: () => Promise<void>
 
   // Write status
@@ -155,6 +160,57 @@ export function useAddressAliases(): UseAddressAliasesResult {
     ],
   )
 
+  const removeAddressAlias = useCallback(
+    async (addressAlias: string): Promise<boolean> => {
+      if (!senderAddress) {
+        setError('Connect wallet first')
+        return false
+      }
+      if (!objectId) {
+        setError('Enable address aliasing first')
+        return false
+      }
+
+      const validationError = validateExistingAddressAlias({
+        addressAlias,
+        existing: addressAliases,
+      })
+      if (validationError) {
+        setError(validationError)
+        return false
+      }
+      const trimmed = addressAlias.trim()
+      const digest = await run(
+        () =>
+          executeAddressAliasTx({
+            suiClient,
+            getSenderAddress,
+            sign,
+            buildBytes: (sender, client) =>
+              removeAddressAliasTxBytes(sender, objectId, trimmed, client),
+          }),
+        {
+          fallbackMessage: 'Failed to remove address alias',
+          onSuccess: async () => {
+            await refetch()
+          },
+        },
+      )
+      return digest !== null
+    },
+    [
+      addressAliases,
+      senderAddress,
+      objectId,
+      run,
+      setError,
+      suiClient,
+      getSenderAddress,
+      sign,
+      refetch,
+    ],
+  )
+
   return {
     isAuthenticated,
     isWalletUnlocked,
@@ -168,11 +224,10 @@ export function useAddressAliases(): UseAddressAliasesResult {
         : readQueryError
           ? 'Failed to read address aliases'
           : null,
-
     enable,
     addAddressAlias,
+    removeAddressAlias,
     refresh,
-
     isSubmitting,
     error,
     txDigest,

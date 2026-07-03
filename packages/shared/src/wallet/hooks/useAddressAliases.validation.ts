@@ -30,3 +30,19 @@ export const validateNewAddressAlias = ({
   }
   return null
 }
+
+/**
+ * Returns an error when the address is not a current address alias, or `null`
+ * when it is safe to remove.
+ */
+export const validateExistingAddressAlias = ({
+  addressAlias,
+  existing,
+}: ValidateAddressAliasParams): string | null => {
+  const trimmed = addressAlias.trim()
+
+  if (!existing.includes(trimmed)) {
+    return 'Address is not an address alias'
+  }
+  return null
+}

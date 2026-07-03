@@ -22,6 +22,7 @@ export const AddressAliasesScreen: React.FC<AddressAliasesScreenProps> = ({
     readError,
     enable,
     addAddressAlias,
+    removeAddressAlias,
     isSubmitting,
     error,
   } = useAddressAliases()
@@ -90,8 +91,21 @@ export const AddressAliasesScreen: React.FC<AddressAliasesScreenProps> = ({
               {addressAliases.map((addressAlias) => (
                 <li key={addressAlias} className="break-all">
                   <Text variant="light" size="small" color="neutral-90">
-                    {addressAlias}
+                    {addressAlias}{' '}
+                    {addressAlias === ownerAddress && '(This address)'}
                   </Text>
+
+                  {addressAlias !== ownerAddress && (
+                    <Button
+                      variant="secondary"
+                      size="small"
+                      disabled={disabled}
+                      isLoading={isSubmitting}
+                      onClick={() => removeAddressAlias(addressAlias)}
+                    >
+                      Remove
+                    </Button>
+                  )}
                 </li>
               ))}
             </ul>
