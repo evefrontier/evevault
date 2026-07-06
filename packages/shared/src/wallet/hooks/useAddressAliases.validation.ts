@@ -1,7 +1,7 @@
 import { isValidSuiAddress } from '@mysten/sui/utils'
 import { MAX_ADDRESS_ALIASES } from './useAddressAliases.config'
 
-type ValidateAddressAliasParams = {
+export type ValidateAddressAliasParams = {
   addressAlias: string
   existing: string[]
 }
