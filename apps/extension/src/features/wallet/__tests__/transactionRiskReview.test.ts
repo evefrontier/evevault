@@ -65,6 +65,79 @@ describe('reviewTransaction', () => {
     )
   })
 
+  it('flags address-alias module calls as dangerous', () => {
+    const findings = reviewTransaction({
+      commands: [
+        {
+          MoveCall: {
+            package:
+              '0x0000000000000000000000000000000000000000000000000000000000000002',
+            module: 'address_alias',
+            function: 'add',
+          },
+        },
+      ],
+    })
+
+    expect(findings).toContainEqual({
+      severity: 'danger',
+      title: 'Modifies address aliases',
+      detail: 'This can add or remove address aliases for your account.',
+    })
+  })
+
+  it('matches short-form alias packages and dedupes repeated alias calls', () => {
+    const findings = reviewTransaction({
+      commands: [
+        {
+          MoveCall: {
+            package: '0x2',
+            module: 'address_alias',
+            function: 'add',
+          },
+        },
+        {
+          MoveCall: {
+            package:
+              '0x0000000000000000000000000000000000000000000000000000000000000002',
+            module: 'address_alias',
+            function: 'remove',
+          },
+        },
+      ],
+    })
+
+    // Short-form ("0x2") and fully padded packages both match, and the two
+    // alias calls collapse to a single finding.
+    expect(
+      findings.filter((f) => f.title === 'Modifies address aliases'),
+    ).toEqual([
+      {
+        severity: 'danger',
+        title: 'Modifies address aliases',
+        detail: 'This can add or remove address aliases for your account.',
+      },
+    ])
+  })
+
+  it('does not flag or throw on a malformed alias package value', () => {
+    const findings = reviewTransaction({
+      commands: [
+        {
+          MoveCall: {
+            package: 'not-a-real-address',
+            module: 'address_alias',
+            function: 'add',
+          },
+        },
+      ],
+    })
+
+    expect(findings.some((f) => f.title === 'Modifies address aliases')).toBe(
+      false,
+    )
+  })
+
   it('flags shared object references', () => {
     const findings = reviewTransaction({
       inputs: [

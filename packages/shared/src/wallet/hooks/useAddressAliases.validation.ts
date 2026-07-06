@@ -1,7 +1,7 @@
 import { isValidSuiAddress } from '@mysten/sui/utils'
 import { MAX_ADDRESS_ALIASES } from './useAddressAliases.config'
 
-type ValidateAddressAliasParams = {
+export type ValidateAddressAliasParams = {
   addressAlias: string
   existing: string[]
 }
@@ -27,6 +27,28 @@ export const validateNewAddressAlias = ({
   }
   if (existing.length >= MAX_ADDRESS_ALIASES) {
     return `Maximum of ${MAX_ADDRESS_ALIASES} address aliases reached`
+  }
+  return null
+}
+
+/**
+ * Returns an error when the address is not a current address alias, or `null`
+ * when it is safe to remove.
+ */
+export const validateExistingAddressAlias = ({
+  addressAlias,
+  existing,
+}: ValidateAddressAliasParams): string | null => {
+  const trimmed = addressAlias.trim()
+
+  if (!trimmed) {
+    return 'Enter an address to remove'
+  }
+  if (!isValidSuiAddress(trimmed)) {
+    return 'Not a valid Sui address'
+  }
+  if (!existing.includes(trimmed)) {
+    return 'Address is not an existing address alias'
   }
   return null
 }

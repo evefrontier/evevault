@@ -26,22 +26,17 @@ type ExecuteAddressAliasTransactionParams = {
 }
 
 /**
- * Enable address alias configuration for the sender. Creates the caller's
- * AddressAliases object. Assumes `enable` transfers the object internally
- * (matching the CLI, which does not transfer a returned value). If it instead
- * RETURNS the object, capture the result and `tx.transferObjects([result], sender)`.
+ * Builds signed-ready bytes for an address alias PTB: runs the caller's
+ * command(s), sets the sender and gas budget, and serializes. Every address
+ * alias transaction shares this sender/gas/build tail.
  */
-export async function enableAddressAliasTxBytes(
+async function buildAddressAliasTx(
   senderAddress: string,
   suiClient: SuiGrpcClient,
+  addCommands: (tx: Transaction) => void,
 ): Promise<Uint8Array> {
   const tx = new Transaction()
-
-  tx.moveCall({
-    target: `${ADDRESS_ALIAS_MODULE}::enable`,
-    arguments: [tx.object(ADDRESS_ALIAS_STATE)],
-  })
-
+  addCommands(tx)
   tx.setSender(senderAddress)
   tx.setGasBudget(ADDRESS_ALIAS_GAS_BUDGET)
   const txb = await tx.build({ client: suiClient })
@@ -49,32 +44,61 @@ export async function enableAddressAliasTxBytes(
 }
 
 /**
+ * Enable address alias configuration for the sender. Creates the caller's
+ * AddressAliases object. Assumes `enable` transfers the object internally
+ * (matching the CLI, which does not transfer a returned value). If it instead
+ * RETURNS the object, capture the result and `tx.transferObjects([result], sender)`.
+ */
+export function enableAddressAliasTxBytes(
+  senderAddress: string,
+  suiClient: SuiGrpcClient,
+): Promise<Uint8Array> {
+  return buildAddressAliasTx(senderAddress, suiClient, (tx) => {
+    tx.moveCall({
+      target: `${ADDRESS_ALIAS_MODULE}::enable`,
+      arguments: [tx.object(ADDRESS_ALIAS_STATE)],
+    })
+  })
+}
+
+/**
  * Add a new address alias to the caller's AddressAliases object.
  *
  * @param aliasesObjectId the caller's AddressAliases object id (from the read path)
- * @param addressAlias the address to add as an address alias
+ * @param addressAlias the address to add as an alias
  */
-export async function addAddressAliasTxBytes(
+export function addAddressAliasTxBytes(
   senderAddress: string,
   aliasesObjectId: string,
   addressAlias: string,
   suiClient: SuiGrpcClient,
 ): Promise<Uint8Array> {
-  const tx = new Transaction()
-
-  tx.moveCall({
-    target: `${ADDRESS_ALIAS_MODULE}::add`,
-    arguments: [
-      // tx.object(ADDRESS_ALIAS_STATE),
-      tx.object(aliasesObjectId),
-      tx.pure.address(addressAlias),
-    ],
+  return buildAddressAliasTx(senderAddress, suiClient, (tx) => {
+    tx.moveCall({
+      target: `${ADDRESS_ALIAS_MODULE}::add`,
+      arguments: [tx.object(aliasesObjectId), tx.pure.address(addressAlias)],
+    })
   })
+}
 
-  tx.setSender(senderAddress)
-  tx.setGasBudget(ADDRESS_ALIAS_GAS_BUDGET)
-  const txb = await tx.build({ client: suiClient })
-  return new Uint8Array(txb)
+/**
+ * Removes an address alias from the caller's AddressAliases object.
+ *
+ * @param aliasesObjectId the caller's AddressAliases object id (from the read path)
+ * @param addressAlias the address alias to remove
+ */
+export function removeAddressAliasTxBytes(
+  senderAddress: string,
+  aliasesObjectId: string,
+  addressAlias: string,
+  suiClient: SuiGrpcClient,
+): Promise<Uint8Array> {
+  return buildAddressAliasTx(senderAddress, suiClient, (tx) => {
+    tx.moveCall({
+      target: `${ADDRESS_ALIAS_MODULE}::remove`,
+      arguments: [tx.object(aliasesObjectId), tx.pure.address(addressAlias)],
+    })
+  })
 }
 
 /**

@@ -14,20 +14,26 @@ export function TransactionRiskPanel({
         Transaction warnings
       </Text>
       <div className="mt-2 flex flex-col gap-2">
-        {findings.map((finding) => (
-          <div key={`${finding.severity}:${finding.title}`}>
-            <Text
-              size="small"
-              variant="bold"
-              color={finding.severity === 'danger' ? 'error' : 'neutral'}
-            >
-              {finding.title}
-            </Text>
-            <Text size="xsmall" color="grey-neutral">
-              {finding.detail}
-            </Text>
-          </div>
-        ))}
+        {[...findings]
+          .sort(
+            (a, b) =>
+              (a.severity === 'danger' ? 0 : 1) -
+              (b.severity === 'danger' ? 0 : 1),
+          )
+          .map((finding) => (
+            <div key={`${finding.severity}:${finding.title}`}>
+              <Text
+                size="small"
+                variant="bold"
+                color={finding.severity === 'danger' ? 'error' : 'neutral'}
+              >
+                {finding.title}
+              </Text>
+              <Text size="xsmall" color="grey-neutral">
+                {finding.detail}
+              </Text>
+            </div>
+          ))}
       </div>
     </div>
   )

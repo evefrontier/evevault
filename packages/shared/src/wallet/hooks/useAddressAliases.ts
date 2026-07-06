@@ -1,3 +1,4 @@
+import type { SuiGrpcClient } from '@mysten/sui/grpc'
 import { useCallback, useEffect, useMemo } from 'react'
 import { useToast } from '#/components'
 import { useAddressAliasesQuery } from './useAddressAliases.query'
@@ -5,8 +6,13 @@ import {
   addAddressAliasTxBytes,
   enableAddressAliasTxBytes,
   executeAddressAliasTx,
+  removeAddressAliasTxBytes,
 } from './useAddressAliases.transaction'
-import { validateNewAddressAlias } from './useAddressAliases.validation'
+import {
+  type ValidateAddressAliasParams,
+  validateExistingAddressAlias,
+  validateNewAddressAlias,
+} from './useAddressAliases.validation'
 import { useTransactionWrite } from './useTransactionWrite'
 import { useWalletSigningContext } from './useWalletSigningContext'
 
@@ -26,6 +32,7 @@ interface UseAddressAliasesResult {
   enable: () => Promise<void>
   /** Resolves `true` when the address alias was submitted successfully. */
   addAddressAlias: (addressAlias: string) => Promise<boolean>
+  removeAddressAlias: (addressAlias: string) => Promise<boolean>
   refresh: () => Promise<void>
 
   // Write status
@@ -105,8 +112,20 @@ export function useAddressAliases(): UseAddressAliasesResult {
     )
   }, [senderAddress, run, setError, suiClient, getSenderAddress, sign, refetch])
 
-  const addAddressAlias = useCallback(
-    async (addressAlias: string): Promise<boolean> => {
+  // Add and remove share the same guard → validate → build → sign → refetch
+  // pipeline; only the validator, bytes builder, and error copy differ.
+  const submitAliasChange = useCallback(
+    async (
+      addressAlias: string,
+      validate: (params: ValidateAddressAliasParams) => string | null,
+      buildBytes: (
+        sender: string,
+        objectId: string,
+        alias: string,
+        client: SuiGrpcClient,
+      ) => Promise<Uint8Array>,
+      fallbackMessage: string,
+    ): Promise<boolean> => {
       if (!senderAddress) {
         setError('Connect wallet first')
         return false
@@ -115,7 +134,7 @@ export function useAddressAliases(): UseAddressAliasesResult {
         setError('Enable address aliasing first')
         return false
       }
-      const validationError = validateNewAddressAlias({
+      const validationError = validate({
         addressAlias,
         existing: addressAliases,
       })
@@ -131,10 +150,10 @@ export function useAddressAliases(): UseAddressAliasesResult {
             getSenderAddress,
             sign,
             buildBytes: (sender, client) =>
-              addAddressAliasTxBytes(sender, objectId, trimmed, client),
+              buildBytes(sender, objectId, trimmed, client),
           }),
         {
-          fallbackMessage: 'Failed to add address alias',
+          fallbackMessage,
           onSuccess: async () => {
             await refetch()
           },
@@ -155,6 +174,28 @@ export function useAddressAliases(): UseAddressAliasesResult {
     ],
   )
 
+  const addAddressAlias = useCallback(
+    (addressAlias: string) =>
+      submitAliasChange(
+        addressAlias,
+        validateNewAddressAlias,
+        addAddressAliasTxBytes,
+        'Failed to add address alias',
+      ),
+    [submitAliasChange],
+  )
+
+  const removeAddressAlias = useCallback(
+    (addressAlias: string) =>
+      submitAliasChange(
+        addressAlias,
+        validateExistingAddressAlias,
+        removeAddressAliasTxBytes,
+        'Failed to remove address alias',
+      ),
+    [submitAliasChange],
+  )
+
   return {
     isAuthenticated,
     isWalletUnlocked,
@@ -168,11 +209,10 @@ export function useAddressAliases(): UseAddressAliasesResult {
         : readQueryError
           ? 'Failed to read address aliases'
           : null,
-
     enable,
     addAddressAlias,
+    removeAddressAlias,
     refresh,
-
     isSubmitting,
     error,
     txDigest,
