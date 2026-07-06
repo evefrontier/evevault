@@ -41,8 +41,14 @@ export const validateExistingAddressAlias = ({
 }: ValidateAddressAliasParams): string | null => {
   const trimmed = addressAlias.trim()
 
+  if (!trimmed) {
+    return 'Enter an address to remove'
+  }
+  if (!isValidSuiAddress(trimmed)) {
+    return 'Not a valid Sui address'
+  }
   if (!existing.includes(trimmed)) {
-    return 'Address is not an address alias'
+    return 'Address is not an existing address alias'
   }
   return null
 }

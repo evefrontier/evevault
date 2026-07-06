@@ -42,6 +42,21 @@ describe('TransactionRiskPanel', () => {
     ).toBeInTheDocument()
   })
 
+  it('renders danger findings before warnings', () => {
+    const findings: TransactionRiskFinding[] = [
+      { severity: 'warning', title: 'Calls Move code', detail: 'w' },
+      { severity: 'danger', title: 'Transfers objects', detail: 'd' },
+    ]
+
+    render(<TransactionRiskPanel findings={findings} />)
+
+    const titles = screen.getAllByText(/Calls Move code|Transfers objects/)
+    expect(titles.map((el) => el.textContent)).toEqual([
+      'Transfers objects',
+      'Calls Move code',
+    ])
+  })
+
   it('renders the panel header for non-empty findings', () => {
     const findings: TransactionRiskFinding[] = [
       { severity: 'warning', title: 'Calls Move code', detail: 'detail' },
