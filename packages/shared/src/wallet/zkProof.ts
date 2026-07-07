@@ -30,7 +30,7 @@ export const fetchZkProof = async (
 
   const { apiBaseUrl, tenant } = getApiContext(idToken)
 
-  const response = await fetch(`${apiBaseUrl}/zklogin/zkp`, {
+  const response = await fetch(`${apiBaseUrl}/auth/zklogin/zkp`, {
     method: 'POST',
     headers: {
       'X-Tenant': tenant,

@@ -22,7 +22,7 @@ import { makeJwt } from '#/testing'
 import { fetchZkProof } from '#/wallet/zkProof'
 
 const ID_TOKEN = makeJwt({ tenant: 'nova', sub: 'user-1' })
-const ZKP_URL = 'https://api.test.pub.evefrontier.com/zklogin/zkp'
+const ZKP_URL = 'https://api.test.pub.evefrontier.com/auth/zklogin/zkp'
 
 const makeProofData = (overrides: Partial<Record<string, unknown>> = {}) => ({
   proofPoints: {
