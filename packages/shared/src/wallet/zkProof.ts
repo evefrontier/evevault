@@ -52,7 +52,13 @@ export const fetchZkProof = async (
     )
   }
 
-  const responseJson = (await response.json()) as unknown as ZkProofData
+  const responseText = await response.text()
+  let responseJson: ZkProofData
+  try {
+    responseJson = JSON.parse(responseText) as ZkProofData
+  } catch {
+    throw new Error(`zk proof response was not valid JSON: ${responseText}`)
+  }
 
   if (
     !responseJson?.proofPoints ||
