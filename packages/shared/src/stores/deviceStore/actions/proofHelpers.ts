@@ -73,7 +73,7 @@ const generateZkProof = async (
     log.info('*********** Generating ZK proof ***********')
     const proofInput = await resolveProofInput(chain, get)
     const zkProofResponse = await requestZkProof(proofInput)
-    await persistSuccessfulProof(chain, zkProofResponse, set)
+    await persistSuccessfulProof(chain, zkProofResponse)
     return zkProofResponse
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'
@@ -212,14 +212,7 @@ const requestZkProof = async ({
 const persistSuccessfulProof = async (
   chain: SuiChain,
   zkProofResponse: ZkProofResponse,
-  set: SetDeviceState,
 ) => {
-  if (zkProofResponse.error !== undefined) {
-    log.error('Error generating ZK proof', zkProofResponse.error)
-    set({ error: zkProofResponse.error?.message })
-    return
-  }
-
   try {
     await zkProofService.setZkProof(chain, zkProofResponse)
     log.debug('zkProof stored in keeper')

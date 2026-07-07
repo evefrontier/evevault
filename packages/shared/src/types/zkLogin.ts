@@ -1,20 +1,20 @@
-// Global types for Enoki API responses
+// Global types for zkLogin API responses
 
 import type { ZkLoginSignatureInputs } from '@mysten/sui/zklogin'
 
-export interface EnokiError {
+export interface ApiError {
   message: string
   code?: string
   status?: number
   details?: string
 }
 
-export interface EnokiResponse<T> {
+export interface ApiResponse<T> {
   data: T | undefined
-  error: EnokiError | undefined
+  error: ApiError | undefined
 }
 
-// Specific response types for different Enoki endpoints
+// Specific response types for different zkLogin endpoints
 export interface ZkLoginAddressData {
   salt: string
   address: string
@@ -23,4 +23,4 @@ export interface ZkLoginAddressData {
 
 export type ZkProofData = ZkLoginSignatureInputs
 
-export interface ZkProofResponse extends EnokiResponse<ZkProofData> {}
+export interface ZkProofResponse extends ApiResponse<ZkProofData> {}
