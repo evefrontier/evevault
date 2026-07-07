@@ -2,8 +2,8 @@ import type { ZKEd25519Keypair } from '@evefrontier/wallet-core/crypto'
 import type { PublicKey, Signer } from '@mysten/sui/cryptography'
 import type { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519'
 import type { User } from 'oidc-client-ts'
-import type { ZkProofResponse } from './enoki'
 import type { WebCryptoKeyMarker } from './stores'
+import type { ZkProofResponse } from './zkLogin'
 
 /**
  * Inert marker stored as the web vault's "secret key". The real key is a

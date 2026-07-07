@@ -1,9 +1,9 @@
 import type { ZKEd25519Keypair } from '@evefrontier/wallet-core/crypto'
 import type { PublicKey } from '@mysten/sui/cryptography'
 import type { SuiChain } from '@mysten/wallet-standard'
-import type { ZkProofResponse } from './enoki'
 import type { ZkLoginSuiChain } from './networks'
 import type { TenantState } from './tenant'
+import type { ZkProofResponse } from './zkLogin'
 
 // Key type flag bytes (matches Sui signature scheme flags)
 export const KEY_FLAG_ED25519 = 0x00

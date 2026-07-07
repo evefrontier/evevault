@@ -1,4 +1,4 @@
-import type { ZkLoginAddressData } from '#/types/enoki'
+import type { ZkLoginAddressData } from '@evevault/shared/types/zkLogin'
 import { getApiContext } from './getApiContext'
 import type { GetZkLoginAddressParams } from './types'
 

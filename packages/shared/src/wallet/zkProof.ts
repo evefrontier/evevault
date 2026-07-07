@@ -1,6 +1,6 @@
+import type { ZkProofData } from '@evevault/shared/types/zkLogin'
 import { getExtendedEphemeralPublicKey } from '@mysten/sui/zklogin'
 import { getApiContext } from '#/auth'
-import type { ZkProofData } from '#/types/enoki'
 import type { ZkProofParams } from '#/types/wallet'
 import { createLogger } from '#/utils/logger'
 

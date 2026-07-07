@@ -1,7 +1,7 @@
 import type { SuiChain } from '@mysten/wallet-standard'
 import type { AuthSuccessToken } from './authTypes'
-import type { ZkProofResponse } from './enoki'
 import type { StoredSecretKey } from './stores'
+import type { ZkProofResponse } from './zkLogin'
 
 export enum AuthMessageTypes {
   AUTH_SUCCESS = 'auth_success',
