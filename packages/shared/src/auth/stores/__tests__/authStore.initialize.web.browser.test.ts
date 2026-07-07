@@ -107,7 +107,7 @@ describe('authStore.initialize() (web path)', () => {
     expect(h.mockEnrichUser).not.toHaveBeenCalled()
   })
 
-  it('re-enriches via Enoki when the token is valid but salt was stripped from sessionStorage', async () => {
+  it('re-enriches via API Gateway when the token is valid but salt was stripped from sessionStorage', async () => {
     const user = makeUser({
       profile: {
         sub: 'user-1',

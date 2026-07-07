@@ -89,7 +89,7 @@ describe('enrichUserWithZkLoginIfNeeded', () => {
   it('fetches and merges sui_address and salt when sui_address is missing', async () => {
     const { enrichUserWithZkLoginIfNeeded } = await import('#/auth/userJwtSync')
     mockGetZkLoginAddress.mockResolvedValue({
-      address: '0xenoki',
+      address: '0xzkLogin',
       salt: 'salt-99',
       publicKey: 'pk',
     })
@@ -104,7 +104,7 @@ describe('enrichUserWithZkLoginIfNeeded', () => {
       jwt: user.id_token,
     })
     expect(out).not.toBe(user)
-    expect(out.profile?.sui_address).toBe('0xenoki')
+    expect(out.profile?.sui_address).toBe('0xzkLogin')
     expect(out.profile?.salt).toBe('salt-99')
   })
 
