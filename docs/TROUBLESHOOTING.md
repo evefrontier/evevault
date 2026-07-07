@@ -25,8 +25,7 @@ Common issues and solutions when working with the EVE Vault extension.
    ```
    Check for `maxEpoch`, `nonce`, `jwtRandomness` in storage
 4. Ensure you're on the correct network (check SuiClient configuration)
-5. Verify Enoki API key is valid and accessible
-6. Check network tab for failed API calls
+5. Check network tab for failed API calls
 
 ### Popup doesn't open
 
@@ -177,7 +176,7 @@ Common issues and solutions when working with the EVE Vault extension.
 
 1. Check console logs for the prepared payload to verify all parameters are present
 2. Verify `maxEpoch`, `jwtRandomness`, `ephemeralKeyPair`, and tokens are all stored correctly
-3. Ensure Enoki API is accessible and returning valid data
+3. Ensure API Gateway is accessible and returning valid data
 4. Check Sui prover endpoint is accessible
 5. Verify network configuration (devnet/testnet/mainnet)
 6. Check if maxEpoch has expired (requires re-login)

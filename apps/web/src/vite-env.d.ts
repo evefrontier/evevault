@@ -6,7 +6,6 @@ declare module 'virtual:app-version' {
 }
 
 interface ImportMetaEnv {
-  readonly VITE_ENOKI_API_KEY: string
   readonly VITE_FUSIONAUTH_REDIRECT_URI: string
 }
 

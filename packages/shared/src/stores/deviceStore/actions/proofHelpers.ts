@@ -198,14 +198,14 @@ const requestZkProof = async ({
   vendedIdToken,
 }: ProofInput): Promise<ZkProofResponse> => {
   log.debug('Generating ZK proof for network', { chain, network })
-  return fetchZkProof({
+  const data = await fetchZkProof({
     jwtRandomness: networkJwtRandomness,
     maxEpoch,
     ephemeralPublicKey,
     idToken: vendedIdToken,
-    enokiApiKey: import.meta.env.VITE_ENOKI_API_KEY,
     network,
   })
+  return { data, error: undefined }
 }
 
 /** Stores the proof in the keeper service so it can be reused across sessions within the same epoch. */

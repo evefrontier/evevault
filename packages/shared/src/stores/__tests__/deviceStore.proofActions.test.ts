@@ -139,10 +139,7 @@ describe('createProofActions.getZkProof', () => {
       id_token: 'stored.primary',
     } as never)
     resolveVendedMock.mockResolvedValue('vended.id.token')
-    fetchZkProofMock.mockResolvedValue({
-      data: { inputs: 'mock' } as never,
-      error: undefined,
-    })
+    fetchZkProofMock.mockResolvedValue({ inputs: 'mock' } as never)
   })
 
   afterEach(() => {

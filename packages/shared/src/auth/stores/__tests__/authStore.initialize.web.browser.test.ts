@@ -93,7 +93,7 @@ describe('authStore.initialize() (web path)', () => {
         sub: 'user-1',
         sui_address: '0xsui',
         salt: 'abc',
-      } as User['profile'],
+      } as unknown as User['profile'],
     })
     h.mockGetUser.mockResolvedValue(user)
     h.mockUserToJwtResponse.mockReturnValue(makeStoredJwt())
@@ -109,7 +109,10 @@ describe('authStore.initialize() (web path)', () => {
 
   it('re-enriches via Enoki when the token is valid but salt was stripped from sessionStorage', async () => {
     const user = makeUser({
-      profile: { sub: 'user-1', sui_address: '0xsui' } as User['profile'],
+      profile: {
+        sub: 'user-1',
+        sui_address: '0xsui',
+      } as unknown as User['profile'],
     })
     h.mockGetUser.mockResolvedValue(user)
     h.mockUserToJwtResponse.mockReturnValue(makeStoredJwt())

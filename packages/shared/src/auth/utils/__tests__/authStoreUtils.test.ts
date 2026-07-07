@@ -10,10 +10,6 @@ vi.mock('#/auth/storageService', () => ({
   getJwt: vi.fn(),
 }))
 
-vi.mock('#/auth/stores/authStore', () => ({
-  getEnokiApiKey: vi.fn(() => 'test-enoki-key'),
-}))
-
 import type { User } from 'oidc-client-ts'
 import { getZkLoginAddress } from '#/auth/getZkLoginAddress'
 import { getJwt } from '#/auth/storageService'

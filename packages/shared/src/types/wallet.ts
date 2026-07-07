@@ -34,7 +34,6 @@ export interface ZkProofParams {
   maxEpoch: string
   ephemeralPublicKey: PublicKey
   idToken: string
-  enokiApiKey: string
   network?: string // Optional network parameter (devnet, testnet, mainnet)
 }
 
@@ -49,7 +48,6 @@ export interface ExtensionZkProofParams {
   maxEpoch: string
   ephemeralKeyPair: ZKEd25519Keypair
   idToken: string
-  enokiApiKey: string
   network?: string
 }
 

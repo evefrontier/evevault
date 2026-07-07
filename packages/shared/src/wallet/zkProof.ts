@@ -1,5 +1,6 @@
 import { getExtendedEphemeralPublicKey } from '@mysten/sui/zklogin'
-import type { ZkProofResponse } from '#/types/enoki'
+import { getApiContext } from '#/auth'
+import type { ZkProofData } from '#/types/enoki'
 import type { ZkProofParams } from '#/types/wallet'
 import { createLogger } from '#/utils/logger'
 
@@ -9,9 +10,8 @@ export type { ZkProofParams }
 
 export const fetchZkProof = async (
   params: ZkProofParams,
-): Promise<ZkProofResponse> => {
-  const { jwtRandomness, maxEpoch, ephemeralPublicKey, idToken, enokiApiKey } =
-    params
+): Promise<ZkProofData> => {
+  const { jwtRandomness, maxEpoch, ephemeralPublicKey, idToken } = params
 
   const extendedEphemeralPublicKey =
     getExtendedEphemeralPublicKey(ephemeralPublicKey)
@@ -28,34 +28,42 @@ export const fetchZkProof = async (
 
   log.debug('Requesting ZK proof', { network })
 
-  const response = await fetch(
-    'https://api.enoki.mystenlabs.com/v1/zklogin/zkp',
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: enokiApiKey,
-        'zklogin-jwt': idToken,
-      },
-      body,
+  const { apiBaseUrl, tenant } = getApiContext(idToken)
+
+  const response = await fetch(`${apiBaseUrl}/zklogin/zkp`, {
+    method: 'POST',
+    headers: {
+      'X-Tenant': tenant,
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${idToken}`,
     },
-  )
+    body,
+  })
 
   if (!response.ok) {
-    let errorBody: unknown
-    try {
-      errorBody = await response.json()
-    } catch {
-      errorBody = undefined
-    }
+    const responseBody = await response.text()
     log.error('Failed to fetch ZK proof', {
       status: response.status,
       statusText: response.statusText,
-      body: errorBody,
+      body: responseBody,
     })
-    throw new Error('Failed to fetch ZK proof')
+    throw new Error(
+      `zk proof request failed (${response.status}): ${responseBody}`,
+    )
   }
 
-  const responseJson = await response.json()
-  return responseJson as unknown as ZkProofResponse
+  const responseJson = (await response.json()) as unknown as ZkProofData
+
+  if (
+    !responseJson?.proofPoints ||
+    !responseJson?.issBase64Details ||
+    !responseJson?.headerBase64 ||
+    !responseJson?.addressSeed
+  ) {
+    throw new Error(
+      `zk proof response missing required fields: ${JSON.stringify(responseJson)}`,
+    )
+  }
+
+  return responseJson
 }
