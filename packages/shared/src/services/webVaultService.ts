@@ -1,7 +1,7 @@
 import { ZKWebCryptoSigner } from '@evefrontier/wallet-core/crypto'
-import type { ZkProofResponse } from '@evevault/shared/types/zkLogin'
 import type { PublicKey } from '@mysten/sui/cryptography'
 import type { SuiChain } from '@mysten/wallet-standard'
+import type { ZkProofResponse } from '#/types/zkLogin'
 import { VAULT_UNLOCK_MS } from '#/utils/constants'
 import { del, get, set } from '#/utils/indexedDbKeyval'
 import { createPinVerifier, verifyPin } from '#/utils/keys/pinVerifier'

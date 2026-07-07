@@ -1,4 +1,4 @@
-import type { ZkLoginAddressData } from '@evevault/shared/types/zkLogin'
+import type { ZkLoginAddressData } from '#/types/zkLogin'
 import { getApiContext } from './getApiContext'
 import type { GetZkLoginAddressParams } from './types'
 

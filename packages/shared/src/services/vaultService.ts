@@ -1,9 +1,9 @@
 import type { ZKWebCryptoSigner } from '@evefrontier/wallet-core/crypto'
-import type { ZkProofResponse } from '@evevault/shared/types/zkLogin'
 import type { PublicKey } from '@mysten/sui/cryptography'
 import type { SuiChain } from '@mysten/wallet-standard'
 import type { StoredSecretKey } from '#/types/stores'
 import { createWebCryptoPlaceholder } from '#/types/wallet'
+import type { ZkProofResponse } from '#/types/zkLogin'
 import { isWeb } from '#/utils/environment'
 import {
   ephKeyService as keeperEphKeyService,

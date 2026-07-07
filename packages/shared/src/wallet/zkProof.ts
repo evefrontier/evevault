@@ -1,7 +1,7 @@
-import type { ZkProofData } from '@evevault/shared/types/zkLogin'
 import { getExtendedEphemeralPublicKey } from '@mysten/sui/zklogin'
 import { getApiContext } from '#/auth'
 import type { ZkProofParams } from '#/types/wallet'
+import type { ZkProofData } from '#/types/zkLogin'
 import { createLogger } from '#/utils/logger'
 
 const log = createLogger()
