@@ -21,9 +21,12 @@ const AUDIENCE = 'test-client-id'
 
 let privateKey: CryptoKey
 let publicJwk: JWK
-// Each test uses a distinct serverUrl so the module-level JWKS cache in
-// verifyJwt.ts never reuses a previous test's (now-stale) cached key.
-let ISSUER: string
+// Each test uses a distinct serverUrl so the module-level JWKS/issuer caches
+// in verifyJwt.ts never reuse a previous test's (now-stale) cached value.
+// SERVER_URL is what getTenantConfig returns (used for OAuth endpoints);
+let SERVER_URL: string
+// BARE_ISSUER mirrors the `iss` claim being omitted in FusionAuth.
+let BARE_ISSUER: string
 let testCounter = 0
 
 const signToken = async (
@@ -39,20 +42,38 @@ const signToken = async (
   return new SignJWT({ sub: 'user-1', ...overrides.claims })
     .setProtectedHeader({ alg: 'RS256', kid: overrides.kid ?? KID })
     .setIssuedAt()
-    .setIssuer(overrides.issuer ?? ISSUER)
+    .setIssuer(overrides.issuer ?? BARE_ISSUER)
     .setAudience(overrides.audience ?? AUDIENCE)
     .setExpirationTime(overrides.expiresIn ?? '1h')
     .sign(overrides.key ?? privateKey)
 }
 
-const stubJwksFetch = (jwks: { keys: JWK[] }) => {
+const jsonResponse = (body: unknown) => ({
+  ok: true,
+  status: 200,
+  headers: new Headers({ 'content-type': 'application/json' }),
+  json: () => Promise.resolve(body),
+})
+
+/**
+ * Real FusionAuth tenants can have an `issuer` in their OIDC metadata that
+ * differs from the `serverUrl` used for OAuth endpoints (e.g. no scheme) —
+ * `discoveredIssuer` defaults to bare-hostname `ISSUER` to match that.
+ */
+const stubDiscoveryFetch = (
+  jwks: { keys: JWK[] },
+  discoveredIssuer: string,
+) => {
   vi.stubGlobal(
     'fetch',
-    vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      headers: new Headers({ 'content-type': 'application/json' }),
-      json: () => Promise.resolve(jwks),
+    vi.fn().mockImplementation((url: string) => {
+      if (url.endsWith('/.well-known/jwks.json')) {
+        return Promise.resolve(jsonResponse(jwks))
+      }
+      if (url.endsWith('/.well-known/openid-configuration')) {
+        return Promise.resolve(jsonResponse({ issuer: discoveredIssuer }))
+      }
+      return Promise.reject(new Error(`Unexpected fetch to ${url}`))
     }),
   )
 }
@@ -60,10 +81,11 @@ const stubJwksFetch = (jwks: { keys: JWK[] }) => {
 describe('verifyIdTokenForTenant', () => {
   beforeEach(async () => {
     testCounter += 1
-    ISSUER = `https://issuer-${testCounter}.example.com`
+    SERVER_URL = `https://issuer-${testCounter}.example.com`
+    BARE_ISSUER = `issuer-${testCounter}.example.com`
     vi.mocked(getTenantConfig).mockReturnValue({
       clientId: AUDIENCE,
-      serverUrl: ISSUER,
+      serverUrl: SERVER_URL,
     } as ReturnType<typeof getTenantConfig>)
 
     const { privateKey: priv, publicKey } = await generateKeyPair('RS256')
@@ -74,7 +96,7 @@ describe('verifyIdTokenForTenant', () => {
       alg: 'RS256',
       use: 'sig',
     }
-    stubJwksFetch({ keys: [publicJwk] })
+    stubDiscoveryFetch({ keys: [publicJwk] }, BARE_ISSUER)
   })
 
   afterEach(() => {
@@ -83,6 +105,17 @@ describe('verifyIdTokenForTenant', () => {
 
   it('accepts a validly signed token from the expected issuer/audience', async () => {
     const token = await signToken()
+    const payload = await verifyIdTokenForTenant(token, 'stillness' as never)
+    expect(payload.sub).toBe('user-1')
+  })
+
+  it('accepts a token whose iss omits the scheme present in serverUrl (real FusionAuth behavior)', async () => {
+    // Regression test: FusionAuth's discovered `issuer` (and the token's own
+    // `iss`) can be a bare hostname even though serverUrl (used for OAuth
+    // endpoints) has an `https://` scheme. The expected issuer must come
+    // from discovery, not from serverUrl directly, or this always fails.
+    expect(SERVER_URL).toBe(`https://${BARE_ISSUER}`)
+    const token = await signToken({ issuer: BARE_ISSUER })
     const payload = await verifyIdTokenForTenant(token, 'stillness' as never)
     expect(payload.sub).toBe('user-1')
   })
@@ -117,7 +150,31 @@ describe('verifyIdTokenForTenant', () => {
   })
 
   it('rejects when the JWKS endpoint is unreachable', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('network down')))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((url: string) => {
+        if (url.endsWith('/.well-known/openid-configuration')) {
+          return Promise.resolve(jsonResponse({ issuer: BARE_ISSUER }))
+        }
+        return Promise.reject(new Error('network down'))
+      }),
+    )
+    const token = await signToken()
+    await expect(
+      verifyIdTokenForTenant(token, 'stillness' as never),
+    ).rejects.toThrow()
+  })
+
+  it('rejects when the discovery (openid-configuration) endpoint is unreachable', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((url: string) => {
+        if (url.endsWith('/.well-known/jwks.json')) {
+          return Promise.resolve(jsonResponse({ keys: [publicJwk] }))
+        }
+        return Promise.reject(new Error('network down'))
+      }),
+    )
     const token = await signToken()
     await expect(
       verifyIdTokenForTenant(token, 'stillness' as never),
