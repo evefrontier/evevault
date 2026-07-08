@@ -1,5 +1,4 @@
 import type { SuiChain } from '@mysten/wallet-standard'
-import { decodeJwt } from 'jose'
 import { type IdTokenClaims, User } from 'oidc-client-ts'
 import { getZkLoginAddress } from '#/auth/getZkLoginAddress'
 import { getJwt } from '#/auth/storageService'
@@ -81,9 +80,12 @@ export async function getUserForNetwork(chain: SuiChain): Promise<User | null> {
     return null
   }
 
-  const decodedJwt = decodeJwt(storedJwt.id_token) as IdTokenClaims & {
-    sui_address?: string
-    salt?: string
+  const decodedJwt = decodeJwtSafely<
+    IdTokenClaims & { sui_address?: string; salt?: string }
+  >(storedJwt.id_token)
+  if (!decodedJwt) {
+    log.error('Failed to decode stored id_token for network JWT', { chain })
+    return null
   }
 
   const suiClaim = decodedJwt.sui_address

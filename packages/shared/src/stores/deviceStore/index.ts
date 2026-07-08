@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { chromeStorageAdapter, localStorageAdapter } from '#/adapters'
 import type { DeviceState } from '#/types'
+import { DEFAULT_LOCALNET_URL } from '#/utils/constants'
 import { isWeb } from '#/utils/environment'
 import { DEVICE_STORAGE_KEY } from '#/utils/storageKeys'
 import { createInitActions } from './actions/initActions'
@@ -10,7 +11,6 @@ import { createProofActions } from './actions/proofActions'
 import {
   createEmptyLocalnetDeviceData,
   createInitialNetworkData,
-  DEFAULT_LOCALNET_URL,
 } from './constants'
 import {
   handleDeviceStoreRehydration,
