@@ -16,17 +16,13 @@ export const fetchZkProof = async (
   const extendedEphemeralPublicKey =
     getExtendedEphemeralPublicKey(ephemeralPublicKey)
 
-  // Network can be passed as parameter for dynamic network support
-  const network = params.network || 'devnet'
-
   const body = JSON.stringify({
-    network,
-    ephemeralPublicKey: extendedEphemeralPublicKey,
+    ephemeralextendedPublicKey: extendedEphemeralPublicKey,
     maxEpoch: Number(maxEpoch),
     randomness: jwtRandomness,
   })
 
-  log.debug('Requesting ZK proof', { network })
+  log.debug('Requesting ZK proof')
 
   const { apiBaseUrl, tenant } = getApiContext(idToken)
 

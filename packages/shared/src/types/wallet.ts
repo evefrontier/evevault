@@ -34,7 +34,6 @@ export interface ZkProofParams {
   maxEpoch: string
   ephemeralPublicKey: PublicKey
   idToken: string
-  network?: string // Optional network parameter (devnet, testnet, mainnet)
 }
 
 export interface RawSignParams {

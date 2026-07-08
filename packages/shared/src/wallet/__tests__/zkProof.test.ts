@@ -63,7 +63,6 @@ describe('fetchZkProof', () => {
         maxEpoch: '12',
         ephemeralPublicKey: 'ephemeral-public-key' as never,
         idToken: ID_TOKEN,
-        network: 'testnet',
       }),
     ).resolves.toEqual(proofData)
 
@@ -78,69 +77,11 @@ describe('fetchZkProof', () => {
         Authorization: `Bearer ${ID_TOKEN}`,
       },
       body: JSON.stringify({
-        network: 'testnet',
-        ephemeralPublicKey: 'extended-public-key',
+        ephemeralextendedPublicKey: 'extended-public-key',
         maxEpoch: 12,
         randomness: 'randomness',
       }),
     })
-  })
-
-  it('defaults network to devnet when omitted', async () => {
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      text: vi.fn().mockResolvedValue(JSON.stringify(makeProofData())),
-    })
-    vi.stubGlobal('fetch', fetchMock)
-
-    await fetchZkProof({
-      jwtRandomness: 'randomness',
-      maxEpoch: '9',
-      ephemeralPublicKey: 'ephemeral-public-key' as never,
-      idToken: ID_TOKEN,
-    })
-
-    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toMatchObject({
-      network: 'devnet',
-      maxEpoch: 9,
-    })
-  })
-
-  it('passes the network param to the API and returns the corresponding response', async () => {
-    const proofsByNetwork: Record<string, unknown> = {
-      testnet: makeProofData({ addressSeed: '11111111' }),
-      mainnet: makeProofData({ addressSeed: '22222222' }),
-    }
-
-    const fetchMock = vi
-      .fn()
-      .mockImplementation((_url: string, init: RequestInit) => {
-        const { network } = JSON.parse(init.body as string)
-        return Promise.resolve({
-          ok: true,
-          text: () => Promise.resolve(JSON.stringify(proofsByNetwork[network])),
-        })
-      })
-    vi.stubGlobal('fetch', fetchMock)
-
-    const baseParams = {
-      jwtRandomness: 'randomness',
-      maxEpoch: '12',
-      ephemeralPublicKey: 'ephemeral-public-key' as never,
-      idToken: ID_TOKEN,
-    }
-
-    const testnetResult = await fetchZkProof({
-      ...baseParams,
-      network: 'testnet',
-    })
-    const mainnetResult = await fetchZkProof({
-      ...baseParams,
-      network: 'mainnet',
-    })
-
-    expect(testnetResult).toEqual(proofsByNetwork.testnet)
-    expect(mainnetResult).toEqual(proofsByNetwork.mainnet)
   })
 
   it('throws with the status and body on a non-ok response', async () => {
