@@ -1,4 +1,4 @@
-import type { ZkLoginAddressData } from '#/types/enoki'
+import type { ZkLoginAddressData } from '#/types/zkLogin'
 import { getApiContext } from './getApiContext'
 import type { GetZkLoginAddressParams } from './types'
 

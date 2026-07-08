@@ -46,11 +46,8 @@ applications:
 #   apps/extension/wxt.config.ts (manifest content_security_policy). The two are
 #   separate surfaces in different formats, but share the same allowed-host list
 #   and 'wasm-unsafe-eval' grant — change both together.
-# - connect-src is scoped to the EVE, Sui and Mysten (Enoki/prover) orgs the
-#   app talks to. Keep this list in sync with deployed environments; once the
-#   Enoki call moves behind a server-side proxy, add that host here.
-#   TODO(tracking issue): link the Enoki-proxy work item so this connect-src
-#   entry is revisited when the proxy lands.
+# - connect-src is scoped to the EVE and Sui orgs the app talks to. Keep this
+#   list in sync with deployed environments.
 # - require-trusted-types-for 'script' enables Trusted Types enforcement.
 customHeaders:
   - pattern: "**"
@@ -62,7 +59,7 @@ customHeaders:
           style-src 'self' 'unsafe-inline';
           img-src 'self' data: blob:;
           font-src 'self' data:;
-          connect-src 'self' https://*.sui.io https://*.evefrontier.com https://*.mystenlabs.com;
+          connect-src 'self' https://*.sui.io https://*.evefrontier.com;
           worker-src 'self';
           manifest-src 'self';
           object-src 'none';

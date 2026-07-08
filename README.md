@@ -5,7 +5,7 @@ EVE Vault Wallet is a Chrome MV3 extension and web app built with WXT and React.
 ## Features
 
 - EVE Frontier OAuth (FusionAuth)
-- zkLogin address derivation (Enoki)
+- zkLogin address derivation
 - Wallet Standard implementation for dApp discovery
 - Transaction signing with zkLogin and privatekey (localnet-only)
 - Multi-network support (Devnet, Testnet, Localnet)
@@ -37,7 +37,6 @@ For detailed technical information, see the [Architecture Documentation](https:/
 - Node.js 22+
 - [Bun](https://bun.sh/) (package manager used in this repo)
 - FusionAuth public OAuth application with PKCE enabled
-- Enoki API key (zkLogin address derivation)
 
 ## Quick Start
 
@@ -186,4 +185,3 @@ EVE Vault registers as **Eve Vault** through the [Sui Wallet Standard](https://d
 - zkLogin: [@mysten/sui](https://docs.sui.io/concepts/cryptography/zklogin)
 - [Zustand](https://zustand-demo.pmnd.rs/)
 - [oidc-client-ts](https://github.com/authts/oidc-client-ts) + FusionAuth
-- [Enoki](https://docs.enoki.mystenlabs.com/) (Mysten Labs)

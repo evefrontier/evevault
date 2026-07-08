@@ -14,7 +14,7 @@ type AuthToken = {
 /**
  * Converts the auth success payload into the Wallet Standard account shape,
  * choosing the localnet path without zkLogin because localnet keys are stored
- * separately from the FusionAuth/Enoki session.
+ * separately from the FusionAuth session.
  */
 export async function getAccountsFromAuthSuccess(
   message: Record<string, unknown>,

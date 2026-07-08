@@ -34,7 +34,7 @@ export async function initializeWebSession(
   if (!isExpired) {
     if (!webUser) return null
     // Salt is stripped from sessionStorage for security. The user is loaded
-    // from storage without salt, so it is re-derived via Enoki before returning
+    // from storage without salt, so it is re-derived via the API Gateway before returning
     // so the in-memory auth store is always fully enriched for signing.
     const hasSalt =
       typeof (webUser.profile as Record<string, unknown>)?.salt === 'string'

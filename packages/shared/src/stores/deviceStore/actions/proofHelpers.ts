@@ -73,7 +73,7 @@ const generateZkProof = async (
     log.info('*********** Generating ZK proof ***********')
     const proofInput = await resolveProofInput(chain, get)
     const zkProofResponse = await requestZkProof(proofInput)
-    await persistSuccessfulProof(chain, zkProofResponse, set)
+    await persistSuccessfulProof(chain, zkProofResponse)
     return zkProofResponse
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error'
@@ -198,28 +198,20 @@ const requestZkProof = async ({
   vendedIdToken,
 }: ProofInput): Promise<ZkProofResponse> => {
   log.debug('Generating ZK proof for network', { chain, network })
-  return fetchZkProof({
+  const data = await fetchZkProof({
     jwtRandomness: networkJwtRandomness,
     maxEpoch,
     ephemeralPublicKey,
     idToken: vendedIdToken,
-    enokiApiKey: import.meta.env.VITE_ENOKI_API_KEY,
-    network,
   })
+  return { data, error: undefined }
 }
 
 /** Stores the proof in the keeper service so it can be reused across sessions within the same epoch. */
 const persistSuccessfulProof = async (
   chain: SuiChain,
   zkProofResponse: ZkProofResponse,
-  set: SetDeviceState,
 ) => {
-  if (zkProofResponse.error !== undefined) {
-    log.error('Error generating ZK proof', zkProofResponse.error)
-    set({ error: zkProofResponse.error?.message })
-    return
-  }
-
   try {
     await zkProofService.setZkProof(chain, zkProofResponse)
     log.debug('zkProof stored in keeper')
