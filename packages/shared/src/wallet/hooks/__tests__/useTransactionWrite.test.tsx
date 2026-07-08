@@ -127,6 +127,50 @@ describe('useTransactionWrite', () => {
     expect(result.current.txDigest).toBe('0xsecond')
   })
 
+  it('ignores a second concurrent call while the first is still in flight', async () => {
+    const execute = vi.fn().mockImplementation(
+      () =>
+        new Promise<string | null>((resolve) => {
+          setTimeout(() => resolve('0xdigest'), 0)
+        }),
+    )
+    const { result } = renderHook(() => useTransactionWrite())
+
+    let first: string | null = 'unset'
+    let second: string | null = 'unset'
+    await act(async () => {
+      const firstCall = result.current.run(execute, {
+        fallbackMessage: 'fallback',
+      })
+      const secondCall = result.current.run(execute, {
+        fallbackMessage: 'fallback',
+      })
+      ;[first, second] = await Promise.all([firstCall, secondCall])
+    })
+
+    expect(execute).toHaveBeenCalledTimes(1)
+    expect(first).toBe('0xdigest')
+    expect(second).toBeNull()
+    expect(result.current.isSubmitting).toBe(false)
+  })
+
+  it('allows a new call once the prior run has finished', async () => {
+    const { result } = renderHook(() => useTransactionWrite())
+
+    await act(async () => {
+      await result.current.run(async () => '0xfirst', {
+        fallbackMessage: 'fallback',
+      })
+    })
+    await act(async () => {
+      await result.current.run(async () => '0xsecond', {
+        fallbackMessage: 'fallback',
+      })
+    })
+
+    expect(result.current.txDigest).toBe('0xsecond')
+  })
+
   it('sets an error via setError without running a write', () => {
     const { result } = renderHook(() => useTransactionWrite())
 
