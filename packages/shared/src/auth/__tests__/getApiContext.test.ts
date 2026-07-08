@@ -76,4 +76,28 @@ describe('getApiContext', () => {
     expect(tenant).toBe('')
     expect(apiBaseUrl).toBe('https://api.preview.pub.evefrontier.com')
   })
+
+  it('rejects a tier claim that injects a hostname', async () => {
+    const token = await makeIdToken({
+      tenant: 'frontier',
+      tier: 'evil.com/x',
+    })
+    expect(() => getApiContext(token)).toThrow(/invalid tier/i)
+  })
+
+  it('rejects a tier claim containing an "@" to smuggle a redirect target', async () => {
+    const token = await makeIdToken({
+      tenant: 'frontier',
+      tier: 'test@evil.com',
+    })
+    expect(() => getApiContext(token)).toThrow(/invalid tier/i)
+  })
+
+  it('rejects a tier claim with path traversal or scheme characters', async () => {
+    const token = await makeIdToken({
+      tenant: 'frontier',
+      tier: '../attacker',
+    })
+    expect(() => getApiContext(token)).toThrow(/invalid tier/i)
+  })
 })

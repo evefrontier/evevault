@@ -5,6 +5,8 @@ const STILLNESS_TENANT = 'stillness'
 const UTOPIA_TENANT = 'utopia'
 const UAT_TIER = 'uat'
 
+const VALID_TIER_PATTERN = /^[a-z0-9-]+$/
+
 type JwtClaims = IdTokenClaims & { tenant?: string; tier?: string }
 
 /**
@@ -19,6 +21,10 @@ export function getApiContext(token: string): {
   const decoded = decodeJwt<JwtClaims>(token)
   const tenant = (decoded.tenant as string) || ''
   const tier = resolveTier(tenant, decoded)
+
+  if (!VALID_TIER_PATTERN.test(tier)) {
+    throw new Error('Invalid tier claim in token')
+  }
 
   const apiBaseUrl = `https://api.${tier}.pub.evefrontier.com`
   return { apiBaseUrl, tenant, decoded }
