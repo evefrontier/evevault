@@ -18,6 +18,7 @@ import {
   makeUserToJwtResponseMock,
   makeUtilsMock,
   makeVaultServiceMock,
+  makeVerifyJwtMock,
   setupAuthStoreMocks,
 } from './authStoreTestMocks'
 
@@ -43,6 +44,7 @@ const h: AuthStoreMockHandles = vi.hoisted(() => ({
   mockPerformFullCleanup: vi.fn(),
   mockIsExtension: vi.fn(),
   mockDecodeJwt: vi.fn(),
+  mockVerifyIdTokenForTenant: vi.fn(),
 }))
 
 vi.mock('#/auth/authConfig', () => makeAuthConfigMock(h))
@@ -59,6 +61,7 @@ vi.mock('#/utils', () => makeUtilsMock(h))
 vi.mock('#/utils/tenantConfig', () => makeTenantConfigMock())
 vi.mock('#/adapters', () => makeAdaptersMock())
 vi.mock('jose', () => makeJoseMock(h))
+vi.mock('#/auth/verifyJwt', () => makeVerifyJwtMock(h))
 
 import { useAuthStore } from '#/auth/stores/authStore'
 

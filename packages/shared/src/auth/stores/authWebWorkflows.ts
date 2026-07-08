@@ -2,6 +2,7 @@ import type { SuiChain } from '@mysten/wallet-standard'
 import { User } from 'oidc-client-ts'
 import { userToJwtResponse } from '#/auth/userToJwtResponse'
 import { resolveExpiresAt } from '#/auth/utils/authStoreUtils'
+import { verifyIdTokenForTenant } from '#/auth/verifyJwt'
 import { useDeviceStore } from '#/stores'
 import { getCurrentTenantId, OAuthTenantSessionKey } from '#/stores/tenantStore'
 import { isZkLoginSuiChain, type ZkLoginSuiChain } from '#/types/networks'
@@ -54,6 +55,10 @@ export async function initializeWebSession(
 
     if (!webUser) {
       return null
+    }
+
+    if (webUser.id_token) {
+      await verifyIdTokenForTenant(webUser.id_token, getCurrentTenantId())
     }
 
     return persistEnrichedUser(new User(webUser), webUserManager)
