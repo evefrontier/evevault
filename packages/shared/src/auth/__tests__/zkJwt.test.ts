@@ -7,12 +7,20 @@ const storeZkLoginJwtForNetworkMock = vi.hoisted(() => vi.fn())
 const vendJwtMock = vi.hoisted(() => vi.fn())
 const decodeJwtMock = vi.hoisted(() => vi.fn())
 const infoMock = vi.hoisted(() => vi.fn())
+const getCurrentTenantIdMock = vi.hoisted(() => vi.fn(() => 'stillness'))
+const verifyIdTokenForTenantMock = vi.hoisted(() => vi.fn())
 
 vi.mock('#/auth/storageService', () => ({
   getZkLoginJwtForNetwork: getZkLoginJwtForNetworkMock,
   storeZkLoginJwtForNetwork: storeZkLoginJwtForNetworkMock,
 }))
 vi.mock('#/auth/vendToken', () => ({ vendJwt: vendJwtMock }))
+vi.mock('#/auth/verifyJwt', () => ({
+  verifyIdTokenForTenant: verifyIdTokenForTenantMock,
+}))
+vi.mock('#/stores/tenantStore', () => ({
+  getCurrentTenantId: getCurrentTenantIdMock,
+}))
 vi.mock('jose', () => ({ decodeJwt: decodeJwtMock }))
 vi.mock('#/utils/logger', () => ({
   createLogger: () => ({
@@ -45,6 +53,7 @@ describe('resolveVendedIdTokenForZkProof', () => {
     vi.setSystemTime(NOW_MS)
     vendJwtMock.mockResolvedValue(NEW_TOKEN)
     decodeJwtMock.mockReturnValue({ nonce: DEVICE_NONCE, exp: NOW_SEC + 7200 })
+    verifyIdTokenForTenantMock.mockResolvedValue({})
   })
 
   afterEach(() => {
@@ -201,6 +210,24 @@ describe('resolveVendedIdTokenForZkProof', () => {
 
       expect(result).toBe(NEW_TOKEN)
       expect(vendJwtMock).toHaveBeenCalledOnce()
+    })
+
+    it('propagates when the vended token fails signature verification', async () => {
+      getZkLoginJwtForNetworkMock.mockResolvedValue(null)
+      verifyIdTokenForTenantMock.mockRejectedValue(
+        new Error('signature verification failed'),
+      )
+
+      await expect(
+        resolveVendedIdTokenForZkProof(
+          CHAIN,
+          PRIMARY_JWT,
+          DEVICE_NONCE,
+          VALID_EPOCH_MS,
+        ),
+      ).rejects.toThrow('signature verification failed')
+
+      expect(storeZkLoginJwtForNetworkMock).not.toHaveBeenCalled()
     })
   })
 
