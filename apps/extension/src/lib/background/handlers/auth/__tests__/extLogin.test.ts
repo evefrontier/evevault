@@ -324,7 +324,7 @@ describe('handleExtLogin', () => {
       'auth-code',
       'https://extension.example/callback',
       'tenant-explicit',
-      { codeVerifier: 'verifier' },
+      { codeVerifier: 'verifier', nonce: 'nonce-value' },
     )
     expect(mockStoreJwt).toHaveBeenCalledWith(
       { id_token: 'id-token' },

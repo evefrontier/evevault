@@ -90,6 +90,7 @@ type OAuthCallbackContext = {
   tenant: string
   codeVerifier: string
   state: string
+  nonce: string
   tabId: number | undefined
   dappContext: DappRequestContext
 }
@@ -416,6 +417,7 @@ async function handleOAuthCallback(
     tenant,
     codeVerifier,
     state,
+    nonce,
     tabId,
     dappContext,
   } = ctx
@@ -456,7 +458,7 @@ async function handleOAuthCallback(
       authCode,
       chromeRedirectUri,
       tenant,
-      { codeVerifier },
+      { codeVerifier, nonce },
     )
     await storeJwt(jwtResponse)
 
@@ -546,6 +548,7 @@ export async function handleDappLogin(
         tenant,
         codeVerifier,
         state,
+        nonce,
         tabId,
         dappContext,
       }),

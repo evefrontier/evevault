@@ -75,7 +75,15 @@ export async function handleExtLogin(
     tenantId,
     nonce,
   })
-  launchOAuthLogin({ id, authUrl, codeVerifier, state, currentChain, tenantId })
+  launchOAuthLogin({
+    id,
+    authUrl,
+    codeVerifier,
+    state,
+    nonce,
+    currentChain,
+    tenantId,
+  })
 }
 
 /**
@@ -260,6 +268,7 @@ async function handleOAuthResponse({
   responseUrl,
   codeVerifier,
   state,
+  nonce,
   currentChain,
   tenantId,
 }: {
@@ -267,6 +276,7 @@ async function handleOAuthResponse({
   responseUrl: string | undefined
   codeVerifier: string
   state: string
+  nonce: string
   currentChain: StoredChain
   tenantId: TenantId
 }) {
@@ -296,7 +306,7 @@ async function handleOAuthResponse({
       authCode,
       chrome.identity.getRedirectURL(),
       tenantId,
-      { codeVerifier },
+      { codeVerifier, nonce },
     )
 
     const chainAfterOAuth = await getCurrentChainFromStorage()
@@ -332,6 +342,7 @@ function launchOAuthLogin({
   authUrl,
   codeVerifier,
   state,
+  nonce,
   currentChain,
   tenantId,
 }: {
@@ -339,6 +350,7 @@ function launchOAuthLogin({
   authUrl: URL
   codeVerifier: string
   state: string
+  nonce: string
   currentChain: StoredChain
   tenantId: TenantId
 }) {
@@ -350,6 +362,7 @@ function launchOAuthLogin({
         responseUrl,
         codeVerifier,
         state,
+        nonce,
         currentChain,
         tenantId,
       })
