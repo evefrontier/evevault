@@ -17,7 +17,7 @@ export const fetchZkProof = async (
     getExtendedEphemeralPublicKey(ephemeralPublicKey)
 
   const body = JSON.stringify({
-    ephemeralextendedPublicKey: extendedEphemeralPublicKey,
+    extendedEphemeralPublicKey: extendedEphemeralPublicKey,
     maxEpoch: Number(maxEpoch),
     randomness: jwtRandomness,
   })
