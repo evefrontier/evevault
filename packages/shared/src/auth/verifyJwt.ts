@@ -25,13 +25,26 @@ async function getIssuerForServer(serverUrl: string): Promise<string> {
   const normalized = serverUrl.replace(/\/$/, '')
   let issuer = issuerCache.get(normalized)
   if (!issuer) {
-    issuer = fetch(`${normalized}/.well-known/openid-configuration`)
-      .then((response) => response.json())
-      .then((config: { issuer: string }) => config.issuer)
-      .catch((error) => {
-        issuerCache.delete(normalized)
-        throw error
-      })
+    issuer = (async () => {
+      const response = await fetch(
+        `${normalized}/.well-known/openid-configuration`,
+      )
+      if (!response.ok) {
+        throw new Error(
+          `Failed to fetch OIDC discovery document for ${normalized}: ${response.status}`,
+        )
+      }
+      const config = (await response.json()) as { issuer?: unknown }
+      if (typeof config.issuer !== 'string' || !config.issuer) {
+        throw new Error(
+          `OIDC discovery document for ${normalized} has no valid "issuer"`,
+        )
+      }
+      return config.issuer
+    })().catch((error) => {
+      issuerCache.delete(normalized)
+      throw error
+    })
     issuerCache.set(normalized, issuer)
   }
   return issuer
@@ -40,8 +53,8 @@ async function getIssuerForServer(serverUrl: string): Promise<string> {
 /**
  * Verifies an id_token's signature against the given tenant's FusionAuth JWKS.
  * Throws on any failure (bad signature, wrong issuer/audience, expired token,
- * or an unreachable JWKS/metadata endpoint) — callers must treat this as a
- * hard failure and never fall back to trusting the unverified token.
+ * or an unreachable/invalid JWKS/metadata endpoint) — callers must treat this
+ * as a hard failure and never fall back to trusting the unverified token.
  */
 export async function verifyIdTokenForTenant(
   idToken: string,

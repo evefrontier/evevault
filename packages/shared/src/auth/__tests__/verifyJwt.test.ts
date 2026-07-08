@@ -180,4 +180,48 @@ describe('verifyIdTokenForTenant', () => {
       verifyIdTokenForTenant(token, 'stillness' as never),
     ).rejects.toThrow()
   })
+
+  it('rejects when the discovery endpoint returns a non-2xx response, rather than silently skipping issuer validation', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((url: string) => {
+        if (url.endsWith('/.well-known/jwks.json')) {
+          return Promise.resolve(jsonResponse({ keys: [publicJwk] }))
+        }
+        if (url.endsWith('/.well-known/openid-configuration')) {
+          return Promise.resolve({
+            ok: false,
+            status: 500,
+            headers: new Headers({ 'content-type': 'application/json' }),
+            json: () => Promise.resolve({ error: 'internal server error' }),
+          })
+        }
+        return Promise.reject(new Error(`Unexpected fetch to ${url}`))
+      }),
+    )
+    const token = await signToken()
+    await expect(
+      verifyIdTokenForTenant(token, 'stillness' as never),
+    ).rejects.toThrow(/discovery document/i)
+  })
+
+  it('rejects when the discovery document has no valid issuer field, rather than silently skipping issuer validation', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((url: string) => {
+        if (url.endsWith('/.well-known/jwks.json')) {
+          return Promise.resolve(jsonResponse({ keys: [publicJwk] }))
+        }
+        if (url.endsWith('/.well-known/openid-configuration')) {
+          // Malformed/unexpected shape: no `issuer` field at all.
+          return Promise.resolve(jsonResponse({ authorization_endpoint: 'x' }))
+        }
+        return Promise.reject(new Error(`Unexpected fetch to ${url}`))
+      }),
+    )
+    const token = await signToken()
+    await expect(
+      verifyIdTokenForTenant(token, 'stillness' as never),
+    ).rejects.toThrow(/no valid "issuer"/i)
+  })
 })
