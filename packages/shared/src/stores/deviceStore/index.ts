@@ -12,7 +12,10 @@ import {
   createInitialNetworkData,
   DEFAULT_LOCALNET_URL,
 } from './constants'
-import { handleDeviceStoreRehydration } from './rehydrationHelpers'
+import {
+  handleDeviceStoreRehydration,
+  refreshExtensionLockState,
+} from './rehydrationHelpers'
 import { createDeviceSelectors } from './selectors'
 
 export {
@@ -62,6 +65,9 @@ export const useDeviceStore = create<DeviceState>()(
       onRehydrateStorage: () => {
         return (state, error) => {
           handleDeviceStoreRehydration(state, error)
+          if (!error) {
+            void refreshExtensionLockState(useDeviceStore.setState)
+          }
         }
       },
     },

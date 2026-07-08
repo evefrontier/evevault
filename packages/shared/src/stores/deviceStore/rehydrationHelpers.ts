@@ -3,6 +3,7 @@ import { type DeviceState, KEY_FLAG_SECP256R1 } from '#/types'
 import { isWebCryptoMarker } from '#/types/wallet'
 import { isWeb } from '#/utils/environment'
 import { createLogger } from '#/utils/logger'
+import type { SetDeviceState } from './actions/types'
 import { createEmptyLocalnetDeviceData } from './constants'
 import { reconstructPublicKey } from './keyHelpers'
 
@@ -94,6 +95,21 @@ const updateWebLockState = (state: DeviceState | undefined) => {
     state.isLocked = !ephKeyService.isUnlocked()
     state.loading = false
   }
+}
+
+/**
+ * The extension keeper's key material lives only in the background service
+ * worker's memory, so the persisted `isLocked` flag can be stale (e.g. it was
+ * saved as `false` before the service worker was killed/restarted, which
+ * clears the keeper's in-memory key). Correct it against the keeper's live
+ * status once rehydration completes, rather than trusting the persisted value.
+ */
+export const refreshExtensionLockState = async (
+  setState: SetDeviceState,
+): Promise<void> => {
+  if (isWeb()) return
+  const remainingMs = await ephKeyService.getUnlockRemainingMs()
+  setState({ isLocked: remainingMs <= 0 })
 }
 
 const isValidStoredSecretKey = (key: object): boolean => {

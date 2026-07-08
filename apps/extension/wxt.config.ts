@@ -135,7 +135,7 @@ export default defineConfig(() => {
       },
       web_accessible_resources: [
         {
-          resources: ['injected.js', 'announce.js', 'callback.html'],
+          resources: ['injected.js', 'announce.js'],
           matches: ['<all_urls>'],
         },
       ],
