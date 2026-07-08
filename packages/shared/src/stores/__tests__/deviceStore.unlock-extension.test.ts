@@ -17,6 +17,7 @@ vi.mock('#/services/vaultService', () => ({
     getEphemeralPublicKey: vi.fn(),
     lock: vi.fn(),
     isUnlocked: vi.fn(() => false),
+    getUnlockRemainingMs: vi.fn(() => 0),
   },
   zkProofService: {
     getZkProof: vi.fn(),

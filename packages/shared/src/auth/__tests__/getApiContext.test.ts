@@ -20,12 +20,12 @@ describe('getApiContext', () => {
   it('stillness: uses decoded.tier for pub host segment', async () => {
     const token = await makeIdToken({
       tenant: 'stillness',
-      tier: 'prod',
+      tier: 'live',
     })
     const { apiBaseUrl, tenant, decoded } = getApiContext(token)
     expect(tenant).toBe('stillness')
-    expect(decoded.tier).toBe('prod')
-    expect(apiBaseUrl).toBe('https://api.prod.pub.evefrontier.com')
+    expect(decoded.tier).toBe('live')
+    expect(apiBaseUrl).toBe('https://api.live.pub.evefrontier.com')
   })
 
   it('stillness: defaults tier to live when tier claim is missing', async () => {
@@ -71,9 +71,33 @@ describe('getApiContext', () => {
   })
 
   it('default tenant: empty tenant with tier uses tier.pub', async () => {
-    const token = await makeIdToken({ tier: 'preview' })
+    const token = await makeIdToken({ tier: 'dev' })
     const { apiBaseUrl, tenant } = getApiContext(token)
     expect(tenant).toBe('')
-    expect(apiBaseUrl).toBe('https://api.preview.pub.evefrontier.com')
+    expect(apiBaseUrl).toBe('https://api.dev.pub.evefrontier.com')
+  })
+
+  it('rejects a tier claim that injects a hostname', async () => {
+    const token = await makeIdToken({
+      tenant: 'frontier',
+      tier: 'evil.com/x',
+    })
+    expect(() => getApiContext(token)).toThrow(/invalid tier/i)
+  })
+
+  it('rejects a tier claim containing an "@" to smuggle a redirect target', async () => {
+    const token = await makeIdToken({
+      tenant: 'frontier',
+      tier: 'test@evil.com',
+    })
+    expect(() => getApiContext(token)).toThrow(/invalid tier/i)
+  })
+
+  it('rejects a tier claim with path traversal or scheme characters', async () => {
+    const token = await makeIdToken({
+      tenant: 'frontier',
+      tier: '../attacker',
+    })
+    expect(() => getApiContext(token)).toThrow(/invalid tier/i)
   })
 })

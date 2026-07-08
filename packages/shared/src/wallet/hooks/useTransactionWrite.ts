@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { createLogger } from '#/utils'
 
 const log = createLogger()
@@ -48,12 +48,19 @@ export function useTransactionWrite(): UseTransactionWriteResult {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [txDigest, setTxDigest] = useState<string | null>(null)
+  // Synchronous latch: `isSubmitting` state lags a render,
+  // so a double-click can't rely on it.
+  const isInFlightRef = useRef(false)
 
   const run = useCallback(
     async (
       execute: () => Promise<string | null>,
       { fallbackMessage, logLabel, onSuccess }: RunOptions,
     ): Promise<string | null> => {
+      if (isInFlightRef.current) {
+        return null
+      }
+      isInFlightRef.current = true
       setIsSubmitting(true)
       setError(null)
       setTxDigest(null)
@@ -68,6 +75,7 @@ export function useTransactionWrite(): UseTransactionWriteResult {
         setError(message)
         return null
       } finally {
+        isInFlightRef.current = false
         setIsSubmitting(false)
       }
     },

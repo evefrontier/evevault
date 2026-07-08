@@ -77,7 +77,7 @@ describe('fetchZkProof', () => {
         Authorization: `Bearer ${ID_TOKEN}`,
       },
       body: JSON.stringify({
-        ephemeralextendedPublicKey: 'extended-public-key',
+        extendedEphemeralPublicKey: 'extended-public-key',
         maxEpoch: 12,
         randomness: 'randomness',
       }),

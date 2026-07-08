@@ -242,6 +242,18 @@ describe('getUserForNetwork', () => {
     expect(getZkLoginAddress).not.toHaveBeenCalled()
   })
 
+  it('returns null when the stored id_token cannot be decoded', async () => {
+    vi.mocked(getJwt).mockResolvedValue({
+      access_token: 'a',
+      id_token: 'not-a-jwt',
+      expires_in: 3600,
+      scope: 's',
+      token_type: 'Bearer',
+    })
+    await expect(getUserForNetwork('sui:testnet')).resolves.toBeNull()
+    expect(getZkLoginAddress).not.toHaveBeenCalled()
+  })
+
   it('returns null when the zkLogin request throws', async () => {
     vi.mocked(getJwt).mockResolvedValue({
       access_token: 'a',
