@@ -31,9 +31,10 @@ let testCounter = 0
 
 const signToken = async (
   overrides: {
-    issuer?: string
-    audience?: string
-    expiresIn?: string
+    iss?: string
+    aud?: string
+    /** `exp` claim as a NumericDate (unix seconds), per RFC 7519 */
+    exp?: number
     kid?: string
     key?: CryptoKey
     claims?: Record<string, unknown>
@@ -42,9 +43,9 @@ const signToken = async (
   return new SignJWT({ sub: 'user-1', ...overrides.claims })
     .setProtectedHeader({ alg: 'RS256', kid: overrides.kid ?? KID })
     .setIssuedAt()
-    .setIssuer(overrides.issuer ?? BARE_ISSUER)
-    .setAudience(overrides.audience ?? AUDIENCE)
-    .setExpirationTime(overrides.expiresIn ?? '1h')
+    .setIssuer(overrides.iss ?? BARE_ISSUER)
+    .setAudience(overrides.aud ?? AUDIENCE)
+    .setExpirationTime(overrides.exp ?? '1h')
     .sign(overrides.key ?? privateKey)
 }
 
@@ -115,7 +116,7 @@ describe('verifyIdTokenForTenant', () => {
     // endpoints) has an `https://` scheme. The expected issuer must come
     // from discovery, not from serverUrl directly, or this always fails.
     expect(SERVER_URL).toBe(`https://${BARE_ISSUER}`)
-    const token = await signToken({ issuer: BARE_ISSUER })
+    const token = await signToken({ iss: BARE_ISSUER })
     const payload = await verifyIdTokenForTenant(token, 'stillness' as never)
     expect(payload.sub).toBe('user-1')
   })
@@ -129,21 +130,21 @@ describe('verifyIdTokenForTenant', () => {
   })
 
   it('rejects a token with the wrong issuer', async () => {
-    const token = await signToken({ issuer: 'https://attacker.example.com' })
+    const token = await signToken({ iss: 'https://attacker.example.com' })
     await expect(
       verifyIdTokenForTenant(token, 'stillness' as never),
     ).rejects.toThrow()
   })
 
   it('rejects a token with the wrong audience', async () => {
-    const token = await signToken({ audience: 'someone-elses-client' })
+    const token = await signToken({ aud: 'someone-elses-client' })
     await expect(
       verifyIdTokenForTenant(token, 'stillness' as never),
     ).rejects.toThrow()
   })
 
   it('rejects an expired token', async () => {
-    const token = await signToken({ expiresIn: '-1h' })
+    const token = await signToken({ exp: Math.floor(Date.now() / 1000) - 3600 })
     await expect(
       verifyIdTokenForTenant(token, 'stillness' as never),
     ).rejects.toThrow()
