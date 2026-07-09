@@ -11,6 +11,7 @@ const hasJwtMock = vi.fn()
 const getJwtMock = vi.fn()
 const getZkProofFromKeeperMock = vi.fn()
 const setZkProofInKeeperMock = vi.fn()
+const verifyIdTokenForTenantMock = vi.fn()
 
 vi.mock('#/wallet/zkProof', () => ({
   fetchZkProof: (...args: unknown[]) => fetchZkProofMock(...args),
@@ -53,6 +54,11 @@ vi.mock('#/auth', () => ({
   },
 }))
 
+vi.mock('#/auth/verifyJwt', () => ({
+  verifyIdTokenForTenant: (...args: unknown[]) =>
+    verifyIdTokenForTenantMock(...args),
+}))
+
 import { useDeviceStore } from '#/stores/deviceStore'
 import { makeJwtWithExp } from '#/testing'
 
@@ -88,6 +94,7 @@ describe('deviceStore.getZkProof with expired stored zkLogin JWT', () => {
     })
     getZkProofFromKeeperMock.mockResolvedValue(null)
     setZkProofInKeeperMock.mockResolvedValue(undefined)
+    verifyIdTokenForTenantMock.mockResolvedValue({})
 
     const expiredJwt = makeJwtWithExp(Math.floor(Date.now() / 1000) - 10)
     getZkLoginJwtForNetworkMock.mockResolvedValue({

@@ -21,6 +21,7 @@ import {
   makeUserJwtSyncMock,
   makeUserToJwtResponseMock,
   makeVaultServiceMock,
+  makeVerifyJwtMock,
   setupAuthStoreMocks,
 } from './authStoreTestMocks'
 
@@ -46,6 +47,7 @@ const h: AuthStoreMockHandles = vi.hoisted(() => ({
   mockPerformFullCleanup: vi.fn(),
   mockIsExtension: vi.fn(),
   mockDecodeJwt: vi.fn(),
+  mockVerifyIdTokenForTenant: vi.fn(),
 }))
 
 vi.mock('#/auth/authConfig', () => makeAuthConfigMock(h))
@@ -68,6 +70,7 @@ vi.mock('#/utils/authCleanup', () => makeAuthCleanupMock(h))
 vi.mock('#/utils/tenantConfig', () => makeTenantConfigMock('default'))
 vi.mock('#/adapters', () => makeAdaptersMock())
 vi.mock('jose', () => makeJoseMock(h))
+vi.mock('#/auth/verifyJwt', () => makeVerifyJwtMock(h))
 
 // ─── import store after mocks ─────────────────────────────────────────────
 import { useAuthStore } from '#/auth/stores/authStore'
@@ -191,6 +194,24 @@ describe('authStore.initialize() (web path)', () => {
 
       expect(useAuthStore.getState().user).toBeNull()
       expect(useAuthStore.getState().loading).toBe(false)
+    })
+
+    it('sets user to null when the refreshed id_token fails signature verification', async () => {
+      const refreshed = makeUser({
+        id_token: makeJwt({ sub: 'user-1', iat: 2000, exp: FUTURE }),
+      })
+      h.mockGetUser.mockResolvedValue(makeUser())
+      h.mockSigninSilent.mockResolvedValue(refreshed)
+      h.mockVerifyIdTokenForTenant.mockRejectedValue(
+        new Error('signature verification failed'),
+      )
+
+      await useAuthStore.getState().initialize()
+
+      expect(useAuthStore.getState().user).toBeNull()
+      expect(useAuthStore.getState().loading).toBe(false)
+      expect(h.mockStoreUser).not.toHaveBeenCalled()
+      expect(h.mockEnrichUser).not.toHaveBeenCalled()
     })
   })
 

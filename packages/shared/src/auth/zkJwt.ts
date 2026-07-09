@@ -7,6 +7,8 @@ import {
 } from '#/auth/storageService'
 import { decodeJwtSafely } from '#/auth/utils/jwtUtils'
 import { vendJwt } from '#/auth/vendToken'
+import { verifyIdTokenForTenant } from '#/auth/verifyJwt'
+import { getCurrentTenantId } from '#/stores/tenantStore'
 import type { JwtResponse } from '#/types/authTypes'
 import { createLogger } from '#/utils/logger'
 
@@ -99,6 +101,7 @@ export async function resolveVendedIdTokenForZkProof(
   const newIdToken = await vendJwt(primaryJwt.id_token as string, {
     nonce: deviceNonce,
   })
+  await verifyIdTokenForTenant(newIdToken, getCurrentTenantId())
   const decodedNew = decodeJwt<IdTokenClaims>(newIdToken)
   const epochExpirySeconds =
     maxEpochTimestampMs != null ? Math.floor(maxEpochTimestampMs / 1000) : null

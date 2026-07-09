@@ -2,12 +2,13 @@ import type { TenantId } from '@evefrontier/wallet-core/tenant'
 import type { OAuthTokenResponse } from '#/types'
 import { getTenantConfig } from '#/utils/tenantConfig'
 import { parseOAuthTokenResponse } from './oauthTokenResponse'
+import { verifyIdTokenForTenant } from './verifyJwt'
 
 export async function exchangeCodeForToken(
   code: string,
   redirectUri: string,
   tenantId: TenantId,
-  options: { codeVerifier: string },
+  options: { codeVerifier: string; nonce: string },
 ): Promise<OAuthTokenResponse> {
   const { clientId, serverUrl } = getTenantConfig(tenantId)
   const tokenUrl = `${serverUrl.replace(/\/$/, '')}/oauth2/token`
@@ -34,5 +35,17 @@ export async function exchangeCodeForToken(
     throw new Error(`Token exchange failed: ${errorText}`)
   }
 
-  return parseOAuthTokenResponse(await response.json())
+  const jwtResponse = parseOAuthTokenResponse(await response.json())
+
+  const { nonce: verifiedNonce } = await verifyIdTokenForTenant(
+    jwtResponse.id_token,
+    tenantId,
+  )
+  if (verifiedNonce !== options.nonce) {
+    throw new Error(
+      'id_token nonce does not match the nonce sent to FusionAuth',
+    )
+  }
+
+  return jwtResponse
 }

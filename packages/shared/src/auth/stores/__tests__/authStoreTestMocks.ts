@@ -50,6 +50,7 @@ export type AuthStoreMockHandles = {
   mockGetCurrentTenantId: Mock
   mockSetCurrentTenantId: Mock
   mockPerformFullCleanup: Mock
+  mockVerifyIdTokenForTenant: Mock
 }
 
 // ─── vi.mock() factory functions ──────────────────────────────────────────
@@ -218,6 +219,14 @@ export function makeJoseMock(h: AuthStoreMockHandles) {
   }
 }
 
+/** Mocks `#/auth/verifyJwt` so tests never reach jose's real createRemoteJWKSet/jwtVerify (network + crypto). */
+export function makeVerifyJwtMock(h: AuthStoreMockHandles) {
+  return {
+    verifyIdTokenForTenant: (...args: unknown[]) =>
+      h.mockVerifyIdTokenForTenant(...args),
+  }
+}
+
 export function makeAdaptersMock() {
   return {
     localStorageAdapter: {
@@ -272,6 +281,11 @@ export function setupAuthStoreMocks(
   h.mockPerformFullCleanup.mockResolvedValue(undefined)
   h.mockSetCurrentTenantId.mockResolvedValue(undefined)
   h.mockDecodeJwt.mockReturnValue({
+    sub: 'user-1',
+    iat: 1000,
+    exp: Math.floor(Date.now() / 1000) + 3600,
+  })
+  h.mockVerifyIdTokenForTenant.mockResolvedValue({
     sub: 'user-1',
     iat: 1000,
     exp: Math.floor(Date.now() / 1000) + 3600,

@@ -3,6 +3,7 @@ import {
   getUserManager,
   getZkLoginAddress,
   useAuthStore,
+  verifyIdTokenForTenant,
 } from '@evevault/shared/auth'
 import { Heading, Text } from '@evevault/shared/components'
 import type { RoutePath } from '@evevault/shared/types'
@@ -49,6 +50,8 @@ const completeOAuthCallback = async (): Promise<RoutePath> => {
   if (!user?.id_token) {
     throw new Error('Failed to authenticate')
   }
+
+  await verifyIdTokenForTenant(user.id_token, tenantId)
 
   // Get zkLogin address
   const { salt, address } = await getZkLoginAddress({
