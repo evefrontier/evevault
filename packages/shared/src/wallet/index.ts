@@ -2,15 +2,15 @@
 // (canonical export is from @evevault/shared/types)
 
 export {
+  ADDRESS_ALIAS_MODULE,
+  type AddressAliasesInfo,
+} from '@evefrontier/wallet-core/address-alias'
+export {
   createWebCryptoPlaceholder,
   isWebCryptoMarker,
 } from '../types/wallet'
 export { useActiveSuiAddress } from './hooks/useActiveSuiAddress'
 export { useAddressAliases } from './hooks/useAddressAliases'
-export {
-  ADDRESS_ALIAS_MODULE,
-  type AddressAliasesInfo,
-} from './hooks/useAddressAliases.config'
 export { useBalance } from './hooks/useBalance'
 export { useSendToken } from './hooks/useSendToken'
 export { useTransactionHistory } from './hooks/useTransactionHistory'

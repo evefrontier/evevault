@@ -1,18 +1,16 @@
-import type { SuiGrpcClient } from '@mysten/sui/grpc'
-import { useCallback, useEffect, useMemo } from 'react'
-import { useToast } from '#/components'
-import { useAddressAliasesQuery } from './useAddressAliases.query'
 import {
   addAddressAliasTxBytes,
   enableAddressAliasTxBytes,
   executeAddressAliasTx,
   removeAddressAliasTxBytes,
-} from './useAddressAliases.transaction'
-import {
   type ValidateAddressAliasParams,
   validateExistingAddressAlias,
   validateNewAddressAlias,
-} from './useAddressAliases.validation'
+} from '@evefrontier/wallet-core/address-alias'
+import type { ClientWithCoreApi } from '@mysten/sui/client'
+import { useCallback, useEffect, useMemo } from 'react'
+import { useToast } from '#/components'
+import { useAddressAliasesQuery } from './useAddressAliases.query'
 import { useTransactionWrite } from './useTransactionWrite'
 import { useWalletSigningContext } from './useWalletSigningContext'
 
@@ -54,9 +52,16 @@ export function useAddressAliases(): UseAddressAliasesResult {
     isWalletUnlocked,
     senderAddress,
     suiClient,
-    getSenderAddress,
     sign,
   } = useWalletSigningContext()
+
+  // Adapts the signing-context callback to wallet-core's signer shape.
+  const signer = useMemo(
+    () => ({
+      signTransaction: (bytes: Uint8Array) => sign('TransactionData', bytes),
+    }),
+    [sign],
+  )
 
   // Show toast when error occurs
   useEffect(() => {
@@ -99,8 +104,8 @@ export function useAddressAliases(): UseAddressAliasesResult {
       () =>
         executeAddressAliasTx({
           suiClient,
-          getSenderAddress,
-          sign,
+          sender: senderAddress,
+          signer,
           buildBytes: enableAddressAliasTxBytes,
         }),
       {
@@ -110,7 +115,7 @@ export function useAddressAliases(): UseAddressAliasesResult {
         },
       },
     )
-  }, [senderAddress, run, setError, suiClient, getSenderAddress, sign, refetch])
+  }, [senderAddress, run, setError, suiClient, signer, refetch])
 
   // Add and remove share the same guard → validate → build → sign → refetch
   // pipeline; only the validator, bytes builder, and error copy differ.
@@ -122,7 +127,7 @@ export function useAddressAliases(): UseAddressAliasesResult {
         sender: string,
         objectId: string,
         alias: string,
-        client: SuiGrpcClient,
+        client: ClientWithCoreApi,
       ) => Promise<Uint8Array>,
       fallbackMessage: string,
     ): Promise<boolean> => {
@@ -147,8 +152,8 @@ export function useAddressAliases(): UseAddressAliasesResult {
         () =>
           executeAddressAliasTx({
             suiClient,
-            getSenderAddress,
-            sign,
+            sender: senderAddress,
+            signer,
             buildBytes: (sender, client) =>
               buildBytes(sender, objectId, trimmed, client),
           }),
@@ -168,8 +173,7 @@ export function useAddressAliases(): UseAddressAliasesResult {
       run,
       setError,
       suiClient,
-      getSenderAddress,
-      sign,
+      signer,
       refetch,
     ],
   )
