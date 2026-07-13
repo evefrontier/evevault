@@ -48,7 +48,7 @@ export function parseOAuthTokenResponse(raw: unknown): OAuthTokenResponse {
       ? o.scope.trim()
       : 'openid profile email offline_access'
 
-  const out: OAuthTokenResponse = {
+  return {
     access_token,
     id_token,
     refresh_token,
@@ -59,13 +59,4 @@ export function parseOAuthTokenResponse(raw: unknown): OAuthTokenResponse {
     expires_at,
     userId,
   }
-
-  if (typeof o.refresh_token_id === 'string' && o.refresh_token_id.trim()) {
-    out.refresh_token_id = o.refresh_token_id.trim()
-  }
-  if (typeof o.userId === 'string' && o.userId.trim()) {
-    out.userId = o.userId.trim()
-  }
-
-  return out
 }

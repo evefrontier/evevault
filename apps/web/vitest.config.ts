@@ -14,7 +14,6 @@ export default mergeConfig(
       globals: true,
       environment: 'jsdom',
       setupFiles: ['../../vitest.setup.ts'],
-      passWithNoTests: true,
       server: {
         deps: {
           inline: ['@evefrontier/wallet-core'],

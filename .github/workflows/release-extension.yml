@@ -19,7 +19,6 @@ jobs:
       contents: read
       packages: read
     env:
-      VITE_FUSIONAUTH_REDIRECT_URI: ${{ secrets.VITE_FUSIONAUTH_REDIRECT_URI }}
       EXTENSION_ID: ${{ secrets.EXTENSION_ID }}
     steps:
       - name: Checkout
@@ -30,7 +29,6 @@ jobs:
         run: |
           set -euo pipefail
           for name in \
-            VITE_FUSIONAUTH_REDIRECT_URI \
             EXTENSION_ID
           do
             if [ -z "${!name}" ]; then

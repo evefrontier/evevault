@@ -38,7 +38,7 @@ export default defineConfig(() => {
   // it never runs in release builds.
   if (process.env.NODE_ENV !== 'production') {
     logger.info('Env vars loaded', {
-      hasFusionAuthRedirectUri: !!envVars.VITE_FUSIONAUTH_REDIRECT_URI,
+      hasExtensionId: !!envVars.EXTENSION_ID,
       rootDir,
     })
   }

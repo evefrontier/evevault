@@ -51,9 +51,6 @@ bun install
 Create a `.env` at the **repository root** (WXT loads env from the monorepo root). OAuth client IDs and tenant URLs are configured in `packages/shared/src/utils/constants.ts`.
 
 ```env
-# FusionAuth
-VITE_FUSIONAUTH_REDIRECT_URI=
-
 # Extension (when required by your build / OAuth redirect)
 EXTENSION_ID=
 ```

@@ -57,14 +57,10 @@ Common issues and solutions when working with the EVE Vault extension.
 1. Verify redirect URI matches provider settings:
    - Check `chrome.identity.getRedirectURL()` output in background console
    - Must match exactly in FusionAuth OAuth settings
-2. Check environment variables are loaded:
-   ```javascript
-   import.meta.env.VITE_FUSIONAUTH_REDIRECT_URI
-   ```
-3. Verify OAuth client IDs are correct
-4. Check OAuth provider logs for errors
-5. Ensure scopes are enabled: `openid`, `profile`, `email`
-6. Check if extension ID changed (requires updating redirect URI)
+2. Verify OAuth client IDs are correct
+3. Check OAuth provider logs for errors
+4. Ensure scopes are enabled: `openid`, `profile`, `email`
+5. Check if extension ID changed (requires updating redirect URI)
 
 ### Token exchange fails
 

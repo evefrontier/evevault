@@ -2,7 +2,6 @@ import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { chromeStorageAdapter, localStorageAdapter } from '#/adapters'
 import type { DeviceState } from '#/types'
-import { DEFAULT_LOCALNET_URL } from '#/utils/constants'
 import { isWeb } from '#/utils/environment'
 import { DEVICE_STORAGE_KEY } from '#/utils/storageKeys'
 import { createInitActions } from './actions/initActions'
@@ -33,7 +32,6 @@ export const useDeviceStore = create<DeviceState>()(
       ephemeralKeyPairSecretKey: null,
       networkData: createInitialNetworkData(),
       localnet: createEmptyLocalnetDeviceData(),
-      localnetUrl: DEFAULT_LOCALNET_URL,
       setLocalnetUrl: (url: string) =>
         set((state) => ({
           localnet: {
