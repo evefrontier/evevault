@@ -1,58 +1,16 @@
-import type { SuiGrpcClient } from '@mysten/sui/grpc'
+import {
+  type AddressAliasesInfo,
+  getAddressAliases,
+} from '@evefrontier/wallet-core/address-alias'
 import { useQuery } from '@tanstack/react-query'
 import { createLogger } from '#/utils'
-import {
-  ADDRESS_ALIASES_TYPE,
-  type AddressAliasesInfo,
-} from './useAddressAliases.config'
 
 const log = createLogger()
 
 const EMPTY: AddressAliasesInfo = { enabled: false, addressAliases: [] }
 
 /**
- * Reads the caller's `AddressAliases` owned object. Its id isn't known ahead of
- * time (it's minted by `enable`), so we list owned objects filtered by type.
- * Returns `enabled: false` when absent.
- */
-export async function getAddressAliases(
-  client: SuiGrpcClient,
-  owner: string,
-): Promise<AddressAliasesInfo> {
-  const result = await client.listOwnedObjects({
-    owner,
-    type: ADDRESS_ALIASES_TYPE,
-    include: { json: true },
-  })
-
-  const object = result.objects[0]
-  if (!object) {
-    return EMPTY
-  }
-
-  return {
-    enabled: true,
-    objectId: object.objectId,
-    addressAliases: parseAddressAliases(object.json),
-  }
-}
-
-/**
- * Defensive parse of the address aliases list out of the object's JSON view.
- */
-function parseAddressAliases(json: Record<string, unknown> | null): string[] {
-  const addressAliases = (json?.aliases as { contents?: unknown } | undefined)
-    ?.contents
-  if (!Array.isArray(addressAliases)) {
-    return []
-  }
-  return addressAliases.filter(
-    (alias): alias is string => typeof alias === 'string',
-  )
-}
-
-/**
- * React-query wrapper around {@link getAddressAliases}, matching the
+ * React-query wrapper around wallet-core's `getAddressAliases`, matching the
  * `useBalance` / `useTransactionHistory` read convention.
  */
 export function useAddressAliasesQuery({
@@ -62,7 +20,7 @@ export function useAddressAliasesQuery({
   enabled = true,
 }: {
   owner: string | null | undefined
-  suiClient: SuiGrpcClient
+  suiClient: Parameters<typeof getAddressAliases>[0] // SuiGrpcClient, extracted from the first parameter of getAddressAliases
   chain?: string
   enabled?: boolean
 }) {

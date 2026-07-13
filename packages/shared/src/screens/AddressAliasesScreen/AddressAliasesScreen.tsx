@@ -1,3 +1,4 @@
+import { MAX_ADDRESS_ALIASES } from '@evefrontier/wallet-core/address-alias'
 import type React from 'react'
 import { useState } from 'react'
 import { getHeaderIdentity } from '#/auth'
@@ -7,7 +8,6 @@ import { Input } from '#/components/Inputs'
 import Text from '#/components/Text'
 import type { AddressAliasesScreenProps } from '#/types/components'
 import { useAddressAliases } from '#/wallet'
-import { MAX_ADDRESS_ALIASES } from '#/wallet/hooks/useAddressAliases.config'
 
 export const AddressAliasesScreen: React.FC<AddressAliasesScreenProps> = ({
   onBack,

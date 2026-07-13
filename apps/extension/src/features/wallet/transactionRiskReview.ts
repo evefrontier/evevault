@@ -1,6 +1,5 @@
+import { isAddressAliasCall } from '@evefrontier/wallet-core/address-alias'
 import { isRecord } from '@evevault/shared/utils'
-import { ADDRESS_ALIAS_MODULE } from '@evevault/shared/wallet'
-import { normalizeSuiAddress } from '@mysten/sui/utils'
 
 export type TransactionRiskSeverity = 'danger' | 'warning'
 
@@ -65,16 +64,6 @@ const COMMAND_RISK_RULES: Record<string, TransactionRiskFinding> = {
   makemovevec: FINDINGS.makeMoveVec,
 }
 
-// Address-alias operations are plain MoveCalls into `0x2::address_alias`, so
-// they can't be matched by command kind (that's always "MoveCall"). We match on
-// the call target instead. Package addresses may arrive short ("0x2") or fully
-// padded, so compare in normalized form.
-const [ADDRESS_ALIAS_PACKAGE, ADDRESS_ALIAS_MODULE_NAME] =
-  ADDRESS_ALIAS_MODULE.split('::')
-const NORMALIZED_ADDRESS_ALIAS_PACKAGE = normalizeSuiAddress(
-  ADDRESS_ALIAS_PACKAGE,
-)
-
 function normalizeKey(key: string): string {
   return key.toLowerCase().replace(/[^a-z0-9]/g, '')
 }
@@ -125,25 +114,6 @@ function getCommandName(command: unknown): string | null {
     .map(normalizeKey)
     .filter((key) => key in COMMAND_RISK_RULES)
   return commandKeys[0] ?? null
-}
-
-// True when the command is a MoveCall into the address-alias module. These
-// calls add/remove aliases, which can hand full control of the account to
-// another address, so they warrant the danger-class finding.
-function isAddressAliasCall(command: unknown): boolean {
-  if (!isRecord(command)) return false
-
-  const moveCall = command.MoveCall ?? command.moveCall
-  if (!isRecord(moveCall)) return false
-
-  const pkg = moveCall.package
-  const module = moveCall.module
-  if (typeof pkg !== 'string' || typeof module !== 'string') return false
-
-  return (
-    normalizeSuiAddress(pkg) === NORMALIZED_ADDRESS_ALIAS_PACKAGE &&
-    module === ADDRESS_ALIAS_MODULE_NAME
-  )
 }
 
 function reviewCommands(commands: unknown[]): TransactionRiskFinding[] {
