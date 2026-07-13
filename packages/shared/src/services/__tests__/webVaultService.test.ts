@@ -255,6 +255,17 @@ describe('WebVaultService', () => {
       )
     })
 
+    it('rejects a wrong PIN even when already unlocked', async () => {
+      // Regression: unlock(wrongPin) must not succeed (nor extend the session)
+      // just because a session is already active.
+      await webVaultService.unlock(testPin)
+      expect(webVaultService.isUnlocked()).toBe(true)
+
+      await expect(webVaultService.unlock('wrongpin')).rejects.toThrow(
+        'Invalid PIN',
+      )
+    })
+
     it('returns false if no PIN verifier exists', async () => {
       // Clear the store to simulate no PIN verifier
       mockStore.delete('evevault:web-pin-verifier')

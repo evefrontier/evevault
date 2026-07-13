@@ -54,6 +54,7 @@ export function lockVault(): void {
   localnetState.localnetKey = null
   sessionDerivedKey = null
   sessionSalt = null
+  clearZkProofs()
   session.clear()
   if (autoLockTimer !== null) {
     clearTimeout(autoLockTimer)

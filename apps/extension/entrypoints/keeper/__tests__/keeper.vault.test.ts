@@ -153,7 +153,7 @@ describe('Keeper CLEAR_EPHKEY handler', () => {
     expect(String(resp.error)).toContain('Vault must be unlocked again')
   })
 
-  it('does NOT clear zkProofs (CLEAR_ZKPROOF is required for that)', async () => {
+  it('clears zkProofs — proof material bound to the old key must not outlive the lock', async () => {
     const proof = {
       data: { proofPoints: { a: ['1'], b: [['2', '3']], c: ['4'] } },
     }
@@ -172,7 +172,7 @@ describe('Keeper CLEAR_EPHKEY handler', () => {
       chain: 'sui:testnet',
     })
     expect(resp.ok).toBe(true)
-    expect(resp.zkProof).toEqual(proof)
+    expect(resp.zkProof).toBeNull()
   })
 
   it('clears ephemeralKey, sessionDerivedKey, and localnetKey in one CLEAR_EPHKEY call', async () => {

@@ -75,14 +75,9 @@ class WebVaultService {
       throw new Error('PIN is required to unlock')
     }
 
-    // If already unlocked with valid signer, just extend the expiry
-    if (this.signer && this.session.isActive()) {
-      this.session.unlock(durationMs)
-      log.debug('[web-vault] Vault already unlocked, extended expiry')
-      return true
-    }
-
-    // Verify PIN against the stored Argon2id verifier
+    // Verify PIN against the stored Argon2id verifier. This must happen even
+    // when a session is already active — otherwise unlock(wrongPin) would
+    // succeed and extend the unlock window indefinitely.
     const storedPinVerifier = await get<string>(PIN_VERIFIER_STORAGE_KEY)
     if (!storedPinVerifier) {
       log.error('[web-vault] No PIN verifier found')
@@ -93,6 +88,13 @@ class WebVaultService {
     if (!pinValid) {
       log.error('[web-vault] Invalid PIN')
       throw new Error('Invalid PIN')
+    }
+
+    // If already unlocked with valid signer, just extend the expiry
+    if (this.signer && this.session.isActive()) {
+      this.session.unlock(durationMs)
+      log.debug('[web-vault] Vault already unlocked, extended expiry')
+      return true
     }
 
     // Recover keypair from IndexedDB
