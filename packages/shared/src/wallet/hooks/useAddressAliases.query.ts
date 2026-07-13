@@ -2,7 +2,6 @@ import {
   type AddressAliasesInfo,
   getAddressAliases,
 } from '@evefrontier/wallet-core/address-alias'
-import type { SuiGrpcClient } from '@mysten/sui/grpc'
 import { useQuery } from '@tanstack/react-query'
 import { createLogger } from '#/utils'
 
@@ -21,7 +20,7 @@ export function useAddressAliasesQuery({
   enabled = true,
 }: {
   owner: string | null | undefined
-  suiClient: SuiGrpcClient
+  suiClient: Parameters<typeof getAddressAliases>[0] // SuiGrpcClient, extracted from the first parameter of getAddressAliases
   chain?: string
   enabled?: boolean
 }) {
