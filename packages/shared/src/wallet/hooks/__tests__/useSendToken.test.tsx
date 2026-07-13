@@ -47,6 +47,7 @@ vi.mock('#/utils', () => ({
     return BigInt(combined === '' ? '0' : combined)
   }),
   SUI_COIN_TYPE: '0x2::sui::SUI',
+  isSuiCoinType: vi.fn((coinType: string) => coinType === '0x2::sui::SUI'),
   GAS_FEE_WARNING_MESSAGE:
     'This transfer will incur a network fee (gas) paid in SUI.',
   formatMistToSui: vi.fn((mist: string | bigint) => {

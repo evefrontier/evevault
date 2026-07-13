@@ -42,6 +42,8 @@ vi.mock('#/utils', () => ({
   })),
   isNonNullable: (value: unknown) => value !== null && value !== undefined,
   SUI_COIN_TYPE: '0x2::sui::SUI',
+  isSuiCoinType: (coinType: string) => coinType === '0x2::sui::SUI',
+  isSameCoinType: (a: string, b: string) => a === b,
   isExtension: vi.fn(() => false),
   isWeb: vi.fn(() => true),
   isBrowser: vi.fn(() => true),

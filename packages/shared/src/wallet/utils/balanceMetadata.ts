@@ -1,5 +1,5 @@
 import { isEveCoinType } from '@evefrontier/wallet-core/eve-token'
-import { SUI_COIN_TYPE } from '#/utils'
+import { isSuiCoinType } from '#/utils'
 import type { BalanceMetadata } from '#/wallet/types/hooks'
 
 export const DEFAULT_SUI_METADATA: BalanceMetadata = {
@@ -23,7 +23,7 @@ export function getKnownTokenDisplay(coinType: string): {
   name: string
   symbol: string
 } | null {
-  if (coinType === SUI_COIN_TYPE) {
+  if (isSuiCoinType(coinType)) {
     return {
       name: DEFAULT_SUI_METADATA.name,
       symbol: DEFAULT_SUI_METADATA.symbol,

@@ -48,6 +48,13 @@ export function formatByDecimals(amount: string, decimals: number): string {
 export function toSmallestUnit(amount: string, decimals: number): bigint {
   if (!amount || amount === '.') return 0n
 
+  // Only digits with at most one decimal point. Anything else (negative sign,
+  // a second '.', exponent notation, thousands separators, stray characters)
+  // must be rejected rather than silently truncated to a different amount.
+  if (!/^\d*\.?\d*$/.test(amount)) {
+    throw new Error(`Invalid amount: "${amount}"`)
+  }
+
   const [whole = '0', fraction = ''] = amount.split('.')
 
   if (fraction.length > decimals) {

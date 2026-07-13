@@ -2,7 +2,12 @@ import { isEveCoinType } from '@evefrontier/wallet-core/eve-token'
 import { isValidSuiAddress } from '@mysten/sui/utils'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useMemo } from 'react'
-import { createLogger, GAS_FEE_WARNING_MESSAGE, SUI_COIN_TYPE } from '#/utils'
+import {
+  createLogger,
+  GAS_FEE_WARNING_MESSAGE,
+  isSuiCoinType,
+  SUI_COIN_TYPE,
+} from '#/utils'
 import { useBalance } from './useBalance'
 import {
   buildValidationErrors,
@@ -136,7 +141,7 @@ export function useSendToken({
 
   const rawSuiBalance = suiBalanceData?.rawBalance ?? '0'
   const hasZeroSui = !suiBalanceLoading && BigInt(rawSuiBalance) === 0n
-  const hasGas = coinType === SUI_COIN_TYPE || !hasZeroSui
+  const hasGas = isSuiCoinType(coinType) || !hasZeroSui
 
   // Collect validation errors
   const validationErrors = useMemo(() => {
@@ -174,7 +179,7 @@ export function useSendToken({
   })
 
   const suiForGasWarning =
-    !suiBalanceLoading && coinType !== SUI_COIN_TYPE && hasZeroSui
+    !suiBalanceLoading && !isSuiCoinType(coinType) && hasZeroSui
       ? 'You have no SUI balance. SUI is required to pay for transaction fees.'
       : null
   const showFaucetTestSui = !suiBalanceLoading && hasZeroSui

@@ -188,10 +188,12 @@ const getSimulationGasUsed = (result: unknown): GasUsedShape | undefined => {
 }
 
 const calculateTotalGas = (gasUsed: GasUsedShape): bigint => {
+  // Net gas = computation + storage − rebate. nonRefundableStorageFee is the
+  // slice of the rebate that is withheld and is already reflected in
+  // storageRebate; adding it again would double-count it.
   return (
     BigInt(gasUsed.computationCost ?? '0') +
     BigInt(gasUsed.storageCost ?? '0') -
-    BigInt(gasUsed.storageRebate ?? '0') +
-    BigInt(gasUsed.nonRefundableStorageFee ?? '0')
+    BigInt(gasUsed.storageRebate ?? '0')
   )
 }

@@ -1,6 +1,7 @@
 export * from './address'
 export * from './authCleanup'
 export * from './calculate'
+export * from './coinTypes'
 export * from './constants'
 export * from './devMode'
 export * from './environment'

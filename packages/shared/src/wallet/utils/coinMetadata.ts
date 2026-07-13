@@ -1,5 +1,5 @@
 import type { SuiGraphQLClient } from '@mysten/sui/graphql'
-import { SUI_COIN_TYPE } from '#/utils'
+import { isSuiCoinType } from '#/utils'
 import { createLogger } from '#/utils/logger'
 import type {
   CoinMetadataQueryResponse,
@@ -73,7 +73,7 @@ const getCachedCoinMetadata = (coinType: string): CoinMetadataResult | null => {
 }
 
 const getKnownCoinMetadata = (coinType: string): CoinMetadataResult | null => {
-  return coinType === SUI_COIN_TYPE
+  return isSuiCoinType(coinType)
     ? {
         decimals: 9,
         symbol: 'SUI',

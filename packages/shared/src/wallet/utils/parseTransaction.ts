@@ -4,7 +4,12 @@ import type {
   TransactionBalanceChange,
   TransactionDirection,
 } from '#/types/components'
-import { isNonNullable, SUI_COIN_TYPE } from '#/utils'
+import {
+  isNonNullable,
+  isSameCoinType,
+  isSuiCoinType,
+  SUI_COIN_TYPE,
+} from '#/utils'
 import { formatByDecimals } from '#/utils/format'
 import { createLogger } from '#/utils/logger'
 import type {
@@ -27,7 +32,7 @@ function findCounterparty(
     ? (amount: bigint) => amount < 0n
     : (amount: bigint) => amount > 0n
   const sameCoinType = (bc: GraphQLBalanceChange) =>
-    (bc.coinType?.repr ?? SUI_COIN_TYPE) === coinType
+    isSameCoinType(bc.coinType?.repr ?? SUI_COIN_TYPE, coinType)
   const notUser = (bc: GraphQLBalanceChange) =>
     bc.owner?.address?.toLowerCase() !== userAddress.toLowerCase()
 
@@ -198,8 +203,10 @@ const getPrimaryUserChange = (
   const primaryAmount = BigInt(primaryUserChange?.amount ?? '0')
   const primaryCoinType = getCoinType(primaryUserChange)
   const primary =
-    balanceChangeItems.find((bc) => bc.coinType === primaryCoinType) ??
-    balanceChangeItems.find((bc) => bc.coinType !== SUI_COIN_TYPE) ??
+    balanceChangeItems.find((bc) =>
+      isSameCoinType(bc.coinType, primaryCoinType),
+    ) ??
+    balanceChangeItems.find((bc) => !isSuiCoinType(bc.coinType)) ??
     balanceChangeItems[0]
 
   return primary
@@ -230,7 +237,7 @@ const isOutgoingChange = (bc: GraphQLBalanceChange): boolean => {
 }
 
 const isNonSuiAmountChange = (change: GraphQLBalanceChange): boolean => {
-  return getCoinType(change) !== SUI_COIN_TYPE && hasAmount(change)
+  return !isSuiCoinType(getCoinType(change)) && hasAmount(change)
 }
 
 const hasAmount = (change: GraphQLBalanceChange): boolean => {

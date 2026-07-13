@@ -36,6 +36,7 @@ vi.mock('#/utils', () => ({
   isWeb: vi.fn(() => true),
   isBrowser: vi.fn(() => true),
   SUI_COIN_TYPE: '0x2::sui::SUI',
+  isSuiCoinType: vi.fn((coinType: string) => coinType === '0x2::sui::SUI'),
   formatByDecimals: vi.fn(
     (balance: string, _decimals: number) => `formatted-${balance}`,
   ),
