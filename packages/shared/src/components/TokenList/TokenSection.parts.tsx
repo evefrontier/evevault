@@ -33,10 +33,10 @@ export function WalletAddressRow({
   walletAddress?: string
   onCopyAddress: (address: string) => void
 }) {
-  if (!walletAddress) return <div className="h-6 flex-shrink-0" />
+  if (!walletAddress) return <div className="h-6 shrink-0" />
 
   return (
-    <div className="flex justify-end items-center gap-2 w-full flex-shrink-0">
+    <div className="flex justify-end items-center gap-2 w-full shrink-0">
       <div className="flex items-center gap-1">
         <Text variant="regular" size="small" color="neutral-80">
           Wallet address:
