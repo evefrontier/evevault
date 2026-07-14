@@ -190,7 +190,7 @@ export function TokenActions({
   onRemoveToken: () => void
 }) {
   return (
-    <div className="flex justify-center items-center gap-1 w-full flex-shrink-0">
+    <div className="flex justify-center items-center gap-1 w-full shrink-0">
       {onAddToken ? (
         <Button variant="primary" size="small" onClick={onAddToken}>
           Add token

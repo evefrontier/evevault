@@ -3,7 +3,6 @@ import {
   useAuthStore,
   useContextStore,
 } from '@evevault/shared'
-import { requireAuth } from '@evevault/shared/router'
 import { WEB_ROUTES } from '@evevault/shared/utils'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 
@@ -24,6 +23,5 @@ function TransactionsPage() {
 }
 
 export const Route = createFileRoute('/wallet/transactions')({
-  beforeLoad: () => requireAuth({ preserveRedirectPath: true }),
   component: TransactionsPage,
 })
