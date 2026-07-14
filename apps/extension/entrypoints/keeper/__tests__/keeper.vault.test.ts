@@ -65,6 +65,20 @@ describe('Keeper CREATE_KEYPAIR handler', () => {
     })
     expect(rotateResp.ok).toBe(true)
   })
+
+  it('rejects a missing or blank PIN — never creates a passwordless vault', async () => {
+    for (const pin of [undefined, '', '   ']) {
+      const resp = await dispatch({
+        type: KeeperMessageTypes.CREATE_KEYPAIR,
+        pin,
+      })
+      expect(resp.ok).toBe(false)
+      expect(String(resp.error)).toContain('PIN is required')
+    }
+
+    const pubResp = await dispatch({ type: KeeperMessageTypes.GET_PUBLIC_KEY })
+    expect(pubResp.error).toBe('LOCKED')
+  })
 })
 
 // ── UNLOCK_VAULT ──────────────────────────────────────────────────────────────
@@ -153,7 +167,7 @@ describe('Keeper CLEAR_EPHKEY handler', () => {
     expect(String(resp.error)).toContain('Vault must be unlocked again')
   })
 
-  it('clears zkProofs — proof material bound to the old key must not outlive the lock', async () => {
+  it('does NOT clear zkProofs (CLEAR_ZKPROOF is required for that)', async () => {
     const proof = {
       data: { proofPoints: { a: ['1'], b: [['2', '3']], c: ['4'] } },
     }
@@ -172,7 +186,7 @@ describe('Keeper CLEAR_EPHKEY handler', () => {
       chain: 'sui:testnet',
     })
     expect(resp.ok).toBe(true)
-    expect(resp.zkProof).toBeNull()
+    expect(resp.zkProof).toEqual(proof)
   })
 
   it('clears ephemeralKey, sessionDerivedKey, and localnetKey in one CLEAR_EPHKEY call', async () => {

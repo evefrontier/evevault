@@ -163,6 +163,7 @@ describe('registerInjectedWallet', () => {
           },
         },
         source: window,
+        origin: window.location.origin,
       }),
     )
 
@@ -211,6 +212,7 @@ describe('registerInjectedWallet', () => {
           event: 'change',
         },
         source: window,
+        origin: window.location.origin,
       }),
     )
     listener(
@@ -223,6 +225,7 @@ describe('registerInjectedWallet', () => {
           },
         },
         source: window,
+        origin: window.location.origin,
       }),
     )
 

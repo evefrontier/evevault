@@ -21,8 +21,8 @@ export const getDeviceData = async (chain: SuiChain) => {
 
   // Fallback: read from storage only if store is missing data
   const result = await chrome.storage.local.get([DEVICE_STORAGE_KEY])
-  const parsedResult = JSON.parse(result[DEVICE_STORAGE_KEY] as string).state
-  const networkData = parsedResult.networkData?.[chain]
+  const persistedState = parsePersistedState(result[DEVICE_STORAGE_KEY])
+  const networkData = persistedState?.networkData?.[chain]
 
   return {
     // Fallback order: use store value, then per-network storage value, then null if still missing.
@@ -30,4 +30,32 @@ export const getDeviceData = async (chain: SuiChain) => {
     nonce: nonce ?? networkData?.nonce,
     maxEpoch: maxEpoch ?? networkData?.maxEpoch,
   }
+}
+
+type PersistedNetworkData = {
+  networkData?: Partial<
+    Record<
+      SuiChain,
+      { jwtRandomness?: string; nonce?: string; maxEpoch?: string }
+    >
+  >
+}
+
+/**
+ * Storage may be empty (fresh install), hold a string-serialized snapshot, or
+ * hold an already-parsed object (see readPersistedDeviceStoreState). Malformed
+ * data must degrade to "no persisted state", not throw.
+ */
+const parsePersistedState = (raw: unknown): PersistedNetworkData | null => {
+  if (typeof raw === 'string') {
+    try {
+      return (JSON.parse(raw) as { state?: PersistedNetworkData }).state ?? null
+    } catch {
+      return null
+    }
+  }
+  if (raw && typeof raw === 'object' && 'state' in raw) {
+    return (raw as { state?: PersistedNetworkData }).state ?? null
+  }
+  return null
 }
