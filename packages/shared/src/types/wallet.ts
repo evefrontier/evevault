@@ -33,6 +33,7 @@ export interface ZkProofParams {
   jwtRandomness: string
   maxEpoch: string
   ephemeralPublicKey: PublicKey
+  network: string
   idToken: string
 }
 

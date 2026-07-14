@@ -11,7 +11,8 @@ export type { ZkProofParams }
 export const fetchZkProof = async (
   params: ZkProofParams,
 ): Promise<ZkProofData> => {
-  const { jwtRandomness, maxEpoch, ephemeralPublicKey, idToken } = params
+  const { jwtRandomness, maxEpoch, ephemeralPublicKey, idToken, network } =
+    params
 
   const extendedEphemeralPublicKey =
     getExtendedEphemeralPublicKey(ephemeralPublicKey)
@@ -19,6 +20,7 @@ export const fetchZkProof = async (
   const body = JSON.stringify({
     extendedEphemeralPublicKey: extendedEphemeralPublicKey,
     maxEpoch: Number(maxEpoch),
+    network: network,
     randomness: jwtRandomness,
   })
 

@@ -63,6 +63,7 @@ describe('fetchZkProof', () => {
         maxEpoch: '12',
         ephemeralPublicKey: 'ephemeral-public-key' as never,
         idToken: ID_TOKEN,
+        network: 'testnet',
       }),
     ).resolves.toEqual(proofData)
 
@@ -79,6 +80,7 @@ describe('fetchZkProof', () => {
       body: JSON.stringify({
         extendedEphemeralPublicKey: 'extended-public-key',
         maxEpoch: 12,
+        network: 'testnet',
         randomness: 'randomness',
       }),
     })
@@ -101,6 +103,7 @@ describe('fetchZkProof', () => {
         maxEpoch: '12',
         ephemeralPublicKey: 'ephemeral-public-key' as never,
         idToken: ID_TOKEN,
+        network: 'testnet',
       }),
     ).rejects.toThrow(/failed \(400\).*bad request/)
   })
@@ -122,6 +125,7 @@ describe('fetchZkProof', () => {
         maxEpoch: '12',
         ephemeralPublicKey: 'ephemeral-public-key' as never,
         idToken: ID_TOKEN,
+        network: 'testnet',
       }),
     ).rejects.toThrow(/missing required fields/)
   })
@@ -141,6 +145,7 @@ describe('fetchZkProof', () => {
         maxEpoch: '12',
         ephemeralPublicKey: 'ephemeral-public-key' as never,
         idToken: ID_TOKEN,
+        network: 'testnet',
       }),
     ).rejects.toThrow(/not valid JSON/)
   })
@@ -157,6 +162,7 @@ describe('fetchZkProof', () => {
         maxEpoch: '12',
         ephemeralPublicKey: 'ephemeral-public-key' as never,
         idToken: ID_TOKEN,
+        network: 'testnet',
       }),
     ).rejects.toThrow('Network failure')
   })
