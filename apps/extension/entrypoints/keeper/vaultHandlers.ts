@@ -29,8 +29,8 @@ export function handleCreateKeypair(
   message: BackgroundMessage,
   sendResponse: KeeperSendResponse,
 ): boolean {
-  const pin = message.pin as string
-  // Mirror the web path: a blank PIN must never create a passwordless vault.
+  // A blank PIN must never create a passwordless vault.
+  const { pin } = message
   if (typeof pin !== 'string' || pin.trim().length === 0) {
     sendResponse({ ok: false, error: 'PIN is required to create keypair' })
     return true
