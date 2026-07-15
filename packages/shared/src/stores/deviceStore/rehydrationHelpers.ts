@@ -115,13 +115,20 @@ const updateWebLockState = (state: DeviceState | undefined) => {
 export const refreshVaultLockState = async (
   setState: SetDeviceState,
 ): Promise<void> => {
-  if (isWeb()) {
-    await ephKeyService.initialize()
-    setState({ isLocked: !ephKeyService.isUnlocked() })
-    return
+  try {
+    if (isWeb()) {
+      await ephKeyService.initialize()
+      setState({ isLocked: !ephKeyService.isUnlocked() })
+      return
+    }
+    const remainingMs = await ephKeyService.getUnlockRemainingMs()
+    setState({ isLocked: remainingMs <= 0 })
+  } catch (error) {
+    // Fired fire-and-forget from onRehydrateStorage; keep the safe default
+    // (locked) rather than surfacing an unhandled rejection.
+    log.error('Failed to refresh vault lock state', error)
+    setState({ isLocked: true })
   }
-  const remainingMs = await ephKeyService.getUnlockRemainingMs()
-  setState({ isLocked: remainingMs <= 0 })
 }
 
 const isValidStoredSecretKey = (key: object): boolean => {
