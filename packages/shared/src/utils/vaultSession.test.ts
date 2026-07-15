@@ -1,6 +1,19 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { VAULT_UNLOCK_MS } from './constants'
-import { VaultSession } from './vaultSession'
+import { VaultSession, type VaultSessionStorage } from './vaultSession'
+
+const createMemoryStorage = (
+  initial: number | null = null,
+): VaultSessionStorage & { value: number | null } => {
+  const storage = {
+    value: initial,
+    load: () => storage.value,
+    save: (expiry: number | null) => {
+      storage.value = expiry
+    },
+  }
+  return storage
+}
 
 describe('VaultSession', () => {
   beforeEach(() => {
@@ -62,5 +75,41 @@ describe('VaultSession', () => {
     session.unlock()
     session.clear()
     expect(session.isActive()).toBe(false)
+  })
+
+  describe('with persistence storage', () => {
+    it('saves the expiry on unlock and null on clear', () => {
+      const storage = createMemoryStorage()
+      const session = new VaultSession(storage)
+
+      session.unlock(1000)
+      expect(storage.value).toBe(Date.now() + 1000)
+
+      session.clear()
+      expect(storage.value).toBeNull()
+    })
+
+    it('resumes a persisted window with its remaining time intact', () => {
+      const storage = createMemoryStorage(Date.now() + 5000)
+      const session = new VaultSession(storage)
+
+      expect(session.isActive()).toBe(true)
+      expect(session.remainingMs()).toBe(5000)
+
+      vi.advanceTimersByTime(5001)
+      expect(session.isActive()).toBe(false)
+    })
+
+    it('stays inactive when the persisted window has already elapsed', () => {
+      const storage = createMemoryStorage(Date.now() - 1)
+      const session = new VaultSession(storage)
+
+      expect(session.isActive()).toBe(false)
+    })
+
+    it('starts fresh when storage holds nothing', () => {
+      const session = new VaultSession(createMemoryStorage())
+      expect(session.isActive()).toBe(false)
+    })
   })
 })

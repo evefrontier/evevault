@@ -1,6 +1,17 @@
 import { VAULT_UNLOCK_MS } from './constants'
 
 /**
+ * Persists the unlock-window expiry so it can outlive the process that set it
+ * (e.g. sessionStorage on web, where OAuth sign-in reloads the page).
+ * `load()` runs once at construction; implementations own validation of
+ * whatever they read back.
+ */
+export interface VaultSessionStorage {
+  load(): number | null
+  save(expiry: number | null): void
+}
+
+/**
  * The single source of truth for vault unlock-window timing.
  *
  * Both the web vault (webVaultService) and the extension keeper (keeperState)
@@ -8,17 +19,24 @@ import { VAULT_UNLOCK_MS } from './constants'
  * secrets differently and clear them in their own way. This class owns ONLY the
  * expiry timestamp and the rule, with no knowledge of keys, so the timing logic
  * can't silently diverge between the two surfaces. Each caller still owns when
- * to clear its own secrets in response to isActive() going false.
+ * to clear its own secrets in response to isActive() going false — including
+ * re-loading them when a storage-restored session is active but the secrets
+ * died with the previous process.
  *
  * Date.now() is read internally so callers (and their fake-timer tests) need no
  * clock plumbing.
  */
 export class VaultSession {
-  private expiry: number | null = null
+  private expiry: number | null
+
+  constructor(private storage?: VaultSessionStorage) {
+    this.expiry = storage?.load() ?? null
+  }
 
   /** Start or extend the unlock window from now. */
   unlock(durationMs: number = VAULT_UNLOCK_MS): void {
     this.expiry = Date.now() + durationMs
+    this.storage?.save(this.expiry)
   }
 
   /**
@@ -43,5 +61,6 @@ export class VaultSession {
   /** End the session immediately. */
   clear(): void {
     this.expiry = null
+    this.storage?.save(null)
   }
 }
