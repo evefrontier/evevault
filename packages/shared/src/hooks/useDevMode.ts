@@ -5,6 +5,7 @@ import { useDeviceStore } from '#/stores'
 import { isZkLoginSuiChain } from '#/types/networks'
 import { createLogger } from '#/utils'
 import { useWalletSigningContext } from '#/wallet/hooks/useWalletSigningContext'
+import { signAndExecuteTransaction } from '#/wallet/signAndExecute'
 import { useContext } from './useContext'
 import { useDevice } from './useDevice'
 
@@ -37,35 +38,20 @@ export function useDevMode() {
       const tx = new Transaction()
       tx.setSender(senderAddress)
       const txb = await tx.build({ client: suiClient })
-      const { signature } = await sign('TransactionData', txb)
-
-      log.debug('Signature ready', { length: signature.length })
-      log.debug('Transaction bytes ready', { length: txb.length })
-
-      const txDigestResult = await suiClient.core.executeTransaction({
-        transaction: new Uint8Array(txb),
-        signatures: [signature],
+      const digest = await signAndExecuteTransaction({
+        chain,
+        suiClient,
+        txBytes: new Uint8Array(txb),
+        sign,
       })
 
-      if (
-        '$kind' in txDigestResult &&
-        txDigestResult.$kind === 'FailedTransaction'
-      ) {
-        throw new Error('Transaction failed')
-      }
-      const txResponse = (
-        txDigestResult as { Transaction: { digest?: string | null } }
-      ).Transaction
-      const digest = txResponse?.digest ?? null
-
-      log.info('Transaction executed', { digest })
       setTxDigest(digest)
       showToast('Transaction submitted!')
     } catch (error) {
       log.error('Error submitting transaction', error)
       showToast('Error submitting transaction')
     }
-  }, [suiClient, getSenderAddress, sign, showToast])
+  }, [chain, suiClient, getSenderAddress, sign, showToast])
 
   const formatPublicKey = useCallback((bytes: number[] | null | undefined) => {
     if (!bytes || bytes.length === 0) return null

@@ -87,7 +87,6 @@ export function AuthenticatedWalletView({
   // Display only of the vault unlock window.
   const unlockRemainingLabel = useUnlockTimeRemaining(devMode) ?? undefined
 
-  // Surface auth/device failures as transient toasts rather than inline text.
   useEffect(() => {
     if (authError) showErrorToast('AuthError', authError)
   }, [authError, showErrorToast])
