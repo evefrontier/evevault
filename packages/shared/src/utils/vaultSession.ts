@@ -29,14 +29,17 @@ export interface VaultSessionStorage {
 export class VaultSession {
   private expiry: number | null
 
-  constructor(private storage?: VaultSessionStorage) {
-    this.expiry = storage?.load() ?? null
+  // Not named `storage`: WXT's auto-import scanner treats a bare `storage`
+  // identifier as its wxt/utils/storage global and injects an unresolvable
+  // import when the extension bundles this shared file.
+  constructor(private persistence?: VaultSessionStorage) {
+    this.expiry = persistence?.load() ?? null
   }
 
   /** Start or extend the unlock window from now. */
   unlock(durationMs: number = VAULT_UNLOCK_MS): void {
     this.expiry = Date.now() + durationMs
-    this.storage?.save(this.expiry)
+    this.persistence?.save(this.expiry)
   }
 
   /**
@@ -61,6 +64,6 @@ export class VaultSession {
   /** End the session immediately. */
   clear(): void {
     this.expiry = null
-    this.storage?.save(null)
+    this.persistence?.save(null)
   }
 }
