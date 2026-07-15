@@ -536,6 +536,20 @@ describe('WebVaultService', () => {
       expect(secondLoad.getPublicKey()).not.toBeNull()
     })
 
+    it('makes concurrent initialize calls await the in-flight restore', async () => {
+      const firstLoad = await loadFreshService()
+      await firstLoad.createEphemeralKeyPair('123456')
+
+      const secondLoad = await loadFreshService()
+      // Do not await the first call: the second must not resolve early and
+      // expose the pre-restore (locked) state.
+      const firstInit = secondLoad.initialize()
+      await secondLoad.initialize()
+
+      expect(secondLoad.isUnlocked()).toBe(true)
+      await firstInit
+    })
+
     it('stays locked when the persisted window has elapsed', async () => {
       const firstLoad = await loadFreshService()
       await firstLoad.createEphemeralKeyPair('123456')

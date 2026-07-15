@@ -67,18 +67,20 @@ class WebVaultService {
   // persists the expiry per-tab (see unlockExpiryStorage above) so the window
   // survives page loads.
   private session = new VaultSession(unlockExpiryStorage)
-  private initialized = false
+  private initPromise: Promise<void> | null = null
 
   /**
    * Initialize the service. Recovers the keypair from IndexedDB when the
    * persisted unlock window is still open (so a page load within the window
    * does not re-prompt for the PIN); otherwise recovery happens in unlock().
+   * Concurrent callers share the one in-flight initialization, so none of
+   * them can observe the pre-restore (locked) state.
    */
   async initialize(): Promise<void> {
-    if (this.initialized) return
-    this.initialized = true
-    await this.restoreUnlockedSession()
-    log.debug('[web-vault] Initialized')
+    this.initPromise ??= this.restoreUnlockedSession().then(() => {
+      log.debug('[web-vault] Initialized')
+    })
+    return this.initPromise
   }
 
   /**

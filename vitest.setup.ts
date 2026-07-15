@@ -24,11 +24,22 @@ const createMemoryStorage = (): Storage => {
   }
 }
 
+const STORAGE_METHODS = [
+  'clear',
+  'getItem',
+  'key',
+  'removeItem',
+  'setItem',
+] as const
+
 for (const name of ['localStorage', 'sessionStorage'] as const) {
   const existing = (globalThis as Record<string, unknown>)[name] as
     | Storage
     | undefined
-  if (existing && typeof existing.getItem !== 'function') {
+  const isBroken =
+    existing &&
+    STORAGE_METHODS.some((method) => typeof existing[method] !== 'function')
+  if (isBroken) {
     Object.defineProperty(globalThis, name, {
       configurable: true,
       value: createMemoryStorage(),
