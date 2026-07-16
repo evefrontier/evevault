@@ -17,14 +17,11 @@ const UNLOCK_EXPIRY_STORAGE_KEY = 'evevault:web-unlock-expiry'
 
 /**
  * Persists the unlock-window expiry in sessionStorage so the window survives
- * full-page navigations — most importantly the OAuth sign-in redirect, which
- * would otherwise force a PIN re-entry seconds after the PIN was created.
+ * full-page navigations — e.g. OAuth sign-in redirect.
  * Scope is deliberately per-tab: a new tab or browser restart still prompts.
  *
- * This does not move the security boundary. The PIN verifier is a UX-level
- * presence check and the keypair handle already sits in IndexedDB independent
- * of the PIN; the real protection is the non-extractable CryptoKey (see the
- * class docblock below).
+ * The PIN verifier is a UX-level presence check.
+ * The keypair handle already sits in IndexedDB independent of the PIN.
  */
 const unlockExpiryStorage: VaultSessionStorage = {
   load(): number | null {
