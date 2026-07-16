@@ -14,12 +14,7 @@ export const FILE_ROUTE_PATHS = [
 ] as const
 
 export type RoutePath = (typeof FILE_ROUTE_PATHS)[number]
-export type NavPath =
-  | RoutePath
-  | '/tokens'
-  | '/assets'
-  | '/history'
-  | '/address-aliases'
+export type NavPath = RoutePath
 
 /**
  * Extension route paths
@@ -49,15 +44,6 @@ export const WEB_ROUTES = {
   WALLET_ADDRESS_ALIASES: '/wallet/address-aliases',
 } as const
 
-/** All valid route paths from the router (for web app) */
-export const ROUTE_PATHS: readonly NavPath[] = [
-  ...FILE_ROUTE_PATHS,
-  '/tokens',
-  '/assets',
-  '/history',
-  '/address-aliases',
-]
-
 /** Navigation items for the sidebar/bottom bar */
 export const NAV_ITEMS: readonly {
   name: string
@@ -65,18 +51,17 @@ export const NAV_ITEMS: readonly {
   icon: string
   label: string
 }[] = [
-  { name: 'tokens', path: '/tokens', icon: 'Tokens', label: 'Tokens' },
-  { name: 'assets', path: '/assets', icon: 'Assets', label: 'Assets' },
+  { name: 'assets', path: '/wallet', icon: 'Assets', label: 'Home' },
   {
     name: 'history',
-    path: '/history',
+    path: '/wallet/transactions',
     icon: 'History',
-    label: 'History',
+    label: 'Transactions',
   },
   {
     name: 'address-aliases',
-    path: '/address-aliases',
-    icon: 'Network',
+    path: '/wallet/address-aliases',
+    icon: 'Tokens',
     label: 'Address Aliases',
   },
 ] as const

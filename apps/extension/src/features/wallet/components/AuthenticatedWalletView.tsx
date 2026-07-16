@@ -5,12 +5,14 @@ import {
   TenantSelector,
   Text,
   TokenListSection,
+  useToast,
 } from '@evevault/shared/components'
 import { useUnlockTimeRemaining } from '@evevault/shared/hooks'
 import { EXTENSION_ROUTES, getSuiscanUrl } from '@evevault/shared/utils'
 import type { SuiChain } from '@mysten/wallet-standard'
 import { useNavigate } from '@tanstack/react-router'
 import type { User } from 'oidc-client-ts'
+import { useEffect } from 'react'
 import { APP_VERSION } from '@/lib/appVersion'
 
 /**
@@ -78,11 +80,21 @@ export function AuthenticatedWalletView({
   onNetworkSwitchStart: (previousNetwork: string, targetNetwork: string) => void
 }) {
   const navigate = useNavigate()
+  const { showErrorToast } = useToast()
   const openFaucet = faucetUrl
     ? () => window.open(faucetUrl, '_blank', 'noopener,noreferrer')
     : undefined
   // Display only of the vault unlock window.
   const unlockRemainingLabel = useUnlockTimeRemaining(devMode) ?? undefined
+
+  // Surface auth/device failures as transient toasts rather than inline text.
+  useEffect(() => {
+    if (authError) showErrorToast('AuthError', authError)
+  }, [authError, showErrorToast])
+
+  useEffect(() => {
+    if (deviceError) showErrorToast('DeviceError', deviceError)
+  }, [deviceError, showErrorToast])
 
   return (
     <div className="flex flex-col h-full">
@@ -131,8 +143,6 @@ export function AuthenticatedWalletView({
         <TenantSelector currentTenantId={tenantId} viewOnly={true} />
       </div>
 
-      {authError && <Text color="error">AuthError: {authError}</Text>}
-      {deviceError && <Text color="error">DeviceError: {deviceError}</Text>}
       {txDigest && (
         <TransactionDigestLink
           chain={chain}

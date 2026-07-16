@@ -1,6 +1,5 @@
 import { SendTokenScreen, useAuthStore } from '@evevault/shared'
 import type { SendTokenSearch } from '@evevault/shared/router'
-import { requireAuth } from '@evevault/shared/router'
 import {
   createFileRoute,
   redirect,
@@ -27,7 +26,6 @@ function SendTokenPage() {
 }
 
 export const Route = createFileRoute('/wallet/send-token')({
-  beforeLoad: () => requireAuth({ preserveRedirectPath: true }),
   component: SendTokenPage,
   validateSearch: (search: Record<string, unknown>): SendTokenSearch => {
     const coinType = (search.coinType as string) || ''

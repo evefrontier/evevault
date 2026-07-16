@@ -36,7 +36,7 @@ export const Layout: React.FC<LayoutProps> = ({
   showNav: _showNav = true, // Reserved for future mobile nav bar visibility
   headerProps,
 }) => {
-  const { width } = useResponsive()
+  const { width, isMobile } = useResponsive()
   const [viewportHeight, setViewportHeight] = useState<number>(() => {
     if (typeof window === 'undefined') return 800
     return window.innerHeight
@@ -107,8 +107,7 @@ export const Layout: React.FC<LayoutProps> = ({
     )
   }
 
-  /// TODO: add sidebar
-  const showSidebar = false
+  const showSidebar = !isMobile
 
   return (
     <div className="flex h-screen w-full overflow-hidden">

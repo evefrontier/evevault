@@ -203,6 +203,7 @@ const requestZkProof = async ({
     maxEpoch,
     ephemeralPublicKey,
     idToken: vendedIdToken,
+    network,
   })
   return { data, error: undefined }
 }
