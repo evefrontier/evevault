@@ -6,13 +6,46 @@ import { VAULT_UNLOCK_MS } from '#/utils/constants'
 import { del, get, set } from '#/utils/indexedDbKeyval'
 import { createPinVerifier, verifyPin } from '#/utils/keys/pinVerifier'
 import { createLogger } from '#/utils/logger'
-import { VaultSession } from '#/utils/vaultSession'
+import { VaultSession, type VaultSessionStorage } from '#/utils/vaultSession'
 
 const log = createLogger()
 
 const KEYPAIR_STORAGE_KEY = 'evevault:web-ephemeral-keypair'
 const PIN_VERIFIER_STORAGE_KEY = 'evevault:web-pin-verifier'
 const ZKPROOF_STORAGE_PREFIX = 'evevault:web-zkproof:'
+const UNLOCK_EXPIRY_STORAGE_KEY = 'evevault:web-unlock-expiry'
+
+/**
+ * Persists the unlock-window expiry in sessionStorage so the window survives
+ * full-page navigations — e.g. OAuth sign-in redirect.
+ * Scope is deliberately per-tab: a new tab or browser restart still prompts.
+ *
+ * The PIN verifier is a UX-level presence check.
+ * The keypair handle already sits in IndexedDB independent of the PIN.
+ */
+const unlockExpiryStorage: VaultSessionStorage = {
+  load(): number | null {
+    if (typeof sessionStorage === 'undefined') return null
+    const raw = sessionStorage.getItem(UNLOCK_EXPIRY_STORAGE_KEY)
+    if (raw === null) return null
+    const expiry = Number(raw)
+    // Reject garbage and anything past the maximum window (clock changes,
+    // hand-edited storage) rather than honoring an oversized unlock.
+    if (!Number.isFinite(expiry) || expiry > Date.now() + VAULT_UNLOCK_MS) {
+      sessionStorage.removeItem(UNLOCK_EXPIRY_STORAGE_KEY)
+      return null
+    }
+    return expiry
+  },
+  save(expiry: number | null): void {
+    if (typeof sessionStorage === 'undefined') return
+    if (expiry === null) {
+      sessionStorage.removeItem(UNLOCK_EXPIRY_STORAGE_KEY)
+    } else {
+      sessionStorage.setItem(UNLOCK_EXPIRY_STORAGE_KEY, String(expiry))
+    }
+  },
+}
 
 /**
  * Web-specific vault service using ZKWebCryptoSigner (Secp256r1).
@@ -27,17 +60,52 @@ class WebVaultService {
   private signer: ZKWebCryptoSigner | null = null
   // Unlock-window timing lives in the shared VaultSession (see
   // utils/vaultSession). The extension keeper (keeperState) uses the same class,
-  // so the expiry rule stays identical across both surfaces.
-  private session = new VaultSession()
-  private initialized = false
+  // so the expiry rule stays identical across both surfaces. Web additionally
+  // persists the expiry per-tab (see unlockExpiryStorage above) so the window
+  // survives page loads.
+  private session = new VaultSession(unlockExpiryStorage)
+  private initPromise: Promise<void> | null = null
 
   /**
-   * Initialize the service. Does not recover the keypair - that happens in unlock().
+   * Initialize the service. Recovers the keypair from IndexedDB when the
+   * persisted unlock window is still open (so a page load within the window
+   * does not re-prompt for the PIN); otherwise recovery happens in unlock().
+   * Concurrent callers share the one in-flight initialization, so none of
+   * them can observe the pre-restore (locked) state.
    */
   async initialize(): Promise<void> {
-    if (this.initialized) return
-    this.initialized = true
-    log.debug('[web-vault] Initialized')
+    this.initPromise ??= this.restoreUnlockedSession().then(() => {
+      log.debug('[web-vault] Initialized')
+    })
+    return this.initPromise
+  }
+
+  /**
+   * Re-loads the signer for a still-active unlock window after a page load.
+   * The window's remaining time is preserved, never extended.
+   */
+  private async restoreUnlockedSession(): Promise<void> {
+    if (this.signer || !this.session.isActive()) return
+
+    try {
+      const exported =
+        await get<ReturnType<ZKWebCryptoSigner['export']>>(KEYPAIR_STORAGE_KEY)
+      if (!exported) {
+        this.session.clear()
+        return
+      }
+
+      this.signer = new ZKWebCryptoSigner(
+        exported.privateKey,
+        exported.publicKey,
+      )
+      log.info(
+        `[web-vault] Restored unlock session (${Math.round(this.session.remainingMs() / 1000)}s remaining)`,
+      )
+    } catch (error) {
+      log.error('[web-vault] Failed to restore unlock session:', error)
+      this.session.clear()
+    }
   }
 
   /**

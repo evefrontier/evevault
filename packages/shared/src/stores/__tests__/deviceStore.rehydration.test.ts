@@ -6,6 +6,7 @@ import { DEVICE_STORAGE_KEY } from '#/utils/storageKeys'
 
 vi.mock('#/services/vaultService', () => ({
   ephKeyService: {
+    initialize: vi.fn(async () => {}),
     isUnlocked: vi.fn(() => false),
     lock: vi.fn(),
   },

@@ -13,7 +13,7 @@ import {
 } from './constants'
 import {
   handleDeviceStoreRehydration,
-  refreshExtensionLockState,
+  refreshVaultLockState,
 } from './rehydrationHelpers'
 import { createDeviceSelectors } from './selectors'
 
@@ -64,7 +64,7 @@ export const useDeviceStore = create<DeviceState>()(
         return (state, error) => {
           handleDeviceStoreRehydration(state, error)
           if (!error) {
-            void refreshExtensionLockState(useDeviceStore.setState)
+            void refreshVaultLockState(useDeviceStore.setState)
           }
         }
       },

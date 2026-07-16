@@ -89,7 +89,12 @@ const clearInconsistentKeyState = (state: DeviceState | undefined) => {
   state.isLocked = true
 }
 
-/** Web vault lock state is always derived from the in-memory ephKeyService, never from persisted state, since the WebCrypto key is not stored. */
+/**
+ * Web vault lock state is always derived from the live ephKeyService, never
+ * from persisted state. This sync pass sees the not-yet-initialized service
+ * (locked); refreshVaultLockState then corrects it after the service has had
+ * the chance to restore a still-open unlock window.
+ */
 const updateWebLockState = (state: DeviceState | undefined) => {
   if (isWeb() && state) {
     state.isLocked = !ephKeyService.isUnlocked()
@@ -98,18 +103,32 @@ const updateWebLockState = (state: DeviceState | undefined) => {
 }
 
 /**
- * The extension keeper's key material lives only in the background service
- * worker's memory, so the persisted `isLocked` flag can be stale (e.g. it was
- * saved as `false` before the service worker was killed/restarted, which
- * clears the keeper's in-memory key). Correct it against the keeper's live
- * status once rehydration completes, rather than trusting the persisted value.
+ * The persisted `isLocked` flag can be stale on both surfaces, so correct it
+ * against the live vault status once rehydration completes.
+ *
+ * Extension: the keeper's key material lives only in the offscreen document's
+ * memory — a persisted `false` saved before the keeper was torn down is wrong.
+ * Web: the reverse — the signer died with the previous page, but the unlock
+ * window is persisted per-tab, and initialize() restores the signer when that
+ * window is still open (so an OAuth redirect doesn't re-prompt for the PIN).
  */
-export const refreshExtensionLockState = async (
+export const refreshVaultLockState = async (
   setState: SetDeviceState,
 ): Promise<void> => {
-  if (isWeb()) return
-  const remainingMs = await ephKeyService.getUnlockRemainingMs()
-  setState({ isLocked: remainingMs <= 0 })
+  try {
+    if (isWeb()) {
+      await ephKeyService.initialize()
+      setState({ isLocked: !ephKeyService.isUnlocked() })
+      return
+    }
+    const remainingMs = await ephKeyService.getUnlockRemainingMs()
+    setState({ isLocked: remainingMs <= 0 })
+  } catch (error) {
+    // Fired fire-and-forget from onRehydrateStorage; keep the safe default
+    // (locked) rather than surfacing an unhandled rejection.
+    log.error('Failed to refresh vault lock state', error)
+    setState({ isLocked: true })
+  }
 }
 
 const isValidStoredSecretKey = (key: object): boolean => {

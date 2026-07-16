@@ -5,6 +5,7 @@ import { useDeviceStore } from '#/stores/deviceStore'
 // Mock the vault service (unified service that routes to keeper/web)
 vi.mock('#/services/vaultService', () => ({
   ephKeyService: {
+    initialize: vi.fn(async () => {}),
     lock: vi.fn(),
     isUnlocked: vi.fn(),
   },
