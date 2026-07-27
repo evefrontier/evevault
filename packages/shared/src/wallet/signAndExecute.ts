@@ -30,7 +30,8 @@ type SignTransactionFn = (
  * second expiry rejection, propagates to the caller.
  *
  * Throws TransactionFailedError when the chain executes the transaction but
- * reports it as failed (this is never retried).
+ * reports it as failed, or when a successful response is missing a digest
+ * (this is never retried).
  */
 export const signAndExecuteTransaction = async ({
   chain,
@@ -42,7 +43,7 @@ export const signAndExecuteTransaction = async ({
   suiClient: SuiGrpcClient
   txBytes: Uint8Array
   sign: SignTransactionFn
-}): Promise<string | null> =>
+}): Promise<string> =>
   withZkLoginEpochRetry(chain, async () => {
     const { signature } = await sign('TransactionData', txBytes)
 
@@ -61,9 +62,11 @@ export const signAndExecuteTransaction = async ({
       throw new TransactionFailedError()
     }
 
-    const digest =
-      (result as { Transaction: { digest?: string | null } }).Transaction
-        ?.digest ?? null
+    const digest = (result as { Transaction: { digest?: string | null } })
+      .Transaction?.digest
+    if (!digest) {
+      throw new TransactionFailedError()
+    }
     log.info('Transaction executed', { digest })
     return digest
   })

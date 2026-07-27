@@ -56,7 +56,7 @@ export const executeTokenTransfer = async ({
   suiClient,
   getSenderAddress,
   sign,
-}: ExecuteTransferParams): Promise<string | null> => {
+}: ExecuteTransferParams): Promise<string> => {
   const senderAddress = await requireSenderAddress(getSenderAddress)
   const txBytes = await buildTransferTransactionBytes(
     senderAddress,
