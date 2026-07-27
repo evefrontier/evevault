@@ -29,7 +29,12 @@ export function handleCreateKeypair(
   message: BackgroundMessage,
   sendResponse: KeeperSendResponse,
 ): boolean {
-  const pin = message.pin as string
+  // A blank PIN must never create a passwordless vault.
+  const { pin } = message
+  if (typeof pin !== 'string' || pin.trim().length === 0) {
+    sendResponse({ ok: false, error: 'PIN is required to create keypair' })
+    return true
+  }
   const keypair = ZKEd25519Keypair.generate()
 
   // Chrome keeps the response channel open only when the listener returns true.

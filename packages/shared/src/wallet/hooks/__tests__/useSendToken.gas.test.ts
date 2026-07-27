@@ -32,7 +32,8 @@ const txResult = (gasUsed: Record<string, string> | undefined) => ({
 
 describe('parseGasUsedFromSimulation', () => {
   it('sums gas components for a successful Transaction', () => {
-    // 1000 + 500 - 200 + 50 = 1350
+    // 1000 + 500 - 200 = 1300; nonRefundableStorageFee is already part of
+    // storageRebate and must not be added again.
     expect(
       parseGasUsedFromSimulation(
         txResult({
@@ -42,7 +43,7 @@ describe('parseGasUsedFromSimulation', () => {
           nonRefundableStorageFee: '50',
         }),
       ),
-    ).toBe('1350')
+    ).toBe('1300')
   })
 
   it('reads gas from a FailedTransaction result', () => {

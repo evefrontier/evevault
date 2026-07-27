@@ -2,7 +2,7 @@ import { isEveCoinType } from '@evefrontier/wallet-core/eve-token'
 import { SUI_LOCALNET_CHAIN } from '@mysten/wallet-standard'
 import { createSuiClient } from '#/sui'
 import type { createSuiGraphQLClient } from '#/sui/graphqlClient'
-import { formatByDecimals, formatMistToSui, SUI_COIN_TYPE } from '#/utils'
+import { formatByDecimals, formatMistToSui, isSuiCoinType } from '#/utils'
 import { createLogger } from '#/utils/logger'
 import {
   BALANCE_AND_METADATA_QUERY,
@@ -98,9 +98,10 @@ async function fetchLocalnetBalanceViaGrpc(
   const client = createSuiClient(SUI_LOCALNET_CHAIN, localnetUrl)
   const result = await client.getBalance({ owner: address, coinType })
   const totalBalance = result.balance?.balance ?? '0'
-  const metadata = coinType === SUI_COIN_TYPE ? DEFAULT_SUI_METADATA : null
+  const isSui = isSuiCoinType(coinType)
+  const metadata = isSui ? DEFAULT_SUI_METADATA : null
 
-  if (coinType !== SUI_COIN_TYPE) {
+  if (!isSui) {
     log.warn(
       'fetchLocalnetBalanceViaGrpc: no metadata for coin type, defaulting to 9 decimals',
       { coinType },
@@ -109,10 +110,9 @@ async function fetchLocalnetBalanceViaGrpc(
 
   return {
     rawBalance: totalBalance,
-    formattedBalance:
-      coinType === SUI_COIN_TYPE
-        ? formatMistToSui(totalBalance)
-        : formatByDecimals(totalBalance, 9),
+    formattedBalance: isSui
+      ? formatMistToSui(totalBalance)
+      : formatByDecimals(totalBalance, 9),
     metadata,
     coinType,
   }
@@ -192,7 +192,7 @@ const resolveBalanceMetadata = (
   meta: BalanceAndMetadataResponse['coinMetadata'] | undefined,
   coinType: string,
 ): BalanceMetadata | null => {
-  if (coinType === SUI_COIN_TYPE) {
+  if (isSuiCoinType(coinType)) {
     return DEFAULT_SUI_METADATA
   }
   if (isEveCoinType(coinType)) {
@@ -216,7 +216,7 @@ const formatBalance = (
   coinType: string,
   metadata: BalanceMetadata | null,
 ): string => {
-  if (coinType === SUI_COIN_TYPE) {
+  if (isSuiCoinType(coinType)) {
     return formatMistToSui(totalBalance)
   }
   return metadata?.decimals === undefined

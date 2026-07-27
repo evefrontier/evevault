@@ -3,7 +3,7 @@ import type {
   TransactionBalanceChange,
   TransactionStatusMessage,
 } from '#/types/components'
-import { formatAddress, formatDisplayAmount, SUI_COIN_TYPE } from '#/utils'
+import { formatAddress, formatDisplayAmount, isSuiCoinType } from '#/utils'
 
 /**
  * Normalizes TanStack Query pages so the screen can stay independent from the
@@ -116,7 +116,7 @@ export function getTransactionRowSummary(transaction: Transaction) {
  */
 export function getBalanceChangeTitle(balanceChange: TransactionBalanceChange) {
   if (!balanceChange.tokenName) return null
-  return `${balanceChange.coinType === SUI_COIN_TYPE ? 'Gas' : 'Token'}: ${
+  return `${isSuiCoinType(balanceChange.coinType) ? 'Gas' : 'Token'}: ${
     balanceChange.tokenName
   }`
 }

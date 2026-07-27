@@ -71,6 +71,32 @@ describe('toSmallestUnit', () => {
         'Maximum allowed is 6',
       )
     })
+
+    it('throws on more than one decimal point instead of truncating', () => {
+      expect(() => toSmallestUnit('1.2.3', SUI_DECIMALS)).toThrow(
+        'Invalid amount',
+      )
+    })
+
+    it('throws on negative amounts', () => {
+      expect(() => toSmallestUnit('-1', SUI_DECIMALS)).toThrow('Invalid amount')
+      expect(() => toSmallestUnit('-0.5', SUI_DECIMALS)).toThrow(
+        'Invalid amount',
+      )
+    })
+
+    it('throws on non-numeric characters', () => {
+      expect(() => toSmallestUnit('1,000', SUI_DECIMALS)).toThrow(
+        'Invalid amount',
+      )
+      expect(() => toSmallestUnit('1e9', SUI_DECIMALS)).toThrow(
+        'Invalid amount',
+      )
+      expect(() => toSmallestUnit(' 1', SUI_DECIMALS)).toThrow('Invalid amount')
+      expect(() => toSmallestUnit('0x10', SUI_DECIMALS)).toThrow(
+        'Invalid amount',
+      )
+    })
   })
 
   describe('different decimal configurations', () => {

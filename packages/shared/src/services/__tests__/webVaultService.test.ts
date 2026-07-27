@@ -255,6 +255,17 @@ describe('WebVaultService', () => {
       )
     })
 
+    it('rejects a wrong PIN even when already unlocked', async () => {
+      // Regression: unlock(wrongPin) must not succeed (nor extend the session)
+      // just because a session is already active.
+      await webVaultService.unlock(testPin)
+      expect(webVaultService.isUnlocked()).toBe(true)
+
+      await expect(webVaultService.unlock('wrongpin')).rejects.toThrow(
+        'Invalid PIN',
+      )
+    })
+
     it('returns false if no PIN verifier exists', async () => {
       // Clear the store to simulate no PIN verifier
       mockStore.delete('evevault:web-pin-verifier')
@@ -478,6 +489,106 @@ describe('WebVaultService', () => {
 
       expect(bytes).toBeInstanceOf(Array)
       expect(bytes?.length).toBe(33)
+    })
+  })
+
+  describe('unlock window persistence across page loads', () => {
+    const UNLOCK_EXPIRY_KEY = 'evevault:web-unlock-expiry'
+    const sessionStore = new Map<string, string>()
+
+    beforeEach(() => {
+      sessionStore.clear()
+      Object.defineProperty(globalThis, 'sessionStorage', {
+        configurable: true,
+        value: {
+          getItem: (key: string) => sessionStore.get(key) ?? null,
+          setItem: (key: string, value: string) => {
+            sessionStore.set(key, value)
+          },
+          removeItem: (key: string) => {
+            sessionStore.delete(key)
+          },
+        },
+      })
+    })
+
+    afterEach(() => {
+      // Restore the storage-less environment the rest of the suite runs in
+      delete (globalThis as { sessionStorage?: unknown }).sessionStorage
+    })
+
+    /** Re-imports the module, so the fresh singleton acts like a new page load. */
+    const loadFreshService = async () => {
+      vi.resetModules()
+      const module = await import('../webVaultService')
+      return module.webVaultService
+    }
+
+    it('restores the unlock session within the window without a PIN', async () => {
+      const firstLoad = await loadFreshService()
+      await firstLoad.createEphemeralKeyPair('123456')
+      expect(sessionStore.has(UNLOCK_EXPIRY_KEY)).toBe(true)
+
+      const secondLoad = await loadFreshService()
+      await secondLoad.initialize()
+
+      expect(secondLoad.isUnlocked()).toBe(true)
+      expect(secondLoad.getPublicKey()).not.toBeNull()
+    })
+
+    it('makes concurrent initialize calls await the in-flight restore', async () => {
+      const firstLoad = await loadFreshService()
+      await firstLoad.createEphemeralKeyPair('123456')
+
+      const secondLoad = await loadFreshService()
+      // Do not await the first call: the second must not resolve early and
+      // expose the pre-restore (locked) state.
+      const firstInit = secondLoad.initialize()
+      await secondLoad.initialize()
+
+      expect(secondLoad.isUnlocked()).toBe(true)
+      await firstInit
+    })
+
+    it('stays locked when the persisted window has elapsed', async () => {
+      const firstLoad = await loadFreshService()
+      await firstLoad.createEphemeralKeyPair('123456')
+      sessionStore.set(UNLOCK_EXPIRY_KEY, String(Date.now() - 1))
+
+      const secondLoad = await loadFreshService()
+      await secondLoad.initialize()
+
+      expect(secondLoad.isUnlocked()).toBe(false)
+    })
+
+    it('clears the window and stays locked when the keypair is missing', async () => {
+      sessionStore.set(UNLOCK_EXPIRY_KEY, String(Date.now() + 60_000))
+
+      const service = await loadFreshService()
+      await service.initialize()
+
+      expect(service.isUnlocked()).toBe(false)
+      expect(sessionStore.has(UNLOCK_EXPIRY_KEY)).toBe(false)
+    })
+
+    it('rejects a persisted expiry beyond the maximum window', async () => {
+      const firstLoad = await loadFreshService()
+      await firstLoad.createEphemeralKeyPair('123456')
+      sessionStore.set(UNLOCK_EXPIRY_KEY, String(Date.now() + 60 * 60 * 1000))
+
+      const secondLoad = await loadFreshService()
+      await secondLoad.initialize()
+
+      expect(secondLoad.isUnlocked()).toBe(false)
+    })
+
+    it('drops the persisted window on lock', async () => {
+      const service = await loadFreshService()
+      await service.createEphemeralKeyPair('123456')
+
+      service.lock()
+
+      expect(sessionStore.has(UNLOCK_EXPIRY_KEY)).toBe(false)
     })
   })
 })

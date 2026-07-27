@@ -65,6 +65,20 @@ describe('Keeper CREATE_KEYPAIR handler', () => {
     })
     expect(rotateResp.ok).toBe(true)
   })
+
+  it('rejects a missing or blank PIN — never creates a passwordless vault', async () => {
+    for (const pin of [undefined, '', '   ']) {
+      const resp = await dispatch({
+        type: KeeperMessageTypes.CREATE_KEYPAIR,
+        pin,
+      })
+      expect(resp.ok).toBe(false)
+      expect(String(resp.error)).toContain('PIN is required')
+    }
+
+    const pubResp = await dispatch({ type: KeeperMessageTypes.GET_PUBLIC_KEY })
+    expect(pubResp.error).toBe('LOCKED')
+  })
 })
 
 // ── UNLOCK_VAULT ──────────────────────────────────────────────────────────────

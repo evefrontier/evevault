@@ -188,10 +188,10 @@ const getSimulationGasUsed = (result: unknown): GasUsedShape | undefined => {
 }
 
 const calculateTotalGas = (gasUsed: GasUsedShape): bigint => {
+  // Net gas = computation + storage − rebate.
   return (
     BigInt(gasUsed.computationCost ?? '0') +
     BigInt(gasUsed.storageCost ?? '0') -
-    BigInt(gasUsed.storageRebate ?? '0') +
-    BigInt(gasUsed.nonRefundableStorageFee ?? '0')
+    BigInt(gasUsed.storageRebate ?? '0')
   )
 }

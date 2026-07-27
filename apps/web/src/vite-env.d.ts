@@ -4,11 +4,3 @@
 declare module 'virtual:app-version' {
   export const APP_VERSION: string
 }
-
-interface ImportMetaEnv {
-  readonly VITE_FUSIONAUTH_REDIRECT_URI: string
-}
-
-declare interface ImportMeta {
-  readonly env: ImportMetaEnv
-}

@@ -81,13 +81,20 @@ try {
   )
 } catch (error) {
   log.error('Failed to render app', error)
-  rootElement.innerHTML = `
-    <div style="padding: 20px;">
-      <h1>EVE Vault</h1>
-      <p style="color: red;">Failed to initialize: ${
-        error instanceof Error ? error.message : String(error)
-      }</p>
-      <button onclick="window.location.reload()">Reload</button>
-    </div>
-  `
+  // Built via DOM APIs (not innerHTML) so the error message is inert text —
+  // also keeps this compatible with require-trusted-types-for 'script'.
+  const container = document.createElement('div')
+  container.style.padding = '20px'
+  const heading = document.createElement('h1')
+  heading.textContent = 'EVE Vault'
+  const message = document.createElement('p')
+  message.style.color = 'red'
+  message.textContent = `Failed to initialize: ${
+    error instanceof Error ? error.message : String(error)
+  }`
+  const reloadButton = document.createElement('button')
+  reloadButton.textContent = 'Reload'
+  reloadButton.addEventListener('click', () => window.location.reload())
+  container.append(heading, message, reloadButton)
+  rootElement.replaceChildren(container)
 }

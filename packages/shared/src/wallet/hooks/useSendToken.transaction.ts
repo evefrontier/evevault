@@ -1,6 +1,6 @@
 import type { SuiGrpcClient } from '@mysten/sui/grpc'
 import { Transaction } from '@mysten/sui/transactions'
-import { createLogger, SUI_COIN_TYPE, toSmallestUnit } from '#/utils'
+import { createLogger, isSuiCoinType, toSmallestUnit } from '#/utils'
 
 type CoinWithBalance = { balance: string; objectId: string }
 
@@ -30,7 +30,7 @@ export async function buildTransferTransactionBytes(
   const tx = new Transaction()
   tx.setSender(senderAddress)
 
-  if (coinType === SUI_COIN_TYPE) {
+  if (isSuiCoinType(coinType)) {
     addSuiTransfer(tx, recipientAddress, amountInSmallestUnit)
   } else {
     await addTokenTransfer(tx, {

@@ -66,6 +66,7 @@ function applyWalletChange(
 function onWalletMessage(walletInstance: EveVaultWallet) {
   return (event: MessageEvent) => {
     if (event.source !== window) return
+    if (event.origin !== window.location.origin) return
 
     const data: Record<string, unknown> = event.data || {}
     if (data.__from !== 'Eve Vault' || data.event !== 'change') return

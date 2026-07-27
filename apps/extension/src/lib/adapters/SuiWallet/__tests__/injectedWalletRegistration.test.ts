@@ -111,12 +111,37 @@ describe('registerInjectedWallet', () => {
           },
         },
         source: window,
+        origin: window.location.origin,
       }),
     )
 
     expect(setChain).toHaveBeenCalledWith(SUI_DEVNET_CHAIN)
     expect(disconnect).toHaveBeenCalled()
     expect(setFeatures).toHaveBeenCalledWith(features)
+  })
+
+  it('ignores wallet change messages from a different origin', () => {
+    const addEventListener = vi.spyOn(window, 'addEventListener')
+    registerInjectedWallet()
+    const wallet = mockRegisterWallet.mock.calls[0][0] as EveVaultWallet
+    const setChain = vi.spyOn(wallet, 'setChain')
+    const listener = addEventListener.mock.calls.find(
+      ([eventName]) => eventName === 'message',
+    )?.[1] as EventListener
+
+    listener(
+      new MessageEvent('message', {
+        data: {
+          __from: 'Eve Vault',
+          event: 'change',
+          payload: { chains: [SUI_DEVNET_CHAIN] },
+        },
+        source: window,
+        origin: 'https://evil.example',
+      }),
+    )
+
+    expect(setChain).not.toHaveBeenCalled()
   })
 
   it('ignores message events that are not wallet change messages', () => {
@@ -138,6 +163,7 @@ describe('registerInjectedWallet', () => {
           },
         },
         source: window,
+        origin: window.location.origin,
       }),
     )
 
@@ -186,6 +212,7 @@ describe('registerInjectedWallet', () => {
           event: 'change',
         },
         source: window,
+        origin: window.location.origin,
       }),
     )
     listener(
@@ -198,6 +225,7 @@ describe('registerInjectedWallet', () => {
           },
         },
         source: window,
+        origin: window.location.origin,
       }),
     )
 
