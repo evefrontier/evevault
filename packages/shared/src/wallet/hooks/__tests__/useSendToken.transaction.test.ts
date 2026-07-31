@@ -1,3 +1,4 @@
+import { SUI_TESTNET_CHAIN } from '@mysten/wallet-standard'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { SUI_COIN_TYPE } from '#/utils'
 
@@ -188,6 +189,7 @@ describe('useSendToken.transaction helpers', () => {
 
     const digest = await executeTokenTransfer({
       amount: '1.5',
+      chain: SUI_TESTNET_CHAIN,
       coinType: SUI_COIN_TYPE,
       decimals: 1,
       recipientAddress: '0xrecipient',
@@ -211,6 +213,7 @@ describe('useSendToken.transaction helpers', () => {
     await expect(
       executeTokenTransfer({
         amount: '1',
+        chain: SUI_TESTNET_CHAIN,
         coinType: SUI_COIN_TYPE,
         decimals: 0,
         recipientAddress: '0xrecipient',
@@ -223,6 +226,7 @@ describe('useSendToken.transaction helpers', () => {
     await expect(
       executeTokenTransfer({
         amount: '1',
+        chain: SUI_TESTNET_CHAIN,
         coinType: SUI_COIN_TYPE,
         decimals: 0,
         recipientAddress: '0xrecipient',

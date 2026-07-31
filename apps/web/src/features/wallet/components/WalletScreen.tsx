@@ -18,10 +18,13 @@ import {
 import { getCurrentTenantId, getTenantLabel } from '@evevault/shared/stores'
 import { createSuiClient, getFaucetUrlForChain } from '@evevault/shared/sui'
 import { createLogger, getSuiscanUrl, WEB_ROUTES } from '@evevault/shared/utils'
-import { zkSignAny } from '@evevault/shared/wallet'
+import {
+  signAndExecuteTransaction,
+  TransactionFailedError,
+  zkSignAny,
+} from '@evevault/shared/wallet'
 import { Transaction } from '@mysten/sui/transactions'
 import type { SuiChain } from '@mysten/wallet-standard'
-import { SUI_TESTNET_CHAIN } from '@mysten/wallet-standard'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 import type { User } from 'oidc-client-ts'
@@ -37,35 +40,40 @@ const log = createLogger()
  */
 const executeTestTransaction = async (
   user: User,
+  chain: SuiChain,
   suiClient: ReturnType<typeof createSuiClient>,
   getZkProof: Parameters<typeof zkSignAny>[2]['getZkProof'],
 ): Promise<{ ok: boolean; digest: string | null }> => {
   const tx = new Transaction()
   tx.setSender(user.profile?.sui_address as string)
   const txb = await tx.build({ client: suiClient })
-  const { bytes, zkSignature } = await zkSignAny('TransactionData', txb, {
-    user,
-    getZkProof,
-  })
-  log.debug('zkSignature ready', { length: zkSignature.length })
-  log.debug('Transaction block bytes ready', { length: bytes.length })
-  const result = await suiClient.core.executeTransaction({
-    transaction: new Uint8Array(txb),
-    signatures: [zkSignature],
-  })
-  // @mysten/sui 2.x: discriminated union Transaction | FailedTransaction
-  if ('$kind' in result && result.$kind === 'FailedTransaction') {
-    log.error('Transaction execution failed', { result })
-    return { ok: false, digest: null }
+  try {
+    const digest = await signAndExecuteTransaction({
+      chain,
+      suiClient,
+      txBytes: new Uint8Array(txb),
+      sign: async (scope, bytes) => {
+        const { bytes: signedBytes, zkSignature } = await zkSignAny(
+          scope,
+          bytes,
+          { user, getZkProof },
+        )
+        return { bytes: signedBytes, signature: zkSignature }
+      },
+    })
+    return { ok: true, digest }
+  } catch (error) {
+    if (error instanceof TransactionFailedError) {
+      log.error('Transaction execution failed', error)
+      return { ok: false, digest: null }
+    }
+    throw error
   }
-  const digest = result.Transaction?.digest ?? null
-  log.info('Transaction executed', { digest })
-  return { ok: true, digest }
 }
 
 interface WalletDashboardState {
   user: User
-  chain: SuiChain | undefined
+  chain: SuiChain
   tenantId: TenantId
   devMode: boolean
   faucetUrl: string | null
@@ -117,6 +125,7 @@ const useWalletInitialization = (initializeAuth: () => Promise<unknown>) => {
 /** Signs + submits a test transaction and records the resulting digest. */
 const useWalletTestTransaction = (params: {
   user: User | null | undefined
+  chain: SuiChain
   maxEpoch: string | number | null | undefined
   ephemeralPublicKey: unknown
   suiClient: ReturnType<typeof createSuiClient>
@@ -125,6 +134,7 @@ const useWalletTestTransaction = (params: {
 }) => {
   const {
     user,
+    chain,
     maxEpoch,
     ephemeralPublicKey,
     suiClient,
@@ -140,6 +150,7 @@ const useWalletTestTransaction = (params: {
     }
     const { ok, digest } = await executeTestTransaction(
       user,
+      chain,
       suiClient,
       getZkProof,
     )
@@ -152,7 +163,15 @@ const useWalletTestTransaction = (params: {
       queryClient.refetchQueries({ queryKey: ['coin-balance'] }),
       queryClient.refetchQueries({ queryKey: ['transactions'] }),
     ])
-  }, [user, maxEpoch, ephemeralPublicKey, getZkProof, suiClient, queryClient])
+  }, [
+    user,
+    chain,
+    maxEpoch,
+    ephemeralPublicKey,
+    getZkProof,
+    suiClient,
+    queryClient,
+  ])
 
   return { txDigest, signAndSubmit }
 }
@@ -194,9 +213,6 @@ const WalletDashboard = ({
     deviceError,
   } = wallet
   const address = user.profile?.sui_address as string
-  // Defined chain (testnet fallback) so balance and token list use the same
-  // network and we avoid cross-network transfer/balance errors
-  const resolvedChain = chain ?? SUI_TESTNET_CHAIN
   // Display only of the vault unlock window.
   const unlockRemainingLabel = useUnlockTimeRemaining(devMode) ?? undefined
 
@@ -224,7 +240,7 @@ const WalletDashboard = ({
       />
       <TokenListSection
         user={user}
-        chain={resolvedChain}
+        chain={chain}
         walletAddress={address}
         onAddToken={actions.onAddToken}
         onSendToken={actions.onSendToken}
@@ -233,7 +249,7 @@ const WalletDashboard = ({
       <div className="justify-between pt-8 flex gap-4 flex-col sm:flex-row">
         <div className="flex justify-between items-center gap-2 w-full">
           <NetworkSelector
-            chain={resolvedChain}
+            chain={chain}
             onNetworkSwitchStart={(previousNetwork, targetNetwork) => {
               log.info('Network switch started', {
                 previousNetwork,
@@ -259,7 +275,7 @@ const WalletDashboard = ({
               <Text>
                 Tx digest:{' '}
                 <a
-                  href={chain ? getSuiscanUrl(chain, txDigest) : '#'}
+                  href={getSuiscanUrl(chain, txDigest)}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{ color: 'var(--quantum)' }}
@@ -305,16 +321,15 @@ export const WalletScreen = () => {
 
   // Create suiClient with useMemo to recreate when chain changes
   const suiClient = React.useMemo(() => {
-    // Defined chain so balance/transactions always use the same network; avoids cross-network errors
-    const currentChain = chain || SUI_TESTNET_CHAIN
-    log.debug('Creating SuiClient for chain', { chain: currentChain })
-    return createSuiClient(currentChain)
+    log.debug('Creating SuiClient for chain', { chain })
+    return createSuiClient(chain)
   }, [chain])
 
   const { initError, isInitializing } = useWalletInitialization(initializeAuth)
   const { txDigest, signAndSubmit: handleSignAndSubmitTx } =
     useWalletTestTransaction({
       user,
+      chain,
       maxEpoch,
       ephemeralPublicKey,
       suiClient,

@@ -1,11 +1,14 @@
 import type { SuiGrpcClient } from '@mysten/sui/grpc'
 import { Transaction } from '@mysten/sui/transactions'
-import { createLogger, isSuiCoinType, toSmallestUnit } from '#/utils'
+import type { SuiChain } from '@mysten/wallet-standard'
+import { isSuiCoinType, toSmallestUnit } from '#/utils'
+import { signAndExecuteTransaction } from '#/wallet/signAndExecute'
 
 type CoinWithBalance = { balance: string; objectId: string }
 
 type ExecuteTransferParams = {
   amount: string
+  chain: SuiChain
   coinType: string
   decimals: number
   recipientAddress: string
@@ -16,8 +19,6 @@ type ExecuteTransferParams = {
     bytes: Uint8Array,
   ) => Promise<{ bytes: string; signature: string }>
 }
-
-const log = createLogger()
 
 /** SUI uses the gas coin directly (splitCoins from gas); other tokens require fetching coin objects and potentially merging them. */
 export async function buildTransferTransactionBytes(
@@ -48,13 +49,14 @@ export async function buildTransferTransactionBytes(
 
 export const executeTokenTransfer = async ({
   amount,
+  chain,
   coinType,
   decimals,
   recipientAddress,
   suiClient,
   getSenderAddress,
   sign,
-}: ExecuteTransferParams): Promise<string | null> => {
+}: ExecuteTransferParams): Promise<string> => {
   const senderAddress = await requireSenderAddress(getSenderAddress)
   const txBytes = await buildTransferTransactionBytes(
     senderAddress,
@@ -63,26 +65,8 @@ export const executeTokenTransfer = async ({
     coinType,
     suiClient,
   )
-  const { bytes, signature } = await sign('TransactionData', txBytes)
 
-  log.debug('Transaction signed', {
-    bytesLength: bytes.length,
-    signatureLength: signature.length,
-  })
-
-  const result = await suiClient.core.executeTransaction({
-    transaction: txBytes,
-    signatures: [signature],
-  })
-
-  if ('$kind' in result && result.$kind === 'FailedTransaction') {
-    throw new Error('Transaction failed')
-  }
-
-  return (
-    (result as { Transaction: { digest?: string | null } }).Transaction
-      ?.digest ?? null
-  )
+  return signAndExecuteTransaction({ chain, suiClient, txBytes, sign })
 }
 
 const requireSenderAddress = async (

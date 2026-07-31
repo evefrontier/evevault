@@ -213,6 +213,7 @@ export function useSendToken({
       () =>
         executeTokenTransfer({
           amount,
+          chain,
           coinType,
           decimals,
           recipientAddress,
@@ -239,6 +240,7 @@ export function useSendToken({
     canSend,
     run,
     setError,
+    chain,
     coinType,
     amount,
     decimals,

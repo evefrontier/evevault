@@ -15,6 +15,10 @@ export { useBalance } from './hooks/useBalance'
 export { useSendToken } from './hooks/useSendToken'
 export { useTransactionHistory } from './hooks/useTransactionHistory'
 export { useWalletSigningContext } from './hooks/useWalletSigningContext'
+export {
+  signAndExecuteTransaction,
+  TransactionFailedError,
+} from './signAndExecute'
 export { signForChain } from './signForChain'
 export type {
   CoinMetadataQueryResponse,
@@ -22,5 +26,9 @@ export type {
 } from './types/coinMetadata'
 export type { BalanceAndMetadataResponse } from './types/graphql'
 export { invalidateCoinMetadataCache } from './utils/coinMetadata'
+export {
+  isZkLoginEpochExpiredError,
+  withZkLoginEpochRetry,
+} from './zkEpochRetry'
 export { fetchZkProof } from './zkProof'
 export { zkSignAny } from './zkSignAny'
