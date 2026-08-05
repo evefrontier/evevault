@@ -1,3 +1,7 @@
+export {
+  type ParseTransactionBytesResult,
+  parseTransactionBytes,
+} from '@evefrontier/wallet-core/transaction'
 export * from './address'
 export * from './authCleanup'
 export * from './calculate'
@@ -10,7 +14,6 @@ export * from './format'
 export * from './getters'
 export * from './keys'
 export * from './logger'
-export * from './parseTxBytes'
 export * from './predicates'
 export * from './redact'
 export * from './routes'
