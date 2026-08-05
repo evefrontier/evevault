@@ -9,19 +9,19 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from "./routes/__root"
-import { Route as NotFoundRouteImport } from "./routes/not-found"
-import { Route as CallbackRouteImport } from "./routes/callback"
-import { Route as WalletRouteRouteImport } from "./routes/wallet/route"
 import { Route as IndexRouteImport } from "./routes/index"
+import { Route as CallbackRouteImport } from "./routes/callback"
+import { Route as NotFoundRouteImport } from "./routes/not-found"
+import { Route as WalletRouteRouteImport } from "./routes/wallet/route"
 import { Route as WalletIndexRouteImport } from "./routes/wallet/index"
-import { Route as WalletTransactionsRouteImport } from "./routes/wallet.transactions"
-import { Route as WalletSendTokenRouteImport } from "./routes/wallet.send-token"
-import { Route as WalletAddressAliasesRouteImport } from "./routes/wallet.address-aliases"
 import { Route as WalletAddTokenRouteImport } from "./routes/wallet/add-token"
+import { Route as WalletAddressAliasesRouteImport } from "./routes/wallet.address-aliases"
+import { Route as WalletSendTokenRouteImport } from "./routes/wallet.send-token"
+import { Route as WalletTransactionsRouteImport } from "./routes/wallet.transactions"
 
-const NotFoundRoute = NotFoundRouteImport.update({
-  id: "/not-found",
-  path: "/not-found",
+const IndexRoute = IndexRouteImport.update({
+  id: "/",
+  path: "/",
   getParentRoute: () => rootRouteImport,
 } as any)
 const CallbackRoute = CallbackRouteImport.update({
@@ -29,14 +29,14 @@ const CallbackRoute = CallbackRouteImport.update({
   path: "/callback",
   getParentRoute: () => rootRouteImport,
 } as any)
+const NotFoundRoute = NotFoundRouteImport.update({
+  id: "/not-found",
+  path: "/not-found",
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WalletRouteRoute = WalletRouteRouteImport.update({
   id: "/wallet",
   path: "/wallet",
-  getParentRoute: () => rootRouteImport,
-} as any)
-const IndexRoute = IndexRouteImport.update({
-  id: "/",
-  path: "/",
   getParentRoute: () => rootRouteImport,
 } as any)
 const WalletIndexRoute = WalletIndexRouteImport.update({
@@ -44,14 +44,9 @@ const WalletIndexRoute = WalletIndexRouteImport.update({
   path: "/",
   getParentRoute: () => WalletRouteRoute,
 } as any)
-const WalletTransactionsRoute = WalletTransactionsRouteImport.update({
-  id: "/transactions",
-  path: "/transactions",
-  getParentRoute: () => WalletRouteRoute,
-} as any)
-const WalletSendTokenRoute = WalletSendTokenRouteImport.update({
-  id: "/send-token",
-  path: "/send-token",
+const WalletAddTokenRoute = WalletAddTokenRouteImport.update({
+  id: "/add-token",
+  path: "/add-token",
   getParentRoute: () => WalletRouteRoute,
 } as any)
 const WalletAddressAliasesRoute = WalletAddressAliasesRouteImport.update({
@@ -59,9 +54,14 @@ const WalletAddressAliasesRoute = WalletAddressAliasesRouteImport.update({
   path: "/address-aliases",
   getParentRoute: () => WalletRouteRoute,
 } as any)
-const WalletAddTokenRoute = WalletAddTokenRouteImport.update({
-  id: "/add-token",
-  path: "/add-token",
+const WalletSendTokenRoute = WalletSendTokenRouteImport.update({
+  id: "/send-token",
+  path: "/send-token",
+  getParentRoute: () => WalletRouteRoute,
+} as any)
+const WalletTransactionsRoute = WalletTransactionsRouteImport.update({
+  id: "/transactions",
+  path: "/transactions",
   getParentRoute: () => WalletRouteRoute,
 } as any)
 
@@ -142,11 +142,11 @@ export interface RootRouteChildren {
 
 declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
-    "/not-found": {
-      id: "/not-found"
-      path: "/not-found"
-      fullPath: "/not-found"
-      preLoaderRoute: typeof NotFoundRouteImport
+    "/": {
+      id: "/"
+      path: "/"
+      fullPath: "/"
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/callback": {
@@ -156,18 +156,18 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof CallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/not-found": {
+      id: "/not-found"
+      path: "/not-found"
+      fullPath: "/not-found"
+      preLoaderRoute: typeof NotFoundRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/wallet": {
       id: "/wallet"
       path: "/wallet"
       fullPath: "/wallet"
       preLoaderRoute: typeof WalletRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    "/": {
-      id: "/"
-      path: "/"
-      fullPath: "/"
-      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/wallet/": {
@@ -177,18 +177,11 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof WalletIndexRouteImport
       parentRoute: typeof WalletRouteRoute
     }
-    "/wallet/transactions": {
-      id: "/wallet/transactions"
-      path: "/transactions"
-      fullPath: "/wallet/transactions"
-      preLoaderRoute: typeof WalletTransactionsRouteImport
-      parentRoute: typeof WalletRouteRoute
-    }
-    "/wallet/send-token": {
-      id: "/wallet/send-token"
-      path: "/send-token"
-      fullPath: "/wallet/send-token"
-      preLoaderRoute: typeof WalletSendTokenRouteImport
+    "/wallet/add-token": {
+      id: "/wallet/add-token"
+      path: "/add-token"
+      fullPath: "/wallet/add-token"
+      preLoaderRoute: typeof WalletAddTokenRouteImport
       parentRoute: typeof WalletRouteRoute
     }
     "/wallet/address-aliases": {
@@ -198,11 +191,18 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof WalletAddressAliasesRouteImport
       parentRoute: typeof WalletRouteRoute
     }
-    "/wallet/add-token": {
-      id: "/wallet/add-token"
-      path: "/add-token"
-      fullPath: "/wallet/add-token"
-      preLoaderRoute: typeof WalletAddTokenRouteImport
+    "/wallet/send-token": {
+      id: "/wallet/send-token"
+      path: "/send-token"
+      fullPath: "/wallet/send-token"
+      preLoaderRoute: typeof WalletSendTokenRouteImport
+      parentRoute: typeof WalletRouteRoute
+    }
+    "/wallet/transactions": {
+      id: "/wallet/transactions"
+      path: "/transactions"
+      fullPath: "/wallet/transactions"
+      preLoaderRoute: typeof WalletTransactionsRouteImport
       parentRoute: typeof WalletRouteRoute
     }
   }

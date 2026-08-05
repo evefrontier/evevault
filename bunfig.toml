@@ -1,5 +1,6 @@
 [install]
 # Only install package versions published at least 24 hours ago
+minimumReleaseAge = 86400
 
 [install.scopes]
 "@evefrontier" = { url = "https://npm.pkg.github.com/", token = "$GITHUB_TOKEN" }
