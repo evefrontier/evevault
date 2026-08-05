@@ -1,4 +1,9 @@
 import {
+  executeSponsoredTransaction,
+  fetchUnsignedSponsoredTransaction,
+  type SponsoredTransactionApiContext,
+} from '@evefrontier/wallet-core/sponsored-transaction'
+import {
   type PendingSponsoredTransaction,
   WalletActions,
   WalletStandardMessageTypes,
@@ -7,13 +12,25 @@ import { getApiContext, getJwt, getStoredChain } from '@evevault/shared/auth'
 import { createLogger } from '@evevault/shared/utils'
 import { sendToTab } from '@/lib/background/messaging/tabMessaging'
 import { openPopupWindow } from '@/lib/background/services/popupWindow'
-import type {
-  EveFrontierSponsoredTransactionMessage,
-  SponsoredTxReturn,
-} from '@/lib/background/types'
+import type { EveFrontierSponsoredTransactionMessage } from '@/lib/background/types'
 import { requireSigningPermission } from './signingPermissions'
 
 const log = createLogger()
+
+// Builds the wallet-core API context. `pathPrefix` accounts for the prepare
+// endpoint living under /v2 while execute sits at the gateway root.
+function sponsoredApiContext(
+  apiBaseUrl: string,
+  tenant: string,
+  idToken: string,
+  pathPrefix = '',
+): SponsoredTransactionApiContext {
+  return {
+    getApiGatewayUrl: (path) => `${apiBaseUrl}${pathPrefix}/${path}`,
+    getApiGatewayToken: () => idToken,
+    tenant,
+  }
+}
 
 // Options for executeSponsoredTx — bundles the API context and the signed result
 // so the function signature stays below qlty's parameter count threshold.
@@ -57,36 +74,14 @@ async function executeSponsoredTx({
   messageId,
 }: ExecuteSponsoredTxOptions): Promise<void> {
   try {
-    const response = await fetch(
-      `${apiBaseUrl}/transactions/sponsored/execute`,
-      {
-        method: 'POST',
-        body: JSON.stringify({
-          preparationId,
-          userSignatureB64Bytes: zkSignature,
-        }),
-        headers: {
-          'X-Tenant': tenant,
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${idToken}`,
-        },
-      },
+    const { digest, effects } = await executeSponsoredTransaction(
+      { preparationId, userSignatureB64Bytes: zkSignature },
+      sponsoredApiContext(apiBaseUrl, tenant, idToken),
     )
-
-    if (!response.ok) {
-      throw new Error(
-        `Sponsored execute failed: ${response.status} ${response.statusText}`,
-      )
-    }
-
-    const result = (await response.json()) as {
-      digest?: string
-      effects?: string
-    }
     sendToTab(senderTabId, {
       type: 'sign_success',
-      digest: result.digest ?? '0x0',
-      effects: result.effects ?? '0x0',
+      digest,
+      effects,
       id: messageId,
     })
   } catch (err) {
@@ -145,44 +140,18 @@ async function handleSponsoredTransaction(
       })
     }
 
-    const encodedAssemblyType = encodeURIComponent(assemblyType)
-    const encodedAction = encodeURIComponent(action)
     const { apiBaseUrl, tenant } = getApiContext(jwt.id_token)
 
-    const response = await fetch(
-      `${apiBaseUrl}/v2/transactions/sponsored/${encodedAssemblyType}/${encodedAction}`,
+    const sponsoredTxReturn = await fetchUnsignedSponsoredTransaction(
       {
-        method: 'POST',
-        body: JSON.stringify({
-          assemblyId: assembly,
-          name: metadata?.name,
-          description: metadata?.description,
-          url: metadata?.url,
-        }),
-        headers: {
-          'X-Tenant': tenant,
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${jwt.id_token}`,
-        },
+        txAction: action,
+        // repo forwards assemblyId as a string; wallet-core types it as number
+        assembly: assembly as unknown as number,
+        assemblyType,
+        metadata,
       },
+      sponsoredApiContext(apiBaseUrl, tenant, jwt.id_token, '/v2'),
     )
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch txb: ${response.statusText}`)
-    }
-
-    const raw = await response.json()
-    if (
-      raw == null ||
-      typeof raw !== 'object' ||
-      typeof raw.bcsDataB64Bytes !== 'string' ||
-      typeof raw.preparationId !== 'string'
-    ) {
-      throw new Error(
-        'Sponsored tx API returned invalid shape: expected { bcsDataB64Bytes: string, preparationId: string }',
-      )
-    }
-    const sponsoredTxReturn = raw as SponsoredTxReturn
 
     const actionType =
       WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION
