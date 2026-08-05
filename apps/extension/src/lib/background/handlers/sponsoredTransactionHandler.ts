@@ -2,6 +2,7 @@ import {
   executeSponsoredTransaction,
   fetchUnsignedSponsoredTransaction,
   type SponsoredTransactionApiContext,
+  type SponsoredTransactionInput,
 } from '@evefrontier/wallet-core/sponsored-transaction'
 import {
   type PendingSponsoredTransaction,
@@ -144,9 +145,8 @@ async function handleSponsoredTransaction(
 
     const sponsoredTxReturn = await fetchUnsignedSponsoredTransaction(
       {
-        txAction: action,
-        // repo forwards assemblyId as a string; wallet-core types it as number
-        assembly: assembly as unknown as number,
+        txAction: action as SponsoredTransactionInput['txAction'],
+        assembly: assembly,
         assemblyType,
         metadata,
       },

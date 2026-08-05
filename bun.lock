@@ -5,7 +5,7 @@
     "": {
       "name": "eve-frontier-vault",
       "dependencies": {
-        "@evefrontier/wallet-core": "0.0.6",
+        "@evefrontier/wallet-core": "0.0.7",
         "@mysten/sui": "^2.23.1",
         "@mysten/wallet-standard": "^0.20.3",
         "jose": "6.0.12",
@@ -33,7 +33,7 @@
     },
     "apps/extension": {
       "name": "@evevault/extension",
-      "version": "0.0.14",
+      "version": "0.0.15",
       "dependencies": {
         "@evevault/shared": "workspace:*",
         "@mysten/sui": "^2.17.0",
@@ -57,7 +57,7 @@
     },
     "apps/web": {
       "name": "@evevault/web",
-      "version": "0.0.14",
+      "version": "0.0.15",
       "dependencies": {
         "@evevault/shared": "workspace:*",
         "@tanstack/react-query": "^5.100.9",
@@ -82,7 +82,7 @@
     },
     "packages/shared": {
       "name": "@evevault/shared",
-      "version": "0.0.14",
+      "version": "0.0.15",
       "dependencies": {
         "@mysten/signers": "^1.0.5",
         "hash-wasm": "4.12.0",
@@ -456,7 +456,7 @@
 
     "@esbuild/win32-x64": ["@esbuild/win32-x64@0.28.1", "", { "os": "win32", "cpu": "x64" }, "sha512-bm4Mowrv+GXMlpWX++EcXw/iLyd1o3+bJkC2DkWXYVvgZCqD/bSj9ctZeAMC3cIxgjRVR2Dufaiu4YPxr5gW1A=="],
 
-    "@evefrontier/wallet-core": ["@evefrontier/wallet-core@0.0.6", "https://npm.pkg.github.com/download/@evefrontier/wallet-core/0.0.6/950f9d036717b18b6c7a5eab785769a4888287b0", { "dependencies": { "@mysten/sui": "^2.23.1", "@mysten/wallet-standard": "^0.20.3", "@mysten/webcrypto-signer": "^0.1.2" } }, "sha512-35lSeyVVMlAkJT+v+QTigNggqyXAIfllxFaM3XLRT9VMei6SUx0rOGpMw60vjfBGbl235fRBf0hU5KAGum0ISA=="],
+    "@evefrontier/wallet-core": ["@evefrontier/wallet-core@0.0.7", "https://npm.pkg.github.com/download/@evefrontier/wallet-core/0.0.7/dd639b3666713b8d16ba95268c6d7f236d06bdf5", { "dependencies": { "@mysten/sui": "^2.23.1", "@mysten/wallet-standard": "^0.20.3", "@mysten/webcrypto-signer": "^0.1.2" } }, "sha512-gS01vGvUekj/ok7QbAgtl1/3x3nu60hiXjFZs9d9ieaq44sruvkcPcQToGktDMd3meuIzU17uoVqZBNgdWsg+A=="],
 
     "@evevault/extension": ["@evevault/extension@workspace:apps/extension"],
 
