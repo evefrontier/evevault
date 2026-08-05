@@ -52,10 +52,3 @@ export type SignAndExecuteTransactionMessage =
       type: 'sign_and_execute_transaction_error'
       error: string
     }
-
-/* EveFrontierSponsoredTransactions custom types */
-
-export type SponsoredTxReturn = {
-  bcsDataB64Bytes: string
-  preparationId: string
-}

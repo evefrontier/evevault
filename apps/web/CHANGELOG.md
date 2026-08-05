@@ -1,5 +1,13 @@
 # @evevault/web
 
+## 0.0.15
+
+### Patch Changes
+
+- stability fixes
+- Updated dependencies
+  - @evevault/shared@0.0.15
+
 ## 0.0.14
 
 ### Patch Changes

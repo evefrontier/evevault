@@ -9,31 +9,16 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from "./routes/__root"
-import { Route as TransactionsRouteImport } from "./routes/transactions"
-import { Route as SendTokenRouteImport } from "./routes/send-token"
-import { Route as LocalnetSettingsRouteImport } from "./routes/localnet-settings"
-import { Route as AddressAliasesRouteImport } from "./routes/address-aliases"
-import { Route as AddTokenRouteImport } from "./routes/add-token"
 import { Route as IndexRouteImport } from "./routes/index"
+import { Route as AddTokenRouteImport } from "./routes/add-token"
+import { Route as AddressAliasesRouteImport } from "./routes/address-aliases"
+import { Route as LocalnetSettingsRouteImport } from "./routes/localnet-settings"
+import { Route as SendTokenRouteImport } from "./routes/send-token"
+import { Route as TransactionsRouteImport } from "./routes/transactions"
 
-const TransactionsRoute = TransactionsRouteImport.update({
-  id: "/transactions",
-  path: "/transactions",
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SendTokenRoute = SendTokenRouteImport.update({
-  id: "/send-token",
-  path: "/send-token",
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LocalnetSettingsRoute = LocalnetSettingsRouteImport.update({
-  id: "/localnet-settings",
-  path: "/localnet-settings",
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AddressAliasesRoute = AddressAliasesRouteImport.update({
-  id: "/address-aliases",
-  path: "/address-aliases",
+const IndexRoute = IndexRouteImport.update({
+  id: "/",
+  path: "/",
   getParentRoute: () => rootRouteImport,
 } as any)
 const AddTokenRoute = AddTokenRouteImport.update({
@@ -41,9 +26,24 @@ const AddTokenRoute = AddTokenRouteImport.update({
   path: "/add-token",
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: "/",
-  path: "/",
+const AddressAliasesRoute = AddressAliasesRouteImport.update({
+  id: "/address-aliases",
+  path: "/address-aliases",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LocalnetSettingsRoute = LocalnetSettingsRouteImport.update({
+  id: "/localnet-settings",
+  path: "/localnet-settings",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SendTokenRoute = SendTokenRouteImport.update({
+  id: "/send-token",
+  path: "/send-token",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TransactionsRoute = TransactionsRouteImport.update({
+  id: "/transactions",
+  path: "/transactions",
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -110,32 +110,11 @@ export interface RootRouteChildren {
 
 declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
-    "/transactions": {
-      id: "/transactions"
-      path: "/transactions"
-      fullPath: "/transactions"
-      preLoaderRoute: typeof TransactionsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    "/send-token": {
-      id: "/send-token"
-      path: "/send-token"
-      fullPath: "/send-token"
-      preLoaderRoute: typeof SendTokenRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    "/localnet-settings": {
-      id: "/localnet-settings"
-      path: "/localnet-settings"
-      fullPath: "/localnet-settings"
-      preLoaderRoute: typeof LocalnetSettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    "/address-aliases": {
-      id: "/address-aliases"
-      path: "/address-aliases"
-      fullPath: "/address-aliases"
-      preLoaderRoute: typeof AddressAliasesRouteImport
+    "/": {
+      id: "/"
+      path: "/"
+      fullPath: "/"
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/add-token": {
@@ -145,11 +124,32 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AddTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
-    "/": {
-      id: "/"
-      path: "/"
-      fullPath: "/"
-      preLoaderRoute: typeof IndexRouteImport
+    "/address-aliases": {
+      id: "/address-aliases"
+      path: "/address-aliases"
+      fullPath: "/address-aliases"
+      preLoaderRoute: typeof AddressAliasesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/localnet-settings": {
+      id: "/localnet-settings"
+      path: "/localnet-settings"
+      fullPath: "/localnet-settings"
+      preLoaderRoute: typeof LocalnetSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/send-token": {
+      id: "/send-token"
+      path: "/send-token"
+      fullPath: "/send-token"
+      preLoaderRoute: typeof SendTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/transactions": {
+      id: "/transactions"
+      path: "/transactions"
+      fullPath: "/transactions"
+      preLoaderRoute: typeof TransactionsRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
