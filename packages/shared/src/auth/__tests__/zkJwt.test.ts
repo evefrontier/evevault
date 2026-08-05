@@ -6,6 +6,7 @@ const getZkLoginJwtForNetworkMock = vi.hoisted(() => vi.fn())
 const storeZkLoginJwtForNetworkMock = vi.hoisted(() => vi.fn())
 const vendJwtMock = vi.hoisted(() => vi.fn())
 const decodeJwtMock = vi.hoisted(() => vi.fn())
+const decodeJwtSafelyMock = vi.hoisted(() => vi.fn())
 const infoMock = vi.hoisted(() => vi.fn())
 const getCurrentTenantIdMock = vi.hoisted(() => vi.fn(() => 'stillness'))
 const verifyIdTokenForTenantMock = vi.hoisted(() => vi.fn())
@@ -15,6 +16,9 @@ vi.mock('#/auth/storageService', () => ({
   storeZkLoginJwtForNetwork: storeZkLoginJwtForNetworkMock,
 }))
 vi.mock('#/auth/vendToken', () => ({ vendJwt: vendJwtMock }))
+vi.mock('#/auth/utils/jwtUtils', () => ({
+  decodeJwtSafely: decodeJwtSafelyMock,
+}))
 vi.mock('#/auth/verifyJwt', () => ({
   verifyIdTokenForTenant: verifyIdTokenForTenantMock,
 }))
@@ -53,6 +57,15 @@ describe('resolveVendedIdTokenForZkProof', () => {
     vi.setSystemTime(NOW_MS)
     vendJwtMock.mockResolvedValue(NEW_TOKEN)
     decodeJwtMock.mockReturnValue({ nonce: DEVICE_NONCE, exp: NOW_SEC + 7200 })
+    // decodeJwtSafely (stored-token path) shares decodeJwtMock's sequencing,
+    // swallowing throws as null the way the real wrapper does.
+    decodeJwtSafelyMock.mockImplementation((token?: string) => {
+      try {
+        return decodeJwtMock(token)
+      } catch {
+        return null
+      }
+    })
     verifyIdTokenForTenantMock.mockResolvedValue({})
   })
 

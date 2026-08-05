@@ -22,9 +22,9 @@ describe('getApiContext', () => {
       tenant: 'stillness',
       tier: 'live',
     })
-    const { apiBaseUrl, tenant, decoded } = getApiContext(token)
+    const { apiBaseUrl, tenant, claims } = getApiContext(token)
     expect(tenant).toBe('stillness')
-    expect(decoded.tier).toBe('live')
+    expect(claims.tier).toBe('live')
     expect(apiBaseUrl).toBe('https://api.live.pub.evefrontier.com')
   })
 
@@ -40,9 +40,9 @@ describe('getApiContext', () => {
       tenant: 'utopia',
       tier: 'should-not-affect-url',
     })
-    const { apiBaseUrl, tenant, decoded } = getApiContext(token)
+    const { apiBaseUrl, tenant, claims } = getApiContext(token)
     expect(tenant).toBe('utopia')
-    expect(decoded.tier).toBe('should-not-affect-url')
+    expect(claims.tier).toBe('should-not-affect-url')
     expect(apiBaseUrl).toBe('https://api.uat.pub.evefrontier.com')
   })
 
