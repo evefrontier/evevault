@@ -34,6 +34,7 @@ export async function sendToKeeper(message: any, retries = 3): Promise<any> {
             attempt + 1
           }/${retries})`,
         )
+        await new Promise((r) => setTimeout(r, 200 * attempt)) // Exponential backoff
         continue
       }
 

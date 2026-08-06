@@ -1,5 +1,6 @@
 import { WalletStandardMessageTypes } from '@evevault/shared'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Browser } from 'wxt/browser'
 import { handleApprovePopup } from '@/lib/background/handlers/walletHandlers'
 import type { WalletActionMessage } from '@/lib/background/types'
 
@@ -8,7 +9,7 @@ import type { WalletActionMessage } from '@/lib/background/types'
 const TEST_REQUEST_ID = '11111111-1111-1111-1111-111111111111'
 
 type StorageListener = (changes: {
-  [key: string]: chrome.storage.StorageChange
+  [key: string]: Browser.storage.StorageChange
 }) => void
 
 // windowId 99 (from mockOpenPopupWindow) + the minted requestId are bind a
@@ -50,11 +51,11 @@ vi.mock('@evevault/shared/utils', async (importOriginal) => {
   }
 })
 
-function installChromeMock(
+function installBrowserMock(
   storageListeners: StorageListener[],
-  sendMessageImpl?: typeof chrome.tabs.sendMessage,
+  sendMessageImpl?: typeof browser.tabs.sendMessage,
 ) {
-  globalThis.chrome = {
+  vi.stubGlobal('browser', {
     storage: {
       local: {
         set: vi.fn(() => Promise.resolve()),
@@ -70,7 +71,7 @@ function installChromeMock(
     tabs: {
       sendMessage: sendMessageImpl ?? vi.fn(() => Promise.resolve()),
     },
-  } as unknown as typeof chrome
+  } as unknown as typeof browser)
 }
 
 describe('handleApprovePopup', () => {
@@ -84,7 +85,7 @@ describe('handleApprovePopup', () => {
       context: { origin: 'https://example.test' },
     })
     vi.spyOn(crypto, 'randomUUID').mockReturnValue(TEST_REQUEST_ID)
-    installChromeMock(storageListeners)
+    installBrowserMock(storageListeners)
   })
 
   afterEach(() => {
@@ -100,7 +101,7 @@ describe('handleApprovePopup', () => {
   ) {
     await handleApprovePopup(
       message,
-      sender as chrome.runtime.MessageSender,
+      sender as Browser.runtime.MessageSender,
       vi.fn(),
     )
     const wrapped = storageListeners[storageListeners.length - 1]
@@ -123,13 +124,13 @@ describe('handleApprovePopup', () => {
           id: 'req-denied',
           action: WalletStandardMessageTypes.SIGN_TRANSACTION,
         },
-        { tab: { id: 42 } } as chrome.runtime.MessageSender,
+        { tab: { id: 42 } } as Browser.runtime.MessageSender,
         sendResponse,
       )
 
       expect(result).toBe(false)
       expect(mockOpenPopupWindow).not.toHaveBeenCalled()
-      expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(42, {
+      expect(browser.tabs.sendMessage).toHaveBeenCalledWith(42, {
         type: 'sign_transaction_error',
         error: 'Connect this site to EVE Vault before requesting a signature.',
         id: 'req-denied',
@@ -149,7 +150,7 @@ describe('handleApprovePopup', () => {
 
       const result = await handleApprovePopup(
         { action: WalletStandardMessageTypes.SIGN_TRANSACTION },
-        { tab: { id: 1 } } as chrome.runtime.MessageSender,
+        { tab: { id: 1 } } as Browser.runtime.MessageSender,
         sendResponse,
       )
 
@@ -167,7 +168,7 @@ describe('handleApprovePopup', () => {
 
       const result = await handleApprovePopup(
         { action: WalletStandardMessageTypes.SIGN_TRANSACTION },
-        { tab: { id: 1 } } as chrome.runtime.MessageSender,
+        { tab: { id: 1 } } as Browser.runtime.MessageSender,
         sendResponse,
       )
 
@@ -184,7 +185,7 @@ describe('handleApprovePopup', () => {
 
       await handleApprovePopup(
         { action: WalletStandardMessageTypes.SIGN_TRANSACTION },
-        { tab: { id: 1 } } as chrome.runtime.MessageSender,
+        { tab: { id: 1 } } as Browser.runtime.MessageSender,
         sendResponse,
       )
 
@@ -212,13 +213,13 @@ describe('handleApprovePopup', () => {
         signature: 'sig-bytes',
       })
 
-      expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(42, {
+      expect(browser.tabs.sendMessage).toHaveBeenCalledWith(42, {
         type: 'sign_success',
         bytes: new Uint8Array([1, 2]),
         signature: 'sig-bytes',
         id: 's1',
       })
-      expect(chrome.storage.local.remove).toHaveBeenCalledWith([
+      expect(browser.storage.local.remove).toHaveBeenCalledWith([
         'pendingAction',
         'transactionResult',
       ])
@@ -241,7 +242,7 @@ describe('handleApprovePopup', () => {
         effects: 'fx',
       })
 
-      expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(7, {
+      expect(browser.tabs.sendMessage).toHaveBeenCalledWith(7, {
         type: 'sign_and_execute_transaction_success',
         result: {
           bytes: new Uint8Array([9]),
@@ -268,7 +269,7 @@ describe('handleApprovePopup', () => {
         signature: 'sig',
       })
 
-      expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(7, {
+      expect(browser.tabs.sendMessage).toHaveBeenCalledWith(7, {
         type: 'sign_and_execute_transaction_error',
         error: 'Missing required fields in sign_and_execute transaction result',
         id: 's3',
@@ -277,7 +278,7 @@ describe('handleApprovePopup', () => {
 
     it('logs when tabs.sendMessage rejects on sign_success', async () => {
       const sendMessage = vi.fn(() => Promise.reject(new Error('tab gone')))
-      installChromeMock(storageListeners, sendMessage)
+      installBrowserMock(storageListeners, sendMessage)
       mockOpenPopupWindow.mockResolvedValue(99)
 
       const wrapped = await getWrappedListener(
@@ -304,7 +305,7 @@ describe('handleApprovePopup', () => {
 
     it('logs when tabs.sendMessage rejects for incomplete sign-and-execute result', async () => {
       const sendMessage = vi.fn(() => Promise.reject(new Error('tab gone')))
-      installChromeMock(storageListeners, sendMessage)
+      installBrowserMock(storageListeners, sendMessage)
       mockOpenPopupWindow.mockResolvedValue(99)
 
       const wrapped = await getWrappedListener(
@@ -331,7 +332,7 @@ describe('handleApprovePopup', () => {
 
     it('logs when tabs.sendMessage rejects for sign-and-execute success', async () => {
       const sendMessage = vi.fn(() => Promise.reject(new Error('tab gone')))
-      installChromeMock(storageListeners, sendMessage)
+      installBrowserMock(storageListeners, sendMessage)
       mockOpenPopupWindow.mockResolvedValue(99)
 
       const wrapped = await getWrappedListener(
@@ -375,7 +376,7 @@ describe('handleApprovePopup', () => {
         action: WalletStandardMessageTypes.SIGN_TRANSACTION,
       })
 
-      expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(42, {
+      expect(browser.tabs.sendMessage).toHaveBeenCalledWith(42, {
         type: 'sign_transaction_error',
         error: 'User said no',
         id: 'req-1',
@@ -400,7 +401,7 @@ describe('handleApprovePopup', () => {
 
       fireResult(wrapped, { status: 'error', error: 'User said no' })
 
-      expect(chrome.storage.onChanged.removeListener).toHaveBeenCalledWith(
+      expect(browser.storage.onChanged.removeListener).toHaveBeenCalledWith(
         registered,
       )
     })
@@ -411,7 +412,7 @@ describe('handleApprovePopup', () => {
         action: WalletStandardMessageTypes.SIGN_PERSONAL_MESSAGE,
       })
 
-      expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(42, {
+      expect(browser.tabs.sendMessage).toHaveBeenCalledWith(42, {
         type: 'sign_personal_message_error',
         error: 'User said no',
         id: 'req-2',
@@ -429,7 +430,7 @@ describe('handleApprovePopup', () => {
         { message: 'approval object failure' },
       )
 
-      expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(42, {
+      expect(browser.tabs.sendMessage).toHaveBeenCalledWith(42, {
         type: 'sign_personal_message_error',
         error: 'approval object failure',
         id: 'req-structured-error',
@@ -442,7 +443,7 @@ describe('handleApprovePopup', () => {
         action: 'unknown_wallet_action_for_test',
       })
 
-      expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(42, {
+      expect(browser.tabs.sendMessage).toHaveBeenCalledWith(42, {
         type: 'sign_error',
         error: 'User said no',
         id: 'req-3',
@@ -458,7 +459,7 @@ describe('handleApprovePopup', () => {
         action: WalletStandardMessageTypes.SIGN_AND_EXECUTE_TRANSACTION,
       })
 
-      expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(42, {
+      expect(browser.tabs.sendMessage).toHaveBeenCalledWith(42, {
         type: 'sign_and_execute_transaction_error',
         error: 'User said no',
         id: 'req-4',
@@ -475,7 +476,7 @@ describe('handleApprovePopup', () => {
         {},
       )
 
-      expect(chrome.tabs.sendMessage).not.toHaveBeenCalled()
+      expect(browser.tabs.sendMessage).not.toHaveBeenCalled()
     })
 
     it('does not call tabs.sendMessage when sender has no tab id (sign-and-execute error)', async () => {
@@ -487,12 +488,12 @@ describe('handleApprovePopup', () => {
         {},
       )
 
-      expect(chrome.tabs.sendMessage).not.toHaveBeenCalled()
+      expect(browser.tabs.sendMessage).not.toHaveBeenCalled()
     })
 
     it('logs when tabs.sendMessage rejects for mapped error type', async () => {
       const sendMessage = vi.fn(() => Promise.reject(new Error('tab gone')))
-      installChromeMock(storageListeners, sendMessage)
+      installBrowserMock(storageListeners, sendMessage)
       mockOpenPopupWindow.mockResolvedValue(99)
 
       await fireTransactionError({
@@ -510,7 +511,7 @@ describe('handleApprovePopup', () => {
 
     it('logs when tabs.sendMessage rejects for sign-and-execute error result', async () => {
       const sendMessage = vi.fn(() => Promise.reject(new Error('tab gone')))
-      installChromeMock(storageListeners, sendMessage)
+      installBrowserMock(storageListeners, sendMessage)
       mockOpenPopupWindow.mockResolvedValue(99)
 
       await fireTransactionError({
@@ -536,8 +537,8 @@ describe('handleApprovePopup', () => {
 
       wrapped({})
 
-      expect(chrome.tabs.sendMessage).not.toHaveBeenCalled()
-      expect(chrome.storage.local.remove).not.toHaveBeenCalled()
+      expect(browser.tabs.sendMessage).not.toHaveBeenCalled()
+      expect(browser.storage.local.remove).not.toHaveBeenCalled()
     })
 
     it('ignores transactionResult for a different popup window', async () => {
@@ -556,9 +557,9 @@ describe('handleApprovePopup', () => {
         signature: 'sig',
       })
 
-      expect(chrome.tabs.sendMessage).not.toHaveBeenCalled()
-      expect(chrome.storage.local.remove).not.toHaveBeenCalled()
-      expect(chrome.storage.onChanged.removeListener).not.toHaveBeenCalled()
+      expect(browser.tabs.sendMessage).not.toHaveBeenCalled()
+      expect(browser.storage.local.remove).not.toHaveBeenCalled()
+      expect(browser.storage.onChanged.removeListener).not.toHaveBeenCalled()
     })
 
     it('ignores a result whose requestId does not match the request', async () => {
@@ -577,9 +578,9 @@ describe('handleApprovePopup', () => {
         signature: 'sig',
       })
 
-      expect(chrome.tabs.sendMessage).not.toHaveBeenCalled()
-      expect(chrome.storage.local.remove).not.toHaveBeenCalled()
-      expect(chrome.storage.onChanged.removeListener).not.toHaveBeenCalled()
+      expect(browser.tabs.sendMessage).not.toHaveBeenCalled()
+      expect(browser.storage.local.remove).not.toHaveBeenCalled()
+      expect(browser.storage.onChanged.removeListener).not.toHaveBeenCalled()
     })
 
     it('does nothing on success when sender has no tab id', async () => {
@@ -594,8 +595,8 @@ describe('handleApprovePopup', () => {
         signature: 'sig',
       })
 
-      expect(chrome.tabs.sendMessage).not.toHaveBeenCalled()
-      expect(chrome.storage.local.remove).not.toHaveBeenCalled()
+      expect(browser.tabs.sendMessage).not.toHaveBeenCalled()
+      expect(browser.storage.local.remove).not.toHaveBeenCalled()
     })
   })
 
@@ -607,7 +608,7 @@ describe('handleApprovePopup', () => {
         {
           action: WalletStandardMessageTypes.SIGN_TRANSACTION,
         },
-        { tab: { id: 5 } } as chrome.runtime.MessageSender,
+        { tab: { id: 5 } } as Browser.runtime.MessageSender,
         vi.fn(),
       )
 
@@ -620,7 +621,7 @@ describe('handleApprovePopup', () => {
           senderTabId: 5,
         },
       )
-      expect(chrome.storage.local.remove).toHaveBeenCalledWith([
+      expect(browser.storage.local.remove).toHaveBeenCalledWith([
         'pendingAction',
         'transactionResult',
       ])

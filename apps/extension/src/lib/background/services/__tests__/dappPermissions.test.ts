@@ -1,6 +1,7 @@
 import { DAPP_PERMISSIONS_STORAGE_KEY } from '@evevault/shared/utils'
 import { SUI_DEVNET_CHAIN, SUI_TESTNET_CHAIN } from '@mysten/wallet-standard'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Browser } from 'wxt/browser'
 import {
   getDappRequestContext,
   grantDappPermission,
@@ -13,7 +14,7 @@ describe('dappPermissions', () => {
 
   beforeEach(() => {
     storage = {}
-    globalThis.chrome = {
+    vi.stubGlobal('browser', {
       storage: {
         local: {
           get: vi.fn(async (key: string | string[]) => {
@@ -25,7 +26,7 @@ describe('dappPermissions', () => {
           }),
         },
       },
-    } as unknown as typeof chrome
+    } as unknown as typeof browser)
   })
 
   afterEach(() => {
@@ -40,7 +41,7 @@ describe('dappPermissions', () => {
         title: 'Example App',
         favIconUrl: 'https://app.example/favicon.ico',
       },
-    } as chrome.runtime.MessageSender)
+    } as Browser.runtime.MessageSender)
 
     expect(context).toEqual({
       origin: 'https://app.example',
@@ -54,7 +55,7 @@ describe('dappPermissions', () => {
     const context = getDappRequestContext({
       origin: 'chrome-extension://extension-id',
       url: 'chrome-extension://extension-id/page.html',
-    } as chrome.runtime.MessageSender)
+    } as Browser.runtime.MessageSender)
 
     expect(context).toBeNull()
   })
@@ -72,7 +73,7 @@ describe('dappPermissions', () => {
         {
           origin: 'https://app.example',
           url: 'https://app.example/inventory',
-        } as chrome.runtime.MessageSender,
+        } as Browser.runtime.MessageSender,
         SUI_TESTNET_CHAIN,
       ),
     ).resolves.toMatchObject({
@@ -126,7 +127,7 @@ describe('dappPermissions', () => {
 
     await revokeDappPermission({
       origin: 'https://app.example',
-    } as chrome.runtime.MessageSender)
+    } as Browser.runtime.MessageSender)
 
     expect(storage[DAPP_PERMISSIONS_STORAGE_KEY]).toMatchObject({
       'https://other.example': {
@@ -220,7 +221,7 @@ describe('dappPermissions', () => {
     await expect(
       requireDappPermission({
         origin: 'https://unknown.example',
-      } as chrome.runtime.MessageSender),
+      } as Browser.runtime.MessageSender),
     ).resolves.toEqual({
       allowed: false,
       context: { origin: 'https://unknown.example' },
@@ -236,7 +237,7 @@ describe('dappPermissions', () => {
 
     await expect(
       requireDappPermission(
-        { origin: 'https://app.example' } as chrome.runtime.MessageSender,
+        { origin: 'https://app.example' } as Browser.runtime.MessageSender,
         SUI_DEVNET_CHAIN,
       ),
     ).resolves.toEqual({
@@ -255,7 +256,7 @@ describe('dappPermissions', () => {
     await expect(
       revokeDappPermission({
         origin: 'https://app.example',
-      } as chrome.runtime.MessageSender),
+      } as Browser.runtime.MessageSender),
     ).resolves.toEqual({
       ok: true,
       context: { origin: 'https://app.example' },
@@ -266,7 +267,7 @@ describe('dappPermissions', () => {
     await expect(
       requireDappPermission({
         origin: 'https://app.example',
-      } as chrome.runtime.MessageSender),
+      } as Browser.runtime.MessageSender),
     ).resolves.toMatchObject({
       allowed: false,
       error: 'Connect this site to EVE Vault before requesting a signature.',
@@ -277,7 +278,7 @@ describe('dappPermissions', () => {
     await expect(
       revokeDappPermission({
         origin: 'https://app.example',
-      } as chrome.runtime.MessageSender),
+      } as Browser.runtime.MessageSender),
     ).resolves.toEqual({
       ok: true,
       context: { origin: 'https://app.example' },
@@ -289,7 +290,7 @@ describe('dappPermissions', () => {
     await expect(
       revokeDappPermission({
         origin: 'chrome-extension://extension-id',
-      } as chrome.runtime.MessageSender),
+      } as Browser.runtime.MessageSender),
     ).resolves.toEqual({
       ok: false,
       error: 'Disconnect requests must come from a valid web page origin.',
