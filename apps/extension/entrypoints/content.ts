@@ -281,7 +281,9 @@ export function handleWindowMessage(event: MessageEvent) {
   }
 
   if (isAllowedPageMessage(data)) {
-    browser.runtime.sendMessage(data)
+    // Fire-and-forget to the background; ignore rejection when it's unavailable
+    // (e.g. mid-reload) rather than surfacing an unhandled promise rejection.
+    void browser.runtime.sendMessage(data).catch(() => {})
   }
 }
 

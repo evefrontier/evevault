@@ -4,7 +4,7 @@
 // swap the global with `vi.stubGlobal('browser', ...)` per test. This proxy
 // instead reads `globalThis.browser` live on every access, so each test's stub
 // is what source code sees.
-// biome-ignore lint/suspicious/noExplicitAny: test shim over the untyped global
+// biome-ignore-all lint/suspicious/noExplicitAny: test shim over the untyped global
 export const browser: any = new Proxy(
   {},
   {

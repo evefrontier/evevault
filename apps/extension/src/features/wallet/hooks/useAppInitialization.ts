@@ -23,10 +23,13 @@ export function useAppInitialization() {
         !prevState.isLocked &&
         browser?.runtime?.sendMessage
       ) {
-        browser.runtime.sendMessage({
-          event: 'change',
-          payload: { accounts: [] },
-        })
+        // Fire-and-forget; ignore rejection when no receiver is listening.
+        void browser.runtime
+          .sendMessage({
+            event: 'change',
+            payload: { accounts: [] },
+          })
+          .catch(() => {})
       }
     })
     return unsubscribe

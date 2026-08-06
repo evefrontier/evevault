@@ -89,7 +89,9 @@ export function sendExtensionAuthSuccess(id: string, jwt: JwtResponse): void {
     type: AuthMessageTypes.AUTH_SUCCESS,
     token,
   }
-  browser.runtime.sendMessage(message)
+  // Fire-and-forget to the popup; browser.runtime.sendMessage rejects when no
+  // extension page is listening (e.g. popup closed), which is expected here.
+  void browser.runtime.sendMessage(message).catch(() => {})
 }
 
 export function sendDappConnectSuccessToTab(
@@ -116,11 +118,14 @@ export function sendDappConnectSuccessToTab(
 }
 
 export function sendAuthError(id: string, error: unknown): void {
-  browser.runtime.sendMessage({
-    id,
-    type: 'auth_error',
-    error,
-  })
+  // Fire-and-forget to the popup; ignore rejection when nothing is listening.
+  void browser.runtime
+    .sendMessage({
+      id,
+      type: 'auth_error',
+      error,
+    })
+    .catch(() => {})
 }
 
 export function extractEmailFromJwt(jwt: JwtResponse): string {

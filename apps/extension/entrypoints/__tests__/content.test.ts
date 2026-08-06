@@ -24,7 +24,7 @@ beforeAll(async () => {
 beforeEach(() => {
   vi.stubGlobal('browser', {
     runtime: {
-      sendMessage: vi.fn(),
+      sendMessage: vi.fn().mockResolvedValue(undefined),
       getURL: vi.fn(
         (path: string) => `chrome-extension://extension-id/${path}`,
       ),

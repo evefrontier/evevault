@@ -33,7 +33,7 @@ vi.mock('jose', () => ({
 function installBrowserMock() {
   vi.stubGlobal('browser', {
     runtime: {
-      sendMessage: vi.fn(),
+      sendMessage: vi.fn().mockResolvedValue(undefined),
     },
     storage: {
       local: {
@@ -41,7 +41,7 @@ function installBrowserMock() {
       },
     },
     tabs: {
-      sendMessage: vi.fn(),
+      sendMessage: vi.fn().mockResolvedValue(undefined),
     },
   } as unknown as typeof browser)
 }

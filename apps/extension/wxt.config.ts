@@ -172,7 +172,7 @@ export default defineConfig(() => {
         if (wxt.config.browser === 'firefox') {
           manifest.browser_specific_settings = {
             gecko: {
-              id: 'evevault@eve.is',
+              id: 'evevault@evefrontier.com',
               strict_min_version: '128.0',
             },
           }
