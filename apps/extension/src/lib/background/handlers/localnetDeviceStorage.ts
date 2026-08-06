@@ -1,5 +1,6 @@
 import type { HashedData } from '@evevault/shared'
 import { DEVICE_STORAGE_KEY } from '@evevault/shared/utils/storageKeys'
+import { browser } from 'wxt/browser'
 
 type DeviceStorage = {
   state?: {
@@ -86,7 +87,7 @@ function parseDeviceStorage(raw: unknown): DeviceStorage {
  * unrelated persisted device state.
  */
 async function readDeviceStorage(): Promise<DeviceStorage> {
-  const result = await chrome.storage.local.get([DEVICE_STORAGE_KEY])
+  const result = await browser.storage.local.get([DEVICE_STORAGE_KEY])
   return parseDeviceStorage(result[DEVICE_STORAGE_KEY])
 }
 
@@ -95,7 +96,7 @@ async function readDeviceStorage(): Promise<DeviceStorage> {
  * representation used elsewhere in the extension.
  */
 async function writeDeviceStorage(device: DeviceStorage): Promise<void> {
-  await chrome.storage.local.set({
+  await browser.storage.local.set({
     [DEVICE_STORAGE_KEY]: JSON.stringify(device),
   })
 }

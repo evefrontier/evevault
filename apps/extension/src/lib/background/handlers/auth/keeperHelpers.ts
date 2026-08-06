@@ -5,6 +5,7 @@ import type {
 } from '@evevault/shared/types'
 import { KeeperMessageTypes } from '@evevault/shared/types'
 import { createLogger, DEVICE_STORAGE_KEY } from '@evevault/shared/utils'
+import { browser } from 'wxt/browser'
 import { ensureOffscreen } from '@/lib/background/services/offscreenService'
 
 const log = createLogger()
@@ -15,16 +16,13 @@ const log = createLogger()
  * hasn't rehydrated yet when setState is called.
  */
 export async function getEphemeralKeyPairSecretKeyFromStorage(): Promise<StoredSecretKey | null> {
-  if (typeof chrome === 'undefined' || !chrome.storage) {
+  if (!browser?.storage) {
     return null
   }
 
   try {
-    const stored = await new Promise<unknown>((resolve) => {
-      chrome.storage.local.get([DEVICE_STORAGE_KEY], (result) => {
-        resolve(result[DEVICE_STORAGE_KEY] || null)
-      })
-    })
+    const result = await browser.storage.local.get([DEVICE_STORAGE_KEY])
+    const stored = result[DEVICE_STORAGE_KEY] || null
 
     if (!stored) {
       return null
@@ -63,26 +61,17 @@ export async function checkKeeperUnlocked(): Promise<{
 }> {
   try {
     await ensureOffscreen(true)
-    return new Promise((resolve) => {
-      chrome.runtime.sendMessage(
-        { type: KeeperMessageTypes.GET_PUBLIC_KEY, target: 'KEEPER' },
-        (response) => {
-          if (chrome.runtime.lastError) {
-            log.error('Error checking keeper', chrome.runtime.lastError)
-            resolve({ unlocked: false })
-            return
-          }
-          if (response?.ok === true && response?.publicKeyBytes) {
-            resolve({
-              unlocked: true,
-              publicKeyBytes: response.publicKeyBytes,
-            })
-          } else {
-            resolve({ unlocked: false })
-          }
-        },
-      )
+    const response = await browser.runtime.sendMessage({
+      type: KeeperMessageTypes.GET_PUBLIC_KEY,
+      target: 'KEEPER',
     })
+    if (response?.ok === true && response?.publicKeyBytes) {
+      return {
+        unlocked: true,
+        publicKeyBytes: response.publicKeyBytes,
+      }
+    }
+    return { unlocked: false }
   } catch (error) {
     log.error('Failed to check keeper status', error)
     return { unlocked: false }

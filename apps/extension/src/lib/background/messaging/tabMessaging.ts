@@ -4,6 +4,7 @@ import {
   hasNoTokenMaterial,
   type TokenMaterialField,
 } from '@evevault/shared/utils'
+import { browser } from 'wxt/browser'
 
 const log = createLogger()
 
@@ -105,7 +106,7 @@ export function sendToTab<M extends TabBoundMessage>(
     return
   }
 
-  void chrome.tabs.sendMessage(tabId, message).catch((err: unknown) => {
+  void browser.tabs.sendMessage(tabId, message).catch((err: unknown) => {
     log.error('Failed to send message to tab', { tabId, err })
   })
 }

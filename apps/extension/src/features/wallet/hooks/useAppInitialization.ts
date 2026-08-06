@@ -2,6 +2,7 @@ import { useAuth } from '@evevault/shared/auth'
 import { useDeviceStore } from '@evevault/shared/stores/deviceStore'
 import { createLogger, DEVICE_STORAGE_KEY } from '@evevault/shared/utils'
 import { useEffect, useState } from 'react'
+import { browser } from 'wxt/browser'
 
 const log = createLogger()
 
@@ -20,10 +21,9 @@ export function useAppInitialization() {
       if (
         state.isLocked &&
         !prevState.isLocked &&
-        typeof chrome !== 'undefined' &&
-        chrome.runtime?.sendMessage
+        browser?.runtime?.sendMessage
       ) {
-        chrome.runtime.sendMessage({
+        browser.runtime.sendMessage({
           event: 'change',
           payload: { accounts: [] },
         })
@@ -43,7 +43,7 @@ export function useAppInitialization() {
         // Subscribe to device store changes for debugging
         unsubscribe = useDeviceStore.subscribe(async (state, prevState) => {
           log.debug('Device store changed', { state, prevState })
-          const storageSnapshot = await chrome.storage.local.get([
+          const storageSnapshot = await browser.storage.local.get([
             DEVICE_STORAGE_KEY,
           ])
           log.debug('Storage after change', storageSnapshot)

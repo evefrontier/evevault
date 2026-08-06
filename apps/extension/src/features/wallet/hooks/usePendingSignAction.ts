@@ -1,5 +1,6 @@
 import { createLogger } from '@evevault/shared/utils'
 import { useEffect, useState } from 'react'
+import { browser } from 'wxt/browser'
 import { useSignPopupAuth } from './useSignPopupAuth'
 
 const log = createLogger()
@@ -56,7 +57,7 @@ export function usePendingSignAction<TPending extends { requestId?: string }>({
   const auth = useSignPopupAuth()
 
   useEffect(() => {
-    chrome.storage.local
+    browser.storage.local
       .get('pendingAction')
       .then(async (data) => {
         const pendingAction = data.pendingAction
@@ -96,7 +97,7 @@ export function usePendingSignAction<TPending extends { requestId?: string }>({
       return false
     }
 
-    await chrome.storage.local.set({
+    await browser.storage.local.set({
       transactionResult: {
         ...result,
         windowId: getWindowId(targetPending),

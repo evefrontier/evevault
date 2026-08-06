@@ -1,9 +1,10 @@
 import { KeeperMessageTypes } from '@evevault/shared'
+import type { Browser } from 'wxt/browser'
 import { isExtensionSender } from '@/lib/background/senderGuard'
 import type { BackgroundMessage } from '@/lib/background/types'
 import type { KeeperHandler, KeeperSendResponse } from './keeperTypes'
 
-type MsgSender = chrome.runtime.MessageSender
+type MsgSender = Browser.runtime.MessageSender
 
 import {
   handleLocalnetGetAddress,

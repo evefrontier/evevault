@@ -17,7 +17,7 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     include: ['src/**/*.test.{ts,tsx}', 'entrypoints/**/*.test.{ts,tsx}'],
-    setupFiles: ['../../vitest.setup.ts'],
+    setupFiles: ['../../vitest.setup.ts', './vitest.browser-shim.ts'],
     server: {
       deps: {
         inline: ['@evefrontier/wallet-core'],
