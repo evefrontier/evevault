@@ -92,15 +92,24 @@ export default defineConfig(() => {
     manifestVersion: 3,
     srcDir: 'src',
     entrypointsDir: '../entrypoints',
-    // Only configure webExt if Chrome path is found
-    // If Chrome is not found, WXT will build the extension but won't auto-launch
-    // User can manually load the extension from .output/chrome-mv3-dev
-    ...(chromePath && {
-      webExt: {
-        chromiumExecutablePath: chromePath,
-        executablePath: chromePath,
+    // WXT owns the dev-server port here (not vite.server.port). Chrome dev uses
+    // 3000; the Firefox dev script overrides with `--port 3002` so both
+    // extension targets can run at once. Web app is on 3005.
+    dev: {
+      server: {
+        port: 3000,
       },
-    }),
+    },
+    // WXT reads binaries[<target browser>] for the chromium binary and
+    // binaries.firefox for Firefox. (The old chromiumExecutablePath/
+    // executablePath keys are not valid webExt options and were ignored.)
+    // Firefox is auto-discovered by web-ext when installed; Chrome is pinned to
+    // the detected path so dev auto-launches when it isn't on PATH.
+    webExt: {
+      binaries: {
+        ...(chromePath && { chrome: chromePath }),
+      },
+    },
     vite: () => ({
       plugins: [
         appVersionPlugin(version),
@@ -110,10 +119,6 @@ export default defineConfig(() => {
         tanstackRouter({ quoteStyle: 'double' }),
         tailwindcss(),
       ],
-      server: {
-        port: 3000, // Extension dev server port (web app uses 3001)
-        strictPort: true, // Don't auto-switch ports
-      },
       // Configure Vite to load env vars from monorepo root
       envDir: rootDir,
       optimizeDeps: {
@@ -154,11 +159,23 @@ export default defineConfig(() => {
       // WXT adds `scripting` in dev for HMR content-script registration but
       // uses a static content_scripts entry in production. Strip it from
       // release builds only so the Web Store doesn't flag it as unused.
-      'build:manifestGenerated'(_wxt, manifest) {
+      'build:manifestGenerated'(wxt, manifest) {
         if (process.env.NODE_ENV !== 'development') {
           manifest.permissions = manifest.permissions?.filter(
             (p) => p !== 'scripting',
           )
+        }
+        // Firefox MV3 refuses to load an extension without an explicit gecko id
+        // (it also fixes the moz-extension:// origin, which the OAuth redirect
+        // URL derives from). Chrome ignores browser_specific_settings, so scope
+        // it to the Firefox build.
+        if (wxt.config.browser === 'firefox') {
+          manifest.browser_specific_settings = {
+            gecko: {
+              id: 'evevault@eve.is',
+              strict_min_version: '128.0',
+            },
+          }
         }
       },
     },

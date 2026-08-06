@@ -79,7 +79,7 @@ export default defineConfig({
     }),
   ],
   server: {
-    port: 3001, // Web app port (extension uses 3000)
+    port: 3005,
     strictPort: true, // Don't auto-switch ports
   },
   // Configure Vite to load env vars from monorepo root

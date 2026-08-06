@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "wxt",
-    "dev:firefox": "wxt -b firefox",
+    "dev:firefox": "wxt -b firefox --port 3002",
     "build": "wxt build",
     "build:webstore": "WXT_WEBSTORE_BUILD=true wxt build",
     "build:firefox": "wxt build -b firefox",
