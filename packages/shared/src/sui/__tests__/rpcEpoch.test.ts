@@ -2,10 +2,10 @@ import { SUI_LOCALNET_CHAIN } from '@mysten/wallet-standard'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DEFAULT_EPOCH_DURATION_MS } from '#/utils/constants'
 
-const mockGetEpoch = vi.fn()
+const mockGetCurrentSystemState = vi.fn()
 const mockCreateSuiClient = vi.fn((..._args: unknown[]) => ({
-  ledgerService: {
-    getEpoch: mockGetEpoch,
+  core: {
+    getCurrentSystemState: mockGetCurrentSystemState,
   },
 }))
 
@@ -30,8 +30,12 @@ describe('getCurrentEpochFromRpc', () => {
   })
 
   it('creates a localnet SUI client with the provided URL', async () => {
-    mockGetEpoch.mockReturnValue({
-      response: Promise.resolve({ epoch: { epoch: 3, start: 1000 } }),
+    mockGetCurrentSystemState.mockResolvedValue({
+      systemState: {
+        epoch: '3',
+        epochStartTimestampMs: '1000',
+        parameters: { epochDurationMs: String(DEFAULT_EPOCH_DURATION_MS) },
+      },
     })
 
     await getCurrentEpochFromRpc('http://127.0.0.1:9000')
@@ -42,35 +46,40 @@ describe('getCurrentEpochFromRpc', () => {
     )
   })
 
-  it('extracts epochNumber and computes maxEpochTimestampMs', async () => {
-    mockGetEpoch.mockReturnValue({
-      response: Promise.resolve({ epoch: { epoch: '11', start: '5000' } }),
+  it('derives numericMaxEpoch and maxEpochTimestampMs from system state', async () => {
+    mockGetCurrentSystemState.mockResolvedValue({
+      systemState: {
+        epoch: '11',
+        epochStartTimestampMs: '5000',
+        parameters: { epochDurationMs: '60000' },
+      },
     })
 
     await expect(
       getCurrentEpochFromRpc('http://127.0.0.1:9000'),
     ).resolves.toEqual({
       numericMaxEpoch: 11,
-      maxEpochTimestampMs: 5000 + DEFAULT_EPOCH_DURATION_MS,
+      maxEpochTimestampMs: 5000 + 60000,
     })
   })
 
-  it('coerces null or undefined epoch fields to 0', async () => {
-    mockGetEpoch.mockReturnValue({
-      response: Promise.resolve({ epoch: { epoch: null, start: undefined } }),
+  it('throws when system state returns non-numeric epoch fields', async () => {
+    mockGetCurrentSystemState.mockResolvedValue({
+      systemState: {
+        epoch: 'not-a-number',
+        epochStartTimestampMs: '5000',
+        parameters: { epochDurationMs: '60000' },
+      },
     })
 
     await expect(
       getCurrentEpochFromRpc('http://127.0.0.1:9000'),
-    ).resolves.toEqual({
-      numericMaxEpoch: 0,
-      maxEpochTimestampMs: DEFAULT_EPOCH_DURATION_MS,
-    })
+    ).rejects.toThrow(/non-numeric epoch fields/)
   })
 
   it('propagates gRPC errors to the caller', async () => {
     const error = new Error('grpc unavailable')
-    mockGetEpoch.mockReturnValue({ response: Promise.reject(error) })
+    mockGetCurrentSystemState.mockRejectedValue(error)
 
     await expect(getCurrentEpochFromRpc('http://127.0.0.1:9000')).rejects.toBe(
       error,

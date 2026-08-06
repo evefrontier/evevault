@@ -54,7 +54,7 @@ export async function getCurrentEpochFromGraphQL(chain: SuiChain): Promise<{
       ? new Date(epoch.endTimestamp).getTime() - startMs
       : DEFAULT_EPOCH_DURATION_MS,
   }
-  // epochsFromCurrent: 0 binds maxEpoch to the current epoch — no buffer.
+  // maxEpoch = current epoch
   const state = computeEpochState(info, {
     epochsFromCurrent: 0,
     nowMs: Date.now(),
