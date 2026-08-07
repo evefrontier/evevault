@@ -1,4 +1,5 @@
 import type { SuiChain } from '@mysten/wallet-standard'
+import { browser } from '@wxt-dev/browser'
 import type { ContextState, NetworkSwitchResult } from '#/types'
 import { isLocalnetChain, isZkLoginSuiChain } from '#/types/networks'
 import { createLogger, isExtension } from '#/utils'
@@ -173,7 +174,7 @@ const needsNetworkDataInitialization = (
 /** Extension background script must be notified so the wallet-standard account list reflects the new chain. */
 const notifyExtensionChainChanged = (chain: SuiChain) => {
   if (isExtension()) {
-    chrome.runtime?.sendMessage?.({
+    void browser.runtime?.sendMessage?.({
       __from: 'Eve Vault',
       event: 'change',
       payload: { chains: [chain] },

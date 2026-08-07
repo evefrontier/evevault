@@ -102,7 +102,7 @@ describe('authConfig UserManager', () => {
 
   afterEach(() => {
     vi.clearAllMocks()
-    delete (globalThis as unknown as { chrome?: unknown }).chrome
+    delete (globalThis as unknown as { browser?: unknown }).browser
   })
 
   it('caches the UserManager per tenant', async () => {
@@ -124,7 +124,7 @@ describe('authConfig UserManager', () => {
 
   it('omits the userStore override in the extension environment', async () => {
     envMocks.isExtension.mockReturnValue(true)
-    ;(globalThis as unknown as { chrome: unknown }).chrome = {
+    ;(globalThis as unknown as { browser: unknown }).browser = {
       runtime: { id: 'ext-id' },
     }
     getUserManager(TenantId.STILLNESS)
@@ -199,7 +199,7 @@ describe('authConfig UserManager', () => {
 
   it('sets automaticSilentRenew to false in extension environment', async () => {
     envMocks.isExtension.mockReturnValue(true)
-    ;(globalThis as unknown as { chrome: unknown }).chrome = {
+    ;(globalThis as unknown as { browser: unknown }).browser = {
       runtime: { id: 'test-ext' },
     }
     try {
@@ -210,7 +210,7 @@ describe('authConfig UserManager', () => {
       }
       expect(settings.automaticSilentRenew).toBe(false)
     } finally {
-      delete (globalThis as unknown as { chrome?: unknown }).chrome
+      delete (globalThis as unknown as { browser?: unknown }).browser
     }
   })
 
@@ -289,11 +289,11 @@ describe('redirectToFusionAuthLogout', () => {
     expect(window.location.href).toBe('https://app.test')
   })
 
-  it('uses chrome.identity launchWebAuthFlow in the extension environment', async () => {
+  it('uses browser.identity launchWebAuthFlow in the extension environment', async () => {
     envMocks.isExtension.mockReturnValue(true)
-    const launchWebAuthFlow = vi.fn()
+    const launchWebAuthFlow = vi.fn().mockResolvedValue(undefined)
     const sendMessage = vi.fn()
-    ;(globalThis as unknown as { chrome: unknown }).chrome = {
+    ;(globalThis as unknown as { browser: unknown }).browser = {
       runtime: { id: 'ext-id', sendMessage },
       identity: {
         getRedirectURL: () => 'https://ext-id.chromiumapp.org/',
@@ -306,20 +306,21 @@ describe('redirectToFusionAuthLogout', () => {
       redirectToFusionAuthLogout()
 
       expect(launchWebAuthFlow).toHaveBeenCalledOnce()
-      const [opts, callback] = launchWebAuthFlow.mock.calls[0] as [
+      const [opts] = launchWebAuthFlow.mock.calls[0] as [
         { url: string; interactive: boolean },
-        () => void,
       ]
       expect(opts.url).toContain('/oauth2/logout')
       expect(opts.interactive).toBe(true)
 
-      // Invoking the callback broadcasts an empty-accounts change message.
-      callback()
-      expect(sendMessage).toHaveBeenCalledWith(
-        expect.objectContaining({ event: 'change' }),
+      // The empty-accounts change broadcasts from the promise's .then, a
+      // microtask after launchWebAuthFlow resolves.
+      await vi.waitFor(() =>
+        expect(sendMessage).toHaveBeenCalledWith(
+          expect.objectContaining({ event: 'change' }),
+        ),
       )
     } finally {
-      delete (globalThis as unknown as { chrome?: unknown }).chrome
+      delete (globalThis as unknown as { browser?: unknown }).browser
     }
   })
 })

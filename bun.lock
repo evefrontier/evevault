@@ -84,6 +84,7 @@
       "version": "0.0.15",
       "dependencies": {
         "@mysten/signers": "^1.0.5",
+        "@wxt-dev/browser": "0.2.5",
         "hash-wasm": "4.12.0",
       },
       "devDependencies": {

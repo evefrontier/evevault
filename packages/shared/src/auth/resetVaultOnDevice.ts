@@ -4,6 +4,7 @@ import {
   SUI_MAINNET_CHAIN,
   SUI_TESTNET_CHAIN,
 } from '@mysten/wallet-standard'
+import { browser } from '@wxt-dev/browser'
 import { ephKeyService, zkProofService } from '#/services/vaultService'
 import { useContextStore } from '#/stores'
 import {
@@ -48,10 +49,8 @@ async function clearWebStorage(): Promise<void> {
 
 async function clearExtensionStorage(): Promise<void> {
   await cleanupExtensionStorage()
-  if (typeof chrome !== 'undefined' && chrome.storage?.local) {
-    await new Promise<void>((resolve) => {
-      chrome.storage.local.remove([...EXTENSION_EXTRA_KEYS], () => resolve())
-    })
+  if (browser?.storage?.local) {
+    await browser.storage.local.remove([...EXTENSION_EXTRA_KEYS])
     log.info('[resetVaultOnDevice] Cleared extension-only local storage')
   }
 }

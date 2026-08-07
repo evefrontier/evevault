@@ -1,4 +1,5 @@
 import type { SuiChain } from '@mysten/wallet-standard'
+import { browser } from '@wxt-dev/browser'
 import { DEVICE_STORAGE_KEY } from './storageKeys'
 
 export const getDeviceData = async (chain: SuiChain) => {
@@ -20,7 +21,7 @@ export const getDeviceData = async (chain: SuiChain) => {
   }
 
   // Fallback: read from storage only if store is missing data
-  const result = await chrome.storage.local.get([DEVICE_STORAGE_KEY])
+  const result = await browser.storage.local.get([DEVICE_STORAGE_KEY])
   const persistedState = parsePersistedState(result[DEVICE_STORAGE_KEY])
   const networkData = persistedState?.networkData?.[chain]
 

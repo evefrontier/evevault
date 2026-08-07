@@ -1,4 +1,5 @@
 import type { SuiChain } from '@mysten/wallet-standard'
+import { browser } from '@wxt-dev/browser'
 import { ephKeyService } from '#/services/vaultService'
 import { resolveStoredSecretKey } from '#/stores/deviceStore/keyHelpers'
 import type {
@@ -25,11 +26,8 @@ const log = createLogger()
 /** Reads the device store snapshot from chrome.storage.local; handles both legacy string-serialized and current object formats. */
 export const readPersistedDeviceStoreState =
   async (): Promise<PersistedDeviceStoreState | null> => {
-    const persistedDeviceStore = await new Promise<unknown>((resolve) => {
-      chrome.storage.local.get([DEVICE_STORAGE_KEY], (result) => {
-        resolve(result[DEVICE_STORAGE_KEY] || null)
-      })
-    })
+    const stored = await browser.storage.local.get([DEVICE_STORAGE_KEY])
+    const persistedDeviceStore = stored[DEVICE_STORAGE_KEY] || null
 
     try {
       return parsePersistedDeviceStoreState(persistedDeviceStore)

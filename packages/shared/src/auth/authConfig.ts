@@ -1,4 +1,5 @@
 import type { TenantId } from '@evefrontier/wallet-core/tenant'
+import { browser } from '@wxt-dev/browser'
 import {
   UserManager,
   type UserManagerSettings,
@@ -51,8 +52,8 @@ const ensureLocalStorage = () => {
 ensureLocalStorage()
 
 const getRedirectUri = () => {
-  if (isExtension() && chrome.runtime?.id) {
-    return `chrome-extension://${chrome.runtime.id}/callback.html`
+  if (isExtension() && browser.runtime?.id) {
+    return `chrome-extension://${browser.runtime.id}/callback.html`
   }
   if (typeof window !== 'undefined' && window.location) {
     return `${window.location.origin}/callback`
@@ -61,8 +62,8 @@ const getRedirectUri = () => {
 }
 
 const getOrigin = () => {
-  if (isExtension() && chrome.runtime?.id) {
-    return `chrome-extension://${chrome.runtime.id}`
+  if (isExtension() && browser.runtime?.id) {
+    return `chrome-extension://${browser.runtime.id}`
   }
   if (typeof window !== 'undefined' && window.location) {
     return window.location.origin
@@ -152,8 +153,7 @@ export function redirectToFusionAuthLogout(): void {
   const tenantId = getCurrentTenantId()
   const { clientId, serverUrl: fusionAuthUrl } = getTenantConfig(tenantId)
   const postRedirectUri = isExtension()
-    ? (typeof chrome !== 'undefined' && chrome.identity?.getRedirectURL?.()) ||
-      getOrigin()
+    ? browser.identity?.getRedirectURL?.() || getOrigin()
     : getOrigin()
   if (!fusionAuthUrl || !clientId || !postRedirectUri) {
     log.warn(
@@ -170,21 +170,17 @@ export function redirectToFusionAuthLogout(): void {
   logoutUrl.searchParams.set('client_id', clientId)
   logoutUrl.searchParams.set('post_logout_redirect_uri', postRedirectUri)
 
-  if (
-    isExtension() &&
-    typeof chrome !== 'undefined' &&
-    chrome.identity?.launchWebAuthFlow
-  ) {
-    chrome.identity.launchWebAuthFlow(
-      { url: logoutUrl.toString(), interactive: true },
-      () => {
-        chrome.runtime?.sendMessage?.({
+  if (isExtension() && browser.identity?.launchWebAuthFlow) {
+    void browser.identity
+      .launchWebAuthFlow({ url: logoutUrl.toString(), interactive: true })
+      .then(() => {
+        void browser.runtime?.sendMessage?.({
           __from: 'Eve Vault',
           event: 'change',
           payload: { accounts: [] },
         })
-      },
-    )
+      })
+      .catch(() => {})
   } else if (typeof window !== 'undefined') {
     window.location.href = logoutUrl.toString()
   }
