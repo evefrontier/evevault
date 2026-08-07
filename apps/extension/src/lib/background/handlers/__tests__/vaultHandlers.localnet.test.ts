@@ -8,10 +8,6 @@ vi.mock('@/lib/background/handlers/authHandlers', () => ({
   checkPendingAuthAfterUnlock: vi.fn(),
 }))
 
-vi.mock('@/lib/background/services/offscreenService', () => ({
-  ensureOffscreen: vi.fn().mockResolvedValue(undefined),
-}))
-
 const DEVICE_KEY = 'evevault:device'
 const HASHED_SECRET_KEY = { iv: 'iv', data: 'data', salt: 'salt' }
 
@@ -48,6 +44,10 @@ function stubKeeperBridge(
         })
       : undefined
   vi.stubGlobal('browser', {
+    // A present offscreen document lets KeeperHost.ensureReady skip creation.
+    offscreen: {
+      hasDocument: vi.fn().mockResolvedValue(true),
+    },
     storage: {
       local: {
         get: vi

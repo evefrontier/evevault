@@ -1,6 +1,6 @@
 import { createLogger, KeeperMessageTypes } from '@evevault/shared'
-import { type Browser, browser } from 'wxt/browser'
-import { ensureOffscreen } from '@/lib/background/services/offscreenService'
+import type { Browser } from 'wxt/browser'
+import { keeperHost } from '@/lib/background/keeper/keeperHost'
 import type { VaultMessage } from '@/lib/background/types'
 import { checkPendingAuthAfterUnlock } from './authHandlers'
 import { readEncryptedLocalnetKey } from './localnetDeviceStorage'
@@ -14,33 +14,12 @@ export {
 const log = createLogger()
 
 /**
- * Sends a message to the keeper and returns the response
- * Retries if the keeper isn't ready yet
+ * Sends a message to the keeper and returns the response.
+ * Delegates transport (offscreen lifecycle + retries) to the KeeperHost seam.
  */
 // biome-ignore lint/suspicious/noExplicitAny: Keeper messages have dynamic types
 export async function sendToKeeper(message: any, retries = 3): Promise<any> {
-  await ensureOffscreen(true)
-
-  for (let attempt = 1; ; attempt++) {
-    try {
-      return await browser.runtime.sendMessage({ ...message, target: 'KEEPER' })
-    } catch (err) {
-      const error = err instanceof Error ? err.message : String(err)
-
-      // If port closed and we have retries left, wait and retry
-      if (error?.includes('port closed') && attempt < retries) {
-        log.info(
-          `Keeper not ready yet, retrying... (attempt ${
-            attempt + 1
-          }/${retries})`,
-        )
-        await new Promise((r) => setTimeout(r, 200 * attempt)) // Exponential backoff
-        continue
-      }
-
-      throw new Error(error)
-    }
-  }
+  return keeperHost.send(message, retries)
 }
 
 // Higher-level wrapper over sendToKeeper: maps the keeper response to a

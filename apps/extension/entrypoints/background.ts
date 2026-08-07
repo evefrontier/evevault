@@ -3,12 +3,12 @@
 import { browser } from 'wxt/browser'
 import { handleMessage } from '../src/lib/background/handlers/messageHandler'
 import { handlePortConnection } from '../src/lib/background/handlers/portHandlers'
-import { ensureOffscreen } from '../src/lib/background/services/offscreenService'
+import { keeperHost } from '../src/lib/background/keeper/keeperHost'
 
 // @ts-expect-error
 export default defineBackground(() => {
-  // Ensure keeper offscreen document exists on startup (don't wait for ready)
-  ensureOffscreen(false)
+  // Warm up the keeper on startup (don't wait for ready)
+  keeperHost.ensureReady(false)
 
   // Set up message handling
   browser.runtime.onMessage.addListener(handleMessage)

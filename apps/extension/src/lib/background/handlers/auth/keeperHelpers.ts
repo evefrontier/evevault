@@ -6,7 +6,7 @@ import type {
 import { KeeperMessageTypes } from '@evevault/shared/types'
 import { createLogger, DEVICE_STORAGE_KEY } from '@evevault/shared/utils'
 import { browser } from 'wxt/browser'
-import { ensureOffscreen } from '@/lib/background/services/offscreenService'
+import { keeperHost } from '@/lib/background/keeper/keeperHost'
 
 const log = createLogger()
 
@@ -60,11 +60,12 @@ export async function checkKeeperUnlocked(): Promise<{
   publicKeyBytes?: number[]
 }> {
   try {
-    await ensureOffscreen(true)
-    const response = await browser.runtime.sendMessage({
-      type: KeeperMessageTypes.GET_PUBLIC_KEY,
-      target: 'KEEPER',
-    })
+    // Single attempt (no retry) to preserve prior behaviour; the host handles
+    // offscreen readiness and tags the message with target: 'KEEPER'.
+    const response = await keeperHost.send(
+      { type: KeeperMessageTypes.GET_PUBLIC_KEY },
+      1,
+    )
     if (response?.ok === true && response?.publicKeyBytes) {
       return {
         unlocked: true,
