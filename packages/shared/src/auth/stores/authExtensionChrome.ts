@@ -44,13 +44,13 @@ export function launchExtensionLogout(logoutUrl: string): void {
    */
   void browser.identity
     .launchWebAuthFlow({ url: logoutUrl, interactive: true })
-    .then(() => {
-      void browser.runtime.sendMessage({
+    .then(() =>
+      browser.runtime?.sendMessage?.({
         __from: 'Eve Vault',
         event: 'change',
         payload: { accounts: [] },
-      })
-    })
+      }),
+    )
     .catch(() => {})
 }
 

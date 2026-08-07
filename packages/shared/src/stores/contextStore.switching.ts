@@ -174,10 +174,13 @@ const needsNetworkDataInitialization = (
 /** Extension background script must be notified so the wallet-standard account list reflects the new chain. */
 const notifyExtensionChainChanged = (chain: SuiChain) => {
   if (isExtension()) {
-    void browser.runtime?.sendMessage?.({
-      __from: 'Eve Vault',
-      event: 'change',
-      payload: { chains: [chain] },
-    })
+    // Fire-and-forget; swallow rejection (no background listener).
+    void browser.runtime
+      ?.sendMessage?.({
+        __from: 'Eve Vault',
+        event: 'change',
+        payload: { chains: [chain] },
+      })
+      ?.catch(() => {})
   }
 }

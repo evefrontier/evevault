@@ -173,14 +173,16 @@ export function redirectToFusionAuthLogout(): void {
   if (isExtension() && browser.identity?.launchWebAuthFlow) {
     void browser.identity
       .launchWebAuthFlow({ url: logoutUrl.toString(), interactive: true })
-      .then(() => {
-        void browser.runtime?.sendMessage?.({
+      .then(() =>
+        browser.runtime?.sendMessage?.({
           __from: 'Eve Vault',
           event: 'change',
           payload: { accounts: [] },
-        })
+        }),
+      )
+      .catch((error) => {
+        log.warn('Extension logout redirect flow failed', error)
       })
-      .catch(() => {})
   } else if (typeof window !== 'undefined') {
     window.location.href = logoutUrl.toString()
   }

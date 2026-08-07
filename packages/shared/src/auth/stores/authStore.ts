@@ -79,17 +79,30 @@ export const useAuthStore = create<AuthState>()(
               return
             }
 
+            const runtime = browser.runtime
+            if (!runtime?.sendMessage) {
+              reject(new Error('Extension runtime messaging unavailable'))
+              return
+            }
+
             const id = crypto.randomUUID()
             const authSuccessListener = createExtensionAuthListener(
               id,
               resolve,
               reject,
             )
-            browser.runtime?.onMessage?.addListener(authSuccessListener)
-            void browser.runtime?.sendMessage?.({
-              action: 'ext_login',
-              id: id,
-              tenantId: getCurrentTenantId(),
+            runtime.onMessage?.addListener(authSuccessListener)
+
+            // Reject on send failure so the caller doesn't hang; drop the listener.
+            Promise.resolve(
+              runtime.sendMessage({
+                action: 'ext_login',
+                id: id,
+                tenantId: getCurrentTenantId(),
+              }),
+            ).catch((error) => {
+              runtime.onMessage?.removeListener(authSuccessListener)
+              reject(error)
             })
           })
         },
