@@ -9,8 +9,9 @@ import { ChromeOffscreenKeeperHost } from './chromeOffscreenKeeperHost'
  */
 export interface KeeperHost {
   /**
-   * Ensure the keeper is running. When `waitForReady` is true, resolves only
-   * once the keeper has signalled it is initialised (subject to a timeout).
+   * Ensure the keeper is running. When `waitForReady` is true and the keeper is
+   * being started, resolves once it signals readiness (subject to a timeout);
+   * if the keeper is already running, resolves immediately.
    */
   ensureReady(waitForReady?: boolean): Promise<void>
   /**

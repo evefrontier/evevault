@@ -15,16 +15,16 @@ const log = createLogger()
 export class ChromeOffscreenKeeperHost implements KeeperHost {
   #ready = false
   #readyPromise: Promise<void> | undefined
-  #listenerRegistered = false
 
   // Keeper signals readiness once its offscreen document has initialised.
   // Registered before createDocument so the KEEPER_READY message can't be missed.
-  #registerReadyListener(): void {
-    if (this.#listenerRegistered) {
-      return
+  // Returns the readiness promise; a set #readyPromise doubles as the
+  // "listener already registered" guard.
+  #registerReadyListener(): Promise<void> {
+    if (this.#readyPromise) {
+      return this.#readyPromise
     }
-    this.#listenerRegistered = true
-    this.#readyPromise = new Promise((resolve) => {
+    this.#readyPromise = new Promise<void>((resolve) => {
       browser.runtime.onMessage.addListener((message) => {
         if (message.type === 'KEEPER_READY') {
           this.#ready = true
@@ -33,13 +33,14 @@ export class ChromeOffscreenKeeperHost implements KeeperHost {
         return false
       })
     })
+    return this.#readyPromise
   }
 
   async ensureReady(waitForReady = false): Promise<void> {
     try {
       const hasDoc = await browser.offscreen.hasDocument()
       if (!hasDoc) {
-        this.#registerReadyListener()
+        const readyPromise = this.#registerReadyListener()
         await browser.offscreen.createDocument({
           url: 'keeper.html',
           reasons: ['LOCAL_STORAGE', 'DOM_SCRAPING'],
@@ -50,7 +51,7 @@ export class ChromeOffscreenKeeperHost implements KeeperHost {
         if (waitForReady) {
           // Wait for keeper to signal it's ready (with timeout)
           await Promise.race([
-            this.#readyPromise,
+            readyPromise,
             new Promise((_, reject) =>
               setTimeout(
                 () => reject(new Error('Keeper initialization timeout')),
@@ -94,7 +95,7 @@ export class ChromeOffscreenKeeperHost implements KeeperHost {
               attempt + 1
             }/${retries})`,
           )
-          await new Promise((r) => setTimeout(r, 200 * attempt)) // Exponential backoff
+          await new Promise((r) => setTimeout(r, 200 * attempt)) // Linear backoff: 200ms × attempt
           continue
         }
 
