@@ -2,10 +2,7 @@ import type {
   SponsoredTransactionInput,
   SponsoredTransactionMethod,
 } from '@evefrontier/wallet-core/sponsored-transaction'
-import {
-  EVEFRONTIER_SPONSORED_TRANSACTION,
-  type EveVaultWalletFeatures,
-} from '@evefrontier/wallet-core/wallet-features'
+import { EVEFRONTIER_SPONSORED_TRANSACTION } from '@evefrontier/wallet-core/wallet-features'
 import { WalletStandardMessageTypes } from '@evevault/shared'
 import { createLogger } from '@evevault/shared/utils'
 import type {
@@ -36,12 +33,17 @@ import {
   SuiSignPersonalMessage,
   SuiSignTransaction,
 } from '@mysten/wallet-standard'
+import { APP_VERSION } from '@/lib/appVersion'
 import type { WalletEventListener } from '@/lib/background/types'
 import { trySettle } from '@/lib/util/timeoutGuard'
 import { postToEveVaultBridge } from './bridgeTargetOrigin'
 import { getAccountsFromAuthSuccess } from './connectAuth'
 import { APPROVAL_TIMEOUT_MS, waitForVaultMessage } from './vaultMessages'
-import { WALLET_FEATURES } from './walletFeatures'
+import {
+  EVEFRONTIER_VAULT_VERSION,
+  type EveVaultWalletFeaturesWithVersion,
+  WALLET_FEATURES,
+} from './walletFeatures'
 
 const log = createLogger()
 
@@ -83,7 +85,7 @@ export class EveVaultWallet implements Wallet {
     )
   }
 
-  get features(): EveVaultWalletFeatures {
+  get features(): EveVaultWalletFeaturesWithVersion {
     return {
       [StandardConnect]: {
         version: '1.0.0',
@@ -112,6 +114,10 @@ export class EveVaultWallet implements Wallet {
       [EVEFRONTIER_SPONSORED_TRANSACTION]: {
         version: '1.0.1',
         signSponsoredTransaction: this.#signEveFrontierSponsoredTransaction,
+      },
+      [EVEFRONTIER_VAULT_VERSION]: {
+        version: '1.0.0',
+        vaultVersion: APP_VERSION,
       },
     }
   }
