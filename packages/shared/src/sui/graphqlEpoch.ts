@@ -1,3 +1,7 @@
+import {
+  type ChainEpochInfo,
+  computeEpochState,
+} from '@evefrontier/wallet-core/epoch'
 import type { SuiChain } from '@mysten/wallet-standard'
 import { DEFAULT_EPOCH_DURATION_MS } from '#/utils/constants'
 import { createLogger } from '#/utils/logger'
@@ -35,9 +39,6 @@ export async function getCurrentEpochFromGraphQL(chain: SuiChain): Promise<{
   const startMs = epoch.startTimestamp
     ? new Date(epoch.startTimestamp).getTime()
     : 0
-  const endMs = epoch.endTimestamp
-    ? new Date(epoch.endTimestamp).getTime()
-    : startMs + DEFAULT_EPOCH_DURATION_MS
 
   if (!epoch.endTimestamp) {
     log.debug('Epoch endTimestamp missing; using start + 24h fallback', {
@@ -46,8 +47,21 @@ export async function getCurrentEpochFromGraphQL(chain: SuiChain): Promise<{
     })
   }
 
+  const info: ChainEpochInfo = {
+    currentEpoch: numericMaxEpoch,
+    epochStartTimestampMs: startMs,
+    epochDurationMs: epoch.endTimestamp
+      ? new Date(epoch.endTimestamp).getTime() - startMs
+      : DEFAULT_EPOCH_DURATION_MS,
+  }
+  // maxEpoch = current epoch
+  const state = computeEpochState(info, {
+    epochsFromCurrent: 0,
+    nowMs: Date.now(),
+  })
+
   return {
-    numericMaxEpoch,
-    maxEpochTimestampMs: endMs,
+    numericMaxEpoch: state.numericMaxEpoch,
+    maxEpochTimestampMs: state.maxEpochTimestampMs,
   }
 }
