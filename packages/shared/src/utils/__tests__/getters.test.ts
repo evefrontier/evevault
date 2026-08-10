@@ -25,9 +25,9 @@ const persistedSnapshot = {
   state: { networkData: { [chain]: persistedNetworkData } },
 }
 
-function stubChromeStorage(value: unknown) {
+function stubBrowserStorage(value: unknown) {
   const get = vi.fn(async () => ({ [DEVICE_STORAGE_KEY]: value }))
-  vi.stubGlobal('chrome', { storage: { local: { get } } })
+  vi.stubGlobal('browser', { storage: { local: { get } } })
   return get
 }
 
@@ -47,7 +47,7 @@ describe('getDeviceData', () => {
     store.getJwtRandomness.mockReturnValue('store-randomness')
     store.getNonce.mockReturnValue('store-nonce')
     store.getMaxEpoch.mockReturnValue('store-epoch')
-    const get = stubChromeStorage(undefined)
+    const get = stubBrowserStorage(undefined)
 
     await expect(getDeviceData(chain)).resolves.toEqual({
       jwtRandomness: 'store-randomness',
@@ -58,7 +58,7 @@ describe('getDeviceData', () => {
   })
 
   it('falls back to a string-serialized storage snapshot', async () => {
-    stubChromeStorage(JSON.stringify(persistedSnapshot))
+    stubBrowserStorage(JSON.stringify(persistedSnapshot))
 
     await expect(getDeviceData(chain)).resolves.toEqual({
       jwtRandomness: 'persisted-randomness',
@@ -68,7 +68,7 @@ describe('getDeviceData', () => {
   })
 
   it('falls back to an object-shaped storage snapshot', async () => {
-    stubChromeStorage(persistedSnapshot)
+    stubBrowserStorage(persistedSnapshot)
 
     await expect(getDeviceData(chain)).resolves.toEqual({
       jwtRandomness: 'persisted-randomness',
@@ -78,7 +78,7 @@ describe('getDeviceData', () => {
   })
 
   it('degrades to empty values on malformed JSON instead of throwing', async () => {
-    stubChromeStorage('{not json')
+    stubBrowserStorage('{not json')
 
     await expect(getDeviceData(chain)).resolves.toEqual({
       jwtRandomness: null,
@@ -88,7 +88,7 @@ describe('getDeviceData', () => {
   })
 
   it('degrades to empty values on a fresh install with no stored snapshot', async () => {
-    stubChromeStorage(undefined)
+    stubBrowserStorage(undefined)
 
     await expect(getDeviceData(chain)).resolves.toEqual({
       jwtRandomness: null,
@@ -98,7 +98,7 @@ describe('getDeviceData', () => {
   })
 
   it('degrades to empty values when the snapshot has no state key', async () => {
-    stubChromeStorage({ unexpected: true })
+    stubBrowserStorage({ unexpected: true })
 
     await expect(getDeviceData(chain)).resolves.toEqual({
       jwtRandomness: null,
@@ -109,7 +109,7 @@ describe('getDeviceData', () => {
 
   it('prefers store values over persisted ones per field', async () => {
     store.getNonce.mockReturnValue('store-nonce')
-    stubChromeStorage(persistedSnapshot)
+    stubBrowserStorage(persistedSnapshot)
 
     await expect(getDeviceData(chain)).resolves.toEqual({
       jwtRandomness: 'persisted-randomness',

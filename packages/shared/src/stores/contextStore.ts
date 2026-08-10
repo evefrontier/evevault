@@ -1,5 +1,6 @@
 import { DEFAULT_TENANT, type TenantId } from '@evefrontier/wallet-core/tenant'
 import { SUI_TESTNET_CHAIN, type SuiChain } from '@mysten/wallet-standard'
+import { browser } from '@wxt-dev/browser'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { chromeStorageAdapter, localStorageAdapter } from '#/adapters'
@@ -97,21 +98,12 @@ export const useContextStore = create<ContextState>()(
   ),
 )
 
-if (typeof chrome !== 'undefined' && chrome.storage && !isWeb()) {
-  const storage = chrome.storage as {
-    onChanged?: {
-      addListener: (
-        callback: (changes: Record<string, unknown>, areaName: string) => void,
-      ) => void
+if (browser?.storage && !isWeb()) {
+  browser.storage.onChanged?.addListener((changes, areaName) => {
+    if (areaName === 'local' && changes[CONTEXT_STORAGE_KEY]) {
+      void useContextStore.persist.rehydrate()
     }
-  }
-  storage.onChanged?.addListener(
-    (changes: Record<string, unknown>, areaName: string) => {
-      if (areaName === 'local' && changes[CONTEXT_STORAGE_KEY]) {
-        void useContextStore.persist.rehydrate()
-      }
-    },
-  )
+  })
 }
 
 export function getCurrentContextTenantId(): TenantId {

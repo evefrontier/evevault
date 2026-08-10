@@ -1,39 +1,26 @@
+import { browser } from '@wxt-dev/browser'
 import type { StorageAdapter } from '#/types'
 
-// Chrome storage adapter for extensions
+// Extension storage adapter (chrome.storage.local via the browser polyfill)
 export const chromeStorageAdapter: StorageAdapter = {
   getItem: async (name: string): Promise<string | null> => {
-    return new Promise((resolve) => {
-      if (typeof chrome === 'undefined' || !chrome.storage) {
-        resolve(null)
-        return
-      }
-      chrome.storage.local.get(name, (result) => {
-        const value = result[name]
-        resolve(typeof value === 'string' ? value : null)
-      })
-    })
+    if (!browser?.storage) {
+      return null
+    }
+    const result = await browser.storage.local.get(name)
+    const value = result[name]
+    return typeof value === 'string' ? value : null
   },
   setItem: async (name: string, value: string): Promise<void> => {
-    return new Promise((resolve) => {
-      if (typeof chrome === 'undefined' || !chrome.storage) {
-        resolve()
-        return
-      }
-      chrome.storage.local.set({ [name]: value }, () => {
-        resolve()
-      })
-    })
+    if (!browser?.storage) {
+      return
+    }
+    await browser.storage.local.set({ [name]: value })
   },
   removeItem: async (name: string): Promise<void> => {
-    return new Promise((resolve) => {
-      if (typeof chrome === 'undefined' || !chrome.storage) {
-        resolve()
-        return
-      }
-      chrome.storage.local.remove(name, () => {
-        resolve()
-      })
-    })
+    if (!browser?.storage) {
+      return
+    }
+    await browser.storage.local.remove(name)
   },
 }

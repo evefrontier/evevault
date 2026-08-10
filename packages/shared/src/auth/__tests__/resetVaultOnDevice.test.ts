@@ -217,14 +217,12 @@ describe('resetVaultOnDevice', () => {
   it('calls cleanupExtensionStorage when isExtension()', async () => {
     vi.mocked(env.isWeb).mockReturnValue(false)
     vi.mocked(env.isExtension).mockReturnValue(true)
-    const remove = vi
-      .fn()
-      .mockImplementation((_keys: string[], cb: () => void) => cb())
+    const remove = vi.fn().mockResolvedValue(undefined)
     ;(
       global as unknown as {
-        chrome: { storage: { local: { remove: typeof remove } } }
+        browser: { storage: { local: { remove: typeof remove } } }
       }
-    ).chrome = {
+    ).browser = {
       storage: { local: { remove } },
     }
 
