@@ -1,4 +1,6 @@
-type MsgSender = chrome.runtime.MessageSender
+import { type Browser, browser } from 'wxt/browser'
+
+type MsgSender = Browser.runtime.MessageSender
 
 /**
  * Identifies messages that originate from this extension rather than a web
@@ -8,7 +10,7 @@ type MsgSender = chrome.runtime.MessageSender
  */
 export function isExtensionSender(sender: MsgSender): boolean {
   const senderUrls = [sender.origin, sender.url, sender.tab?.url]
-  const extensionId = chrome.runtime?.id
+  const extensionId = browser.runtime?.id
   const isOwnExtensionUrl = (url: string | undefined) => {
     if (!url) return false
     if (!extensionId) return url.startsWith('chrome-extension://')

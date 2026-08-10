@@ -13,20 +13,20 @@ vi.mock('@evevault/shared/utils', async (importOriginal) => {
   }
 })
 
-function installChromeMock(rejectSend = false) {
-  vi.stubGlobal('chrome', {
+function installBrowserMock(rejectSend = false) {
+  vi.stubGlobal('browser', {
     tabs: {
       sendMessage: rejectSend
         ? vi.fn(() => Promise.reject(new Error('Tab closed')))
         : vi.fn(() => Promise.resolve()),
     },
-  } as unknown as typeof chrome)
+  } as unknown as typeof browser)
 }
 
 import { sendToTab } from '../tabMessaging'
 
 beforeEach(() => {
-  installChromeMock()
+  installBrowserMock()
   vi.clearAllMocks()
 })
 
@@ -38,7 +38,7 @@ describe('sendToTab', () => {
   it('delivers a safe message to the target tab', () => {
     sendToTab(42, { type: 'auth_error', id: 'msg-1' })
 
-    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(42, {
+    expect(browser.tabs.sendMessage).toHaveBeenCalledWith(42, {
       type: 'auth_error',
       id: 'msg-1',
     })
@@ -52,11 +52,11 @@ describe('sendToTab', () => {
       address: '0xabc',
     }
     sendToTab(99, msg)
-    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(99, msg)
+    expect(browser.tabs.sendMessage).toHaveBeenCalledWith(99, msg)
   })
 
-  it('logs an error when chrome.tabs.sendMessage rejects', async () => {
-    installChromeMock(true)
+  it('logs an error when browser.tabs.sendMessage rejects', async () => {
+    installBrowserMock(true)
 
     sendToTab(7, { type: 'auth_error', id: 'err-msg' })
 
@@ -87,6 +87,6 @@ describe('sendToTab', () => {
       'Blocked tab-bound message containing token material',
       { type: 'auth_error' },
     )
-    expect(chrome.tabs.sendMessage).not.toHaveBeenCalled()
+    expect(browser.tabs.sendMessage).not.toHaveBeenCalled()
   })
 })

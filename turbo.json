@@ -13,6 +13,11 @@
       "persistent": true,
       "env": ["VITE_*", "EXTENSION_ID"]
     },
+    "dev:firefox": {
+      "cache": false,
+      "persistent": true,
+      "env": ["VITE_*", "EXTENSION_ID"]
+    },
     "typecheck": {
       "dependsOn": ["^build"],
       "outputs": []

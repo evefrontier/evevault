@@ -1,6 +1,6 @@
-/// <reference types="chrome"/>
 /// <reference types="vite/client" />
 
+import { browser } from 'wxt/browser'
 import { handleMessage } from '../src/lib/background/handlers/messageHandler'
 import { handlePortConnection } from '../src/lib/background/handlers/portHandlers'
 import { ensureOffscreen } from '../src/lib/background/services/offscreenService'
@@ -11,8 +11,8 @@ export default defineBackground(() => {
   ensureOffscreen(false)
 
   // Set up message handling
-  chrome.runtime.onMessage.addListener(handleMessage)
+  browser.runtime.onMessage.addListener(handleMessage)
 
   // Set up port connections
-  chrome.runtime.onConnect.addListener(handlePortConnection)
+  browser.runtime.onConnect.addListener(handlePortConnection)
 })

@@ -7,6 +7,7 @@ import {
 } from '@evevault/shared/stores'
 import { createLogger } from '@evevault/shared/utils'
 import { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519'
+import { type Browser, browser } from 'wxt/browser'
 import { getAuthRequest } from '@/lib/background/services/oauthService'
 import { openPopupWindow } from '@/lib/background/services/popupWindow'
 import type { MessageWithId } from '@/lib/background/types'
@@ -43,7 +44,7 @@ const KEEPER_RETRY_DELAYS_MS = [
  */
 export async function handleExtLogin(
   message: MessageWithId,
-  _sender: chrome.runtime.MessageSender,
+  _sender: Browser.runtime.MessageSender,
   _sendResponse: (response?: unknown) => void,
 ): Promise<void> {
   const id = ensureMessageId(message)
@@ -280,11 +281,6 @@ async function handleOAuthResponse({
   currentChain: StoredChain
   tenantId: TenantId
 }) {
-  if (chrome.runtime.lastError) {
-    sendAuthError(id, chrome.runtime.lastError)
-    return
-  }
-
   if (!responseUrl) {
     sendAuthError(id, { message: 'No response URL received' })
     return
@@ -304,7 +300,7 @@ async function handleOAuthResponse({
 
     const jwtResponse = await exchangeCodeForToken(
       authCode,
-      chrome.identity.getRedirectURL(),
+      browser.identity.getRedirectURL(),
       tenantId,
       { codeVerifier, nonce },
     )
@@ -334,8 +330,8 @@ async function handleOAuthResponse({
 }
 
 /**
- * Starts Chrome's web auth flow and delegates async response handling without
- * returning a promise to the Chrome callback API.
+ * Starts the browser web auth flow and delegates async response handling.
+ * Rejections (user-cancel, no redirect) surface via sendAuthError.
  */
 function launchOAuthLogin({
   id,
@@ -354,9 +350,9 @@ function launchOAuthLogin({
   currentChain: StoredChain
   tenantId: TenantId
 }) {
-  chrome.identity.launchWebAuthFlow(
-    { url: authUrl.toString(), interactive: true },
-    (responseUrl) => {
+  browser.identity
+    .launchWebAuthFlow({ url: authUrl.toString(), interactive: true })
+    .then((responseUrl) => {
       void handleOAuthResponse({
         id,
         responseUrl,
@@ -366,6 +362,8 @@ function launchOAuthLogin({
         currentChain,
         tenantId,
       })
-    },
-  )
+    })
+    .catch((error) => {
+      sendAuthError(id, error)
+    })
 }

@@ -125,7 +125,7 @@ describe('SignPersonalMessage', () => {
     expect(screen.getByText('Hello world')).toBeInTheDocument()
   })
 
-  it('decodes a number-array message (post-chrome-storage serialization)', async () => {
+  it('decodes a number-array message (post-browser-storage serialization)', async () => {
     const encoded = Array.from(new TextEncoder().encode('Array msg'))
     stubPending({
       windowId: 1,
@@ -140,7 +140,7 @@ describe('SignPersonalMessage', () => {
   it('decodes a plain-object message with numeric keys', async () => {
     const text = 'Object msg'
     const bytes = new TextEncoder().encode(text)
-    // chrome.storage serialises Uint8Array as { '0': 72, '1': 101, ... }
+    // browser.storage serialises Uint8Array as { '0': 72, '1': 101, ... }
     const objectMsg = Object.fromEntries(
       [...bytes].map((v, i) => [String(i), v]),
     )

@@ -1,5 +1,6 @@
 import { SUI_PRIVATE_KEY_PREFIX } from '@mysten/sui/cryptography'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Browser } from 'wxt/browser'
 import {
   _handleLocalnetGetAddress,
   _handleLocalnetSetKeypair,
@@ -23,7 +24,7 @@ vi.mock('@evevault/shared/types', () => ({
   },
 }))
 
-const mockSender = {} as chrome.runtime.MessageSender
+const mockSender = {} as Browser.runtime.MessageSender
 
 function makeMessage(overrides: Partial<VaultMessage> = {}): VaultMessage {
   return {
@@ -32,8 +33,8 @@ function makeMessage(overrides: Partial<VaultMessage> = {}): VaultMessage {
   } as unknown as VaultMessage
 }
 
-function installChromeMock() {
-  globalThis.chrome = {
+function installBrowserMock() {
+  vi.stubGlobal('browser', {
     storage: {
       local: {
         get: vi.fn().mockResolvedValue({}),
@@ -41,12 +42,12 @@ function installChromeMock() {
         remove: vi.fn(),
       },
     },
-  } as unknown as typeof chrome
+  } as unknown as typeof browser)
 }
 
 describe('_handleLocalnetSetKeypair', () => {
   beforeEach(() => {
-    installChromeMock()
+    installBrowserMock()
     mockSendToKeeper.mockReset()
   })
 
@@ -75,7 +76,7 @@ describe('_handleLocalnetSetKeypair', () => {
       type: 'LOCALNET_SET_KEYPAIR',
       privateKey: `${SUI_PRIVATE_KEY_PREFIX}1abc`,
     })
-    expect(chrome.storage.local.set).toHaveBeenCalledWith({
+    expect(browser.storage.local.set).toHaveBeenCalledWith({
       'evevault:device': JSON.stringify({
         state: {
           localnet: {
@@ -86,7 +87,7 @@ describe('_handleLocalnetSetKeypair', () => {
         version: 0,
       }),
     })
-    expect(chrome.storage.local.remove).not.toHaveBeenCalled()
+    expect(browser.storage.local.remove).not.toHaveBeenCalled()
     expect(sendResponse).toHaveBeenCalledWith({
       ok: true,
       address: '0xabc',
@@ -104,7 +105,7 @@ describe('_handleLocalnetSetKeypair', () => {
     _handleLocalnetSetKeypair(message, mockSender, sendResponse)
     await new Promise((r) => setTimeout(r, 0))
 
-    expect(chrome.storage.local.set).not.toHaveBeenCalled()
+    expect(browser.storage.local.set).not.toHaveBeenCalled()
     expect(sendResponse).toHaveBeenCalledWith({
       ok: false,
       address: undefined,
@@ -122,7 +123,7 @@ describe('_handleLocalnetSetKeypair', () => {
     _handleLocalnetSetKeypair(message, mockSender, sendResponse)
     await new Promise((r) => setTimeout(r, 0))
 
-    expect(chrome.storage.local.set).not.toHaveBeenCalled()
+    expect(browser.storage.local.set).not.toHaveBeenCalled()
     expect(sendResponse).toHaveBeenCalledWith({
       ok: false,
       error: 'Keeper unavailable',
@@ -146,7 +147,7 @@ describe('_handleLocalnetSetKeypair', () => {
     )
     await new Promise((r) => setTimeout(r, 0))
 
-    const [[stored]] = (chrome.storage.local.set as ReturnType<typeof vi.fn>)
+    const [[stored]] = (browser.storage.local.set as ReturnType<typeof vi.fn>)
       .mock.calls
     const storedValue = JSON.parse(stored['evevault:device']).state.localnet
       .encryptedKey
@@ -163,7 +164,7 @@ describe('_handleLocalnetSetKeypair', () => {
 
 describe('_handleLocalnetGetAddress', () => {
   beforeEach(() => {
-    installChromeMock()
+    installBrowserMock()
     mockSendToKeeper.mockReset()
   })
 
@@ -197,7 +198,7 @@ describe('_handleLocalnetGetAddress', () => {
 
 describe('_handleLocalnetSignBytes', () => {
   beforeEach(() => {
-    installChromeMock()
+    installBrowserMock()
     mockSendToKeeper.mockReset()
   })
 

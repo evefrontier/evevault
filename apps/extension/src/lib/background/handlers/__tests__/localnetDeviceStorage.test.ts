@@ -8,14 +8,14 @@ import {
 const encryptedKey = { iv: 'iv', data: 'data', salt: 'salt' }
 
 function installChromeStorageMock(initialValue: unknown) {
-  vi.stubGlobal('chrome', {
+  vi.stubGlobal('browser', {
     storage: {
       local: {
         get: vi.fn().mockResolvedValue({ [DEVICE_STORAGE_KEY]: initialValue }),
         set: vi.fn().mockResolvedValue(undefined),
       },
     },
-  } as unknown as typeof chrome)
+  } as unknown as typeof browser)
 }
 
 describe('localnetDeviceStorage', () => {
@@ -95,7 +95,7 @@ describe('localnetDeviceStorage', () => {
 
     await writeEncryptedLocalnetKey(encryptedKey, '0xnew')
 
-    expect(chrome.storage.local.set).toHaveBeenCalledWith({
+    expect(browser.storage.local.set).toHaveBeenCalledWith({
       [DEVICE_STORAGE_KEY]: JSON.stringify({
         state: {
           anotherField: 'preserved',

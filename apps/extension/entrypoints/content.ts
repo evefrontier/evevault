@@ -1,6 +1,7 @@
 import { WalletStandardMessageTypes } from '@evevault/shared/types'
 import { createLogger, hasNoTokenMaterial } from '@evevault/shared/utils'
 import { CONTEXT_STORAGE_KEY } from '@evevault/shared/utils/storageKeys'
+import { browser } from 'wxt/browser'
 
 const log = createLogger()
 const PUBLIC_WALLET_ACTIONS = new Set<string>([
@@ -244,23 +245,19 @@ function postToPage(message: Record<string, unknown>): void {
   window.postMessage(message, targetOrigin)
 }
 
-function resolveCurrentChain(): Promise<string> {
-  return new Promise((resolve) => {
-    chrome.storage.local.get([CONTEXT_STORAGE_KEY], (result) => {
-      let chain = 'sui:testnet'
-      try {
-        const stored = result[CONTEXT_STORAGE_KEY]
-        if (stored) {
-          const parsed =
-            typeof stored === 'string' ? JSON.parse(stored) : stored
-          if (parsed?.state?.chain) chain = parsed.state.chain
-        }
-      } catch {
-        // fall back to testnet
-      }
-      resolve(chain)
-    })
-  })
+async function resolveCurrentChain(): Promise<string> {
+  let chain = 'sui:testnet'
+  try {
+    const result = await browser.storage.local.get([CONTEXT_STORAGE_KEY])
+    const stored = result[CONTEXT_STORAGE_KEY]
+    if (stored) {
+      const parsed = typeof stored === 'string' ? JSON.parse(stored) : stored
+      if (parsed?.state?.chain) chain = parsed.state.chain
+    }
+  } catch {
+    // fall back to testnet
+  }
+  return chain
 }
 
 async function handleGetCurrentChain() {
@@ -284,7 +281,9 @@ export function handleWindowMessage(event: MessageEvent) {
   }
 
   if (isAllowedPageMessage(data)) {
-    chrome.runtime.sendMessage(data)
+    // Fire-and-forget to the background; ignore rejection when it's unavailable
+    // (e.g. mid-reload) rather than surfacing an unhandled promise rejection.
+    void browser.runtime.sendMessage(data).catch(() => {})
   }
 }
 
@@ -305,10 +304,10 @@ export default defineContentScript({
     log.info('Eve Vault content script loaded')
 
     const injectScript = document.createElement('script')
-    injectScript.src = chrome.runtime.getURL('injected.js')
+    injectScript.src = browser.runtime.getURL('/injected.js')
     ;(document.head || document.documentElement).appendChild(injectScript)
 
     window.addEventListener('message', handleWindowMessage)
-    chrome.runtime.onMessage.addListener(forwardToPage)
+    browser.runtime.onMessage.addListener(forwardToPage)
   },
 })

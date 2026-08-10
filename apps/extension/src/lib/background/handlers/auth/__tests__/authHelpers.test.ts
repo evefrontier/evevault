@@ -30,24 +30,24 @@ vi.mock('jose', () => ({
   decodeJwt: mockDecodeJwt,
 }))
 
-function installChromeMock() {
-  vi.stubGlobal('chrome', {
+function installBrowserMock() {
+  vi.stubGlobal('browser', {
     runtime: {
-      sendMessage: vi.fn(),
+      sendMessage: vi.fn().mockResolvedValue(undefined),
     },
     storage: {
       local: {
-        get: vi.fn(),
+        get: vi.fn(() => Promise.resolve({})),
       },
     },
     tabs: {
-      sendMessage: vi.fn(),
+      sendMessage: vi.fn().mockResolvedValue(undefined),
     },
-  } as unknown as typeof chrome)
+  } as unknown as typeof browser)
 }
 
 beforeEach(() => {
-  installChromeMock()
+  installBrowserMock()
   vi.clearAllMocks()
   mockDecodeJwt.mockReturnValue({
     email: 'user@example.com',
@@ -151,10 +151,8 @@ describe('buildExtensionAuthSuccessToken', () => {
 describe('getCurrentChainFromStorage', () => {
   it('resolves chain from stored JSON string', async () => {
     const stored = JSON.stringify({ state: { chain: 'sui:mainnet' } })
-    ;(chrome.storage.local.get as ReturnType<typeof vi.fn>).mockImplementation(
-      (_keys: unknown, callback: (result: Record<string, unknown>) => void) => {
-        callback({ [CONTEXT_STORAGE_KEY]: stored })
-      },
+    ;(browser.storage.local.get as ReturnType<typeof vi.fn>).mockImplementation(
+      () => Promise.resolve({ [CONTEXT_STORAGE_KEY]: stored }),
     )
 
     const chain = await getCurrentChainFromStorage()
@@ -163,10 +161,8 @@ describe('getCurrentChainFromStorage', () => {
 
   it('resolves chain from stored object (already parsed)', async () => {
     const stored = { state: { chain: 'sui:devnet' } }
-    ;(chrome.storage.local.get as ReturnType<typeof vi.fn>).mockImplementation(
-      (_keys: unknown, callback: (result: Record<string, unknown>) => void) => {
-        callback({ [CONTEXT_STORAGE_KEY]: stored })
-      },
+    ;(browser.storage.local.get as ReturnType<typeof vi.fn>).mockImplementation(
+      () => Promise.resolve({ [CONTEXT_STORAGE_KEY]: stored }),
     )
 
     const chain = await getCurrentChainFromStorage()
@@ -175,10 +171,8 @@ describe('getCurrentChainFromStorage', () => {
 
   it('falls back to Zustand when storage returns nothing', async () => {
     mockGetChain.mockReturnValue('sui:mainnet')
-    ;(chrome.storage.local.get as ReturnType<typeof vi.fn>).mockImplementation(
-      (_keys: unknown, callback: (result: Record<string, unknown>) => void) => {
-        callback({})
-      },
+    ;(browser.storage.local.get as ReturnType<typeof vi.fn>).mockImplementation(
+      () => Promise.resolve({}),
     )
 
     const chain = await getCurrentChainFromStorage()
@@ -187,10 +181,8 @@ describe('getCurrentChainFromStorage', () => {
 
   it('falls back to Zustand when stored value has no chain field', async () => {
     mockGetChain.mockReturnValue('sui:devnet')
-    ;(chrome.storage.local.get as ReturnType<typeof vi.fn>).mockImplementation(
-      (_keys: unknown, callback: (result: Record<string, unknown>) => void) => {
-        callback({ [CONTEXT_STORAGE_KEY]: { state: {} } })
-      },
+    ;(browser.storage.local.get as ReturnType<typeof vi.fn>).mockImplementation(
+      () => Promise.resolve({ [CONTEXT_STORAGE_KEY]: { state: {} } }),
     )
 
     const chain = await getCurrentChainFromStorage()
@@ -199,10 +191,8 @@ describe('getCurrentChainFromStorage', () => {
 
   it('falls back to Zustand when JSON.parse throws', async () => {
     mockGetChain.mockReturnValue('sui:localnet')
-    ;(chrome.storage.local.get as ReturnType<typeof vi.fn>).mockImplementation(
-      (_keys: unknown, callback: (result: Record<string, unknown>) => void) => {
-        callback({ [CONTEXT_STORAGE_KEY]: 'not-valid-json{{{' })
-      },
+    ;(browser.storage.local.get as ReturnType<typeof vi.fn>).mockImplementation(
+      () => Promise.resolve({ [CONTEXT_STORAGE_KEY]: 'not-valid-json{{{' }),
     )
 
     const chain = await getCurrentChainFromStorage()
@@ -211,7 +201,7 @@ describe('getCurrentChainFromStorage', () => {
 })
 
 describe('sendExtensionAuthSuccess', () => {
-  it('sends an AUTH_SUCCESS message via chrome.runtime.sendMessage', () => {
+  it('sends an AUTH_SUCCESS message via browser.runtime.sendMessage', () => {
     const jwt = {
       access_token: 'a',
       id_token: 'i',
@@ -226,7 +216,7 @@ describe('sendExtensionAuthSuccess', () => {
 
     sendExtensionAuthSuccess('msg-id', jwt)
 
-    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(
+    expect(browser.runtime.sendMessage).toHaveBeenCalledWith(
       expect.objectContaining({
         id: 'msg-id',
         type: 'auth_success',
@@ -247,9 +237,9 @@ describe('sendExtensionAuthSuccess', () => {
 })
 
 describe('sendAuthError', () => {
-  it('sends an auth_error message via chrome.runtime.sendMessage', () => {
+  it('sends an auth_error message via browser.runtime.sendMessage', () => {
     sendAuthError('err-id', { message: 'something went wrong' })
-    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith({
+    expect(browser.runtime.sendMessage).toHaveBeenCalledWith({
       id: 'err-id',
       type: 'auth_error',
       error: { message: 'something went wrong' },

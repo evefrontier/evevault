@@ -19,13 +19,13 @@ describe('getAuthRequest', () => {
       serverUrl: 'https://auth.example.com/',
     })
 
-    globalThis.chrome = {
+    vi.stubGlobal('browser', {
       identity: {
         getRedirectURL: vi.fn(
           () => 'https://extension.chromiumapp.org/callback',
         ),
       },
-    } as unknown as typeof chrome
+    } as unknown as typeof browser)
   })
 
   afterEach(() => {

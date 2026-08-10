@@ -18,7 +18,7 @@ export type KeeperHandler = (
  *   const { dispatch, rawDispatch, unlockVault } = ctx;
  *
  *   beforeAll(async () => {
- *     vi.stubGlobal("chrome", {
+ *     vi.stubGlobal("browser", {
  *       runtime: {
  *         onMessage: { addListener: ctx.captureHandler },
  *         sendMessage: vi.fn().mockResolvedValue(undefined),
@@ -100,16 +100,16 @@ export function setupKeeperSuite(
   ctx: ReturnType<typeof createKeeperTestContext>,
 ) {
   beforeAll(async () => {
-    // chrome must exist before keeper.ts loads because it calls
-    // chrome.runtime.onMessage.addListener() at module scope.
-    vi.stubGlobal('chrome', {
+    // browser must exist before keeper.ts loads because it calls
+    // browser.runtime.onMessage.addListener() at module scope.
+    vi.stubGlobal('browser', {
       runtime: {
         id: 'test-extension-id',
         onMessage: { addListener: ctx.captureHandler },
         sendMessage: vi.fn().mockResolvedValue(undefined),
       },
     })
-    // Dynamic import so the chrome stub is in place when the module registers
+    // Dynamic import so the browser stub is in place when the module registers
     // its listener. This exercises the real message-handler registration.
     await import('../keeper')
   })

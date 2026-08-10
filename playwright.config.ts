@@ -1,32 +1,34 @@
-import { defineConfig, devices } from "@playwright/test";
+import { defineConfig, devices } from '@playwright/test'
 
 /**
  * Playwright configuration for E2E smoke tests.
  * This file intentionally ships without test files—add them per feature once flows are ready.
  */
 export default defineConfig({
-  testDir: "./tests/e2e",
+  testDir: './tests/e2e',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: "html",
+  reporter: 'html',
   use: {
-    baseURL: "http://localhost:3001",
-    trace: "on-first-retry",
-    screenshot: "only-on-failure",
-    video: "retain-on-failure",
+    // TODO: web dev port moved to 3005; update this and webServer.url
+    // to 3005 (currently no e2e test files exist, so this is dormant).
+    baseURL: 'http://localhost:3001',
+    trace: 'on-first-retry',
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
   },
   projects: [
     {
-      name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
     },
   ],
   webServer: {
-    command: "bun run dev:web",
-    url: "http://localhost:3001",
+    command: 'bun run dev:web',
+    url: 'http://localhost:3001',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },
-});
+})
