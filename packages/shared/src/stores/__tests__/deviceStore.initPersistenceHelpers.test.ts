@@ -74,13 +74,11 @@ function persistedState(
   } as PersistedDeviceStoreState
 }
 
-function stubChromeStorage(value: unknown) {
-  vi.stubGlobal('chrome', {
+function stubBrowserStorage(value: unknown) {
+  vi.stubGlobal('browser', {
     storage: {
       local: {
-        get: vi.fn((_keys: string[], callback: (result: unknown) => void) => {
-          callback({ [DEVICE_STORAGE_KEY]: value })
-        }),
+        get: vi.fn(async () => ({ [DEVICE_STORAGE_KEY]: value })),
       },
     },
   })
@@ -102,20 +100,20 @@ describe('initPersistenceHelpers', () => {
 
   it('reads persisted state from string storage', async () => {
     const state = persistedState()
-    stubChromeStorage(JSON.stringify({ state }))
+    stubBrowserStorage(JSON.stringify({ state }))
 
     await expect(readPersistedDeviceStoreState()).resolves.toEqual(state)
   })
 
   it('reads persisted state from object storage', async () => {
     const state = persistedState()
-    stubChromeStorage({ state })
+    stubBrowserStorage({ state })
 
     await expect(readPersistedDeviceStoreState()).resolves.toEqual(state)
   })
 
   it('returns null when no persisted store exists', async () => {
-    stubChromeStorage(null)
+    stubBrowserStorage(null)
 
     await expect(readPersistedDeviceStoreState()).resolves.toBeNull()
   })
@@ -123,7 +121,7 @@ describe('initPersistenceHelpers', () => {
   it('rehydrates extension state when persisted randomness and secret key exist', async () => {
     const state = persistedState()
     const set = vi.fn()
-    stubChromeStorage({ state })
+    stubBrowserStorage({ state })
 
     const result = await tryRehydrateExtensionDevice({
       pin: '123456',
@@ -160,7 +158,7 @@ describe('initPersistenceHelpers', () => {
   it('falls back to current randomness for non-zkLogin chains', async () => {
     const state = persistedState({ networkData: {} })
     const set = vi.fn()
-    stubChromeStorage({ state })
+    stubBrowserStorage({ state })
 
     const result = await tryRehydrateExtensionDevice({
       pin: '123456',
@@ -177,7 +175,7 @@ describe('initPersistenceHelpers', () => {
 
   it('does not rehydrate when randomness or secret key cannot be resolved', async () => {
     mockResolveStoredSecretKey.mockResolvedValue(null)
-    stubChromeStorage({ state: persistedState({ networkData: {} }) })
+    stubBrowserStorage({ state: persistedState({ networkData: {} }) })
     const set = vi.fn()
 
     const result = await tryRehydrateExtensionDevice({
@@ -198,7 +196,7 @@ describe('initPersistenceHelpers', () => {
   })
 
   it('returns the current state when persisted storage is absent or invalid', async () => {
-    stubChromeStorage('not-json')
+    stubBrowserStorage('not-json')
     const set = vi.fn()
 
     const result = await tryRehydrateExtensionDevice({
@@ -224,7 +222,7 @@ describe('initPersistenceHelpers', () => {
 
   it('logs secret key resolution failures separately from parse failures', async () => {
     mockResolveStoredSecretKey.mockRejectedValue(new Error('decrypt failed'))
-    stubChromeStorage({ state: persistedState() })
+    stubBrowserStorage({ state: persistedState() })
     const set = vi.fn()
 
     const result = await tryRehydrateExtensionDevice({

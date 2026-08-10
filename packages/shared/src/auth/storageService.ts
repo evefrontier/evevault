@@ -1,5 +1,6 @@
 import type { SuiChain } from '@mysten/wallet-standard'
 import { SUI_TESTNET_CHAIN } from '@mysten/wallet-standard'
+import { browser } from '@wxt-dev/browser'
 import { useContextStore } from '#/stores/contextStore'
 import type { JwtResponse, OAuthTokenResponse } from '#/types'
 import { isExtension, isWeb } from '#/utils/environment'
@@ -24,14 +25,10 @@ type JwtStorage = {
  * In web context returns the default chain; call only from extension when possible.
  */
 export async function getStoredChain(): Promise<SuiChain> {
-  if (
-    !isExtension() ||
-    typeof chrome === 'undefined' ||
-    !chrome.storage?.local
-  ) {
+  if (!isExtension() || !browser?.storage?.local) {
     return SUI_TESTNET_CHAIN
   }
-  const result = await chrome.storage.local.get([CONTEXT_STORAGE_KEY])
+  const result = await browser.storage.local.get([CONTEXT_STORAGE_KEY])
   const raw = result[CONTEXT_STORAGE_KEY]
   if (typeof raw !== 'string') {
     return SUI_TESTNET_CHAIN
@@ -46,13 +43,13 @@ export async function getStoredChain(): Promise<SuiChain> {
 }
 
 function getSessionStorage() {
-  if (typeof chrome === 'undefined' || !chrome.storage?.session) {
+  if (!browser?.storage?.session) {
     log.warn(
-      'chrome.storage.session unavailable — JWT will not persist this session',
+      'browser.storage.session unavailable — JWT will not persist this session',
     )
     return null
   }
-  return chrome.storage.session
+  return browser.storage.session
 }
 
 async function readJwtStorage(): Promise<JwtStorage | null> {

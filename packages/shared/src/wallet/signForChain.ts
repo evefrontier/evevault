@@ -1,5 +1,6 @@
 import type { IntentScope } from '@mysten/sui/cryptography'
 import { SUI_LOCALNET_CHAIN, type SuiChain } from '@mysten/wallet-standard'
+import { browser } from '@wxt-dev/browser'
 import { VaultMessageTypes } from '#/types'
 import type { ZkSignAnyParams } from '#/types/wallet'
 import { toErrorMessage } from '#/utils/errorMessage'
@@ -26,7 +27,7 @@ export async function signForChain(
       )
     }
 
-    if (typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) {
+    if (!browser?.runtime?.sendMessage) {
       throw new Error(
         '[signForChain] Localnet signing is only available in the extension.',
       )
@@ -34,7 +35,7 @@ export async function signForChain(
 
     try {
       // Extension: Use background script
-      const response = (await chrome.runtime.sendMessage({
+      const response = (await browser.runtime.sendMessage({
         type: VaultMessageTypes.LOCALNET_SIGN_BYTES,
         msgBytes: Array.from(msgBytes), // Convert Uint8Array to array for serialization
         scope,

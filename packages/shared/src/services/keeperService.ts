@@ -1,5 +1,6 @@
 import { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519'
 import type { SuiChain } from '@mysten/wallet-standard'
+import { browser } from '@wxt-dev/browser'
 import { VaultMessageTypes, type VaultResponse } from '#/types/messages'
 import type { StoredSecretKey } from '#/types/stores'
 import type { ZkProofResponse } from '#/types/zkLogin'
@@ -11,7 +12,7 @@ const log = createLogger()
 const sendVaultMessage = async (
   message: Record<string, unknown>,
 ): Promise<VaultResponse | undefined> => {
-  return (await chrome.runtime?.sendMessage?.(message)) as
+  return (await browser.runtime?.sendMessage?.(message)) as
     | VaultResponse
     | undefined
 }
@@ -46,7 +47,7 @@ export const ephKeyService = {
 
     log.debug('[ephKeyService] Unlocking vault')
 
-    const res = (await chrome.runtime?.sendMessage?.({
+    const res = (await browser.runtime?.sendMessage?.({
       type: VaultMessageTypes.UNLOCK_VAULT,
       hashedSecretKey: hashedSecretKey,
       pin: pin,
@@ -90,7 +91,7 @@ export const ephKeyService = {
   }> {
     log.debug('[ephKeyService] Creating ephemeral key pair')
 
-    const res = (await chrome.runtime?.sendMessage?.({
+    const res = (await browser.runtime?.sendMessage?.({
       type: VaultMessageTypes.CREATE_KEYPAIR,
       pin,
     })) as VaultResponse | undefined
@@ -119,7 +120,7 @@ export const ephKeyService = {
   }> {
     log.debug('[ephKeyService] Rotating ephemeral key pair')
 
-    const res = (await chrome.runtime?.sendMessage?.({
+    const res = (await browser.runtime?.sendMessage?.({
       type: VaultMessageTypes.ROTATE_KEYPAIR,
     })) as VaultResponse | undefined
 
@@ -141,7 +142,7 @@ export const ephKeyService = {
    * Gets the current ephemeral public key from the offscreen keeper
    */
   async getEphemeralPublicKey(): Promise<Ed25519PublicKey | null> {
-    const res = (await chrome.runtime?.sendMessage?.({
+    const res = (await browser.runtime?.sendMessage?.({
       type: VaultMessageTypes.GET_PUBLIC_KEY,
     })) as VaultResponse | undefined
 
@@ -160,7 +161,7 @@ export const ephKeyService = {
    * Ms left on the keeper's unlock window (0 if locked/unavailable).
    */
   async getUnlockRemainingMs(): Promise<number> {
-    const res = (await chrome.runtime?.sendMessage?.({
+    const res = (await browser.runtime?.sendMessage?.({
       type: VaultMessageTypes.GET_UNLOCK_REMAINING,
     })) as VaultResponse | undefined
     return res?.ok ? (res.remainingMs ?? 0) : 0
@@ -174,7 +175,7 @@ export const zkProofService = {
   async setZkProof(chain: SuiChain, zkProof: ZkProofResponse): Promise<void> {
     log.debug('[ephKeyService] Setting zkProof for chain', chain)
 
-    const res = (await chrome.runtime?.sendMessage?.({
+    const res = (await browser.runtime?.sendMessage?.({
       type: VaultMessageTypes.SET_ZKPROOF,
       chain,
       zkProof,
@@ -196,7 +197,7 @@ export const zkProofService = {
   async getZkProof(chain: SuiChain): Promise<ZkProofResponse | null> {
     log.debug('[ephKeyService] Getting zkProof for chain', chain)
 
-    const res = (await chrome.runtime?.sendMessage?.({
+    const res = (await browser.runtime?.sendMessage?.({
       type: VaultMessageTypes.GET_ZKPROOF,
       chain,
     })) as VaultResponse | undefined
@@ -238,7 +239,7 @@ export const localnetKeyService = {
   async setKeypairFromPrivateKey(
     privateKey: string,
   ): Promise<{ address: string }> {
-    const res = (await chrome.runtime?.sendMessage?.({
+    const res = (await browser.runtime?.sendMessage?.({
       type: VaultMessageTypes.LOCALNET_SET_KEYPAIR,
       privateKey,
     })) as { ok?: boolean; address?: string; error?: string } | undefined
@@ -251,7 +252,7 @@ export const localnetKeyService = {
 
   /** Returns the Sui address for the currently loaded localnet keypair, or null if none set. */
   async getAddress(): Promise<string | null> {
-    const res = (await chrome.runtime?.sendMessage?.({
+    const res = (await browser.runtime?.sendMessage?.({
       type: VaultMessageTypes.LOCALNET_GET_ADDRESS,
     })) as { ok?: boolean; address?: string } | undefined
 

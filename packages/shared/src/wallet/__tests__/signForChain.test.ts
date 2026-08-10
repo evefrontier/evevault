@@ -9,7 +9,7 @@ import { SUI_LOCALNET_CHAIN, SUI_TESTNET_CHAIN } from '@mysten/wallet-standard'
 import { signForChain } from '#/wallet/signForChain'
 import { zkSignAny } from '#/wallet/zkSignAny'
 
-type ChromeStub = { runtime?: { sendMessage?: unknown } }
+type BrowserStub = { runtime?: { sendMessage?: unknown } }
 
 const MSG = new Uint8Array([1, 2, 3])
 const LOCALNET = SUI_LOCALNET_CHAIN
@@ -20,19 +20,19 @@ const minimalUser = {
   profile: { sui_address: '0x1', salt: '1', sub: 'sub', aud: 'aud' },
 } as unknown as User
 
-function setChrome(sendMessage: unknown) {
-  ;(globalThis as unknown as { chrome: ChromeStub }).chrome = {
+function setBrowser(sendMessage: unknown) {
+  ;(globalThis as unknown as { browser: BrowserStub }).browser = {
     runtime: { sendMessage },
   }
 }
 
-function clearChrome() {
-  delete (globalThis as unknown as { chrome?: ChromeStub }).chrome
+function clearBrowser() {
+  delete (globalThis as unknown as { browser?: BrowserStub }).browser
 }
 
 describe('signForChain — localnet path', () => {
   afterEach(() => {
-    clearChrome()
+    clearBrowser()
     vi.clearAllMocks()
   })
 
@@ -47,8 +47,8 @@ describe('signForChain — localnet path', () => {
     ).rejects.toThrow('[signForChain] No localnet address')
   })
 
-  it('throws when chrome.runtime returns no response', async () => {
-    setChrome(vi.fn().mockResolvedValue(undefined))
+  it('throws when browser.runtime returns no response', async () => {
+    setBrowser(vi.fn().mockResolvedValue(undefined))
 
     await expect(
       signForChain('PersonalMessage', MSG, {
@@ -61,7 +61,7 @@ describe('signForChain — localnet path', () => {
   })
 
   it('throws with response.error when ok is false', async () => {
-    setChrome(vi.fn().mockResolvedValue({ ok: false, error: 'keeper locked' }))
+    setBrowser(vi.fn().mockResolvedValue({ ok: false, error: 'keeper locked' }))
 
     await expect(
       signForChain('PersonalMessage', MSG, {
@@ -74,7 +74,7 @@ describe('signForChain — localnet path', () => {
   })
 
   it('unwraps structured response errors instead of stringifying objects', async () => {
-    setChrome(
+    setBrowser(
       vi.fn().mockResolvedValue({
         ok: false,
         error: { message: 'keeper object failure' },
@@ -92,7 +92,7 @@ describe('signForChain — localnet path', () => {
   })
 
   it("throws 'Failed to sign bytes' when ok is false and no error field", async () => {
-    setChrome(vi.fn().mockResolvedValue({ ok: false }))
+    setBrowser(vi.fn().mockResolvedValue({ ok: false }))
 
     await expect(
       signForChain('PersonalMessage', MSG, {
@@ -105,7 +105,7 @@ describe('signForChain — localnet path', () => {
   })
 
   it('returns { bytes, signature } on success', async () => {
-    setChrome(
+    setBrowser(
       vi.fn().mockResolvedValue({
         ok: true,
         bytes: 'b64bytes',
@@ -129,7 +129,7 @@ describe('signForChain — localnet path', () => {
       bytes: 'b',
       signature: 's',
     })
-    setChrome(sendMessage)
+    setBrowser(sendMessage)
 
     await signForChain('PersonalMessage', MSG, {
       chain: LOCALNET,

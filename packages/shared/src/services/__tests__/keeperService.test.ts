@@ -2,9 +2,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ephKeyService } from '#/services/keeperService'
 import { VaultMessageTypes } from '#/types/messages'
 
-// Mock chrome.runtime.sendMessage
+// Mock browser.runtime.sendMessage
 const mockSendMessage = vi.fn()
-;(global as unknown as { chrome: unknown }).chrome = {
+;(global as unknown as { browser: unknown }).browser = {
   runtime: {
     sendMessage: mockSendMessage,
   },
