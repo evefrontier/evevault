@@ -21,10 +21,11 @@ function getOwnOrigin(): string | undefined {
 }
 
 /**
- * Identifies messages that originate from this extension rather than a web
- * page. Fails closed: a sender is trusted only when it carries a URL under this
- * extension's own origin. Senders with no identifying metadata are NOT trusted,
- * so the privileged extension-only routes can't be reached without provenance.
+ * Identifies messages from this extension rather than a web page. Fails closed:
+ * trusted only when the sender URL is under this extension's own origin; no
+ * metadata → rejected. When the own origin is unknown (no `getURL`), falls back
+ * to any `chrome-extension://` / `moz-extension://` URL — a degraded path not
+ * reached from the background, where routes are actually gated.
  */
 export function isExtensionSender(sender: MsgSender): boolean {
   const ownOrigin = getOwnOrigin()
