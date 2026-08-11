@@ -58,8 +58,8 @@ function installBrowserMock(
   vi.stubGlobal('browser', {
     storage: {
       local: {
-        set: vi.fn(() => Promise.resolve()),
-        remove: vi.fn(() => Promise.resolve()),
+        set: vi.fn(async () => undefined),
+        remove: vi.fn(async () => undefined),
       },
       onChanged: {
         addListener: vi.fn((fn: StorageListener) => {
@@ -69,7 +69,7 @@ function installBrowserMock(
       },
     },
     tabs: {
-      sendMessage: sendMessageImpl ?? vi.fn(() => Promise.resolve()),
+      sendMessage: sendMessageImpl ?? vi.fn(async () => undefined),
     },
   } as unknown as typeof browser)
 }
@@ -277,7 +277,9 @@ describe('handleApprovePopup', () => {
     })
 
     it('logs when tabs.sendMessage rejects on sign_success', async () => {
-      const sendMessage = vi.fn(() => Promise.reject(new Error('tab gone')))
+      const sendMessage = vi.fn(async () => {
+        throw new Error('tab gone')
+      })
       installBrowserMock(storageListeners, sendMessage)
       mockOpenPopupWindow.mockResolvedValue(99)
 
@@ -304,7 +306,9 @@ describe('handleApprovePopup', () => {
     })
 
     it('logs when tabs.sendMessage rejects for incomplete sign-and-execute result', async () => {
-      const sendMessage = vi.fn(() => Promise.reject(new Error('tab gone')))
+      const sendMessage = vi.fn(async () => {
+        throw new Error('tab gone')
+      })
       installBrowserMock(storageListeners, sendMessage)
       mockOpenPopupWindow.mockResolvedValue(99)
 
@@ -331,7 +335,9 @@ describe('handleApprovePopup', () => {
     })
 
     it('logs when tabs.sendMessage rejects for sign-and-execute success', async () => {
-      const sendMessage = vi.fn(() => Promise.reject(new Error('tab gone')))
+      const sendMessage = vi.fn(async () => {
+        throw new Error('tab gone')
+      })
       installBrowserMock(storageListeners, sendMessage)
       mockOpenPopupWindow.mockResolvedValue(99)
 
@@ -492,7 +498,9 @@ describe('handleApprovePopup', () => {
     })
 
     it('logs when tabs.sendMessage rejects for mapped error type', async () => {
-      const sendMessage = vi.fn(() => Promise.reject(new Error('tab gone')))
+      const sendMessage = vi.fn(async () => {
+        throw new Error('tab gone')
+      })
       installBrowserMock(storageListeners, sendMessage)
       mockOpenPopupWindow.mockResolvedValue(99)
 
@@ -510,7 +518,9 @@ describe('handleApprovePopup', () => {
     })
 
     it('logs when tabs.sendMessage rejects for sign-and-execute error result', async () => {
-      const sendMessage = vi.fn(() => Promise.reject(new Error('tab gone')))
+      const sendMessage = vi.fn(async () => {
+        throw new Error('tab gone')
+      })
       installBrowserMock(storageListeners, sendMessage)
       mockOpenPopupWindow.mockResolvedValue(99)
 

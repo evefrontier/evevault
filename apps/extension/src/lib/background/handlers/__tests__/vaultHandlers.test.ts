@@ -39,7 +39,7 @@ function stubKeeperBridge(keeperResponse: unknown = { ok: true }) {
       },
     },
     runtime: {
-      sendMessage: vi.fn(() => Promise.resolve(keeperResponse)),
+      sendMessage: vi.fn(async () => keeperResponse),
       lastError: undefined,
     },
   } as unknown as typeof browser)

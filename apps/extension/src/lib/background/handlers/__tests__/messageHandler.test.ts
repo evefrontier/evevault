@@ -83,8 +83,8 @@ function installBrowserMock() {
       id: 'extension-id',
     },
     tabs: {
-      query: vi.fn(() => Promise.resolve([{ id: 1 }, { id: 2 }])),
-      sendMessage: vi.fn(() => Promise.resolve()),
+      query: vi.fn(async () => [{ id: 1 }, { id: 2 }]),
+      sendMessage: vi.fn(async () => undefined),
     },
   } as unknown as typeof browser)
 }

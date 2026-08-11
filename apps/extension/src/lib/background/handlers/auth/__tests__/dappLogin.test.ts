@@ -108,7 +108,7 @@ const mockCheckKeeperUnlocked = vi.mocked(checkKeeperUnlocked)
 function installBrowserMock() {
   vi.stubGlobal('browser', {
     tabs: {
-      sendMessage: vi.fn(() => Promise.resolve()),
+      sendMessage: vi.fn(async () => undefined),
     },
     identity: {
       getRedirectURL: vi.fn(() => 'chrome-extension://extension-id/callback'),

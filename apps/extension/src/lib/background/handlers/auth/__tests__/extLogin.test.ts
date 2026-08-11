@@ -128,7 +128,7 @@ function installChromeIdentityMock(responseUrl: string | undefined) {
     },
     identity: {
       getRedirectURL: vi.fn(() => 'https://extension.example/callback'),
-      launchWebAuthFlow: vi.fn(() => Promise.resolve(responseUrl)),
+      launchWebAuthFlow: vi.fn(async () => responseUrl),
     },
   } as unknown as typeof browser)
 }
@@ -387,7 +387,9 @@ describe('handleExtLogin', () => {
       runtime: {},
       identity: {
         getRedirectURL: vi.fn(() => 'https://extension.example/callback'),
-        launchWebAuthFlow: vi.fn(() => Promise.reject(rejection)),
+        launchWebAuthFlow: vi.fn(async () => {
+          throw rejection
+        }),
       },
     } as unknown as typeof browser)
 
