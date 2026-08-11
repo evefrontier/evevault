@@ -37,7 +37,7 @@ function installBrowserMock() {
     },
     storage: {
       local: {
-        get: vi.fn(() => Promise.resolve({})),
+        get: vi.fn(async () => ({})),
       },
     },
     tabs: {
@@ -152,7 +152,7 @@ describe('getCurrentChainFromStorage', () => {
   it('resolves chain from stored JSON string', async () => {
     const stored = JSON.stringify({ state: { chain: 'sui:mainnet' } })
     ;(browser.storage.local.get as ReturnType<typeof vi.fn>).mockImplementation(
-      () => Promise.resolve({ [CONTEXT_STORAGE_KEY]: stored }),
+      async () => ({ [CONTEXT_STORAGE_KEY]: stored }),
     )
 
     const chain = await getCurrentChainFromStorage()
@@ -162,7 +162,7 @@ describe('getCurrentChainFromStorage', () => {
   it('resolves chain from stored object (already parsed)', async () => {
     const stored = { state: { chain: 'sui:devnet' } }
     ;(browser.storage.local.get as ReturnType<typeof vi.fn>).mockImplementation(
-      () => Promise.resolve({ [CONTEXT_STORAGE_KEY]: stored }),
+      async () => ({ [CONTEXT_STORAGE_KEY]: stored }),
     )
 
     const chain = await getCurrentChainFromStorage()
@@ -172,7 +172,7 @@ describe('getCurrentChainFromStorage', () => {
   it('falls back to Zustand when storage returns nothing', async () => {
     mockGetChain.mockReturnValue('sui:mainnet')
     ;(browser.storage.local.get as ReturnType<typeof vi.fn>).mockImplementation(
-      () => Promise.resolve({}),
+      async () => ({}),
     )
 
     const chain = await getCurrentChainFromStorage()
@@ -182,7 +182,7 @@ describe('getCurrentChainFromStorage', () => {
   it('falls back to Zustand when stored value has no chain field', async () => {
     mockGetChain.mockReturnValue('sui:devnet')
     ;(browser.storage.local.get as ReturnType<typeof vi.fn>).mockImplementation(
-      () => Promise.resolve({ [CONTEXT_STORAGE_KEY]: { state: {} } }),
+      async () => ({ [CONTEXT_STORAGE_KEY]: { state: {} } }),
     )
 
     const chain = await getCurrentChainFromStorage()
@@ -192,7 +192,7 @@ describe('getCurrentChainFromStorage', () => {
   it('falls back to Zustand when JSON.parse throws', async () => {
     mockGetChain.mockReturnValue('sui:localnet')
     ;(browser.storage.local.get as ReturnType<typeof vi.fn>).mockImplementation(
-      () => Promise.resolve({ [CONTEXT_STORAGE_KEY]: 'not-valid-json{{{' }),
+      async () => ({ [CONTEXT_STORAGE_KEY]: 'not-valid-json{{{' }),
     )
 
     const chain = await getCurrentChainFromStorage()

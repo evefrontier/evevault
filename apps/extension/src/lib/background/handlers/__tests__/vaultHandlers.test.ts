@@ -18,10 +18,6 @@ vi.mock('@/lib/background/handlers/authHandlers', () => ({
   checkPendingAuthAfterUnlock: vi.fn(),
 }))
 
-vi.mock('@/lib/background/services/offscreenService', () => ({
-  ensureOffscreen: vi.fn().mockResolvedValue(undefined),
-}))
-
 const mockSender = {} as Browser.runtime.MessageSender
 
 function makeMessage(overrides: Partial<VaultMessage> = {}): VaultMessage {
@@ -30,6 +26,11 @@ function makeMessage(overrides: Partial<VaultMessage> = {}): VaultMessage {
 
 function stubKeeperBridge(keeperResponse: unknown = { ok: true }) {
   vi.stubGlobal('browser', {
+    // KeeperHost.ensureReady checks the offscreen document; a present document
+    // skips creation and the readiness wait.
+    offscreen: {
+      hasDocument: vi.fn().mockResolvedValue(true),
+    },
     storage: {
       local: {
         get: vi.fn().mockResolvedValue({}),
@@ -38,7 +39,7 @@ function stubKeeperBridge(keeperResponse: unknown = { ok: true }) {
       },
     },
     runtime: {
-      sendMessage: vi.fn(() => Promise.resolve(keeperResponse)),
+      sendMessage: vi.fn(async () => keeperResponse),
       lastError: undefined,
     },
   } as unknown as typeof browser)
