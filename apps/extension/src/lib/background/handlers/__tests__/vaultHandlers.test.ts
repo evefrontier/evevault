@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Browser } from 'wxt/browser'
 import {
   _handleClearZkProof,
   _handleCreateKeypair,
@@ -21,14 +22,14 @@ vi.mock('@/lib/background/services/offscreenService', () => ({
   ensureOffscreen: vi.fn().mockResolvedValue(undefined),
 }))
 
-const mockSender = {} as chrome.runtime.MessageSender
+const mockSender = {} as Browser.runtime.MessageSender
 
 function makeMessage(overrides: Partial<VaultMessage> = {}): VaultMessage {
   return { type: 'VAULT_MSG', ...overrides } as unknown as VaultMessage
 }
 
 function stubKeeperBridge(keeperResponse: unknown = { ok: true }) {
-  globalThis.chrome = {
+  vi.stubGlobal('browser', {
     storage: {
       local: {
         get: vi.fn().mockResolvedValue({}),
@@ -37,12 +38,10 @@ function stubKeeperBridge(keeperResponse: unknown = { ok: true }) {
       },
     },
     runtime: {
-      sendMessage: vi.fn((_msg, callback) => {
-        callback(keeperResponse)
-      }),
+      sendMessage: vi.fn(() => Promise.resolve(keeperResponse)),
       lastError: undefined,
     },
-  } as unknown as typeof chrome
+  } as unknown as typeof browser)
 }
 
 describe('handleLock', () => {

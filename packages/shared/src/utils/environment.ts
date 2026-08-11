@@ -1,6 +1,7 @@
 /**
  * Environment detection utilities for cross-platform code
  */
+import { browser } from '@wxt-dev/browser'
 
 /**
  * Check if code is running in a browser environment (has window object)
@@ -10,10 +11,10 @@ export const isBrowser = (): boolean => {
 }
 
 /**
- * Check if code is running in a Chrome extension context
+ * Check if code is running in an extension context
  */
 export const isExtension = (): boolean => {
-  return typeof chrome !== 'undefined' && !!chrome?.runtime?.id
+  return !!browser?.runtime?.id
 }
 
 /**

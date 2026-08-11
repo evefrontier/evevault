@@ -9,8 +9,10 @@
   ],
   "packageManager": "bun@1.3.13",
   "scripts": {
-    "dev": "turbo run dev",
+    "dev": "turbo run dev dev:firefox",
+    "dev:chrome": "turbo run dev",
     "dev:ext": "turbo run dev --filter=@evevault/extension",
+    "dev:ext:firefox": "turbo run dev:firefox --filter=@evevault/extension",
     "dev:ext:direct": "bun --cwd apps/extension run dev",
     "dev:web": "turbo run dev --filter=@evevault/web",
     "build": "turbo run build",

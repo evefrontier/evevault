@@ -10,6 +10,7 @@ import { CONTEXT_STORAGE_KEY, createLogger } from '@evevault/shared/utils'
 import type { SuiChain } from '@mysten/wallet-standard'
 import { decodeJwt } from 'jose'
 import type { IdTokenClaims } from 'oidc-client-ts'
+import { browser } from 'wxt/browser'
 import { sendToTab } from '@/lib/background/messaging/tabMessaging'
 import type { MessageWithId } from '@/lib/background/types'
 
@@ -51,31 +52,26 @@ export function getCurrentChain(): SuiChain {
  * state when storing JWTs during OAuth callbacks.
  */
 export async function getCurrentChainFromStorage(): Promise<SuiChain> {
-  return new Promise((resolve) => {
-    chrome.storage.local.get([CONTEXT_STORAGE_KEY], (result) => {
-      try {
-        const stored = result[CONTEXT_STORAGE_KEY]
-        if (stored) {
-          const parsed =
-            typeof stored === 'string' ? JSON.parse(stored) : stored
-          if (parsed?.state?.chain) {
-            log.debug('Read chain from storage', {
-              chain: parsed.state.chain,
-            })
-            resolve(parsed.state.chain)
-            return
-          }
-        }
-      } catch (error) {
-        log.error('Error reading chain from storage', error)
+  try {
+    const result = await browser.storage.local.get([CONTEXT_STORAGE_KEY])
+    const stored = result[CONTEXT_STORAGE_KEY]
+    if (stored) {
+      const parsed = typeof stored === 'string' ? JSON.parse(stored) : stored
+      if (parsed?.state?.chain) {
+        log.debug('Read chain from storage', {
+          chain: parsed.state.chain,
+        })
+        return parsed.state.chain
       }
-      const fallbackChain = getCurrentChain()
-      log.debug('Using fallback chain from Zustand', {
-        chain: fallbackChain,
-      })
-      resolve(fallbackChain)
-    })
+    }
+  } catch (error) {
+    log.error('Error reading chain from storage', error)
+  }
+  const fallbackChain = getCurrentChain()
+  log.debug('Using fallback chain from Zustand', {
+    chain: fallbackChain,
   })
+  return fallbackChain
 }
 
 export function extractAuthCode(responseUrl: string): string | null {
@@ -93,7 +89,9 @@ export function sendExtensionAuthSuccess(id: string, jwt: JwtResponse): void {
     type: AuthMessageTypes.AUTH_SUCCESS,
     token,
   }
-  chrome.runtime.sendMessage(message)
+  // Fire-and-forget to the popup; browser.runtime.sendMessage rejects when no
+  // extension page is listening (e.g. popup closed), which is expected here.
+  void browser.runtime.sendMessage(message).catch(() => {})
 }
 
 export function sendDappConnectSuccessToTab(
@@ -120,11 +118,14 @@ export function sendDappConnectSuccessToTab(
 }
 
 export function sendAuthError(id: string, error: unknown): void {
-  chrome.runtime.sendMessage({
-    id,
-    type: 'auth_error',
-    error,
-  })
+  // Fire-and-forget to the popup; ignore rejection when nothing is listening.
+  void browser.runtime
+    .sendMessage({
+      id,
+      type: 'auth_error',
+      error,
+    })
+    .catch(() => {})
 }
 
 export function extractEmailFromJwt(jwt: JwtResponse): string {

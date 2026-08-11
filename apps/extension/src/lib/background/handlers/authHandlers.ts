@@ -1,4 +1,5 @@
 import { createLogger } from '@evevault/shared/utils'
+import { type Browser, browser } from 'wxt/browser'
 import type { MessageWithId } from '@/lib/background/types'
 import { handleDappLogin } from './auth/dappLogin'
 import { handleExtLogin } from './auth/extLogin'
@@ -12,8 +13,8 @@ import { handleWebUnlock } from './auth/webUnlock'
 
 const log = createLogger()
 
-if (typeof chrome !== 'undefined' && chrome.windows?.onRemoved) {
-  chrome.windows.onRemoved.addListener((removedWindowId) => {
+if (browser?.windows?.onRemoved) {
+  browser.windows.onRemoved.addListener((removedWindowId) => {
     const pending = getPending()
     if (pending?.windowId === removedWindowId) {
       clearPendingAuth()
@@ -32,7 +33,7 @@ export function checkPendingAuthAfterUnlock(): void {
         id: pending.id,
         ...(pending.tenantId && { tenantId: pending.tenantId }),
       } as MessageWithId,
-      undefined as unknown as chrome.runtime.MessageSender,
+      undefined as unknown as Browser.runtime.MessageSender,
       () => {},
     ).catch((error) => {
       log.error('Failed to resume extension login after unlock', error)
@@ -44,7 +45,7 @@ export function checkPendingAuthAfterUnlock(): void {
         id: pending.id,
         additionalIds: pending.additionalIds,
       } as MessageWithId,
-      { tab: { id: pending.tabId } } as chrome.runtime.MessageSender,
+      { tab: { id: pending.tabId } } as Browser.runtime.MessageSender,
       () => {},
       pending.tabId,
     ).catch((error) => {

@@ -313,7 +313,7 @@ describe('zkSignAny', () => {
 
     beforeEach(() => {
       vi.mocked(isWeb).mockReturnValue(false)
-      vi.stubGlobal('chrome', {
+      vi.stubGlobal('browser', {
         runtime: { sendMessage: mockSendMessage },
       })
       // Default happy-path response so post-signing guard tests can reach the validation code

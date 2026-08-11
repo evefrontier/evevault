@@ -11,6 +11,7 @@ import {
 } from '@evevault/shared'
 import { getApiContext, getJwt, getStoredChain } from '@evevault/shared/auth'
 import { createLogger } from '@evevault/shared/utils'
+import { type Browser, browser } from 'wxt/browser'
 import { sendToTab } from '@/lib/background/messaging/tabMessaging'
 import { openPopupWindow } from '@/lib/background/services/popupWindow'
 import type { EveFrontierSponsoredTransactionMessage } from '@/lib/background/types'
@@ -97,7 +98,7 @@ async function executeSponsoredTx({
 
 async function handleSponsoredTransaction(
   message: EveFrontierSponsoredTransactionMessage,
-  sender: chrome.runtime.MessageSender,
+  sender: Browser.runtime.MessageSender,
   _sendResponse: (response?: unknown) => void,
 ): Promise<boolean> {
   const senderTabId = sender.tab?.id
@@ -180,22 +181,33 @@ async function handleSponsoredTransaction(
       metadata,
     }
 
-    await chrome.storage.local.set({ pendingAction })
+    await browser.storage.local.set({ pendingAction })
 
     let timeoutId: ReturnType<typeof setTimeout>
     let registeredListener: (changes: {
-      [key: string]: chrome.storage.StorageChange
+      [key: string]: Browser.storage.StorageChange
     }) => void
 
     const detachSponsoredListener = () => {
       clearTimeout(timeoutId)
-      chrome.storage.onChanged.removeListener(registeredListener)
+      browser.storage.onChanged.removeListener(registeredListener)
     }
 
     const coreListener = (changes: {
-      [key: string]: chrome.storage.StorageChange
+      [key: string]: Browser.storage.StorageChange
     }) => {
-      const result = changes.transactionResult?.newValue
+      // newValue is untyped storage; describe the popup result shape this
+      // listener reads so field access stays checked.
+      const result = changes.transactionResult?.newValue as
+        | {
+            windowId?: number
+            requestId?: string
+            status?: string
+            zkSignature?: string | null
+            preparationId?: string | null
+            error?: string
+          }
+        | undefined
       if (
         !result ||
         result.windowId !== windowId ||
@@ -204,7 +216,7 @@ async function handleSponsoredTransaction(
         return
 
       detachSponsoredListener()
-      chrome.storage.local.remove(['pendingAction', 'transactionResult'])
+      browser.storage.local.remove(['pendingAction', 'transactionResult'])
 
       if (
         result.status === 'signed' &&
@@ -231,7 +243,7 @@ async function handleSponsoredTransaction(
     }
 
     registeredListener = (changes: {
-      [key: string]: chrome.storage.StorageChange
+      [key: string]: Browser.storage.StorageChange
     }) => {
       clearTimeout(timeoutId)
       coreListener(changes)
@@ -240,13 +252,13 @@ async function handleSponsoredTransaction(
     timeoutId = setTimeout(
       () => {
         detachSponsoredListener()
-        chrome.storage.local.remove(['pendingAction', 'transactionResult'])
+        browser.storage.local.remove(['pendingAction', 'transactionResult'])
         log.warn('Sponsored transaction approval timed out', { senderTabId })
       },
       10 * 60 * 1000,
     )
 
-    chrome.storage.onChanged.addListener(registeredListener)
+    browser.storage.onChanged.addListener(registeredListener)
 
     return true
   } catch (error) {

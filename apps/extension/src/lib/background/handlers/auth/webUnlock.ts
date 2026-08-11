@@ -1,5 +1,6 @@
 import { storeJwt } from '@evevault/shared'
 import { createLogger } from '@evevault/shared/utils'
+import type { Browser } from 'wxt/browser'
 import { sendToTab } from '@/lib/background/messaging/tabMessaging'
 import type { WebUnlockMessage } from '@/lib/background/types'
 import { ensureMessageId } from './authHelpers'
@@ -8,7 +9,7 @@ const log = createLogger()
 
 export async function handleWebUnlock(
   message: WebUnlockMessage,
-  _sender: chrome.runtime.MessageSender,
+  _sender: Browser.runtime.MessageSender,
   _sendResponse: (response?: unknown) => void,
 ): Promise<void> {
   log.info('Evefrontier web unlock request')

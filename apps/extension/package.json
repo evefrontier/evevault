@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "wxt",
-    "dev:firefox": "wxt -b firefox",
+    "dev:firefox": "wxt -b firefox --port 3002",
     "build": "wxt build",
     "build:webstore": "WXT_WEBSTORE_BUILD=true wxt build",
     "build:firefox": "wxt build -b firefox",
@@ -32,7 +32,6 @@
   "devDependencies": {
     "@tanstack/router-plugin": "^1.168.13",
     "@tailwindcss/vite": "^4.3.0",
-    "@types/chrome": "^0.0.280",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
     "@wxt-dev/module-react": "^1.2.2",

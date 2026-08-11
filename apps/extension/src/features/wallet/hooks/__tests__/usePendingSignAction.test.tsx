@@ -47,14 +47,14 @@ function makeOptions(parsePending = vi.fn(async (a: unknown) => a)) {
 }
 
 function stubStorage(pendingAction: unknown) {
-  vi.stubGlobal('chrome', {
+  vi.stubGlobal('browser', {
     storage: {
       local: {
         get: vi.fn(() => Promise.resolve({ pendingAction })),
         set: vi.fn(() => Promise.resolve()),
       },
     },
-  } as unknown as typeof chrome)
+  } as unknown as typeof browser)
 }
 
 beforeEach(() => {
@@ -107,14 +107,14 @@ describe('usePendingSignAction', () => {
       expect(result.current.pending).toBeNull()
     })
 
-    it('sets error when chrome.storage.local.get rejects', async () => {
-      vi.stubGlobal('chrome', {
+    it('sets error when browser.storage.local.get rejects', async () => {
+      vi.stubGlobal('browser', {
         storage: {
           local: {
             get: vi.fn(() => Promise.reject(new Error('idb crash'))),
           },
         },
-      } as unknown as typeof chrome)
+      } as unknown as typeof browser)
 
       const { result } = renderHook(() => usePendingSignAction(makeOptions()))
 
@@ -135,7 +135,7 @@ describe('usePendingSignAction', () => {
         error: 'x',
       })
       expect(stored).toBe(false)
-      expect(chrome.storage.local.set).not.toHaveBeenCalled()
+      expect(browser.storage.local.set).not.toHaveBeenCalled()
     })
 
     it('returns false and does not write when requestId is missing', async () => {
@@ -149,7 +149,7 @@ describe('usePendingSignAction', () => {
         error: 'x',
       })
       expect(stored).toBe(false)
-      expect(chrome.storage.local.set).not.toHaveBeenCalled()
+      expect(browser.storage.local.set).not.toHaveBeenCalled()
     })
 
     it('writes transactionResult and returns true when pending has requestId', async () => {
@@ -163,7 +163,7 @@ describe('usePendingSignAction', () => {
         error: 'rejected',
       })
       expect(stored).toBe(true)
-      expect(chrome.storage.local.set).toHaveBeenCalledWith({
+      expect(browser.storage.local.set).toHaveBeenCalledWith({
         transactionResult: {
           status: 'error',
           error: 'rejected',
@@ -182,7 +182,7 @@ describe('usePendingSignAction', () => {
       await waitFor(() => expect(result.current.pending).toEqual(action))
 
       await result.current.storeErrorResult('something went wrong')
-      expect(chrome.storage.local.set).toHaveBeenCalledWith({
+      expect(browser.storage.local.set).toHaveBeenCalledWith({
         transactionResult: {
           status: 'error',
           error: 'something went wrong',
@@ -206,7 +206,7 @@ describe('usePendingSignAction', () => {
 
       await act(() => result.current.handleReject())
 
-      expect(chrome.storage.local.set).not.toHaveBeenCalled()
+      expect(browser.storage.local.set).not.toHaveBeenCalled()
       expect(closeSpy).not.toHaveBeenCalled()
     })
 
@@ -221,7 +221,7 @@ describe('usePendingSignAction', () => {
 
       await act(() => result.current.handleReject())
 
-      expect(chrome.storage.local.set).toHaveBeenCalledWith({
+      expect(browser.storage.local.set).toHaveBeenCalledWith({
         transactionResult: {
           status: 'error',
           error: 'User rejected',

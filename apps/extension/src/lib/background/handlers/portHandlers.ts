@@ -1,12 +1,13 @@
 import { createLogger } from '@evevault/shared/utils'
+import { type Browser, browser } from 'wxt/browser'
 
 const log = createLogger()
 
-function handlePortConnection(port: chrome.runtime.Port) {
+function handlePortConnection(port: Browser.runtime.Port) {
   log.info('Port connected', { name: port.name })
 
   // Listen for logout requests
-  chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
+  browser.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
     if (message.action === 'logout') {
       port.postMessage({ action: 'logout' })
     }

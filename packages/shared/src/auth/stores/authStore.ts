@@ -1,4 +1,5 @@
 import type { TenantId } from '@evefrontier/wallet-core/tenant'
+import { browser } from '@wxt-dev/browser'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { chromeStorageAdapter, localStorageAdapter } from '#/adapters'
@@ -22,9 +23,6 @@ import { getCurrentTenantId, setCurrentTenantId } from '#/stores/tenantStore'
 import { createLogger, isExtension, isWeb, performFullCleanup } from '#/utils'
 import { AUTH_STORAGE_KEY } from '#/utils/storageKeys'
 
-// biome-ignore lint/suspicious/noExplicitAny: chrome is a global object
-declare const chrome: any
-
 const log = createLogger()
 
 export const useAuthStore = create<AuthState>()(
@@ -43,13 +41,12 @@ export const useAuthStore = create<AuthState>()(
           const network = useContextStore.getState().chain
 
           try {
-            const user =
-              isExtension() && typeof chrome !== 'undefined'
-                ? await initializeExtensionSession(
-                    getUserManagerInstance,
-                    network,
-                  )
-                : await initializeWebSession(getUserManagerInstance, network)
+            const user = isExtension()
+              ? await initializeExtensionSession(
+                  getUserManagerInstance,
+                  network,
+                )
+              : await initializeWebSession(getUserManagerInstance, network)
 
             set({ user, loading: false })
           } catch (error) {
@@ -82,17 +79,30 @@ export const useAuthStore = create<AuthState>()(
               return
             }
 
+            const runtime = browser.runtime
+            if (!runtime?.sendMessage) {
+              reject(new Error('Extension runtime messaging unavailable'))
+              return
+            }
+
             const id = crypto.randomUUID()
             const authSuccessListener = createExtensionAuthListener(
               id,
               resolve,
               reject,
             )
-            chrome.runtime?.onMessage?.addListener(authSuccessListener)
-            chrome.runtime?.sendMessage?.({
-              action: 'ext_login',
-              id: id,
-              tenantId: getCurrentTenantId(),
+            runtime.onMessage?.addListener(authSuccessListener)
+
+            // Reject on send failure so the caller doesn't hang; drop the listener.
+            Promise.resolve(
+              runtime.sendMessage({
+                action: 'ext_login',
+                id: id,
+                tenantId: getCurrentTenantId(),
+              }),
+            ).catch((error) => {
+              runtime.onMessage?.removeListener(authSuccessListener)
+              reject(error)
             })
           })
         },
@@ -101,7 +111,7 @@ export const useAuthStore = create<AuthState>()(
           try {
             await clearAuthSession(set, getUserManagerInstance)
 
-            if (isExtension() && typeof chrome !== 'undefined') {
+            if (isExtension()) {
               finishExtensionLogout()
             } else {
               // For web, just redirect to home - FusionAuth session can remain

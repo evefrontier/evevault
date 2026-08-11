@@ -1,6 +1,7 @@
 import type { TenantId } from '@evefrontier/wallet-core/tenant'
 import { getTenantConfig } from '@evevault/shared'
 import { sha256 } from '@evevault/shared/utils'
+import { browser } from 'wxt/browser'
 import { base64UrlEncode } from '@/lib/util/b64UrlEncode'
 
 async function createPkcePair(): Promise<{
@@ -31,7 +32,7 @@ function getAuthUrl(params: {
   const tenantConfig = getTenantConfig(params.tenantId)
 
   const clientId = tenantConfig.clientId
-  const redirectUri = chrome.identity.getRedirectURL()
+  const redirectUri = browser.identity.getRedirectURL()
 
   const url = new URL(
     `${tenantConfig.serverUrl.replace(/\/$/, '')}/oauth2/authorize`,

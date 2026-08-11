@@ -147,10 +147,10 @@ describe('storageService (extension chrome.storage.session)', () => {
     chromeStorageSession.get.mockResolvedValue({})
     chromeStorageSession.set.mockResolvedValue(undefined)
     chromeStorageSession.remove.mockResolvedValue(undefined)
-    ;(globalThis as unknown as { chrome: typeof chrome }).chrome = {
+    ;(globalThis as unknown as { browser: unknown }).browser = {
       storage: { session: chromeStorageSession },
       runtime: { id: 'test-extension' },
-    } as unknown as typeof chrome
+    }
     vi.mocked(useContextStore.getState).mockReturnValue({
       chain: SUI_TESTNET_CHAIN,
     } as never)
@@ -158,7 +158,7 @@ describe('storageService (extension chrome.storage.session)', () => {
 
   afterEach(() => {
     vi.clearAllMocks()
-    delete (globalThis as unknown as { chrome?: unknown }).chrome
+    delete (globalThis as unknown as { browser?: unknown }).browser
   })
 
   it('storeJwt writes via chrome.storage.session.set', async () => {
@@ -184,14 +184,14 @@ describe('getStoredChain', () => {
   beforeEach(() => {
     chromeStorage.get.mockReset()
     chromeStorage.get.mockResolvedValue({})
-    ;(globalThis as unknown as { chrome: typeof chrome }).chrome = {
+    ;(globalThis as unknown as { browser: unknown }).browser = {
       storage: { local: chromeStorage },
       runtime: { id: 'ext' },
-    } as unknown as typeof chrome
+    }
   })
 
   afterEach(() => {
-    delete (globalThis as unknown as { chrome?: unknown }).chrome
+    delete (globalThis as unknown as { browser?: unknown }).browser
     vi.clearAllMocks()
   })
 

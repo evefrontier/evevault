@@ -22,9 +22,9 @@ beforeAll(async () => {
 })
 
 beforeEach(() => {
-  vi.stubGlobal('chrome', {
+  vi.stubGlobal('browser', {
     runtime: {
-      sendMessage: vi.fn(),
+      sendMessage: vi.fn().mockResolvedValue(undefined),
       getURL: vi.fn(
         (path: string) => `chrome-extension://extension-id/${path}`,
       ),
@@ -34,10 +34,10 @@ beforeEach(() => {
     },
     storage: {
       local: {
-        get: vi.fn(),
+        get: vi.fn(() => Promise.resolve({})),
       },
     },
-  } as unknown as typeof chrome)
+  } as unknown as typeof browser)
 })
 
 afterEach(() => {
@@ -143,8 +143,8 @@ describe('content bridge message validation', () => {
     content.handleWindowMessage(blocked)
     content.handleWindowMessage(allowed)
 
-    expect(chrome.runtime.sendMessage).toHaveBeenCalledTimes(1)
-    expect(chrome.runtime.sendMessage).toHaveBeenCalledWith(allowed.data)
+    expect(browser.runtime.sendMessage).toHaveBeenCalledTimes(1)
+    expect(browser.runtime.sendMessage).toHaveBeenCalledWith(allowed.data)
   })
 
   it('posts public background responses to the page origin instead of wildcard origin', () => {
@@ -372,7 +372,7 @@ describe('content bridge message validation', () => {
 
     content.handleWindowMessage(crossOrigin)
 
-    expect(chrome.runtime.sendMessage).not.toHaveBeenCalled()
+    expect(browser.runtime.sendMessage).not.toHaveBeenCalled()
   })
 
   it('ignores messages that originated from the extension itself (__from guard)', () => {
@@ -384,21 +384,20 @@ describe('content bridge message validation', () => {
 
     content.handleWindowMessage(reflected)
 
-    expect(chrome.runtime.sendMessage).not.toHaveBeenCalled()
+    expect(browser.runtime.sendMessage).not.toHaveBeenCalled()
   })
 
   it('responds to get_current_chain by posting a change event to the page', async () => {
     const postMessage = vi
       .spyOn(window, 'postMessage')
       .mockImplementation(() => undefined)
-    ;(chrome.storage.local.get as ReturnType<typeof vi.fn>).mockImplementation(
-      (_keys: unknown, callback: (result: Record<string, unknown>) => void) => {
-        callback({
+    ;(browser.storage.local.get as ReturnType<typeof vi.fn>).mockImplementation(
+      () =>
+        Promise.resolve({
           'evevault:context': JSON.stringify({
             state: { chain: 'sui:mainnet' },
           }),
-        })
-      },
+        }),
     )
 
     const event = new MessageEvent('message', {

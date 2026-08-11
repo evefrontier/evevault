@@ -1,6 +1,7 @@
 import type { DappRequestContext } from '@evevault/shared/types'
 import { DAPP_PERMISSIONS_STORAGE_KEY, isRecord } from '@evevault/shared/utils'
 import { SUI_CHAINS, type SuiChain } from '@mysten/wallet-standard'
+import { type Browser, browser } from 'wxt/browser'
 
 type DappPermissionRecord = DappRequestContext & {
   chains: SuiChain[]
@@ -43,13 +44,13 @@ function normalizePageUrl(value: unknown): URL | null {
 }
 
 function getSenderUrl(
-  sender: chrome.runtime.MessageSender,
+  sender: Browser.runtime.MessageSender,
 ): string | undefined {
   return sender.url ?? sender.tab?.url
 }
 
 export function getDappRequestContext(
-  sender: chrome.runtime.MessageSender,
+  sender: Browser.runtime.MessageSender,
 ): DappRequestContext | null {
   const originUrl =
     normalizePageUrl(sender.origin) ??
@@ -116,7 +117,7 @@ function sanitizePermissionStore(value: unknown): DappPermissionStore {
 }
 
 async function readPermissionStore(): Promise<DappPermissionStore> {
-  const result = await chrome.storage.local.get(DAPP_PERMISSIONS_STORAGE_KEY)
+  const result = await browser.storage.local.get(DAPP_PERMISSIONS_STORAGE_KEY)
   return sanitizePermissionStore(result[DAPP_PERMISSIONS_STORAGE_KEY])
 }
 
@@ -126,7 +127,7 @@ async function updatePermissionStore<T>(
   const nextUpdate = permissionStoreUpdateQueue.then(async () => {
     const permissions = await readPermissionStore()
     const { store, result } = update(permissions)
-    await chrome.storage.local.set({ [DAPP_PERMISSIONS_STORAGE_KEY]: store })
+    await browser.storage.local.set({ [DAPP_PERMISSIONS_STORAGE_KEY]: store })
     return result
   })
 
@@ -179,7 +180,7 @@ export async function grantDappPermission(
 }
 
 export async function requireDappPermission(
-  sender: chrome.runtime.MessageSender,
+  sender: Browser.runtime.MessageSender,
   chain?: SuiChain,
 ): Promise<DappPermissionResult> {
   const context = getDappRequestContext(sender)
@@ -218,7 +219,7 @@ export async function requireDappPermission(
 }
 
 export async function revokeDappPermission(
-  sender: chrome.runtime.MessageSender,
+  sender: Browser.runtime.MessageSender,
 ): Promise<DappPermissionRevocationResult> {
   const context = getDappRequestContext(sender)
   if (!context) {

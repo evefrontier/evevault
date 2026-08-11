@@ -75,8 +75,8 @@ describe('authStore.logout() extension path', () => {
   beforeEach(() => {
     setupAuthStoreMocks(h, { isExtension: true })
     getRedirectURL.mockReturnValue('chrome-extension://extension-id/callback')
-    launchWebAuthFlow.mockImplementation((_, callback) => callback?.())
-    vi.stubGlobal('chrome', {
+    launchWebAuthFlow.mockResolvedValue(undefined)
+    vi.stubGlobal('browser', {
       identity: {
         getRedirectURL,
         launchWebAuthFlow,
@@ -97,10 +97,10 @@ describe('authStore.logout() extension path', () => {
     await useAuthStore.getState().logout()
 
     expect(getRedirectURL).toHaveBeenCalledOnce()
-    expect(launchWebAuthFlow).toHaveBeenCalledWith(
-      { url: expect.any(String), interactive: true },
-      expect.any(Function),
-    )
+    expect(launchWebAuthFlow).toHaveBeenCalledWith({
+      url: expect.any(String),
+      interactive: true,
+    })
 
     const [{ url }] = launchWebAuthFlow.mock.calls[0]
     const logoutUrl = new URL(url)
@@ -110,10 +110,14 @@ describe('authStore.logout() extension path', () => {
     expect(logoutUrl.searchParams.get('post_logout_redirect_uri')).toBe(
       'chrome-extension://extension-id/callback',
     )
-    expect(sendMessage).toHaveBeenCalledWith({
-      __from: 'Eve Vault',
-      event: 'change',
-      payload: { accounts: [] },
-    })
+    // The empty-accounts change is broadcast from the launchWebAuthFlow
+    // promise's .then, so it lands a microtask after logout() resolves.
+    await vi.waitFor(() =>
+      expect(sendMessage).toHaveBeenCalledWith({
+        __from: 'Eve Vault',
+        event: 'change',
+        payload: { accounts: [] },
+      }),
+    )
   })
 })

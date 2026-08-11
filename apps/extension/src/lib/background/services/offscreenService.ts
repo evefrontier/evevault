@@ -1,12 +1,11 @@
-/// <reference types="chrome"/>
-
 import { createLogger } from '@evevault/shared/utils'
+import { browser } from 'wxt/browser'
 
 const log = createLogger()
 
 let keeperReady = false
 const keeperReadyPromise = new Promise<void>((resolve) => {
-  chrome.runtime.onMessage.addListener((message) => {
+  browser.runtime.onMessage.addListener((message) => {
     if (message.type === 'KEEPER_READY') {
       keeperReady = true
       resolve()
@@ -22,9 +21,9 @@ const keeperReadyPromise = new Promise<void>((resolve) => {
  */
 export async function ensureOffscreen(waitForReady = false): Promise<void> {
   try {
-    const hasDoc = await chrome.offscreen.hasDocument()
+    const hasDoc = await browser.offscreen.hasDocument()
     if (!hasDoc) {
-      await chrome.offscreen.createDocument({
+      await browser.offscreen.createDocument({
         url: 'keeper.html',
         reasons: ['LOCAL_STORAGE', 'DOM_SCRAPING'],
         justification: 'Hold ephemeral key in RAM only.',

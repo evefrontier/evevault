@@ -83,7 +83,7 @@ describe('authStore.extensionLogin()', () => {
     h.mockDecodeJwt.mockReturnValue(MOCK_ID_TOKEN_CLAIMS)
     useAuthStore.setState({ user: null, loading: false, error: null })
     vi.stubGlobal('crypto', { randomUUID: vi.fn(() => 'uuid-1') })
-    vi.stubGlobal('chrome', {
+    vi.stubGlobal('browser', {
       runtime: {
         onMessage: { addListener, removeListener },
         sendMessage,
@@ -95,7 +95,7 @@ describe('authStore.extensionLogin()', () => {
     vi.clearAllMocks()
   })
 
-  it('sets up a chrome.runtime.onMessage listener with a unique UUID', () => {
+  it('sets up a browser.runtime.onMessage listener with a unique UUID', () => {
     void useAuthStore.getState().extensionLogin()
 
     expect(addListener).toHaveBeenCalledWith(expect.any(Function))
@@ -146,6 +146,26 @@ describe('authStore.extensionLogin()', () => {
 
     await expect(promise).resolves.toBe(tokenResponse)
     expect(h.mockParseOAuthTokenResponse).toHaveBeenCalledWith('right-token')
+  })
+
+  it('rejects without registering a listener when runtime messaging is unavailable', async () => {
+    vi.stubGlobal('browser', {
+      runtime: { onMessage: { addListener, removeListener } },
+    })
+
+    await expect(useAuthStore.getState().extensionLogin()).rejects.toThrow(
+      'Extension runtime messaging unavailable',
+    )
+    expect(addListener).not.toHaveBeenCalled()
+  })
+
+  it('rejects and removes the listener when the send fails', async () => {
+    sendMessage.mockRejectedValue(new Error('port closed'))
+    const promise = useAuthStore.getState().extensionLogin()
+    const listener = addListener.mock.calls[0][0] as ChromeMessageListener
+
+    await expect(promise).rejects.toThrow('port closed')
+    expect(removeListener).toHaveBeenCalledWith(listener)
   })
 
   describe('login() wrapping extensionLogin()', () => {

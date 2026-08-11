@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Browser } from 'wxt/browser'
 import type { WebUnlockMessage } from '@/lib/background/types'
 import { handleWebUnlock } from '../webUnlock'
 
@@ -63,7 +64,7 @@ describe('handleWebUnlock', () => {
     mockEnsureMessageId.mockReturnValueOnce('ensured-id')
     await handleWebUnlock(
       makeMessage({ id: 'original-id' }),
-      {} as chrome.runtime.MessageSender,
+      {} as Browser.runtime.MessageSender,
       vi.fn(),
     )
 
@@ -77,7 +78,7 @@ describe('handleWebUnlock', () => {
   it('stores the JWT without sending to tab when tabId is absent', async () => {
     await handleWebUnlock(
       makeMessage({ tabId: undefined }),
-      {} as chrome.runtime.MessageSender,
+      {} as Browser.runtime.MessageSender,
       vi.fn(),
     )
 
@@ -91,7 +92,7 @@ describe('handleWebUnlock', () => {
 
     await handleWebUnlock(
       makeMessage({ id: 'original-id' }),
-      {} as chrome.runtime.MessageSender,
+      {} as Browser.runtime.MessageSender,
       vi.fn(),
     )
 
@@ -107,7 +108,7 @@ describe('handleWebUnlock', () => {
 
     await handleWebUnlock(
       makeMessage({ tabId: undefined }),
-      {} as chrome.runtime.MessageSender,
+      {} as Browser.runtime.MessageSender,
       vi.fn(),
     )
 
@@ -120,7 +121,7 @@ describe('handleWebUnlock', () => {
 
     await handleWebUnlock(
       makeMessage({ id: 'original-id' }),
-      {} as chrome.runtime.MessageSender,
+      {} as Browser.runtime.MessageSender,
       vi.fn(),
     )
 

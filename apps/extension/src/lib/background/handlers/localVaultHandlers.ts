@@ -1,5 +1,6 @@
 import { KeeperMessageTypes } from '@evevault/shared/types'
 
+import type { Browser } from 'wxt/browser'
 import type { VaultMessage } from '@/lib/background/types'
 import { writeEncryptedLocalnetKey } from './localnetDeviceStorage'
 import { sendToKeeper } from './vaultHandlers'
@@ -8,7 +9,7 @@ import { sendToKeeper } from './vaultHandlers'
 
 export function _handleLocalnetSetKeypair(
   message: VaultMessage,
-  _sender: chrome.runtime.MessageSender,
+  _sender: Browser.runtime.MessageSender,
   sendResponse: (response?: unknown) => void,
 ): boolean {
   ;(async () => {
@@ -43,7 +44,7 @@ export function _handleLocalnetSetKeypair(
 
 export async function _handleLocalnetGetAddress(
   _message: VaultMessage,
-  _sender: chrome.runtime.MessageSender,
+  _sender: Browser.runtime.MessageSender,
   sendResponse: (response?: unknown) => void,
 ): Promise<boolean> {
   try {
@@ -59,7 +60,7 @@ export async function _handleLocalnetGetAddress(
 
 export async function _handleLocalnetSignBytes(
   message: VaultMessage,
-  _sender: chrome.runtime.MessageSender,
+  _sender: Browser.runtime.MessageSender,
   sendResponse: (response?: unknown) => void,
 ): Promise<boolean> {
   const { msgBytes, scope } = message

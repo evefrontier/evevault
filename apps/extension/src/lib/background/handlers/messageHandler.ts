@@ -1,5 +1,6 @@
 import { VaultMessageTypes, WalletStandardMessageTypes } from '@evevault/shared'
 import { createLogger, redactSensitive } from '@evevault/shared/utils'
+import { type Browser, browser } from 'wxt/browser'
 import { sendToTab } from '@/lib/background/messaging/tabMessaging'
 import { isDappSender, isExtensionSender } from '@/lib/background/senderGuard'
 import { revokeDappPermission } from '@/lib/background/services/dappPermissions'
@@ -35,7 +36,7 @@ import { handleApprovePopup } from './walletHandlers'
 
 const log = createLogger()
 
-type MsgSender = chrome.runtime.MessageSender
+type MsgSender = Browser.runtime.MessageSender
 type SendResponse = (response?: unknown) => void
 type RouteField = 'action' | 'type'
 type RouteAccess = 'dapp' | 'extension'
@@ -301,7 +302,7 @@ function hasRequiredSender(sender: MsgSender, access: RouteAccess): boolean {
  */
 function broadcastChangeEvent(payload: unknown): void {
   log.info('Broadcasting chain change event', payload)
-  chrome.tabs.query({}, (tabs) => {
+  void browser.tabs.query({}).then((tabs) => {
     tabs.forEach((tab) => {
       if (tab.id) {
         sendToTab(tab.id, {
@@ -316,7 +317,7 @@ function broadcastChangeEvent(payload: unknown): void {
 
 export function handleMessage(
   message: BackgroundMessage,
-  sender: chrome.runtime.MessageSender,
+  sender: Browser.runtime.MessageSender,
   sendResponse: (response?: unknown) => void,
 ) {
   const route = findRoute(message)
