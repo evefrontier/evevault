@@ -81,6 +81,7 @@ function installBrowserMock() {
   vi.stubGlobal('browser', {
     runtime: {
       id: 'extension-id',
+      getURL: (path: string) => `chrome-extension://extension-id${path}`,
     },
     tabs: {
       query: vi.fn(async () => [{ id: 1 }, { id: 2 }]),

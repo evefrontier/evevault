@@ -3,21 +3,45 @@ import { type Browser, browser } from 'wxt/browser'
 type MsgSender = Browser.runtime.MessageSender
 
 /**
+ * This extension's own origin (`chrome-extension://<id>` on Chrome,
+ * `moz-extension://<uuid>` on Firefox), derived from `runtime.getURL` so the
+ * scheme and host are whatever the current browser actually uses. Trailing
+ * slash stripped so it matches both a bare origin and a full page URL.
+ * Returns undefined outside an extension context (no `getURL`).
+ */
+function getOwnOrigin(): string | undefined {
+  // WXT types getURL to statically-known public paths; widen to a plain string
+  // signature since we only need the origin prefix.
+  const getURL = browser.runtime?.getURL as
+    | ((path: string) => string)
+    | undefined
+  const base = getURL?.('/')
+  if (!base) return undefined
+  return base.endsWith('/') ? base.slice(0, -1) : base
+}
+
+/**
  * Identifies messages that originate from this extension rather than a web
  * page. Fails closed: a sender is trusted only when it carries a URL under this
  * extension's own origin. Senders with no identifying metadata are NOT trusted,
  * so the privileged extension-only routes can't be reached without provenance.
  */
 export function isExtensionSender(sender: MsgSender): boolean {
-  const senderUrls = [sender.origin, sender.url, sender.tab?.url]
-  const extensionId = browser.runtime?.id
+  const ownOrigin = getOwnOrigin()
   const isOwnExtensionUrl = (url: string | undefined) => {
     if (!url) return false
-    if (!extensionId) return url.startsWith('chrome-extension://')
-
-    return url.startsWith(`chrome-extension://${extensionId}/`)
+    if (ownOrigin) {
+      // Boundary match so a lookalike host (`…-evil`) can't prefix-escape.
+      return url === ownOrigin || url.startsWith(`${ownOrigin}/`)
+    }
+    // No getURL (non-extension context): best-effort allow of extension schemes.
+    return (
+      url.startsWith('chrome-extension://') ||
+      url.startsWith('moz-extension://')
+    )
   }
 
+  const senderUrls = [sender.origin, sender.url, sender.tab?.url]
   return senderUrls.some(isOwnExtensionUrl)
 }
 
