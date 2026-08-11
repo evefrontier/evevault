@@ -457,3 +457,65 @@ describe('handleMessage route policy', () => {
     expect(sendResponse).not.toHaveBeenCalled()
   })
 })
+
+// Firefox's extension-URL host is a per-install UUID (not runtime.id) under the
+// moz-extension:// scheme, so the guard must gate routes off the getURL-derived
+// origin. These drive that end-to-end through handleMessage, not just the guard.
+const FIREFOX_ORIGIN = 'moz-extension://11111111-2222-3333-4444-555555555555'
+
+function installFirefoxBrowserMock() {
+  vi.stubGlobal('browser', {
+    runtime: {
+      id: 'eve@evefrontier',
+      getURL: (path: string) => `${FIREFOX_ORIGIN}${path}`,
+    },
+    tabs: {
+      query: vi.fn(async () => [{ id: 1 }, { id: 2 }]),
+      sendMessage: vi.fn(async () => undefined),
+    },
+  } as unknown as typeof browser)
+}
+
+describe('handleMessage route policy — Firefox (moz-extension)', () => {
+  beforeEach(() => {
+    installFirefoxBrowserMock()
+    vi.clearAllMocks()
+  })
+
+  it('allows vault messages from a moz-extension sender', () => {
+    const sendResponse = vi.fn()
+    const sender: Browser.runtime.MessageSender = {
+      url: `${FIREFOX_ORIGIN}/popup.html`,
+    }
+
+    const result = handleMessage(
+      { type: VaultMessageTypes.LOCK },
+      sender,
+      sendResponse,
+    )
+
+    expect(result).toBe(true)
+    expect(mocks.handleLock).toHaveBeenCalledWith(
+      { type: VaultMessageTypes.LOCK },
+      sender,
+      sendResponse,
+    )
+  })
+
+  it('rejects a chrome-extension sender when running under a Firefox origin', () => {
+    const sendResponse = vi.fn()
+
+    const result = handleMessage(
+      { type: VaultMessageTypes.LOCK },
+      { url: 'chrome-extension://extension-id/popup.html' },
+      sendResponse,
+    )
+
+    expect(result).toBe(false)
+    expect(mocks.handleLock).not.toHaveBeenCalled()
+    expect(sendResponse).toHaveBeenCalledWith({
+      type: 'auth_error',
+      error: { message: 'Unauthorized message sender' },
+    })
+  })
+})
