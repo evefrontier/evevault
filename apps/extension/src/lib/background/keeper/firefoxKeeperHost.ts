@@ -25,10 +25,9 @@ export class FirefoxKeeperHost implements KeeperHost {
         settled = true
         resolve(response)
       }
-      // Present this in-process call as our own origin so it passes the same
-      // isExtensionSender guard Chrome's offscreen path relies on.
+      // Structured-clone and tag the message, then dispatch as our own origin.
       const keepOpen = handleKeeperMessage(
-        { ...message, target: 'KEEPER' } as BackgroundMessage,
+        structuredClone({ ...message, target: 'KEEPER' }) as BackgroundMessage,
         this.#ownSender(),
         respond,
       )
