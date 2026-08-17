@@ -84,6 +84,24 @@ function runAsyncRoute(
 }
 
 /**
+ * Starts an async route whose result is delivered out-of-band via a separate
+ * runtime.sendMessage, so it returns undefined to close the message channel
+ * immediately. Firefox rejects the sender's sendMessage when a listener claims
+ * an async response by returning true but never calls sendResponse.
+ */
+function runOutOfBandRoute(
+  name: string,
+  task: Promise<unknown>,
+  onError?: (error: unknown) => void,
+): undefined {
+  void task.catch((error) => {
+    log.error(`${name} failed`, error)
+    onError?.(error)
+  })
+  return undefined
+}
+
+/**
  * Sends a disconnect result through the immediate runtime response and, when
  * the request came from a tab, mirrors it back through the content-script path.
  */
@@ -156,7 +174,7 @@ const MESSAGE_ROUTES: Record<string, MessageRoute> = {
   [routeKey('action', 'ext_login')]: {
     access: 'extension',
     handle: (m, s, sr) =>
-      runAsyncRoute('handleExtLogin', handleExtLogin(m, s, sr)),
+      runOutOfBandRoute('handleExtLogin', handleExtLogin(m, s, sr)),
   },
   // Wallet Standard connect arrives as type='connect', not action='connect'.
   [routeKey('type', 'connect')]: {

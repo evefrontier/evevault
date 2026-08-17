@@ -28,6 +28,7 @@ type SignSuccessMessage = {
   signature?: string
   digest?: string
   effects?: string
+  executionStatus?: string
 }
 type SignAndExecuteSuccessMessage = {
   type: 'sign_and_execute_transaction_success'
