@@ -1,4 +1,5 @@
 import { ChromeOffscreenKeeperHost } from './chromeOffscreenKeeperHost'
+import { FirefoxKeeperHost } from './firefoxKeeperHost'
 
 /**
  * Transport seam between the background script and the keeper (which holds the
@@ -22,6 +23,11 @@ export interface KeeperHost {
   send(message: any, retries?: number): Promise<any>
 }
 
-// Selection between Chrome and a future Firefox host is deliberately not here
-// yet — this PR only relocates the existing offscreen path behind the seam.
-export const keeperHost: KeeperHost = new ChromeOffscreenKeeperHost()
+// Chrome hosts the keeper in an offscreen document; Firefox — which has no
+// offscreen API — runs it in-process in the background. Exported for tests;
+// the singleton selects via the WXT build-time browser flag.
+export function selectKeeperHost(isFirefox: boolean): KeeperHost {
+  return isFirefox ? new FirefoxKeeperHost() : new ChromeOffscreenKeeperHost()
+}
+
+export const keeperHost: KeeperHost = selectKeeperHost(import.meta.env.FIREFOX)

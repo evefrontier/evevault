@@ -176,6 +176,10 @@ export default defineConfig(() => {
               strict_min_version: '128.0',
             },
           }
+          // No offscreen API on Firefox; the keeper runs in-process.
+          manifest.permissions = manifest.permissions?.filter(
+            (p) => p !== 'offscreen',
+          )
         }
       },
     },

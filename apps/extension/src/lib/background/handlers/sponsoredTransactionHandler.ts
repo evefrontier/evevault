@@ -151,7 +151,7 @@ async function handleSponsoredTransaction(
         assemblyType,
         metadata,
       },
-      sponsoredApiContext(apiBaseUrl, tenant, jwt.id_token, '/v2'),
+      sponsoredApiContext(apiBaseUrl, tenant, jwt.id_token, ''),
     )
 
     const actionType =
