@@ -180,6 +180,19 @@ function isSignatureSuccess(data: Record<string, unknown>): boolean {
   )
 }
 
+// Sponsored transactions resolve with a digest (the txid) and an execution
+// status; unlike sign/personal-message success they carry no bytes/signature or
+// effects, so they need their own validator. Both fields are required because
+// the consumer (#signEveFrontierSponsoredTransaction) reads them as strings.
+function isSponsoredSuccess(data: Record<string, unknown>): boolean {
+  return (
+    hasStringIdAndType(data) &&
+    data.type === 'sign_success' &&
+    typeof data.digest === 'string' &&
+    typeof data.executionStatus === 'string'
+  )
+}
+
 function isSignAndExecuteSuccess(data: Record<string, unknown>): boolean {
   return (
     hasStringIdAndType(data) &&
@@ -223,6 +236,7 @@ const PUBLIC_EXTENSION_MESSAGE_VALIDATORS: readonly PageMessageValidator[] = [
   isPublicAuthSuccess,
   isPublicAuthError,
   isSignatureSuccess,
+  isSponsoredSuccess,
   isSignAndExecuteSuccess,
   isPublicSigningError,
   isPublicDisconnectResponse,

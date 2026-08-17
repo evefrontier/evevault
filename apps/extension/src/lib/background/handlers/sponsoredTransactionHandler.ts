@@ -65,7 +65,7 @@ function sendSponsoredError(
 }
 
 // POSTs the signed sponsored transaction to the backend execute endpoint and
-// forwards the digest/effects back to the originating tab on success.
+// forwards the digest/executionStatus back to the originating tab on success.
 async function executeSponsoredTx({
   apiBaseUrl,
   tenant,
@@ -76,14 +76,14 @@ async function executeSponsoredTx({
   messageId,
 }: ExecuteSponsoredTxOptions): Promise<void> {
   try {
-    const { digest, effects } = await executeSponsoredTransaction(
+    const { digest, executionStatus } = await executeSponsoredTransaction(
       { preparationId, userSignatureB64Bytes: zkSignature },
       sponsoredApiContext(apiBaseUrl, tenant, idToken),
     )
     sendToTab(senderTabId, {
       type: 'sign_success',
       digest,
-      effects,
+      executionStatus,
       id: messageId,
     })
   } catch (err) {

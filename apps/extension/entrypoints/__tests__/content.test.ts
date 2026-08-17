@@ -468,6 +468,44 @@ describe('content bridge message validation', () => {
     )
   })
 
+  it('forwards a sponsored sign_success carrying digest and executionStatus but no effects', () => {
+    const postMessage = vi
+      .spyOn(window, 'postMessage')
+      .mockImplementation(() => undefined)
+
+    content.forwardToPage({
+      id: 'sponsored-id',
+      type: 'sign_success',
+      digest: '0xdigest',
+      executionStatus: 'success',
+    })
+
+    expect(postMessage).toHaveBeenCalledWith(
+      {
+        __from: 'Eve Vault',
+        id: 'sponsored-id',
+        type: 'sign_success',
+        digest: '0xdigest',
+        executionStatus: 'success',
+      },
+      window.location.origin,
+    )
+  })
+
+  it('blocks a sponsored sign_success missing executionStatus', () => {
+    const postMessage = vi
+      .spyOn(window, 'postMessage')
+      .mockImplementation(() => undefined)
+
+    content.forwardToPage({
+      id: 'sponsored-id',
+      type: 'sign_success',
+      digest: '0xdigest',
+    })
+
+    expect(postMessage).not.toHaveBeenCalled()
+  })
+
   it('blocks sign_success missing both bytes and digest', () => {
     const postMessage = vi
       .spyOn(window, 'postMessage')

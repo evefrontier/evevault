@@ -86,14 +86,27 @@ export const useAuthStore = create<AuthState>()(
             }
 
             const id = crypto.randomUUID()
+
+            // The id-correlated listener is the source of truth: the background
+            // delivers the result out-of-band via a separate sendMessage. Settle
+            // once so a send-dispatch rejection can't clobber a delivered result.
+            let settled = false
             const authSuccessListener = createExtensionAuthListener(
               id,
-              resolve,
-              reject,
+              (value) => {
+                settled = true
+                resolve(value)
+              },
+              (reason) => {
+                settled = true
+                reject(reason)
+              },
             )
             runtime.onMessage?.addListener(authSuccessListener)
 
-            // Reject on send failure so the caller doesn't hang; drop the listener.
+            // A send-dispatch failure means the background never received the
+            // request, so reject to avoid hanging. Skip if the listener already
+            // settled us: Firefox can reject the send even when delivery succeeded.
             Promise.resolve(
               runtime.sendMessage({
                 action: 'ext_login',
@@ -101,6 +114,7 @@ export const useAuthStore = create<AuthState>()(
                 tenantId: getCurrentTenantId(),
               }),
             ).catch((error) => {
+              if (settled) return
               runtime.onMessage?.removeListener(authSuccessListener)
               reject(error)
             })

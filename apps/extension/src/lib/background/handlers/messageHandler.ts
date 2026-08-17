@@ -11,6 +11,7 @@ import type {
   WalletActionMessage,
   WebUnlockMessage,
 } from '@/lib/background/types'
+import { sendAuthError } from './auth/authHelpers'
 import {
   handleDappLogin,
   handleExtLogin,
@@ -81,6 +82,24 @@ function runAsyncRoute(
     onError?.(error)
   })
   return true
+}
+
+/**
+ * Starts an async route whose result is delivered out-of-band via a separate
+ * runtime.sendMessage, so it returns undefined to close the message channel
+ * immediately. Firefox rejects the sender's sendMessage when a listener claims
+ * an async response by returning true but never calls sendResponse.
+ */
+function runOutOfBandRoute(
+  name: string,
+  task: Promise<unknown>,
+  onError?: (error: unknown) => void,
+): undefined {
+  void task.catch((error) => {
+    log.error(`${name} failed`, error)
+    onError?.(error)
+  })
+  return undefined
 }
 
 /**
@@ -156,13 +175,21 @@ const MESSAGE_ROUTES: Record<string, MessageRoute> = {
   [routeKey('action', 'ext_login')]: {
     access: 'extension',
     handle: (m, s, sr) =>
-      runAsyncRoute('handleExtLogin', handleExtLogin(m, s, sr)),
+      runOutOfBandRoute('handleExtLogin', handleExtLogin(m, s, sr), (error) => {
+        // The channel is already closed, so an unexpected throw before the
+        // handler sends its own auth_success/auth_error would hang the popup
+        // (extensionLogin has no timeout). Send a correlated auth_error so the
+        // waiting listener settles.
+        if (typeof m.id === 'string') {
+          sendAuthError(m.id, { message: getErrorMessage(error) })
+        }
+      }),
   },
   // Wallet Standard connect arrives as type='connect', not action='connect'.
   [routeKey('type', 'connect')]: {
     access: 'dapp',
     handle: (m, s, sr, tabId) =>
-      runAsyncRoute('handleDappLogin', handleDappLogin(m, s, sr, tabId)),
+      runOutOfBandRoute('handleDappLogin', handleDappLogin(m, s, sr, tabId)),
   },
   [routeKey('type', WalletStandardMessageTypes.DISCONNECT)]: {
     access: 'dapp',
@@ -181,7 +208,7 @@ const MESSAGE_ROUTES: Record<string, MessageRoute> = {
   [routeKey('action', 'web_unlock')]: {
     access: 'extension',
     handle: (m, s, sr) =>
-      runAsyncRoute(
+      runOutOfBandRoute(
         'handleWebUnlock',
         handleWebUnlock(m as WebUnlockMessage, s, sr),
       ),
@@ -205,7 +232,7 @@ const MESSAGE_ROUTES: Record<string, MessageRoute> = {
   )]: {
     access: 'dapp',
     handle: (m, s, sr) =>
-      runAsyncRoute(
+      runOutOfBandRoute(
         'handleSponsoredTransaction',
         handleSponsoredTransaction(
           m as EveFrontierSponsoredTransactionMessage,
