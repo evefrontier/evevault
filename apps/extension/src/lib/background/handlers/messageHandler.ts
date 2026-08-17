@@ -11,6 +11,7 @@ import type {
   WalletActionMessage,
   WebUnlockMessage,
 } from '@/lib/background/types'
+import { sendAuthError } from './auth/authHelpers'
 import {
   handleDappLogin,
   handleExtLogin,
@@ -174,7 +175,15 @@ const MESSAGE_ROUTES: Record<string, MessageRoute> = {
   [routeKey('action', 'ext_login')]: {
     access: 'extension',
     handle: (m, s, sr) =>
-      runOutOfBandRoute('handleExtLogin', handleExtLogin(m, s, sr)),
+      runOutOfBandRoute('handleExtLogin', handleExtLogin(m, s, sr), (error) => {
+        // The channel is already closed, so an unexpected throw before the
+        // handler sends its own auth_success/auth_error would hang the popup
+        // (extensionLogin has no timeout). Send a correlated auth_error so the
+        // waiting listener settles.
+        if (typeof m.id === 'string') {
+          sendAuthError(m.id, { message: getErrorMessage(error) })
+        }
+      }),
   },
   // Wallet Standard connect arrives as type='connect', not action='connect'.
   [routeKey('type', 'connect')]: {

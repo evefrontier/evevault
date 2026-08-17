@@ -492,6 +492,20 @@ describe('content bridge message validation', () => {
     )
   })
 
+  it('blocks a sponsored sign_success missing executionStatus', () => {
+    const postMessage = vi
+      .spyOn(window, 'postMessage')
+      .mockImplementation(() => undefined)
+
+    content.forwardToPage({
+      id: 'sponsored-id',
+      type: 'sign_success',
+      digest: '0xdigest',
+    })
+
+    expect(postMessage).not.toHaveBeenCalled()
+  })
+
   it('blocks sign_success missing both bytes and digest', () => {
     const postMessage = vi
       .spyOn(window, 'postMessage')

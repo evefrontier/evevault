@@ -31,6 +31,7 @@ const { logger, mocks } = vi.hoisted(() => ({
     handleLocalnetSetKeypair: vi.fn(),
     handleLocalnetGetAddress: vi.fn(),
     handleLocalnetSignBytes: vi.fn(),
+    sendAuthError: vi.fn(),
   },
 }))
 
@@ -52,6 +53,17 @@ vi.mock('@/lib/background/handlers/authHandlers', () => ({
   handleExtLogin: mocks.handleExtLogin,
   handleWebUnlock: mocks.handleWebUnlock,
 }))
+
+vi.mock(
+  '@/lib/background/handlers/auth/authHelpers',
+  async (importOriginal) => {
+    const actual =
+      await importOriginal<
+        typeof import('@/lib/background/handlers/auth/authHelpers')
+      >()
+    return { ...actual, sendAuthError: mocks.sendAuthError }
+  },
+)
 
 vi.mock('@/lib/background/handlers/walletHandlers', () => ({
   handleApprovePopup: mocks.handleApprovePopup,
@@ -311,6 +323,26 @@ describe('handleMessage route policy', () => {
     )
     expect(mocks.getDappRequestContext).not.toHaveBeenCalled()
     expect(sendResponse).not.toHaveBeenCalled()
+  })
+
+  it('sends a correlated auth_error when ext_login throws unexpectedly', async () => {
+    const sendResponse = vi.fn()
+    mocks.handleExtLogin.mockRejectedValueOnce(new Error('boom'))
+
+    const result = handleMessage(
+      { action: 'ext_login', id: 'ext-id' },
+      extensionSender(),
+      sendResponse,
+    )
+
+    // Channel closes immediately; the failure is reported out-of-band so the
+    // popup listener (which has no timeout) still settles.
+    expect(result).toBeUndefined()
+    await vi.waitFor(() => {
+      expect(mocks.sendAuthError).toHaveBeenCalledWith('ext-id', {
+        message: 'boom',
+      })
+    })
   })
 
   it('routes sponsored signing actions through the out-of-band route wrapper', () => {
