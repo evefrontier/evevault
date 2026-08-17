@@ -33,7 +33,7 @@ import {
   SuiSignPersonalMessage,
   SuiSignTransaction,
 } from '@mysten/wallet-standard'
-import { APP_VERSION } from '@/lib/appVersion'
+import { APP_VERSION, BUILD_COMMIT } from '@/lib/appVersion'
 import type { WalletEventListener } from '@/lib/background/types'
 import { trySettle } from '@/lib/util/timeoutGuard'
 import { postToEveVaultBridge } from './bridgeTargetOrigin'
@@ -118,6 +118,9 @@ export class EveVaultWallet implements Wallet {
       [EVEFRONTIER_VAULT_VERSION]: {
         version: '1.0.0',
         vaultVersion: APP_VERSION,
+        commit: BUILD_COMMIT,
+        // WXT injects the build target; undefined under plain vitest.
+        platform: import.meta.env.BROWSER ?? 'unknown',
       },
     }
   }

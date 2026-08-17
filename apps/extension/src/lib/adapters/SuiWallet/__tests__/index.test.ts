@@ -12,7 +12,7 @@ import {
   SuiSignTransaction,
 } from '@mysten/wallet-standard'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { APP_VERSION } from '@/lib/appVersion'
+import { APP_VERSION, BUILD_COMMIT } from '@/lib/appVersion'
 import { EveVaultWallet } from '../index'
 import { APPROVAL_TIMEOUT_MS } from '../vaultMessages'
 import { EVEFRONTIER_VAULT_VERSION } from '../walletFeatures'
@@ -95,7 +95,7 @@ describe('EveVaultWallet', () => {
     expect(wallet.chains).toEqual([SUI_TESTNET_CHAIN, SUI_DEVNET_CHAIN])
   })
 
-  it('exposes the extension package version distinct from the wallet-standard version', () => {
+  it('exposes the extension build info distinct from the wallet-standard version', () => {
     const wallet = new EveVaultWallet()
 
     const versionFeature = wallet.features[EVEFRONTIER_VAULT_VERSION]
@@ -103,6 +103,9 @@ describe('EveVaultWallet', () => {
     expect(versionFeature.vaultVersion).toMatch(/^\d+\.\d+\.\d+/)
     // The client build version must not be conflated with the spec version.
     expect(versionFeature.vaultVersion).not.toBe(wallet.version)
+    // Build provenance for disambiguating which client/build is connected.
+    expect(versionFeature.commit).toBe(BUILD_COMMIT)
+    expect(typeof versionFeature.platform).toBe('string')
   })
 
   it('connects to localnet auth success and supports silent reconnect when accounts exist', async () => {

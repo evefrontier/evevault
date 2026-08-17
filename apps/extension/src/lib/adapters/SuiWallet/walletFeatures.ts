@@ -11,9 +11,9 @@ import {
 } from '@mysten/wallet-standard'
 
 /**
- * Reports the Eve Vault extension's package version to dApps so they can detect
- * outdated installs. Distinct from the Wallet Standard `version` ('1.0.0'),
- * which identifies the spec the wallet implements, not the client build.
+ * Reports the Eve Vault build to dApps so they can detect outdated installs and
+ * disambiguate which client is connected (e.g. from zkSigner, or a Firefox vs
+ * Chrome build).
  */
 export const EVEFRONTIER_VAULT_VERSION = 'evefrontier:vaultVersion' as const
 
@@ -21,6 +21,8 @@ export type EveVaultWalletFeaturesWithVersion = EveVaultWalletFeatures & {
   [EVEFRONTIER_VAULT_VERSION]: {
     version: '1.0.0'
     vaultVersion: string
+    commit: string // Short commit SHA of the build, e.g. "18ba780e" ("unknown" if unavailable).
+    platform: string // Build target the extension was compiled for, e.g. "chrome" | "firefox".
   }
 }
 
