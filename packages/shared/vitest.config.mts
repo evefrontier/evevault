@@ -1,4 +1,5 @@
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import react from '@vitejs/plugin-react'
 import { playwright } from '@vitest/browser-playwright'
 import tsconfigPaths from 'vite-tsconfig-paths'
@@ -15,6 +16,17 @@ const inlineDappKit = {
       inline: ['@evefrontier/wallet-core'],
     },
   },
+}
+
+// Tests drive the extension APIs by stubbing `globalThis.browser`; route
+// `@wxt-dev/browser` to a live proxy over it (see vitest.browser-mock.ts). The
+// real module snapshots `browser` at import, which goes stale as tests swap the
+// global. `test.alias` is applied by the module runner (even to pre-bundled
+// deps), and must be set per-project since projects don't inherit root config.
+const browserMockAlias = {
+  '@wxt-dev/browser': fileURLToPath(
+    new URL('./vitest.browser-mock.ts', import.meta.url),
+  ),
 }
 
 export default defineConfig({
@@ -56,6 +68,7 @@ export default defineConfig({
           environment: 'node',
           globals: true,
           setupFiles: ['../../vitest.setup.ts'],
+          alias: browserMockAlias,
           ...inlineDappKit,
         },
       },
@@ -72,6 +85,7 @@ export default defineConfig({
           environment: 'jsdom',
           globals: true,
           setupFiles: ['../../vitest.setup.ts'],
+          alias: browserMockAlias,
           ...inlineDappKit,
         },
       },
@@ -81,6 +95,7 @@ export default defineConfig({
           include: ['src/**/*.browser.test.{ts,tsx}'],
           globals: true,
           setupFiles: ['../../vitest.setup.ts'],
+          alias: browserMockAlias,
           ...inlineDappKit,
           browser: {
             enabled: true,

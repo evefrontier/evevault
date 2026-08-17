@@ -13,6 +13,7 @@ import {
 } from '@evevault/shared/types'
 import { createLogger, toErrorMessage } from '@evevault/shared/utils'
 import { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519'
+import { type Browser, browser } from 'wxt/browser'
 import { sendToTab } from '@/lib/background/messaging/tabMessaging'
 import {
   getDappRequestContext,
@@ -403,11 +404,13 @@ async function ensureNonce(
   return nonce
 }
 
-// Processes the redirect URL from chrome.identity.launchWebAuthFlow: exchanges
+// Processes the redirect URL from browser.identity.launchWebAuthFlow: exchanges
 // the auth code for a JWT, stores it, and sends auth_success to the originating tab.
+// `error` carries a launchWebAuthFlow rejection (user-cancel, no redirect).
 async function handleOAuthCallback(
   responseUrl: string | undefined,
   ctx: OAuthCallbackContext,
+  error?: unknown,
 ): Promise<void> {
   const {
     id,
@@ -425,12 +428,12 @@ async function handleOAuthCallback(
   // the same, or the dApp's connect request hangs until it times out.
   const ids = [id, ...additionalIds]
 
-  if (chrome.runtime.lastError || !responseUrl) {
-    log.error('Auth flow returned no response', chrome.runtime.lastError)
+  if (!responseUrl) {
+    log.error('Auth flow returned no response', error)
     sendAuthErrorToTabIds(
       tabId,
       ids,
-      chrome.runtime.lastError?.message ??
+      (error instanceof Error ? error.message : undefined) ??
         'Sign-in did not complete. Please try again.',
     )
     return
@@ -483,7 +486,7 @@ async function handleOAuthCallback(
 
 export async function handleDappLogin(
   message: MessageWithId,
-  sender: chrome.runtime.MessageSender,
+  sender: Browser.runtime.MessageSender,
   _sendResponse: (response?: unknown) => void,
   tabId?: number,
 ): Promise<void> {
@@ -532,25 +535,25 @@ export async function handleDappLogin(
   const nonce = await ensureNonce(chain, id, tabId)
   if (!nonce) return
 
-  const chromeRedirectUri = chrome.identity.getRedirectURL()
+  const chromeRedirectUri = browser.identity.getRedirectURL()
   const { authUrl, codeVerifier, state } = await getAuthRequest({
     tenantId: tenant,
     nonce,
   })
-  chrome.identity.launchWebAuthFlow(
-    { url: authUrl.toString(), interactive: true },
-    (responseUrl) =>
-      handleOAuthCallback(responseUrl, {
-        id,
-        additionalIds,
-        chain,
-        chromeRedirectUri,
-        tenant,
-        codeVerifier,
-        state,
-        nonce,
-        tabId,
-        dappContext,
-      }),
-  )
+  const ctx: OAuthCallbackContext = {
+    id,
+    additionalIds,
+    chain,
+    chromeRedirectUri,
+    tenant,
+    codeVerifier,
+    state,
+    nonce,
+    tabId,
+    dappContext,
+  }
+  void browser.identity
+    .launchWebAuthFlow({ url: authUrl.toString(), interactive: true })
+    .then((responseUrl) => handleOAuthCallback(responseUrl, ctx))
+    .catch((error) => handleOAuthCallback(undefined, ctx, error))
 }

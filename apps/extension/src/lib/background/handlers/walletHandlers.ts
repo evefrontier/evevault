@@ -1,6 +1,7 @@
 import { WalletStandardMessageTypes } from '@evevault/shared'
 import { createLogger, isRecord, toErrorMessage } from '@evevault/shared/utils'
 import type { SuiChain } from '@mysten/wallet-standard'
+import { type Browser, browser } from 'wxt/browser'
 import {
   type SigningErrorType,
   sendToTab,
@@ -136,7 +137,7 @@ function sendApprovalError(
 
 async function handleApprovePopup(
   message: WalletActionMessage,
-  sender: chrome.runtime.MessageSender,
+  sender: Browser.runtime.MessageSender,
   sendResponse: (response?: unknown) => void,
 ): Promise<boolean> {
   const { action } = message
@@ -172,7 +173,7 @@ async function handleApprovePopup(
 
     const requestId = crypto.randomUUID()
 
-    await chrome.storage.local.set({
+    await browser.storage.local.set({
       pendingAction: {
         ...message,
         windowId,
@@ -188,16 +189,16 @@ async function handleApprovePopup(
 
     let timeoutId: ReturnType<typeof setTimeout>
     let registeredListener: (changes: {
-      [key: string]: chrome.storage.StorageChange
+      [key: string]: Browser.storage.StorageChange
     }) => void
 
     const detachApprovalListener = () => {
       clearTimeout(timeoutId)
-      chrome.storage.onChanged.removeListener(registeredListener)
+      browser.storage.onChanged.removeListener(registeredListener)
     }
 
     const coreListener = (changes: {
-      [key: string]: chrome.storage.StorageChange
+      [key: string]: Browser.storage.StorageChange
     }) => {
       const result = changes.transactionResult?.newValue
       if (!isApprovalResultForRequest(result, windowId, requestId)) return
@@ -207,7 +208,7 @@ async function handleApprovePopup(
 
       if (isSuccess && typeof senderTabId === 'number') {
         sendApprovalSuccess(result, isSignAndExecute, senderTabId, message.id)
-        chrome.storage.local.remove(['pendingAction', 'transactionResult'])
+        browser.storage.local.remove(['pendingAction', 'transactionResult'])
         detachApprovalListener()
       } else if (result?.status === 'error') {
         sendApprovalError(
@@ -217,13 +218,13 @@ async function handleApprovePopup(
           action,
           message.id,
         )
-        chrome.storage.local.remove(['pendingAction', 'transactionResult'])
+        browser.storage.local.remove(['pendingAction', 'transactionResult'])
         detachApprovalListener()
       }
     }
 
     registeredListener = (changes: {
-      [key: string]: chrome.storage.StorageChange
+      [key: string]: Browser.storage.StorageChange
     }) => {
       clearTimeout(timeoutId)
       coreListener(changes)
@@ -232,13 +233,13 @@ async function handleApprovePopup(
     timeoutId = setTimeout(
       () => {
         detachApprovalListener()
-        chrome.storage.local.remove(['pendingAction', 'transactionResult'])
+        browser.storage.local.remove(['pendingAction', 'transactionResult'])
         log.warn('Transaction approval timed out', { action, senderTabId })
       },
       10 * 60 * 1000,
     )
 
-    chrome.storage.onChanged.addListener(registeredListener)
+    browser.storage.onChanged.addListener(registeredListener)
 
     return true
   } catch (error) {

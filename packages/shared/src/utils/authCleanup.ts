@@ -1,3 +1,4 @@
+import { browser } from '@wxt-dev/browser'
 import { createLogger } from './logger'
 
 const log = createLogger()
@@ -28,37 +29,29 @@ export function cleanupOidcStorage(): void {
 /**
  * Cleans up all OIDC-related data from chrome.storage.local (for extensions)
  */
-export function cleanupExtensionStorage(): Promise<void> {
-  if (typeof chrome === 'undefined' || !chrome.storage) {
-    return Promise.resolve()
+export async function cleanupExtensionStorage(): Promise<void> {
+  if (!browser?.storage) {
+    return
   }
 
-  return new Promise((resolve) => {
-    // Cast null to get all keys (Chrome API accepts null but TS types don't)
-    chrome.storage.local.get(null as unknown as string[], (items) => {
-      const keysToRemove: string[] = []
+  // null returns all keys (browser.storage.local.get accepts null)
+  const items = await browser.storage.local.get(null)
+  const keysToRemove: string[] = []
 
-      // Check all keys in chrome.storage.local
-      for (const key in items) {
-        if (key.includes('oidc') || key.includes('eve')) {
-          keysToRemove.push(key)
-        }
-      }
+  // Check all keys in browser.storage.local
+  for (const key in items) {
+    if (key.includes('oidc') || key.includes('eve')) {
+      keysToRemove.push(key)
+    }
+  }
 
-      // Remove all identified keys
-      log.info('Cleaning up OIDC entries from chrome.storage.local', {
-        total: keysToRemove.length,
-      })
-      if (keysToRemove.length > 0) {
-        chrome.storage.local.remove(keysToRemove, () => {
-          log.info('Chrome storage cleanup complete')
-          resolve()
-        })
-      } else {
-        resolve()
-      }
-    })
+  log.info('Cleaning up OIDC entries from browser.storage.local', {
+    total: keysToRemove.length,
   })
+  if (keysToRemove.length > 0) {
+    await browser.storage.local.remove(keysToRemove)
+    log.info('Extension storage cleanup complete')
+  }
 }
 
 /**

@@ -5,7 +5,8 @@ import type {
 } from '@evevault/shared/types'
 import { KeeperMessageTypes } from '@evevault/shared/types'
 import { createLogger, DEVICE_STORAGE_KEY } from '@evevault/shared/utils'
-import { ensureOffscreen } from '@/lib/background/services/offscreenService'
+import { browser } from 'wxt/browser'
+import { keeperHost } from '@/lib/background/keeper/keeperHost'
 
 const log = createLogger()
 
@@ -15,16 +16,13 @@ const log = createLogger()
  * hasn't rehydrated yet when setState is called.
  */
 export async function getEphemeralKeyPairSecretKeyFromStorage(): Promise<StoredSecretKey | null> {
-  if (typeof chrome === 'undefined' || !chrome.storage) {
+  if (!browser?.storage) {
     return null
   }
 
   try {
-    const stored = await new Promise<unknown>((resolve) => {
-      chrome.storage.local.get([DEVICE_STORAGE_KEY], (result) => {
-        resolve(result[DEVICE_STORAGE_KEY] || null)
-      })
-    })
+    const result = await browser.storage.local.get([DEVICE_STORAGE_KEY])
+    const stored = result[DEVICE_STORAGE_KEY] || null
 
     if (!stored) {
       return null
@@ -62,27 +60,19 @@ export async function checkKeeperUnlocked(): Promise<{
   publicKeyBytes?: number[]
 }> {
   try {
-    await ensureOffscreen(true)
-    return new Promise((resolve) => {
-      chrome.runtime.sendMessage(
-        { type: KeeperMessageTypes.GET_PUBLIC_KEY, target: 'KEEPER' },
-        (response) => {
-          if (chrome.runtime.lastError) {
-            log.error('Error checking keeper', chrome.runtime.lastError)
-            resolve({ unlocked: false })
-            return
-          }
-          if (response?.ok === true && response?.publicKeyBytes) {
-            resolve({
-              unlocked: true,
-              publicKeyBytes: response.publicKeyBytes,
-            })
-          } else {
-            resolve({ unlocked: false })
-          }
-        },
-      )
-    })
+    // Single attempt (no retry) to preserve prior behaviour; the host handles
+    // offscreen readiness and tags the message with target: 'KEEPER'.
+    const response = await keeperHost.send(
+      { type: KeeperMessageTypes.GET_PUBLIC_KEY },
+      1,
+    )
+    if (response?.ok === true && response?.publicKeyBytes) {
+      return {
+        unlocked: true,
+        publicKeyBytes: response.publicKeyBytes,
+      }
+    }
+    return { unlocked: false }
   } catch (error) {
     log.error('Failed to check keeper status', error)
     return { unlocked: false }

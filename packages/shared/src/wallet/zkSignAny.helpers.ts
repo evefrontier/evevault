@@ -1,5 +1,6 @@
 import type { ZKProofData } from '@evefrontier/wallet-core/crypto'
 import type { IntentScope } from '@mysten/sui/cryptography'
+import { browser } from '@wxt-dev/browser'
 import { ephKeyService } from '#/services/vaultService'
 import { useContextStore } from '#/stores/contextStore'
 import { useDeviceStore } from '#/stores/deviceStore'
@@ -112,7 +113,7 @@ const signWithExtensionEphemeralKey = async (
     throw new Error('[signWithExtensionEphemeralKey] User address not found')
   }
 
-  const response = (await chrome.runtime?.sendMessage?.({
+  const response = (await browser.runtime?.sendMessage?.({
     type: VaultMessageTypes.ZK_EPH_SIGN_BYTES,
     msgBytes: Array.from(msgBytes),
     scope,

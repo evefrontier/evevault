@@ -81,7 +81,7 @@ import { makeJwt } from '#/testing'
 const PAST = Math.floor(Date.now() / 1000) - 60
 
 describe('authStore.initialize() (extension path)', () => {
-  let originalChrome: unknown
+  let originalBrowser: unknown
 
   beforeEach(() => {
     setupAuthStoreMocks(h, { isExtension: true, tenantId: 'default' })
@@ -93,8 +93,8 @@ describe('authStore.initialize() (extension path)', () => {
     })
     useAuthStore.setState({ user: null, loading: false, error: null })
 
-    originalChrome = (globalThis as unknown as { chrome: unknown }).chrome
-    ;(globalThis as unknown as { chrome: unknown }).chrome = {
+    originalBrowser = (globalThis as unknown as { browser: unknown }).browser
+    ;(globalThis as unknown as { browser: unknown }).browser = {
       runtime: { id: 'test-ext' },
       storage: { local: { get: vi.fn().mockResolvedValue({}) } },
     }
@@ -102,7 +102,7 @@ describe('authStore.initialize() (extension path)', () => {
 
   afterEach(() => {
     vi.clearAllMocks()
-    ;(globalThis as unknown as { chrome: unknown }).chrome = originalChrome
+    ;(globalThis as unknown as { browser: unknown }).browser = originalBrowser
   })
 
   describe('when UserManager has no user', () => {

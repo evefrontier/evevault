@@ -1,5 +1,6 @@
 import { getJwt, getZkLoginAddress } from '@evevault/shared/auth'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Browser } from 'wxt/browser'
 import { handleDappLogin } from '../dappLogin'
 import { checkKeeperUnlocked } from '../keeperHelpers'
 
@@ -104,10 +105,10 @@ const mockGetJwt = vi.mocked(getJwt)
 const mockGetZkLoginAddress = vi.mocked(getZkLoginAddress)
 const mockCheckKeeperUnlocked = vi.mocked(checkKeeperUnlocked)
 
-function installChromeMock() {
-  vi.stubGlobal('chrome', {
+function installBrowserMock() {
+  vi.stubGlobal('browser', {
     tabs: {
-      sendMessage: vi.fn(() => Promise.resolve()),
+      sendMessage: vi.fn(async () => undefined),
     },
     identity: {
       getRedirectURL: vi.fn(() => 'chrome-extension://extension-id/callback'),
@@ -122,12 +123,12 @@ function installChromeMock() {
         set: vi.fn(async () => undefined),
       },
     },
-  } as unknown as typeof chrome)
+  } as unknown as typeof browser)
 }
 
 describe('handleDappLogin', () => {
   beforeEach(() => {
-    installChromeMock()
+    installBrowserMock()
     vi.clearAllMocks()
     mocks.deviceState.ephemeralKeyPairSecretKey = { iv: 'iv', data: 'data' }
     mocks.deviceState.ephemeralPublicKey = { flag: vi.fn() }
@@ -163,7 +164,7 @@ describe('handleDappLogin', () => {
           url: 'https://dapp.example/connect',
           title: 'Example dApp',
         },
-      } as chrome.runtime.MessageSender,
+      } as Browser.runtime.MessageSender,
       vi.fn(),
       42,
     )
@@ -171,14 +172,14 @@ describe('handleDappLogin', () => {
     expect(mockGetZkLoginAddress).toHaveBeenCalledWith({
       jwt: 'access-token',
     })
-    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(42, {
+    expect(browser.tabs.sendMessage).toHaveBeenCalledWith(42, {
       id: 'connect-id',
       type: 'auth_success',
       chain: 'sui:testnet',
       address: '0xzk',
       publicKey: 'AQID',
     })
-    expect(chrome.tabs.sendMessage).not.toHaveBeenCalledWith(
+    expect(browser.tabs.sendMessage).not.toHaveBeenCalledWith(
       42,
       expect.objectContaining({
         token: expect.anything(),
@@ -191,12 +192,12 @@ describe('handleDappLogin', () => {
       { id: 'ext-req' },
       {
         origin: 'chrome-extension://extension-id',
-      } as chrome.runtime.MessageSender,
+      } as Browser.runtime.MessageSender,
       vi.fn(),
       undefined,
     )
 
-    expect(chrome.tabs.sendMessage).not.toHaveBeenCalled()
+    expect(browser.tabs.sendMessage).not.toHaveBeenCalled()
   })
 
   it('sends auth_error to the tab when the keeper is locked and there is no device data', async () => {
@@ -209,12 +210,12 @@ describe('handleDappLogin', () => {
       {
         origin: 'https://dapp.example',
         tab: { id: 10, url: 'https://dapp.example/' },
-      } as chrome.runtime.MessageSender,
+      } as Browser.runtime.MessageSender,
       vi.fn(),
       10,
     )
 
-    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(
+    expect(browser.tabs.sendMessage).toHaveBeenCalledWith(
       10,
       expect.objectContaining({
         id: 'locked-req',
@@ -238,14 +239,14 @@ describe('handleDappLogin', () => {
       {
         origin: 'https://dapp.example',
         tab: { id: 20, url: 'https://dapp.example/' },
-      } as chrome.runtime.MessageSender,
+      } as Browser.runtime.MessageSender,
       vi.fn(),
       20,
     )
 
     expect(mocks.addPendingDappId).toHaveBeenCalledWith(20, 'dup-req')
     expect(mocks.openPopupWindow).not.toHaveBeenCalled()
-    expect(chrome.tabs.sendMessage).not.toHaveBeenCalled()
+    expect(browser.tabs.sendMessage).not.toHaveBeenCalled()
   })
 
   it('sends auth_error when the popup window fails to open (no device data)', async () => {
@@ -258,12 +259,12 @@ describe('handleDappLogin', () => {
       {
         origin: 'https://dapp.example',
         tab: { id: 7, url: 'https://dapp.example/' },
-      } as chrome.runtime.MessageSender,
+      } as Browser.runtime.MessageSender,
       vi.fn(),
       7,
     )
 
-    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(
+    expect(browser.tabs.sendMessage).toHaveBeenCalledWith(
       7,
       expect.objectContaining({
         type: 'auth_error',
@@ -286,14 +287,14 @@ describe('handleDappLogin', () => {
       {
         origin: 'https://dapp.example',
         tab: { id: 42, url: 'https://dapp.example/' },
-      } as chrome.runtime.MessageSender,
+      } as Browser.runtime.MessageSender,
       vi.fn(),
       42,
     )
 
     expect(mockCheckKeeperUnlocked).toHaveBeenCalledTimes(2)
     expect(mocks.openPopupWindow).not.toHaveBeenCalled()
-    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(
+    expect(browser.tabs.sendMessage).toHaveBeenCalledWith(
       42,
       expect.objectContaining({ type: 'auth_success' }),
     )
@@ -309,12 +310,12 @@ describe('handleDappLogin', () => {
       {
         origin: 'https://dapp.example',
         tab: { id: 42, url: 'https://dapp.example/' },
-      } as chrome.runtime.MessageSender,
+      } as Browser.runtime.MessageSender,
       vi.fn(),
       42,
     )
 
-    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(
+    expect(browser.tabs.sendMessage).toHaveBeenCalledWith(
       42,
       expect.objectContaining({
         id: 'zk-fail',
@@ -338,12 +339,12 @@ describe('handleDappLogin', () => {
       {
         origin: 'https://dapp.example',
         tab: { id: 42, url: 'https://dapp.example/' },
-      } as chrome.runtime.MessageSender,
+      } as Browser.runtime.MessageSender,
       vi.fn(),
       42,
     )
 
-    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(
+    expect(browser.tabs.sendMessage).toHaveBeenCalledWith(
       42,
       expect.objectContaining({
         type: 'auth_error',

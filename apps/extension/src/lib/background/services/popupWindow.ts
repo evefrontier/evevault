@@ -1,4 +1,5 @@
 import { createLogger } from '@evevault/shared/utils'
+import { browser } from 'wxt/browser'
 
 const log = createLogger()
 
@@ -11,9 +12,13 @@ export async function openPopupWindow(
   url: string,
 ): Promise<number | undefined> {
   try {
-    const popupUrl = chrome.runtime.getURL(`${url}.html`)
+    // WXT types runtime.getURL to statically-known public paths; the page name
+    // is built dynamically here, so widen to the getURL parameter type.
+    const popupUrl = browser.runtime.getURL(
+      `/${url}.html` as Parameters<typeof browser.runtime.getURL>[0],
+    )
 
-    const window = await chrome.windows.create({
+    const window = await browser.windows.create({
       url: popupUrl,
       type: 'popup',
       width: 500,
@@ -21,7 +26,7 @@ export async function openPopupWindow(
       focused: true,
     })
 
-    return window.id
+    return window?.id
   } catch (error) {
     log.error('Failed to open popup', error)
     return undefined

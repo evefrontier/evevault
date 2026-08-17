@@ -1,5 +1,6 @@
 import { VaultMessageTypes, WalletStandardMessageTypes } from '@evevault/shared'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Browser } from 'wxt/browser'
 import { handleMessage } from '@/lib/background/handlers/messageHandler'
 
 const { logger, mocks } = vi.hoisted(() => ({
@@ -76,52 +77,53 @@ vi.mock('@/lib/background/handlers/vaultHandlers', () => ({
   _handleLocalnetSignBytes: mocks.handleLocalnetSignBytes,
 }))
 
-function installChromeMock() {
-  vi.stubGlobal('chrome', {
+function installBrowserMock() {
+  vi.stubGlobal('browser', {
     runtime: {
       id: 'extension-id',
+      getURL: (path: string) => `chrome-extension://extension-id${path}`,
     },
     tabs: {
-      query: vi.fn((_queryInfo, callback) => callback([{ id: 1 }, { id: 2 }])),
-      sendMessage: vi.fn(() => Promise.resolve()),
+      query: vi.fn(async () => [{ id: 1 }, { id: 2 }]),
+      sendMessage: vi.fn(async () => undefined),
     },
-  } as unknown as typeof chrome)
+  } as unknown as typeof browser)
 }
 
-function dappSender(): chrome.runtime.MessageSender {
+function dappSender(): Browser.runtime.MessageSender {
   return {
     origin: 'https://dapp.example',
     url: 'https://dapp.example/app',
     tab: {
       id: 42,
       url: 'https://dapp.example/app',
-    } as chrome.tabs.Tab,
+    } as Browser.tabs.Tab,
   }
 }
 
-function extensionSender(): chrome.runtime.MessageSender {
+function extensionSender(): Browser.runtime.MessageSender {
   return {
     url: 'chrome-extension://extension-id/popup.html',
   }
 }
 
-function extensionTabSender(): chrome.runtime.MessageSender {
+function extensionTabSender(): Browser.runtime.MessageSender {
   return {
     origin: 'chrome-extension://extension-id',
     url: 'chrome-extension://extension-id/sign_transaction.html',
     tab: {
       id: 77,
       url: 'chrome-extension://extension-id/sign_transaction.html',
-    } as chrome.tabs.Tab,
+    } as Browser.tabs.Tab,
   }
 }
 
 describe('handleMessage route policy', () => {
   beforeEach(() => {
-    installChromeMock()
+    installBrowserMock()
     vi.clearAllMocks()
     mocks.getDappRequestContext.mockImplementation(
-      (sender: chrome.runtime.MessageSender) =>
+      (sender: Browser.runtime.MessageSender) =>
         sender.tab
           ? {
               origin: 'https://dapp.example',
@@ -265,7 +267,7 @@ describe('handleMessage route policy', () => {
         sendResponse,
       ),
     ).toBe(false)
-    expect(chrome.tabs.query).not.toHaveBeenCalled()
+    expect(browser.tabs.query).not.toHaveBeenCalled()
   })
 
   it('allows wallet signing actions from tab senders only', () => {
@@ -294,7 +296,7 @@ describe('handleMessage route policy', () => {
 
   it('routes wallet signing actions from tab senders without resolving dApp context', () => {
     const sendResponse = vi.fn()
-    const sender = { tab: { id: 42 } } as chrome.runtime.MessageSender
+    const sender = { tab: { id: 42 } } as Browser.runtime.MessageSender
     expect(
       handleMessage(
         { action: WalletStandardMessageTypes.SIGN_TRANSACTION, id: 'sign-id' },
@@ -344,7 +346,7 @@ describe('handleMessage route policy', () => {
       id: 'disconnect-id',
       type: 'disconnect_success',
     })
-    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(42, {
+    expect(browser.tabs.sendMessage).toHaveBeenCalledWith(42, {
       id: 'disconnect-id',
       type: 'disconnect_success',
     })
@@ -372,7 +374,7 @@ describe('handleMessage route policy', () => {
         error: { message: 'revocation failed' },
       })
     })
-    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(42, {
+    expect(browser.tabs.sendMessage).toHaveBeenCalledWith(42, {
       id: 'disconnect-id',
       type: 'disconnect_error',
       error: { message: 'revocation failed' },
@@ -417,7 +419,7 @@ describe('handleMessage route policy', () => {
     })
   })
 
-  it('broadcasts change events to all tabs when sent by extension', () => {
+  it('broadcasts change events to all tabs when sent by extension', async () => {
     const sendResponse = vi.fn()
     const result = handleMessage(
       { event: 'change', payload: { accounts: ['0xabc'] } },
@@ -426,16 +428,18 @@ describe('handleMessage route policy', () => {
     )
 
     expect(result).toBe(true)
-    expect(chrome.tabs.query).toHaveBeenCalled()
-    // tabs.query callback runs synchronously in the mock, so sendMessage is already called
-    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(
-      1,
-      expect.objectContaining({
-        event: 'change',
-        payload: { accounts: ['0xabc'] },
-      }),
-    )
-    expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(
+    expect(browser.tabs.query).toHaveBeenCalled()
+    // browser.tabs.query resolves as a promise, so sendMessage fires on a microtask.
+    await vi.waitFor(() => {
+      expect(browser.tabs.sendMessage).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({
+          event: 'change',
+          payload: { accounts: ['0xabc'] },
+        }),
+      )
+    })
+    expect(browser.tabs.sendMessage).toHaveBeenCalledWith(
       2,
       expect.objectContaining({ event: 'change' }),
     )
@@ -451,5 +455,67 @@ describe('handleMessage route policy', () => {
 
     expect(result).toBeUndefined()
     expect(sendResponse).not.toHaveBeenCalled()
+  })
+})
+
+// Firefox's extension-URL host is a per-install UUID (not runtime.id) under the
+// moz-extension:// scheme, so the guard must gate routes off the getURL-derived
+// origin. These drive that end-to-end through handleMessage, not just the guard.
+const FIREFOX_ORIGIN = 'moz-extension://11111111-2222-3333-4444-555555555555'
+
+function installFirefoxBrowserMock() {
+  vi.stubGlobal('browser', {
+    runtime: {
+      id: 'eve@evefrontier',
+      getURL: (path: string) => `${FIREFOX_ORIGIN}${path}`,
+    },
+    tabs: {
+      query: vi.fn(async () => [{ id: 1 }, { id: 2 }]),
+      sendMessage: vi.fn(async () => undefined),
+    },
+  } as unknown as typeof browser)
+}
+
+describe('handleMessage route policy — Firefox (moz-extension)', () => {
+  beforeEach(() => {
+    installFirefoxBrowserMock()
+    vi.clearAllMocks()
+  })
+
+  it('allows vault messages from a moz-extension sender', () => {
+    const sendResponse = vi.fn()
+    const sender: Browser.runtime.MessageSender = {
+      url: `${FIREFOX_ORIGIN}/popup.html`,
+    }
+
+    const result = handleMessage(
+      { type: VaultMessageTypes.LOCK },
+      sender,
+      sendResponse,
+    )
+
+    expect(result).toBe(true)
+    expect(mocks.handleLock).toHaveBeenCalledWith(
+      { type: VaultMessageTypes.LOCK },
+      sender,
+      sendResponse,
+    )
+  })
+
+  it('rejects a chrome-extension sender when running under a Firefox origin', () => {
+    const sendResponse = vi.fn()
+
+    const result = handleMessage(
+      { type: VaultMessageTypes.LOCK },
+      { url: 'chrome-extension://extension-id/popup.html' },
+      sendResponse,
+    )
+
+    expect(result).toBe(false)
+    expect(mocks.handleLock).not.toHaveBeenCalled()
+    expect(sendResponse).toHaveBeenCalledWith({
+      type: 'auth_error',
+      error: { message: 'Unauthorized message sender' },
+    })
   })
 })

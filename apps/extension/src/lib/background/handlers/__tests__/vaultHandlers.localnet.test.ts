@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { Browser } from 'wxt/browser'
 import { handleUnlockVault } from '@/lib/background/handlers/vaultHandlers'
 import type { VaultMessage } from '@/lib/background/types'
 import { captureKeeperMessage } from './vaultHandlers.test-utils'
@@ -7,14 +8,10 @@ vi.mock('@/lib/background/handlers/authHandlers', () => ({
   checkPendingAuthAfterUnlock: vi.fn(),
 }))
 
-vi.mock('@/lib/background/services/offscreenService', () => ({
-  ensureOffscreen: vi.fn().mockResolvedValue(undefined),
-}))
-
 const DEVICE_KEY = 'evevault:device'
 const HASHED_SECRET_KEY = { iv: 'iv', data: 'data', salt: 'salt' }
 
-const mockSender = {} as chrome.runtime.MessageSender
+const mockSender = {} as Browser.runtime.MessageSender
 
 function makeUnlockMessage(
   overrides: Partial<VaultMessage> = {},
@@ -46,7 +43,11 @@ function stubKeeperBridge(
           version: 0,
         })
       : undefined
-  vi.stubGlobal('chrome', {
+  vi.stubGlobal('browser', {
+    // A present offscreen document lets KeeperHost.ensureReady skip creation.
+    offscreen: {
+      hasDocument: vi.fn().mockResolvedValue(true),
+    },
     storage: {
       local: {
         get: vi
@@ -59,12 +60,10 @@ function stubKeeperBridge(
       },
     },
     runtime: {
-      sendMessage: vi.fn((_msg, callback) => {
-        callback(keeperResponse)
-      }),
+      sendMessage: vi.fn(async () => keeperResponse),
       lastError: undefined,
     },
-  } as unknown as typeof chrome)
+  } as unknown as typeof browser)
 }
 
 describe('handleUnlockVault — localnet key forwarding', () => {
@@ -124,7 +123,7 @@ describe('handleUnlockVault — localnet key forwarding', () => {
       sendResponse,
     )
 
-    expect(chrome.runtime.sendMessage).not.toHaveBeenCalled()
+    expect(browser.runtime.sendMessage).not.toHaveBeenCalled()
     expect(sendResponse).toHaveBeenCalledWith(
       expect.objectContaining({ ok: false }),
     )

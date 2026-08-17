@@ -2,6 +2,7 @@ import { storeJwt } from '@evevault/shared'
 import { exchangeCodeForToken } from '@evevault/shared/auth'
 import { useDeviceStore } from '@evevault/shared/stores'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Browser } from 'wxt/browser'
 import { getAuthRequest } from '@/lib/background/services/oauthService'
 import { openPopupWindow } from '@/lib/background/services/popupWindow'
 import type { MessageWithId } from '@/lib/background/types'
@@ -121,15 +122,15 @@ const mockCheckKeeperUnlocked = vi.mocked(checkKeeperUnlocked)
 const mockSetPendingAuthAfterUnlock = vi.mocked(setPendingAuthAfterUnlock)
 
 function installChromeIdentityMock(responseUrl: string | undefined) {
-  vi.stubGlobal('chrome', {
+  vi.stubGlobal('browser', {
     runtime: {
       lastError: undefined,
     },
     identity: {
       getRedirectURL: vi.fn(() => 'https://extension.example/callback'),
-      launchWebAuthFlow: vi.fn((_details, callback) => callback(responseUrl)),
+      launchWebAuthFlow: vi.fn(async () => responseUrl),
     },
-  } as unknown as typeof chrome)
+  } as unknown as typeof browser)
 }
 
 function resetDeviceState() {
@@ -180,7 +181,7 @@ describe('handleExtLogin', () => {
 
     await handleExtLogin(
       makeMessage(),
-      {} as chrome.runtime.MessageSender,
+      {} as Browser.runtime.MessageSender,
       vi.fn(),
     )
 
@@ -206,7 +207,7 @@ describe('handleExtLogin', () => {
 
     const promise = handleExtLogin(
       makeMessage(),
-      {} as chrome.runtime.MessageSender,
+      {} as Browser.runtime.MessageSender,
       vi.fn(),
     )
     await vi.advanceTimersByTimeAsync(301)
@@ -229,7 +230,7 @@ describe('handleExtLogin', () => {
 
     await handleExtLogin(
       makeMessage(),
-      {} as chrome.runtime.MessageSender,
+      {} as Browser.runtime.MessageSender,
       vi.fn(),
     )
 
@@ -255,7 +256,7 @@ describe('handleExtLogin', () => {
 
     await handleExtLogin(
       makeMessage(),
-      {} as chrome.runtime.MessageSender,
+      {} as Browser.runtime.MessageSender,
       vi.fn(),
     )
 
@@ -288,7 +289,7 @@ describe('handleExtLogin', () => {
 
     await handleExtLogin(
       makeMessage(),
-      {} as chrome.runtime.MessageSender,
+      {} as Browser.runtime.MessageSender,
       vi.fn(),
     )
 
@@ -307,7 +308,7 @@ describe('handleExtLogin', () => {
 
     await handleExtLogin(
       makeMessage({ tenantId: 'tenant-explicit' }),
-      {} as chrome.runtime.MessageSender,
+      {} as Browser.runtime.MessageSender,
       vi.fn(),
     )
 
@@ -341,7 +342,7 @@ describe('handleExtLogin', () => {
 
     await handleExtLogin(
       makeMessage(),
-      {} as chrome.runtime.MessageSender,
+      {} as Browser.runtime.MessageSender,
       vi.fn(),
     )
 
@@ -364,7 +365,7 @@ describe('handleExtLogin', () => {
 
     await handleExtLogin(
       makeMessage(),
-      {} as chrome.runtime.MessageSender,
+      {} as Browser.runtime.MessageSender,
       vi.fn(),
     )
 
@@ -378,28 +379,28 @@ describe('handleExtLogin', () => {
     expect(mockSendExtensionAuthSuccess).not.toHaveBeenCalled()
   })
 
-  it('sends auth error when chrome.runtime.lastError is set', async () => {
+  it('sends auth error when launchWebAuthFlow rejects', async () => {
     mocks.deviceState.ephemeralPublicKey = { existing: true }
     mocks.deviceState.networkData = { 'sui:testnet': { nonce: 'nonce-value' } }
-    const lastError = { message: 'User cancelled' }
-    vi.stubGlobal('chrome', {
-      runtime: { lastError },
+    const rejection = { message: 'User cancelled' }
+    vi.stubGlobal('browser', {
+      runtime: {},
       identity: {
         getRedirectURL: vi.fn(() => 'https://extension.example/callback'),
-        launchWebAuthFlow: vi.fn((_details, callback) =>
-          callback('https://extension.example/callback?code=abc'),
-        ),
+        launchWebAuthFlow: vi.fn(async () => {
+          throw rejection
+        }),
       },
-    } as unknown as typeof chrome)
+    } as unknown as typeof browser)
 
     await handleExtLogin(
       makeMessage(),
-      {} as chrome.runtime.MessageSender,
+      {} as Browser.runtime.MessageSender,
       vi.fn(),
     )
 
     await vi.waitFor(() => {
-      expect(mockSendAuthError).toHaveBeenCalledWith('message-id', lastError)
+      expect(mockSendAuthError).toHaveBeenCalledWith('message-id', rejection)
     })
   })
 
@@ -410,7 +411,7 @@ describe('handleExtLogin', () => {
 
     await handleExtLogin(
       makeMessage(),
-      {} as chrome.runtime.MessageSender,
+      {} as Browser.runtime.MessageSender,
       vi.fn(),
     )
 
@@ -428,7 +429,7 @@ describe('handleExtLogin', () => {
 
     await handleExtLogin(
       makeMessage(),
-      {} as chrome.runtime.MessageSender,
+      {} as Browser.runtime.MessageSender,
       vi.fn(),
     )
 
@@ -447,7 +448,7 @@ describe('handleExtLogin', () => {
 
     await handleExtLogin(
       makeMessage(),
-      {} as chrome.runtime.MessageSender,
+      {} as Browser.runtime.MessageSender,
       vi.fn(),
     )
 
@@ -469,7 +470,7 @@ describe('handleExtLogin', () => {
 
     await handleExtLogin(
       makeMessage(),
-      {} as chrome.runtime.MessageSender,
+      {} as Browser.runtime.MessageSender,
       vi.fn(),
     )
 
@@ -488,7 +489,7 @@ describe('handleExtLogin', () => {
 
     await handleExtLogin(
       makeMessage(),
-      {} as chrome.runtime.MessageSender,
+      {} as Browser.runtime.MessageSender,
       vi.fn(),
     )
 

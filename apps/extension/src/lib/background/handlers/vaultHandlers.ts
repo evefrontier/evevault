@@ -1,5 +1,6 @@
 import { createLogger, KeeperMessageTypes } from '@evevault/shared'
-import { ensureOffscreen } from '@/lib/background/services/offscreenService'
+import type { Browser } from 'wxt/browser'
+import { keeperHost } from '@/lib/background/keeper/keeperHost'
 import type { VaultMessage } from '@/lib/background/types'
 import { checkPendingAuthAfterUnlock } from './authHandlers'
 import { readEncryptedLocalnetKey } from './localnetDeviceStorage'
@@ -13,42 +14,12 @@ export {
 const log = createLogger()
 
 /**
- * Sends a message to the keeper and returns the response
- * Retries if the keeper isn't ready yet
+ * Sends a message to the keeper and returns the response.
+ * Delegates transport (offscreen lifecycle + retries) to the KeeperHost seam.
  */
 // biome-ignore lint/suspicious/noExplicitAny: Keeper messages have dynamic types
 export async function sendToKeeper(message: any, retries = 3): Promise<any> {
-  await ensureOffscreen(true)
-
-  return new Promise((resolve, reject) => {
-    const attemptSend = (attempt: number) => {
-      chrome.runtime.sendMessage(
-        { ...message, target: 'KEEPER' },
-        (response) => {
-          if (chrome.runtime.lastError) {
-            const error = chrome.runtime.lastError.message
-
-            // If port closed and we have retries left, wait and retry
-            if (error?.includes('port closed') && attempt < retries) {
-              log.info(
-                `Keeper not ready yet, retrying... (attempt ${
-                  attempt + 1
-                }/${retries})`,
-              )
-              setTimeout(() => attemptSend(attempt + 1), 200 * attempt) // Exponential backoff
-              return
-            }
-
-            reject(new Error(error))
-            return
-          }
-          resolve(response)
-        },
-      )
-    }
-
-    attemptSend(1)
-  })
+  return keeperHost.send(message, retries)
 }
 
 // Higher-level wrapper over sendToKeeper: maps the keeper response to a
@@ -75,7 +46,7 @@ async function forwardToKeeper(
  */
 export async function handleUnlockVault(
   message: VaultMessage,
-  _sender: chrome.runtime.MessageSender,
+  _sender: Browser.runtime.MessageSender,
   sendResponse: (response?: unknown) => void,
 ): Promise<boolean | undefined> {
   const { hashedSecretKey, pin } = message
@@ -130,7 +101,7 @@ export async function handleUnlockVault(
  */
 export function handleLock(
   _message: VaultMessage,
-  _sender: chrome.runtime.MessageSender,
+  _sender: Browser.runtime.MessageSender,
   sendResponse: (response?: unknown) => void,
 ): Promise<boolean> {
   return forwardToKeeper(
@@ -145,7 +116,7 @@ export function handleLock(
 
 export function _handleCreateKeypair(
   message: VaultMessage,
-  _sender: chrome.runtime.MessageSender,
+  _sender: Browser.runtime.MessageSender,
   sendResponse: (response?: unknown) => void,
 ): Promise<boolean> {
   const { pin } = message
@@ -165,7 +136,7 @@ export function _handleCreateKeypair(
 
 export function _handleRotateKeypair(
   _message: VaultMessage,
-  _sender: chrome.runtime.MessageSender,
+  _sender: Browser.runtime.MessageSender,
   sendResponse: (response?: unknown) => void,
 ): Promise<boolean> {
   return forwardToKeeper(
@@ -192,7 +163,7 @@ export function _handleRotateKeypair(
  */
 export function _handleGetPublicKey(
   _message: VaultMessage,
-  _sender: chrome.runtime.MessageSender,
+  _sender: Browser.runtime.MessageSender,
   sendResponse: (response?: unknown) => void,
 ): Promise<boolean> {
   return forwardToKeeper(
@@ -210,7 +181,7 @@ export function _handleGetPublicKey(
  */
 export function _handleGetUnlockRemaining(
   _message: VaultMessage,
-  _sender: chrome.runtime.MessageSender,
+  _sender: Browser.runtime.MessageSender,
   sendResponse: (response?: unknown) => void,
 ): Promise<boolean> {
   return forwardToKeeper(
@@ -222,7 +193,7 @@ export function _handleGetUnlockRemaining(
 
 export function _handleZkEphSignBytes(
   message: VaultMessage,
-  _sender: chrome.runtime.MessageSender,
+  _sender: Browser.runtime.MessageSender,
   sendResponse: (response?: unknown) => void,
 ): Promise<boolean> {
   const { msgBytes, scope, zkProofData } = message
@@ -255,7 +226,7 @@ export function _handleZkEphSignBytes(
  */
 export function _handleSetZkProof(
   message: VaultMessage,
-  _sender: chrome.runtime.MessageSender,
+  _sender: Browser.runtime.MessageSender,
   sendResponse: (response?: unknown) => void,
 ): Promise<boolean> {
   const { chain, zkProof } = message
@@ -274,7 +245,7 @@ export function _handleSetZkProof(
  */
 export function _handleGetZkProof(
   message: VaultMessage,
-  _sender: chrome.runtime.MessageSender,
+  _sender: Browser.runtime.MessageSender,
   sendResponse: (response?: unknown) => void,
 ): Promise<boolean> {
   const { chain } = message
@@ -297,7 +268,7 @@ export function _handleGetZkProof(
  */
 export function _handleClearZkProof(
   _message: VaultMessage,
-  _sender: chrome.runtime.MessageSender,
+  _sender: Browser.runtime.MessageSender,
   sendResponse: (response?: unknown) => void,
 ): Promise<boolean> {
   return forwardToKeeper(
