@@ -180,7 +180,7 @@ const MESSAGE_ROUTES: Record<string, MessageRoute> = {
   [routeKey('type', 'connect')]: {
     access: 'dapp',
     handle: (m, s, sr, tabId) =>
-      runAsyncRoute('handleDappLogin', handleDappLogin(m, s, sr, tabId)),
+      runOutOfBandRoute('handleDappLogin', handleDappLogin(m, s, sr, tabId)),
   },
   [routeKey('type', WalletStandardMessageTypes.DISCONNECT)]: {
     access: 'dapp',
@@ -199,7 +199,7 @@ const MESSAGE_ROUTES: Record<string, MessageRoute> = {
   [routeKey('action', 'web_unlock')]: {
     access: 'extension',
     handle: (m, s, sr) =>
-      runAsyncRoute(
+      runOutOfBandRoute(
         'handleWebUnlock',
         handleWebUnlock(m as WebUnlockMessage, s, sr),
       ),
@@ -223,7 +223,7 @@ const MESSAGE_ROUTES: Record<string, MessageRoute> = {
   )]: {
     access: 'dapp',
     handle: (m, s, sr) =>
-      runAsyncRoute(
+      runOutOfBandRoute(
         'handleSponsoredTransaction',
         handleSponsoredTransaction(
           m as EveFrontierSponsoredTransactionMessage,

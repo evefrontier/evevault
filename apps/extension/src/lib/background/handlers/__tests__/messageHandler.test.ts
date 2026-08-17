@@ -152,7 +152,7 @@ describe('handleMessage route policy', () => {
       sender,
       sendResponse,
     )
-    expect(result).toBe(true)
+    expect(result).toBeUndefined()
     expect(mocks.handleDappLogin).toHaveBeenCalledWith(
       { type: 'connect', id: 'connect-id' },
       sender,
@@ -313,7 +313,7 @@ describe('handleMessage route policy', () => {
     expect(sendResponse).not.toHaveBeenCalled()
   })
 
-  it('routes sponsored signing actions through the async route wrapper', () => {
+  it('routes sponsored signing actions through the out-of-band route wrapper', () => {
     const sendResponse = vi.fn()
     const sender = dappSender()
     const message = {
@@ -321,7 +321,8 @@ describe('handleMessage route policy', () => {
       id: 'sponsored-id',
       message: { action: 'mine', assembly: '1', assemblyType: 'type' },
     }
-    expect(handleMessage(message, sender, sendResponse)).toBe(true)
+    // Sponsored results are sent to the tab out-of-band, not via sendResponse.
+    expect(handleMessage(message, sender, sendResponse)).toBeUndefined()
     expect(mocks.handleSponsoredTransaction).toHaveBeenCalledWith(
       message,
       sender,
