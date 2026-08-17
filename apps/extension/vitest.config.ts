@@ -1,7 +1,14 @@
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import react from '@vitejs/plugin-react'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { defineConfig } from 'vitest/config'
+import { appVersionPlugin } from '../../tools/vite-app-version-plugin'
+
+const extPkg = JSON.parse(
+  readFileSync(path.join(__dirname, 'package.json'), 'utf-8'),
+) as { version?: string }
 
 export default defineConfig({
   define: {
@@ -13,6 +20,7 @@ export default defineConfig({
     tsconfigPaths({
       root: __dirname,
     }),
+    appVersionPlugin(extPkg.version ?? '0.0.0'),
   ],
   test: {
     globals: true,
