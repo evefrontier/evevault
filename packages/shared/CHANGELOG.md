@@ -1,5 +1,11 @@
 # @evevault/shared
 
+## 0.0.16
+
+### Patch Changes
+
+- add support for firefox
+
 ## 0.0.15
 
 ### Patch Changes
