@@ -1,5 +1,13 @@
 # @evevault/extension
 
+## 0.0.16
+
+### Patch Changes
+
+- add support for firefox
+- Updated dependencies
+  - @evevault/shared@0.0.16
+
 ## 0.0.15
 
 ### Patch Changes

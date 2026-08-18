@@ -31,6 +31,7 @@ const { logger, mocks } = vi.hoisted(() => ({
     handleLocalnetSetKeypair: vi.fn(),
     handleLocalnetGetAddress: vi.fn(),
     handleLocalnetSignBytes: vi.fn(),
+    sendAuthError: vi.fn(),
   },
 }))
 
@@ -52,6 +53,17 @@ vi.mock('@/lib/background/handlers/authHandlers', () => ({
   handleExtLogin: mocks.handleExtLogin,
   handleWebUnlock: mocks.handleWebUnlock,
 }))
+
+vi.mock(
+  '@/lib/background/handlers/auth/authHelpers',
+  async (importOriginal) => {
+    const actual =
+      await importOriginal<
+        typeof import('@/lib/background/handlers/auth/authHelpers')
+      >()
+    return { ...actual, sendAuthError: mocks.sendAuthError }
+  },
+)
 
 vi.mock('@/lib/background/handlers/walletHandlers', () => ({
   handleApprovePopup: mocks.handleApprovePopup,
@@ -152,7 +164,7 @@ describe('handleMessage route policy', () => {
       sender,
       sendResponse,
     )
-    expect(result).toBe(true)
+    expect(result).toBeUndefined()
     expect(mocks.handleDappLogin).toHaveBeenCalledWith(
       { type: 'connect', id: 'connect-id' },
       sender,
@@ -313,7 +325,76 @@ describe('handleMessage route policy', () => {
     expect(sendResponse).not.toHaveBeenCalled()
   })
 
-  it('routes sponsored signing actions through the async route wrapper', () => {
+  it('sends a correlated auth_error when ext_login throws unexpectedly', async () => {
+    const sendResponse = vi.fn()
+    mocks.handleExtLogin.mockRejectedValueOnce(new Error('boom'))
+
+    const result = handleMessage(
+      { action: 'ext_login', id: 'ext-id' },
+      extensionSender(),
+      sendResponse,
+    )
+
+    // Channel closes immediately; the failure is reported out-of-band so the
+    // popup listener (which has no timeout) still settles.
+    expect(result).toBeUndefined()
+    await vi.waitFor(() => {
+      expect(mocks.sendAuthError).toHaveBeenCalledWith('ext-id', {
+        message: 'boom',
+      })
+    })
+  })
+
+  it('skips the auth_error fallback when a throwing ext_login has no id', async () => {
+    const sendResponse = vi.fn()
+    mocks.handleExtLogin.mockRejectedValueOnce(new Error('boom'))
+
+    handleMessage({ action: 'ext_login' }, extensionSender(), sendResponse)
+
+    // No id means the popup listener could not correlate a response anyway.
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(mocks.sendAuthError).not.toHaveBeenCalled()
+  })
+
+  it('routes sign_personal_message and sign_and_execute actions from tab senders', () => {
+    const sendResponse = vi.fn()
+    const sender = dappSender()
+
+    for (const action of [
+      WalletStandardMessageTypes.SIGN_PERSONAL_MESSAGE,
+      WalletStandardMessageTypes.SIGN_AND_EXECUTE_TRANSACTION,
+    ]) {
+      mocks.handleApprovePopup.mockClear()
+      expect(
+        handleMessage({ action, id: 'sign-id' }, sender, sendResponse),
+      ).toBe(true)
+      expect(mocks.handleApprovePopup).toHaveBeenCalledWith(
+        { action, id: 'sign-id' },
+        sender,
+        sendResponse,
+      )
+    }
+  })
+
+  it('routes web_unlock from extension senders through the out-of-band wrapper', () => {
+    const sendResponse = vi.fn()
+    const sender = extensionSender()
+
+    const result = handleMessage(
+      { action: 'web_unlock', id: 'web-id' },
+      sender,
+      sendResponse,
+    )
+
+    expect(result).toBeUndefined()
+    expect(mocks.handleWebUnlock).toHaveBeenCalledWith(
+      { action: 'web_unlock', id: 'web-id' },
+      sender,
+      sendResponse,
+    )
+  })
+
+  it('routes sponsored signing actions through the out-of-band route wrapper', () => {
     const sendResponse = vi.fn()
     const sender = dappSender()
     const message = {
@@ -321,7 +402,8 @@ describe('handleMessage route policy', () => {
       id: 'sponsored-id',
       message: { action: 'mine', assembly: '1', assemblyType: 'type' },
     }
-    expect(handleMessage(message, sender, sendResponse)).toBe(true)
+    // Sponsored results are sent to the tab out-of-band, not via sendResponse.
+    expect(handleMessage(message, sender, sendResponse)).toBeUndefined()
     expect(mocks.handleSponsoredTransaction).toHaveBeenCalledWith(
       message,
       sender,

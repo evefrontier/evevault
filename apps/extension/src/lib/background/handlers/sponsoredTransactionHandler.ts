@@ -23,14 +23,12 @@ const log = createLogger()
 // endpoint living under /v2 while execute sits at the gateway root.
 function sponsoredApiContext(
   apiBaseUrl: string,
-  tenant: string,
   idToken: string,
   pathPrefix = '',
 ): SponsoredTransactionApiContext {
   return {
     getApiGatewayUrl: (path) => `${apiBaseUrl}${pathPrefix}/${path}`,
     getApiGatewayToken: () => idToken,
-    tenant,
   }
 }
 
@@ -65,10 +63,9 @@ function sendSponsoredError(
 }
 
 // POSTs the signed sponsored transaction to the backend execute endpoint and
-// forwards the digest/effects back to the originating tab on success.
+// forwards the digest/executionStatus back to the originating tab on success.
 async function executeSponsoredTx({
   apiBaseUrl,
-  tenant,
   idToken,
   preparationId,
   zkSignature,
@@ -76,14 +73,14 @@ async function executeSponsoredTx({
   messageId,
 }: ExecuteSponsoredTxOptions): Promise<void> {
   try {
-    const { digest, effects } = await executeSponsoredTransaction(
+    const { digest, executionStatus } = await executeSponsoredTransaction(
       { preparationId, userSignatureB64Bytes: zkSignature },
-      sponsoredApiContext(apiBaseUrl, tenant, idToken),
+      sponsoredApiContext(apiBaseUrl, idToken),
     )
     sendToTab(senderTabId, {
       type: 'sign_success',
       digest,
-      effects,
+      executionStatus,
       id: messageId,
     })
   } catch (err) {
@@ -151,7 +148,7 @@ async function handleSponsoredTransaction(
         assemblyType,
         metadata,
       },
-      sponsoredApiContext(apiBaseUrl, tenant, jwt.id_token, '/v2'),
+      sponsoredApiContext(apiBaseUrl, jwt.id_token, ''),
     )
 
     const actionType =

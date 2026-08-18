@@ -387,7 +387,10 @@ export class EveVaultWallet implements Wallet {
       },
       mapSuccess: (m) => ({
         digest: m.digest as string,
-        effects: m.effects as string,
+        executionStatus: m.executionStatus as string,
+        ...(typeof m.executionErrorMessage === 'string' && {
+          executionErrorMessage: m.executionErrorMessage,
+        }),
       }),
       timeoutMessage: 'Sponsored transaction timed out',
     })

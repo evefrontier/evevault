@@ -513,12 +513,12 @@ describe('EveVaultWallet', () => {
     dispatchVaultMessage({
       type: 'sign_success',
       digest: 'digest',
-      effects: 'effects',
+      executionStatus: 'success',
     })
 
     await expect(promise).resolves.toEqual({
       digest: 'digest',
-      effects: 'effects',
+      executionStatus: 'success',
     })
   })
 
@@ -547,12 +547,12 @@ describe('EveVaultWallet', () => {
     dispatchVaultMessage({
       type: 'sign_success',
       digest: 'digest',
-      effects: 'effects',
+      executionStatus: 'success',
     })
 
     await expect(promise).resolves.toEqual({
       digest: 'digest',
-      effects: 'effects',
+      executionStatus: 'success',
     })
   })
 
@@ -575,12 +575,12 @@ describe('EveVaultWallet', () => {
     dispatchVaultMessage({
       type: 'sign_success',
       digest: 'digest',
-      effects: 'effects',
+      executionStatus: 'success',
     })
 
     await expect(promise).resolves.toEqual({
       digest: 'digest',
-      effects: 'effects',
+      executionStatus: 'success',
     })
   })
 })
