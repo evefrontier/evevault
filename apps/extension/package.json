@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "wxt",
     "dev:firefox": "wxt -b firefox --port 3002",
-    "build": "wxt build",
+    "build": "wxt build && wxt build -b firefox",
     "build:webstore": "WXT_WEBSTORE_BUILD=true wxt build",
     "build:firefox": "wxt build -b firefox",
     "zip": "wxt zip",
