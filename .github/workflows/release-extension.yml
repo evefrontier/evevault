@@ -10,7 +10,7 @@ env:
   EXTENSION_ZIP: eve-vault-chrome.zip
   FIREFOX_ZIP: eve-vault-firefox.zip
   CHECKSUMS_FILE: checksums.txt
-  ATTESTATION_FILE: eve-vault-chrome.attestation.json
+  ATTESTATION_FILE: eve-vault.attestation.json
 
 jobs:
   build-extension:
