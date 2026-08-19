@@ -1,4 +1,4 @@
-# Build extension → eve-vault-chrome.zip on release or manual run. Docs: docs/RELEASE_EXTENSION.md
+# Build extension → eve-vault-chrome.zip + eve-vault-firefox.zip on release or manual run. Docs: docs/RELEASE_EXTENSION.md
 name: Release extension
 
 on:
@@ -8,6 +8,7 @@ on:
 
 env:
   EXTENSION_ZIP: eve-vault-chrome.zip
+  FIREFOX_ZIP: eve-vault-firefox.zip
   CHECKSUMS_FILE: checksums.txt
   ATTESTATION_FILE: eve-vault-chrome.attestation.json
 
@@ -57,30 +58,37 @@ jobs:
         run: bun run build:ext
 
       - name: Zip extension
-        run: bun run zip
+        run: bun run zip && bun run zip:firefox
         working-directory: apps/extension
 
-      - name: Copy zip to fixed name
+      - name: Copy zips to fixed names
         run: |
           set -euo pipefail
           shopt -s nullglob
-          files=(apps/extension/.output/*-chrome.zip)
 
-          if [ "${#files[@]}" -eq 0 ]; then
-            echo "Error: No Chrome ZIP found matching 'apps/extension/.output/*-chrome.zip'."
-            exit 1
-          fi
+          copy_single() {
+            local glob="$1" dest="$2" label="$3"
+            local files=($glob)
 
-          if [ "${#files[@]}" -gt 1 ]; then
-            echo "Error: Multiple Chrome ZIPs found matching 'apps/extension/.output/*-chrome.zip':"
-            printf '  %s\n' "${files[@]}"
-            exit 1
-          fi
+            if [ "${#files[@]}" -eq 0 ]; then
+              echo "Error: No $label ZIP found matching '$glob'."
+              exit 1
+            fi
 
-          cp "${files[0]}" "./${EXTENSION_ZIP}"
+            if [ "${#files[@]}" -gt 1 ]; then
+              echo "Error: Multiple $label ZIPs found matching '$glob':"
+              printf '  %s\n' "${files[@]}"
+              exit 1
+            fi
+
+            cp "${files[0]}" "$dest"
+          }
+
+          copy_single 'apps/extension/.output/*-chrome.zip' "./${EXTENSION_ZIP}" Chrome
+          copy_single 'apps/extension/.output/*-firefox.zip' "./${FIREFOX_ZIP}" Firefox
 
       - name: Generate checksums
-        run: sha256sum "${EXTENSION_ZIP}" > "${CHECKSUMS_FILE}"
+        run: sha256sum "${EXTENSION_ZIP}" "${FIREFOX_ZIP}" > "${CHECKSUMS_FILE}"
 
       - name: Upload build assets
         uses: actions/upload-artifact@v4
@@ -88,6 +96,7 @@ jobs:
           name: release-extension-build-assets
           path: |
             ${{ env.EXTENSION_ZIP }}
+            ${{ env.FIREFOX_ZIP }}
             ${{ env.CHECKSUMS_FILE }}
 
   attest-extension:
@@ -147,6 +156,7 @@ jobs:
         run: |
           gh release upload "$TAG_NAME" \
             "${EXTENSION_ZIP}" \
+            "${FIREFOX_ZIP}" \
             "${CHECKSUMS_FILE}" \
             "${ATTESTATION_FILE}" \
             --repo "${{ github.repository }}" \
@@ -175,8 +185,9 @@ jobs:
       - name: Upload artifact (manual run)
         uses: actions/upload-artifact@v4
         with:
-          name: eve-vault-chrome
+          name: eve-vault-extension
           path: |
             ${{ env.EXTENSION_ZIP }}
+            ${{ env.FIREFOX_ZIP }}
             ${{ env.CHECKSUMS_FILE }}
             ${{ env.ATTESTATION_FILE }}
