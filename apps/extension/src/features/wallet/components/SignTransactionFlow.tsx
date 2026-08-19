@@ -1,6 +1,9 @@
-import { Text } from '@evevault/shared/components'
 import Json from '@evevault/shared/components/Json'
-import { useTransactionSigning } from '@/features/wallet/hooks'
+import { useWalletSigningContext } from '@evevault/shared/wallet'
+import {
+  useTransactionSigning,
+  useTransactionSimulation,
+} from '@/features/wallet/hooks'
 import type {
   SignResult,
   StoreResult,
@@ -9,18 +12,25 @@ import {
   requiresAcknowledgement,
   reviewTransaction,
 } from '../transactionRiskReview'
+import { type ApprovalTab, ApprovalTabs } from './ApprovalTabs'
 import { SignRequestView } from './SignRequestView'
 import { TransactionRiskPanel } from './TransactionRiskPanel'
+import { TransactionSimulationPanel } from './TransactionSimulationPanel'
 
 interface SignTransactionFlowProps {
   title: string
   onSign: (result: SignResult, storeResult: StoreResult) => Promise<void>
 }
 
+const PREDICTED_FAILURE_ACKNOWLEDGEMENT =
+  'This transaction is expected to fail on-chain. I understand and want to approve anyway.'
+
 export function SignTransactionFlow({
   title,
   onSign,
 }: SignTransactionFlowProps) {
+  const { suiClient, chain, getSenderAddress, senderAddress } =
+    useWalletSigningContext()
   const {
     pendingTransaction,
     loading,
@@ -31,10 +41,62 @@ export function SignTransactionFlow({
     storeResult,
   } = useTransactionSigning()
 
+  const simulation = useTransactionSimulation({
+    payload: pendingTransaction?.transaction ?? null,
+    mode: 'build',
+    suiClient,
+    chain,
+    getSenderAddress,
+    fallbackSender: pendingTransaction?.account?.address,
+  })
+
   const handleApprove = () =>
     withSigning((result) => onSign(result, storeResult))
   const riskFindings = pendingTransaction
     ? reviewTransaction(pendingTransaction.reviewValue)
+    : []
+
+  // A simulated on-chain failure is a danger signal in its own right, so gate
+  // approval behind the acknowledgement even when the static review is clean.
+  const predictedFailure =
+    simulation?.status === 'ready' && simulation.simulation.status === 'failure'
+  const needsRiskAck = requiresAcknowledgement(riskFindings)
+
+  const tabs: ApprovalTab[] = pendingTransaction
+    ? [
+        {
+          id: 'outcome',
+          label: 'Outcome',
+          content: (
+            <TransactionSimulationPanel
+              state={simulation}
+              senderAddress={
+                senderAddress ?? pendingTransaction.account?.address
+              }
+            />
+          ),
+        },
+        ...(riskFindings.length > 0
+          ? [
+              {
+                id: 'warnings',
+                label: `Warnings (${riskFindings.length})`,
+                tone: needsRiskAck ? ('danger' as const) : ('default' as const),
+                content: <TransactionRiskPanel findings={riskFindings} />,
+              },
+            ]
+          : []),
+        {
+          id: 'payload',
+          label: 'Payload',
+          content: (
+            <Json
+              value={pendingTransaction.displayValue}
+              className="max-h-52 text-xs"
+            />
+          ),
+        },
+      ]
     : []
 
   return (
@@ -47,22 +109,20 @@ export function SignTransactionFlow({
       loadingMessage="Loading transaction..."
       chain={pendingTransaction?.chain}
       dapp={pendingTransaction?.dapp}
-      accountAddress={pendingTransaction?.account.address}
+      accountAddress={senderAddress ?? pendingTransaction?.account?.address}
       requestKind={title}
-      requireAcknowledgement={requiresAcknowledgement(riskFindings)}
+      requireAcknowledgement={needsRiskAck || predictedFailure}
+      acknowledgementLabel={
+        predictedFailure && !needsRiskAck
+          ? PREDICTED_FAILURE_ACKNOWLEDGEMENT
+          : undefined
+      }
       onApprove={handleApprove}
       onReject={handleReject}
     >
       {pendingTransaction && (
         <div className="flex w-full flex-col items-center gap-2">
-          <TransactionRiskPanel findings={riskFindings} />
-          <Text size="small" color="grey-neutral">
-            Transaction payload
-          </Text>
-          <Json
-            value={pendingTransaction.displayValue}
-            className="max-h-36 text-xs"
-          />
+          <ApprovalTabs tabs={tabs} />
         </div>
       )}
     </SignRequestView>

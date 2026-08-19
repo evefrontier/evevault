@@ -27,6 +27,15 @@ export type {
 export type { BalanceAndMetadataResponse } from './types/graphql'
 export { invalidateCoinMetadataCache } from './utils/coinMetadata'
 export {
+  type ObjectChangeKind,
+  type SimulatedBalanceChange,
+  type SimulatedEvent,
+  type SimulatedGas,
+  type SimulatedObjectChange,
+  simulateTransactionOutcome,
+  type TransactionSimulation,
+} from './utils/simulateTransaction'
+export {
   isZkLoginEpochExpiredError,
   withZkLoginEpochRetry,
 } from './zkEpochRetry'

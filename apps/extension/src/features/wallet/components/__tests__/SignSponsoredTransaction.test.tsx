@@ -17,6 +17,11 @@ const {
 
 vi.mock('@/features/wallet/hooks', () => ({
   usePendingSignAction: mockUsePendingSignAction,
+  useTransactionSimulation: () => null,
+}))
+
+vi.mock('@/features/wallet/components/TransactionSimulationPanel', () => ({
+  TransactionSimulationPanel: () => null,
 }))
 
 vi.mock('@evevault/shared/wallet', () => ({
