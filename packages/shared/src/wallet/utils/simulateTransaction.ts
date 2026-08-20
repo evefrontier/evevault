@@ -84,10 +84,12 @@ export type TransactionSimulation = {
 
 // Both `Transaction` and `FailedTransaction` responses carry effects (a failed
 // simulation still reports the gas it consumed), so read whichever is present.
+// Any other shape is unrecognized: return undefined so the caller treats the
+// simulation as unavailable rather than rendering an empty phantom success.
 function getInner(result: SimulateResult) {
-  return result.$kind === 'Transaction'
-    ? result.Transaction
-    : result.FailedTransaction
+  if (result.$kind === 'Transaction') return result.Transaction
+  if (result.$kind === 'FailedTransaction') return result.FailedTransaction
+  return undefined
 }
 
 function buildGas(
@@ -107,9 +109,11 @@ function buildGas(
 function objectChangeKind(
   change: SuiClientTypes.ChangedObject,
 ): ObjectChangeKind {
-  if (change.idOperation === 'Created') return 'created'
   if (change.idOperation === 'Deleted') return 'deleted'
+  // A published package is `Created` + `PackageWrite`; check the output state
+  // first so it is labeled `published` rather than a plain `created` object.
   if (change.outputState === 'PackageWrite') return 'published'
+  if (change.idOperation === 'Created') return 'created'
   if (change.outputState === 'ObjectWrite') return 'mutated'
   return 'unknown'
 }
@@ -218,11 +222,14 @@ export async function simulateTransactionOutcome({
   })
 
   const inner = getInner(result)
-  const effects = inner?.effects
+  if (!inner) {
+    throw new Error(`Unrecognized simulation response: ${result.$kind}`)
+  }
+  const effects = inner.effects
   const gas = buildGas(effects?.gasUsed)
-  const digest = effects?.transactionDigest ?? inner?.digest ?? ''
-  const changedObjects = buildChangedObjects(effects, inner?.objectTypes)
-  const events = buildEvents(inner?.events)
+  const digest = effects?.transactionDigest ?? inner.digest ?? ''
+  const changedObjects = buildChangedObjects(effects, inner.objectTypes)
+  const events = buildEvents(inner.events)
 
   if (effects?.status.success === false) {
     return {
@@ -236,7 +243,7 @@ export async function simulateTransactionOutcome({
     }
   }
 
-  const senderChanges = (inner?.balanceChanges ?? []).filter(
+  const senderChanges = (inner.balanceChanges ?? []).filter(
     (bc) => bc.address.toLowerCase() === sender.toLowerCase(),
   )
 

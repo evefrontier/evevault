@@ -24,8 +24,8 @@ export function ApprovalTabs({
   const active = tabs.find((tab) => tab.id === activeId) ?? tabs[0]
 
   return (
-    <div className="w-[80vw] max-w-full border border-[var(--matter-05)]">
-      <div role="tablist" className="flex border-b border-[var(--matter-05)]">
+    <div className="w-[80vw] max-w-full border border-(--matter-05)">
+      <div role="tablist" className="flex border-b border-(--matter-05)">
         {tabs.map((tab) => {
           const isActive = tab.id === active?.id
           const tone =

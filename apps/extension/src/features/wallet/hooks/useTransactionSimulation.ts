@@ -16,9 +16,7 @@ const log = createLogger()
 export type SimulationState =
   | { status: 'loading' }
   | { status: 'ready'; simulation: TransactionSimulation }
-  // Transport/build failure — the outcome is unknown, distinct from a
-  // transaction that simulates cleanly as a predicted on-chain failure.
-  | { status: 'unavailable'; reason?: string }
+  | { status: 'unavailable'; reason?: string } // // Transport/build failure — outcome unknown
 
 type SimulationParams = {
   /**

@@ -171,6 +171,57 @@ describe('simulateTransactionOutcome', () => {
     expect(outcome.balanceChanges).toEqual([])
   })
 
+  it('labels a published package as `published`, not `created`', async () => {
+    const PKG = '0xpkg'
+    const suiClient = makeSuiClient({
+      $kind: 'Transaction',
+      Transaction: {
+        effects: {
+          status: { success: true, error: null },
+          gasUsed: GAS_USED,
+          // A package publish reports Created + PackageWrite.
+          changedObjects: [
+            {
+              objectId: PKG,
+              idOperation: 'Created',
+              outputState: 'PackageWrite',
+            },
+          ],
+        },
+        balanceChanges: [],
+      },
+    })
+
+    const outcome = await simulateTransactionOutcome({
+      transactionBytes: bytes,
+      sender: SENDER,
+      suiClient,
+      graphqlClient: makeGraphqlClient(9, 'EVE'),
+    })
+
+    expect(outcome.changedObjects).toEqual([
+      {
+        objectId: PKG,
+        kind: 'published',
+        objectType: undefined,
+        ownerAfter: undefined,
+      },
+    ])
+  })
+
+  it('throws on an unrecognized response so the caller treats it as unavailable', async () => {
+    const suiClient = makeSuiClient({ $kind: 'SomethingElse' })
+
+    await expect(
+      simulateTransactionOutcome({
+        transactionBytes: bytes,
+        sender: SENDER,
+        suiClient,
+        graphqlClient: makeGraphqlClient(9, 'EVE'),
+      }),
+    ).rejects.toThrow(/Unrecognized simulation response/)
+  })
+
   it('returns an empty change set when nothing touches the sender', async () => {
     const suiClient = makeSuiClient({
       $kind: 'Transaction',
