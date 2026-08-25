@@ -9,6 +9,7 @@ import type {
   StoreResult,
 } from '@/features/wallet/hooks/useTransactionSigning'
 import {
+  PREDICTED_FAILURE_ACKNOWLEDGEMENT,
   requiresAcknowledgement,
   reviewTransaction,
 } from '../transactionRiskReview'
@@ -21,9 +22,6 @@ interface SignTransactionFlowProps {
   title: string
   onSign: (result: SignResult, storeResult: StoreResult) => Promise<void>
 }
-
-const PREDICTED_FAILURE_ACKNOWLEDGEMENT =
-  'This transaction is expected to fail on-chain. I understand and want to approve anyway.'
 
 export function SignTransactionFlow({
   title,

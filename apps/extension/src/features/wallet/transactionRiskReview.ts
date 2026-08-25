@@ -9,6 +9,11 @@ export type TransactionRiskFinding = {
   detail: string
 }
 
+// Acknowledgement copy shown when a simulation predicts an on-chain failure but
+// the static review is otherwise clean. Shared by every signing path.
+export const PREDICTED_FAILURE_ACKNOWLEDGEMENT =
+  'This transaction is expected to fail on-chain. I understand and want to approve anyway.'
+
 // Single catalog of every user-facing risk finding. The three review paths
 // below (per-command, per-input, and payload-level) all reference entries here.
 const FINDINGS = {

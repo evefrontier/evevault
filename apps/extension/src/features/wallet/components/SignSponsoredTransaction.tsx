@@ -8,6 +8,7 @@ import {
   useTransactionSimulation,
 } from '@/features/wallet/hooks'
 import {
+  PREDICTED_FAILURE_ACKNOWLEDGEMENT,
   requiresAcknowledgement,
   reviewTransaction,
 } from '../transactionRiskReview'
@@ -172,6 +173,7 @@ function SignSponsoredTransaction() {
         <TransactionSimulationPanel
           state={simulation}
           senderAddress={senderAddress ?? undefined}
+          gasPaidBySponsor
         />
       ),
     },
@@ -210,6 +212,11 @@ function SignSponsoredTransaction() {
       dapp={pending?.dapp}
       requestKind="Sponsored transaction"
       requireAcknowledgement={needsRiskAck || predictedFailure}
+      acknowledgementLabel={
+        predictedFailure && !needsRiskAck
+          ? PREDICTED_FAILURE_ACKNOWLEDGEMENT
+          : undefined
+      }
       onApprove={handleApprove}
       onReject={handleReject}
     >

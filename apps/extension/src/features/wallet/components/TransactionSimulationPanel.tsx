@@ -111,7 +111,21 @@ function ObjectChangeRow({
   )
 }
 
+// Decoded Move struct data can contain bigints (u64/u128) that plain
+// JSON.stringify throws on; coerce them to strings and swallow any residual
+// serialization failure so one odd event can't crash the whole panel.
+function safeJson(value: unknown): string | null {
+  try {
+    return JSON.stringify(value, (_, v) =>
+      typeof v === 'bigint' ? v.toString() : v,
+    )
+  } catch {
+    return null
+  }
+}
+
 function EventRow({ event }: { event: SimulatedEvent }) {
+  const json = event.json != null ? safeJson(event.json) : null
   return (
     <div className="flex flex-col gap-0.5">
       <span
@@ -120,12 +134,7 @@ function EventRow({ event }: { event: SimulatedEvent }) {
       >
         {event.label}
       </span>
-      {event.json != null && (
-        <Json
-          value={JSON.stringify(event.json)}
-          className="max-h-24 text-[10px]"
-        />
-      )}
+      {json && <Json value={json} className="max-h-24 text-[10px]" />}
     </div>
   )
 }
@@ -133,9 +142,11 @@ function EventRow({ event }: { event: SimulatedEvent }) {
 function OutcomeBody({
   simulation,
   senderAddress,
+  gasPaidBySponsor,
 }: {
   simulation: TransactionSimulation
   senderAddress?: string
+  gasPaidBySponsor?: boolean
 }) {
   const failed = simulation.status === 'failure'
   return (
@@ -152,7 +163,12 @@ function OutcomeBody({
       {simulation.digest && (
         <InfoRow label="Digest" value={simulation.digest} />
       )}
-      <InfoRow label="Gas fee" value={`${simulation.gas.net} SUI`} />
+      <InfoRow
+        label="Gas fee"
+        value={`${simulation.gas.net} SUI${
+          gasPaidBySponsor ? ' · paid by sponsor' : ''
+        }`}
+      />
 
       {!failed && (
         <div className="flex flex-col gap-1">
@@ -202,9 +218,11 @@ function OutcomeBody({
 export function TransactionSimulationPanel({
   state,
   senderAddress,
+  gasPaidBySponsor,
 }: {
   state: SimulationState | null
   senderAddress?: string
+  gasPaidBySponsor?: boolean
 }) {
   if (!state || state.status === 'loading') {
     return (
@@ -236,6 +254,7 @@ export function TransactionSimulationPanel({
       <OutcomeBody
         simulation={state.simulation}
         senderAddress={senderAddress}
+        gasPaidBySponsor={gasPaidBySponsor}
       />
     </PanelShell>
   )
