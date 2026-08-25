@@ -8,16 +8,18 @@ import {
 const {
   mockUsePendingSignAction,
   mockUseWalletSigningContext,
+  mockUseTransactionSimulation,
   mockAddressAliasModule,
 } = vi.hoisted(() => ({
   mockUsePendingSignAction: vi.fn(),
   mockUseWalletSigningContext: vi.fn(),
+  mockUseTransactionSimulation: vi.fn(),
   mockAddressAliasModule: '0xaddress_alias_module',
 }))
 
 vi.mock('@/features/wallet/hooks', () => ({
   usePendingSignAction: mockUsePendingSignAction,
-  useTransactionSimulation: () => null,
+  useTransactionSimulation: mockUseTransactionSimulation,
 }))
 
 vi.mock('@/features/wallet/components/TransactionSimulationPanel', () => ({
@@ -53,6 +55,7 @@ vi.mock('@/features/wallet/components/SignRequestView', () => ({
     loadingMessage,
     error,
     requireAcknowledgement,
+    acknowledgementLabel,
     onApprove,
     onReject,
   }: {
@@ -61,6 +64,7 @@ vi.mock('@/features/wallet/components/SignRequestView', () => ({
     loadingMessage: string
     error: string | null
     requireAcknowledgement?: boolean
+    acknowledgementLabel?: string
     onApprove?: () => void
     onReject?: () => void
   }) => (
@@ -69,6 +73,9 @@ vi.mock('@/features/wallet/components/SignRequestView', () => ({
       {error && <span data-testid="error">{error}</span>}
       {requireAcknowledgement && (
         <span data-testid="ack-required">ack-required</span>
+      )}
+      {acknowledgementLabel && (
+        <span data-testid="ack-label">{acknowledgementLabel}</span>
       )}
       <button data-testid="approve-btn" type="button" onClick={onApprove}>
         Approve
@@ -126,6 +133,7 @@ beforeEach(() => {
     isLocalnet: false,
     sign: vi.fn(),
   })
+  mockUseTransactionSimulation.mockReturnValue(null)
 })
 
 afterEach(() => {
@@ -207,6 +215,46 @@ describe('SignSponsoredTransaction', () => {
     })
     await renderSignSponsored()
     expect(screen.queryByTestId('ack-required')).not.toBeInTheDocument()
+  })
+
+  it('gates on a predicted on-chain failure with the failure-specific label when the static review is clean', async () => {
+    mockUseTransactionSimulation.mockReturnValue({
+      status: 'ready',
+      simulation: { status: 'failure' },
+    })
+    stubPending({
+      windowId: 1,
+      requestId: 'req-5',
+      sponsoredTxB64: btoa('bytes'),
+      preparationId: 'prep-5',
+      reviewValue: { commands: [], inputs: [] },
+      chain: 'sui:testnet',
+    })
+    await renderSignSponsored()
+    expect(screen.getByTestId('ack-required')).toBeInTheDocument()
+    expect(screen.getByTestId('ack-label')).toHaveTextContent(
+      'expected to fail on-chain',
+    )
+  })
+
+  it('keeps the default acknowledgement label when the static review already requires it', async () => {
+    mockUseTransactionSimulation.mockReturnValue({
+      status: 'ready',
+      simulation: { status: 'failure' },
+    })
+    stubPending({
+      windowId: 1,
+      requestId: 'req-6',
+      sponsoredTxB64: btoa('bytes'),
+      preparationId: 'prep-6',
+      // undefined reviewValue → unverified danger finding → needsRiskAck
+      reviewValue: undefined,
+      chain: 'sui:testnet',
+    })
+    await renderSignSponsored()
+    expect(screen.getByTestId('ack-required')).toBeInTheDocument()
+    // predictedFailure && !needsRiskAck is false, so no failure-specific label.
+    expect(screen.queryByTestId('ack-label')).not.toBeInTheDocument()
   })
 })
 
