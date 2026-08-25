@@ -27,6 +27,7 @@ export type {
 export type { BalanceAndMetadataResponse } from './types/graphql'
 export { invalidateCoinMetadataCache } from './utils/coinMetadata'
 export {
+  classifyBuildFailure,
   type ObjectChangeKind,
   type SimulatedBalanceChange,
   type SimulatedEvent,

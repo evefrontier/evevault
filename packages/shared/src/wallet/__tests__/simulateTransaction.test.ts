@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { invalidateCoinMetadataCache } from '#/wallet/utils/coinMetadata'
-import { simulateTransactionOutcome } from '#/wallet/utils/simulateTransaction'
+import {
+  classifyBuildFailure,
+  simulateTransactionOutcome,
+} from '#/wallet/utils/simulateTransaction'
 
 const SENDER =
   '0x1111111111111111111111111111111111111111111111111111111111111111'
@@ -244,5 +247,164 @@ describe('simulateTransactionOutcome', () => {
 
     expect(outcome.status).toBe('success')
     expect(outcome.balanceChanges).toEqual([])
+  })
+})
+
+describe('classifyBuildFailure', () => {
+  it('reclassifies a gas-budget-probe SimulationError as a predicted failure', () => {
+    const err = Object.assign(
+      new Error(
+        'Transaction resolution failed: InsufficientCoinBalance in command 0',
+      ),
+      {
+        cause: {
+          $kind: 'FailedTransaction',
+          FailedTransaction: {
+            effects: {
+              status: {
+                success: false,
+                error: { message: 'InsufficientCoinBalance in command 0' },
+              },
+              gasUsed: GAS_USED,
+              transactionDigest: 'ProbeDigest',
+              changedObjects: [],
+            },
+          },
+        },
+      },
+    )
+
+    const outcome = classifyBuildFailure(err)
+
+    expect(outcome).toEqual({
+      status: 'failure',
+      error: 'InsufficientCoinBalance in command 0',
+      digest: 'ProbeDigest',
+      gas: {
+        computation: '0.001',
+        storage: '0.002',
+        rebate: '0.0005',
+        net: '0.0025',
+      },
+      balanceChanges: [],
+      changedObjects: [],
+      events: [],
+    })
+  })
+
+  it('reclassifies a SimulationError via executionError when cause was dropped', () => {
+    // The extension's transpilation of `super(message, { cause })` drops the
+    // cause value, but `.executionError` survives (message + kind).
+    const err = Object.assign(
+      new Error(
+        'Transaction resolution failed: InsufficientCoinBalance in command 0',
+      ),
+      { executionError: { message: 'InsufficientCoinBalance in command 0' } },
+    )
+
+    const outcome = classifyBuildFailure(err)
+
+    expect(outcome).toEqual({
+      status: 'failure',
+      error: 'InsufficientCoinBalance in command 0',
+      digest: '',
+      gas: { computation: '0', storage: '0', rebate: '0', net: '0' },
+      balanceChanges: [],
+      changedObjects: [],
+      events: [],
+    })
+  })
+
+  it('reclassifies a gas-selection insufficient-balance error as a predicted failure', () => {
+    // grpc resolver wraps the RPC failure as a SimulationError with an RpcError
+    // cause and no executionError (@mysten/sui grpc/core.ts:925).
+    const err = Object.assign(
+      new Error(
+        'Unable to perform gas selection due to insufficient SUI balance (in address balance or coins) for account 0xabc to satisfy required budget 2988000.',
+      ),
+      {
+        cause: Object.assign(new Error('rpc'), {
+          name: 'RpcError',
+          code: 'UNKNOWN',
+        }),
+      },
+    )
+
+    const outcome = classifyBuildFailure(err)
+
+    expect(outcome?.status).toBe('failure')
+    expect(outcome?.error).toContain('insufficient SUI balance')
+  })
+
+  it('reclassifies "no valid gas coins" as a predicted failure', () => {
+    const err = new Error('No valid gas coins found for the transaction.')
+
+    expect(classifyBuildFailure(err)?.status).toBe('failure')
+  })
+
+  it('reclassifies invalid transaction inputs (-32002) as a predicted failure', () => {
+    const err = new Error(
+      'Failed to submit transaction: Transaction validator signing failed due to issues with transaction inputs, code: -32002',
+    )
+
+    expect(classifyBuildFailure(err)?.status).toBe('failure')
+  })
+
+  it('reclassifies a VMVerification error as a predicted failure', () => {
+    const err = new Error(
+      'Error executing transaction: VMVerificationOrDeserializationError in command 0',
+    )
+
+    expect(classifyBuildFailure(err)?.status).toBe('failure')
+  })
+
+  it('reclassifies a deterministic gRPC status code as a predicted failure', () => {
+    const err = Object.assign(new Error('rejected'), {
+      cause: Object.assign(new Error('bad'), {
+        name: 'RpcError',
+        code: 'INVALID_ARGUMENT',
+      }),
+    })
+
+    expect(classifyBuildFailure(err)?.status).toBe('failure')
+  })
+
+  it('returns null for a transport error with no deterministic-failure signal', () => {
+    const err = Object.assign(new Error('Service unavailable'), {
+      cause: Object.assign(new Error('unavailable'), {
+        name: 'RpcError',
+        code: 'UNAVAILABLE',
+      }),
+    })
+
+    expect(classifyBuildFailure(err)).toBeNull()
+  })
+
+  it('returns null for object contention (reserved / equivocated)', () => {
+    const reserved = new Error(
+      'Failed to sign transaction by a quorum of validators because one or more of its objects is reserved for another transaction',
+    )
+    const equivocated = new Error(
+      'one or more of its objects is equivocated until the next epoch',
+    )
+
+    expect(classifyBuildFailure(reserved)).toBeNull()
+    expect(classifyBuildFailure(equivocated)).toBeNull()
+  })
+
+  it('returns null for an error whose cause is not a failed simulation', () => {
+    const err = Object.assign(new Error('boom'), {
+      cause: { $kind: 'Transaction' },
+    })
+
+    expect(classifyBuildFailure(err)).toBeNull()
+  })
+
+  it('returns null for an unrelated network error', () => {
+    expect(classifyBuildFailure(new Error('network timeout'))).toBeNull()
+  })
+
+  it('returns null for a non-Error throw', () => {
+    expect(classifyBuildFailure('some string')).toBeNull()
   })
 })

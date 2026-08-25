@@ -199,6 +199,144 @@ async function enrichBalanceChanges(
   return items
 }
 
+function buildFailureSimulation({
+  error,
+  digest,
+  effects,
+  objectTypes,
+  events,
+}: {
+  error: string
+  digest?: string
+  effects?: SuiClientTypes.TransactionEffects
+  objectTypes?: Record<string, string>
+  events?: SuiClientTypes.Event[]
+}): TransactionSimulation {
+  return {
+    status: 'failure',
+    error,
+    digest: digest ?? '',
+    gas: buildGas(effects?.gasUsed),
+    balanceChanges: [],
+    changedObjects: buildChangedObjects(effects, objectTypes),
+    events: buildEvents(events),
+  }
+}
+
+// Matches the failed simulate result `SimulationError` from `Transaction#build()`
+// attaches as `.cause` (@mysten/sui `client/core-resolver.ts` `setGasBudget`).
+function isFailedSimulationCause(cause: unknown): cause is {
+  $kind: 'FailedTransaction'
+  FailedTransaction: {
+    effects?: SuiClientTypes.TransactionEffects
+    digest?: string
+    objectTypes?: Record<string, string>
+    events?: SuiClientTypes.Event[]
+  }
+} {
+  return (
+    !!cause &&
+    typeof cause === 'object' &&
+    (cause as { $kind?: unknown }).$kind === 'FailedTransaction' &&
+    'FailedTransaction' in cause
+  )
+}
+
+// Reads the parsed `ExecutionError` a `SimulationError` carries on
+// `.executionError`; survives bundling that drops `.cause`.
+function extractExecutionError(err: Error): { message?: string } | undefined {
+  const executionError = (err as { executionError?: unknown }).executionError
+  return executionError && typeof executionError === 'object'
+    ? (executionError as { message?: string })
+    : undefined
+}
+
+// Canonical gRPC status names, matched against `RpcError.code` on the error's
+// `.cause` — a string like `'UNAVAILABLE'` set from grpcweb's `GrpcStatusCode`.
+// Hardcoded rather than imported: the names are gRPC-spec stable, and comparing
+// strings keeps this decoupled from the transport library that produced them.
+const TRANSIENT_RPC_CODES = new Set([
+  'CANCELLED',
+  'DEADLINE_EXCEEDED',
+  'UNAVAILABLE',
+  'ABORTED',
+  'RESOURCE_EXHAUSTED',
+])
+const DETERMINISTIC_RPC_CODES = new Set([
+  'INVALID_ARGUMENT',
+  'FAILED_PRECONDITION',
+  'OUT_OF_RANGE',
+  'NOT_FOUND',
+  'UNIMPLEMENTED',
+  'PERMISSION_DENIED',
+  'UNAUTHENTICATED',
+])
+
+// Retryable transport/contention failures — outcome unknown.
+const TRANSIENT_MESSAGE =
+  /tim ?e?out|timed out|unavailable|temporarily|overloaded|connection|failed to connect|fetch failed|requires a connection|reserved for another transaction|equivocated|\b(403|429|502|503|504)\b|-32050|-32604/i
+// Failures the node reports before execution that the transaction cannot recover
+// from as-is (gas/balance shortfalls, input validation, verification).
+const DETERMINISTIC_MESSAGE =
+  /insufficient|no valid gas coins|gas selection|could not automatically determine a budget|unusedvalue|vmverification|deserialization|move ?abort|transaction inputs|validator signing failed|invalid sui address|unresolved address|-32002/i
+
+function rpcCode(cause: unknown): string | undefined {
+  const code =
+    cause && typeof cause === 'object'
+      ? (cause as { code?: unknown }).code
+      : undefined
+  return typeof code === 'string' ? code : undefined
+}
+
+export function classifyBuildFailure(
+  err: unknown,
+): TransactionSimulation | null {
+  if (!(err instanceof Error)) return null
+
+  const executionError = extractExecutionError(err)
+
+  // `.cause` carries full effects (gas, digest, changed objects).
+  const cause = (err as Error & { cause?: unknown }).cause
+  if (isFailedSimulationCause(cause)) {
+    const inner = cause.FailedTransaction
+    return buildFailureSimulation({
+      error:
+        inner.effects?.status.error?.message ??
+        executionError?.message ??
+        err.message,
+      digest: inner.effects?.transactionDigest ?? inner.digest,
+      effects: inner.effects,
+      objectTypes: inner.objectTypes,
+      events: inner.events,
+    })
+  }
+
+  // `.cause` dropped; report the abort without effect detail.
+  if (executionError) {
+    return buildFailureSimulation({
+      error: executionError.message ?? err.message,
+    })
+  }
+
+  // Transient first, so an incidental substring can't label a retryable error
+  // as a certain failure. Unrecognized errors fall through to unavailable.
+  const code = rpcCode(cause)
+  if (
+    (code && TRANSIENT_RPC_CODES.has(code)) ||
+    TRANSIENT_MESSAGE.test(err.message)
+  ) {
+    return null
+  }
+  if (
+    (code && DETERMINISTIC_RPC_CODES.has(code)) ||
+    DETERMINISTIC_MESSAGE.test(err.message)
+  ) {
+    return buildFailureSimulation({ error: err.message })
+  }
+
+  return null
+}
+
 /**
  * Simulates already-built transaction bytes and shapes the fullnode response
  * into the projected effect on the sender's account. Throws on transport
@@ -232,15 +370,13 @@ export async function simulateTransactionOutcome({
   const events = buildEvents(inner.events)
 
   if (effects?.status.success === false) {
-    return {
-      status: 'failure',
+    return buildFailureSimulation({
       error: effects.status.error?.message ?? 'Transaction would fail',
       digest,
-      gas,
-      balanceChanges: [],
-      changedObjects,
-      events,
-    }
+      effects,
+      objectTypes: inner.objectTypes,
+      events: inner.events,
+    })
   }
 
   const senderChanges = (inner.balanceChanges ?? []).filter(

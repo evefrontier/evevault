@@ -2,6 +2,7 @@ import { buildTransactionBytes } from '@evefrontier/wallet-core/crypto'
 import { createSuiGraphQLClient } from '@evevault/shared/sui'
 import { createLogger } from '@evevault/shared/utils'
 import {
+  classifyBuildFailure,
   simulateTransactionOutcome,
   type TransactionSimulation,
 } from '@evevault/shared/wallet'
@@ -16,7 +17,7 @@ const log = createLogger()
 export type SimulationState =
   | { status: 'loading' }
   | { status: 'ready'; simulation: TransactionSimulation }
-  | { status: 'unavailable'; reason?: string } // // Transport/build failure — outcome unknown
+  | { status: 'unavailable'; reason?: string } // Transport/build failure — outcome unknown
 
 type SimulationParams = {
   /**
@@ -89,13 +90,18 @@ export function useTransactionSimulation({
           setState({ status: 'ready', simulation })
         }
       } catch (err) {
-        log.warn('Transaction simulation failed', err)
-        if (runId === runIdRef.current) {
-          setState({
-            status: 'unavailable',
-            reason: err instanceof Error ? err.message : String(err),
-          })
+        if (runId !== runIdRef.current) return
+
+        const classified = classifyBuildFailure(err)
+        if (classified) {
+          setState({ status: 'ready', simulation: classified })
+          return
         }
+        log.warn('Transaction simulation failed', err)
+        setState({
+          status: 'unavailable',
+          reason: err instanceof Error ? err.message : String(err),
+        })
       }
     }
 
