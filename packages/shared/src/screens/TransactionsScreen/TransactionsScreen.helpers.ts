@@ -98,13 +98,24 @@ function getSummaryAmounts(transaction: Transaction) {
 }
 
 /**
+ * Truncates hex addresses, but leaves non-address counterparties (e.g. a
+ * `module::function` label for a coin-less move call) intact so they aren't
+ * mangled by the address ellipsis.
+ */
+function formatCounterparty(counterparty: string) {
+  return counterparty.startsWith('0x')
+    ? formatAddress(counterparty, 6, 6)
+    : counterparty
+}
+
+/**
  * Precomputes row display fields so the JSX parts do not duplicate address
  * truncation or sent/received direction logic.
  */
 export function getTransactionRowSummary(transaction: Transaction) {
   return {
     iconName: transaction.direction === 'sent' ? 'ArrowRight' : 'ArrowLeft',
-    shortCounterparty: formatAddress(transaction.counterparty, 6, 6),
+    shortCounterparty: formatCounterparty(transaction.counterparty),
     shortDigest: formatAddress(transaction.digest, 8, 8),
     summaryAmounts: getSummaryAmounts(transaction),
   } as const

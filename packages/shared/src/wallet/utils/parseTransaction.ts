@@ -14,12 +14,16 @@ import {
 import { createLogger } from '#/utils/logger'
 import type {
   GraphQLBalanceChange,
+  GraphQLMoveCallCommand,
   GraphQLTransactionNode,
 } from '#/wallet/types/graphql'
 import { fetchCoinMetadata } from './coinMetadata'
 import { extractSymbolFromCoinType } from './formatTransaction'
 
 const log = createLogger()
+
+/** Counterparty shown when no address moved coins (e.g. a pure move call). */
+const SYSTEM_COUNTERPARTY = 'System'
 
 function findCounterparty(
   balanceChanges: GraphQLBalanceChange[],
@@ -42,7 +46,7 @@ function findCounterparty(
   })
   const sameCoin = withOppositeSign.find(sameCoinType)
   const counterpartyChange = sameCoin ?? withOppositeSign[0]
-  return counterpartyChange?.owner?.address ?? 'System'
+  return counterpartyChange?.owner?.address ?? SYSTEM_COUNTERPARTY
 }
 
 /**
@@ -71,6 +75,8 @@ type TransactionContext = {
   digest: string
   timestamp: number
   balanceChanges: GraphQLBalanceChange[]
+  /** `module::function` of the first move call, used to label coin-less txs. */
+  moveCallLabel: string | null
 }
 
 const getTransactionContext = (
@@ -85,8 +91,38 @@ const getTransactionContext = (
           ? new Date(effects.timestamp).getTime()
           : Date.now(),
         balanceChanges,
+        moveCallLabel: getMoveCallLabel(txNode),
       }
     : null
+}
+
+/**
+ * Derives a `module::function` label from the transaction's first move call,
+ * so coin-less calls (e.g. address_alias::add) read as their target instead of
+ * a bare "System" counterparty. Returns null when the tx has no move call.
+ */
+const getMoveCallLabel = (txNode: GraphQLTransactionNode): string | null => {
+  const command = txNode.kind?.commands?.nodes?.find(isMoveCallCommand)
+  const fn = command?.function
+  const moduleName = fn?.module?.name
+  return fn?.name && moduleName ? `${moduleName}::${fn.name}` : null
+}
+
+const isMoveCallCommand = (command: GraphQLMoveCallCommand): boolean => {
+  return command.__typename === 'MoveCallCommand'
+}
+
+/**
+ * Falls back to the move-call label when no address moved coins, keeping a real
+ * counterparty address whenever one exists.
+ */
+const resolveCounterparty = (
+  counterparty: string,
+  context: TransactionContext,
+): string => {
+  return counterparty === SYSTEM_COUNTERPARTY
+    ? (context.moveCallLabel ?? counterparty)
+    : counterparty
 }
 
 const buildUserBalanceTransaction = async (
@@ -106,11 +142,14 @@ const buildUserBalanceTransaction = async (
         digest: context.digest,
         timestamp: context.timestamp,
         direction: primary.direction,
-        counterparty: findCounterparty(
-          context.balanceChanges,
-          userAddress,
-          primary.direction,
-          primary.coinType,
+        counterparty: resolveCounterparty(
+          findCounterparty(
+            context.balanceChanges,
+            userAddress,
+            primary.direction,
+            primary.coinType,
+          ),
+          context,
         ),
         balanceChanges: balanceChangeItems,
       }
@@ -132,9 +171,9 @@ const buildOutgoingBalanceTransaction = async (
         digest: context.digest,
         timestamp: context.timestamp,
         direction: 'sent',
-        counterparty: findRecipientCounterparty(
-          context.balanceChanges,
-          userAddress,
+        counterparty: resolveCounterparty(
+          findRecipientCounterparty(context.balanceChanges, userAddress),
+          context,
         ),
         balanceChanges: [balanceChange],
       }
@@ -229,7 +268,7 @@ const findRecipientCounterparty = (
       ownerAddress?.toLowerCase() !== userAddress.toLowerCase()
     )
   })
-  return recipientChange?.owner?.address ?? 'System'
+  return recipientChange?.owner?.address ?? SYSTEM_COUNTERPARTY
 }
 
 const isOutgoingChange = (bc: GraphQLBalanceChange): boolean => {

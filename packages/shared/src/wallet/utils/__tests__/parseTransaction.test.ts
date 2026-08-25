@@ -215,6 +215,73 @@ describe('parseGraphQLTransaction — outgoing fallback', () => {
   })
 })
 
+describe('parseGraphQLTransaction — move-call counterparty label', () => {
+  beforeEach(() => mockFetchCoinMetadata.mockReset())
+
+  const moveCallKind = (moduleName: string, functionName: string) => ({
+    kind: {
+      __typename: 'ProgrammableTransaction',
+      commands: {
+        nodes: [
+          {
+            __typename: 'MoveCallCommand',
+            function: { name: functionName, module: { name: moduleName } },
+          },
+        ],
+      },
+    },
+  })
+
+  it('labels a coin-less move call with module::function instead of System', async () => {
+    mockFetchCoinMetadata.mockResolvedValue(metadata(9, 'SUI'))
+
+    // Alias registration: user pays gas, no coin moves to another address.
+    const result = await parseGraphQLTransaction(
+      txNode(
+        [change({ amount: '-5000', coinType: SUI, owner: USER })],
+        moveCallKind('address_alias', 'add'),
+      ),
+      USER,
+      client,
+    )
+
+    expect(result).toMatchObject({
+      direction: 'sent',
+      counterparty: 'address_alias::add',
+    })
+  })
+
+  it('keeps a real counterparty address over the move-call label', async () => {
+    mockFetchCoinMetadata.mockResolvedValue(metadata(9, 'SUI'))
+
+    const result = await parseGraphQLTransaction(
+      txNode(
+        [
+          change({ amount: '-100', coinType: SUI, owner: USER }),
+          change({ amount: '100', coinType: SUI, owner: '0xRecipient' }),
+        ],
+        moveCallKind('address_alias', 'add'),
+      ),
+      USER,
+      client,
+    )
+
+    expect(result?.counterparty).toBe('0xRecipient')
+  })
+
+  it('stays System when the tx has no move call', async () => {
+    mockFetchCoinMetadata.mockResolvedValue(metadata(9, 'SUI'))
+
+    const result = await parseGraphQLTransaction(
+      txNode([change({ amount: '-5000', coinType: SUI, owner: USER })]),
+      USER,
+      client,
+    )
+
+    expect(result?.counterparty).toBe('System')
+  })
+})
+
 describe('parseGraphQLTransaction — metadata fallbacks', () => {
   beforeEach(() => mockFetchCoinMetadata.mockReset())
 

@@ -67,8 +67,8 @@ export function useTransactionHistory({
         query: TRANSACTIONS_QUERY,
         variables: {
           address: userAddress,
-          first: pageSize,
-          after: pageParam as string | undefined,
+          last: pageSize,
+          before: pageParam as string | undefined,
         },
       })
 
@@ -84,36 +84,38 @@ export function useTransactionHistory({
         log.debug('No transactions found')
         return {
           transactions: [],
-          nextCursor: null,
-          hasNextPage: false,
+          prevCursor: null,
+          hasPreviousPage: false,
         }
       }
 
-      // Parse transactions (one row per digest, with all balance changes aggregated)
+      // Connection nodes are oldest-first; reverse so each page reads
+      // newest-first without re-sorting by timestamp.
       const parsed = await Promise.all(
-        transactionsData.nodes.map((node: GraphQLTransactionNode) =>
-          parseGraphQLTransaction(node, userAddress, graphqlClient),
-        ),
+        transactionsData.nodes
+          .slice()
+          .reverse()
+          .map((node: GraphQLTransactionNode) =>
+            parseGraphQLTransaction(node, userAddress, graphqlClient),
+          ),
       )
 
-      const transactions = parsed
-        .filter(isNonNullable)
-        .sort((a, b) => b.timestamp - a.timestamp)
+      const transactions = parsed.filter(isNonNullable)
 
       log.debug('Transactions fetched successfully via GraphQL', {
         count: transactions.length,
-        hasNextPage: transactionsData.pageInfo.hasNextPage,
+        hasPreviousPage: transactionsData.pageInfo.hasPreviousPage,
       })
 
       return {
         transactions,
-        nextCursor: transactionsData.pageInfo.endCursor ?? null,
-        hasNextPage: transactionsData.pageInfo.hasNextPage,
+        prevCursor: transactionsData.pageInfo.startCursor ?? null,
+        hasPreviousPage: transactionsData.pageInfo.hasPreviousPage,
       }
     },
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) =>
-      lastPage.hasNextPage ? lastPage.nextCursor : undefined,
+      lastPage.hasPreviousPage ? lastPage.prevCursor : undefined,
     enabled: !!userAddress && !!chain && !!graphqlClient,
     staleTime: 1000 * 60, // 1 minute
     retry: 2,
