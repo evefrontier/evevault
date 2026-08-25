@@ -1,5 +1,11 @@
 # @evevault/shared
 
+## 0.0.18
+
+### Patch Changes
+
+- add enforcement address aliasing
+
 ## 0.0.17
 
 ### Patch Changes
