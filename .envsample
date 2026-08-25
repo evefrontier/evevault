@@ -1,1 +1,5 @@
 EXTENSION_ID=
+
+# Address-alias enforcement kill-switch. Defaults to enabled; set to "false"
+# to disable the alias-setup gate and the signing backstop in both apps.
+VITE_ENFORCE_ADDRESS_ALIAS=true

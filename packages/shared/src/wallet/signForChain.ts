@@ -4,6 +4,7 @@ import { browser } from '@wxt-dev/browser'
 import { VaultMessageTypes } from '#/types'
 import type { ZkSignAnyParams } from '#/types/wallet'
 import { toErrorMessage } from '#/utils/errorMessage'
+import { assertAliasEnforced } from './aliasEnforcement'
 import { zkSignAny } from './zkSignAny'
 
 /**
@@ -76,6 +77,15 @@ export async function signForChain(
   if (!opts.getZkProof) {
     throw new Error('[signForChain] getZkProof is required for zkLogin signing')
   }
+
+  // Enforcement backstop: block signing until the account has a non-self alias.
+  // Alias-setup transactions are exempt so the first alias can be registered.
+  await assertAliasEnforced({
+    chain: opts.chain,
+    owner: (opts.user?.profile?.sui_address as string | undefined) ?? null,
+    scope,
+    msgBytes,
+  })
 
   const { bytes, zkSignature } = await zkSignAny(scope, msgBytes, {
     user: opts.user,

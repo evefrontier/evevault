@@ -1,5 +1,10 @@
 import { useCallback, useRef, useState } from 'react'
 import { createLogger } from '#/utils'
+import { isAliasEnforcementError } from '../aliasEnforcement'
+
+/** Shown when signing is blocked by address-alias enforcement (rare race past the UX gate). */
+const ALIAS_ENFORCEMENT_MESSAGE =
+  'Set up your personal access alias to continue'
 
 const log = createLogger()
 
@@ -70,7 +75,11 @@ export function useTransactionWrite(): UseTransactionWriteResult {
         await onSuccess?.(digest)
         return digest
       } catch (err) {
-        const message = err instanceof Error ? err.message : fallbackMessage
+        const message = isAliasEnforcementError(err)
+          ? ALIAS_ENFORCEMENT_MESSAGE
+          : err instanceof Error
+            ? err.message
+            : fallbackMessage
         log.error(logLabel ?? fallbackMessage, err)
         setError(message)
         return null

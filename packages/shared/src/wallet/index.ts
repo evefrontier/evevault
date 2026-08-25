@@ -19,8 +19,16 @@ export {
   createWebCryptoPlaceholder,
   isWebCryptoMarker,
 } from '../types/wallet'
+export {
+  assertAliasEnforced,
+  invalidateAliasEnforcement,
+  isAddressAliasEnforcementEnabled,
+  isAliasEnforcementError,
+  resolveAliasEnforcementStatus,
+} from './aliasEnforcement'
 export { useActiveSuiAddress } from './hooks/useActiveSuiAddress'
 export { useAddressAliases } from './hooks/useAddressAliases'
+export { useAliasProvisioning } from './hooks/useAliasProvisioning'
 export { useBalance } from './hooks/useBalance'
 export { useSendToken } from './hooks/useSendToken'
 export { useTransactionHistory } from './hooks/useTransactionHistory'

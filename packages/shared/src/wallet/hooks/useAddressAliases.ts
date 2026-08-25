@@ -149,14 +149,19 @@ export function useAddressAliases(): UseAddressAliasesResult {
       }
       const trimmed = addressAlias.trim()
       const digest = await run(
-        () =>
-          executeAddressAliasTx({
+        async () => {
+          const digest = await executeAddressAliasTx({
             suiClient,
             sender: senderAddress,
             signer,
             buildBytes: (sender, client) =>
               buildBytes(sender, objectId, trimmed, client),
-          }),
+          })
+          // Wait for finality before refetching, else the read can race the
+          // write and still return the pre-change alias list.
+          await suiClient.core.waitForTransaction({ digest })
+          return digest
+        },
         {
           fallbackMessage,
           onSuccess: async () => {
