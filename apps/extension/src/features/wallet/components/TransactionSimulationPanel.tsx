@@ -1,6 +1,6 @@
 import { Text } from '@evevault/shared/components'
 import Json from '@evevault/shared/components/Json'
-import { formatAddress } from '@evevault/shared/utils'
+import { formatAddress, formatDisplayAmount } from '@evevault/shared/utils'
 import type {
   SimulatedBalanceChange,
   SimulatedEvent,
@@ -45,7 +45,7 @@ function BalanceChangeRow({ change }: { change: SimulatedBalanceChange }) {
       color={change.isDebit ? 'neutral' : 'success'}
     >
       {sign}
-      {change.amount} {change.symbol}
+      {formatDisplayAmount(change.amount, 9)} {change.symbol}
     </Text>
   )
 }
@@ -165,7 +165,7 @@ function OutcomeBody({
       )}
       <InfoRow
         label="Gas fee"
-        value={`${simulation.gas.net} SUI${
+        value={`${formatDisplayAmount(simulation.gas.net, 9)} SUI${
           gasPaidBySponsor ? ' · paid by sponsor' : ''
         }`}
       />
