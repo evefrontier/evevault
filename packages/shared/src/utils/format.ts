@@ -15,11 +15,16 @@ import { SUI_DECIMALS } from '@mysten/sui/utils'
 export function formatByDecimals(amount: string, decimals: number): string {
   const divisor = 10n ** BigInt(decimals)
   const value = BigInt(amount)
-  const integer = value / divisor
-  const fraction = value % divisor
+  // Operate on the magnitude so the sign is applied once at the end; splitting a
+  // negative value into integer/fraction otherwise yields garbage like "-1.-5".
+  const negative = value < 0n
+  const abs = negative ? -value : value
+  const sign = negative ? '-' : ''
+  const integer = abs / divisor
+  const fraction = abs % divisor
 
   if (fraction === 0n) {
-    return integer.toString()
+    return `${sign}${integer.toString()}`
   }
 
   const fractionStr = fraction
@@ -27,7 +32,7 @@ export function formatByDecimals(amount: string, decimals: number): string {
     .padStart(decimals, '0')
     .replace(/0+$/, '')
 
-  return `${integer.toString()}.${fractionStr}`
+  return `${sign}${integer.toString()}.${fractionStr}`
 }
 
 /**

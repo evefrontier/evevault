@@ -133,6 +133,13 @@ describe('formatByDecimals', () => {
       expect(formatByDecimals('1', SUI_DECIMALS)).toBe('0.000000001')
       expect(formatByDecimals('100000000', SUI_DECIMALS)).toBe('0.1')
     })
+
+    it('formats negative amounts (e.g. a net gas rebate)', () => {
+      expect(formatByDecimals('-1500000000', SUI_DECIMALS)).toBe('-1.5')
+      expect(formatByDecimals('-1000000000', SUI_DECIMALS)).toBe('-1')
+      expect(formatByDecimals('-500000000', SUI_DECIMALS)).toBe('-0.5')
+      expect(formatByDecimals('-1', SUI_DECIMALS)).toBe('-0.000000001')
+    })
   })
 
   describe('trailing zero handling', () => {

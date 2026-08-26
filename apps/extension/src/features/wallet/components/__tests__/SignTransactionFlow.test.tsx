@@ -1,12 +1,26 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { mockUseTransactionSigning } = vi.hoisted(() => ({
-  mockUseTransactionSigning: vi.fn(),
-}))
+const { mockUseTransactionSigning, mockUseTransactionSimulation } = vi.hoisted(
+  () => ({
+    mockUseTransactionSigning: vi.fn(),
+    mockUseTransactionSimulation: vi.fn(),
+  }),
+)
 
 vi.mock('@/features/wallet/hooks', () => ({
   useTransactionSigning: mockUseTransactionSigning,
+  useTransactionSimulation: mockUseTransactionSimulation,
+}))
+
+vi.mock('@evevault/shared/wallet', () => ({
+  useWalletSigningContext: () => ({ suiClient: {}, chain: 'sui:testnet' }),
+}))
+
+vi.mock('@/features/wallet/components/TransactionSimulationPanel', () => ({
+  TransactionSimulationPanel: ({ state }: { state: unknown }) => (
+    <div data-testid="simulation-panel">{JSON.stringify(state)}</div>
+  ),
 }))
 
 vi.mock('@/features/wallet/components/SignRequestView', () => ({
@@ -79,6 +93,7 @@ function stubSigning(overrides: Record<string, unknown> = {}) {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mockUseTransactionSimulation.mockReturnValue(null)
 })
 
 describe('SignTransactionFlow', () => {
@@ -88,12 +103,12 @@ describe('SignTransactionFlow', () => {
     expect(screen.getByText('Loading transaction...')).toBeInTheDocument()
   })
 
-  it('shows the risk panel and payload label when a transaction is pending', () => {
+  it('renders Outcome and Payload tabs, Outcome active, when pending', () => {
     stubSigning({
       pendingTransaction: {
         windowId: 1,
         requestId: 'r1',
-        reviewValue: { commands: [], inputs: [] },
+        reviewValue: { commands: [], inputs: [] }, // no findings → no Warnings tab
         displayValue: '{"test":true}',
         chain: 'sui:testnet',
         dapp: undefined,
@@ -101,8 +116,33 @@ describe('SignTransactionFlow', () => {
       },
     })
     render(<SignTransactionFlow title="Sign Transaction" onSign={vi.fn()} />)
+    expect(screen.getByRole('tab', { name: 'Outcome' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: 'Payload' })).toBeInTheDocument()
+    expect(
+      screen.queryByRole('tab', { name: /Warnings/ }),
+    ).not.toBeInTheDocument()
+    // Outcome is the default tab, so its content is mounted.
+    expect(screen.getByTestId('simulation-panel')).toBeInTheDocument()
+  })
+
+  it('adds a Warnings tab that reveals the risk panel when there are findings', () => {
+    stubSigning({
+      pendingTransaction: {
+        windowId: 1,
+        requestId: 'r1',
+        reviewValue: { commands: [{ MoveCall: {} }], inputs: [] }, // warning finding
+        displayValue: '{}',
+        chain: 'sui:testnet',
+        account: { address: '0xabc' },
+      },
+    })
+    render(<SignTransactionFlow title="Sign Transaction" onSign={vi.fn()} />)
+    const warningsTab = screen.getByRole('tab', { name: /Warnings/ })
+    expect(warningsTab).toBeInTheDocument()
+    // Risk panel lives in the (inactive) Warnings tab until it's selected.
+    expect(screen.queryByTestId('risk-panel')).not.toBeInTheDocument()
+    fireEvent.click(warningsTab)
     expect(screen.getByTestId('risk-panel')).toBeInTheDocument()
-    expect(screen.getByText('Transaction payload')).toBeInTheDocument()
   })
 
   it('requires acknowledgement for danger-class findings', () => {
@@ -129,6 +169,59 @@ describe('SignTransactionFlow', () => {
         displayValue: '{}',
         chain: 'sui:testnet',
         account: { address: '0xabc' },
+      },
+    })
+    render(<SignTransactionFlow title="Sign Transaction" onSign={vi.fn()} />)
+    expect(screen.queryByTestId('ack-required')).not.toBeInTheDocument()
+  })
+
+  it('requires acknowledgement when the simulation predicts failure', () => {
+    stubSigning({
+      pendingTransaction: {
+        windowId: 1,
+        requestId: 'r1',
+        reviewValue: { commands: [], inputs: [] }, // clean static review
+        displayValue: '{}',
+        chain: 'sui:testnet',
+        account: { address: '0xabc' },
+      },
+    })
+    mockUseTransactionSimulation.mockReturnValue({
+      status: 'ready',
+      simulation: {
+        status: 'failure',
+        error: 'MoveAbort',
+        digest: 'd',
+        gas: { computation: '0', storage: '0', rebate: '0', net: '0.001' },
+        balanceChanges: [],
+        changedObjects: [],
+        events: [],
+      },
+    })
+    render(<SignTransactionFlow title="Sign Transaction" onSign={vi.fn()} />)
+    expect(screen.getByTestId('ack-required')).toBeInTheDocument()
+  })
+
+  it('does not require acknowledgement when the simulation succeeds', () => {
+    stubSigning({
+      pendingTransaction: {
+        windowId: 1,
+        requestId: 'r1',
+        reviewValue: { commands: [], inputs: [] },
+        displayValue: '{}',
+        chain: 'sui:testnet',
+        account: { address: '0xabc' },
+      },
+    })
+    mockUseTransactionSimulation.mockReturnValue({
+      status: 'ready',
+      simulation: {
+        status: 'success',
+        digest: 'd',
+        gas: { computation: '0', storage: '0', rebate: '0', net: '0.001' },
+        balanceChanges: [],
+        changedObjects: [],
+        events: [],
       },
     })
     render(<SignTransactionFlow title="Sign Transaction" onSign={vi.fn()} />)

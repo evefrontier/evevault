@@ -1,5 +1,13 @@
 # @evevault/extension
 
+## 0.0.17
+
+### Patch Changes
+
+- add transaction simulation to extension approval
+- Updated dependencies
+  - @evevault/shared@0.0.17
+
 ## 0.0.16
 
 ### Patch Changes

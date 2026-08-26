@@ -13,11 +13,16 @@ const {
 
 vi.mock('@/features/wallet/hooks', () => ({
   useTransactionSigning: mockUseTransactionSigning,
+  useTransactionSimulation: () => null,
 }))
 
 vi.mock('@evevault/shared/wallet', () => ({
   useWalletSigningContext: mockUseWalletSigningContext,
   ADDRESS_ALIAS_MODULE: mockAddressAliasModule,
+}))
+
+vi.mock('@/features/wallet/components/TransactionSimulationPanel', () => ({
+  TransactionSimulationPanel: () => null,
 }))
 
 vi.mock('@tanstack/react-query', () => ({
@@ -93,6 +98,7 @@ beforeEach(() => {
     suiClient: defaultSuiClient,
     isLocalnet: false,
     sign: vi.fn(),
+    chain: 'sui:testnet',
   })
   mockUseTransactionSigning.mockReturnValue({
     pendingTransaction: null,
@@ -132,6 +138,7 @@ describe('SignAndExecuteTransaction', () => {
       suiClient: execSuiClient,
       isLocalnet: false,
       sign: vi.fn(),
+      chain: 'sui:testnet',
     })
     const withSigning = vi.fn().mockImplementation(async (cb) => {
       await cb({ bytes: 'b64', signature: 'sig', txb: {}, windowId: 1 })
@@ -177,6 +184,7 @@ describe('SignAndExecuteTransaction', () => {
       suiClient: execSuiClient,
       isLocalnet: false,
       sign: vi.fn(),
+      chain: 'sui:testnet',
     })
     let capturedCb:
       | ((result: Record<string, unknown>) => Promise<void>)

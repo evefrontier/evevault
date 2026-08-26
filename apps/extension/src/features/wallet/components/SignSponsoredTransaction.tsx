@@ -3,13 +3,19 @@ import Json from '@evevault/shared/components/Json'
 import type { PendingSponsoredTransaction } from '@evevault/shared/types'
 import { createLogger, parseTransactionBytes } from '@evevault/shared/utils'
 import { useWalletSigningContext } from '@evevault/shared/wallet'
-import { usePendingSignAction } from '@/features/wallet/hooks'
 import {
+  usePendingSignAction,
+  useTransactionSimulation,
+} from '@/features/wallet/hooks'
+import {
+  PREDICTED_FAILURE_ACKNOWLEDGEMENT,
   requiresAcknowledgement,
   reviewTransaction,
 } from '../transactionRiskReview'
+import { type ApprovalTab, ApprovalTabs } from './ApprovalTabs'
 import { SignRequestView } from './SignRequestView'
 import { TransactionRiskPanel } from './TransactionRiskPanel'
+import { TransactionSimulationPanel } from './TransactionSimulationPanel'
 
 const log = createLogger()
 
@@ -75,7 +81,14 @@ function SponsoredDetail({
 }
 
 function SignSponsoredTransaction() {
-  const { isLocalnet, sign } = useWalletSigningContext()
+  const {
+    isLocalnet,
+    sign,
+    suiClient,
+    chain,
+    getSenderAddress,
+    senderAddress,
+  } = useWalletSigningContext()
   const {
     pending,
     loading,
@@ -137,6 +150,56 @@ function SignSponsoredTransaction() {
 
   const riskFindings = pending ? reviewTransaction(pending.reviewValue) : []
 
+  // The sponsored bytes are already fully built (sender + sponsor gas), so
+  // simulate them as-is rather than rebuilding, which would drop the sponsor.
+  const simulation = useTransactionSimulation({
+    payload: pending?.sponsoredTxB64 ?? null,
+    mode: 'bytes',
+    suiClient,
+    chain,
+    getSenderAddress,
+    fallbackSender: senderAddress ?? undefined,
+  })
+
+  const predictedFailure =
+    simulation?.status === 'ready' && simulation.simulation.status === 'failure'
+  const needsRiskAck = requiresAcknowledgement(riskFindings)
+
+  const tabs: ApprovalTab[] = [
+    {
+      id: 'outcome',
+      label: 'Outcome',
+      content: (
+        <TransactionSimulationPanel
+          state={simulation}
+          senderAddress={senderAddress ?? undefined}
+          gasPaidBySponsor
+        />
+      ),
+    },
+    ...(riskFindings.length > 0
+      ? [
+          {
+            id: 'warnings',
+            label: `Warnings (${riskFindings.length})`,
+            tone: needsRiskAck ? ('danger' as const) : ('default' as const),
+            content: <TransactionRiskPanel findings={riskFindings} />,
+          },
+        ]
+      : []),
+    ...(pending?.displayValue
+      ? [
+          {
+            id: 'payload',
+            label: 'Payload',
+            content: (
+              <Json value={pending.displayValue} className="max-h-52 text-xs" />
+            ),
+          },
+        ]
+      : []),
+  ]
+
   return (
     <SignRequestView
       auth={auth}
@@ -148,7 +211,12 @@ function SignSponsoredTransaction() {
       chain={pending?.chain}
       dapp={pending?.dapp}
       requestKind="Sponsored transaction"
-      requireAcknowledgement={requiresAcknowledgement(riskFindings)}
+      requireAcknowledgement={needsRiskAck || predictedFailure}
+      acknowledgementLabel={
+        predictedFailure && !needsRiskAck
+          ? PREDICTED_FAILURE_ACKNOWLEDGEMENT
+          : undefined
+      }
       onApprove={handleApprove}
       onReject={handleReject}
     >
@@ -175,16 +243,7 @@ function SignSponsoredTransaction() {
           </div>
         </div>
 
-        <TransactionRiskPanel findings={riskFindings} />
-
-        {pending?.displayValue && (
-          <>
-            <Text size="small" color="grey-neutral">
-              Transaction payload
-            </Text>
-            <Json value={pending.displayValue} className="max-h-36 text-xs" />
-          </>
-        )}
+        {pending && <ApprovalTabs tabs={tabs} />}
       </div>
     </SignRequestView>
   )

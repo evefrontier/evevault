@@ -68,20 +68,11 @@
     "vitest": "4.1.10"
   },
   "overrides": {
-    "uuid": ">=11.1.1",
-    "tmp": "^0.2.6",
     "shell-quote": "^1.8.5",
+    "tmp": "^0.2.6",
     "axios": "^1.16.0",
-    "esbuild": "^0.28.1",
-    "js-yaml": "^4.3.0",
-    "valibot": "^1.4.2",
-    "nanoid": "^3.3.18",
-    "postcss": "^8.5.18",
-    "protobufjs": "^7.6.5",
-    "vite": "^7.3.3",
     "adm-zip": "^0.6.0",
-    "brace-expansion": "^5.0.8",
-    "fast-uri": "^3.1.4",
-    "@mysten/sui": "^2.22.1"
+    "esbuild": "^0.28.1",
+    "uuid": "^11.1.1"
   }
 }

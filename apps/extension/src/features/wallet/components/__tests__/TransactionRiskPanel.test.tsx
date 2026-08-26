@@ -57,13 +57,14 @@ describe('TransactionRiskPanel', () => {
     ])
   })
 
-  it('renders the panel header for non-empty findings', () => {
+  it('renders findings without a standalone header (the tab supplies it)', () => {
     const findings: TransactionRiskFinding[] = [
       { severity: 'warning', title: 'Calls Move code', detail: 'detail' },
     ]
 
     render(<TransactionRiskPanel findings={findings} />)
 
-    expect(screen.getByText('Transaction warnings')).toBeInTheDocument()
+    expect(screen.getByText('Calls Move code')).toBeInTheDocument()
+    expect(screen.queryByText('Transaction warnings')).not.toBeInTheDocument()
   })
 })
