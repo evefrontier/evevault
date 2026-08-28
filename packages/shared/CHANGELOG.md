@@ -4,7 +4,7 @@
 
 ### Patch Changes
 
-- add enforcement address aliasing
+- Require zkLogin accounts to register a recovery alias before signing
 
 ## 0.0.17
 

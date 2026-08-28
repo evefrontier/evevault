@@ -47,7 +47,9 @@ beforeEach(() => {
   mockSigningContext.mockReturnValue({
     chain: 'sui:devnet',
     senderAddress: OWNER,
-    suiClient: {},
+    suiClient: {
+      core: { waitForTransaction: vi.fn().mockResolvedValue(undefined) },
+    },
     sign: vi.fn().mockResolvedValue({ bytes: 'b', signature: 's' }),
   })
 })
@@ -62,9 +64,6 @@ describe('useAliasProvisioning', () => {
   })
 
   it('surfaces the error and does not register when acknowledged is false', async () => {
-    mockRegisterAcknowledgedAlias.mockRejectedValue(
-      new Error('Alias registration requires the user to acknowledge'),
-    )
     const { result } = renderHook(() => useAliasProvisioning(), { wrapper })
     act(() => {
       result.current.generate()
@@ -76,7 +75,8 @@ describe('useAliasProvisioning', () => {
     })
 
     expect(ok).toBe(false)
-    expect(result.current.error).toContain('acknowledge')
+    expect(result.current.error).toContain('saved your personal access key')
+    expect(mockRegisterAcknowledgedAlias).not.toHaveBeenCalled()
     expect(mockInvalidate).not.toHaveBeenCalled()
   })
 

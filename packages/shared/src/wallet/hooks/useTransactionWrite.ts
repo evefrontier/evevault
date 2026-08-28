@@ -3,8 +3,7 @@ import { createLogger } from '#/utils'
 import { isAliasEnforcementError } from '../aliasEnforcement'
 
 /** Shown when signing is blocked by address-alias enforcement (rare race past the UX gate). */
-const ALIAS_ENFORCEMENT_MESSAGE =
-  'Set up your personal access alias to continue'
+const ALIAS_ENFORCEMENT_MESSAGE = 'Set up your personal access key to continue'
 
 const log = createLogger()
 

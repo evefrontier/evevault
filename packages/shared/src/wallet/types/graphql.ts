@@ -21,8 +21,10 @@ export interface GraphQLBalanceChange {
 }
 
 /**
- * Move-call command within a programmable transaction. Only the fields needed
- * to label the call (module + function) are requested.
+ * A command node within a programmable transaction. Every `commands.nodes`
+ * entry has this shape; `function` is only present on MoveCall commands (other
+ * command types carry just `__typename`). Only the fields needed to label a
+ * move call (module + function) are requested.
  */
 export interface GraphQLMoveCallCommand {
   __typename: string

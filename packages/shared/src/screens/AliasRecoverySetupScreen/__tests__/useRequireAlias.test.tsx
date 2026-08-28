@@ -83,14 +83,15 @@ describe('useRequireAlias', () => {
     expect(mockResolve).toHaveBeenCalledWith(OWNER, 'sui:testnet')
   })
 
-  it('throws when zklogin enforcement applies but no sender is available', async () => {
+  it('does not gate when no sender is available', async () => {
     mockSigningContext.mockReturnValue({
       mode: 'zklogin',
       senderAddress: null,
       chain: 'sui:testnet',
     })
     render(<Harness />)
-    await expect(api.ensureAlias()).rejects.toThrow('No sender address')
+    await expect(api.ensureAlias()).resolves.toBe(true)
+    expect(mockResolve).not.toHaveBeenCalled()
   })
 
   it('opens the modal and resolves true once registration completes', async () => {

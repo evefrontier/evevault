@@ -68,15 +68,24 @@ export function useAliasProvisioning(): UseAliasProvisioningResult {
         setError('Generate a personal access key first')
         return false
       }
+      if (!acknowledged) {
+        setError('Confirm you have saved your personal access key first')
+        return false
+      }
       const digest = await run(
-        () =>
-          registerAcknowledgedAlias({
+        async () => {
+          const { addDigest } = await registerAcknowledgedAlias({
             suiClient,
             owner: senderAddress,
             signer,
             aliasAddress: aliasKey.address,
             acknowledged,
-          }).then((result) => result.addDigest),
+          })
+          // Wait for finality before invalidating, else the refetch can race
+          // the write.
+          await suiClient.core.waitForTransaction({ digest: addDigest })
+          return addDigest
+        },
         {
           fallbackMessage: 'Failed to register personal access alias',
           onSuccess: async () => {

@@ -46,7 +46,8 @@ export function useRequireAlias(): UseRequireAliasResult {
     }
 
     if (!senderAddress) {
-      throw new Error('No sender address available')
+      // No account to gate; let the downstream no-sender handling take over.
+      return true
     }
 
     const status = await resolveAliasEnforcementStatus(senderAddress, chain)
@@ -55,6 +56,9 @@ export function useRequireAlias(): UseRequireAliasResult {
     }
 
     return new Promise<boolean>((resolve) => {
+      // A pending caller from a prior (still-open) invocation would otherwise be
+      // orphaned when we overwrite the ref; settle it so it never hangs.
+      resolverRef.current?.(false)
       resolverRef.current = resolve
       setIsOpen(true)
     })
