@@ -158,6 +158,8 @@ evevault/
 
 EVE Vault registers as **Eve Vault** through the [Sui Wallet Standard](https://docs.sui.io/standards/wallet-standard). Use any stack that lists Wallet Standard wallets (for example `@mysten/dapp-kit`); connect or filter for the wallet named **Eve Vault**. The extension injects the provider in pages where it is allowed to run.
 
+> **Verifying a sign-in server-side:** `signPersonalMessage` returns `{ bytes, signature }`. Verify the signature against a message your server **rebuilds** from a nonce it issued — never against the `bytes` the wallet returned, which are attacker-controlled and let any previously signed message be replayed. EVE Vault addresses are zkLogin, so pass a `client` to the verifier. See [Verifying a Sign-In Server-Side](https://docs.evefrontier.com/dapps/verifying-sign-in) for a full example.
+
 ### For extension users
 
 1. Open the popup from the toolbar icon
