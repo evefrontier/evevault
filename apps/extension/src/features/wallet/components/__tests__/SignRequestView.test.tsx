@@ -55,6 +55,7 @@ vi.mock('@evevault/shared/components', async (importOriginal) => {
 
 const AUTH_STUB = {
   isLocked: false,
+  lockChecked: true,
   isPinSet: true,
   unlock: vi.fn(),
   user: { id_token: 'tok' },
@@ -117,6 +118,15 @@ describe('SignRequestView', () => {
     )
     expect(screen.getByRole('button', { name: 'Approve' })).not.toBeDisabled()
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+  })
+
+  it('Approve is disabled until the keeper lock state is confirmed', () => {
+    render(
+      <SignRequestView
+        {...defaultProps({ auth: { ...AUTH_STUB, lockChecked: false } })}
+      />,
+    )
+    expect(screen.getByRole('button', { name: 'Approve' })).toBeDisabled()
   })
 
   it('Approve is disabled when requireAcknowledgement is true and not yet acknowledged', () => {

@@ -1,7 +1,8 @@
 import { useAuth } from '@evevault/shared/auth'
-import { useContext, useDevice } from '@evevault/shared/hooks'
+import { useContext, useDevice, useVaultAutoLock } from '@evevault/shared/hooks'
+import { ephKeyService } from '@evevault/shared/services/vaultService'
 import { createLogger } from '@evevault/shared/utils'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 const log = createLogger()
 
@@ -14,6 +15,37 @@ export function useSignPopupAuth() {
   const device = useDevice()
   const auth = useAuth()
   const { chain } = useContext()
+
+  // Sign popups are standalone entrypoints, so they must arm auto-lock
+  // themselves — otherwise a keeper that expires while the approval screen sits
+  // open never flips this popup to the lock screen.
+  useVaultAutoLock()
+
+  // The persisted `isLocked` flag can still read false on this popup's first
+  // render while the keeper has already expired (its async refresh hasn't landed
+  // yet). Confirm the authoritative lock state before Approve is enabled so the
+  // popup shows the PIN screen instead of a doomed sign attempt.
+  const [lockChecked, setLockChecked] = useState(false)
+  useEffect(() => {
+    let cancelled = false
+    ephKeyService
+      .getUnlockRemainingMs()
+      .then((remainingMs) => {
+        if (cancelled) return
+        if (remainingMs <= 0) return device.lock()
+      })
+      .catch((error) => {
+        log.warn('Failed to confirm keeper lock state for sign popup', {
+          error,
+        })
+      })
+      .finally(() => {
+        if (!cancelled) setLockChecked(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [device.lock])
 
   useEffect(() => {
     auth.initialize()
@@ -42,8 +74,10 @@ export function useSignPopupAuth() {
 
   return {
     isLocked: device.isLocked,
+    lockChecked,
     isPinSet: device.isPinSet,
     unlock: device.unlock,
+    lock: device.lock,
     user: auth.user,
     loading: auth.loading,
     login: auth.login,
