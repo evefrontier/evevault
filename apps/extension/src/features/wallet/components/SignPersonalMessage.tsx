@@ -56,6 +56,7 @@ function SignPersonalMessage() {
     setError,
     auth,
     handleReject,
+    recoverIfLocked,
     storeResult,
     storeErrorResult,
   } = usePendingSignAction({
@@ -98,8 +99,9 @@ function SignPersonalMessage() {
 
       window.close()
     } catch (err) {
-      log.error('Personal message signing failed', err)
       const errorMessage = toErrorMessage(err, 'Unknown error occurred')
+      if (await recoverIfLocked(errorMessage)) return
+      log.error('Personal message signing failed', err)
       setError(errorMessage)
       await storeErrorResult(errorMessage)
     } finally {

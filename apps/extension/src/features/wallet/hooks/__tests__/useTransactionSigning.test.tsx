@@ -63,6 +63,7 @@ function stubPendingTransaction(overrides: Record<string, unknown> = {}) {
     setError,
     auth: { user: { id_token: 'tok' } },
     handleReject,
+    recoverIfLocked: vi.fn(() => Promise.resolve(false)),
     storeResult,
     storeErrorResult,
     ...overrides,

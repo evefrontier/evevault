@@ -97,6 +97,7 @@ function SignSponsoredTransaction() {
     setError,
     auth,
     handleReject,
+    recoverIfLocked,
     storeResult,
     storeErrorResult,
   } = usePendingSignAction({
@@ -138,9 +139,10 @@ function SignSponsoredTransaction() {
       }
       window.close()
     } catch (err) {
-      log.error('Sponsored transaction signing failed', err)
       const errorMessage =
         err instanceof Error ? err.message : 'Unknown error occurred'
+      if (await recoverIfLocked(errorMessage)) return
+      log.error('Sponsored transaction signing failed', err)
       setError(errorMessage)
       await storeErrorResult(errorMessage)
     } finally {

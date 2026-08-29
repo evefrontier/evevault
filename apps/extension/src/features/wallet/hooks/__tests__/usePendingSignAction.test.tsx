@@ -25,8 +25,10 @@ vi.mock('@evevault/shared/utils', async (importOriginal) => {
 
 const AUTH_STUB = {
   isLocked: false,
+  lockChecked: true,
   isPinSet: true,
   unlock: vi.fn(),
+  lock: vi.fn(() => Promise.resolve()),
   user: { id_token: 'tok' },
   loading: false,
   login: vi.fn(),
@@ -245,6 +247,43 @@ describe('usePendingSignAction', () => {
 
       expect(closeSpy).not.toHaveBeenCalled()
       expect(result.current.error).toBe('Reject failed')
+    })
+  })
+
+  describe('recoverIfLocked', () => {
+    it('locks the vault and reports handled for the keeper locked error', async () => {
+      const action = { windowId: 1, requestId: 'req-lock' }
+      stubStorage(action)
+      const { result } = renderHook(() => usePendingSignAction(makeOptions()))
+      await waitFor(() => expect(result.current.pending).toEqual(action))
+
+      let handled: boolean | undefined
+      await act(async () => {
+        handled = await result.current.recoverIfLocked(
+          '[KEEPER_EPH_SIGN] LOCKED',
+        )
+      })
+
+      expect(handled).toBe(true)
+      expect(AUTH_STUB.lock).toHaveBeenCalledTimes(1)
+      // The dApp request must stay pending, so no error result is written.
+      expect(browser.storage.local.set).not.toHaveBeenCalled()
+      expect(result.current.error).toBeNull()
+    })
+
+    it('does not handle unrelated errors', async () => {
+      const action = { windowId: 1, requestId: 'req-other' }
+      stubStorage(action)
+      const { result } = renderHook(() => usePendingSignAction(makeOptions()))
+      await waitFor(() => expect(result.current.pending).toEqual(action))
+
+      let handled: boolean | undefined
+      await act(async () => {
+        handled = await result.current.recoverIfLocked('some other failure')
+      })
+
+      expect(handled).toBe(false)
+      expect(AUTH_STUB.lock).not.toHaveBeenCalled()
     })
   })
 })
