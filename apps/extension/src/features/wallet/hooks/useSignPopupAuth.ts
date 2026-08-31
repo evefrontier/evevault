@@ -31,8 +31,10 @@ export function useSignPopupAuth() {
     ephKeyService
       .getUnlockRemainingMs()
       .then((remainingMs) => {
-        if (cancelled) return
-        if (remainingMs <= 0) return device.lock()
+        if (cancelled || remainingMs > 0) return
+        return device.lock().catch((error) => {
+          log.warn('Failed to lock sign popup after keeper expiry', { error })
+        })
       })
       .catch((error) => {
         log.warn('Failed to confirm keeper lock state for sign popup', {
