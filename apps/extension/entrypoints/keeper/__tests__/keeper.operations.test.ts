@@ -6,6 +6,7 @@ import {
   decrypt,
   encrypt,
   type HashedData,
+  KEEPER_EPH_SIGN_LOCKED_ERROR,
   KeeperMessageTypes,
 } from '@evevault/shared'
 import type { ZkProofResponse } from '@evevault/shared/types'
@@ -228,7 +229,7 @@ describe('Keeper EPH_SIGN handler', () => {
       msgBytes: [1],
     })
 
-    expect(resp.error).toBe('[KEEPER_EPH_SIGN] LOCKED')
+    expect(resp.error).toBe(KEEPER_EPH_SIGN_LOCKED_ERROR)
   })
 
   it('converts msgBytes to Uint8Array and calls signTransaction for TransactionData scope', async () => {

@@ -1,3 +1,4 @@
+import { KEEPER_EPH_SIGN_LOCKED_ERROR } from '@evevault/shared'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { usePendingSignAction } from '../usePendingSignAction'
@@ -260,7 +261,7 @@ describe('usePendingSignAction', () => {
       let handled: boolean | undefined
       await act(async () => {
         handled = await result.current.recoverIfLocked(
-          '[KEEPER_EPH_SIGN] LOCKED',
+          KEEPER_EPH_SIGN_LOCKED_ERROR,
         )
       })
 
