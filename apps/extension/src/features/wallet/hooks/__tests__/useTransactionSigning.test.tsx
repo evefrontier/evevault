@@ -63,6 +63,7 @@ function stubPendingTransaction(overrides: Record<string, unknown> = {}) {
     setError,
     auth: { user: { id_token: 'tok' } },
     handleReject,
+    recoverIfLocked: vi.fn(() => Promise.resolve(false)),
     storeResult,
     storeErrorResult,
     ...overrides,
@@ -149,6 +150,23 @@ describe('useTransactionSigning', () => {
       expect(setError).toHaveBeenCalledWith('signing failed')
       expect(storeErrorResult).toHaveBeenCalledWith('signing failed')
       expect(setLoading).toHaveBeenLastCalledWith(false)
+      expect(onSigned).not.toHaveBeenCalled()
+    })
+
+    it('recovers in-place without surfacing an error when the vault is locked', async () => {
+      const { setError, storeErrorResult } = stubPendingTransaction({
+        recoverIfLocked: vi.fn(() => Promise.resolve(true)),
+      })
+      mockPrepare.mockRejectedValue(new Error('[KEEPER_EPH_SIGN] LOCKED'))
+
+      const onSigned = vi.fn()
+      const { result } = renderHook(() => useTransactionSigning())
+
+      await act(() => result.current.withSigning(onSigned))
+
+      // recoverIfLocked handled it: no error written back to the dApp.
+      expect(setError).not.toHaveBeenCalledWith('[KEEPER_EPH_SIGN] LOCKED')
+      expect(storeErrorResult).not.toHaveBeenCalled()
       expect(onSigned).not.toHaveBeenCalled()
     })
 

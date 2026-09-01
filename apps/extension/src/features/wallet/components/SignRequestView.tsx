@@ -116,7 +116,10 @@ export function SignRequestView({
   children,
 }: SignRequestViewProps) {
   const [acknowledged, setAcknowledged] = useState(false)
-  const approveDisabled = loading || (requireAcknowledgement && !acknowledged)
+  // Keep Approve disabled until the keeper's lock state is confirmed, so a stale
+  // unlocked flag can't let the user fire a sign the keeper will reject.
+  const approveDisabled =
+    loading || !auth.lockChecked || (requireAcknowledgement && !acknowledged)
   return (
     <SignPopupAuthGate
       isLocked={auth.isLocked}

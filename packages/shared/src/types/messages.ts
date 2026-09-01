@@ -85,6 +85,17 @@ export enum KeeperMessageTypes {
   LOCALNET_SIGN = 'KEEPER_LOCALNET_SIGN',
 }
 
+/**
+ * Returned by the keeper when a sign request arrives after the unlock window
+ * expired. Recoverable: re-unlocking and re-approving the same request succeeds,
+ * so the popup should catch this rather than surface it to the dApp.
+ */
+export const KEEPER_EPH_SIGN_LOCKED_ERROR = `[${KeeperMessageTypes.EPH_SIGN}] LOCKED`
+
+/** True when an error message is the keeper's recoverable locked-vault signal. */
+export const isKeeperLockedError = (message: unknown): boolean =>
+  typeof message === 'string' && message.includes(KEEPER_EPH_SIGN_LOCKED_ERROR)
+
 // Response type for vault/keeper message handlers
 export interface VaultResponse {
   ok?: boolean

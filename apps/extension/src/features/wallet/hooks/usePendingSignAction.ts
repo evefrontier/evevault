@@ -1,3 +1,4 @@
+import { isKeeperLockedError } from '@evevault/shared'
 import { createLogger } from '@evevault/shared/utils'
 import { useEffect, useState } from 'react'
 import { browser } from 'wxt/browser'
@@ -114,6 +115,18 @@ export function usePendingSignAction<TPending extends { requestId?: string }>({
     return storeResult({ status: 'error', error: errorMessage }, targetPending)
   }
 
+  // If a sign attempt reaches the keeper after its unlock window expired, flip
+  // this popup to the lock screen and keep the request pending instead of
+  // failing the dApp. The same request continues to approval after unlock.
+  // Returns true when the error was the recoverable locked-vault signal.
+  const recoverIfLocked = async (errorMessage: string): Promise<boolean> => {
+    if (!isKeeperLockedError(errorMessage)) return false
+    log.info('Sign request hit locked keeper; showing unlock screen for retry')
+    setError(null)
+    await auth.lock()
+    return true
+  }
+
   const handleReject = async () => {
     if (!pending) return
 
@@ -139,6 +152,7 @@ export function usePendingSignAction<TPending extends { requestId?: string }>({
     setError,
     auth,
     handleReject,
+    recoverIfLocked,
     storeResult,
     storeErrorResult,
   }

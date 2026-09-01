@@ -2,7 +2,12 @@ import {
   ZKEd25519Keypair,
   type ZKProofData,
 } from '@evefrontier/wallet-core/crypto'
-import { encrypt, encryptWithKey, type HashedData } from '@evevault/shared'
+import {
+  encrypt,
+  encryptWithKey,
+  type HashedData,
+  KEEPER_EPH_SIGN_LOCKED_ERROR,
+} from '@evevault/shared'
 import { createLogger } from '@evevault/shared/utils'
 import type { BackgroundMessage } from '@/lib/background/types'
 import {
@@ -163,7 +168,7 @@ export function handleEphSign(
 ): boolean {
   const key = getEphemeralKey()
   if (enforceExpiry() || !key) {
-    sendResponse({ error: '[KEEPER_EPH_SIGN] LOCKED' })
+    sendResponse({ error: KEEPER_EPH_SIGN_LOCKED_ERROR })
     return false
   }
   // Capture the current key before async work so a later lock does not mutate it.

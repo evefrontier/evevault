@@ -121,6 +121,7 @@ function stubPending(
     setError: vi.fn(),
     auth: AUTH_STUB,
     handleReject: vi.fn(),
+    recoverIfLocked: vi.fn(() => Promise.resolve(false)),
     storeResult: vi.fn(() => Promise.resolve(true)),
     storeErrorResult: vi.fn(() => Promise.resolve(true)),
     ...overrides,
