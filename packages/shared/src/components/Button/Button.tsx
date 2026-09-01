@@ -10,11 +10,13 @@ export const Button: FC<ButtonProps> = ({
   children,
   className = '',
   disabled,
+  isLoading = false,
   ...props
 }) => {
   const sizeClass = `button--${size}`
   const variantClass = `button--${variant}`
-  const disabledClass = disabled ? 'button--disabled' : ''
+  const isDisabled = disabled || isLoading
+  const disabledClass = isDisabled ? 'button--disabled' : ''
   const showDecorations = variant === 'primary' || variant === 'secondary'
 
   const contentRef = useRef<HTMLSpanElement>(null)
@@ -53,11 +55,13 @@ export const Button: FC<ButtonProps> = ({
   return (
     <button
       className={`button ${sizeClass} ${variantClass} ${disabledClass} ${className}`.trim()}
-      disabled={disabled}
+      disabled={isDisabled}
+      aria-busy={isLoading || undefined}
       {...props}
     >
       {/* Main content */}
       <span ref={contentRef} className="button__content">
+        {isLoading && <span className="button__spinner" aria-hidden="true" />}
         {children}
       </span>
 

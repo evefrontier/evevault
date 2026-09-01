@@ -3,8 +3,7 @@
  * Returns transactions where the address is either sender or affected party
  *
  * Paginates backward (`last`/`before`) because the connection is ordered
- * oldest-first: `last` returns the most recent window, and walking `before`
- * the window's startCursor loads progressively older transactions.
+ * oldest-first: `last` returns the most recent window.
  *
  * Schema reference (testnet/devnet 2025+):
  * - Address.transactions (not transactionBlocks)

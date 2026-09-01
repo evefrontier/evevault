@@ -6,13 +6,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mockSigningContext = vi.fn()
 const mockGenerateAliasKey = vi.fn()
 const mockRegisterAcknowledgedAlias = vi.fn()
-const mockInvalidate = vi.fn()
 
 vi.mock('#/wallet/hooks/useWalletSigningContext', () => ({
   useWalletSigningContext: () => mockSigningContext(),
 }))
 vi.mock('#/wallet/aliasEnforcement', () => ({
-  invalidateAliasEnforcement: (...args: unknown[]) => mockInvalidate(...args),
   isAliasEnforcementError: () => false,
 }))
 vi.mock('@evefrontier/wallet-core/address-alias', () => ({
@@ -43,7 +41,6 @@ function wrapper({ children }: { children: ReactNode }) {
 beforeEach(() => {
   mockGenerateAliasKey.mockReset().mockReturnValue(KEY)
   mockRegisterAcknowledgedAlias.mockReset()
-  mockInvalidate.mockReset()
   mockSigningContext.mockReturnValue({
     chain: 'sui:devnet',
     senderAddress: OWNER,
@@ -77,10 +74,9 @@ describe('useAliasProvisioning', () => {
     expect(ok).toBe(false)
     expect(result.current.error).toContain('saved your personal access key')
     expect(mockRegisterAcknowledgedAlias).not.toHaveBeenCalled()
-    expect(mockInvalidate).not.toHaveBeenCalled()
   })
 
-  it('registers and invalidates caches when acknowledged', async () => {
+  it('registers and records the tx digest when acknowledged', async () => {
     mockRegisterAcknowledgedAlias.mockResolvedValue({ addDigest: 'digest-1' })
     const { result } = renderHook(() => useAliasProvisioning(), { wrapper })
     act(() => {
@@ -100,9 +96,6 @@ describe('useAliasProvisioning', () => {
         acknowledged: true,
       }),
     )
-    await waitFor(() =>
-      expect(mockInvalidate).toHaveBeenCalledWith(OWNER, 'sui:devnet'),
-    )
-    expect(result.current.txDigest).toBe('digest-1')
+    await waitFor(() => expect(result.current.txDigest).toBe('digest-1'))
   })
 })

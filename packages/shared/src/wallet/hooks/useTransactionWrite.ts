@@ -2,7 +2,10 @@ import { useCallback, useRef, useState } from 'react'
 import { createLogger } from '#/utils'
 import { isAliasEnforcementError } from '../aliasEnforcement'
 
-/** Shown when signing is blocked by address-alias enforcement (rare race past the UX gate). */
+/**
+ * When the signing backstop blocks a sign — a path that skipped
+ * the UX gate, or an alias removed after the gate passed.
+ */
 const ALIAS_ENFORCEMENT_MESSAGE = 'Set up your personal access key to continue'
 
 const log = createLogger()

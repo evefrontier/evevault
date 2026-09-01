@@ -21,9 +21,8 @@ export {
 } from '../types/wallet'
 export {
   assertAliasEnforced,
-  invalidateAliasEnforcement,
-  isAddressAliasEnforcementEnabled,
   isAliasEnforcementError,
+  isEnforcementOverridden,
   resolveAliasEnforcementStatus,
 } from './aliasEnforcement'
 export { useActiveSuiAddress } from './hooks/useActiveSuiAddress'

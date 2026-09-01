@@ -3,12 +3,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { UseRequireAliasResult } from '../useRequireAlias'
 
 const mockSigningContext = vi.fn()
-const mockEnabled = vi.fn()
+const mockOverridden = vi.fn()
 const mockResolve = vi.fn()
 
 vi.mock('#/wallet', () => ({
   useWalletSigningContext: () => mockSigningContext(),
-  isAddressAliasEnforcementEnabled: () => mockEnabled(),
+  isEnforcementOverridden: (...args: unknown[]) => mockOverridden(...args),
   resolveAliasEnforcementStatus: (...args: unknown[]) => mockResolve(...args),
 }))
 
@@ -53,13 +53,13 @@ beforeEach(() => {
     senderAddress: OWNER,
     chain: 'sui:testnet',
   })
-  mockEnabled.mockReset().mockReturnValue(true)
+  mockOverridden.mockReset().mockReturnValue(false)
   mockResolve.mockReset()
 })
 
 describe('useRequireAlias', () => {
-  it('allows immediately when enforcement is disabled', async () => {
-    mockEnabled.mockReturnValue(false)
+  it('allows immediately when an ops override is active', async () => {
+    mockOverridden.mockReturnValue(true)
     render(<Harness />)
     await expect(api.ensureAlias()).resolves.toBe(true)
     expect(mockResolve).not.toHaveBeenCalled()

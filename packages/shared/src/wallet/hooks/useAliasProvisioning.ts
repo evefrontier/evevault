@@ -5,7 +5,6 @@ import {
 } from '@evefrontier/wallet-core/address-alias'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useMemo, useState } from 'react'
-import { invalidateAliasEnforcement } from '../aliasEnforcement'
 import { useTransactionWrite } from './useTransactionWrite'
 import { useWalletSigningContext } from './useWalletSigningContext'
 
@@ -81,15 +80,14 @@ export function useAliasProvisioning(): UseAliasProvisioningResult {
             aliasAddress: aliasKey.address,
             acknowledged,
           })
-          // Wait for finality before invalidating, else the refetch can race
-          // the write.
+          // Wait for finality before refetching, else the read (and the next
+          // sign's on-chain enforcement check) can race the write.
           await suiClient.core.waitForTransaction({ digest: addDigest })
           return addDigest
         },
         {
           fallbackMessage: 'Failed to register personal access alias',
           onSuccess: async () => {
-            invalidateAliasEnforcement(senderAddress, chain)
             await queryClient.invalidateQueries({
               queryKey: ['address-aliases', senderAddress, chain],
             })

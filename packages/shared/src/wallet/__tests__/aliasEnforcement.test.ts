@@ -1,5 +1,5 @@
 import { SUI_DEVNET_CHAIN, SUI_LOCALNET_CHAIN } from '@mysten/wallet-standard'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockListOwnedObjects = vi.fn()
 
@@ -25,8 +25,8 @@ vi.mock('@mysten/sui/transactions', () => ({
 import { Transaction } from '@mysten/sui/transactions'
 import {
   assertAliasEnforced,
-  invalidateAliasEnforcement,
   isAliasEnforcementError,
+  resolveEnforcementOverride,
 } from '#/wallet/aliasEnforcement'
 
 const OWNER = `0x${'a'.repeat(64)}`
@@ -45,14 +45,8 @@ function stubDecodedModule(module: string) {
 }
 
 beforeEach(() => {
-  invalidateAliasEnforcement()
   mockListOwnedObjects.mockReset()
   vi.mocked(Transaction.from).mockReset()
-  vi.unstubAllEnvs()
-})
-
-afterEach(() => {
-  vi.unstubAllEnvs()
 })
 
 describe('assertAliasEnforced', () => {
@@ -95,7 +89,7 @@ describe('assertAliasEnforced', () => {
     expect(mockListOwnedObjects).not.toHaveBeenCalled()
   })
 
-  it('always enforces personal messages (no bypass)', async () => {
+  it('never gates personal messages (off-chain signatures)', async () => {
     mockListOwnedObjects.mockResolvedValue(objectsWith([OWNER]))
     await expect(
       assertAliasEnforced({
@@ -104,7 +98,8 @@ describe('assertAliasEnforced', () => {
         scope: 'PersonalMessage',
         msgBytes: new Uint8Array([1]),
       }),
-    ).rejects.toMatchObject({ code: 'alias_enforcement_required' })
+    ).resolves.toBeUndefined()
+    expect(mockListOwnedObjects).not.toHaveBeenCalled()
   })
 
   it('is a no-op on localnet', async () => {
@@ -119,20 +114,7 @@ describe('assertAliasEnforced', () => {
     expect(mockListOwnedObjects).not.toHaveBeenCalled()
   })
 
-  it('is a no-op when the flag is disabled', async () => {
-    vi.stubEnv('VITE_ENFORCE_ADDRESS_ALIAS', 'false')
-    await expect(
-      assertAliasEnforced({
-        chain: SUI_DEVNET_CHAIN,
-        owner: OWNER,
-        scope: 'TransactionData',
-        msgBytes: new Uint8Array([1]),
-      }),
-    ).resolves.toBeUndefined()
-    expect(mockListOwnedObjects).not.toHaveBeenCalled()
-  })
-
-  it('caches a satisfied result and re-reads after invalidation', async () => {
+  it('reads on-chain state fresh on every call (no caching)', async () => {
     mockListOwnedObjects.mockResolvedValue(objectsWith([ALIAS]))
     stubDecodedModule('coin')
     const params = {
@@ -143,10 +125,6 @@ describe('assertAliasEnforced', () => {
     }
 
     await assertAliasEnforced(params)
-    await assertAliasEnforced(params)
-    expect(mockListOwnedObjects).toHaveBeenCalledTimes(1)
-
-    invalidateAliasEnforcement(OWNER, SUI_DEVNET_CHAIN)
     await assertAliasEnforced(params)
     expect(mockListOwnedObjects).toHaveBeenCalledTimes(2)
   })
@@ -159,5 +137,43 @@ describe('isAliasEnforcementError', () => {
     ).toBe(true)
     expect(isAliasEnforcementError(new Error('nope'))).toBe(false)
     expect(isAliasEnforcementError(null)).toBe(false)
+  })
+})
+
+describe('resolveEnforcementOverride (break-glass, fail-closed)', () => {
+  const NOW = 1_000_000
+
+  it('accepts a well-formed, unexpired override', () => {
+    expect(
+      resolveEnforcementOverride(
+        { reason: 'incident-123', until: NOW + 1000, actor: 'ops@eve' },
+        NOW,
+      ),
+    ).toEqual({ reason: 'incident-123', until: NOW + 1000, actor: 'ops@eve' })
+  })
+
+  it('drops actor when it is not a string but keeps the override', () => {
+    expect(
+      resolveEnforcementOverride({ reason: 'x', until: NOW + 1 }, NOW),
+    ).toEqual({ reason: 'x', until: NOW + 1, actor: undefined })
+  })
+
+  it('rejects an expired override', () => {
+    expect(
+      resolveEnforcementOverride({ reason: 'x', until: NOW - 1 }, NOW),
+    ).toBeNull()
+  })
+
+  it('rejects malformed / missing claims', () => {
+    expect(resolveEnforcementOverride(null, NOW)).toBeNull()
+    expect(resolveEnforcementOverride('nope', NOW)).toBeNull()
+    expect(resolveEnforcementOverride({ until: NOW + 1 }, NOW)).toBeNull()
+    expect(
+      resolveEnforcementOverride({ reason: '', until: NOW + 1 }, NOW),
+    ).toBeNull()
+    expect(resolveEnforcementOverride({ reason: 'x' }, NOW)).toBeNull()
+    expect(
+      resolveEnforcementOverride({ reason: 'x', until: 'soon' }, NOW),
+    ).toBeNull()
   })
 })

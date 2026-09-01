@@ -2,7 +2,7 @@ import type React from 'react'
 import { useRef, useState } from 'react'
 import { Modal } from '#/components'
 import {
-  isAddressAliasEnforcementEnabled,
+  isEnforcementOverridden,
   resolveAliasEnforcementStatus,
   useWalletSigningContext,
 } from '#/wallet'
@@ -10,10 +10,10 @@ import { AliasRecoverySetupScreen } from './AliasRecoverySetupScreen'
 
 export interface UseRequireAliasResult {
   /**
-   * Resolves `true` when the account may sign (enforcement off, non-zklogin, no
-   * sender, or a non-self alias already exists). Otherwise opens the recovery
-   * setup modal and resolves `true` once an alias is registered, or `false` if
-   * the user cancels. Await it before signing and bail when it returns `false`.
+   * Resolves `true` when the account may sign (non-zklogin, no sender, an ops
+   * override is active, or a non-self alias already exists). Otherwise opens the
+   * recovery setup modal and resolves `true` once an alias is registered, or
+   * `false` if the user cancels. Await it before signing and bail on `false`.
    */
   ensureAlias: () => Promise<boolean>
   /** Render this in the component tree so the setup modal can appear. */
@@ -21,9 +21,9 @@ export interface UseRequireAliasResult {
 }
 
 /**
- * Just-in-time address-alias gate. Instead of blocking the dashboard, callers
- * invoke `ensureAlias()` right before signing; the setup modal is shown only
- * when an on-chain lookup finds no non-self alias for the zklogin account.
+ * Just-in-time address-alias gate. Callers invoke `ensureAlias()` right
+ * before signing; the setup modal is shown when an on-chain lookup
+ * finds no non-self alias for the zklogin account.
  */
 export function useRequireAlias(): UseRequireAliasResult {
   const { mode, senderAddress, chain } = useWalletSigningContext()
@@ -40,13 +40,18 @@ export function useRequireAlias(): UseRequireAliasResult {
   }
 
   const ensureAlias = async (): Promise<boolean> => {
-    if (mode !== 'zklogin' || !isAddressAliasEnforcementEnabled()) {
-      // Localnet and flag-off accounts are never gated.
+    if (mode !== 'zklogin') {
+      // Non-zklogin (localnet) accounts are never gated.
       return true
     }
 
     if (!senderAddress) {
       // No account to gate; let the downstream no-sender handling take over.
+      return true
+    }
+
+    if (isEnforcementOverridden(senderAddress)) {
+      // Ops break-glass active (audit-logged); mirror the signing backstop.
       return true
     }
 
