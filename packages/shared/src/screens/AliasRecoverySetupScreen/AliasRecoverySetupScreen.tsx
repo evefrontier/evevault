@@ -3,7 +3,6 @@ import { useState } from 'react'
 import Text from '#/components/Text'
 import { useAliasProvisioning } from '#/wallet'
 import {
-  ConfirmStep,
   RecoverySuccess,
   RevealStep,
   StepDots,
@@ -19,15 +18,15 @@ export interface AliasRecoverySetupScreenProps {
   onCancel?: () => void
 }
 
-const STEP_ORDER = ['terms', 'reveal', 'confirm'] as const
+const STEP_ORDER = ['terms', 'reveal'] as const
 type Step = (typeof STEP_ORDER)[number]
 
 /**
  * Onboarding gate shown when a zkLogin account has no non-self address alias.
- * A multi-step terms-and-conditions clickthrough: the user reads the terms,
- * reveals a one-time client-only personal access key and accepts the recovery
- * terms, then confirms — the final step registers the key's address on-chain as
- * an alias.
+ * A two-step terms-and-conditions clickthrough: the user reads the terms, then
+ * reveals a one-time client-only personal access key and accepts the terms —
+ * that acceptance registers the key's address on-chain as an alias. A success
+ * screen confirms setup.
  */
 export const AliasRecoverySetupScreen: React.FC<
   AliasRecoverySetupScreenProps
@@ -43,6 +42,8 @@ export const AliasRecoverySetupScreen: React.FC<
 
   return (
     <div className="flex flex-col gap-10">
+      <StepDots steps={STEP_ORDER} current={STEP_ORDER.indexOf(step) + 1} />
+
       {step === 'terms' && (
         <TermsStep
           onContinue={() => {
@@ -58,7 +59,10 @@ export const AliasRecoverySetupScreen: React.FC<
           aliasKey={aliasKey}
           accepted={accepted}
           onAcceptChange={setAccepted}
-          onContinue={() => setStep('confirm')}
+          isSubmitting={isSubmitting}
+          // wallet-core's register(acknowledged) takes only a boolean; ticking
+          // the acceptance checkbox is the acknowledgement.
+          onRegister={() => register(true)}
           onBack={() => {
             clear()
             setAccepted(false)
@@ -67,19 +71,6 @@ export const AliasRecoverySetupScreen: React.FC<
           onCancel={onCancel}
         />
       )}
-
-      {step === 'confirm' && (
-        <ConfirmStep
-          isSubmitting={isSubmitting}
-          // wallet-core's register(acknowledged) takes only a boolean; reaching
-          // this step (having ticked the acceptance checkbox) is the acknowledgement.
-          onRegister={() => register(true)}
-          onBack={() => setStep('reveal')}
-          onCancel={onCancel}
-        />
-      )}
-
-      <StepDots steps={STEP_ORDER} current={STEP_ORDER.indexOf(step) + 1} />
 
       {error && (
         <div className="w-full rounded border border-red-10/30 bg-red-10/10 p-2">

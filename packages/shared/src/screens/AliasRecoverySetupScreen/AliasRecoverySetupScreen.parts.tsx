@@ -124,8 +124,8 @@ export const TermsStep: React.FC<{
       <Text variant="light" size="large" color="neutral-90">
         Before you can sign transactions, register a personal access key as an
         address alias. This key co-owns your account and lets you keep access if
-        you lose this device. The next screens walk you through generating it,
-        saving your recovery methods, and confirming you understand the terms.
+        you lose this device. The next step generates it, shows your recovery
+        methods, and registers it once you accept the terms.
       </Text>
     </div>
 
@@ -143,19 +143,30 @@ export const TermsStep: React.FC<{
 )
 
 /**
- * Step 2: reveal the generated key and take a single acceptance. Continue is
- * gated only on the acceptance checkbox being ticked.
+ * Step 2 (terminal): reveal the generated key, then a single acceptance both
+ * asserts the user read and agreed to the terms and registers the alias
+ * on-chain. The register button is gated on the acceptance checkbox.
  */
 export const RevealStep: React.FC<{
   aliasKey: GeneratedAliasKey
   accepted: boolean
   onAcceptChange: (accepted: boolean) => void
-  onContinue: () => void
+  isSubmitting: boolean
+  /** Register the alias on-chain. Guarded by the acceptance checkbox. */
+  onRegister: () => void
   /** Discard the generated key and return to the intro step. */
   onBack: () => void
   /** Exit without setting up a key. Omitted when there is no exit path. */
   onCancel?: () => void
-}> = ({ aliasKey, accepted, onAcceptChange, onContinue, onBack, onCancel }) => {
+}> = ({
+  aliasKey,
+  accepted,
+  onAcceptChange,
+  isSubmitting,
+  onRegister,
+  onBack,
+  onCancel,
+}) => {
   const { copy } = useCopyToClipboard('Copied to clipboard')
 
   return (
@@ -184,20 +195,29 @@ export const RevealStep: React.FC<{
       <Checkbox
         name="accept-recovery"
         isChecked={accepted}
-        text="I've saved my recovery phrase or private key — or I accept that I may permanently lose access to this key. It won't be shown again."
+        isDisabled={isSubmitting}
+        text="This key co-owns my account and won't be shown again. I've saved my recovery phrase or private key, or accept I may lose access forever."
         onChange={onAcceptChange}
       />
 
-      <Button disabled={!accepted} onClick={onContinue}>
-        Continue
+      <Button
+        disabled={!accepted || isSubmitting}
+        isLoading={isSubmitting}
+        onClick={onRegister}
+      >
+        Set up personal access key
       </Button>
 
       <div className="flex gap-1">
-        <Button variant="secondary" onClick={onBack}>
+        <Button variant="secondary" disabled={isSubmitting} onClick={onBack}>
           Back
         </Button>
         {onCancel && (
-          <Button variant="secondary" onClick={onCancel}>
+          <Button
+            variant="secondary"
+            disabled={isSubmitting}
+            onClick={onCancel}
+          >
             Cancel
           </Button>
         )}
@@ -205,50 +225,6 @@ export const RevealStep: React.FC<{
     </div>
   )
 }
-
-/**
- * Step 3: the terminal action. Setting up here asserts the user read and agreed
- * to every prior step, then registers the alias on-chain — unblocking signing.
- */
-export const ConfirmStep: React.FC<{
-  isSubmitting: boolean
-  onRegister: () => void
-  onBack: () => void
-  onCancel?: () => void
-}> = ({ isSubmitting, onRegister, onBack, onCancel }) => (
-  <div className="flex flex-col gap-10">
-    <div className="flex flex-col gap-4">
-      <Heading level={2} variant="bold" color="neutral">
-        Confirm and set up
-      </Heading>
-      <Text variant="light" size="large" color="neutral-90">
-        By setting up your personal access key you confirm you have read and
-        agree to everything in the previous steps: this key co-owns your
-        account, it is shown only once and never stored by this app, and you are
-        responsible for saving your recovery phrase or private key.
-      </Text>
-    </div>
-
-    <Button
-      disabled={isSubmitting}
-      isLoading={isSubmitting}
-      onClick={onRegister}
-    >
-      Set up personal access key
-    </Button>
-
-    <div className="flex gap-1">
-      <Button variant="secondary" disabled={isSubmitting} onClick={onBack}>
-        Back
-      </Button>
-      {onCancel && (
-        <Button variant="secondary" disabled={isSubmitting} onClick={onCancel}>
-          Cancel
-        </Button>
-      )}
-    </div>
-  </div>
-)
 
 /** Success state shown once the alias is registered on-chain. */
 export const RecoverySuccess: React.FC<{ onContinue: () => void }> = ({
