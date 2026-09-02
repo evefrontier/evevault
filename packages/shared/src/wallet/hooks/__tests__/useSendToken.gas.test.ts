@@ -12,8 +12,11 @@ vi.mock('#/utils', () => ({
     warn: vi.fn(),
     error: vi.fn(),
   }),
-  formatMistToSui: (mist: string | bigint) => `sui-${mist}`,
   toSmallestUnit: (amount: string, _decimals: number) => BigInt(amount),
+}))
+
+vi.mock('@evefrontier/wallet-core/utils', () => ({
+  formatMistToSui: (mist: string | bigint) => `sui-${mist}`,
 }))
 
 vi.mock('#/wallet/hooks/useSendToken.transaction', () => ({

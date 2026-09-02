@@ -1,8 +1,12 @@
 import { isEveCoinType } from '@evefrontier/wallet-core/eve-token'
+import {
+  formatByDecimals,
+  formatMistToSui,
+} from '@evefrontier/wallet-core/utils'
 import { SUI_LOCALNET_CHAIN } from '@mysten/wallet-standard'
 import { createSuiClient } from '#/sui'
 import type { createSuiGraphQLClient } from '#/sui/graphqlClient'
-import { formatByDecimals, formatMistToSui, isSuiCoinType } from '#/utils'
+import { isSuiCoinType } from '#/utils'
 import { createLogger } from '#/utils/logger'
 import {
   BALANCE_AND_METADATA_QUERY,

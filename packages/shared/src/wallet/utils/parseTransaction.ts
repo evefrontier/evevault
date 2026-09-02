@@ -1,3 +1,4 @@
+import { formatByDecimals } from '@evefrontier/wallet-core/utils'
 import type { SuiGraphQLClient } from '@mysten/sui/graphql'
 import type {
   Transaction,
@@ -10,7 +11,6 @@ import {
   isSuiCoinType,
   SUI_COIN_TYPE,
 } from '#/utils'
-import { formatByDecimals } from '#/utils/format'
 import { createLogger } from '#/utils/logger'
 import type {
   GraphQLBalanceChange,

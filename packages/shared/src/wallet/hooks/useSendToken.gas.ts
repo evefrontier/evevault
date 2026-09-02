@@ -1,6 +1,7 @@
+import { formatMistToSui } from '@evefrontier/wallet-core/utils'
 import type { SuiGrpcClient } from '@mysten/sui/grpc'
 import { useEffect, useRef, useState } from 'react'
-import { createLogger, formatMistToSui, toSmallestUnit } from '#/utils'
+import { createLogger, toSmallestUnit } from '#/utils'
 import { buildTransferTransactionBytes } from './useSendToken.transaction'
 
 type GasEstimateParams = {
