@@ -1,3 +1,4 @@
+import type { PublicKey } from '@mysten/sui/cryptography'
 import { generateNonce, generateRandomness } from '@mysten/sui/zklogin'
 import type { SuiChain } from '@mysten/wallet-standard'
 import { clearAllZkLoginJwts } from '#/auth/storageService'
@@ -18,6 +19,8 @@ import type { GetDeviceState, SetDeviceState } from './types'
 
 const log = createLogger()
 
+type EpochData = Awaited<ReturnType<typeof getCurrentEpochFromGraphQL>>
+
 const NULL_EPOCH = { maxEpoch: null, maxEpochTimestampMs: null } as const
 
 export const initializeForChainData = async (
@@ -35,18 +38,41 @@ export const initializeForChainData = async (
   await initializeZkLoginChainData(chain, set, get)
 }
 
-/** Clears JWTs and cached ZK proofs before rotating so stale proofs tied to the old key can't be reused. */
+/**
+ * Rotates the ephemeral key and regenerates the current chain's nonce, so
+ * the store never persists a nonce bound to a superseded key.
+ *
+ * Epoch fetch runs before keeper rotate, so a network failure aborts
+ * with the old key + old nonce still mutually consistent. After rotation,
+ * nonce derivation is synchronous — no await between the new key and nonce
+ * that might introduce drift.
+ *
+ * Clears JWTs and cached ZK proofs first so stale proofs tied to the old key can't
+ * be reused.
+ */
 export const rotateEphemeralKeyForChain = async (
   currentChain: SuiChain,
   set: SetDeviceState,
   get: GetDeviceState,
 ) => {
   log.info('Rotating ephemeral key', { currentChain })
+
+  const epoch = isZkLoginSuiChain(currentChain)
+    ? await getCurrentEpochFromGraphQL(currentChain)
+    : null
+
   await clearDerivedZkLoginState()
 
   const { ephKeyService } = await import('#/services/vaultService')
   const { hashedSecretKey, publicKey } =
     await ephKeyService.rotateEphemeralKeyPair()
+
+  const networkData = epoch
+    ? {
+        ...createInitialNetworkData(),
+        [currentChain]: buildNonceEntry(publicKey, epoch),
+      }
+    : createInitialNetworkData()
 
   set({
     ephemeralPublicKey: publicKey,
@@ -55,12 +81,16 @@ export const rotateEphemeralKeyForChain = async (
     ephemeralKeyPairSecretKey: isWeb()
       ? createWebCryptoPlaceholder()
       : hashedSecretKey,
-    networkData: createInitialNetworkData(),
+    networkData,
     error: null,
     isLocked: false,
   })
 
-  await get().initializeForChain(currentChain)
+  // Localnet epoch lives on state.localnet, not networkData, and has no nonce to
+  // bind; refresh it separately after the atomic zkLogin commit.
+  if (isLocalnetChain(currentChain)) {
+    await get().initializeForChain(currentChain)
+  }
 }
 
 /** Guards against redundant network calls when the chain was already initialized (e.g. after rehydration). */
@@ -121,17 +151,31 @@ const initializeZkLoginChainData = async (
     throw new Error('Ephemeral public key not found')
   }
 
-  const jwtRandomness = generateRandomness().toString()
-  const { numericMaxEpoch, maxEpochTimestampMs } =
-    await getCurrentEpochFromGraphQL(chain)
-  const nonce = generateNonce(ephemeralPubkey, numericMaxEpoch, jwtRandomness)
+  const epoch = await getCurrentEpochFromGraphQL(chain)
+  setChainData(set, get, chain, buildNonceEntry(ephemeralPubkey, epoch))
+}
 
-  setChainData(set, get, chain, {
-    maxEpoch: numericMaxEpoch.toString(),
-    maxEpochTimestampMs,
+/**
+ * Derives network data entry with nonce from a specific key + epoch. Synchronous
+ * so callers can compute it before committing, keeping the nonce and the key
+ * in a single atomic write.
+ */
+const buildNonceEntry = (
+  ephemeralPubkey: PublicKey,
+  epoch: EpochData,
+): NetworkDataEntry => {
+  const jwtRandomness = generateRandomness().toString()
+  const nonce = generateNonce(
+    ephemeralPubkey,
+    epoch.numericMaxEpoch,
+    jwtRandomness,
+  )
+  return {
+    maxEpoch: epoch.numericMaxEpoch.toString(),
+    maxEpochTimestampMs: epoch.maxEpochTimestampMs,
     nonce,
     jwtRandomness,
-  })
+  }
 }
 
 const setLocalnetEpochData = (
