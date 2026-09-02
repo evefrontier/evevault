@@ -296,15 +296,21 @@ describe('createProofActions.getZkProof', () => {
   })
 
   it('rotates the eph key when the stored nonce does not match the current key', async () => {
+    // Rotation swaps the ephemeral key and regenerates the nonce from it.
+    const rotatedPk = new Ed25519PublicKey(new Uint8Array(32).fill(7))
+    const rotatedRandomness = '9876543210'
+    const rotatedNonce = generateNonce(rotatedPk, 22, rotatedRandomness)
     const rotateEphemeralKey = vi.fn().mockImplementation(async () => {
+      state.ephemeralPublicKey = rotatedPk
       state.networkData[SUI_DEVNET_CHAIN] = {
-        nonce: 'rotated-nonce',
+        nonce: rotatedNonce,
         maxEpoch: '22',
         maxEpochTimestampMs: Date.now() + 60_000,
-        jwtRandomness: 'rotated-random',
+        jwtRandomness: rotatedRandomness,
       }
     })
-    // Recompute guard detects drift between epoch and stored nonce and rotates.
+    // Stored nonce is bound to a previously-rotated keypair; the recompute guard detects
+    // the drift against the current key and rotates even though the epoch is valid.
     const { getZkProof, state } = buildProofHarness({
       rotateEphemeralKey,
       networkData: {
@@ -323,13 +329,14 @@ describe('createProofActions.getZkProof', () => {
     expect(resolveVendedMock).toHaveBeenCalledWith(
       SUI_DEVNET_CHAIN,
       expect.anything(),
-      'rotated-nonce',
+      rotatedNonce,
       expect.any(Number),
     )
     expect(fetchZkProofMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        jwtRandomness: 'rotated-random',
+        jwtRandomness: rotatedRandomness,
         maxEpoch: '22',
+        ephemeralPublicKey: rotatedPk,
       }),
     )
   })
