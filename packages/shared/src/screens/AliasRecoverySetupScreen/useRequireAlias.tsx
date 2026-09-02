@@ -2,6 +2,7 @@ import type React from 'react'
 import { useRef, useState } from 'react'
 import { Modal } from '#/components'
 import {
+  isAliasEnforcementFeatureEnabled,
   isEnforcementOverridden,
   resolveAliasEnforcementStatus,
   useWalletSigningContext,
@@ -40,6 +41,11 @@ export function useRequireAlias(): UseRequireAliasResult {
   }
 
   const ensureAlias = async (): Promise<boolean> => {
+    if (!isAliasEnforcementFeatureEnabled()) {
+      // Do not gate if feature staged off
+      return true
+    }
+
     if (mode !== 'zklogin') {
       // Non-zklogin (localnet) accounts are never gated.
       return true

@@ -14,6 +14,16 @@ import { createLogger } from '#/utils'
 const log = createLogger()
 
 /**
+ * App-side rollout gate for the whole alias-enforcement feature. Owned by the
+ * build/env. When on, enforcement applies — subject to the ops break-glass
+ * ({@link isEnforcementOverridden}). Defaults ON; set
+ * `VITE_ADDRESS_ALIAS_ENFORCEMENT=false` to stage the feature off in an env.
+ */
+export function isAliasEnforcementFeatureEnabled(): boolean {
+  return import.meta.env.VITE_ADDRESS_ALIAS_ENFORCEMENT !== 'false'
+}
+
+/**
  * Ops break-glass override for the compliance-mandated alias enforcement. There
  * is deliberately no env/build-time off-switch: enforcement is always on (see
  * {@link assertAliasEnforced}). The only way to suspend it is an ops-issued,
@@ -119,11 +129,11 @@ export interface AssertAliasEnforcedParams {
 
 /**
  * Signing backstop: throws `AliasEnforcementError` when the owner has no
- * enforceable alias. Only on-chain transactions are gated. No-op on localnet,
- * for non-transaction scopes (personal messages are never gated),
- * when the owner is unknown, when the transaction is the alias-setup
- * call itself (so the first alias can still be registered),
- * or when a valid ops break-glass override is active.
+ * enforceable alias. Only on-chain transactions are gated. No-op when the
+ * feature flag is off, on localnet, for non-transaction scopes (personal
+ * messages are never gated), when the owner is unknown, when the transaction is
+ * the alias-setup call itself (so the first alias can still be registered), or
+ * when a valid ops break-glass override is active.
  */
 export async function assertAliasEnforced({
   chain,
@@ -131,6 +141,7 @@ export async function assertAliasEnforced({
   scope,
   msgBytes,
 }: AssertAliasEnforcedParams): Promise<void> {
+  if (!isAliasEnforcementFeatureEnabled()) return
   if (!chain || isLocalnetChain(chain)) return
   if (!owner) return
 

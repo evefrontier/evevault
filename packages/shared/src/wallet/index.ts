@@ -22,6 +22,7 @@ export {
 export {
   assertAliasEnforced,
   isAliasEnforcementError,
+  isAliasEnforcementFeatureEnabled,
   isEnforcementOverridden,
   resolveAliasEnforcementStatus,
 } from './aliasEnforcement'

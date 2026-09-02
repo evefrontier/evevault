@@ -29,6 +29,7 @@ vi.mock('@/features/wallet/components/TransactionSimulationPanel', () => ({
 vi.mock('@evevault/shared/wallet', () => ({
   useWalletSigningContext: mockUseWalletSigningContext,
   ADDRESS_ALIAS_MODULE: mockAddressAliasModule,
+  isAliasEnforcementFeatureEnabled: () => false,
 }))
 
 vi.mock('@evevault/shared/utils', async (importOriginal) => {

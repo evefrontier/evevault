@@ -49,7 +49,25 @@ beforeEach(() => {
   vi.mocked(Transaction.from).mockReset()
 })
 
+afterEach(() => {
+  vi.unstubAllEnvs()
+})
+
 describe('assertAliasEnforced', () => {
+  it('is a no-op when the feature flag is staged off', async () => {
+    vi.stubEnv('VITE_ADDRESS_ALIAS_ENFORCEMENT', 'false')
+    mockListOwnedObjects.mockResolvedValue(objectsWith([OWNER]))
+    await expect(
+      assertAliasEnforced({
+        chain: SUI_DEVNET_CHAIN,
+        owner: OWNER,
+        scope: 'TransactionData',
+        msgBytes: new Uint8Array([1]),
+      }),
+    ).resolves.toBeUndefined()
+    expect(mockListOwnedObjects).not.toHaveBeenCalled()
+  })
+
   it('throws when the owner has no non-self alias', async () => {
     mockListOwnedObjects.mockResolvedValue(objectsWith([OWNER]))
     await expect(
