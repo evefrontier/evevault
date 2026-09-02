@@ -1,4 +1,5 @@
 import { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519'
+import { generateNonce } from '@mysten/sui/zklogin'
 import { SUI_DEVNET_CHAIN } from '@mysten/wallet-standard'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createProofActions } from '#/stores/deviceStore/actions/proofActions'
@@ -64,6 +65,11 @@ function stubAsync() {
   return Promise.resolve()
 }
 
+// Randomness must be a BigInt-convertible string for generateNonce.
+const DEVICE_PK = new Ed25519PublicKey(new Uint8Array(32).fill(4))
+const DEVICE_RANDOMNESS = '1234567890'
+const DEVICE_NONCE = generateNonce(DEVICE_PK, 10, DEVICE_RANDOMNESS)
+
 function buildProofHarness(overrides: Partial<DeviceState> = {}) {
   let state: DeviceState
 
@@ -76,7 +82,7 @@ function buildProofHarness(overrides: Partial<DeviceState> = {}) {
 
   const { getZkProof } = createProofActions(set, get)
 
-  const pk = new Ed25519PublicKey(new Uint8Array(32).fill(4))
+  const pk = DEVICE_PK
 
   state = {
     isLocked: false,
@@ -86,10 +92,10 @@ function buildProofHarness(overrides: Partial<DeviceState> = {}) {
     ephemeralKeyPairSecretKey: null,
     networkData: {
       [SUI_DEVNET_CHAIN]: {
-        nonce: 'nonce-1',
+        nonce: DEVICE_NONCE,
         maxEpoch: '10',
         maxEpochTimestampMs: Date.now() + 60_000,
-        jwtRandomness: 'random',
+        jwtRandomness: DEVICE_RANDOMNESS,
       },
     },
     loading: false,
@@ -238,7 +244,7 @@ describe('createProofActions.getZkProof', () => {
     expect(fetchZkProofMock).toHaveBeenCalledWith(
       expect.objectContaining({
         idToken: 'vended.id.token',
-        jwtRandomness: 'random',
+        jwtRandomness: DEVICE_RANDOMNESS,
         maxEpoch: '10',
       }),
     )
@@ -268,6 +274,45 @@ describe('createProofActions.getZkProof', () => {
           maxEpoch: '10',
           maxEpochTimestampMs: Date.now() - 1_000,
           jwtRandomness: 'old-random',
+        },
+      },
+    })
+
+    await getZkProof(SUI_DEVNET_CHAIN)
+
+    expect(rotateEphemeralKey).toHaveBeenCalledOnce()
+    expect(resolveVendedMock).toHaveBeenCalledWith(
+      SUI_DEVNET_CHAIN,
+      expect.anything(),
+      'rotated-nonce',
+      expect.any(Number),
+    )
+    expect(fetchZkProofMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        jwtRandomness: 'rotated-random',
+        maxEpoch: '22',
+      }),
+    )
+  })
+
+  it('rotates the eph key when the stored nonce does not match the current key', async () => {
+    const rotateEphemeralKey = vi.fn().mockImplementation(async () => {
+      state.networkData[SUI_DEVNET_CHAIN] = {
+        nonce: 'rotated-nonce',
+        maxEpoch: '22',
+        maxEpochTimestampMs: Date.now() + 60_000,
+        jwtRandomness: 'rotated-random',
+      }
+    })
+    // Recompute guard detects drift between epoch and stored nonce and rotates.
+    const { getZkProof, state } = buildProofHarness({
+      rotateEphemeralKey,
+      networkData: {
+        [SUI_DEVNET_CHAIN]: {
+          nonce: 'nonce-from-a-rotated-away-keypair',
+          maxEpoch: '10',
+          maxEpochTimestampMs: Date.now() + 60_000,
+          jwtRandomness: DEVICE_RANDOMNESS,
         },
       },
     })

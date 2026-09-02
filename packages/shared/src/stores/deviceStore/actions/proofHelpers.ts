@@ -1,3 +1,4 @@
+import { generateNonce } from '@mysten/sui/zklogin'
 import type { SuiChain } from '@mysten/wallet-standard'
 import { useAuthStore } from '#/auth'
 import { getJwt } from '#/auth/storageService'
@@ -123,15 +124,50 @@ const ensureProofNonce = async (
   get: GetDeviceState,
 ): Promise<string> => {
   const nonce = get().getNonce(chain)
-  if (nonce && !isEpochExpired(chain, get)) {
+  if (
+    nonce &&
+    !isEpochExpired(chain, get) &&
+    isNonceBoundToCurrentKey(chain, get, nonce)
+  ) {
     return nonce
   }
 
-  log.info('Device nonce missing or epoch expired; rotating ephemeral key', {
-    chain,
-  })
+  log.info(
+    'Device nonce missing, epoch expired, or bound to a stale ephemeral key; rotating ephemeral key',
+    { chain },
+  )
   await get().rotateEphemeralKey(chain)
   return requireNonceAfterRotation(chain, network, get)
+}
+
+/**
+ * Recomputes the nonce from the current ephemeral key, epoch, and randomness and
+ * compares it to the stored nonce. The ephemeral key lives in a different store
+ * than the per-chain nonce, so a key rotation elsewhere can leave the stored nonce
+ * bound to a stale key; this catches that mismatch before Enoki rejects it as
+ * incorrect_nonce.
+ */
+const isNonceBoundToCurrentKey = (
+  chain: SuiChain,
+  get: GetDeviceState,
+  nonce: string,
+): boolean => {
+  const ephemeralPublicKey = get().ephemeralPublicKey
+  const maxEpoch = get().getMaxEpoch(chain)
+  const jwtRandomness = get().getJwtRandomness(chain)
+  if (!ephemeralPublicKey || !maxEpoch || !jwtRandomness) {
+    return false
+  }
+  try {
+    return (
+      generateNonce(ephemeralPublicKey, Number(maxEpoch), jwtRandomness) ===
+      nonce
+    )
+  } catch {
+    // Malformed stored epoch/randomness can't recompute; treat as unbound so the
+    // caller rotates and regenerates from scratch.
+    return false
+  }
 }
 
 const requireNonceAfterRotation = (

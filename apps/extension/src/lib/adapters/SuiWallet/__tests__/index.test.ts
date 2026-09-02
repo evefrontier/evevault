@@ -238,7 +238,7 @@ describe('EveVaultWallet', () => {
         },
       }),
     )
-    // The genuine same-window response still settles the connect.
+    // Same-window response still settles the connect.
     dispatchVaultMessage({
       type: 'auth_success',
       chain: SUI_LOCALNET_CHAIN,
