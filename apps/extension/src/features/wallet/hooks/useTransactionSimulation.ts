@@ -3,6 +3,7 @@ import { createSuiGraphQLClient } from '@evevault/shared/sui'
 import { createLogger } from '@evevault/shared/utils'
 import {
   classifyBuildFailure,
+  fetchCoinMetadata,
   simulateTransactionOutcome,
   type TransactionSimulation,
 } from '@evevault/shared/wallet'
@@ -80,11 +81,23 @@ export function useTransactionSimulation({
           throw new Error('No sender address available')
         }
         const bytes = await resolveBytes(mode, payload, sender, suiClient)
+        const graphqlClient = createSuiGraphQLClient(chain)
         const simulation = await simulateTransactionOutcome({
           transactionBytes: bytes,
           sender,
           suiClient,
-          graphqlClient: createSuiGraphQLClient(chain),
+          // Inject evevault's cached GraphQL metadata source; wallet-core falls
+          // back to 9 decimals + coin-type-derived symbol when this returns null.
+          resolveCoinMetadata: async (coinType) => {
+            const metadata = await fetchCoinMetadata(graphqlClient, coinType)
+            return metadata
+              ? {
+                  decimals: metadata.decimals,
+                  symbol: metadata.symbol,
+                  name: metadata.name ?? undefined,
+                }
+              : null
+          },
         })
         if (runId === runIdRef.current) {
           setState({ status: 'ready', simulation })
