@@ -1,4 +1,5 @@
 import { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519'
+import { generateNonce } from '@mysten/sui/zklogin'
 import { SUI_DEVNET_CHAIN } from '@mysten/wallet-standard'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useContextStore } from '#/stores/contextStore'
@@ -62,11 +63,16 @@ vi.mock('#/auth/verifyJwt', () => ({
 import { useDeviceStore } from '#/stores/deviceStore'
 import { makeJwtWithExp } from '#/testing'
 
+const devicePublicKey = new Ed25519PublicKey(new Uint8Array(32).fill(1))
+// Randomness must be a BigInt-convertible string for generateNonce.
+const deviceRandomness = '987654321'
+const deviceNonce = generateNonce(devicePublicKey, 123, deviceRandomness)
+
 describe('deviceStore.getZkProof with expired stored zkLogin JWT', () => {
   beforeEach(() => {
     useContextStore.setState({ chain: SUI_DEVNET_CHAIN })
 
-    const publicKey = new Ed25519PublicKey(new Uint8Array(32).fill(1))
+    const publicKey = devicePublicKey
     useDeviceStore.setState({
       isLocked: false,
       ephemeralPublicKey: publicKey,
@@ -74,10 +80,10 @@ describe('deviceStore.getZkProof with expired stored zkLogin JWT', () => {
       ephemeralPublicKeyFlag: publicKey.flag(),
       networkData: {
         [SUI_DEVNET_CHAIN]: {
-          nonce: 'device-nonce',
+          nonce: deviceNonce,
           maxEpoch: '123',
           maxEpochTimestampMs: Date.now() + 60_000,
-          jwtRandomness: 'randomness',
+          jwtRandomness: deviceRandomness,
         },
       },
       error: null,
@@ -120,7 +126,7 @@ describe('deviceStore.getZkProof with expired stored zkLogin JWT', () => {
 
     expect(vendJwtMock).toHaveBeenCalledOnce()
     expect(vendJwtMock).toHaveBeenCalledWith('primary.jwt.token', {
-      nonce: 'device-nonce',
+      nonce: deviceNonce,
     })
 
     const freshToken = vendJwtMock.mock.results[0]?.value
