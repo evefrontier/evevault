@@ -6,6 +6,16 @@ export {
   type AddressAliasesInfo,
 } from '@evefrontier/wallet-core/address-alias'
 export {
+  classifyBuildFailure,
+  type ObjectChangeKind,
+  type SimulatedBalanceChange,
+  type SimulatedEvent,
+  type SimulatedGas,
+  type SimulatedObjectChange,
+  simulateTransactionOutcome,
+  type TransactionSimulation,
+} from '@evefrontier/wallet-core/transaction'
+export {
   createWebCryptoPlaceholder,
   isWebCryptoMarker,
 } from '../types/wallet'
@@ -25,17 +35,10 @@ export type {
   CoinMetadataResult,
 } from './types/coinMetadata'
 export type { BalanceAndMetadataResponse } from './types/graphql'
-export { invalidateCoinMetadataCache } from './utils/coinMetadata'
 export {
-  classifyBuildFailure,
-  type ObjectChangeKind,
-  type SimulatedBalanceChange,
-  type SimulatedEvent,
-  type SimulatedGas,
-  type SimulatedObjectChange,
-  simulateTransactionOutcome,
-  type TransactionSimulation,
-} from './utils/simulateTransaction'
+  fetchCoinMetadata,
+  invalidateCoinMetadataCache,
+} from './utils/coinMetadata'
 export {
   isZkLoginEpochExpiredError,
   withZkLoginEpochRetry,

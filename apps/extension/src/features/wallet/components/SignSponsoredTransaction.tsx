@@ -1,3 +1,8 @@
+import {
+  PREDICTED_FAILURE_ACKNOWLEDGEMENT,
+  requiresAcknowledgement,
+  reviewTransaction,
+} from '@evefrontier/wallet-core/transaction'
 import { Text } from '@evevault/shared/components'
 import Json from '@evevault/shared/components/Json'
 import type { PendingSponsoredTransaction } from '@evevault/shared/types'
@@ -7,11 +12,6 @@ import {
   usePendingSignAction,
   useTransactionSimulation,
 } from '@/features/wallet/hooks'
-import {
-  PREDICTED_FAILURE_ACKNOWLEDGEMENT,
-  requiresAcknowledgement,
-  reviewTransaction,
-} from '../transactionRiskReview'
 import { type ApprovalTab, ApprovalTabs } from './ApprovalTabs'
 import { SignRequestView } from './SignRequestView'
 import { TransactionRiskPanel } from './TransactionRiskPanel'
