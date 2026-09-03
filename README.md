@@ -1,17 +1,23 @@
 # EVE Vault Wallet
 
-EVE Vault Wallet is a Chrome MV3 extension and web app built with WXT and React. It implements the Sui Wallet Standard to let dApps discover and connect to a user wallet. User authentication supports **EVE Frontier FusionAuth** via Chrome's `identity` API. After login, a [Sui zkLogin](https://docs.sui.io/concepts/cryptography/zklogin) address is derived and exposed to dApps via the wallet standard.
+EVE Vault Wallet is a Chrome and Firefox MV3 extension and web app built with WXT and React. It implements the Sui Wallet Standard to let dApps discover and connect to a user wallet. User authentication supports **EVE Frontier FusionAuth** via the browser's `identity` API. After login, a [Sui zkLogin](https://docs.sui.io/concepts/cryptography/zklogin) address is derived and exposed to dApps via the wallet standard.
 
 ## Features
 
-- EVE Frontier OAuth (FusionAuth)
+- EVE Frontier OAuth (FusionAuth) with PKCE
 - zkLogin address derivation
-- Wallet Standard implementation for dApp discovery
-- Transaction signing with zkLogin and privatekey (localnet-only)
-- Multi-network support (Devnet, Testnet, Localnet)
+- Wallet Standard implementation for dApp discovery (Chrome & Firefox)
+- PIN-protected vault — Argon2id (memory-hard) key derivation; decrypted keys held only in offscreen/in-process memory, never persisted
+- Auto-lock 10 minutes after unlock (web + extension), with a PIN re-entry screen if the vault expires mid-approval
+- Transaction simulation in the approval popup — projected balance changes, gas, object changes, events, and success/failure before signing
+- Automatic zkLogin session recovery on epoch expiry (rotates keys, retries; address unchanged)
+- Multi-network support (Mainnet, Devnet, Testnet, Localnet)
 - Multi-tenant FusionAuth configuration
+- Reports build version, commit, and platform to dApps via the wallet standard
+- Strict Content-Security-Policy on extension and web surfaces
+- Transaction signing with zkLogin and private key (localnet-only)
 - Zustand for client state
-- Chrome storage persistence (extension)
+- Browser storage persistence (extension)
 
 ## How It Works
 
@@ -19,23 +25,28 @@ EVE Vault uses **zkLogin** to create a Sui wallet address from your OAuth creden
 
 On Sui Localnet, signing uses a local Ed25519 keypair (imported in the app), which keeps dev/test flows simple.
 
+After signing in, you set a **PIN**. The PIN runs through Argon2id to unlock an ephemeral signing key that lives only in memory (the extension's offscreen keeper, or the web app's tab) and is never written to storage. The vault **auto-locks 10 minutes** after unlocking; if it locks while a signing approval is open, you're prompted to re-enter your PIN before the transaction can be signed.
+
 For detailed technical information, see the [Architecture Documentation](https://github.com/evefrontier/architecture-decision-log/blob/main/adr/0008-zklogin-implementation-auth-flow.md) and [Sui zkLogin docs](https://docs.sui.io/concepts/cryptography/zklogin).
 
 ## Download
 
-**Latest extension (Chrome):**  
+**Latest release (Chrome & Firefox):**  
 [https://github.com/evefrontier/evevault/releases](https://github.com/evefrontier/evevault/releases)
 
-**Latest extension ZIP** (CI, stable filename):  
-[releases/latest/download/eve-vault-chrome.zip](https://github.com/evefrontier/evevault/releases/latest/download/eve-vault-chrome.zip) — see [docs/RELEASE_EXTENSION.md](./docs/RELEASE_EXTENSION.md).
+**Latest extension ZIPs** (CI, stable filenames):  
+- Chrome: [releases/latest/download/eve-vault-chrome.zip](https://github.com/evefrontier/evevault/releases/latest/download/eve-vault-chrome.zip)
+- Firefox: [releases/latest/download/eve-vault-firefox.zip](https://github.com/evefrontier/evevault/releases/latest/download/eve-vault-firefox.zip)
+
+See [docs/RELEASE_EXTENSION.md](./docs/RELEASE_EXTENSION.md).
 
 **Web app:**  
 [https://evevault.evefrontier.com/](https://evevault.evefrontier.com/)
 
 ## Requirements
 
-- Node.js 22+
-- [Bun](https://bun.sh/) (package manager used in this repo)
+- Node.js (see [`.nvmrc`](./.nvmrc), currently 25.x)
+- [Bun](https://bun.sh/) (package manager used in this repo; pinned via `packageManager` in `package.json`)
 - FusionAuth public OAuth application with PKCE enabled
 
 ## Quick Start
@@ -65,18 +76,34 @@ EXTENSION_ID=
 ### 4. Start development
 
 ```bash
-# Extension only
+# Extension only (Chrome)
 bun run dev:ext
 
-# Extension and web apps
+# Extension only (Firefox)
+bun run dev:ext:firefox
+
+# All apps — both browsers + web
 bun run dev
+
+# All apps — Chrome + web only
+bun run dev:chrome
+
+# Web only
+bun run dev:web
 ```
 
-### 5. Load the extension in Chrome
+### 5. Load the extension
+
+**Chrome**
 
 1. Open `chrome://extensions`
 2. Enable **Developer mode**
 3. **Load unpacked** → select `apps/extension/.output/chrome-mv3` (after `dev` or `build` has produced output)
+
+**Firefox**
+
+1. Open `about:debugging#/runtime/this-firefox`
+2. **Load Temporary Add-on…** → pick any file inside `apps/extension/.output/firefox-mv3`
 
 ### 6. Smoke-test the popup
 
@@ -88,7 +115,7 @@ bun run dev
 ## Build
 
 ```bash
-# Extension (Turborepo)
+# Extension (Turborepo) — builds both Chrome and Firefox
 bun run build:ext
 
 # Web app
@@ -96,9 +123,13 @@ bun run build:web
 
 # Both apps
 bun run build
+
+# Chrome web-store build / zip
+bun run build:ext:webstore
+bun run zip:ext:webstore
 ```
 
-Extension artifact directory: `apps/extension/.output/chrome-mv3/`
+Extension artifact directories: `apps/extension/.output/chrome-mv3/` and `apps/extension/.output/firefox-mv3/`
 
 ## Code quality
 
@@ -158,6 +189,8 @@ evevault/
 
 EVE Vault registers as **Eve Vault** through the [Sui Wallet Standard](https://docs.sui.io/standards/wallet-standard). Use any stack that lists Wallet Standard wallets (for example `@mysten/dapp-kit`); connect or filter for the wallet named **Eve Vault**. The extension injects the provider in pages where it is allowed to run.
 
+Alongside the standard Sui features (connect, disconnect, sign personal message, sign transaction, sign-and-execute), EVE Vault exposes two EVE-specific features: `evefrontier:vaultVersion` (reports the build's `vaultVersion`, short `commit`, and `platform` so dApps can detect outdated installs and tell which client is connected) and a sponsored-transaction feature.
+
 > **Verifying a sign-in server-side:** `signPersonalMessage` returns `{ bytes, signature }`. Verify the signature against a message your server **rebuilds** from a nonce it issued — never against the `bytes` the wallet returned, which are attacker-controlled and let any previously signed message be replayed. EVE Vault addresses are zkLogin, so pass a `client` to the verifier. See [Verifying a Sign-In Server-Side](https://docs.evefrontier.com/dapps/verifying-sign-in) for a full example.
 
 ### For extension users
@@ -169,7 +202,7 @@ EVE Vault registers as **Eve Vault** through the [Sui Wallet Standard](https://d
 
 ## Known limitations
 
-- zkLogin **maxEpoch** expiry can require unlocking / signing again after an epoch boundary
+- zkLogin **maxEpoch** expiry is recovered automatically: on an expired-proof error the wallet rotates the ephemeral key and retries once (the zkLogin address is unchanged), so re-signing is largely transparent
 
 ## Contributing
 
