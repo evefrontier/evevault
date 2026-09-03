@@ -1,6 +1,6 @@
 # EVE Vault Wallet
 
-EVE Vault Wallet is a Chrome and Firefox MV3 extension and web app built with WXT and React. It implements the Sui Wallet Standard to let dApps discover and connect to a user wallet. User authentication supports **EVE Frontier FusionAuth** via Chrome's `identity` API. After login, a [Sui zkLogin](https://docs.sui.io/concepts/cryptography/zklogin) address is derived and exposed to dApps via the wallet standard.
+EVE Vault Wallet is a Chrome and Firefox MV3 extension and web app built with WXT and React. It implements the Sui Wallet Standard to let dApps discover and connect to a user wallet. User authentication supports **EVE Frontier FusionAuth** via the browser's `identity` API. After login, a [Sui zkLogin](https://docs.sui.io/concepts/cryptography/zklogin) address is derived and exposed to dApps via the wallet standard.
 
 ## Features
 
