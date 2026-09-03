@@ -1,3 +1,8 @@
+import {
+  PREDICTED_FAILURE_ACKNOWLEDGEMENT,
+  requiresAcknowledgement,
+  reviewTransaction,
+} from '@evefrontier/wallet-core/transaction'
 import Json from '@evevault/shared/components/Json'
 import { useWalletSigningContext } from '@evevault/shared/wallet'
 import {
@@ -8,11 +13,6 @@ import type {
   SignResult,
   StoreResult,
 } from '@/features/wallet/hooks/useTransactionSigning'
-import {
-  PREDICTED_FAILURE_ACKNOWLEDGEMENT,
-  requiresAcknowledgement,
-  reviewTransaction,
-} from '../transactionRiskReview'
 import { type ApprovalTab, ApprovalTabs } from './ApprovalTabs'
 import { SignRequestView } from './SignRequestView'
 import { TransactionRiskPanel } from './TransactionRiskPanel'
