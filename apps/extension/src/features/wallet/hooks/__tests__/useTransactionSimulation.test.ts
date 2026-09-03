@@ -7,11 +7,13 @@ const {
   mockSimulateTransactionOutcome,
   mockClassifyBuildFailure,
   mockCreateSuiGraphQLClient,
+  mockFetchCoinMetadata,
 } = vi.hoisted(() => ({
   mockBuildTransactionBytes: vi.fn(),
   mockSimulateTransactionOutcome: vi.fn(),
   mockClassifyBuildFailure: vi.fn(),
   mockCreateSuiGraphQLClient: vi.fn(() => ({})),
+  mockFetchCoinMetadata: vi.fn(),
 }))
 
 vi.mock('@evefrontier/wallet-core/crypto', () => ({
@@ -29,6 +31,7 @@ vi.mock('@evevault/shared/sui', () => ({
 vi.mock('@evevault/shared/wallet', () => ({
   simulateTransactionOutcome: mockSimulateTransactionOutcome,
   classifyBuildFailure: mockClassifyBuildFailure,
+  fetchCoinMetadata: mockFetchCoinMetadata,
 }))
 
 vi.mock('@evevault/shared/utils', async (importOriginal) => {
@@ -166,6 +169,50 @@ describe('useTransactionSimulation', () => {
         reason: 'network timeout',
       }),
     )
+  })
+
+  it('maps cached GraphQL metadata through resolveCoinMetadata, falling back to null when absent', async () => {
+    mockBuildTransactionBytes.mockResolvedValue(new Uint8Array([1]))
+    mockSimulateTransactionOutcome.mockResolvedValue(SUCCESS_SIMULATION)
+
+    const { result } = renderHook((p) => useTransactionSimulation(p), {
+      initialProps: makeParams(),
+    })
+
+    await waitFor(() =>
+      expect(result.current).toEqual({
+        status: 'ready',
+        simulation: SUCCESS_SIMULATION,
+      }),
+    )
+
+    const { resolveCoinMetadata } =
+      mockSimulateTransactionOutcome.mock.calls[0][0]
+
+    mockFetchCoinMetadata.mockResolvedValueOnce({
+      decimals: 6,
+      symbol: 'USDC',
+      name: 'USD Coin',
+    })
+    expect(await resolveCoinMetadata('0x2::usdc::USDC')).toEqual({
+      decimals: 6,
+      symbol: 'USDC',
+      name: 'USD Coin',
+    })
+
+    mockFetchCoinMetadata.mockResolvedValueOnce({
+      decimals: 9,
+      symbol: 'EVE',
+      name: null,
+    })
+    expect(await resolveCoinMetadata('0x2::eve::EVE')).toEqual({
+      decimals: 9,
+      symbol: 'EVE',
+      name: undefined,
+    })
+
+    mockFetchCoinMetadata.mockResolvedValueOnce(null)
+    expect(await resolveCoinMetadata('0x2::unknown::UNKNOWN')).toBeNull()
   })
 
   it('reports unavailable, not a misclassified failure, when no sender address resolves', async () => {
