@@ -1,7 +1,7 @@
+import { formatByDecimals } from '@evefrontier/wallet-core/utils'
 import { SUI_DECIMALS } from '@mysten/sui/utils'
 import { describe, expect, it } from 'vitest'
 import {
-  formatByDecimals,
   formatDisplayAmount,
   formatShortDate,
   toSmallestUnit,

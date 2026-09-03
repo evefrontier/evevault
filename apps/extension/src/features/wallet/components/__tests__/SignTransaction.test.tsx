@@ -12,6 +12,7 @@ vi.mock('@/features/wallet/hooks', () => ({
 
 vi.mock('@evevault/shared/wallet', () => ({
   useWalletSigningContext: () => ({ suiClient: {}, chain: 'sui:testnet' }),
+  isAliasEnforcementFeatureEnabled: () => false,
 }))
 
 vi.mock('@/features/wallet/components/TransactionSimulationPanel', () => ({

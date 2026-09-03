@@ -1,5 +1,5 @@
+import type { TransactionRiskFinding } from '@evefrontier/wallet-core/transaction'
 import { Text } from '@evevault/shared/components'
-import type { TransactionRiskFinding } from '../transactionRiskReview'
 
 export function TransactionRiskPanel({
   findings,

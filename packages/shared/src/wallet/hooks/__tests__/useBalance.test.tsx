@@ -37,14 +37,17 @@ vi.mock('#/utils', () => ({
   isBrowser: vi.fn(() => true),
   SUI_COIN_TYPE: '0x2::sui::SUI',
   isSuiCoinType: vi.fn((coinType: string) => coinType === '0x2::sui::SUI'),
+}))
+
+vi.mock('@evefrontier/wallet-core/utils', () => ({
   formatByDecimals: vi.fn(
     (balance: string, _decimals: number) => `formatted-${balance}`,
   ),
   formatMistToSui: vi.fn(),
 }))
 
+import { formatMistToSui } from '@evefrontier/wallet-core/utils'
 import { createMockUser } from '#/testing'
-import { formatMistToSui } from '#/utils'
 import { useBalance } from '#/wallet/hooks/useBalance'
 
 const mockedFormatSUI = vi.mocked(formatMistToSui)
@@ -204,7 +207,7 @@ describe('useBalance hook — localnet gRPC path', () => {
 
   it('returns formatted SUI balance via gRPC on localnet', async () => {
     mockGetBalance.mockResolvedValue({ balance: { balance: '2000000000' } })
-    const { formatMistToSui } = await import('#/utils')
+    const { formatMistToSui } = await import('@evefrontier/wallet-core/utils')
     vi.mocked(formatMistToSui).mockReturnValueOnce('2')
 
     const user = (await import('#/testing')).createMockUser()

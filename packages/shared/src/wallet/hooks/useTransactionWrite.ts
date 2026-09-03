@@ -1,5 +1,12 @@
 import { useCallback, useRef, useState } from 'react'
 import { createLogger } from '#/utils'
+import { isAliasEnforcementError } from '../aliasEnforcement'
+
+/**
+ * When the signing backstop blocks a sign — a path that skipped
+ * the UX gate, or an alias removed after the gate passed.
+ */
+const ALIAS_ENFORCEMENT_MESSAGE = 'Set up your personal access key to continue'
 
 const log = createLogger()
 
@@ -70,7 +77,11 @@ export function useTransactionWrite(): UseTransactionWriteResult {
         await onSuccess?.(digest)
         return digest
       } catch (err) {
-        const message = err instanceof Error ? err.message : fallbackMessage
+        const message = isAliasEnforcementError(err)
+          ? ALIAS_ENFORCEMENT_MESSAGE
+          : err instanceof Error
+            ? err.message
+            : fallbackMessage
         log.error(logLabel ?? fallbackMessage, err)
         setError(message)
         return null

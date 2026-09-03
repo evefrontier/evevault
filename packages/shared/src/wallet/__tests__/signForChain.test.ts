@@ -5,6 +5,12 @@ vi.mock('#/wallet/zkSignAny', () => ({
   zkSignAny: vi.fn(),
 }))
 
+// Enforcement is exercised in aliasEnforcement.test.ts; keep it a no-op here
+// so these tests stay focused on routing/delegation.
+vi.mock('#/wallet/aliasEnforcement', () => ({
+  assertAliasEnforced: vi.fn().mockResolvedValue(undefined),
+}))
+
 import { SUI_LOCALNET_CHAIN, SUI_TESTNET_CHAIN } from '@mysten/wallet-standard'
 import { signForChain } from '#/wallet/signForChain'
 import { zkSignAny } from '#/wallet/zkSignAny'

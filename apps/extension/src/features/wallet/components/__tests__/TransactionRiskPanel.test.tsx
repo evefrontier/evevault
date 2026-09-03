@@ -1,6 +1,6 @@
+import type { TransactionRiskFinding } from '@evefrontier/wallet-core/transaction'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import type { TransactionRiskFinding } from '../../transactionRiskReview'
 import { TransactionRiskPanel } from '../TransactionRiskPanel'
 
 describe('TransactionRiskPanel', () => {

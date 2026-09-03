@@ -1,3 +1,9 @@
+import {
+  PREDICTED_FAILURE_ACKNOWLEDGEMENT,
+  requiresAcknowledgement,
+  reviewTransaction,
+} from '@evefrontier/wallet-core/transaction'
+import { useRequireAlias } from '@evevault/shared'
 import Json from '@evevault/shared/components/Json'
 import { useWalletSigningContext } from '@evevault/shared/wallet'
 import {
@@ -8,11 +14,6 @@ import type {
   SignResult,
   StoreResult,
 } from '@/features/wallet/hooks/useTransactionSigning'
-import {
-  PREDICTED_FAILURE_ACKNOWLEDGEMENT,
-  requiresAcknowledgement,
-  reviewTransaction,
-} from '../transactionRiskReview'
 import { type ApprovalTab, ApprovalTabs } from './ApprovalTabs'
 import { SignRequestView } from './SignRequestView'
 import { TransactionRiskPanel } from './TransactionRiskPanel'
@@ -48,8 +49,13 @@ export function SignTransactionFlow({
     fallbackSender: pendingTransaction?.account?.address,
   })
 
-  const handleApprove = () =>
-    withSigning((result) => onSign(result, storeResult))
+  const { ensureAlias, aliasSetupModal } = useRequireAlias()
+
+  const handleApprove = async () => {
+    if (!(await ensureAlias())) return
+    await withSigning((result) => onSign(result, storeResult))
+  }
+
   const riskFindings = pendingTransaction
     ? reviewTransaction(pendingTransaction.reviewValue)
     : []
@@ -98,31 +104,34 @@ export function SignTransactionFlow({
     : []
 
   return (
-    <SignRequestView
-      auth={auth}
-      title={title}
-      hasPending={!!pendingTransaction}
-      loading={loading}
-      error={error}
-      loadingMessage="Loading transaction..."
-      chain={pendingTransaction?.chain}
-      dapp={pendingTransaction?.dapp}
-      accountAddress={senderAddress ?? pendingTransaction?.account?.address}
-      requestKind={title}
-      requireAcknowledgement={needsRiskAck || predictedFailure}
-      acknowledgementLabel={
-        predictedFailure && !needsRiskAck
-          ? PREDICTED_FAILURE_ACKNOWLEDGEMENT
-          : undefined
-      }
-      onApprove={handleApprove}
-      onReject={handleReject}
-    >
-      {pendingTransaction && (
-        <div className="flex w-full flex-col items-center gap-2">
-          <ApprovalTabs tabs={tabs} />
-        </div>
-      )}
-    </SignRequestView>
+    <>
+      <SignRequestView
+        auth={auth}
+        title={title}
+        hasPending={!!pendingTransaction}
+        loading={loading}
+        error={error}
+        loadingMessage="Loading transaction..."
+        chain={pendingTransaction?.chain}
+        dapp={pendingTransaction?.dapp}
+        accountAddress={senderAddress ?? pendingTransaction?.account?.address}
+        requestKind={title}
+        requireAcknowledgement={needsRiskAck || predictedFailure}
+        acknowledgementLabel={
+          predictedFailure && !needsRiskAck
+            ? PREDICTED_FAILURE_ACKNOWLEDGEMENT
+            : undefined
+        }
+        onApprove={handleApprove}
+        onReject={handleReject}
+      >
+        {pendingTransaction && (
+          <div className="flex w-full flex-col items-center gap-2">
+            <ApprovalTabs tabs={tabs} />
+          </div>
+        )}
+      </SignRequestView>
+      {aliasSetupModal}
+    </>
   )
 }

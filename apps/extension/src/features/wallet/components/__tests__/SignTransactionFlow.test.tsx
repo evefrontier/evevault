@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { mockUseTransactionSigning, mockUseTransactionSimulation } = vi.hoisted(
@@ -15,6 +15,13 @@ vi.mock('@/features/wallet/hooks', () => ({
 
 vi.mock('@evevault/shared/wallet', () => ({
   useWalletSigningContext: () => ({ suiClient: {}, chain: 'sui:testnet' }),
+}))
+
+vi.mock('@evevault/shared', () => ({
+  useRequireAlias: () => ({
+    ensureAlias: () => Promise.resolve(true),
+    aliasSetupModal: null,
+  }),
 }))
 
 vi.mock('@/features/wallet/components/TransactionSimulationPanel', () => ({
@@ -252,7 +259,7 @@ describe('SignTransactionFlow', () => {
     expect(handleReject).toHaveBeenCalledTimes(1)
   })
 
-  it('calls withSigning (via handleApprove) when Approve is clicked', () => {
+  it('calls withSigning (via handleApprove) when Approve is clicked', async () => {
     const withSigning = vi.fn()
     stubSigning({
       pendingTransaction: {
@@ -268,7 +275,9 @@ describe('SignTransactionFlow', () => {
     const onSign = vi.fn()
     render(<SignTransactionFlow title="Sign Transaction" onSign={onSign} />)
     fireEvent.click(screen.getByTestId('approve-btn'))
-    expect(withSigning).toHaveBeenCalledWith(expect.any(Function))
+    await waitFor(() =>
+      expect(withSigning).toHaveBeenCalledWith(expect.any(Function)),
+    )
   })
 })
 

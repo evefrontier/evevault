@@ -137,6 +137,14 @@ describe('transaction list helpers', () => {
     ).toBe('−1 SUI')
   })
 
+  it('leaves a non-address counterparty label untruncated', () => {
+    expect(
+      getTransactionRowSummary(
+        createTransaction({ counterparty: 'address_alias::add' }),
+      ).shortCounterparty,
+    ).toBe('address_alias::add')
+  })
+
   it('leaves sent summaries unsigned when there are no balance changes', () => {
     expect(
       getTransactionRowSummary(
