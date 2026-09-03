@@ -176,13 +176,13 @@ describe('resolveEnforcementOverride (break-glass, fail-closed)', () => {
     ).toEqual({ reason: 'x', until: NOW + 1, actor: undefined })
   })
 
-  it('rejects an expired override', () => {
+  it('returns null for an expired override', () => {
     expect(
       resolveEnforcementOverride({ reason: 'x', until: NOW - 1 }, NOW),
     ).toBeNull()
   })
 
-  it('rejects malformed / missing claims', () => {
+  it('returns null for malformed / missing claims', () => {
     expect(resolveEnforcementOverride(null, NOW)).toBeNull()
     expect(resolveEnforcementOverride('nope', NOW)).toBeNull()
     expect(resolveEnforcementOverride({ until: NOW + 1 }, NOW)).toBeNull()
