@@ -76,7 +76,7 @@ function InitErrorView({ initError }: { initError: string }) {
   return (
     <SplashView title="Error">
       <Text color="error">Error: {initError}</Text>
-      <div className="w-full max-w-[300px]">
+      <div className="w-full max-w-75">
         <Button size="fill" onClick={() => window.location.reload()}>
           Reload
         </Button>

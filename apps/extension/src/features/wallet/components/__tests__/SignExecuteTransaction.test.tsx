@@ -21,6 +21,15 @@ vi.mock('@evevault/shared/wallet', () => ({
   ADDRESS_ALIAS_MODULE: mockAddressAliasModule,
 }))
 
+// mock useRequireAlias to keep the alias gate open and avoid loading shared's
+// real queryClient (which the react-query mock below doesn't provide).
+vi.mock('@evevault/shared', () => ({
+  useRequireAlias: () => ({
+    ensureAlias: () => Promise.resolve(true),
+    aliasSetupModal: null,
+  }),
+}))
+
 vi.mock('@/features/wallet/components/TransactionSimulationPanel', () => ({
   TransactionSimulationPanel: () => null,
 }))

@@ -7,6 +7,7 @@ import { getFaucetUrlForChain } from '#/sui'
 import type { SendTokenScreenProps } from '#/types'
 import { getSuiscanUrl } from '#/utils'
 import { useSendToken } from '#/wallet'
+import { useRequireAlias } from '../AliasRecoverySetupScreen/useRequireAlias'
 import { TransferForm, TransferSuccessScreen } from './SendTokenScreen.parts'
 
 export const SendTokenScreen: React.FC<SendTokenScreenProps> = ({
@@ -14,6 +15,7 @@ export const SendTokenScreen: React.FC<SendTokenScreenProps> = ({
   onCancel,
 }) => {
   const { showToast } = useToast()
+  const { ensureAlias, aliasSetupModal } = useRequireAlias()
   const { chain: currentChain } = useContext()
   const {
     localnet: { url: localnetUrl },
@@ -63,6 +65,7 @@ export const SendTokenScreen: React.FC<SendTokenScreenProps> = ({
   }
 
   const handleSend = async () => {
+    if (!(await ensureAlias())) return
     // Store the values before sending so we can show them on success screen
     setSubmittedRecipient(recipientAddress)
     setSubmittedAmount(amount)
@@ -105,35 +108,38 @@ export const SendTokenScreen: React.FC<SendTokenScreenProps> = ({
   }
 
   return (
-    <TransferForm
-      values={{
-        recipientAddress,
-        amount,
-        currentBalance,
-        tokenSymbol,
-      }}
-      status={{
-        isValidRecipient,
-        isValidAmount,
-        validationErrors,
-        canSend,
-        isLoading,
-        error,
-      }}
-      notices={{
-        suiForGasWarning,
-        gasFeeWarning,
-        estimatedGasFee,
-        estimatedGasFeeLoading,
-        showFaucetTestSui,
-        faucetUrl,
-      }}
-      actions={{
-        onRecipientChange: handleRecipientChange,
-        onAmountChange: handleAmountChange,
-        onSend: handleSend,
-        onCancel,
-      }}
-    />
+    <>
+      <TransferForm
+        values={{
+          recipientAddress,
+          amount,
+          currentBalance,
+          tokenSymbol,
+        }}
+        status={{
+          isValidRecipient,
+          isValidAmount,
+          validationErrors,
+          canSend,
+          isLoading,
+          error,
+        }}
+        notices={{
+          suiForGasWarning,
+          gasFeeWarning,
+          estimatedGasFee,
+          estimatedGasFeeLoading,
+          showFaucetTestSui,
+          faucetUrl,
+        }}
+        actions={{
+          onRecipientChange: handleRecipientChange,
+          onAmountChange: handleAmountChange,
+          onSend: handleSend,
+          onCancel,
+        }}
+      />
+      {aliasSetupModal}
+    </>
   )
 }

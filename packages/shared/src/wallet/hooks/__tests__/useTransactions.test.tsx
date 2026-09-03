@@ -85,16 +85,16 @@ function createMockGraphQLResponse(
       ownerAddress: string
     }>
   }>,
-  hasNextPage = false,
-  endCursor: string | null = null,
+  hasPreviousPage = false,
+  startCursor: string | null = null,
 ) {
   return {
     data: {
       address: {
         transactions: {
           pageInfo: {
-            hasNextPage,
-            endCursor,
+            hasPreviousPage,
+            startCursor,
           },
           nodes: transactions.map((tx) => ({
             digest: tx.digest,
@@ -312,6 +312,60 @@ describe('useTransactionHistory hook (GraphQL)', () => {
     unmount()
   })
 
+  it('returns page transactions newest-first (reversed from oldest-first connection order)', async () => {
+    // The connection is ordered oldest-first; the hook reverses each page so
+    // the most recent transaction leads without re-sorting by timestamp.
+    const mockResponse = createMockGraphQLResponse([
+      {
+        digest: 'tx-old',
+        timestamp: '2024-01-01T00:00:00.000Z',
+        balanceChanges: [
+          {
+            amount: '-1000000000',
+            coinType: '0x2::sui::SUI',
+            ownerAddress: '0x123',
+          },
+        ],
+      },
+      {
+        digest: 'tx-new',
+        timestamp: '2024-06-01T00:00:00.000Z',
+        balanceChanges: [
+          {
+            amount: '-1000000000',
+            coinType: '0x2::sui::SUI',
+            ownerAddress: '0x123',
+          },
+        ],
+      },
+    ])
+
+    mockGraphQLQuery.mockResolvedValue(mockResponse)
+
+    const user = createMockUser()
+    const wrapper = createWrapper(queryClient)
+
+    const { result, unmount } = renderHook(
+      () =>
+        useTransactionHistory({
+          user,
+          chain: SUI_DEVNET_CHAIN,
+        }),
+      { wrapper },
+    )
+
+    await waitFor(() => {
+      expect(result.current.isSuccess).toBe(true)
+    })
+
+    const digests = result.current.data?.pages[0].transactions.map(
+      (tx) => tx.digest,
+    )
+    expect(digests).toEqual(['tx-new', 'tx-old'])
+
+    unmount()
+  })
+
   it('handles GraphQL errors by throwing', async () => {
     // When GraphQL returns errors, the hook throws an error
     // The hook will retry twice before failing (retry: 2)
@@ -398,8 +452,8 @@ describe('useTransactionHistory hook (GraphQL)', () => {
           ],
         },
       ],
-      true, // hasNextPage
-      'cursor123', // endCursor
+      true, // hasPreviousPage
+      'cursor123', // startCursor
     )
 
     mockGraphQLQuery.mockResolvedValue(mockResponse)
@@ -500,8 +554,8 @@ describe('useTransactionHistory hook (GraphQL)', () => {
 
     const callArgs = mockGraphQLQuery.mock.calls[0][0]
     expect(callArgs.variables.address).toBe('0x123')
-    expect(callArgs.variables.first).toBe(50)
-    expect(callArgs.variables.after).toBeUndefined()
+    expect(callArgs.variables.last).toBe(50)
+    expect(callArgs.variables.before).toBeUndefined()
 
     unmount()
   })

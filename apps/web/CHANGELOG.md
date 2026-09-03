@@ -1,5 +1,13 @@
 # @evevault/web
 
+## 0.0.18
+
+### Patch Changes
+
+- Require zkLogin accounts to register a recovery alias before signing
+- Updated dependencies
+  - @evevault/shared@0.0.18
+
 ## 0.0.17
 
 ### Patch Changes

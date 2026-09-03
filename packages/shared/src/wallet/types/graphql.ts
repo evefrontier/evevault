@@ -21,10 +21,32 @@ export interface GraphQLBalanceChange {
 }
 
 /**
+ * A command node within a programmable transaction. Every `commands.nodes`
+ * entry has this shape; `function` is only present on MoveCall commands (other
+ * command types carry just `__typename`). Only the fields needed to label a
+ * move call (module + function) are requested.
+ */
+export interface GraphQLMoveCallCommand {
+  __typename: string
+  function?: {
+    name: string | null
+    module: {
+      name: string | null
+    } | null
+  } | null
+}
+
+/**
  * Transaction node from a GraphQL response
  */
 export interface GraphQLTransactionNode {
   digest: string | null
+  kind: {
+    __typename: string
+    commands?: {
+      nodes: GraphQLMoveCallCommand[]
+    } | null
+  } | null
   effects: {
     timestamp: string | null
     balanceChanges: {
@@ -40,8 +62,8 @@ export interface TransactionsQueryResponse {
   address: {
     transactions: {
       pageInfo: {
-        hasNextPage: boolean
-        endCursor: string | null
+        hasPreviousPage: boolean
+        startCursor: string | null
       }
       nodes: GraphQLTransactionNode[]
     } | null
@@ -53,8 +75,8 @@ export interface TransactionsQueryResponse {
  */
 export interface TransactionPage {
   transactions: import('#/types/components').Transaction[]
-  nextCursor: string | null
-  hasNextPage: boolean
+  prevCursor: string | null
+  hasPreviousPage: boolean
 }
 
 /**

@@ -1,5 +1,6 @@
 export * from './AddressAliasesScreen'
 export * from './AddTokenScreen'
+export * from './AliasRecoverySetupScreen'
 export * from './Lockscreen'
 export * from './NotFoundScreen'
 export * from './SendTokenScreen'
