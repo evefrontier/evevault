@@ -11,7 +11,15 @@ vi.mock('#/wallet/aliasEnforcement', () => ({
   assertAliasEnforced: vi.fn().mockResolvedValue(undefined),
 }))
 
+// Detection is unit-tested in aliasCall.test.ts; stub it so we can drive the
+// backstop's routing (blocked vs allowed) directly.
+vi.mock('#/wallet/aliasCall', () => ({
+  ADDRESS_ALIAS_SIGNING_BLOCKED: 'BLOCKED_ALIAS',
+  transactionContainsAddressAliasCall: vi.fn(),
+}))
+
 import { SUI_LOCALNET_CHAIN, SUI_TESTNET_CHAIN } from '@mysten/wallet-standard'
+import { transactionContainsAddressAliasCall } from '#/wallet/aliasCall'
 import { signForChain } from '#/wallet/signForChain'
 import { zkSignAny } from '#/wallet/zkSignAny'
 
@@ -192,5 +200,93 @@ describe('signForChain — zkLogin path', () => {
 
     expect(zkSignAny).toHaveBeenCalled()
     expect(result).toEqual({ bytes: 'zk_bytes', signature: 'zk_sig' })
+  })
+})
+
+describe('signForChain — address-alias backstop', () => {
+  afterEach(() => {
+    clearBrowser()
+    vi.clearAllMocks()
+  })
+
+  it('refuses a TransactionData carrying an alias call and never signs', async () => {
+    vi.mocked(transactionContainsAddressAliasCall).mockReturnValue(true)
+
+    await expect(
+      signForChain('TransactionData', MSG, {
+        chain: TESTNET,
+        user: minimalUser,
+        getZkProof: vi.fn(),
+        localnetAddress: null,
+      }),
+    ).rejects.toThrow('BLOCKED_ALIAS')
+    expect(zkSignAny).not.toHaveBeenCalled()
+  })
+
+  it('detects with failClosed:false so a parse hiccup never blocks all signing', async () => {
+    vi.mocked(transactionContainsAddressAliasCall).mockReturnValue(false)
+
+    await signForChain('TransactionData', MSG, {
+      chain: TESTNET,
+      user: minimalUser,
+      getZkProof: vi.fn(),
+      localnetAddress: null,
+    })
+
+    expect(transactionContainsAddressAliasCall).toHaveBeenCalledWith(MSG, {
+      failClosed: false,
+    })
+  })
+
+  it('allows an alias call when the caller opts in (Eve Vault alias setup)', async () => {
+    vi.mocked(transactionContainsAddressAliasCall).mockReturnValue(true)
+    vi.mocked(zkSignAny).mockResolvedValue({
+      bytes: 'zk_bytes',
+      zkSignature: 'zk_sig',
+    })
+
+    const result = await signForChain('TransactionData', MSG, {
+      chain: TESTNET,
+      user: minimalUser,
+      getZkProof: vi.fn(),
+      localnetAddress: null,
+      allowAddressAliasCalls: true,
+    })
+
+    expect(result).toEqual({ bytes: 'zk_bytes', signature: 'zk_sig' })
+  })
+
+  it('does not gate non-transaction scopes (personal messages)', async () => {
+    vi.mocked(transactionContainsAddressAliasCall).mockReturnValue(true)
+    vi.mocked(zkSignAny).mockResolvedValue({
+      bytes: 'zk_bytes',
+      zkSignature: 'zk_sig',
+    })
+
+    await signForChain('PersonalMessage', MSG, {
+      chain: TESTNET,
+      user: minimalUser,
+      getZkProof: vi.fn(),
+      localnetAddress: null,
+    })
+
+    expect(transactionContainsAddressAliasCall).not.toHaveBeenCalled()
+    expect(zkSignAny).toHaveBeenCalled()
+  })
+
+  it('blocks before the localnet branch, so localnet is covered too', async () => {
+    vi.mocked(transactionContainsAddressAliasCall).mockReturnValue(true)
+    const sendMessage = vi.fn()
+    setBrowser(sendMessage)
+
+    await expect(
+      signForChain('TransactionData', MSG, {
+        chain: LOCALNET,
+        user: null,
+        getZkProof: null,
+        localnetAddress: LOCAL_ADDR,
+      }),
+    ).rejects.toThrow('BLOCKED_ALIAS')
+    expect(sendMessage).not.toHaveBeenCalled()
   })
 })

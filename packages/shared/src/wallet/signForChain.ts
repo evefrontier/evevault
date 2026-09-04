@@ -4,6 +4,10 @@ import { browser } from '@wxt-dev/browser'
 import { VaultMessageTypes } from '#/types'
 import type { ZkSignAnyParams } from '#/types/wallet'
 import { toErrorMessage } from '#/utils/errorMessage'
+import {
+  ADDRESS_ALIAS_SIGNING_BLOCKED,
+  transactionContainsAddressAliasCall,
+} from './aliasCall'
 import { assertAliasEnforced } from './aliasEnforcement'
 import { zkSignAny } from './zkSignAny'
 
@@ -19,8 +23,21 @@ export async function signForChain(
     user: ZkSignAnyParams['user'] | null
     getZkProof: ZkSignAnyParams['getZkProof'] | null
     localnetAddress?: string | null
+    /** When unset, a TransactionData carrying an address-alias call is refused. */
+    allowAddressAliasCalls?: boolean
   },
 ): Promise<{ bytes: string; signature: string }> {
+  // Refuse an opted-out TransactionData that carries an address-alias call.
+  // Runs before the chain branch (covers localnet). Detection fails open:
+  // undecodable bytes are not treated as an alias call.
+  if (
+    !opts.allowAddressAliasCalls &&
+    scope === 'TransactionData' &&
+    transactionContainsAddressAliasCall(msgBytes, { failClosed: false })
+  ) {
+    throw new Error(ADDRESS_ALIAS_SIGNING_BLOCKED)
+  }
+
   if (opts.chain === SUI_LOCALNET_CHAIN) {
     if (!opts.localnetAddress) {
       throw new Error(
