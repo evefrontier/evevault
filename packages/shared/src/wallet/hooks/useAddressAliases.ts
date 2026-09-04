@@ -58,7 +58,8 @@ export function useAddressAliases(): UseAddressAliasesResult {
   // Adapts the signing-context callback to wallet-core's signer shape.
   const signer = useMemo(
     () => ({
-      signTransaction: (bytes: Uint8Array) => sign('TransactionData', bytes),
+      signTransaction: (bytes: Uint8Array) =>
+        sign('TransactionData', bytes, { allowAddressAliasCalls: true }),
     }),
     [sign],
   )

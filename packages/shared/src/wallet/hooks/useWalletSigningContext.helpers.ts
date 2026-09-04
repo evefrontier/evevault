@@ -28,13 +28,18 @@ export const useWalletSigningCallbacks = ({
   }, [chain, isLocalnet])
 
   const sign = useCallback(
-    async (scope: IntentScope, msgBytes: Uint8Array) => {
+    async (
+      scope: IntentScope,
+      msgBytes: Uint8Array,
+      signOpts?: { allowAddressAliasCalls?: boolean },
+    ) => {
       const zkLoginUser = await getZkLoginUser()
       return signForChain(scope, msgBytes, {
         chain,
         user: zkLoginUser,
         getZkProof: isLocalnet ? null : getZkProof,
         localnetAddress,
+        allowAddressAliasCalls: signOpts?.allowAddressAliasCalls,
       })
     },
     [chain, isLocalnet, getZkProof, localnetAddress, getZkLoginUser],

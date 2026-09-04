@@ -39,8 +39,16 @@ function objectsWith(aliases: string[]) {
 }
 
 function stubDecodedModule(module: string) {
+  stubDecodedModules([module])
+}
+
+function stubDecodedModules(modules: string[]) {
   vi.mocked(Transaction.from).mockReturnValue({
-    getData: () => ({ commands: [{ MoveCall: { package: '0x2', module } }] }),
+    getData: () => ({
+      commands: modules.map((module) => ({
+        MoveCall: { package: '0x2', module },
+      })),
+    }),
   } as never)
 }
 
@@ -105,6 +113,47 @@ describe('assertAliasEnforced', () => {
       }),
     ).resolves.toBeUndefined()
     expect(mockListOwnedObjects).not.toHaveBeenCalled()
+  })
+
+  it('still exempts a pure multi-command alias setup tx', async () => {
+    mockListOwnedObjects.mockResolvedValue(objectsWith([OWNER]))
+    stubDecodedModules(['address_alias', 'address_alias'])
+    await expect(
+      assertAliasEnforced({
+        chain: SUI_DEVNET_CHAIN,
+        owner: OWNER,
+        scope: 'TransactionData',
+        msgBytes: new Uint8Array([1]),
+      }),
+    ).resolves.toBeUndefined()
+    expect(mockListOwnedObjects).not.toHaveBeenCalled()
+  })
+
+  it('does NOT exempt an alias call bundled with other commands (enforces it)', async () => {
+    mockListOwnedObjects.mockResolvedValue(objectsWith([OWNER]))
+    // A dApp bundling an alias call with a transfer must not claim the exemption.
+    stubDecodedModules(['address_alias', 'coin'])
+    await expect(
+      assertAliasEnforced({
+        chain: SUI_DEVNET_CHAIN,
+        owner: OWNER,
+        scope: 'TransactionData',
+        msgBytes: new Uint8Array([1]),
+      }),
+    ).rejects.toMatchObject({ code: 'alias_enforcement_required' })
+  })
+
+  it('does NOT exempt an empty-command tx', async () => {
+    mockListOwnedObjects.mockResolvedValue(objectsWith([OWNER]))
+    stubDecodedModules([])
+    await expect(
+      assertAliasEnforced({
+        chain: SUI_DEVNET_CHAIN,
+        owner: OWNER,
+        scope: 'TransactionData',
+        msgBytes: new Uint8Array([1]),
+      }),
+    ).rejects.toMatchObject({ code: 'alias_enforcement_required' })
   })
 
   it('never gates personal messages (off-chain signatures)', async () => {

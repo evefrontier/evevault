@@ -98,11 +98,17 @@ export function isAliasEnforcementError(err: unknown): boolean {
   )
 }
 
-/** True when the transaction bytes are an address-alias setup call (enable/add/remove). */
+/**
+ * True when every command in the transaction is an address-alias call
+ * (enable/add/remove). Empty or mixed command sets are false.
+ */
 function isAliasSetupBytes(msgBytes: Uint8Array): boolean {
   try {
     const { commands } = Transaction.from(msgBytes).getData()
-    return commands.some((command) => isAddressAliasCall(command))
+    return (
+      commands.length > 0 &&
+      commands.every((command) => isAddressAliasCall(command))
+    )
   } catch {
     // Undecodable bytes are never treated as an alias-setup exemption.
     return false

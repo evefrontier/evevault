@@ -180,4 +180,28 @@ describe('SignRequestView', () => {
     )
     expect(screen.getByText('I accept the risk')).toBeInTheDocument()
   })
+
+  it('shows the warning and disables Approve when approveBlockedReason is set', () => {
+    render(
+      <SignRequestView
+        {...defaultProps({ approveBlockedReason: 'Cannot sign this request.' })}
+      />,
+    )
+    expect(screen.getByText('Cannot sign this request.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Approve' })).toBeDisabled()
+  })
+
+  it('hides the acknowledgement checkbox and keeps Approve disabled when blocked', () => {
+    render(
+      <SignRequestView
+        {...defaultProps({
+          requireAcknowledgement: true,
+          approveBlockedReason: 'Cannot sign this request.',
+        })}
+      />,
+    )
+    // The acknowledgement path must not offer a way to enable Approve.
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Approve' })).toBeDisabled()
+  })
 })
