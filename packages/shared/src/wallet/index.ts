@@ -6,8 +6,10 @@ export {
   type AddressAliasesInfo,
 } from '@evefrontier/wallet-core/address-alias'
 export {
+  CachedCoinMetadataResolver,
   classifyBuildFailure,
   type ObjectChangeKind,
+  type ResolvedCoinMetadata,
   type SimulatedBalanceChange,
   type SimulatedEvent,
   type SimulatedGas,
@@ -38,12 +40,10 @@ export {
   TransactionFailedError,
 } from './signAndExecute'
 export { signForChain } from './signForChain'
-export type {
-  CoinMetadataQueryResponse,
-  CoinMetadataResult,
-} from './types/coinMetadata'
+export type { CoinMetadataQueryResponse } from './types/coinMetadata'
 export type { BalanceAndMetadataResponse } from './types/graphql'
 export {
+  createGraphQLCoinMetadataResolver,
   fetchCoinMetadata,
   invalidateCoinMetadataCache,
 } from './utils/coinMetadata'
