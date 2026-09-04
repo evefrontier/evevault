@@ -18,6 +18,10 @@
       "development": "./src/wallet/index.ts",
       "default": "./dist/wallet/index.js"
     },
+    "./wallet/aliasCall": {
+      "development": "./src/wallet/aliasCall.ts",
+      "default": "./dist/wallet/aliasCall.js"
+    },
     "./sui": {
       "development": "./src/sui/index.ts",
       "default": "./dist/sui/index.js"

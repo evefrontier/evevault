@@ -25,9 +25,13 @@ export function transactionContainsAddressAliasCall(
     const { commands } = Transaction.from(source).getData()
     return commands.some((command) => isAddressAliasCall(command))
   } catch (error) {
-    log.warn('Treating undecodable transaction as a possible alias call', {
-      error,
-    })
-    return opts.failClosed ?? true
+    const blocked = opts.failClosed ?? true
+    // Warn only when this blocks.
+    if (blocked) {
+      log.warn('Blocking undecodable transaction as a possible alias call', {
+        error,
+      })
+    }
+    return blocked
   }
 }

@@ -120,7 +120,7 @@ function SignSponsoredTransaction() {
   })
 
   // Decode the backend payload once. `null` means undecodable base64, which we
-  // treat as blocked below..
+  // treat as blocked below.
   const sponsoredBytes =
     typeof pending?.sponsoredTxB64 === 'string'
       ? b64ToBytesOrNull(pending.sponsoredTxB64)
