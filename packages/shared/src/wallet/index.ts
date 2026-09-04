@@ -20,6 +20,10 @@ export {
   isWebCryptoMarker,
 } from '../types/wallet'
 export {
+  ADDRESS_ALIAS_SIGNING_BLOCKED,
+  transactionContainsAddressAliasCall,
+} from './aliasCall'
+export {
   assertAliasEnforced,
   isAliasEnforcementError,
   isAliasEnforcementFeatureEnabled,

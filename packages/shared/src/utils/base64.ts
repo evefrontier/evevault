@@ -21,3 +21,14 @@ export const bytesToB64 = (bytes: Uint8Array): string => {
 
 export const b64ToBytes = (b64: string): Uint8Array<ArrayBuffer> =>
   Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))
+
+/** Like {@link b64ToBytes}, but returns `null` instead of throwing on malformed input. */
+export const b64ToBytesOrNull = (
+  b64: string,
+): Uint8Array<ArrayBuffer> | null => {
+  try {
+    return b64ToBytes(b64)
+  } catch {
+    return null
+  }
+}

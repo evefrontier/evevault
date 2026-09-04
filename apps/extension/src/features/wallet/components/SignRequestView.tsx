@@ -29,6 +29,11 @@ type SignRequestViewProps = {
   /** When true, Approve stays disabled until the user ticks the acknowledgement. */
   requireAcknowledgement?: boolean
   acknowledgementLabel?: string
+  /**
+   * When set, Approve is disabled, this message renders as a warning banner, and
+   * the acknowledgement checkbox is hidden. Reject stays available.
+   */
+  approveBlockedReason?: string | null
   onApprove: () => void | Promise<void>
   onReject: () => void | Promise<void>
   children: ReactNode
@@ -111,6 +116,7 @@ export function SignRequestView({
   requestKind,
   requireAcknowledgement = false,
   acknowledgementLabel = DEFAULT_ACKNOWLEDGEMENT_LABEL,
+  approveBlockedReason = null,
   onApprove,
   onReject,
   children,
@@ -119,7 +125,10 @@ export function SignRequestView({
   // Keep Approve disabled until the keeper's lock state is confirmed, so a stale
   // unlocked flag can't let the user fire a sign the keeper will reject.
   const approveDisabled =
-    loading || !auth.lockChecked || (requireAcknowledgement && !acknowledged)
+    loading ||
+    !auth.lockChecked ||
+    !!approveBlockedReason ||
+    (requireAcknowledgement && !acknowledged)
   return (
     <SignPopupAuthGate
       isLocked={auth.isLocked}
@@ -157,7 +166,19 @@ export function SignRequestView({
               </div>
             )}
 
-            {requireAcknowledgement && (
+            {approveBlockedReason && (
+              <div
+                className="w-[320px] max-w-[88vw] rounded border border-critical bg-critical/50 p-2"
+                role="alert"
+                data-testid="approve-blocked-reason"
+              >
+                <Text variant="light" size="xsmall">
+                  {approveBlockedReason}
+                </Text>
+              </div>
+            )}
+
+            {!approveBlockedReason && requireAcknowledgement && (
               <Checkbox
                 name="acknowledge-risk"
                 isChecked={acknowledged}

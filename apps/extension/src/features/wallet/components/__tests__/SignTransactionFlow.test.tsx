@@ -1,5 +1,7 @@
+import { addAddressAliasTx } from '@evefrontier/wallet-core/address-alias'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ADDRESS_ALIAS_SIGNING_BLOCKED } from '../../aliasCallGuard'
 
 const { mockUseTransactionSigning, mockUseTransactionSimulation } = vi.hoisted(
   () => ({
@@ -40,6 +42,7 @@ vi.mock('@/features/wallet/components/SignRequestView', () => ({
     requireAcknowledgement,
     onApprove,
     onReject,
+    approveBlockedReason,
   }: {
     children: React.ReactNode
     title?: string
@@ -47,6 +50,7 @@ vi.mock('@/features/wallet/components/SignRequestView', () => ({
     loadingMessage: string
     error?: string | null
     requireAcknowledgement?: boolean
+    approveBlockedReason?: string | null
     onApprove?: () => void
     onReject?: () => void
   }) => (
@@ -54,10 +58,18 @@ vi.mock('@/features/wallet/components/SignRequestView', () => ({
       {title && <span data-testid="title">{title}</span>}
       {!hasPending ? <span>{loadingMessage}</span> : children}
       {error && <span data-testid="error">{error}</span>}
+      {approveBlockedReason && (
+        <span data-testid="approve-blocked-reason">{approveBlockedReason}</span>
+      )}
       {requireAcknowledgement && (
         <span data-testid="ack-required">ack-required</span>
       )}
-      <button data-testid="approve-btn" type="button" onClick={onApprove}>
+      <button
+        data-testid="approve-btn"
+        type="button"
+        disabled={!!approveBlockedReason}
+        onClick={onApprove}
+      >
         Approve
       </button>
       <button data-testid="reject-btn" type="button" onClick={onReject}>
@@ -278,6 +290,52 @@ describe('SignTransactionFlow', () => {
     await waitFor(() =>
       expect(withSigning).toHaveBeenCalledWith(expect.any(Function)),
     )
+  })
+
+  it('warns, defaults to Warnings, and disables Approve when the pending tx contains an alias call', async () => {
+    const aliasTx = await addAddressAliasTx(
+      `0x${'a'.repeat(64)}`,
+      `0x${'b'.repeat(64)}`,
+      `0x${'c'.repeat(64)}`,
+    ).toJSON()
+    const withSigning = vi.fn()
+    stubSigning({
+      pendingTransaction: {
+        windowId: 1,
+        requestId: 'r1',
+        transaction: aliasTx,
+        // The alias MoveCall yields a danger "Modifies address aliases" finding.
+        reviewValue: {
+          commands: [{ MoveCall: { package: '0x2', module: 'address_alias' } }],
+          inputs: [],
+        },
+        displayValue: '{}',
+        chain: 'sui:testnet',
+        account: { address: '0xabc' },
+      },
+      withSigning,
+    })
+    render(<SignTransactionFlow title="Sign Transaction" onSign={vi.fn()} />)
+
+    expect(screen.getByTestId('approve-blocked-reason')).toHaveTextContent(
+      ADDRESS_ALIAS_SIGNING_BLOCKED,
+    )
+    expect(screen.getByTestId('approve-btn')).toBeDisabled()
+
+    // Warnings is the default tab (not Outcome), so its risk panel is mounted.
+    expect(screen.getByRole('tab', { name: /Warnings/ })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
+    expect(screen.getByRole('tab', { name: 'Outcome' })).toHaveAttribute(
+      'aria-selected',
+      'false',
+    )
+    expect(screen.getByTestId('risk-panel')).toBeInTheDocument()
+
+    // Even if the click fires, signing is refused.
+    fireEvent.click(screen.getByTestId('approve-btn'))
+    await waitFor(() => expect(withSigning).not.toHaveBeenCalled())
   })
 })
 

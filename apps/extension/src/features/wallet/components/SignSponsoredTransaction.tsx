@@ -7,12 +7,20 @@ import { useRequireAlias } from '@evevault/shared'
 import { Text } from '@evevault/shared/components'
 import Json from '@evevault/shared/components/Json'
 import type { PendingSponsoredTransaction } from '@evevault/shared/types'
-import { createLogger, parseTransactionBytes } from '@evevault/shared/utils'
+import {
+  b64ToBytesOrNull,
+  createLogger,
+  parseTransactionBytes,
+} from '@evevault/shared/utils'
 import { useWalletSigningContext } from '@evevault/shared/wallet'
 import {
   usePendingSignAction,
   useTransactionSimulation,
 } from '@/features/wallet/hooks'
+import {
+  ADDRESS_ALIAS_SIGNING_BLOCKED,
+  transactionContainsAddressAliasCall,
+} from '../aliasCallGuard'
 import { type ApprovalTab, ApprovalTabs } from './ApprovalTabs'
 import { SignRequestView } from './SignRequestView'
 import { TransactionRiskPanel } from './TransactionRiskPanel'
@@ -111,8 +119,26 @@ function SignSponsoredTransaction() {
     getWindowId: (pending) => pending.windowId,
   })
 
+  // Decode the backend payload once. `null` means undecodable base64, which we
+  // treat as blocked below..
+  const sponsoredBytes =
+    typeof pending?.sponsoredTxB64 === 'string'
+      ? b64ToBytesOrNull(pending.sponsoredTxB64)
+      : null
+
+  // Block Approve (with a warning) when the payload carries an alias call or
+  // can't be decoded.
+  const aliasBlockReason =
+    typeof pending?.sponsoredTxB64 === 'string' &&
+    (sponsoredBytes === null ||
+      transactionContainsAddressAliasCall(sponsoredBytes))
+      ? ADDRESS_ALIAS_SIGNING_BLOCKED
+      : null
+
   const handleApprove = async () => {
     if (!pending) return
+    // Never sign an alias call, even if the disabled button is bypassed.
+    if (aliasBlockReason) return
     const validationError = getSponsoredApproveError(isLocalnet, auth)
     if (validationError) {
       setError(validationError)
@@ -121,14 +147,18 @@ function SignSponsoredTransaction() {
 
     if (!(await ensureAlias())) return
 
+    // sponsoredBytes is non-null here: a null decode sets aliasBlockReason, which
+    // the guard above already returned on.
+    if (!sponsoredBytes) return
+
     try {
       setLoading(true)
       setError(null)
 
-      const txbBytes = Uint8Array.from(atob(pending.sponsoredTxB64), (c) =>
-        c.charCodeAt(0),
+      const { signature: zkSignature } = await sign(
+        'TransactionData',
+        sponsoredBytes,
       )
-      const { signature: zkSignature } = await sign('TransactionData', txbBytes)
 
       const stored = await storeResult({
         status: 'signed',
@@ -224,6 +254,7 @@ function SignSponsoredTransaction() {
             ? PREDICTED_FAILURE_ACKNOWLEDGEMENT
             : undefined
         }
+        approveBlockedReason={aliasBlockReason}
         onApprove={handleApprove}
         onReject={handleReject}
       >
@@ -255,7 +286,16 @@ function SignSponsoredTransaction() {
             </div>
           </div>
 
-          {pending && <ApprovalTabs tabs={tabs} />}
+          {pending && (
+            <ApprovalTabs
+              tabs={tabs}
+              initialId={
+                aliasBlockReason && riskFindings.length > 0
+                  ? 'warnings'
+                  : undefined
+              }
+            />
+          )}
         </div>
       </SignRequestView>
       {aliasSetupModal}
