@@ -7,14 +7,21 @@ const {
   mockSimulateTransactionOutcome,
   mockClassifyBuildFailure,
   mockCreateSuiGraphQLClient,
-  mockFetchCoinMetadata,
-} = vi.hoisted(() => ({
-  mockBuildTransactionBytes: vi.fn(),
-  mockSimulateTransactionOutcome: vi.fn(),
-  mockClassifyBuildFailure: vi.fn(),
-  mockCreateSuiGraphQLClient: vi.fn(() => ({})),
-  mockFetchCoinMetadata: vi.fn(),
-}))
+  mockCoinMetadataResolve,
+  mockCreateGraphQLCoinMetadataResolver,
+} = vi.hoisted(() => {
+  const mockCoinMetadataResolve = vi.fn()
+  return {
+    mockBuildTransactionBytes: vi.fn(),
+    mockSimulateTransactionOutcome: vi.fn(),
+    mockClassifyBuildFailure: vi.fn(),
+    mockCreateSuiGraphQLClient: vi.fn(() => ({})),
+    mockCoinMetadataResolve,
+    mockCreateGraphQLCoinMetadataResolver: vi.fn(() => ({
+      resolve: mockCoinMetadataResolve,
+    })),
+  }
+})
 
 vi.mock('@evefrontier/wallet-core/crypto', () => ({
   buildTransactionBytes: mockBuildTransactionBytes,
@@ -31,7 +38,7 @@ vi.mock('@evevault/shared/sui', () => ({
 vi.mock('@evevault/shared/wallet', () => ({
   simulateTransactionOutcome: mockSimulateTransactionOutcome,
   classifyBuildFailure: mockClassifyBuildFailure,
-  fetchCoinMetadata: mockFetchCoinMetadata,
+  createGraphQLCoinMetadataResolver: mockCreateGraphQLCoinMetadataResolver,
 }))
 
 vi.mock('@evevault/shared/utils', async (importOriginal) => {
@@ -80,6 +87,9 @@ function makeParams(overrides: Record<string, unknown> = {}) {
 beforeEach(() => {
   vi.resetAllMocks()
   mockCreateSuiGraphQLClient.mockReturnValue({})
+  mockCreateGraphQLCoinMetadataResolver.mockReturnValue({
+    resolve: mockCoinMetadataResolve,
+  })
 })
 
 describe('useTransactionSimulation', () => {
@@ -171,7 +181,7 @@ describe('useTransactionSimulation', () => {
     )
   })
 
-  it('maps cached GraphQL metadata through resolveCoinMetadata, falling back to null when absent', async () => {
+  it('delegates resolveCoinMetadata to the per-network cached resolver', async () => {
     mockBuildTransactionBytes.mockResolvedValue(new Uint8Array([1]))
     mockSimulateTransactionOutcome.mockResolvedValue(SUCCESS_SIMULATION)
 
@@ -186,32 +196,24 @@ describe('useTransactionSimulation', () => {
       }),
     )
 
+    // Resolver built once from the network's GraphQL client.
+    expect(mockCreateGraphQLCoinMetadataResolver).toHaveBeenCalledTimes(1)
+
     const { resolveCoinMetadata } =
       mockSimulateTransactionOutcome.mock.calls[0][0]
 
-    mockFetchCoinMetadata.mockResolvedValueOnce({
+    const metadata = {
       decimals: 6,
       symbol: 'USDC',
       name: 'USD Coin',
-    })
-    expect(await resolveCoinMetadata('0x2::usdc::USDC')).toEqual({
-      decimals: 6,
-      symbol: 'USDC',
-      name: 'USD Coin',
-    })
+      description: 'USD Coin',
+      iconUrl: 'https://x',
+    }
+    mockCoinMetadataResolve.mockResolvedValueOnce(metadata)
+    expect(await resolveCoinMetadata('0x2::usdc::USDC')).toBe(metadata)
+    expect(mockCoinMetadataResolve).toHaveBeenCalledWith('0x2::usdc::USDC')
 
-    mockFetchCoinMetadata.mockResolvedValueOnce({
-      decimals: 9,
-      symbol: 'EVE',
-      name: null,
-    })
-    expect(await resolveCoinMetadata('0x2::eve::EVE')).toEqual({
-      decimals: 9,
-      symbol: 'EVE',
-      name: undefined,
-    })
-
-    mockFetchCoinMetadata.mockResolvedValueOnce(null)
+    mockCoinMetadataResolve.mockResolvedValueOnce(null)
     expect(await resolveCoinMetadata('0x2::unknown::UNKNOWN')).toBeNull()
   })
 
