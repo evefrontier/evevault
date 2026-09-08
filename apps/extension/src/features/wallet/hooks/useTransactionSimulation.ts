@@ -3,7 +3,7 @@ import { createSuiGraphQLClient } from '@evevault/shared/sui'
 import { createLogger } from '@evevault/shared/utils'
 import {
   classifyBuildFailure,
-  fetchCoinMetadata,
+  createGraphQLCoinMetadataResolver,
   simulateTransactionOutcome,
   type TransactionSimulation,
 } from '@evevault/shared/wallet'
@@ -11,7 +11,7 @@ import type { SuiGrpcClient } from '@mysten/sui/grpc'
 import { Transaction } from '@mysten/sui/transactions'
 import { fromBase64 } from '@mysten/sui/utils'
 import type { SuiChain } from '@mysten/wallet-standard'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 const log = createLogger()
 
@@ -65,6 +65,12 @@ export function useTransactionSimulation({
   const [state, setState] = useState<SimulationState | null>(null)
   const runIdRef = useRef(0)
 
+  // One resolver per network, holding the metadata cache across simulation runs.
+  const coinMetadataResolver = useMemo(
+    () => createGraphQLCoinMetadataResolver(createSuiGraphQLClient(chain)),
+    [chain],
+  )
+
   useEffect(() => {
     if (!payload) {
       setState(null)
@@ -81,23 +87,14 @@ export function useTransactionSimulation({
           throw new Error('No sender address available')
         }
         const bytes = await resolveBytes(mode, payload, sender, suiClient)
-        const graphqlClient = createSuiGraphQLClient(chain)
         const simulation = await simulateTransactionOutcome({
           transactionBytes: bytes,
           sender,
           suiClient,
           // Inject evevault's cached GraphQL metadata source; wallet-core falls
           // back to 9 decimals + coin-type-derived symbol when this returns null.
-          resolveCoinMetadata: async (coinType) => {
-            const metadata = await fetchCoinMetadata(graphqlClient, coinType)
-            return metadata
-              ? {
-                  decimals: metadata.decimals,
-                  symbol: metadata.symbol,
-                  name: metadata.name ?? undefined,
-                }
-              : null
-          },
+          resolveCoinMetadata: (coinType) =>
+            coinMetadataResolver.resolve(coinType),
         })
         if (runId === runIdRef.current) {
           setState({ status: 'ready', simulation })
@@ -123,7 +120,14 @@ export function useTransactionSimulation({
     return () => {
       runIdRef.current++
     }
-  }, [payload, mode, suiClient, chain, getSenderAddress, fallbackSender])
+  }, [
+    payload,
+    mode,
+    suiClient,
+    coinMetadataResolver,
+    getSenderAddress,
+    fallbackSender,
+  ])
 
   return state
 }

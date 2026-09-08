@@ -5,7 +5,7 @@
     "": {
       "name": "eve-frontier-vault",
       "dependencies": {
-        "@evefrontier/wallet-core": "0.0.10",
+        "@evefrontier/wallet-core": "0.0.11",
         "@mysten/sui": "^2.23.1",
         "@mysten/wallet-standard": "^0.20.3",
         "jose": "6.0.12",
@@ -33,7 +33,7 @@
     },
     "apps/extension": {
       "name": "@evevault/extension",
-      "version": "0.0.17",
+      "version": "0.0.18",
       "dependencies": {
         "@evevault/shared": "workspace:*",
         "@mysten/sui": "^2.17.0",
@@ -56,7 +56,7 @@
     },
     "apps/web": {
       "name": "@evevault/web",
-      "version": "0.0.17",
+      "version": "0.0.18",
       "dependencies": {
         "@evevault/shared": "workspace:*",
         "@tanstack/react-query": "^5.100.9",
@@ -81,7 +81,7 @@
     },
     "packages/shared": {
       "name": "@evevault/shared",
-      "version": "0.0.17",
+      "version": "0.0.18",
       "dependencies": {
         "@mysten/signers": "^1.0.5",
         "@wxt-dev/browser": "0.2.5",
@@ -449,7 +449,7 @@
 
     "@esbuild/win32-x64": ["@esbuild/win32-x64@0.28.1", "", { "os": "win32", "cpu": "x64" }, "sha512-bm4Mowrv+GXMlpWX++EcXw/iLyd1o3+bJkC2DkWXYVvgZCqD/bSj9ctZeAMC3cIxgjRVR2Dufaiu4YPxr5gW1A=="],
 
-    "@evefrontier/wallet-core": ["@evefrontier/wallet-core@0.0.10", "https://npm.pkg.github.com/download/@evefrontier/wallet-core/0.0.10/24446f2898d1b623368a284fc79905b8bec65493", { "dependencies": { "@mysten/sui": "^2.23.1", "@mysten/wallet-standard": "^0.20.3", "@mysten/webcrypto-signer": "^0.1.2", "@scure/bip39": "^2.2.0" }, "peerDependencies": { "@ledgerhq/hw-transport-webhid": "^6.0.0", "@mysten/ledgerjs-hw-app-sui": "^0.9.1", "@mysten/signers": "^1.1.18" } }, "sha512-Asihtzgn0VPnO2g3Jmh1xx2tKROK5GSl2Cx3G2i5EBqDd/HC9/7M1mb2PR7xk5xTEcP/buwvM4j1vlHv+3Ovhg=="],
+    "@evefrontier/wallet-core": ["@evefrontier/wallet-core@0.0.11", "https://npm.pkg.github.com/download/@evefrontier/wallet-core/0.0.11/30cdae23326e2ac05e3b638f0b62cb740703e6e0", { "dependencies": { "@mysten/sui": "^2.23.1", "@mysten/wallet-standard": "^0.20.3", "@mysten/webcrypto-signer": "^0.1.2", "@scure/bip39": "^2.2.0" }, "peerDependencies": { "@ledgerhq/hw-transport-webhid": "^6.0.0", "@mysten/ledgerjs-hw-app-sui": "^0.9.1", "@mysten/signers": "^1.1.18" } }, "sha512-HPPynQarGLB3g1DwOqmt8TOuYSv/NJjcBvEEVbEfgOe9VCx0r+mWyTNrL59ouqWfoUBe3WKJT56VMSENz/vpPA=="],
 
     "@evevault/extension": ["@evevault/extension@workspace:apps/extension"],
 
