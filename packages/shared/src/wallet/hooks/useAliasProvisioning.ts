@@ -41,10 +41,12 @@ export function useAliasProvisioning(): UseAliasProvisioningResult {
   const [aliasKey, setAliasKey] = useState<GeneratedAliasKey | null>(null)
 
   // Adapts the signing-context callback to wallet-core's signer shape (same as
-  // useAddressAliases). Alias-setup txs bypass the enforcement backstop.
+  // useAddressAliases). Alias-setup txs bypass the enforcement backstop and the
+  // alias-call signing gate.
   const signer = useMemo(
     () => ({
-      signTransaction: (bytes: Uint8Array) => sign('TransactionData', bytes),
+      signTransaction: (bytes: Uint8Array) =>
+        sign('TransactionData', bytes, { allowAddressAliasCalls: true }),
     }),
     [sign],
   )

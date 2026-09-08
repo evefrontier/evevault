@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { ADDRESS_ALIAS_SIGNING_BLOCKED } from '../../aliasCallGuard'
 import {
   getSponsoredApproveError,
   parsePendingSponsoredAction,
@@ -10,12 +11,22 @@ const {
   mockUseWalletSigningContext,
   mockUseTransactionSimulation,
   mockAddressAliasModule,
+  mockContainsAlias,
 } = vi.hoisted(() => ({
   mockUsePendingSignAction: vi.fn(),
   mockUseWalletSigningContext: vi.fn(),
   mockUseTransactionSimulation: vi.fn(),
   mockAddressAliasModule: '0xaddress_alias_module',
+  mockContainsAlias: vi.fn(),
 }))
+
+vi.mock('../../aliasCallGuard', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../aliasCallGuard')>()
+  return {
+    ...actual,
+    transactionContainsAddressAliasCall: mockContainsAlias,
+  }
+})
 
 vi.mock('@/features/wallet/hooks', () => ({
   usePendingSignAction: mockUsePendingSignAction,
@@ -57,6 +68,7 @@ vi.mock('@/features/wallet/components/SignRequestView', () => ({
     error,
     requireAcknowledgement,
     acknowledgementLabel,
+    approveBlockedReason,
     onApprove,
     onReject,
   }: {
@@ -66,19 +78,28 @@ vi.mock('@/features/wallet/components/SignRequestView', () => ({
     error: string | null
     requireAcknowledgement?: boolean
     acknowledgementLabel?: string
+    approveBlockedReason?: string | null
     onApprove?: () => void
     onReject?: () => void
   }) => (
     <div>
       {!hasPending ? <span>{loadingMessage}</span> : children}
       {error && <span data-testid="error">{error}</span>}
+      {approveBlockedReason && (
+        <span data-testid="approve-blocked-reason">{approveBlockedReason}</span>
+      )}
       {requireAcknowledgement && (
         <span data-testid="ack-required">ack-required</span>
       )}
       {acknowledgementLabel && (
         <span data-testid="ack-label">{acknowledgementLabel}</span>
       )}
-      <button data-testid="approve-btn" type="button" onClick={onApprove}>
+      <button
+        data-testid="approve-btn"
+        type="button"
+        disabled={!!approveBlockedReason}
+        onClick={onApprove}
+      >
         Approve
       </button>
       <button data-testid="reject-btn" type="button" onClick={onReject}>
@@ -131,6 +152,7 @@ function stubPending(
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mockContainsAlias.mockReturnValue(false)
   mockUseWalletSigningContext.mockReturnValue({
     isLocalnet: false,
     sign: vi.fn(),
@@ -257,6 +279,54 @@ describe('SignSponsoredTransaction', () => {
     expect(screen.getByTestId('ack-required')).toBeInTheDocument()
     // predictedFailure && !needsRiskAck is false, so no failure-specific label.
     expect(screen.queryByTestId('ack-label')).not.toBeInTheDocument()
+  })
+
+  it('warns, defaults to Warnings, and disables Approve when the sponsored tx contains an alias call', async () => {
+    mockContainsAlias.mockReturnValue(true)
+    stubPending({
+      windowId: 1,
+      requestId: 'req-alias',
+      sponsoredTxB64: btoa('bytes'),
+      preparationId: 'prep-alias',
+      // The alias MoveCall yields a danger "Modifies address aliases" finding.
+      reviewValue: {
+        commands: [{ MoveCall: { package: '0x2', module: 'address_alias' } }],
+        inputs: [],
+      },
+      chain: 'sui:testnet',
+    })
+    await renderSignSponsored()
+    expect(screen.getByTestId('approve-blocked-reason')).toHaveTextContent(
+      ADDRESS_ALIAS_SIGNING_BLOCKED,
+    )
+    expect(screen.getByTestId('approve-btn')).toBeDisabled()
+    expect(screen.getByRole('tab', { name: /Warnings/ })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
+    expect(screen.getByRole('tab', { name: 'Outcome' })).toHaveAttribute(
+      'aria-selected',
+      'false',
+    )
+  })
+
+  it('blocks (without crashing) when sponsoredTxB64 is not valid base64', async () => {
+    // Undecodable payload: decoding must fail closed in the UI, not throw during
+    // render. The alias detector is never reached.
+    mockContainsAlias.mockReturnValue(false)
+    stubPending({
+      windowId: 1,
+      requestId: 'req-bad',
+      sponsoredTxB64: '!!!not-base64!!!',
+      preparationId: 'prep-bad',
+      chain: 'sui:testnet',
+    })
+    await renderSignSponsored()
+    expect(screen.getByTestId('approve-blocked-reason')).toHaveTextContent(
+      ADDRESS_ALIAS_SIGNING_BLOCKED,
+    )
+    expect(screen.getByTestId('approve-btn')).toBeDisabled()
+    expect(mockContainsAlias).not.toHaveBeenCalled()
   })
 })
 

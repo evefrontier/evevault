@@ -4,6 +4,7 @@ export {
 } from '@evefrontier/wallet-core/transaction'
 export * from './address'
 export * from './authCleanup'
+export { b64ToBytes, b64ToBytesOrNull, bytesToB64 } from './base64'
 export * from './calculate'
 export * from './coinTypes'
 export * from './constants'

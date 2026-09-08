@@ -14,6 +14,10 @@ import type {
   SignResult,
   StoreResult,
 } from '@/features/wallet/hooks/useTransactionSigning'
+import {
+  ADDRESS_ALIAS_SIGNING_BLOCKED,
+  transactionContainsAddressAliasCall,
+} from '../aliasCallGuard'
 import { type ApprovalTab, ApprovalTabs } from './ApprovalTabs'
 import { SignRequestView } from './SignRequestView'
 import { TransactionRiskPanel } from './TransactionRiskPanel'
@@ -51,7 +55,16 @@ export function SignTransactionFlow({
 
   const { ensureAlias, aliasSetupModal } = useRequireAlias()
 
+  // Block Approve (with a warning) when the request carries an alias call.
+  const aliasBlockReason =
+    typeof pendingTransaction?.transaction === 'string' &&
+    transactionContainsAddressAliasCall(pendingTransaction.transaction)
+      ? ADDRESS_ALIAS_SIGNING_BLOCKED
+      : null
+
   const handleApprove = async () => {
+    // Never sign an alias call.
+    if (aliasBlockReason) return
     if (!(await ensureAlias())) return
     await withSigning((result) => onSign(result, storeResult))
   }
@@ -111,6 +124,7 @@ export function SignTransactionFlow({
         hasPending={!!pendingTransaction}
         loading={loading}
         error={error}
+        approveBlockedReason={aliasBlockReason}
         loadingMessage="Loading transaction..."
         chain={pendingTransaction?.chain}
         dapp={pendingTransaction?.dapp}
@@ -127,7 +141,14 @@ export function SignTransactionFlow({
       >
         {pendingTransaction && (
           <div className="flex w-full flex-col items-center gap-2">
-            <ApprovalTabs tabs={tabs} />
+            <ApprovalTabs
+              tabs={tabs}
+              initialId={
+                aliasBlockReason && riskFindings.length > 0
+                  ? 'warnings'
+                  : undefined
+              }
+            />
           </div>
         )}
       </SignRequestView>
