@@ -141,13 +141,12 @@ describe('useAddressAliases remove guard', () => {
   })
 
   it('matches the removal target regardless of address form', async () => {
-    // Same alias, short form; the registered entry is the padded form.
     setAliases([OWNER, ALIAS_A])
     const { result } = renderHook(() => useAddressAliases())
 
     let removed: boolean | undefined
     await act(async () => {
-      removed = await result.current.removeAddressAlias(`0x${'b'.repeat(64)}`)
+      removed = await result.current.removeAddressAlias(`0x${'B'.repeat(64)}`)
     })
 
     expect(removed).toBe(false)
