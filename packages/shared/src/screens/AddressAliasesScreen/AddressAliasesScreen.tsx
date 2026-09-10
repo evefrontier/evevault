@@ -73,7 +73,7 @@ export const AddressAliasesScreen: React.FC<AddressAliasesScreenProps> = ({
           Loading aliases…
         </Text>
       ) : !enabled ? (
-        <Button disabled={disabled} isLoading={isSubmitting} onClick={enable}>
+        <Button disabled={disabled} onClick={enable}>
           Enable address aliasing
         </Button>
       ) : (
@@ -103,7 +103,6 @@ export const AddressAliasesScreen: React.FC<AddressAliasesScreenProps> = ({
                         variant="secondary"
                         size="small"
                         disabled={disabled}
-                        isLoading={isSubmitting}
                         onClick={() => removeAddressAlias(addressAlias)}
                       >
                         Remove
@@ -124,11 +123,7 @@ export const AddressAliasesScreen: React.FC<AddressAliasesScreenProps> = ({
                 onChange={(event) => setNewAddressAlias(event.target.value)}
               />
             </div>
-            <Button
-              disabled={disabled || atMax}
-              isLoading={isSubmitting}
-              onClick={handleAdd}
-            >
+            <Button disabled={disabled || atMax} onClick={handleAdd}>
               Add alias
             </Button>
           </div>

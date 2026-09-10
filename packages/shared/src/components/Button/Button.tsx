@@ -1,4 +1,4 @@
-import type { FC } from 'react'
+import type { FC, MouseEvent } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import './Button.css'
 import { Corners } from '#/components/Corners'
@@ -11,11 +11,38 @@ export const Button: FC<ButtonProps> = ({
   className = '',
   disabled,
   isLoading = false,
+  onClick,
   ...props
 }) => {
   const sizeClass = `button--${size}`
   const variantClass = `button--${variant}`
-  const isDisabled = disabled || isLoading
+
+  const [selfLoading, setSelfLoading] = useState(false)
+  const mountedRef = useRef(true)
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+    }
+  }, [])
+
+  const handleClick = onClick
+    ? (event: MouseEvent<HTMLButtonElement>) => {
+        const result = onClick(event) as unknown
+        if (
+          result != null &&
+          typeof (result as PromiseLike<unknown>).then === 'function'
+        ) {
+          setSelfLoading(true)
+          Promise.resolve(result).finally(() => {
+            if (mountedRef.current) setSelfLoading(false)
+          })
+        }
+      }
+    : undefined
+
+  const loading = isLoading || selfLoading
+  const isDisabled = disabled || loading
   const disabledClass = isDisabled ? 'button--disabled' : ''
   const showDecorations = variant === 'primary' || variant === 'secondary'
 
@@ -56,12 +83,13 @@ export const Button: FC<ButtonProps> = ({
     <button
       className={`button ${sizeClass} ${variantClass} ${disabledClass} ${className}`.trim()}
       disabled={isDisabled}
-      aria-busy={isLoading || undefined}
+      aria-busy={loading || undefined}
+      onClick={handleClick}
       {...props}
     >
       {/* Main content */}
       <span ref={contentRef} className="button__content">
-        {isLoading && <span className="button__spinner" aria-hidden="true" />}
+        {loading && <span className="button__spinner" aria-hidden="true" />}
         {children}
       </span>
 

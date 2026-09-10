@@ -2,14 +2,18 @@ import {
   addAddressAliasTxBytes,
   enableAddressAliasTxBytes,
   executeAddressAliasTx,
+  hasEnforceableAlias,
   removeAddressAliasTxBytes,
   type ValidateAddressAliasParams,
   validateExistingAddressAlias,
   validateNewAddressAlias,
 } from '@evefrontier/wallet-core/address-alias'
 import type { ClientWithCoreApi } from '@mysten/sui/client'
+import { normalizeSuiAddress } from '@mysten/sui/utils'
 import { useCallback, useEffect, useMemo } from 'react'
 import { useToast } from '#/components'
+import { isLocalnetChain } from '#/types/networks'
+import { isAliasEnforcementFeatureEnabled } from '../aliasEnforcement'
 import { useAddressAliasesQuery } from './useAddressAliases.query'
 import { useTransactionWrite } from './useTransactionWrite'
 import { useWalletSigningContext } from './useWalletSigningContext'
@@ -67,7 +71,7 @@ export function useAddressAliases(): UseAddressAliasesResult {
   // Show toast when error occurs
   useEffect(() => {
     if (error) {
-      showToast('Transaction failed')
+      showToast(error || 'Transaction failed')
     }
   }, [error, showToast])
 
@@ -195,15 +199,43 @@ export function useAddressAliases(): UseAddressAliasesResult {
     [submitAliasChange],
   )
 
+  // Blocks removing the last non-self alias, which would strand the account
+  // and fail enforcement. Composes wallet-core's
+  // membership validator with a post-removal enforceability check.
+  const validateRemoval = useCallback(
+    (params: ValidateAddressAliasParams): string | null => {
+      const base = validateExistingAddressAlias(params)
+      if (base) return base
+
+      if (!isAliasEnforcementFeatureEnabled()) return null
+      if (!chain || isLocalnetChain(chain)) return null
+      if (!senderAddress) return null
+
+      const target = normalizeSuiAddress(params.addressAlias.trim())
+      const after = params.existing.filter(
+        (a) => normalizeSuiAddress(a) !== target,
+      )
+      const stillEnforceable = hasEnforceableAlias(
+        { enabled, objectId, addressAliases: after },
+        senderAddress,
+      )
+      if (!stillEnforceable) {
+        return 'You can’t remove your last recovery alias. Add another personal access key before removing this one.'
+      }
+      return null
+    },
+    [chain, senderAddress, enabled, objectId],
+  )
+
   const removeAddressAlias = useCallback(
     (addressAlias: string) =>
       submitAliasChange(
         addressAlias,
-        validateExistingAddressAlias,
+        validateRemoval,
         removeAddressAliasTxBytes,
         'Failed to remove address alias',
       ),
-    [submitAliasChange],
+    [submitAliasChange, validateRemoval],
   )
 
   return {
