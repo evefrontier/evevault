@@ -15,8 +15,6 @@ vi.mock('#/wallet/hooks/useAddressAliases.query', () => ({
 vi.mock('#/components', () => ({
   useToast: () => ({ showToast: vi.fn(), showErrorToast: vi.fn() }),
 }))
-// Keep the real validators + `hasEnforceableAlias` policy; only stub the
-// on-chain tx builders/executor so no network is touched.
 vi.mock('@evefrontier/wallet-core/address-alias', async (importActual) => {
   const actual =
     await importActual<
