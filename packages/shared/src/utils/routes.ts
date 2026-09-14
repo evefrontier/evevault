@@ -17,6 +17,22 @@ export type RoutePath = (typeof FILE_ROUTE_PATHS)[number]
 export type NavPath = RoutePath
 
 /**
+ * Search param set on the login route when the web app sends a user back to
+ * sign in because their local session was lost (e.g. the browser evicted the
+ * IndexedDB keypair). Lets the login screen explain the sign-out instead of
+ * looking like an unprompted logout.
+ */
+export const SESSION_EXPIRED_PARAM = 'sessionExpired'
+
+/** Login path flagged so the login screen explains the lost-session sign-out. */
+export const sessionExpiredLoginPath = (): string =>
+  `/?${SESSION_EXPIRED_PARAM}=1`
+
+/** Reads the expired-session flag from a raw or validated search value. */
+export const isSessionExpiredSearch = (value: unknown): boolean =>
+  value === '1' || value === true
+
+/**
  * Extension route paths
  * These are the routes available in the browser extension popup
  */
