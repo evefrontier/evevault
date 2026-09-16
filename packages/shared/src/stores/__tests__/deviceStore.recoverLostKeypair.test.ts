@@ -20,9 +20,15 @@ vi.mock('#/auth/resetVaultOnDevice', () => ({
   resetVaultOnDevice: vi.fn(async () => {}),
 }))
 
+vi.mock('#/stores/tenantStore', () => ({
+  getCurrentTenantId: vi.fn(() => 'tauceti'),
+  setCurrentTenantId: vi.fn(async () => {}),
+}))
+
 import { resetVaultOnDevice } from '#/auth/resetVaultOnDevice'
 import { ephKeyService } from '#/services/vaultService'
 import { refreshVaultLockState } from '#/stores/deviceStore/rehydrationHelpers'
+import { setCurrentTenantId } from '#/stores/tenantStore'
 import type { DeviceState } from '#/types'
 import { SESSION_EXPIRED_PARAM } from '#/utils/routes'
 
@@ -58,6 +64,9 @@ describe('refreshVaultLockState — lost web keypair recovery', () => {
     await refreshVaultLockState(setState, configuredState)
 
     expect(resetVaultOnDevice).toHaveBeenCalledOnce()
+    // Restore tenant so re-auth targets the same tenant and
+    // the same wallet/address.
+    expect(setCurrentTenantId).toHaveBeenCalledWith('tauceti')
     expect(window.location.href).toBe(`/?${SESSION_EXPIRED_PARAM}=1`)
     // Recovery took over, so it skips its own lock-state write.
     expect(setState).not.toHaveBeenCalled()

@@ -28,8 +28,10 @@ export const LoginScreen = () => {
   )
   const currentTenantId = getCurrentTenantId()
 
-  // First, check for unencrypted ephemeral key pair
-  if (isLocked) {
+  // First, check for unencrypted ephemeral key pair. After a lost-session
+  // recovery there's no keypair behind the lock, so show the sign-in notice
+  // instead of a dead-end lock screen.
+  if (isLocked && !sessionExpired) {
     return (
       <LockScreen
         isPinSet={isPinSet}
@@ -48,7 +50,7 @@ export const LoginScreen = () => {
           {sessionExpired && (
             <Text variant="light" color="grey-neutral">
               For your security, this browser cleared your local session. Sign
-              in to continue — your wallet and address are unchanged.
+              in again to continue.
             </Text>
           )}
         </header>

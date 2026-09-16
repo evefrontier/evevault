@@ -137,11 +137,11 @@ export const refreshVaultLockState = async (
 /**
  * Recovers from the browser evicting the IndexedDB keypair while the localStorage
  * "configured device" markers survive, which otherwise strands the user on an
- * "Enter pin" screen with no keypair ("No keypair available"). Clears local state
- * and routes to login as an expired session (re-auth re-derives the same zkLogin
- * address). Returns true when recovery ran and the page is redirecting, so the
- * caller skips its own lock-state write. Only a clean hasKeypair() === false
- * triggers it; a DB-open failure throws instead, so transients never sign out.
+ * "Enter pin" screen with no keypair ("No keypair available").
+ *
+ * Clears local state and routes to login as an expired session. Returns true when
+ * recovery ran and the page is redirecting, so the caller skips its own lock-state
+ * write. Only a clean hasKeypair() === false triggers it; a DB-open failure throws.
  */
 const recoverFromLostWebKeypair = async (
   state: DeviceState | undefined,
@@ -154,10 +154,20 @@ const recoverFromLostWebKeypair = async (
     '[web] Configured keypair marker present but IndexedDB keypair is gone (likely evicted); treating as an expired session and routing to login',
   )
 
-  // Dynamic import avoids a static cycle: resetVaultOnDevice imports the device
-  // store, which imports this module.
+  // Dynamic imports avoid static cycles: resetVaultOnDevice imports the device
+  // store, which imports this module; tenantStore reaches contextStore, which
+  // deviceStore must not import.
+  const { getCurrentTenantId, setCurrentTenantId } = await import(
+    '#/stores/tenantStore'
+  )
   const { resetVaultOnDevice } = await import('#/auth/resetVaultOnDevice')
+
+  // Capture and restore the current tenant so the re-auth targets the
+  // same tenant and recovers the same wallet/address.
+  const tenantId = getCurrentTenantId()
   await resetVaultOnDevice()
+  await setCurrentTenantId(tenantId)
+
   if (typeof window !== 'undefined') {
     window.location.href = sessionExpiredLoginPath()
   }
