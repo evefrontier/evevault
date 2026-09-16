@@ -43,31 +43,33 @@
   },
   "dependencies": {
     "@evefrontier/wallet-core": "0.0.11",
-    "@mysten/sui": "^2.23.1",
+    "@mysten/sui": "^2.31.1",
     "@mysten/wallet-standard": "^0.20.3",
     "jose": "6.0.12",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "zustand": "^5.0.14"
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.15",
     "@changesets/cli": "^2.31.1",
-    "@playwright/test": "^1.62.1",
+    "@playwright/test": "^1.63.0",
     "@testing-library/jest-dom": "^6.10.0",
-    "@testing-library/react": "^16.3.2",
+    "@testing-library/react": "^16.3.3",
     "@vitejs/plugin-react": "^5.2.0",
-    "@vitest/coverage-v8": "4.1.10",
-    "@vitest/ui": "4.1.10",
+    "@vitest/coverage-v8": "4.1.11",
+    "@vitest/ui": "4.1.11",
     "husky": "^9.1.7",
     "jsdom": "^27.4.0",
     "lint-staged": "^16.4.0",
-    "turbo": "^2.10.8",
+    "turbo": "^2.10.13",
     "typescript": "^5.9.3",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "4.1.10"
+    "vitest": "4.1.11"
   },
   "overrides": {
+    "@vitejs/plugin-react": "^5.2.0",
+    "@vitest/mocker": "^4.1.11",
     "shell-quote": "^1.8.5",
     "tmp": "^0.2.6",
     "axios": "^1.16.0",

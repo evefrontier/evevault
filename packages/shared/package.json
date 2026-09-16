@@ -101,24 +101,24 @@
     "test:coverage": "vitest run --config ./vitest.config.mts --coverage"
   },
   "dependencies": {
-    "@mysten/signers": "^1.0.5",
+    "@mysten/signers": "^1.1.25",
     "@wxt-dev/browser": "0.2.5",
     "hash-wasm": "4.12.0"
   },
   "peerDependencies": {
-    "@mysten/sui": "^2.17.0",
+    "@mysten/sui": "^2.31.1",
     "@mysten/wallet-standard": "^0.20.3",
-    "@tanstack/react-query": "^5.101.0",
-    "@tanstack/react-router": "^1.170.15",
-    "@types/react": "^19.2.17",
+    "@tanstack/react-query": "^5.102.8",
+    "@tanstack/react-router": "^1.170.36",
+    "@types/react": "^19.3.0",
     "oidc-client-ts": "^3.5.0",
-    "react": "^19.2.7",
+    "react": "^19.3.0",
     "jose": "6.0.12"
   },
   "devDependencies": {
-    "@testing-library/react": "^16.3.2",
-    "@types/node": "^25.9.3",
-    "@vitest/browser-playwright": "4.1.10",
+    "@testing-library/react": "^16.3.3",
+    "@types/node": "^25.9.6",
+    "@vitest/browser-playwright": "4.1.11",
     "typescript": "^5.9.3"
   }
 }
