@@ -1,5 +1,13 @@
 # @evevault/web
 
+## 0.0.19
+
+### Patch Changes
+
+- guarding address alias calls, bug fixes
+- Updated dependencies
+  - @evevault/shared@0.0.19
+
 ## 0.0.18
 
 ### Patch Changes
