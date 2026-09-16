@@ -1,6 +1,6 @@
 {
   "name": "@evevault/extension",
-  "version": "0.0.18",
+  "version": "0.0.19",
   "type": "module",
   "scripts": {
     "dev": "wxt",
@@ -22,21 +22,21 @@
   },
   "dependencies": {
     "@evevault/shared": "workspace:*",
-    "@mysten/sui": "^2.17.0",
+    "@mysten/sui": "^2.31.1",
     "@mysten/wallet-standard": "^0.20.3",
-    "@tanstack/react-query": "^5.100.14",
-    "@tanstack/react-router": "^1.170.10",
+    "@tanstack/react-query": "^5.102.8",
+    "@tanstack/react-router": "^1.170.36",
     "oidc-client-ts": "^3.5.0",
-    "vite": "^7.3.3"
+    "vite": "^7.3.6"
   },
   "devDependencies": {
-    "@tanstack/router-plugin": "^1.168.13",
-    "@tailwindcss/vite": "^4.3.0",
-    "@types/react": "^19.2.15",
-    "@types/react-dom": "^19.2.3",
+    "@tanstack/router-plugin": "^1.168.38",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "@wxt-dev/module-react": "^1.2.2",
-    "tailwindcss": "^4.3.0",
+    "tailwindcss": "^4.3.3",
     "typescript": "^5.9.3",
-    "wxt": "^0.20.26"
+    "wxt": "^0.20.27"
   }
 }

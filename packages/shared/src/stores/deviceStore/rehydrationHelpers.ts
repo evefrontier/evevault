@@ -3,6 +3,7 @@ import { type DeviceState, KEY_FLAG_SECP256R1 } from '#/types'
 import { isWebCryptoMarker } from '#/types/wallet'
 import { isWeb } from '#/utils/environment'
 import { createLogger } from '#/utils/logger'
+import { sessionExpiredLoginPath } from '#/utils/routes'
 import type { SetDeviceState } from './actions/types'
 import { createEmptyLocalnetDeviceData } from './constants'
 import { reconstructPublicKey } from './keyHelpers'
@@ -114,10 +115,12 @@ const updateWebLockState = (state: DeviceState | undefined) => {
  */
 export const refreshVaultLockState = async (
   setState: SetDeviceState,
+  state?: DeviceState,
 ): Promise<void> => {
   try {
     if (isWeb()) {
       await ephKeyService.initialize()
+      if (await recoverFromLostWebKeypair(state)) return
       setState({ isLocked: !ephKeyService.isUnlocked() })
       return
     }
@@ -129,6 +132,46 @@ export const refreshVaultLockState = async (
     log.error('Failed to refresh vault lock state', error)
     setState({ isLocked: true })
   }
+}
+
+/**
+ * Recovers from the browser evicting the IndexedDB keypair while the localStorage
+ * "configured device" markers survive, which otherwise strands the user on an
+ * "Enter pin" screen with no keypair ("No keypair available").
+ *
+ * Clears local state and routes to login as an expired session. Returns true when
+ * recovery ran and the page is redirecting, so the caller skips its own lock-state
+ * write. Only a clean hasKeypair() === false triggers it; a DB-open failure throws.
+ */
+const recoverFromLostWebKeypair = async (
+  state: DeviceState | undefined,
+): Promise<boolean> => {
+  const claimsConfiguredKeypair = Boolean(state?.ephemeralPublicKeyBytes)
+  if (!claimsConfiguredKeypair) return false
+  if (await ephKeyService.hasKeypair()) return false
+
+  log.warn(
+    '[web] Configured keypair marker present but IndexedDB keypair is gone (likely evicted); treating as an expired session and routing to login',
+  )
+
+  // Dynamic imports avoid static cycles: resetVaultOnDevice imports the device
+  // store, which imports this module; tenantStore reaches contextStore, which
+  // deviceStore must not import.
+  const { getCurrentTenantId, setCurrentTenantId } = await import(
+    '#/stores/tenantStore'
+  )
+  const { resetVaultOnDevice } = await import('#/auth/resetVaultOnDevice')
+
+  // Capture and restore the current tenant so the re-auth targets the
+  // same tenant and recovers the same wallet/address.
+  const tenantId = getCurrentTenantId()
+  await resetVaultOnDevice()
+  await setCurrentTenantId(tenantId)
+
+  if (typeof window !== 'undefined') {
+    window.location.href = sessionExpiredLoginPath()
+  }
+  return true
 }
 
 const isValidStoredSecretKey = (key: object): boolean => {

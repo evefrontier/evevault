@@ -64,7 +64,7 @@ export const useDeviceStore = create<DeviceState>()(
         return (state, error) => {
           handleDeviceStoreRehydration(state, error)
           if (!error) {
-            void refreshVaultLockState(useDeviceStore.setState)
+            void refreshVaultLockState(useDeviceStore.setState, state)
           }
         }
       },

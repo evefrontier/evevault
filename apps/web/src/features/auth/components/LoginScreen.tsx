@@ -1,19 +1,26 @@
 import type { TenantId } from '@evefrontier/wallet-core/tenant'
 import { LockScreen, switchTenantAndReload } from '@evevault/shared'
 import { redirectToFusionAuthLogout, useAuth } from '@evevault/shared/auth'
-import { Button, Heading, TenantSelector } from '@evevault/shared/components'
+import {
+  Button,
+  Heading,
+  TenantSelector,
+  Text,
+} from '@evevault/shared/components'
 import Icon from '@evevault/shared/components/Icon'
 import { useContext, useDevice } from '@evevault/shared/hooks'
 import {
   getAvailableTenantIds,
   getCurrentTenantId,
 } from '@evevault/shared/stores'
+import { useSearch } from '@tanstack/react-router'
 import { useMemo } from 'react'
 
 export const LoginScreen = () => {
   const { login, loading } = useAuth()
   const { isLocked, isPinSet, unlock } = useDevice()
   const { devMode, setDevMode } = useContext()
+  const { sessionExpired } = useSearch({ from: '/' })
 
   const availableTenantIds = useMemo(
     () => getAvailableTenantIds(devMode),
@@ -21,8 +28,10 @@ export const LoginScreen = () => {
   )
   const currentTenantId = getCurrentTenantId()
 
-  // First, check for unencrypted ephemeral key pair
-  if (isLocked) {
+  // First, check for unencrypted ephemeral key pair. After a lost-session
+  // recovery there's no keypair behind the lock, so show the sign-in notice
+  // instead of a dead-end lock screen.
+  if (isLocked && !sessionExpired) {
     return (
       <LockScreen
         isPinSet={isPinSet}
@@ -38,6 +47,12 @@ export const LoginScreen = () => {
         <img src="/images/logo.png" alt="EVE Vault" className="h-20 w-auto" />
         <header className="flex flex-col items-center gap-4 text-center">
           <Heading level={2}>Sign in</Heading>
+          {sessionExpired && (
+            <Text variant="light" color="grey-neutral">
+              For your security, this browser cleared your local session. Sign
+              in again to continue.
+            </Text>
+          )}
         </header>
         <div className="w-full max-w-75">
           <Button size="fill" onClick={() => login()} disabled={loading}>

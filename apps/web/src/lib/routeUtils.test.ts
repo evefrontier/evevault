@@ -25,18 +25,51 @@ describe('getOptionalString', () => {
 
 describe('validateSearch', () => {
   it.each([
-    ['missing key', {}, { redirect: undefined }],
-    ['string redirect', { redirect: '/wallet' }, { redirect: '/wallet' }],
-    ['empty string redirect', { redirect: '' }, { redirect: '' }],
-    ['number redirect', { redirect: 1 }, { redirect: undefined }],
-    ['null redirect', { redirect: null }, { redirect: undefined }],
-    ['boolean redirect', { redirect: false }, { redirect: undefined }],
-    ['undefined redirect', { redirect: undefined }, { redirect: undefined }],
-    ['unrelated keys', { tenant: 'tauceti' }, { redirect: undefined }],
+    ['missing key', {}, { redirect: undefined, sessionExpired: false }],
+    [
+      'string redirect',
+      { redirect: '/wallet' },
+      { redirect: '/wallet', sessionExpired: false },
+    ],
+    [
+      'empty string redirect',
+      { redirect: '' },
+      { redirect: '', sessionExpired: false },
+    ],
+    [
+      'number redirect',
+      { redirect: 1 },
+      { redirect: undefined, sessionExpired: false },
+    ],
+    [
+      'null redirect',
+      { redirect: null },
+      { redirect: undefined, sessionExpired: false },
+    ],
+    [
+      'boolean redirect',
+      { redirect: false },
+      { redirect: undefined, sessionExpired: false },
+    ],
+    [
+      'undefined redirect',
+      { redirect: undefined },
+      { redirect: undefined, sessionExpired: false },
+    ],
+    [
+      'unrelated keys',
+      { tenant: 'tauceti' },
+      { redirect: undefined, sessionExpired: false },
+    ],
     [
       'extra keys',
       { redirect: '/wallet', tenant: 'tauceti' },
-      { redirect: '/wallet' },
+      { redirect: '/wallet', sessionExpired: false },
+    ],
+    [
+      'session expired flag',
+      { sessionExpired: '1' },
+      { redirect: undefined, sessionExpired: true },
     ],
   ])('sanitizes %s', (_label, search, expected) => {
     expect(validateSearch(search)).toEqual(expected)

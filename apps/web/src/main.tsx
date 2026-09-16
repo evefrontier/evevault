@@ -10,11 +10,16 @@ import { applyTheme } from '@evevault/shared/theme'
 import './styles/index.css'
 import { Button, ToastProvider } from '@evevault/shared/components'
 import { createLogger } from '@evevault/shared/utils'
+import { requestPersistentStorage } from '@/lib/persistentStorage'
 
 const log = createLogger()
 
 // Apply default theme
 applyTheme('dark')
+
+// Ask the browser to keep the vault's IndexedDB storage out of the
+// best-effort eviction bucket so the keypair survives idle periods.
+void requestPersistentStorage()
 
 // Error boundary component
 class ErrorBoundary extends React.Component<
