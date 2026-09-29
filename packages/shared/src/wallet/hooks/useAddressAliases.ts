@@ -2,14 +2,13 @@ import {
   addAddressAliasTxBytes,
   enableAddressAliasTxBytes,
   executeAddressAliasTx,
-  hasEnforceableAlias,
   removeAddressAliasTxBytes,
   type ValidateAddressAliasParams,
+  validateAddressAliasRemoval,
   validateExistingAddressAlias,
   validateNewAddressAlias,
 } from '@evefrontier/wallet-core/address-alias'
 import type { ClientWithCoreApi } from '@mysten/sui/client'
-import { normalizeSuiAddress } from '@mysten/sui/utils'
 import { useCallback, useEffect, useMemo } from 'react'
 import { useToast } from '#/components'
 import { isLocalnetChain } from '#/types/networks'
@@ -199,30 +198,23 @@ export function useAddressAliases(): UseAddressAliasesResult {
     [submitAliasChange],
   )
 
-  // Blocks removing the last non-self alias, which would strand the account
-  // and fail enforcement. Composes wallet-core's
-  // membership validator with a post-removal enforceability check.
+  // Blocks removing the last non-self alias where enforcement applies;
+  // otherwise only checks membership.
   const validateRemoval = useCallback(
     (params: ValidateAddressAliasParams): string | null => {
-      const base = validateExistingAddressAlias(params)
-      if (base) return base
-
-      if (!isAliasEnforcementFeatureEnabled()) return null
-      if (!chain || isLocalnetChain(chain)) return null
-      if (!senderAddress) return null
-
-      const target = normalizeSuiAddress(params.addressAlias.trim())
-      const after = params.existing.filter(
-        (a) => normalizeSuiAddress(a) !== target,
-      )
-      const stillEnforceable = hasEnforceableAlias(
-        { enabled, objectId, addressAliases: after },
-        senderAddress,
-      )
-      if (!stillEnforceable) {
-        return 'You can’t remove your last recovery alias. Add another personal access key before removing this one.'
+      if (
+        !isAliasEnforcementFeatureEnabled() ||
+        !chain ||
+        isLocalnetChain(chain) ||
+        !senderAddress
+      ) {
+        return validateExistingAddressAlias(params)
       }
-      return null
+      return validateAddressAliasRemoval({
+        addressAlias: params.addressAlias,
+        owner: senderAddress,
+        info: { enabled, objectId, addressAliases: params.existing },
+      })
     },
     [chain, senderAddress, enabled, objectId],
   )
