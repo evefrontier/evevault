@@ -1,5 +1,11 @@
 # @evevault/shared
 
+## 0.0.20
+
+### Patch Changes
+
+- liminality, MVR eve token address
+
 ## 0.0.19
 
 ### Patch Changes
