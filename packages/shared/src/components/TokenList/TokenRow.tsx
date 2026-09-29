@@ -1,8 +1,10 @@
+import type { SuiChain } from '@mysten/wallet-standard'
 import type React from 'react'
 import { type KeyboardEvent, useMemo } from 'react'
 import Button from '#/components/Button'
 import Icon from '#/components/Icon'
 import Text from '#/components/Text'
+import { getMvrTypeName } from '#/sui/mvr'
 import type { ExtendedTokenRowProps } from '#/types'
 import { useBalance } from '#/wallet'
 import { getKnownTokenDisplay } from '#/wallet/utils/balanceMetadata'
@@ -11,6 +13,16 @@ import {
   scrambleBalanceWithFixedFirst,
   scrambleLetters,
 } from './refreshScramble'
+
+/**
+ * Shows the MVR package name for cached types (e.g. `@evefrontier/currency`),
+ * otherwise a truncated coin type.
+ */
+function getShortAddress(coinType: string, chain: SuiChain | null) {
+  const mvrName = getMvrTypeName(coinType, chain)
+  if (mvrName) return mvrName.slice(0, mvrName.indexOf('::'))
+  return `${coinType.slice(0, 6)}•••${coinType.slice(-4)}`
+}
 
 type TokenRowDisplay = {
   balance: string
@@ -67,12 +79,14 @@ function useRefreshText(
  */
 function useTokenRowDisplay({
   coinType,
+  chain,
   data,
   isLoading,
   isRefreshing,
   refreshTick,
 }: {
   coinType: string
+  chain: SuiChain | null
   data: ReturnType<typeof useBalance>['data']
   isLoading: boolean
   isRefreshing: boolean
@@ -97,7 +111,7 @@ function useTokenRowDisplay({
     balance,
     displayBalance,
     displaySymbol,
-    shortAddress: `${coinType.slice(0, 6)}•••${coinType.slice(-4)}`,
+    shortAddress: getShortAddress(coinType, chain),
     symbol,
     tokenName: getTokenName(coinType, data?.metadata),
   }
@@ -132,11 +146,13 @@ function TokenAddress({
 }) {
   return (
     <div className="flex items-center gap-1">
-      <Text variant="light" size="small" color="grey-neutral">
+      <Text variant="light" size="small" color="grey-neutral" title={coinType}>
         {shortAddress}
       </Text>
       <button
         type="button"
+        title={`Copy ${coinType}`}
+        aria-label="Copy coin type"
         className="flex items-center justify-center w-4 h-4 p-0 bg-transparent border-none cursor-pointer opacity-70 hover:opacity-100 transition-opacity"
         onClick={(event) => {
           event.stopPropagation()
@@ -217,6 +233,7 @@ export const TokenRow: React.FC<ExtendedTokenRowProps> = ({
   })
   const display = useTokenRowDisplay({
     coinType,
+    chain,
     data,
     isLoading,
     isRefreshing,

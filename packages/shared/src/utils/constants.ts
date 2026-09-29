@@ -30,7 +30,7 @@ export const TENANT_KEYS: Record<TenantId, TenantConfig> = {
     webOrigin: 'https://evevault.evefrontier.com',
   },
   liminality: {
-    clientId: '583ebc6d-abd8-4057-8c77-78405628e42d',
+    clientId: 'e0b7a1f4-d0a2-4566-83b1-4059c9cbbdf6',
     serverUrl: 'https://auth.evefrontier.com',
     webOrigin: 'https://evevault.evefrontier.com',
   },

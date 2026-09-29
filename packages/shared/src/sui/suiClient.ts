@@ -4,6 +4,7 @@ import {
   SUI_TESTNET_CHAIN,
   type SuiChain,
 } from '@mysten/wallet-standard'
+import { getMvrClientOptions } from './mvr'
 import { NETWORKS } from './networks'
 
 /**
@@ -37,5 +38,6 @@ export const createSuiClient = (
   return new SuiGrpcClient({
     network: chainName,
     baseUrl,
+    ...getMvrClientOptions(chainName),
   })
 }

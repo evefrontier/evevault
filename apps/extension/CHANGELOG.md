@@ -1,5 +1,12 @@
 # @evevault/extension
 
+## 0.0.20
+
+### Patch Changes
+
+- Updated dependencies
+  - @evevault/shared@0.0.20
+
 ## 0.0.19
 
 ### Patch Changes

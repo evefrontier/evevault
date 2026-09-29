@@ -1,3 +1,4 @@
+import { getMvrCache } from '@evefrontier/wallet-core/tenant'
 import {
   SUI_DEVNET_CHAIN,
   SUI_LOCALNET_CHAIN,
@@ -28,6 +29,7 @@ describe('createSuiClient', () => {
     expect(mockSuiGrpcClient).toHaveBeenCalledWith({
       network: 'testnet',
       baseUrl: NETWORKS.testnet.fullnodeUrl,
+      mvr: { overrides: getMvrCache('testnet') },
     })
   })
 
@@ -37,6 +39,7 @@ describe('createSuiClient', () => {
     expect(mockSuiGrpcClient).toHaveBeenCalledWith({
       network: 'mainnet',
       baseUrl: NETWORKS.mainnet.fullnodeUrl,
+      mvr: { overrides: getMvrCache('mainnet') },
     })
   })
 

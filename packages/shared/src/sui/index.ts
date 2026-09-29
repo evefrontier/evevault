@@ -1,5 +1,6 @@
 export * from './graphqlClient'
 export { getCurrentEpochFromGraphQL } from './graphqlEpoch'
+export * from './mvr'
 export * from './networks'
 export { getCurrentEpochFromRpc } from './rpcEpoch'
 export * from './suiClient'

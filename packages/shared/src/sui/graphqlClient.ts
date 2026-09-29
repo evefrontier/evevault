@@ -1,5 +1,6 @@
 import { SuiGraphQLClient } from '@mysten/sui/graphql'
 import { SUI_TESTNET_CHAIN, type SuiChain } from '@mysten/wallet-standard'
+import { getMvrClientOptions } from './mvr'
 
 /**
  * GraphQL Beta endpoint URLs per network
@@ -29,5 +30,6 @@ export function createSuiGraphQLClient(
   return new SuiGraphQLClient({
     url,
     network: chainName,
+    ...getMvrClientOptions(chainName),
   })
 }

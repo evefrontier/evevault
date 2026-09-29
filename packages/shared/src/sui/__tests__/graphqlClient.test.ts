@@ -1,3 +1,4 @@
+import { getMvrCache } from '@evefrontier/wallet-core/tenant'
 import {
   SUI_DEVNET_CHAIN,
   SUI_MAINNET_CHAIN,
@@ -24,11 +25,23 @@ describe('createSuiGraphQLClient', () => {
   it.each<[SuiChain, string, string]>([
     [SUI_MAINNET_CHAIN, 'mainnet', 'https://graphql.mainnet.sui.io/graphql'],
     [SUI_TESTNET_CHAIN, 'testnet', 'https://graphql.testnet.sui.io/graphql'],
-    [SUI_DEVNET_CHAIN, 'devnet', 'https://graphql.devnet.sui.io/graphql'],
-  ])('maps %s to its GraphQL endpoint', (chain, network, url) => {
+  ])('maps %s to its GraphQL endpoint with MVR overrides', (chain, network, url) => {
     createSuiGraphQLClient(chain)
 
-    expect(mockSuiGraphQLClient).toHaveBeenCalledWith({ network, url })
+    expect(mockSuiGraphQLClient).toHaveBeenCalledWith({
+      network,
+      url,
+      mvr: { overrides: getMvrCache(network as 'mainnet' | 'testnet') },
+    })
+  })
+
+  it('maps SUI_DEVNET_CHAIN to its GraphQL endpoint without MVR overrides', () => {
+    createSuiGraphQLClient(SUI_DEVNET_CHAIN)
+
+    expect(mockSuiGraphQLClient).toHaveBeenCalledWith({
+      network: 'devnet',
+      url: 'https://graphql.devnet.sui.io/graphql',
+    })
   })
 
   it('falls back to devnet endpoint for an unknown network name', () => {
@@ -46,6 +59,7 @@ describe('createSuiGraphQLClient', () => {
     expect(mockSuiGraphQLClient).toHaveBeenCalledWith({
       network: 'testnet',
       url: 'https://graphql.testnet.sui.io/graphql',
+      mvr: { overrides: getMvrCache('testnet') },
     })
   })
 })
