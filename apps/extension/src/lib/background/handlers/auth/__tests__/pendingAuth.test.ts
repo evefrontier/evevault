@@ -5,10 +5,21 @@ import {
   getPending,
   getPendingAndClear,
   PENDING_AUTH_TIMEOUT_MS,
+  type PendingDappAuth,
   sendPendingAuthError,
   setPendingAuthAfterUnlock,
-  setPendingAuthWindowId,
+  setPendingDappWindowId,
+  takePendingDapp,
 } from '../pendingAuth'
+
+function getPendingDapp(): PendingDappAuth | undefined {
+  const pending = getPending()
+  return pending?.type === 'dapp' ? pending : undefined
+}
+
+const dappContext = { origin: 'https://dapp.example' }
+const otherContext = { origin: 'https://other.example' }
+const doc = (tabId: number, documentId = 'doc-1') => ({ tabId, documentId })
 
 const { mockSendToTab, mockSendAuthError } = vi.hoisted(() => ({
   mockSendToTab: vi.fn(),
@@ -36,7 +47,7 @@ afterEach(() => {
 describe('clearPendingAuth', () => {
   it('cancels a pending timeout and nulls state', () => {
     vi.useFakeTimers()
-    setPendingAuthAfterUnlock('id-1', 'ext')
+    setPendingAuthAfterUnlock({ id: 'id-1', type: 'ext' })
     expect(getPending()).not.toBeNull()
 
     clearPendingAuth()
@@ -58,8 +69,14 @@ describe('sendPendingAuthError', () => {
   })
 
   it('calls sendToTab for dapp type with tabId', () => {
-    sendPendingAuthError({ id: 'dapp-id', type: 'dapp', tabId: 7 })
-    expect(mockSendToTab).toHaveBeenCalledWith(7, {
+    sendPendingAuthError({
+      id: 'dapp-id',
+      type: 'dapp',
+      target: { tabId: 7, documentId: 'doc-1' },
+      dappContext,
+      additionalIds: [],
+    })
+    expect(mockSendToTab).toHaveBeenCalledWith(doc(7), {
       id: 'dapp-id',
       type: 'auth_error',
       error: { message: 'Vault unlock was cancelled or timed out.' },
@@ -71,90 +88,249 @@ describe('sendPendingAuthError', () => {
     sendPendingAuthError({
       id: 'primary-id',
       type: 'dapp',
-      tabId: 3,
+      target: { tabId: 3, documentId: 'doc-1' },
+      dappContext,
       additionalIds: ['extra-1', 'extra-2'],
     })
     expect(mockSendToTab).toHaveBeenCalledTimes(3)
-    expect(mockSendToTab).toHaveBeenCalledWith(3, {
+    expect(mockSendToTab).toHaveBeenCalledWith(doc(3), {
       id: 'primary-id',
       type: 'auth_error',
       error: { message: 'Vault unlock was cancelled or timed out.' },
     })
-    expect(mockSendToTab).toHaveBeenCalledWith(3, {
+    expect(mockSendToTab).toHaveBeenCalledWith(doc(3), {
       id: 'extra-1',
       type: 'auth_error',
       error: { message: 'Vault unlock was cancelled or timed out.' },
     })
-    expect(mockSendToTab).toHaveBeenCalledWith(3, {
+    expect(mockSendToTab).toHaveBeenCalledWith(doc(3), {
       id: 'extra-2',
       type: 'auth_error',
       error: { message: 'Vault unlock was cancelled or timed out.' },
     })
   })
-
-  it('does nothing for dapp type without tabId', () => {
-    sendPendingAuthError({ id: 'dapp-id', type: 'dapp' })
-    expect(mockSendToTab).not.toHaveBeenCalled()
-    expect(mockSendAuthError).not.toHaveBeenCalled()
-  })
 })
 
 describe('addPendingDappId', () => {
   it('returns false when there is no pending auth', () => {
-    expect(addPendingDappId(1, 'id')).toBe(false)
+    expect(addPendingDappId(doc(1), 'id', dappContext)).toBe(false)
   })
 
   it('returns false when pending type is ext', () => {
-    setPendingAuthAfterUnlock('ext-id', 'ext')
-    expect(addPendingDappId(1, 'new-id')).toBe(false)
+    setPendingAuthAfterUnlock({ id: 'ext-id', type: 'ext' })
+    expect(addPendingDappId(doc(1), 'new-id', dappContext)).toBe(false)
   })
 
   it('returns false when pending tabId does not match', () => {
-    setPendingAuthAfterUnlock('dapp-id', 'dapp', 5)
-    expect(addPendingDappId(99, 'new-id')).toBe(false)
+    setPendingAuthAfterUnlock({
+      id: 'dapp-id',
+      type: 'dapp',
+      target: { tabId: 5, documentId: 'doc-1' },
+      dappContext,
+    })
+    expect(addPendingDappId(doc(99), 'new-id', dappContext)).toBe(false)
+  })
+
+  it('retargets the pending to the new request when the tab document changed', () => {
+    setPendingAuthAfterUnlock({
+      id: 'dapp-id',
+      type: 'dapp',
+      target: { tabId: 5, documentId: 'doc-1' },
+      dappContext,
+      windowId: 77,
+    })
+    addPendingDappId(doc(5), 'extra-id', dappContext)
+
+    expect(addPendingDappId(doc(5, 'doc-2'), 'new-id', otherContext)).toBe(true)
+    expect(getPending()).toEqual({
+      id: 'new-id',
+      type: 'dapp',
+      target: doc(5, 'doc-2'),
+      windowId: 77,
+      dappContext: otherContext,
+      additionalIds: [],
+    })
+  })
+
+  it('sends auth_error to the replaced ids at their own document', () => {
+    setPendingAuthAfterUnlock({
+      id: 'dapp-id',
+      type: 'dapp',
+      target: doc(5),
+      dappContext,
+    })
+    addPendingDappId(doc(5), 'extra-id', dappContext)
+
+    addPendingDappId(doc(5, 'doc-2'), 'new-id', otherContext)
+
+    const error = { message: 'Replaced by a newer sign-in request.' }
+    expect(mockSendToTab).toHaveBeenCalledTimes(2)
+    expect(mockSendToTab).toHaveBeenCalledWith(doc(5), {
+      id: 'dapp-id',
+      type: 'auth_error',
+      error,
+    })
+    expect(mockSendToTab).toHaveBeenCalledWith(doc(5), {
+      id: 'extra-id',
+      type: 'auth_error',
+      error,
+    })
+  })
+
+  it('restarts the timeout for the retargeted request', () => {
+    vi.useFakeTimers()
+    setPendingAuthAfterUnlock({
+      id: 'dapp-id',
+      type: 'dapp',
+      target: doc(5),
+      dappContext,
+    })
+    vi.advanceTimersByTime(PENDING_AUTH_TIMEOUT_MS - 1000)
+
+    addPendingDappId(doc(5, 'doc-2'), 'new-id', otherContext)
+    mockSendToTab.mockClear()
+    vi.advanceTimersByTime(1000)
+    expect(getPending()?.id).toBe('new-id')
+    expect(mockSendToTab).not.toHaveBeenCalled()
+
+    vi.advanceTimersByTime(PENDING_AUTH_TIMEOUT_MS)
+    expect(getPending()).toBeNull()
+    expect(mockSendToTab).toHaveBeenCalledWith(doc(5, 'doc-2'), {
+      id: 'new-id',
+      type: 'auth_error',
+      error: { message: 'Vault unlock was cancelled or timed out.' },
+    })
+  })
+
+  it('retargets on a new document from the same origin (page reload)', () => {
+    setPendingAuthAfterUnlock({
+      id: 'dapp-id',
+      type: 'dapp',
+      target: { tabId: 5, documentId: 'doc-1' },
+      dappContext,
+    })
+
+    expect(addPendingDappId(doc(5, 'doc-2'), 'new-id', dappContext)).toBe(true)
+    expect(getPending()).toMatchObject({
+      id: 'new-id',
+      target: doc(5, 'doc-2'),
+    })
   })
 
   it('appends id and returns true for matching dapp pending', () => {
-    setPendingAuthAfterUnlock('dapp-id', 'dapp', 5)
-    const result = addPendingDappId(5, 'new-id')
+    setPendingAuthAfterUnlock({
+      id: 'dapp-id',
+      type: 'dapp',
+      target: { tabId: 5, documentId: 'doc-1' },
+      dappContext,
+    })
+    const result = addPendingDappId(doc(5), 'new-id', dappContext)
     expect(result).toBe(true)
-    const pending = getPending()
-    expect(pending?.additionalIds).toContain('new-id')
+    expect(getPendingDapp()?.additionalIds).toContain('new-id')
   })
 
   it('returns true without duplicate when id is already tracked', () => {
-    setPendingAuthAfterUnlock('dapp-id', 'dapp', 5)
-    addPendingDappId(5, 'new-id')
-    const result = addPendingDappId(5, 'new-id')
+    setPendingAuthAfterUnlock({
+      id: 'dapp-id',
+      type: 'dapp',
+      target: { tabId: 5, documentId: 'doc-1' },
+      dappContext,
+    })
+    addPendingDappId(doc(5), 'new-id', dappContext)
+    const result = addPendingDappId(doc(5), 'new-id', dappContext)
     expect(result).toBe(true)
     expect(
-      getPending()?.additionalIds?.filter((x) => x === 'new-id'),
+      getPendingDapp()?.additionalIds?.filter((x) => x === 'new-id'),
     ).toHaveLength(1)
   })
 })
 
 describe('setPendingAuthAfterUnlock', () => {
-  it('sets pending state with provided fields', () => {
-    setPendingAuthAfterUnlock('my-id', 'dapp', 10, 99, 'tenant-abc')
-    const pending = getPending()
-    expect(pending).toMatchObject({
+  it('sets dapp pending state with provided fields', () => {
+    setPendingAuthAfterUnlock({
       id: 'my-id',
       type: 'dapp',
-      tabId: 10,
+      target: { tabId: 10, documentId: 'doc-1' },
+      dappContext,
+      windowId: 99,
+    })
+    expect(getPending()).toEqual({
+      id: 'my-id',
+      type: 'dapp',
+      target: { tabId: 10, documentId: 'doc-1' },
+      dappContext,
+      windowId: 99,
+      additionalIds: [],
+    })
+  })
+
+  it('sets ext pending state with provided fields', () => {
+    setPendingAuthAfterUnlock({
+      id: 'my-id',
+      type: 'ext',
+      windowId: 99,
+      tenantId: 'tenant-abc',
+    })
+    expect(getPending()).toEqual({
+      id: 'my-id',
+      type: 'ext',
       windowId: 99,
       tenantId: 'tenant-abc',
     })
   })
 
   it('replaces existing pending state by calling clearPendingAuth first', () => {
-    setPendingAuthAfterUnlock('first-id', 'ext')
-    setPendingAuthAfterUnlock('second-id', 'dapp', 1)
+    setPendingAuthAfterUnlock({ id: 'first-id', type: 'ext' })
+    setPendingAuthAfterUnlock({
+      id: 'second-id',
+      type: 'dapp',
+      target: { tabId: 1, documentId: 'doc-1' },
+      dappContext,
+    })
     expect(getPending()?.id).toBe('second-id')
+  })
+
+  it('sends auth_error to the requests of the entry it replaces', () => {
+    setPendingAuthAfterUnlock({
+      id: 'first-id',
+      type: 'dapp',
+      target: doc(1),
+      dappContext,
+    })
+    addPendingDappId(doc(1), 'first-extra', dappContext)
+
+    setPendingAuthAfterUnlock({
+      id: 'second-id',
+      type: 'dapp',
+      target: doc(2, 'doc-2'),
+      dappContext,
+    })
+
+    const error = { message: 'Replaced by a newer sign-in request.' }
+    expect(mockSendToTab).toHaveBeenCalledTimes(2)
+    expect(mockSendToTab).toHaveBeenCalledWith(doc(1), {
+      id: 'first-id',
+      type: 'auth_error',
+      error,
+    })
+    expect(mockSendToTab).toHaveBeenCalledWith(doc(1), {
+      id: 'first-extra',
+      type: 'auth_error',
+      error,
+    })
+  })
+
+  it('sends auth_error to a replaced ext login', () => {
+    setPendingAuthAfterUnlock({ id: 'ext-id', type: 'ext' })
+    setPendingAuthAfterUnlock({ id: 'ext-id-2', type: 'ext' })
+    expect(mockSendAuthError).toHaveBeenCalledWith('ext-id', {
+      message: 'Replaced by a newer sign-in request.',
+    })
   })
 
   it('fires sendAuthError after PENDING_AUTH_TIMEOUT_MS elapses', () => {
     vi.useFakeTimers()
-    setPendingAuthAfterUnlock('timeout-id', 'ext')
+    setPendingAuthAfterUnlock({ id: 'timeout-id', type: 'ext' })
     vi.advanceTimersByTime(PENDING_AUTH_TIMEOUT_MS)
     expect(mockSendAuthError).toHaveBeenCalledWith('timeout-id', {
       message: 'Vault unlock was cancelled or timed out.',
@@ -163,35 +339,102 @@ describe('setPendingAuthAfterUnlock', () => {
   })
 })
 
-describe('setPendingAuthWindowId', () => {
-  it('updates windowId when the pending id matches', () => {
-    setPendingAuthAfterUnlock('my-id', 'ext')
-    setPendingAuthWindowId('my-id', 42)
+describe('setPendingDappWindowId', () => {
+  it('updates windowId when the pending tab matches', () => {
+    setPendingAuthAfterUnlock({
+      id: 'my-id',
+      type: 'dapp',
+      target: { tabId: 5, documentId: 'doc-1' },
+      dappContext,
+    })
+    setPendingDappWindowId(5, 42)
     expect(getPending()?.windowId).toBe(42)
   })
 
+  it('updates windowId after the pending was retargeted to a new document', () => {
+    setPendingAuthAfterUnlock({
+      id: 'first-id',
+      type: 'dapp',
+      target: { tabId: 5, documentId: 'doc-1' },
+      dappContext,
+    })
+    addPendingDappId(doc(5, 'doc-2'), 'second-id', otherContext)
+    setPendingDappWindowId(5, 42)
+    expect(getPending()).toMatchObject({ id: 'second-id', windowId: 42 })
+  })
+
   it('ignores the update when there is no pending auth', () => {
-    expect(() => setPendingAuthWindowId('ghost-id', 1)).not.toThrow()
+    expect(() => setPendingDappWindowId(5, 1)).not.toThrow()
     expect(getPending()).toBeNull()
   })
 
-  it('ignores the update when the pending id does not match (stale caller)', () => {
-    setPendingAuthAfterUnlock('current-id', 'ext')
-    setPendingAuthWindowId('stale-id', 99)
+  it('ignores the update when the pending belongs to another tab', () => {
+    setPendingAuthAfterUnlock({
+      id: 'current-id',
+      type: 'dapp',
+      target: { tabId: 6, documentId: 'doc-1' },
+      dappContext,
+    })
+    setPendingDappWindowId(5, 99)
+    expect(getPending()?.windowId).toBeUndefined()
+  })
+
+  it('ignores the update when the pending is an ext login', () => {
+    setPendingAuthAfterUnlock({ id: 'ext-id', type: 'ext' })
+    setPendingDappWindowId(5, 99)
     expect(getPending()?.windowId).toBeUndefined()
   })
 
   it('ignores a conflicting windowId when one is already set', () => {
-    setPendingAuthAfterUnlock('my-id', 'ext')
-    setPendingAuthWindowId('my-id', 10)
-    setPendingAuthWindowId('my-id', 20)
+    setPendingAuthAfterUnlock({
+      id: 'my-id',
+      type: 'dapp',
+      target: { tabId: 5, documentId: 'doc-1' },
+      dappContext,
+    })
+    setPendingDappWindowId(5, 10)
+    setPendingDappWindowId(5, 20)
     expect(getPending()?.windowId).toBe(10)
+  })
+})
+
+describe('takePendingDapp', () => {
+  it('returns and clears the dapp pending for the tab', () => {
+    setPendingAuthAfterUnlock({
+      id: 'my-id',
+      type: 'dapp',
+      target: { tabId: 5, documentId: 'doc-1' },
+      dappContext,
+    })
+    addPendingDappId(doc(5), 'extra-id', dappContext)
+    expect(takePendingDapp(5)).toMatchObject({
+      id: 'my-id',
+      additionalIds: ['extra-id'],
+    })
+    expect(getPending()).toBeNull()
+  })
+
+  it('leaves a pending for another tab in place', () => {
+    setPendingAuthAfterUnlock({
+      id: 'my-id',
+      type: 'dapp',
+      target: { tabId: 6, documentId: 'doc-1' },
+      dappContext,
+    })
+    expect(takePendingDapp(5)).toBeNull()
+    expect(getPending()?.id).toBe('my-id')
+  })
+
+  it('leaves an ext pending in place', () => {
+    setPendingAuthAfterUnlock({ id: 'ext-id', type: 'ext' })
+    expect(takePendingDapp(5)).toBeNull()
+    expect(getPending()?.id).toBe('ext-id')
   })
 })
 
 describe('getPendingAndClear', () => {
   it('returns the pending entry and resets state to null', () => {
-    setPendingAuthAfterUnlock('clear-me', 'ext')
+    setPendingAuthAfterUnlock({ id: 'clear-me', type: 'ext' })
     const result = getPendingAndClear()
     expect(result?.id).toBe('clear-me')
     expect(getPending()).toBeNull()

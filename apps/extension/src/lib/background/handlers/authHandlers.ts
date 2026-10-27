@@ -1,13 +1,14 @@
 import { createLogger } from '@evevault/shared/utils'
 import { type Browser, browser } from 'wxt/browser'
 import type { MessageWithId } from '@/lib/background/types'
-import { handleDappLogin } from './auth/dappLogin'
+import { connectDapp, handleDappLogin } from './auth/dappLogin'
 import { handleExtLogin } from './auth/extLogin'
 import {
   clearPendingAuth,
   getPending,
   getPendingAndClear,
   sendPendingAuthError,
+  takePendingDapp,
 } from './auth/pendingAuth'
 import { handleWebUnlock } from './auth/webUnlock'
 
@@ -19,6 +20,16 @@ if (browser?.windows?.onRemoved) {
     if (pending?.windowId === removedWindowId) {
       clearPendingAuth()
       sendPendingAuthError(pending)
+    }
+  })
+}
+
+if (browser?.tabs?.onRemoved) {
+  browser.tabs.onRemoved.addListener((removedTabId) => {
+    if (takePendingDapp(removedTabId)) {
+      log.debug('Dropped pending dapp login for closed tab', {
+        tabId: removedTabId,
+      })
     }
   })
 }
@@ -38,17 +49,9 @@ export function checkPendingAuthAfterUnlock(): void {
     ).catch((error) => {
       log.error('Failed to resume extension login after unlock', error)
     })
-  } else if (pending.tabId !== undefined) {
-    handleDappLogin(
-      {
-        type: 'connect',
-        id: pending.id,
-        additionalIds: pending.additionalIds,
-      } as MessageWithId,
-      { tab: { id: pending.tabId } } as Browser.runtime.MessageSender,
-      () => {},
-      pending.tabId,
-    ).catch((error) => {
+  } else {
+    // Replies go only to the document captured when the connect was made.
+    connectDapp(pending).catch((error) => {
       log.error('Failed to resume dapp login after unlock', error)
     })
   }

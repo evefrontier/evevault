@@ -1,5 +1,9 @@
+import type { DappRequestContext } from '@evevault/shared/types'
 import { createLogger } from '@evevault/shared/utils'
-import { sendToTab } from '@/lib/background/messaging/tabMessaging'
+import {
+  sendToTab,
+  type TabDocument,
+} from '@/lib/background/messaging/tabMessaging'
 import { sendAuthError } from './authHelpers'
 
 const log = createLogger()
@@ -10,16 +14,30 @@ export const KEEPER_RETRY_DELAY_MS = 100
 /** Time to wait for vault unlock before sending auth_error (2 minutes) */
 export const PENDING_AUTH_TIMEOUT_MS = 2 * 60 * 1000
 
-export interface PendingAuthAfterUnlock {
+const UNLOCK_CANCELLED_MESSAGE = 'Vault unlock was cancelled or timed out.'
+const REPLACED_MESSAGE = 'Replaced by a newer sign-in request.'
+
+export interface PendingExtAuth {
   id: string
-  type: 'ext' | 'dapp'
-  tabId?: number
+  type: 'ext'
   windowId?: number
-  /** Extra connect request ids for same tab (all get auth_success when unlock completes). */
-  additionalIds?: string[]
   /** Tenant id for ext_login resume (popup context tenant when vault was locked). */
   tenantId?: string
 }
+
+export interface PendingDappAuth {
+  id: string
+  type: 'dapp'
+  /** Page document that sent the connect; replies are only delivered to it. */
+  target: TabDocument
+  /** Request context captured from the original sender. */
+  dappContext: DappRequestContext
+  windowId?: number
+  /** Extra connect request ids for same document (all get auth_success when unlock completes). */
+  additionalIds: string[]
+}
+
+export type PendingAuthAfterUnlock = PendingExtAuth | PendingDappAuth
 
 let pendingAuthAfterUnlock: PendingAuthAfterUnlock | null = null
 let pendingAuthTimeoutId: ReturnType<typeof setTimeout> | null = null
@@ -32,16 +50,16 @@ export function clearPendingAuth(): void {
   pendingAuthAfterUnlock = null
 }
 
-export function sendPendingAuthError(pending: PendingAuthAfterUnlock): void {
-  const errorPayload = {
-    message: 'Vault unlock was cancelled or timed out.',
-  }
+export function sendPendingAuthError(
+  pending: PendingAuthAfterUnlock,
+  message = UNLOCK_CANCELLED_MESSAGE,
+): void {
+  const errorPayload = { message }
   if (pending.type === 'ext') {
     sendAuthError(pending.id, errorPayload)
-  } else if (pending.tabId !== undefined) {
-    const ids = [pending.id, ...(pending.additionalIds ?? [])]
-    for (const id of ids) {
-      sendToTab(pending.tabId, {
+  } else {
+    for (const id of [pending.id, ...pending.additionalIds]) {
+      sendToTab(pending.target, {
         id,
         type: 'auth_error',
         error: errorPayload,
@@ -50,41 +68,8 @@ export function sendPendingAuthError(pending: PendingAuthAfterUnlock): void {
   }
 }
 
-/**
- * Adds a connect request id to the existing dapp pending for this tab.
- * @returns true if the id was added (no new popup should be opened)
- */
-export function addPendingDappId(tabId: number, id: string): boolean {
-  if (!pendingAuthAfterUnlock) return false
-  if (pendingAuthAfterUnlock.type !== 'dapp') return false
-  if (pendingAuthAfterUnlock.tabId !== tabId) return false
-  if (!pendingAuthAfterUnlock.additionalIds) {
-    pendingAuthAfterUnlock.additionalIds = []
-  }
-  // Deduplicate: only add if not already present
-  if (pendingAuthAfterUnlock.additionalIds.includes(id)) {
-    return true // Already tracked, still no new popup needed
-  }
-  pendingAuthAfterUnlock.additionalIds.push(id)
-  return true
-}
-
-export function setPendingAuthAfterUnlock(
-  id: string,
-  type: 'ext' | 'dapp',
-  tabId?: number,
-  windowId?: number,
-  tenantId?: string,
-): void {
-  clearPendingAuth()
-  pendingAuthAfterUnlock = {
-    id,
-    type,
-    tabId,
-    windowId,
-    tenantId,
-    additionalIds: undefined,
-  }
+function startPendingTimeout(): void {
+  if (pendingAuthTimeoutId !== null) clearTimeout(pendingAuthTimeoutId)
   pendingAuthTimeoutId = setTimeout(() => {
     pendingAuthTimeoutId = null
     const pending = pendingAuthAfterUnlock
@@ -96,20 +81,74 @@ export function setPendingAuthAfterUnlock(
 }
 
 /**
- * Updates the popup window id for the current pending auth entry.
- * Used when pending state is created before opening the popup to avoid races.
- * The `id` must match the current pending entry to guard against concurrent flows.
+ * Adds a connect request id to the existing dapp pending for this tab and document.
+ * If the tab now shows a different document, the pending is retargeted to this
+ * request (keeping its popup window, restarting its timeout) and the earlier
+ * ids get an auth_error at their own document.
+ * @returns true if the id was added (no new popup should be opened)
  */
-export function setPendingAuthWindowId(id: string, windowId: number): void {
+export function addPendingDappId(
+  target: TabDocument,
+  id: string,
+  dappContext: DappRequestContext,
+): boolean {
+  const pending = pendingAuthAfterUnlock
+  if (pending?.type !== 'dapp') return false
+  if (pending.target.tabId !== target.tabId) return false
+  if (pending.target.documentId !== target.documentId) {
+    log.debug('Retargeting pending dapp connect to new tab document', {
+      tabId: target.tabId,
+    })
+    const replaced = { ...pending }
+    pendingAuthAfterUnlock = {
+      ...pending,
+      id,
+      target,
+      dappContext,
+      additionalIds: [],
+    }
+    startPendingTimeout()
+    sendPendingAuthError(replaced, REPLACED_MESSAGE)
+    return true
+  }
+  // Deduplicate: only add if not already present
+  if (pending.id !== id && !pending.additionalIds.includes(id)) {
+    pending.additionalIds.push(id)
+  }
+  return true
+}
+
+/**
+ * Stores the pending auth and starts its timeout. An existing entry is replaced
+ * and its requests get an auth_error.
+ */
+export function setPendingAuthAfterUnlock(
+  pending: PendingExtAuth | Omit<PendingDappAuth, 'additionalIds'>,
+): void {
+  const replaced = pendingAuthAfterUnlock
+  clearPendingAuth()
+  pendingAuthAfterUnlock =
+    pending.type === 'dapp' ? { ...pending, additionalIds: [] } : { ...pending }
+  startPendingTimeout()
+  if (replaced) sendPendingAuthError(replaced, REPLACED_MESSAGE)
+}
+
+/**
+ * Updates the popup window id for the dapp pending entry of this tab.
+ * Used when pending state is created before opening the popup to avoid races.
+ * Matches on tab rather than request id so a pending retargeted while the popup
+ * was opening still gets its window.
+ */
+export function setPendingDappWindowId(tabId: number, windowId: number): void {
   const pending = pendingAuthAfterUnlock
   if (!pending) return
 
-  // Guard against races: only update if the pending entry still matches the caller's id.
-  if (pending.id !== id) {
+  // Guard against races: only update if the pending entry still belongs to the caller's tab.
+  if (pending.type !== 'dapp' || pending.target.tabId !== tabId) {
     log.warn(
       'Ignoring windowId update for stale/mismatched pending auth entry',
       {
-        expectedId: id,
+        tabId,
         pendingId: pending.id,
       },
     )
@@ -127,6 +166,14 @@ export function setPendingAuthWindowId(id: string, windowId: number): void {
   }
 
   pending.windowId = windowId
+}
+
+/** Returns and clears the dapp pending entry for this tab, or null if there is none. */
+export function takePendingDapp(tabId: number): PendingDappAuth | null {
+  const pending = pendingAuthAfterUnlock
+  if (pending?.type !== 'dapp' || pending.target.tabId !== tabId) return null
+  clearPendingAuth()
+  return pending
 }
 
 /** Returns the current pending auth without clearing (e.g. for window-close check). */

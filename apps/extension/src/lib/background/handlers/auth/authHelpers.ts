@@ -11,7 +11,10 @@ import type { SuiChain } from '@mysten/wallet-standard'
 import { decodeJwt } from 'jose'
 import type { IdTokenClaims } from 'oidc-client-ts'
 import { browser } from 'wxt/browser'
-import { sendToTab } from '@/lib/background/messaging/tabMessaging'
+import {
+  sendToTab,
+  type TabDocument,
+} from '@/lib/background/messaging/tabMessaging'
 import type { MessageWithId } from '@/lib/background/types'
 
 const log = createLogger()
@@ -95,7 +98,7 @@ export function sendExtensionAuthSuccess(id: string, jwt: JwtResponse): void {
 }
 
 export function sendDappConnectSuccessToTab(
-  tabId: number,
+  target: TabDocument,
   ids: string[],
   opts: {
     chain: SuiChain
@@ -113,7 +116,7 @@ export function sendDappConnectSuccessToTab(
       ...(publicKey && { publicKey }),
     }
 
-    sendToTab(tabId, message)
+    sendToTab(target, message)
   }
 }
 
