@@ -42,8 +42,8 @@ import {
   KEEPER_RETRY_DELAY_MS,
   sendPendingAuthError,
   setPendingAuthAfterUnlock,
-  setPendingDappWindowId,
-  takePendingDapp,
+  setPendingAuthWindowId,
+  takePendingAttempt,
 } from './pendingAuth'
 
 const log = createLogger()
@@ -107,10 +107,10 @@ export type DappConnectRequest = {
   dappContext: DappRequestContext
 }
 
-// Sends an auth_error to the target document, or to the tab when no document is known.
+// Sends an auth_error to the target document.
 // Centralises tab-bound auth errors through sendToTab.
 function sendAuthErrorToTab(
-  target: number | TabDocument,
+  target: TabDocument,
   id: string,
   message: string,
   extra?: Record<string, unknown>,
@@ -176,25 +176,29 @@ async function ensureKeeperReady(
   }
 
   useDeviceStore.setState({ isLocked: true })
-  if (hasDeviceData) {
-    setPendingAuthAfterUnlock({ id, type: 'dapp', target, dappContext })
-  }
+  const attempt = hasDeviceData
+    ? setPendingAuthAfterUnlock({ id, type: 'dapp', target, dappContext })
+    : undefined
 
   const windowId = await openPopupWindow('popup')
 
   if (windowId === undefined) {
     log.warn('Failed to open vault popup window')
     const message = 'Failed to open vault window. Please try again.'
-    // The pending may have gained or swapped ids and documents while the popup
-    // was opening.
-    const pending = hasDeviceData ? takePendingDapp(target.tabId) : null
-    if (pending) sendPendingAuthError(pending, message)
-    else sendAuthErrorToTab(target, id, message)
+    if (attempt === undefined) {
+      sendAuthErrorToTab(target, id, message)
+    } else {
+      // The pending may have gained or swapped ids and documents while the
+      // popup was opening. If a newer attempt replaced it, its requests were
+      // already notified.
+      const pending = takePendingAttempt(attempt)
+      if (pending) sendPendingAuthError(pending, message)
+    }
     return { ready: false }
   }
 
-  if (hasDeviceData) {
-    setPendingDappWindowId(target.tabId, windowId)
+  if (attempt !== undefined) {
+    setPendingAuthWindowId(attempt, windowId)
     return { ready: false }
   }
 
@@ -502,33 +506,26 @@ export async function handleDappLogin(
   const id = ensureMessageId(message)
   if (typeof tabId !== 'number') return
 
+  // Without a documentId no reply can be bound to the sender, so none is sent;
+  // the page's own connect timeout settles the request.
+  const { documentId } = sender
+  if (!documentId) {
+    log.warn('Dropping connect without a sender documentId', { tabId })
+    return
+  }
+  const target = { tabId, documentId }
+
   const dappContext = getDappRequestContext(sender)
   if (!dappContext) {
     sendAuthErrorToTab(
-      tabId,
+      target,
       id,
       'Connect requests must come from a valid web page origin.',
     )
     return
   }
 
-  const { documentId } = sender
-  if (!documentId) {
-    log.warn('Rejecting connect without a sender documentId', { tabId })
-    sendAuthErrorToTab(
-      tabId,
-      id,
-      'Connect requests must come from a web page document.',
-    )
-    return
-  }
-
-  await connectDapp({
-    id,
-    additionalIds: [],
-    target: { tabId, documentId },
-    dappContext,
-  })
+  await connectDapp({ id, additionalIds: [], target, dappContext })
 }
 
 // Runs a dapp connect: waits for the vault, then replies from the existing

@@ -41,6 +41,8 @@ export type PendingAuthAfterUnlock = PendingExtAuth | PendingDappAuth
 
 let pendingAuthAfterUnlock: PendingAuthAfterUnlock | null = null
 let pendingAuthTimeoutId: ReturnType<typeof setTimeout> | null = null
+/** Incremented per setPendingAuthAfterUnlock; identifies the current entry's popup flow. */
+let pendingAuthAttempt = 0
 
 export function clearPendingAuth(): void {
   if (pendingAuthTimeoutId !== null) {
@@ -83,8 +85,8 @@ function startPendingTimeout(): void {
 /**
  * Adds a connect request id to the existing dapp pending for this tab and document.
  * If the tab now shows a different document, the pending is retargeted to this
- * request (keeping its popup window, restarting its timeout) and the earlier
- * ids get an auth_error at their own document.
+ * request (keeping its popup window and attempt, restarting its timeout) and the
+ * earlier ids get an auth_error at their own document.
  * @returns true if the id was added (no new popup should be opened)
  */
 export function addPendingDappId(
@@ -121,34 +123,40 @@ export function addPendingDappId(
 /**
  * Stores the pending auth and starts its timeout. An existing entry is replaced
  * and its requests get an auth_error.
+ * @returns the attempt number for this entry's popup flow
  */
 export function setPendingAuthAfterUnlock(
   pending: PendingExtAuth | Omit<PendingDappAuth, 'additionalIds'>,
-): void {
+): number {
   const replaced = pendingAuthAfterUnlock
   clearPendingAuth()
   pendingAuthAfterUnlock =
     pending.type === 'dapp' ? { ...pending, additionalIds: [] } : { ...pending }
+  pendingAuthAttempt += 1
   startPendingTimeout()
   if (replaced) sendPendingAuthError(replaced, REPLACED_MESSAGE)
+  return pendingAuthAttempt
 }
 
 /**
- * Updates the popup window id for the dapp pending entry of this tab.
+ * Updates the popup window id for the pending entry of this attempt.
  * Used when pending state is created before opening the popup to avoid races.
- * Matches on tab rather than request id so a pending retargeted while the popup
- * was opening still gets its window.
+ * A retargeted entry keeps its attempt; a replaced one does not, so a late
+ * popup from an older attempt is ignored.
  */
-export function setPendingDappWindowId(tabId: number, windowId: number): void {
+export function setPendingAuthWindowId(
+  attempt: number,
+  windowId: number,
+): void {
   const pending = pendingAuthAfterUnlock
   if (!pending) return
 
-  // Guard against races: only update if the pending entry still belongs to the caller's tab.
-  if (pending.type !== 'dapp' || pending.target.tabId !== tabId) {
+  // Guard against races: only update if the pending entry is still the caller's attempt.
+  if (attempt !== pendingAuthAttempt) {
     log.warn(
       'Ignoring windowId update for stale/mismatched pending auth entry',
       {
-        tabId,
+        attempt,
         pendingId: pending.id,
       },
     )
@@ -166,6 +174,16 @@ export function setPendingDappWindowId(tabId: number, windowId: number): void {
   }
 
   pending.windowId = windowId
+}
+
+/** Returns and clears the pending entry of this attempt, or null if it was replaced or cleared. */
+export function takePendingAttempt(
+  attempt: number,
+): PendingAuthAfterUnlock | null {
+  const pending = pendingAuthAfterUnlock
+  if (!pending || attempt !== pendingAuthAttempt) return null
+  clearPendingAuth()
+  return pending
 }
 
 /** Returns and clears the dapp pending entry for this tab, or null if there is none. */

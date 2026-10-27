@@ -44,8 +44,8 @@ const { mocks, logger } = vi.hoisted(() => {
       getEphemeralKeyPairSecretKeyFromStorage: vi.fn(),
       addPendingDappId: vi.fn(),
       setPendingAuthAfterUnlock: vi.fn(),
-      setPendingDappWindowId: vi.fn(),
-      takePendingDapp: vi.fn(),
+      setPendingAuthWindowId: vi.fn(),
+      takePendingAttempt: vi.fn(),
       sendPendingAuthError: vi.fn(),
     },
   }
@@ -92,8 +92,8 @@ vi.mock('../pendingAuth', () => ({
   addPendingDappId: mocks.addPendingDappId,
   KEEPER_RETRY_DELAY_MS: 1,
   setPendingAuthAfterUnlock: mocks.setPendingAuthAfterUnlock,
-  setPendingDappWindowId: mocks.setPendingDappWindowId,
-  takePendingDapp: mocks.takePendingDapp,
+  setPendingAuthWindowId: mocks.setPendingAuthWindowId,
+  takePendingAttempt: mocks.takePendingAttempt,
   sendPendingAuthError: mocks.sendPendingAuthError,
 }))
 
@@ -140,7 +140,8 @@ describe('handleDappLogin', () => {
     mocks.useDeviceStore.getState.mockReturnValue(mocks.deviceState)
     mockCheckKeeperUnlocked.mockResolvedValue({ unlocked: true })
     mocks.addPendingDappId.mockReturnValue(false)
-    mocks.takePendingDapp.mockReturnValue(null)
+    mocks.setPendingAuthAfterUnlock.mockReturnValue(1)
+    mocks.takePendingAttempt.mockReturnValue(null)
     mockGetJwt.mockResolvedValue({
       access_token: 'access-token',
       id_token: 'id-token',
@@ -216,7 +217,7 @@ describe('handleDappLogin', () => {
     ])
   })
 
-  it('rejects a connect whose sender has no documentId', async () => {
+  it('drops a connect whose sender has no documentId without replying', async () => {
     await handleDappLogin(
       { id: 'no-doc' },
       {
@@ -227,15 +228,37 @@ describe('handleDappLogin', () => {
       42,
     )
 
+    expect(browser.tabs.sendMessage).not.toHaveBeenCalled()
+    expect(mockCheckKeeperUnlocked).not.toHaveBeenCalled()
+    expect(logger.warn).toHaveBeenCalledWith(
+      'Dropping connect without a sender documentId',
+      { tabId: 42 },
+    )
+  })
+
+  it('rejects an invalid page origin with an error to the sender document only', async () => {
+    await handleDappLogin(
+      { id: 'bad-origin' },
+      {
+        origin: 'chrome-extension://other-extension',
+        documentId: 'doc-1',
+        tab: { id: 42 },
+      } as Browser.runtime.MessageSender,
+      vi.fn(),
+      42,
+    )
+
+    expect(browser.tabs.sendMessage).toHaveBeenCalledTimes(1)
     expect(browser.tabs.sendMessage).toHaveBeenCalledWith(
       42,
       expect.objectContaining({
-        id: 'no-doc',
+        id: 'bad-origin',
         type: 'auth_error',
         error: expect.objectContaining({
-          message: expect.stringContaining('web page document'),
+          message: 'Connect requests must come from a valid web page origin.',
         }),
       }),
+      { documentId: 'doc-1' },
     )
     expect(mockCheckKeeperUnlocked).not.toHaveBeenCalled()
   })
@@ -353,7 +376,7 @@ describe('handleDappLogin', () => {
         url: 'https://dapp.example/app',
       }),
     })
-    expect(mocks.setPendingDappWindowId).toHaveBeenCalledWith(30, 77)
+    expect(mocks.setPendingAuthWindowId).toHaveBeenCalledWith(1, 77)
     expect(browser.tabs.sendMessage).not.toHaveBeenCalled()
   })
 
@@ -367,7 +390,7 @@ describe('handleDappLogin', () => {
       dappContext: { origin: 'https://other.example' },
       additionalIds: ['extra-id'],
     }
-    mocks.takePendingDapp.mockReturnValue(pending)
+    mocks.takePendingAttempt.mockReturnValue(pending)
 
     await handleDappLogin(
       { id: 'popup-fail' },
@@ -380,13 +403,69 @@ describe('handleDappLogin', () => {
       7,
     )
 
-    expect(mocks.takePendingDapp).toHaveBeenCalledWith(7)
+    expect(mocks.takePendingAttempt).toHaveBeenCalledWith(1)
     // Errors go to every id at the document the pending now belongs to.
     expect(mocks.sendPendingAuthError).toHaveBeenCalledWith(
       pending,
       'Failed to open vault window. Please try again.',
     )
     expect(browser.tabs.sendMessage).not.toHaveBeenCalled()
+  })
+
+  it('sends nothing when a late popup failure belongs to a replaced attempt', async () => {
+    mockCheckKeeperUnlocked.mockResolvedValue({ unlocked: false })
+    mocks.openPopupWindow.mockResolvedValue(undefined)
+    mocks.takePendingAttempt.mockReturnValue(null)
+
+    await handleDappLogin(
+      { id: 'stale' },
+      {
+        origin: 'https://dapp.example',
+        documentId: 'doc-1',
+        tab: { id: 7, url: 'https://dapp.example/' },
+      } as Browser.runtime.MessageSender,
+      vi.fn(),
+      7,
+    )
+
+    expect(mocks.takePendingAttempt).toHaveBeenCalledWith(1)
+    expect(mocks.sendPendingAuthError).not.toHaveBeenCalled()
+    expect(browser.tabs.sendMessage).not.toHaveBeenCalled()
+  })
+
+  it('resumes a parked connect after unlock and replies to its document', async () => {
+    mockCheckKeeperUnlocked.mockResolvedValue({ unlocked: false })
+    mocks.openPopupWindow.mockResolvedValue(77)
+
+    await handleDappLogin(
+      { id: 'parked-id' },
+      {
+        origin: 'https://dapp.example',
+        documentId: 'doc-1',
+        tab: { id: 30, url: 'https://dapp.example/app' },
+      } as Browser.runtime.MessageSender,
+      vi.fn(),
+      30,
+    )
+    expect(browser.tabs.sendMessage).not.toHaveBeenCalled()
+
+    // Resume as checkPendingAuthAfterUnlock does, from the stored entry.
+    const [parked] = mocks.setPendingAuthAfterUnlock.mock.calls[0]
+    mockCheckKeeperUnlocked.mockResolvedValue({ unlocked: true })
+    await connectDapp({ ...parked, additionalIds: [] })
+
+    expect(browser.tabs.sendMessage).toHaveBeenCalledTimes(1)
+    expect(browser.tabs.sendMessage).toHaveBeenCalledWith(
+      30,
+      {
+        id: 'parked-id',
+        type: 'auth_success',
+        chain: 'sui:testnet',
+        address: '0xzk',
+        publicKey: 'AQID',
+      },
+      { documentId: 'doc-1' },
+    )
   })
 
   it('sends auth_error when the popup window fails to open (no device data)', async () => {

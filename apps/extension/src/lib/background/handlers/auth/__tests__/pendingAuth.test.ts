@@ -8,7 +8,8 @@ import {
   type PendingDappAuth,
   sendPendingAuthError,
   setPendingAuthAfterUnlock,
-  setPendingDappWindowId,
+  setPendingAuthWindowId,
+  takePendingAttempt,
   takePendingDapp,
 } from '../pendingAuth'
 
@@ -339,62 +340,120 @@ describe('setPendingAuthAfterUnlock', () => {
   })
 })
 
-describe('setPendingDappWindowId', () => {
-  it('updates windowId when the pending tab matches', () => {
-    setPendingAuthAfterUnlock({
+describe('setPendingAuthWindowId', () => {
+  it('updates windowId when the attempt matches', () => {
+    const attempt = setPendingAuthAfterUnlock({
       id: 'my-id',
       type: 'dapp',
-      target: { tabId: 5, documentId: 'doc-1' },
+      target: doc(5),
       dappContext,
     })
-    setPendingDappWindowId(5, 42)
+    setPendingAuthWindowId(attempt, 42)
     expect(getPending()?.windowId).toBe(42)
   })
 
   it('updates windowId after the pending was retargeted to a new document', () => {
-    setPendingAuthAfterUnlock({
+    const attempt = setPendingAuthAfterUnlock({
       id: 'first-id',
       type: 'dapp',
-      target: { tabId: 5, documentId: 'doc-1' },
+      target: doc(5),
       dappContext,
     })
     addPendingDappId(doc(5, 'doc-2'), 'second-id', otherContext)
-    setPendingDappWindowId(5, 42)
+    setPendingAuthWindowId(attempt, 42)
     expect(getPending()).toMatchObject({ id: 'second-id', windowId: 42 })
   })
 
   it('ignores the update when there is no pending auth', () => {
-    expect(() => setPendingDappWindowId(5, 1)).not.toThrow()
+    expect(() => setPendingAuthWindowId(1, 1)).not.toThrow()
     expect(getPending()).toBeNull()
   })
 
-  it('ignores the update when the pending belongs to another tab', () => {
-    setPendingAuthAfterUnlock({
-      id: 'current-id',
+  it('ignores a late window from an attempt that was replaced (A1 → B → A2)', () => {
+    const a1 = setPendingAuthAfterUnlock({
+      id: 'a1',
       type: 'dapp',
-      target: { tabId: 6, documentId: 'doc-1' },
+      target: doc(5),
       dappContext,
     })
-    setPendingDappWindowId(5, 99)
-    expect(getPending()?.windowId).toBeUndefined()
-  })
+    setPendingAuthAfterUnlock({
+      id: 'b',
+      type: 'dapp',
+      target: doc(6, 'doc-b'),
+      dappContext: otherContext,
+    })
+    const a2 = setPendingAuthAfterUnlock({
+      id: 'a2',
+      type: 'dapp',
+      target: doc(5),
+      dappContext,
+    })
 
-  it('ignores the update when the pending is an ext login', () => {
-    setPendingAuthAfterUnlock({ id: 'ext-id', type: 'ext' })
-    setPendingDappWindowId(5, 99)
+    setPendingAuthWindowId(a1, 10)
+    expect(getPending()?.id).toBe('a2')
     expect(getPending()?.windowId).toBeUndefined()
+
+    setPendingAuthWindowId(a2, 30)
+    expect(getPending()).toMatchObject({ id: 'a2', windowId: 30 })
   })
 
   it('ignores a conflicting windowId when one is already set', () => {
-    setPendingAuthAfterUnlock({
+    const attempt = setPendingAuthAfterUnlock({
       id: 'my-id',
       type: 'dapp',
-      target: { tabId: 5, documentId: 'doc-1' },
+      target: doc(5),
       dappContext,
     })
-    setPendingDappWindowId(5, 10)
-    setPendingDappWindowId(5, 20)
+    setPendingAuthWindowId(attempt, 10)
+    setPendingAuthWindowId(attempt, 20)
     expect(getPending()?.windowId).toBe(10)
+  })
+})
+
+describe('takePendingAttempt', () => {
+  it('returns and clears the pending entry of the attempt', () => {
+    const attempt = setPendingAuthAfterUnlock({
+      id: 'my-id',
+      type: 'dapp',
+      target: doc(5),
+      dappContext,
+    })
+    addPendingDappId(doc(5), 'extra-id', dappContext)
+    expect(takePendingAttempt(attempt)).toMatchObject({
+      id: 'my-id',
+      additionalIds: ['extra-id'],
+    })
+    expect(getPending()).toBeNull()
+  })
+
+  it('leaves a newer attempt for the same tab in place (A1 → B → A2)', () => {
+    const a1 = setPendingAuthAfterUnlock({
+      id: 'a1',
+      type: 'dapp',
+      target: doc(5),
+      dappContext,
+    })
+    setPendingAuthAfterUnlock({
+      id: 'b',
+      type: 'dapp',
+      target: doc(6, 'doc-b'),
+      dappContext: otherContext,
+    })
+    setPendingAuthAfterUnlock({
+      id: 'a2',
+      type: 'dapp',
+      target: doc(5),
+      dappContext,
+    })
+
+    expect(takePendingAttempt(a1)).toBeNull()
+    expect(getPending()?.id).toBe('a2')
+  })
+
+  it('returns null once the entry was cleared', () => {
+    const attempt = setPendingAuthAfterUnlock({ id: 'ext-id', type: 'ext' })
+    clearPendingAuth()
+    expect(takePendingAttempt(attempt)).toBeNull()
   })
 })
 
