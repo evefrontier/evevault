@@ -8,9 +8,11 @@ import {
   type SuiChain,
 } from '@mysten/wallet-standard'
 import { SUI_COIN_TYPE } from '#/utils/constants'
+import { LOCAL_DEV } from '#/utils/localDev'
 
+/** LOCAL_DEV builds sign on localnet with zkLogin, so it is not the local-key localnet. */
 export function isLocalnetChain(chain: SuiChain | string | null | undefined) {
-  return chain === SUI_LOCALNET_CHAIN
+  return chain === SUI_LOCALNET_CHAIN && !LOCAL_DEV
 }
 
 export function isZkLoginChain(chain: SuiChain | string | null | undefined) {
@@ -21,6 +23,7 @@ export type ZkLoginSuiChain =
   | typeof SUI_DEVNET_CHAIN
   | typeof SUI_TESTNET_CHAIN
   | typeof SUI_MAINNET_CHAIN
+  | typeof SUI_LOCALNET_CHAIN // LOCAL_DEV builds only
 
 export function isZkLoginSuiChain(
   chain: SuiChain | string | null | undefined,
@@ -28,7 +31,8 @@ export function isZkLoginSuiChain(
   return (
     chain === SUI_DEVNET_CHAIN ||
     chain === SUI_TESTNET_CHAIN ||
-    chain === SUI_MAINNET_CHAIN
+    chain === SUI_MAINNET_CHAIN ||
+    (LOCAL_DEV && chain === SUI_LOCALNET_CHAIN)
   )
 }
 

@@ -20,7 +20,9 @@ export const fetchZkProof = async (
   const body = JSON.stringify({
     extendedEphemeralPublicKey: extendedEphemeralPublicKey,
     maxEpoch: Number(maxEpoch),
-    network: network,
+    // zk-login accepts testnet or devnet; without one it proves for its own
+    // network, which is localnet in the local-dev stack.
+    network: network === 'localnet' ? undefined : network,
     randomness: jwtRandomness,
   })
 
