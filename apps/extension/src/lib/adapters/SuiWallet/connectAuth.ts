@@ -20,8 +20,10 @@ export async function getAccountsFromAuthSuccess(
   message: Record<string, unknown>,
   chains: SuiChain[],
 ) {
+  // LOCAL_DEV builds sign on localnet with zkLogin (see @evevault/shared localDev).
   const account =
-    message.chain === SUI_LOCALNET_CHAIN
+    message.chain === SUI_LOCALNET_CHAIN &&
+    import.meta.env.VITE_LOCAL_DEV !== 'true'
       ? buildLocalnetAccount(message)
       : await buildZkLoginAccount(message, chains)
 

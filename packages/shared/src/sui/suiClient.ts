@@ -4,6 +4,7 @@ import {
   SUI_TESTNET_CHAIN,
   type SuiChain,
 } from '@mysten/wallet-standard'
+import { LOCAL_DEV, LOCAL_DEV_SUI_URL } from '#/utils/localDev'
 import { getMvrClientOptions } from './mvr'
 import { NETWORKS } from './networks'
 
@@ -25,7 +26,8 @@ export const createSuiClient = (
   const baseUrl =
     network === SUI_LOCALNET_CHAIN
       ? (() => {
-          const configuredUrl = localnetUrl?.trim()
+          const configuredUrl =
+            localnetUrl?.trim() || (LOCAL_DEV ? LOCAL_DEV_SUI_URL : '')
           if (!configuredUrl) {
             throw new Error(
               '[createSuiClient] requires a non-empty localnetUrl when using SUI_LOCALNET_CHAIN.',

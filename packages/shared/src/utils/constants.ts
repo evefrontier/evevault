@@ -1,5 +1,6 @@
 import type { TenantId } from '@evefrontier/wallet-core/tenant'
 import type { TenantConfig } from '#/types'
+import { LOCAL_DEV, LOCAL_DEV_AUTH_URL, LOCAL_TENANT_ID } from './localDev'
 
 export const FULLNODE_URL = 'https://fullnode.devnet.sui.io'
 
@@ -70,4 +71,15 @@ export const TENANT_KEYS: Record<TenantId, TenantConfig> = {
     webOrigin: 'https://test.evevault.evefrontier.com',
     isDev: true,
   },
+  // LOCAL_DEV: the eve-frontier-local-dev stack (see ./localDev).
+  ...(LOCAL_DEV
+    ? {
+        [LOCAL_TENANT_ID]: {
+          clientId: 'evevault',
+          serverUrl: LOCAL_DEV_AUTH_URL,
+          webOrigin: 'http://localhost:3005',
+          isDev: true,
+        },
+      }
+    : {}),
 } as const
