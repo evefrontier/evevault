@@ -1,5 +1,6 @@
 import { SuiGraphQLClient } from '@mysten/sui/graphql'
 import { SUI_TESTNET_CHAIN, type SuiChain } from '@mysten/wallet-standard'
+import { LOCAL_DEV, LOCAL_DEV_GRAPHQL_URL } from '#/utils/localDev'
 import { getMvrClientOptions } from './mvr'
 
 /**
@@ -10,6 +11,7 @@ const GRAPHQL_ENDPOINTS: Record<string, string> = {
   mainnet: 'https://graphql.mainnet.sui.io/graphql',
   testnet: 'https://graphql.testnet.sui.io/graphql',
   devnet: 'https://graphql.devnet.sui.io/graphql',
+  ...(LOCAL_DEV ? { localnet: LOCAL_DEV_GRAPHQL_URL } : {}),
 }
 
 /**
@@ -24,6 +26,7 @@ export function createSuiGraphQLClient(
     | 'mainnet'
     | 'testnet'
     | 'devnet'
+    | 'localnet'
 
   const url = GRAPHQL_ENDPOINTS[chainName] || GRAPHQL_ENDPOINTS.devnet
 
