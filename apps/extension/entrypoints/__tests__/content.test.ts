@@ -65,6 +65,26 @@ describe('content bridge message validation', () => {
     ).toBe(true)
   })
 
+  it('allows a boolean silent flag on connect and rejects any other value', () => {
+    expect(
+      content.isAllowedPageMessage({
+        __to: 'Eve Vault',
+        type: 'connect',
+        id: 'connect-id',
+        silent: true,
+      }),
+    ).toBe(true)
+
+    expect(
+      content.isAllowedPageMessage({
+        __to: 'Eve Vault',
+        type: 'connect',
+        id: 'connect-id',
+        silent: 'true',
+      }),
+    ).toBe(false)
+  })
+
   it('allows sponsored transaction requests with string assembly ids', () => {
     expect(
       content.isAllowedPageMessage({

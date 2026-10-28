@@ -65,7 +65,8 @@ function isEveVaultRequest(data: unknown): data is Record<string, unknown> {
 function isConnectMessage(data: Record<string, unknown>): boolean {
   return (
     data.type === WalletStandardMessageTypes.CONNECT &&
-    isValidRequestId(data.id)
+    isValidRequestId(data.id) &&
+    (data.silent === undefined || typeof data.silent === 'boolean')
   )
 }
 

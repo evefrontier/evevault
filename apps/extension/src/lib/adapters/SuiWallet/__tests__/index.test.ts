@@ -14,7 +14,10 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { APP_VERSION, BUILD_COMMIT } from '@/lib/appVersion'
 import { EveVaultWallet } from '../index'
-import { APPROVAL_TIMEOUT_MS } from '../vaultMessages'
+import {
+  APPROVAL_TIMEOUT_MS,
+  SILENT_CONNECT_TIMEOUT_MS,
+} from '../vaultMessages'
 import { EVEFRONTIER_VAULT_VERSION } from '../walletFeatures'
 
 const { logger } = vi.hoisted(() => ({
@@ -43,6 +46,7 @@ describe('EveVaultWallet', () => {
   })
 
   afterEach(() => {
+    vi.useRealTimers()
     vi.restoreAllMocks()
     vi.clearAllMocks()
   })
@@ -177,6 +181,69 @@ describe('EveVaultWallet', () => {
     await expect(promise).rejects.toThrow(
       'Localnet auth_success missing address',
     )
+  })
+
+  it('marks only silent connect requests as silent on the bridge', () => {
+    const wallet = new EveVaultWallet()
+
+    void wallet.features[StandardConnect].connect()
+    expect(lastPostedMessage()).toEqual({
+      __to: 'Eve Vault',
+      type: 'connect',
+      id: 'request-id',
+    })
+
+    void wallet.features[StandardConnect].connect({ silent: true })
+    expect(lastPostedMessage()).toEqual({
+      __to: 'Eve Vault',
+      type: 'connect',
+      id: 'request-id',
+      silent: true,
+    })
+  })
+
+  it('returns no accounts when the vault declines a silent connect', async () => {
+    const wallet = new EveVaultWallet()
+    const promise = wallet.features[StandardConnect].connect({ silent: true })
+
+    dispatchVaultMessage({
+      type: 'auth_error',
+      error: { message: 'Silent connect declined: vault is locked.' },
+    })
+
+    await expect(promise).resolves.toEqual({ accounts: [] })
+  })
+
+  it('returns no accounts and warns when a silent auth_success cannot be resolved into accounts', async () => {
+    const wallet = new EveVaultWallet()
+    const promise = wallet.features[StandardConnect].connect({ silent: true })
+
+    dispatchVaultMessage({
+      type: 'auth_success',
+      chain: SUI_LOCALNET_CHAIN,
+    })
+
+    await expect(promise).resolves.toEqual({ accounts: [] })
+    expect(logger.warn).toHaveBeenCalledWith(
+      '[SuiWallet] Silent connect returned no accounts',
+      expect.any(Error),
+    )
+  })
+
+  it('returns no accounts when a silent connect gets no reply before its shorter timeout', async () => {
+    vi.useFakeTimers()
+    const wallet = new EveVaultWallet()
+    const promise = wallet.features[StandardConnect].connect({ silent: true })
+    let settled = false
+    void promise.then(() => {
+      settled = true
+    })
+
+    await vi.advanceTimersByTimeAsync(SILENT_CONNECT_TIMEOUT_MS - 1)
+    expect(settled).toBe(false)
+    await vi.advanceTimersByTimeAsync(1)
+
+    await expect(promise).resolves.toEqual({ accounts: [] })
   })
 
   it('ignores unrelated connect messages until the matching auth response arrives', async () => {
