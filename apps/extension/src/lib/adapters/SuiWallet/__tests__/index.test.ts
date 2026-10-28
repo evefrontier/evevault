@@ -183,23 +183,28 @@ describe('EveVaultWallet', () => {
     )
   })
 
-  it('marks only silent connect requests as silent on the bridge', () => {
+  it('marks only silent connect requests as silent on the bridge', async () => {
     const wallet = new EveVaultWallet()
 
-    void wallet.features[StandardConnect].connect()
+    const interactive = wallet.features[StandardConnect].connect()
     expect(lastPostedMessage()).toEqual({
       __to: 'Eve Vault',
       type: 'connect',
       id: 'request-id',
     })
 
-    void wallet.features[StandardConnect].connect({ silent: true })
+    const silent = wallet.features[StandardConnect].connect({ silent: true })
     expect(lastPostedMessage()).toEqual({
       __to: 'Eve Vault',
       type: 'connect',
       id: 'request-id',
       silent: true,
     })
+
+    dispatchVaultMessage({ type: 'auth_error', error: {} })
+
+    await expect(interactive).rejects.toThrow('Authentication failed')
+    await expect(silent).resolves.toEqual({ accounts: [] })
   })
 
   it('returns no accounts when the vault declines a silent connect', async () => {

@@ -83,6 +83,7 @@ type DappConnectCompletionOptions = {
   jwt: JwtResponse
   chain: ReturnType<typeof getCurrentChain>
   dappContext: DappRequestContext
+  silent?: boolean
 }
 
 // Context threaded into the launchWebAuthFlow callback, which runs outside the
@@ -128,12 +129,12 @@ function sendAuthErrorToTab(
 // Declines a silent connect; the adapter answers it with no accounts.
 function declineSilentConnect(
   target: TabDocument,
-  id: string,
+  ids: string[],
   dappContext: DappRequestContext,
   reason: string,
 ): void {
   log.debug('Declined silent connect', { origin: dappContext.origin, reason })
-  sendAuthErrorToTab(target, id, `Silent connect declined: ${reason}.`)
+  sendAuthErrorToTabIds(target, ids, `Silent connect declined: ${reason}.`)
 }
 
 function sendAuthErrorToTabIds(
@@ -184,7 +185,7 @@ async function ensureKeeperReady(
   if (silent) {
     declineSilentConnect(
       target,
-      id,
+      [id],
       dappContext,
       hasDeviceData ? 'vault is locked' : 'vault is not set up',
     )
@@ -363,6 +364,7 @@ async function completeDappConnect({
   jwt,
   chain,
   dappContext,
+  silent = false,
 }: DappConnectCompletionOptions): Promise<void> {
   const result = await resolveDappConnectAccount(jwt, chain)
   if (!result.ok) {
@@ -370,10 +372,20 @@ async function completeDappConnect({
     return
   }
 
+  // A silent connect never grants. It re-checks the permission after the
+  // account lookup, so a disconnect made meanwhile is not undone.
+  if (silent) {
+    if (!(await hasDappPermission(dappContext.origin, chain))) {
+      declineSilentConnect(target, ids, dappContext, 'site not connected')
+      return
+    }
+  } else {
+    await grantDappPermission(dappContext, chain)
+  }
+
   log.debug('Connect: sending auth_success with account metadata', {
     chain,
   })
-  await grantDappPermission(dappContext, chain)
   sendDappConnectSuccessToTab(target, ids, {
     chain,
     address: result.account.address,
@@ -389,6 +401,7 @@ async function checkExistingAuth(
   additionalIds: string[],
   chain: ReturnType<typeof getCurrentChain>,
   dappContext: DappRequestContext,
+  silent: boolean,
 ): Promise<boolean> {
   const existingJwt = await getJwt()
   if (!existingJwt?.id_token) return false
@@ -400,6 +413,7 @@ async function checkExistingAuth(
     jwt: existingJwt,
     chain,
     dappContext,
+    silent,
   })
   return true
 }
@@ -575,7 +589,7 @@ export async function connectDapp({
   const chain = getCurrentChain()
 
   if (silent && !(await hasDappPermission(dappContext.origin, chain))) {
-    declineSilentConnect(target, id, dappContext, 'site not connected')
+    declineSilentConnect(target, [id], dappContext, 'site not connected')
     return
   }
 
@@ -607,11 +621,20 @@ export async function connectDapp({
     return
   }
 
-  if (await checkExistingAuth(target, id, additionalIds, chain, dappContext))
+  if (
+    await checkExistingAuth(
+      target,
+      id,
+      additionalIds,
+      chain,
+      dappContext,
+      silent,
+    )
+  )
     return
 
   if (silent) {
-    declineSilentConnect(target, id, dappContext, 'not signed in')
+    declineSilentConnect(target, [id], dappContext, 'not signed in')
     return
   }
 

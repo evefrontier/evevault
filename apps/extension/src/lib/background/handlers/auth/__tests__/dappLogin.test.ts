@@ -693,6 +693,20 @@ describe('handleDappLogin', () => {
       )
       expect(mocks.openPopupWindow).not.toHaveBeenCalled()
       expect(browser.identity.launchWebAuthFlow).not.toHaveBeenCalled()
+      expect(browser.storage.local.set).not.toHaveBeenCalled()
+    })
+
+    it('declines without restoring the permission when the site disconnects during the account lookup', async () => {
+      seedPermission(['sui:testnet'])
+      mockGetZkLoginAddress.mockImplementation(async () => {
+        vi.mocked(browser.storage.local.get).mockResolvedValue({})
+        return { address: '0xzk', publicKey: 'AQID', salt: '99' }
+      })
+
+      await connectSilently()
+
+      expectDeclined('site not connected')
+      expect(browser.storage.local.set).not.toHaveBeenCalled()
     })
 
     it('treats a non-boolean silent flag as an interactive connect', async () => {
