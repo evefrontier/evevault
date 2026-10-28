@@ -149,7 +149,7 @@ async function requestVaultUnlock({
   }
 
   if (hasDeviceData) {
-    setPendingAuthAfterUnlock(id, 'ext', undefined, windowId, tenantId)
+    setPendingAuthAfterUnlock({ id, type: 'ext', windowId, tenantId })
     return
   }
 

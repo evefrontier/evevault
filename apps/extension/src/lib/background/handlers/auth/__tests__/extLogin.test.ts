@@ -215,13 +215,12 @@ describe('handleExtLogin', () => {
 
     expect(mockOpenPopupWindow).toHaveBeenCalledWith('popup')
     expect(mockCheckKeeperUnlocked).toHaveBeenCalledTimes(3)
-    expect(mockSetPendingAuthAfterUnlock).toHaveBeenCalledWith(
-      'message-id',
-      'ext',
-      undefined,
-      77,
-      'tenant-default',
-    )
+    expect(mockSetPendingAuthAfterUnlock).toHaveBeenCalledWith({
+      id: 'message-id',
+      type: 'ext',
+      windowId: 77,
+      tenantId: 'tenant-default',
+    })
     expect(mockSendAuthError).not.toHaveBeenCalled()
   })
 

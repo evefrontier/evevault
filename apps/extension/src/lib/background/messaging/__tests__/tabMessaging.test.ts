@@ -55,6 +55,40 @@ describe('sendToTab', () => {
     expect(browser.tabs.sendMessage).toHaveBeenCalledWith(99, msg)
   })
 
+  it('delivers only to the document when given a TabDocument target', () => {
+    sendToTab(
+      { tabId: 42, documentId: 'doc-1' },
+      {
+        type: 'auth_error',
+        id: 'msg-1',
+      },
+    )
+
+    expect(browser.tabs.sendMessage).toHaveBeenCalledWith(
+      42,
+      { type: 'auth_error', id: 'msg-1' },
+      { documentId: 'doc-1' },
+    )
+  })
+
+  it('logs the tab id when a document send rejects', async () => {
+    installBrowserMock(true)
+
+    sendToTab(
+      { tabId: 7, documentId: 'gone' },
+      {
+        type: 'auth_error',
+        id: 'err-msg',
+      },
+    )
+    await Promise.resolve()
+
+    expect(logger.error).toHaveBeenCalledWith(
+      'Failed to send message to tab',
+      expect.objectContaining({ tabId: 7, err: expect.any(Error) }),
+    )
+  })
+
   it('logs an error when browser.tabs.sendMessage rejects', async () => {
     installBrowserMock(true)
 

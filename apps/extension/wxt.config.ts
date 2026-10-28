@@ -173,7 +173,7 @@ export default defineConfig(() => {
           manifest.browser_specific_settings = {
             gecko: {
               id: 'evevault@evefrontier.com',
-              strict_min_version: '128.0',
+              strict_min_version: '153.0',
             },
           }
           // No offscreen API on Firefox; the keeper runs in-process.

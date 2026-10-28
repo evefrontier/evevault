@@ -249,15 +249,19 @@ describe('sendAuthError', () => {
 
 describe('sendDappConnectSuccessToTab', () => {
   it('sends one auth_success per id', () => {
-    sendDappConnectSuccessToTab(5, ['id-a', 'id-b'], {
-      chain: 'sui:testnet',
-      address: '0xabc',
-      publicKey: 'AQID',
-    })
+    sendDappConnectSuccessToTab(
+      { tabId: 5, documentId: 'doc-1' },
+      ['id-a', 'id-b'],
+      {
+        chain: 'sui:testnet',
+        address: '0xabc',
+        publicKey: 'AQID',
+      },
+    )
 
     expect(mockSendToTab).toHaveBeenCalledTimes(2)
     expect(mockSendToTab).toHaveBeenCalledWith(
-      5,
+      { tabId: 5, documentId: 'doc-1' },
       expect.objectContaining({
         id: 'id-a',
         type: 'auth_success',
@@ -267,7 +271,7 @@ describe('sendDappConnectSuccessToTab', () => {
       }),
     )
     expect(mockSendToTab).toHaveBeenCalledWith(
-      5,
+      { tabId: 5, documentId: 'doc-1' },
       expect.objectContaining({
         id: 'id-b',
         type: 'auth_success',
@@ -279,13 +283,13 @@ describe('sendDappConnectSuccessToTab', () => {
   })
 
   it('omits publicKey when not provided', () => {
-    sendDappConnectSuccessToTab(3, ['id-x'], {
+    sendDappConnectSuccessToTab({ tabId: 3, documentId: 'doc-1' }, ['id-x'], {
       chain: 'sui:testnet',
       address: '0xdef',
     })
 
     expect(mockSendToTab).toHaveBeenCalledWith(
-      3,
+      { tabId: 3, documentId: 'doc-1' },
       expect.not.objectContaining({ publicKey: expect.anything() }),
     )
   })

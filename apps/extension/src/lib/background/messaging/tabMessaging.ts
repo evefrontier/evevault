@@ -70,6 +70,9 @@ export type TabBoundMessage =
   | DisconnectResponseMessage
   | ChangeEventMessage
 
+/** A page document in a tab. Messages sent to it are not delivered once the tab navigates away. */
+export type TabDocument = { tabId: number; documentId: string }
+
 /** Forbids any OAuth token field on a tab-bound message at compile time. */
 type ForbidTokenMaterial = Partial<Record<TokenMaterialField, never>>
 
@@ -92,9 +95,12 @@ function inDevBuild(): boolean {
  *
  * Token material must only travel via chrome.runtime.sendMessage
  * (extension contexts) or live in chrome.storage.session / background memory.
+ *
+ * A TabDocument target delivers only to that document; a bare tab id delivers
+ * to whatever page the tab shows when the message is sent.
  */
 export function sendToTab<M extends TabBoundMessage>(
-  tabId: number,
+  target: number | TabDocument,
   message: M & ForbidTokenMaterial,
 ): void {
   if (!hasNoTokenMaterial(message)) {
@@ -107,7 +113,16 @@ export function sendToTab<M extends TabBoundMessage>(
     return
   }
 
-  void browser.tabs.sendMessage(tabId, message).catch((err: unknown) => {
-    log.error('Failed to send message to tab', { tabId, err })
+  const sent =
+    typeof target === 'number'
+      ? browser.tabs.sendMessage(target, message)
+      : browser.tabs.sendMessage(target.tabId, message, {
+          documentId: target.documentId,
+        })
+  void sent.catch((err: unknown) => {
+    log.error('Failed to send message to tab', {
+      tabId: typeof target === 'number' ? target : target.tabId,
+      err,
+    })
   })
 }

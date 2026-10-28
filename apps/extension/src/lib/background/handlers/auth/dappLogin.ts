@@ -14,7 +14,10 @@ import {
 import { createLogger, toErrorMessage } from '@evevault/shared/utils'
 import { Ed25519PublicKey } from '@mysten/sui/keypairs/ed25519'
 import { type Browser, browser } from 'wxt/browser'
-import { sendToTab } from '@/lib/background/messaging/tabMessaging'
+import {
+  sendToTab,
+  type TabDocument,
+} from '@/lib/background/messaging/tabMessaging'
 import {
   getDappRequestContext,
   grantDappPermission,
@@ -36,11 +39,11 @@ import {
 } from './keeperHelpers'
 import {
   addPendingDappId,
-  clearPendingAuth,
-  getPending,
   KEEPER_RETRY_DELAY_MS,
+  sendPendingAuthError,
   setPendingAuthAfterUnlock,
   setPendingAuthWindowId,
+  takePendingAttempt,
 } from './pendingAuth'
 
 const log = createLogger()
@@ -74,7 +77,7 @@ type DappConnectAccountResult =
 type ZkLoginAddressResult = Awaited<ReturnType<typeof getZkLoginAddress>>
 
 type DappConnectCompletionOptions = {
-  tabId: number
+  target: TabDocument
   ids: string[]
   jwt: JwtResponse
   chain: ReturnType<typeof getCurrentChain>
@@ -92,20 +95,27 @@ type OAuthCallbackContext = {
   codeVerifier: string
   state: string
   nonce: string
-  tabId: number | undefined
+  target: TabDocument
   dappContext: DappRequestContext
 }
 
-// Sends an auth_error to the tab if tabId is defined, otherwise does nothing.
-// Centralises guarded tab-bound auth errors through sendToTab.
+/** A dapp connect bound to the page document that sent it. */
+export type DappConnectRequest = {
+  id: string
+  additionalIds: string[]
+  target: TabDocument
+  dappContext: DappRequestContext
+}
+
+// Sends an auth_error to the target document.
+// Centralises tab-bound auth errors through sendToTab.
 function sendAuthErrorToTab(
-  tabId: number | undefined,
+  target: TabDocument,
   id: string,
   message: string,
   extra?: Record<string, unknown>,
 ): void {
-  if (typeof tabId !== 'number') return
-  sendToTab(tabId, {
+  sendToTab(target, {
     id,
     type: 'auth_error',
     error: { message, ...extra },
@@ -113,12 +123,12 @@ function sendAuthErrorToTab(
 }
 
 function sendAuthErrorToTabIds(
-  tabId: number | undefined,
+  target: TabDocument,
   ids: string[],
   message: string,
 ): void {
   ids.forEach((id) => {
-    sendAuthErrorToTab(tabId, id, message)
+    sendAuthErrorToTab(target, id, message)
   })
 }
 
@@ -137,8 +147,9 @@ function checkHasDeviceData(): boolean {
 async function ensureKeeperReady(
   hasDeviceData: boolean,
   id: string,
-  tabId: number | undefined,
+  target: TabDocument,
   chain: ReturnType<typeof getCurrentChain>,
+  dappContext: DappRequestContext,
 ): Promise<KeeperReadyResult> {
   let keeperStatus = await checkKeeperUnlocked()
 
@@ -159,41 +170,40 @@ async function ensureKeeperReady(
     hasDeviceData,
   })
 
-  if (typeof tabId === 'number') {
-    const pending = getPending()
-    if (
-      pending?.type === 'dapp' &&
-      pending.tabId === tabId &&
-      addPendingDappId(tabId, id)
-    ) {
-      log.debug('Connect deduplicated for tab', { tabId, id })
-      return { ready: false }
-    }
+  if (addPendingDappId(target, id, dappContext)) {
+    log.debug('Connect deduplicated for tab', { tabId: target.tabId, id })
+    return { ready: false }
   }
 
   useDeviceStore.setState({ isLocked: true })
-  if (hasDeviceData) setPendingAuthAfterUnlock(id, 'dapp', tabId)
+  const attempt = hasDeviceData
+    ? setPendingAuthAfterUnlock({ id, type: 'dapp', target, dappContext })
+    : undefined
 
   const windowId = await openPopupWindow('popup')
 
   if (windowId === undefined) {
     log.warn('Failed to open vault popup window')
-    if (hasDeviceData) clearPendingAuth()
-    sendAuthErrorToTab(
-      tabId,
-      id,
-      'Failed to open vault window. Please try again.',
-    )
+    const message = 'Failed to open vault window. Please try again.'
+    if (attempt === undefined) {
+      sendAuthErrorToTab(target, id, message)
+    } else {
+      // The pending may have gained or swapped ids and documents while the
+      // popup was opening. If a newer attempt replaced it, its requests were
+      // already notified.
+      const pending = takePendingAttempt(attempt)
+      if (pending) sendPendingAuthError(pending, message)
+    }
     return { ready: false }
   }
 
-  if (hasDeviceData) {
-    setPendingAuthWindowId(id, windowId)
+  if (attempt !== undefined) {
+    setPendingAuthWindowId(attempt, windowId)
     return { ready: false }
   }
 
   sendAuthErrorToTab(
-    tabId,
+    target,
     id,
     'Please set up or unlock the vault in the window we opened, then try again.',
     { vaultOpened: true },
@@ -207,7 +217,7 @@ async function ensureKeeperReady(
 async function syncPublicKeyFromKeeper(
   publicKeyBytes: number[] | undefined,
   id: string,
-  tabId: number | undefined,
+  target: TabDocument,
 ): Promise<boolean> {
   const deviceStore = useDeviceStore.getState()
   if (deviceStore.ephemeralPublicKey || !publicKeyBytes?.length) return true
@@ -230,7 +240,7 @@ async function syncPublicKeyFromKeeper(
   } catch (error) {
     log.error('Failed to sync public key from keeper', error)
     sendAuthErrorToTab(
-      tabId,
+      target,
       id,
       'Failed to sync vault state. Please try unlocking again.',
     )
@@ -322,7 +332,7 @@ function buildDappAccountMetadata(
 }
 
 async function completeDappConnect({
-  tabId,
+  target,
   ids,
   jwt,
   chain,
@@ -330,7 +340,7 @@ async function completeDappConnect({
 }: DappConnectCompletionOptions): Promise<void> {
   const result = await resolveDappConnectAccount(jwt, chain)
   if (!result.ok) {
-    sendAuthErrorToTabIds(tabId, ids, result.error)
+    sendAuthErrorToTabIds(target, ids, result.error)
     return
   }
 
@@ -338,7 +348,7 @@ async function completeDappConnect({
     chain,
   })
   await grantDappPermission(dappContext, chain)
-  sendDappConnectSuccessToTab(tabId, ids, {
+  sendDappConnectSuccessToTab(target, ids, {
     chain,
     address: result.account.address,
     publicKey: result.account.publicKey,
@@ -348,7 +358,7 @@ async function completeDappConnect({
 // If the tab already has a valid JWT, sends auth_success immediately without
 // going through the OAuth flow. Returns true if handled (caller should return).
 async function checkExistingAuth(
-  tabId: number,
+  target: TabDocument,
   id: string,
   additionalIds: string[],
   chain: ReturnType<typeof getCurrentChain>,
@@ -359,7 +369,7 @@ async function checkExistingAuth(
 
   log.debug('Connect: already connected, sending auth_success without OIDC')
   await completeDappConnect({
-    tabId,
+    target,
     ids: [id, ...additionalIds],
     jwt: existingJwt,
     chain,
@@ -374,7 +384,7 @@ async function checkExistingAuth(
 async function ensureNonce(
   chain: ReturnType<typeof getCurrentChain>,
   id: string,
-  tabId: number | undefined,
+  target: TabDocument,
 ): Promise<string | null> {
   if (!isZkLoginSuiChain(chain)) return null
 
@@ -385,7 +395,7 @@ async function ensureNonce(
     } catch (error) {
       log.error('Failed to initialize device data for chain', { chain, error })
       sendAuthErrorToTab(
-        tabId,
+        target,
         id,
         'Could not prepare sign-in. Please try again.',
       )
@@ -395,7 +405,7 @@ async function ensureNonce(
   }
   if (!nonce) {
     sendAuthErrorToTab(
-      tabId,
+      target,
       id,
       'Could not prepare sign-in. Please try again.',
     )
@@ -421,7 +431,7 @@ async function handleOAuthCallback(
     codeVerifier,
     state,
     nonce,
-    tabId,
+    target,
     dappContext,
   } = ctx
   // The success path notifies the dApp via the tab; every failure path must do
@@ -431,7 +441,7 @@ async function handleOAuthCallback(
   if (!responseUrl) {
     log.error('Auth flow returned no response', error)
     sendAuthErrorToTabIds(
-      tabId,
+      target,
       ids,
       (error instanceof Error ? error.message : undefined) ??
         'Sign-in did not complete. Please try again.',
@@ -440,14 +450,18 @@ async function handleOAuthCallback(
   }
 
   if (extractState(responseUrl) !== state) {
-    sendAuthErrorToTabIds(tabId, ids, 'Invalid OAuth response (state mismatch)')
+    sendAuthErrorToTabIds(
+      target,
+      ids,
+      'Invalid OAuth response (state mismatch)',
+    )
     return
   }
 
   const authCode = extractAuthCode(responseUrl)
   if (!authCode) {
     sendAuthErrorToTabIds(
-      tabId,
+      target,
       ids,
       'Authorization code not found in response.',
     )
@@ -465,25 +479,24 @@ async function handleOAuthCallback(
     )
     await storeJwt(jwtResponse)
 
-    if (typeof tabId === 'number') {
-      await completeDappConnect({
-        tabId,
-        ids,
-        jwt: jwtResponse,
-        chain,
-        dappContext,
-      })
-    }
+    await completeDappConnect({
+      target,
+      ids,
+      jwt: jwtResponse,
+      chain,
+      dappContext,
+    })
   } catch (error) {
     log.error('Token exchange failed', error)
     sendAuthErrorToTabIds(
-      tabId,
+      target,
       ids,
       toErrorMessage(error, 'Sign-in failed. Please try again.'),
     )
   }
 }
 
+// Binds a connect message to the page document that sent it, then runs the connect.
 export async function handleDappLogin(
   message: MessageWithId,
   sender: Browser.runtime.MessageSender,
@@ -491,27 +504,52 @@ export async function handleDappLogin(
   tabId?: number,
 ): Promise<void> {
   const id = ensureMessageId(message)
+  if (typeof tabId !== 'number') return
+
+  // Without a documentId no reply can be bound to the sender, so none is sent;
+  // the page's own connect timeout settles the request.
+  const { documentId } = sender
+  if (!documentId) {
+    log.warn('Dropping connect without a sender documentId', { tabId })
+    return
+  }
+  const target = { tabId, documentId }
+
   const dappContext = getDappRequestContext(sender)
   if (!dappContext) {
     sendAuthErrorToTab(
-      tabId,
+      target,
       id,
       'Connect requests must come from a valid web page origin.',
     )
     return
   }
 
-  const additionalIds =
-    (message as MessageWithId & { additionalIds?: string[] }).additionalIds ??
-    []
+  await connectDapp({ id, additionalIds: [], target, dappContext })
+}
+
+// Runs a dapp connect: waits for the vault, then replies from the existing
+// session or the OAuth flow. Every reply goes only to the request's document.
+export async function connectDapp({
+  id,
+  additionalIds,
+  target,
+  dappContext,
+}: DappConnectRequest): Promise<void> {
   const tenant = useContextStore.getState().tenantId
   const chain = getCurrentChain()
   const hasDeviceData = checkHasDeviceData()
 
-  const keeperResult = await ensureKeeperReady(hasDeviceData, id, tabId, chain)
+  const keeperResult = await ensureKeeperReady(
+    hasDeviceData,
+    id,
+    target,
+    chain,
+    dappContext,
+  )
   if (!keeperResult.ready) return
 
-  if (!(await syncPublicKeyFromKeeper(keeperResult.publicKeyBytes, id, tabId)))
+  if (!(await syncPublicKeyFromKeeper(keeperResult.publicKeyBytes, id, target)))
     return
 
   if (
@@ -520,19 +558,17 @@ export async function handleDappLogin(
   ) {
     log.error('Keeper is unlocked but no public key bytes available', { chain })
     sendAuthErrorToTab(
-      tabId,
+      target,
       id,
       'Vault state is inconsistent. Please unlock the vault again.',
     )
     return
   }
 
-  if (typeof tabId === 'number') {
-    if (await checkExistingAuth(tabId, id, additionalIds, chain, dappContext))
-      return
-  }
+  if (await checkExistingAuth(target, id, additionalIds, chain, dappContext))
+    return
 
-  const nonce = await ensureNonce(chain, id, tabId)
+  const nonce = await ensureNonce(chain, id, target)
   if (!nonce) return
 
   const chromeRedirectUri = browser.identity.getRedirectURL()
@@ -549,7 +585,7 @@ export async function handleDappLogin(
     codeVerifier,
     state,
     nonce,
-    tabId,
+    target,
     dappContext,
   }
   void browser.identity
