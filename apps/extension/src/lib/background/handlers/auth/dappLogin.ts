@@ -21,6 +21,7 @@ import {
 import {
   getDappRequestContext,
   grantDappPermission,
+  hasDappPermission,
 } from '@/lib/background/services/dappPermissions'
 import { getAuthRequest } from '@/lib/background/services/oauthService'
 import { openPopupWindow } from '@/lib/background/services/popupWindow'
@@ -82,6 +83,7 @@ type DappConnectCompletionOptions = {
   jwt: JwtResponse
   chain: ReturnType<typeof getCurrentChain>
   dappContext: DappRequestContext
+  silent?: boolean
 }
 
 // Context threaded into the launchWebAuthFlow callback, which runs outside the
@@ -105,6 +107,8 @@ export type DappConnectRequest = {
   additionalIds: string[]
   target: TabDocument
   dappContext: DappRequestContext
+  /** Declined without UI when it can't be satisfied; never becomes pending. */
+  silent?: boolean
 }
 
 // Sends an auth_error to the target document.
@@ -120,6 +124,17 @@ function sendAuthErrorToTab(
     type: 'auth_error',
     error: { message, ...extra },
   })
+}
+
+// Declines a silent connect; the adapter answers it with no accounts.
+function declineSilentConnect(
+  target: TabDocument,
+  ids: string[],
+  dappContext: DappRequestContext,
+  reason: string,
+): void {
+  log.debug('Declined silent connect', { origin: dappContext.origin, reason })
+  sendAuthErrorToTabIds(target, ids, `Silent connect declined: ${reason}.`)
 }
 
 function sendAuthErrorToTabIds(
@@ -143,13 +158,15 @@ function checkHasDeviceData(): boolean {
 
 // Checks that the keeper is unlocked, retrying briefly if device data exists
 // (handles the race where the background script wakes before keeper is ready).
-// If still locked, opens the vault popup and deduplicates concurrent requests.
+// If still locked, declines a silent request, otherwise opens the vault popup
+// and deduplicates concurrent requests.
 async function ensureKeeperReady(
   hasDeviceData: boolean,
   id: string,
   target: TabDocument,
   chain: ReturnType<typeof getCurrentChain>,
   dappContext: DappRequestContext,
+  silent: boolean,
 ): Promise<KeeperReadyResult> {
   let keeperStatus = await checkKeeperUnlocked()
 
@@ -163,6 +180,16 @@ async function ensureKeeperReady(
 
   if (keeperStatus.unlocked) {
     return { ready: true, publicKeyBytes: keeperStatus.publicKeyBytes }
+  }
+
+  if (silent) {
+    declineSilentConnect(
+      target,
+      [id],
+      dappContext,
+      hasDeviceData ? 'vault is locked' : 'vault is not set up',
+    )
+    return { ready: false }
   }
 
   log.error('Cannot login: vault not set up or locked', {
@@ -337,6 +364,7 @@ async function completeDappConnect({
   jwt,
   chain,
   dappContext,
+  silent = false,
 }: DappConnectCompletionOptions): Promise<void> {
   const result = await resolveDappConnectAccount(jwt, chain)
   if (!result.ok) {
@@ -344,10 +372,20 @@ async function completeDappConnect({
     return
   }
 
+  // A silent connect never grants. It re-checks the permission after the
+  // account lookup, so a disconnect made meanwhile is not undone.
+  if (silent) {
+    if (!(await hasDappPermission(dappContext.origin, chain))) {
+      declineSilentConnect(target, ids, dappContext, 'site not connected')
+      return
+    }
+  } else {
+    await grantDappPermission(dappContext, chain)
+  }
+
   log.debug('Connect: sending auth_success with account metadata', {
     chain,
   })
-  await grantDappPermission(dappContext, chain)
   sendDappConnectSuccessToTab(target, ids, {
     chain,
     address: result.account.address,
@@ -363,6 +401,7 @@ async function checkExistingAuth(
   additionalIds: string[],
   chain: ReturnType<typeof getCurrentChain>,
   dappContext: DappRequestContext,
+  silent: boolean,
 ): Promise<boolean> {
   const existingJwt = await getJwt()
   if (!existingJwt?.id_token) return false
@@ -374,6 +413,7 @@ async function checkExistingAuth(
     jwt: existingJwt,
     chain,
     dappContext,
+    silent,
   })
   return true
 }
@@ -525,19 +565,34 @@ export async function handleDappLogin(
     return
   }
 
-  await connectDapp({ id, additionalIds: [], target, dappContext })
+  await connectDapp({
+    id,
+    additionalIds: [],
+    target,
+    dappContext,
+    silent: message.silent === true,
+  })
 }
 
 // Runs a dapp connect: waits for the vault, then replies from the existing
 // session or the OAuth flow. Every reply goes only to the request's document.
+// A silent connect only replies from the existing session for an origin already
+// permitted on the current chain, and is declined otherwise.
 export async function connectDapp({
   id,
   additionalIds,
   target,
   dappContext,
+  silent = false,
 }: DappConnectRequest): Promise<void> {
   const tenant = useContextStore.getState().tenantId
   const chain = getCurrentChain()
+
+  if (silent && !(await hasDappPermission(dappContext.origin, chain))) {
+    declineSilentConnect(target, [id], dappContext, 'site not connected')
+    return
+  }
+
   const hasDeviceData = checkHasDeviceData()
 
   const keeperResult = await ensureKeeperReady(
@@ -546,6 +601,7 @@ export async function connectDapp({
     target,
     chain,
     dappContext,
+    silent,
   )
   if (!keeperResult.ready) return
 
@@ -565,8 +621,22 @@ export async function connectDapp({
     return
   }
 
-  if (await checkExistingAuth(target, id, additionalIds, chain, dappContext))
+  if (
+    await checkExistingAuth(
+      target,
+      id,
+      additionalIds,
+      chain,
+      dappContext,
+      silent,
+    )
+  )
     return
+
+  if (silent) {
+    declineSilentConnect(target, [id], dappContext, 'not signed in')
+    return
+  }
 
   const nonce = await ensureNonce(chain, id, target)
   if (!nonce) return

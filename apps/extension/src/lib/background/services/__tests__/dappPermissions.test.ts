@@ -5,6 +5,7 @@ import type { Browser } from 'wxt/browser'
 import {
   getDappRequestContext,
   grantDappPermission,
+  hasDappPermission,
   requireDappPermission,
   revokeDappPermission,
 } from '../dappPermissions'
@@ -89,6 +90,45 @@ describe('dappPermissions', () => {
         origin: 'https://app.example',
         chains: [SUI_TESTNET_CHAIN],
       },
+    })
+  })
+
+  it('reports a permission only for a granted origin and chain', async () => {
+    await grantDappPermission(
+      { origin: 'https://app.example' },
+      SUI_TESTNET_CHAIN,
+    )
+
+    await expect(
+      hasDappPermission('https://app.example', SUI_TESTNET_CHAIN),
+    ).resolves.toBe(true)
+    await expect(
+      hasDappPermission('https://app.example', SUI_DEVNET_CHAIN),
+    ).resolves.toBe(false)
+    await expect(
+      hasDappPermission('https://other.example', SUI_TESTNET_CHAIN),
+    ).resolves.toBe(false)
+  })
+
+  it('reports permissions only after queued grants and revokes are written', async () => {
+    const sender = {
+      origin: 'https://app.example',
+    } as Browser.runtime.MessageSender
+
+    void grantDappPermission(
+      { origin: 'https://app.example' },
+      SUI_TESTNET_CHAIN,
+    )
+    await expect(
+      hasDappPermission('https://app.example', SUI_TESTNET_CHAIN),
+    ).resolves.toBe(true)
+
+    void revokeDappPermission(sender)
+    await expect(
+      hasDappPermission('https://app.example', SUI_TESTNET_CHAIN),
+    ).resolves.toBe(false)
+    await expect(requireDappPermission(sender)).resolves.toMatchObject({
+      allowed: false,
     })
   })
 

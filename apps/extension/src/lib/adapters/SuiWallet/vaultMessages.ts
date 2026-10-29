@@ -12,6 +12,7 @@ type VaultMessageOpts<T> = {
 }
 
 export const APPROVAL_TIMEOUT_MS = 2 * 60 * 1000 // 2 minutes
+export const SILENT_CONNECT_TIMEOUT_MS = 15 * 1000 // 15 seconds
 
 /**
  * Sends a single wallet request through the injected-page bridge and resolves

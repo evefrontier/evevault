@@ -581,4 +581,147 @@ describe('handleDappLogin', () => {
       { documentId: 'doc-1' },
     )
   })
+
+  describe('silent connect', () => {
+    const sender = {
+      origin: 'https://dapp.example',
+      documentId: 'doc-1',
+      tab: { id: 42, url: 'https://dapp.example/' },
+    } as Browser.runtime.MessageSender
+
+    function seedPermission(chains: string[]) {
+      vi.mocked(browser.storage.local.get).mockResolvedValue({
+        dappPermissions: {
+          'https://dapp.example': {
+            origin: 'https://dapp.example',
+            chains,
+            connectedAt: 1,
+            updatedAt: 1,
+          },
+        },
+      })
+    }
+
+    function connectSilently() {
+      return handleDappLogin(
+        { id: 'silent-id', silent: true },
+        sender,
+        vi.fn(),
+        42,
+      )
+    }
+
+    function expectDeclined(reason: string) {
+      expect(browser.tabs.sendMessage).toHaveBeenCalledTimes(1)
+      expect(browser.tabs.sendMessage).toHaveBeenCalledWith(
+        42,
+        {
+          id: 'silent-id',
+          type: 'auth_error',
+          error: { message: `Silent connect declined: ${reason}.` },
+        },
+        { documentId: 'doc-1' },
+      )
+      expect(mocks.openPopupWindow).not.toHaveBeenCalled()
+      expect(mocks.addPendingDappId).not.toHaveBeenCalled()
+      expect(mocks.setPendingAuthAfterUnlock).not.toHaveBeenCalled()
+      expect(browser.identity.launchWebAuthFlow).not.toHaveBeenCalled()
+    }
+
+    it('declines an origin with no stored permission before checking the vault', async () => {
+      await connectSilently()
+
+      expectDeclined('site not connected')
+      expect(mockCheckKeeperUnlocked).not.toHaveBeenCalled()
+    })
+
+    it('declines an origin permitted only on another chain', async () => {
+      seedPermission(['sui:devnet'])
+
+      await connectSilently()
+
+      expectDeclined('site not connected')
+    })
+
+    it('declines a permitted origin while the vault is locked without parking it', async () => {
+      seedPermission(['sui:testnet'])
+      mockCheckKeeperUnlocked.mockResolvedValue({ unlocked: false })
+
+      await connectSilently()
+
+      expectDeclined('vault is locked')
+      expect(mocks.useDeviceStore.setState).not.toHaveBeenCalledWith({
+        isLocked: true,
+      })
+    })
+
+    it('declines a permitted origin when the vault is not set up', async () => {
+      seedPermission(['sui:testnet'])
+      mocks.deviceState.ephemeralKeyPairSecretKey = null
+      mockCheckKeeperUnlocked.mockResolvedValue({ unlocked: false })
+
+      await connectSilently()
+
+      expectDeclined('vault is not set up')
+    })
+
+    it('declines a permitted origin when there is no session instead of starting OAuth', async () => {
+      seedPermission(['sui:testnet'])
+      mockGetJwt.mockResolvedValue(null)
+
+      await connectSilently()
+
+      expectDeclined('not signed in')
+      expect(mocks.getAuthRequest).not.toHaveBeenCalled()
+    })
+
+    it('connects a permitted origin from the existing session without UI', async () => {
+      seedPermission(['sui:testnet'])
+
+      await connectSilently()
+
+      expect(browser.tabs.sendMessage).toHaveBeenCalledWith(
+        42,
+        {
+          id: 'silent-id',
+          type: 'auth_success',
+          chain: 'sui:testnet',
+          address: '0xzk',
+          publicKey: 'AQID',
+        },
+        { documentId: 'doc-1' },
+      )
+      expect(mocks.openPopupWindow).not.toHaveBeenCalled()
+      expect(browser.identity.launchWebAuthFlow).not.toHaveBeenCalled()
+      expect(browser.storage.local.set).not.toHaveBeenCalled()
+    })
+
+    it('declines without restoring the permission when the site disconnects during the account lookup', async () => {
+      seedPermission(['sui:testnet'])
+      mockGetZkLoginAddress.mockImplementation(async () => {
+        vi.mocked(browser.storage.local.get).mockResolvedValue({})
+        return { address: '0xzk', publicKey: 'AQID', salt: '99' }
+      })
+
+      await connectSilently()
+
+      expectDeclined('site not connected')
+      expect(browser.storage.local.set).not.toHaveBeenCalled()
+    })
+
+    it('treats a non-boolean silent flag as an interactive connect', async () => {
+      mockCheckKeeperUnlocked.mockResolvedValue({ unlocked: false })
+      mocks.openPopupWindow.mockResolvedValue(77)
+
+      await handleDappLogin(
+        { id: 'silent-id', silent: 'true' },
+        sender,
+        vi.fn(),
+        42,
+      )
+
+      expect(mocks.setPendingAuthAfterUnlock).toHaveBeenCalled()
+      expect(mocks.openPopupWindow).toHaveBeenCalledWith('popup')
+    })
+  })
 })

@@ -121,6 +121,14 @@ async function readPermissionStore(): Promise<DappPermissionStore> {
   return sanitizePermissionStore(result[DAPP_PERMISSIONS_STORAGE_KEY])
 }
 
+// Reads one origin's permission after every write queued before the call.
+async function readSettledPermission(
+  origin: string,
+): Promise<DappPermissionRecord | undefined> {
+  const permissions = await permissionStoreUpdateQueue.then(readPermissionStore)
+  return permissions[origin]
+}
+
 async function updatePermissionStore<T>(
   update: (permissions: DappPermissionStore) => PermissionStoreUpdate<T>,
 ): Promise<T> {
@@ -179,6 +187,14 @@ export async function grantDappPermission(
   })
 }
 
+export async function hasDappPermission(
+  origin: string,
+  chain: SuiChain,
+): Promise<boolean> {
+  const permission = await readSettledPermission(origin)
+  return permission?.chains.includes(chain) ?? false
+}
+
 export async function requireDappPermission(
   sender: Browser.runtime.MessageSender,
   chain?: SuiChain,
@@ -191,8 +207,7 @@ export async function requireDappPermission(
     }
   }
 
-  const permissions = await readPermissionStore()
-  const permission = permissions[context.origin]
+  const permission = await readSettledPermission(context.origin)
   if (!permission) {
     return {
       allowed: false,

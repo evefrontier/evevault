@@ -38,7 +38,11 @@ import type { WalletEventListener } from '@/lib/background/types'
 import { trySettle } from '@/lib/util/timeoutGuard'
 import { postToEveVaultBridge } from './bridgeTargetOrigin'
 import { getAccountsFromAuthSuccess } from './connectAuth'
-import { APPROVAL_TIMEOUT_MS, waitForVaultMessage } from './vaultMessages'
+import {
+  APPROVAL_TIMEOUT_MS,
+  SILENT_CONNECT_TIMEOUT_MS,
+  waitForVaultMessage,
+} from './vaultMessages'
 import {
   EVEFRONTIER_VAULT_VERSION,
   type EveVaultWalletFeaturesWithVersion,
@@ -237,10 +241,23 @@ export class EveVaultWallet implements Wallet {
       return { accounts: this.accounts }
     }
 
+    const silent = input?.silent === true
+
     return new Promise<StandardConnectOutput>((resolve, reject) => {
       const id = crypto.randomUUID()
       const state = { settled: false }
       let timeoutId: ReturnType<typeof setTimeout> | undefined
+
+      // A silent connect that can't be satisfied returns no accounts instead of failing.
+      const fail = (error: unknown, unexpected = false) => {
+        if (silent) {
+          const logFn = unexpected ? log.warn : log.debug
+          logFn('[SuiWallet] Silent connect returned no accounts', error)
+          resolve({ accounts: [] })
+          return
+        }
+        reject(error)
+      }
 
       const onMsg = async (e: MessageEvent) => {
         // Only accept responses posted by this same page window.
@@ -257,10 +274,10 @@ export class EveVaultWallet implements Wallet {
               this.#emitChangeEvent({ accounts: this.#accounts })
               resolve({ accounts: this.accounts })
             } catch (error) {
-              reject(error)
+              fail(error, true)
             }
           } else {
-            reject(
+            fail(
               new Error(
                 (m.error as { message?: string })?.message ||
                   'Authentication failed',
@@ -271,12 +288,20 @@ export class EveVaultWallet implements Wallet {
       }
 
       window.addEventListener('message', onMsg)
-      timeoutId = setTimeout(() => {
-        if (trySettle(state, onMsg)) {
-          reject(new Error('Connection request timed out'))
-        }
-      }, APPROVAL_TIMEOUT_MS)
-      postToEveVaultBridge({ __to: 'Eve Vault', type: 'connect', id })
+      timeoutId = setTimeout(
+        () => {
+          if (trySettle(state, onMsg)) {
+            fail(new Error('Connection request timed out'))
+          }
+        },
+        silent ? SILENT_CONNECT_TIMEOUT_MS : APPROVAL_TIMEOUT_MS,
+      )
+      postToEveVaultBridge({
+        __to: 'Eve Vault',
+        type: 'connect',
+        id,
+        ...(silent && { silent: true }),
+      })
     })
   }
 
