@@ -1,7 +1,8 @@
 import type { IntentScope } from '@mysten/sui/cryptography'
-import { SUI_LOCALNET_CHAIN, type SuiChain } from '@mysten/wallet-standard'
+import type { SuiChain } from '@mysten/wallet-standard'
 import { browser } from '@wxt-dev/browser'
 import { VaultMessageTypes } from '#/types'
+import { isLocalnetChain } from '#/types/networks'
 import type { ZkSignAnyParams } from '#/types/wallet'
 import { toErrorMessage } from '#/utils/errorMessage'
 import {
@@ -13,7 +14,8 @@ import { zkSignAny } from './zkSignAny'
 
 /**
  * Unified signing entry point. Calls to sign in keeper only on localnet,
- * utilises zkSignAny (zkLogin) implementation on all other chains.
+ * utilises zkSignAny (zkLogin) implementation on all other chains. LOCAL_DEV
+ * builds sign localnet with zkLogin too (see isLocalnetChain).
  */
 export async function signForChain(
   scope: IntentScope,
@@ -38,7 +40,7 @@ export async function signForChain(
     throw new Error(ADDRESS_ALIAS_SIGNING_BLOCKED)
   }
 
-  if (opts.chain === SUI_LOCALNET_CHAIN) {
+  if (isLocalnetChain(opts.chain)) {
     if (!opts.localnetAddress) {
       throw new Error(
         '[signForChain] No localnet address. Localnet private key might be missing.',

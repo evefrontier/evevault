@@ -1,7 +1,8 @@
-import { SUI_LOCALNET_CHAIN, type SuiChain } from '@mysten/wallet-standard'
+import type { SuiChain } from '@mysten/wallet-standard'
 import { useCallback, useEffect, useMemo } from 'react'
 import type { NetworkSelectorProps } from '#/types'
 import { getAvailableNetworks } from '#/types'
+import { isLocalnetChain } from '#/types/networks'
 import { createLogger, isExtension } from '#/utils'
 
 type NetworkSwitchResult = {
@@ -47,7 +48,8 @@ async function handleSuccessfulNetworkSwitch(
     return
   }
 
-  if (targetChain === SUI_LOCALNET_CHAIN && params.isExtensionContext) {
+  // The local-key setup only applies to the local-key localnet, not LOCAL_DEV's.
+  if (isLocalnetChain(targetChain) && params.isExtensionContext) {
     await params.onLocalnetSelected?.()
   }
 }
