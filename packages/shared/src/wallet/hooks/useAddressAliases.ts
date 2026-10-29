@@ -1,4 +1,5 @@
 import {
+  ADDRESS_ALIASES_TYPE,
   addAddressAliasTxBytes,
   enableAddressAliasTxBytes,
   executeAddressAliasTx,
@@ -9,13 +10,25 @@ import {
   validateNewAddressAlias,
 } from '@evefrontier/wallet-core/address-alias'
 import type { ClientWithCoreApi } from '@mysten/sui/client'
+import { normalizeStructTag, normalizeSuiAddress } from '@mysten/sui/utils'
+import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo } from 'react'
 import { useToast } from '#/components'
 import { isLocalnetChain } from '#/types/networks'
 import { isAliasEnforcementFeatureEnabled } from '../aliasEnforcement'
-import { useAddressAliasesQuery } from './useAddressAliases.query'
+import {
+  setAddressAliasesData,
+  useAddressAliasesQuery,
+} from './useAddressAliases.query'
 import { useTransactionWrite } from './useTransactionWrite'
 import { useWalletSigningContext } from './useWalletSigningContext'
+
+const NORMALIZED_ADDRESS_ALIASES_TYPE = normalizeStructTag(ADDRESS_ALIASES_TYPE)
+
+const appendAlias = (aliases: string[], alias: string) => [...aliases, alias]
+
+const withoutAlias = (aliases: string[], alias: string) =>
+  aliases.filter((existing) => normalizeSuiAddress(existing) !== alias)
 
 interface UseAddressAliasesResult {
   // State
@@ -34,7 +47,6 @@ interface UseAddressAliasesResult {
   /** Resolves `true` when the address alias was submitted successfully. */
   addAddressAlias: (addressAlias: string) => Promise<boolean>
   removeAddressAlias: (addressAlias: string) => Promise<boolean>
-  refresh: () => Promise<void>
 
   // Write status
   isSubmitting: boolean
@@ -46,6 +58,7 @@ interface UseAddressAliasesResult {
  * Hook for reading and managing address aliases.
  */
 export function useAddressAliases(): UseAddressAliasesResult {
+  const queryClient = useQueryClient()
   const { showToast } = useToast()
   const { isSubmitting, error, txDigest, run, setError } = useTransactionWrite()
 
@@ -95,34 +108,75 @@ export function useAddressAliases(): UseAddressAliasesResult {
   )
   const objectId = data?.objectId
 
-  const refresh = useCallback(async () => {
-    await refetch()
-  }, [refetch])
-
   const enable = useCallback(async () => {
     if (!senderAddress) {
       setError('Connect wallet first')
       return
     }
+    let createdObjectId: string | undefined
     await run(
-      () =>
-        executeAddressAliasTx({
+      async () => {
+        const digest = await executeAddressAliasTx({
           suiClient,
           sender: senderAddress,
           signer,
           buildBytes: enableAddressAliasTxBytes,
-        }),
+        })
+        // The owned-object read can miss a just-created object, so take its
+        // id from the effects.
+        const { Transaction: transaction } =
+          await suiClient.core.waitForTransaction({
+            digest,
+            include: { effects: true, objectTypes: true },
+          })
+        createdObjectId = transaction?.effects?.changedObjects.find(
+          (object) => {
+            const type = transaction.objectTypes?.[object.objectId]
+            return (
+              object.idOperation === 'Created' &&
+              type != null &&
+              normalizeStructTag(type) === NORMALIZED_ADDRESS_ALIASES_TYPE
+            )
+          },
+        )?.objectId
+        return digest
+      },
       {
         fallbackMessage: 'Failed to enable address aliasing',
         onSuccess: async () => {
-          await refetch()
+          if (!createdObjectId) {
+            await refetch()
+            return
+          }
+          const objectId = createdObjectId
+          // `enable` registers the owner as the first alias.
+          await setAddressAliasesData(
+            queryClient,
+            senderAddress,
+            chain,
+            () => ({
+              enabled: true,
+              objectId,
+              addressAliases: [normalizeSuiAddress(senderAddress)],
+            }),
+          )
         },
       },
     )
-  }, [senderAddress, run, setError, suiClient, signer, refetch])
+  }, [
+    senderAddress,
+    run,
+    setError,
+    suiClient,
+    signer,
+    refetch,
+    queryClient,
+    chain,
+  ])
 
-  // Add and remove share the same guard → validate → build → sign → refetch
-  // pipeline; only the validator, bytes builder, and error copy differ.
+  // Add and remove share the same guard → validate → build → sign → cache
+  // update pipeline; only the validator, bytes builder, list change, and error
+  // copy differ.
   const submitAliasChange = useCallback(
     async (
       addressAlias: string,
@@ -133,6 +187,7 @@ export function useAddressAliases(): UseAddressAliasesResult {
         alias: string,
         client: ClientWithCoreApi,
       ) => Promise<Uint8Array>,
+      applyChange: (aliases: string[], alias: string) => string[],
       fallbackMessage: string,
     ): Promise<boolean> => {
       if (!senderAddress) {
@@ -161,15 +216,25 @@ export function useAddressAliases(): UseAddressAliasesResult {
             buildBytes: (sender, client) =>
               buildBytes(sender, objectId, trimmed, client),
           })
-          // Wait for finality before refetching, else the read can race the
-          // write and still return the pre-change alias list.
+          // Wait for finality so the next alias transaction builds against
+          // the updated object and gas coin.
           await suiClient.core.waitForTransaction({ digest })
           return digest
         },
         {
           fallbackMessage,
           onSuccess: async () => {
-            await refetch()
+            const alias = normalizeSuiAddress(trimmed)
+            await setAddressAliasesData(
+              queryClient,
+              senderAddress,
+              chain,
+              (previous) =>
+                previous && {
+                  ...previous,
+                  addressAliases: applyChange(previous.addressAliases, alias),
+                },
+            )
           },
         },
       )
@@ -183,7 +248,8 @@ export function useAddressAliases(): UseAddressAliasesResult {
       setError,
       suiClient,
       signer,
-      refetch,
+      queryClient,
+      chain,
     ],
   )
 
@@ -193,6 +259,7 @@ export function useAddressAliases(): UseAddressAliasesResult {
         addressAlias,
         validateNewAddressAlias,
         addAddressAliasTxBytes,
+        appendAlias,
         'Failed to add address alias',
       ),
     [submitAliasChange],
@@ -225,6 +292,7 @@ export function useAddressAliases(): UseAddressAliasesResult {
         addressAlias,
         validateRemoval,
         removeAddressAliasTxBytes,
+        withoutAlias,
         'Failed to remove address alias',
       ),
     [submitAliasChange, validateRemoval],
@@ -246,7 +314,6 @@ export function useAddressAliases(): UseAddressAliasesResult {
     enable,
     addAddressAlias,
     removeAddressAlias,
-    refresh,
     isSubmitting,
     error,
     txDigest,

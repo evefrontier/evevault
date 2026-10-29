@@ -3,7 +3,6 @@ import {
   generateAliasKey,
   registerAcknowledgedAlias,
 } from '@evefrontier/wallet-core/address-alias'
-import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useMemo, useState } from 'react'
 import { useTransactionWrite } from './useTransactionWrite'
 import { useWalletSigningContext } from './useWalletSigningContext'
@@ -31,12 +30,10 @@ export interface UseAliasProvisioningResult {
  * Drives one-time recovery-alias provisioning: generate a client-only key
  * (shown once, never persisted), then register it on-chain once the user
  * acknowledges saving it. Reuses the app signing context and the shared write
- * lifecycle, and invalidates alias caches/queries on success so the
- * enforcement gate clears.
+ * lifecycle.
  */
 export function useAliasProvisioning(): UseAliasProvisioningResult {
-  const queryClient = useQueryClient()
-  const { chain, senderAddress, suiClient, sign } = useWalletSigningContext()
+  const { senderAddress, suiClient, sign } = useWalletSigningContext()
   const { isSubmitting, error, txDigest, run, setError } = useTransactionWrite()
   const [aliasKey, setAliasKey] = useState<GeneratedAliasKey | null>(null)
 
@@ -82,33 +79,21 @@ export function useAliasProvisioning(): UseAliasProvisioningResult {
             aliasAddress: aliasKey.address,
             acknowledged,
           })
-          // Wait for finality before refetching, else the read (and the next
-          // sign's on-chain enforcement check) can race the write.
+          // Wait for finality, else the next sign's on-chain enforcement check
+          // can race the write.
           await suiClient.core.waitForTransaction({ digest: addDigest })
           return addDigest
         },
         {
           fallbackMessage: 'Failed to register personal access alias',
-          onSuccess: async () => {
-            await queryClient.invalidateQueries({
-              queryKey: ['address-aliases', senderAddress, chain],
-            })
+          onSuccess: () => {
             setAliasKey(null)
           },
         },
       )
       return digest !== null
     },
-    [
-      senderAddress,
-      aliasKey,
-      run,
-      setError,
-      suiClient,
-      signer,
-      chain,
-      queryClient,
-    ],
+    [senderAddress, aliasKey, run, setError, suiClient, signer],
   )
 
   return {
