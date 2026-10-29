@@ -1,5 +1,5 @@
 import {
-  getEveCoinType,
+  EVE_COIN_TYPE_SUFFIX,
   isEveCoinType,
 } from '@evefrontier/wallet-core/eve-token'
 import type { SuiChain } from '@mysten/wallet-standard'
@@ -9,6 +9,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useContext } from '#/hooks'
 import { getDefaultTokensForChain } from '#/types/networks'
 import { createLogger } from '#/utils'
+import {
+  isLocalDevEveChain,
+  useEveCoinType,
+} from '#/wallet/hooks/useEveCoinType'
 
 const SCRAMBLE_INTERVAL_MS = 200
 const REFRESH_TIMEOUT_MS = 10000
@@ -130,14 +134,23 @@ export function useTokensForChain(
   tokens: Partial<Record<SuiChain, string[]>>,
 ): string[] {
   const { tenantId } = useContext()
-  const currentEveCoinType = getEveCoinType(tenantId)
+  const currentEveCoinType = useEveCoinType(chain, tenantId)
 
   return useMemo(() => {
     if (!chain) return []
 
-    const stored = tokens[chain] ?? getDefaultTokensForChain(chain, tenantId)
+    // LOCAL_DEV localnet: EVE is listed by default, and EVE saved under an
+    // earlier genesis's address is the current EVE.
+    const localEve = isLocalDevEveChain(chain)
+    const stored =
+      tokens[chain] ??
+      (localEve && currentEveCoinType
+        ? [...getDefaultTokensForChain(chain, tenantId), currentEveCoinType]
+        : getDefaultTokensForChain(chain, tenantId))
+    const isEve = (token: string) =>
+      isEveCoinType(token) || (localEve && token.endsWith(EVE_COIN_TYPE_SUFFIX))
     const mapped = stored.map((token) =>
-      isEveCoinType(token) ? currentEveCoinType : token,
+      currentEveCoinType && isEve(token) ? currentEveCoinType : token,
     )
 
     return [...new Set(mapped)]

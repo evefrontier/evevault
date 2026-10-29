@@ -2,6 +2,7 @@ import { getMvrCache } from '@evefrontier/wallet-core/tenant'
 import type { SuiClientTypes } from '@mysten/sui/client'
 import { normalizeStructTag } from '@mysten/sui/utils'
 import type { SuiChain } from '@mysten/wallet-standard'
+import { LOCAL_DEV, LOCAL_DEV_MVR_URL } from '#/utils/localDev'
 
 type MvrNetwork = 'mainnet' | 'testnet'
 
@@ -13,12 +14,19 @@ const toNetwork = (chain: SuiChain) => chain.replace('sui:', '')
 /**
  * Client `mvr` options that pre-resolve `@evefrontier/*` names from
  * wallet-core's embedded cache. Returns an empty object for networks
- * without a cache so callers can spread it unconditionally.
+ * without a cache so callers can spread it unconditionally. LOCAL_DEV
+ * builds resolve localnet names through the local stack's MVR API.
  */
 export const getMvrClientOptions = (
   network: string,
-): { mvr?: SuiClientTypes.MvrOptions } =>
-  isMvrNetwork(network) ? { mvr: { overrides: getMvrCache(network) } } : {}
+): { mvr?: SuiClientTypes.MvrOptions } => {
+  if (LOCAL_DEV && network === 'localnet') {
+    return { mvr: { url: LOCAL_DEV_MVR_URL } }
+  }
+  return isMvrNetwork(network)
+    ? { mvr: { overrides: getMvrCache(network) } }
+    : {}
+}
 
 const typeNamesByNetwork = new Map<MvrNetwork, Map<string, string>>()
 
