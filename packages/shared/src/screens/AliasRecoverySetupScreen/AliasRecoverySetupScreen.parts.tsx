@@ -6,6 +6,7 @@ import Heading from '#/components/Heading'
 import { Checkbox } from '#/components/Inputs'
 import Text from '#/components/Text'
 import { useCopyToClipboard } from '#/hooks'
+import { LOCAL_DEV } from '#/utils/localDev'
 
 /** Progress breadcrumb */
 export const StepDots: React.FC<{
@@ -207,6 +208,14 @@ export const RevealStep: React.FC<{
       >
         Set up personal access key
       </Button>
+
+      {/* LOCAL_DEV: the stack's prover is slow; say so while registering. */}
+      {LOCAL_DEV && isSubmitting && (
+        <Text variant="light" size="xsmall" color="neutral-90">
+          The first signature waits 15–20 s for a zkLogin proof on the local
+          stack.
+        </Text>
+      )}
 
       <div className="flex gap-1">
         <Button variant="secondary" disabled={isSubmitting} onClick={onBack}>

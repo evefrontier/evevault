@@ -3,6 +3,7 @@ import Button from '#/components/Button'
 import { Input } from '#/components/Inputs'
 import Text from '#/components/Text'
 import { formatAddress } from '#/utils'
+import { LOCAL_DEV } from '#/utils/localDev'
 
 interface TransferSuccessScreenProps {
   amount: string
@@ -269,6 +270,14 @@ export const TransferForm: React.FC<{
               {status.error}
             </Text>
           </div>
+        )}
+
+        {/* LOCAL_DEV: the stack's prover is slow; say so while sending. */}
+        {LOCAL_DEV && status.isLoading && (
+          <Text variant="light" size="xsmall" color="neutral-90">
+            The first signature waits 15–20 s for a zkLogin proof on the local
+            stack.
+          </Text>
         )}
 
         {/* Action Buttons - gap-1 (DuoButton style) */}
