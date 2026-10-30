@@ -139,6 +139,7 @@ async function ensureKeeperReady(
   id: string,
   tabId: number | undefined,
   chain: ReturnType<typeof getCurrentChain>,
+  sender: Browser.runtime.MessageSender,
 ): Promise<KeeperReadyResult> {
   let keeperStatus = await checkKeeperUnlocked()
 
@@ -172,7 +173,8 @@ async function ensureKeeperReady(
   }
 
   useDeviceStore.setState({ isLocked: true })
-  if (hasDeviceData) setPendingAuthAfterUnlock(id, 'dapp', tabId)
+  if (hasDeviceData)
+    setPendingAuthAfterUnlock(id, 'dapp', tabId, undefined, undefined, sender)
 
   const windowId = await openPopupWindow('popup')
 
@@ -508,7 +510,13 @@ export async function handleDappLogin(
   const chain = getCurrentChain()
   const hasDeviceData = checkHasDeviceData()
 
-  const keeperResult = await ensureKeeperReady(hasDeviceData, id, tabId, chain)
+  const keeperResult = await ensureKeeperReady(
+    hasDeviceData,
+    id,
+    tabId,
+    chain,
+    sender,
+  )
   if (!keeperResult.ready) return
 
   if (!(await syncPublicKeyFromKeeper(keeperResult.publicKeyBytes, id, tabId)))

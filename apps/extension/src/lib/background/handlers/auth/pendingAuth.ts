@@ -1,4 +1,5 @@
 import { createLogger } from '@evevault/shared/utils'
+import type { Browser } from 'wxt/browser'
 import { sendToTab } from '@/lib/background/messaging/tabMessaging'
 import { sendAuthError } from './authHelpers'
 
@@ -19,6 +20,12 @@ export interface PendingAuthAfterUnlock {
   additionalIds?: string[]
   /** Tenant id for ext_login resume (popup context tenant when vault was locked). */
   tenantId?: string
+  /**
+   * The dApp page that asked to connect (origin, URL, tab). The resumed
+   * connect checks and records the dApp's permission against it, so it must
+   * be the original sender, not just the tab id.
+   */
+  sender?: Browser.runtime.MessageSender
 }
 
 let pendingAuthAfterUnlock: PendingAuthAfterUnlock | null = null
@@ -75,6 +82,7 @@ export function setPendingAuthAfterUnlock(
   tabId?: number,
   windowId?: number,
   tenantId?: string,
+  sender?: Browser.runtime.MessageSender,
 ): void {
   clearPendingAuth()
   pendingAuthAfterUnlock = {
@@ -83,6 +91,7 @@ export function setPendingAuthAfterUnlock(
     tabId,
     windowId,
     tenantId,
+    sender,
     additionalIds: undefined,
   }
   pendingAuthTimeoutId = setTimeout(() => {

@@ -45,7 +45,9 @@ export function checkPendingAuthAfterUnlock(): void {
         id: pending.id,
         additionalIds: pending.additionalIds,
       } as MessageWithId,
-      { tab: { id: pending.tabId } } as Browser.runtime.MessageSender,
+      // The original sender: the resumed connect needs the page's origin.
+      pending.sender ??
+        ({ tab: { id: pending.tabId } } as Browser.runtime.MessageSender),
       () => {},
       pending.tabId,
     ).catch((error) => {
