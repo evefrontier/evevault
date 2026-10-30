@@ -8,7 +8,8 @@ import type { TenantId } from '@evefrontier/wallet-core/tenant'
  * - the API gateway is the stack's, for every tenant, so other tenants do not
  *   work in such a build;
  * - localnet is a zkLogin chain like devnet and testnet, reading through the
- *   stack's Sui GraphQL server, instead of the local-key localnet mode.
+ *   stack's Sui GraphQL server, instead of the local-key localnet mode;
+ * - zkLogin sessions last LOCAL_DEV_SESSION_EPOCHS epochs.
  */
 export const LOCAL_DEV = import.meta.env.VITE_LOCAL_DEV === 'true'
 
@@ -38,3 +39,15 @@ export const LOCAL_DEV_MVR_URL =
 export const LOCAL_DEV_EVE_MVR_TYPE = `${
   import.meta.env.VITE_LOCAL_DEV_CURRENCY_MVR_NAME || '@evefrontier/currency'
 }::EVE::EVE`
+
+/**
+ * Epochs a zkLogin session lasts beyond the current one: 30, the most Sui
+ * accepts (zkLogin's max-epoch upper bound). Release builds end a session with
+ * the current epoch, which on testnet's 24 h epochs is up to a day; the stack's
+ * epochs last an hour, to keep its node small, so 30 of them is about 30 hours.
+ * When a session ends, the next signature renews it: a new ephemeral key,
+ * nonce and proof, without signing in again.
+ */
+export const LOCAL_DEV_SESSION_EPOCHS = Number(
+  import.meta.env.VITE_LOCAL_DEV_SESSION_EPOCHS || 30,
+)

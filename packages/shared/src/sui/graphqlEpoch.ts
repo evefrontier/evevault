@@ -4,9 +4,10 @@ import {
 } from '@evefrontier/wallet-core/epoch'
 import type { SuiChain } from '@mysten/wallet-standard'
 import { DEFAULT_EPOCH_DURATION_MS } from '#/utils/constants'
+import { LOCAL_DEV, LOCAL_DEV_SESSION_EPOCHS } from '#/utils/localDev'
 import { createLogger } from '#/utils/logger'
 import { createSuiGraphQLClient } from './graphqlClient'
-import { EPOCH_QUERY } from './queries/epoch'
+import { EPOCH_QUERY, LOCAL_DEV_EPOCH_QUERY } from './queries/epoch'
 import type { EpochQueryResponse } from './types'
 
 const log = createLogger()
@@ -21,7 +22,7 @@ export async function getCurrentEpochFromGraphQL(chain: SuiChain): Promise<{
 }> {
   const client = createSuiGraphQLClient(chain)
   const result = await client.query<EpochQueryResponse>({
-    query: EPOCH_QUERY,
+    query: LOCAL_DEV ? LOCAL_DEV_EPOCH_QUERY : EPOCH_QUERY,
     variables: {},
   })
 
@@ -47,16 +48,23 @@ export async function getCurrentEpochFromGraphQL(chain: SuiChain): Promise<{
     })
   }
 
+  // GraphQL gives no end for the current epoch. LOCAL_DEV reads the chain's
+  // epoch length from its system state: the stack's epochs are not 24 h.
+  const localDevDurationMs = Number(
+    epoch.systemState?.json?.parameters?.epoch_duration_ms,
+  )
   const info: ChainEpochInfo = {
     currentEpoch: numericMaxEpoch,
     epochStartTimestampMs: startMs,
     epochDurationMs: epoch.endTimestamp
       ? new Date(epoch.endTimestamp).getTime() - startMs
-      : DEFAULT_EPOCH_DURATION_MS,
+      : LOCAL_DEV && localDevDurationMs > 0
+        ? localDevDurationMs
+        : DEFAULT_EPOCH_DURATION_MS,
   }
-  // maxEpoch = current epoch
+  // maxEpoch = current epoch (LOCAL_DEV: LOCAL_DEV_SESSION_EPOCHS more)
   const state = computeEpochState(info, {
-    epochsFromCurrent: 0,
+    epochsFromCurrent: LOCAL_DEV ? LOCAL_DEV_SESSION_EPOCHS : 0,
     nowMs: Date.now(),
   })
 
