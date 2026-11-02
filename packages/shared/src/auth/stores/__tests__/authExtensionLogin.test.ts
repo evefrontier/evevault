@@ -64,7 +64,7 @@ describe('authExtensionLogin()', () => {
   })
 
   describe('Success path', () => {
-    it('builds user, persists enriched user, sets { user, loading: false }', async () => {
+    it('builds user, persists enriched user, sets { user, loading: false, error: null }', async () => {
       const user = await loginExtensionSession(
         mockGet,
         mockSet,
@@ -76,7 +76,7 @@ describe('authExtensionLogin()', () => {
       expect(h.mockStoreUser).toHaveBeenCalledWith(expect.any(User))
       expect(h.mockSyncPrimaryJwt).toHaveBeenCalledWith(expect.any(User))
       expect(mockSet).toHaveBeenCalledWith(
-        expect.objectContaining({ loading: false }),
+        expect.objectContaining({ loading: false, error: null }),
       )
     })
   })
