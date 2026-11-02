@@ -32,7 +32,7 @@ export async function loginExtensionSession(
       getUserManagerInstance(),
     )
 
-    set({ user, loading: false })
+    set({ user, loading: false, error: null })
     return user
   } catch (error) {
     log.error('Extension login failed', error)

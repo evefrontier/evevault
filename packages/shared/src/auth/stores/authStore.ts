@@ -48,7 +48,7 @@ export const useAuthStore = create<AuthState>()(
                 )
               : await initializeWebSession(getUserManagerInstance, network)
 
-            set({ user, loading: false })
+            set({ user, loading: false, error: null })
           } catch (error) {
             log.error('Error initializing auth', error)
             set({
@@ -153,9 +153,10 @@ export const useAuthStore = create<AuthState>()(
         isWeb() ? localStorageAdapter : chromeStorageAdapter,
       ),
       // Tokens are managed by context-specific session storage (oidc-client-ts
-      // sessionStorage on web; chrome.storage.session on extension).
+      // sessionStorage on web; chrome.storage.session on extension). Errors are
+      // kept in memory only.
       partialize: (state) => {
-        const { user: _user, ...rest } = state
+        const { user: _user, error: _error, ...rest } = state
         return rest as typeof state
       },
       onRehydrateStorage: () => {

@@ -108,3 +108,18 @@ describe('waitForAuthHydration', () => {
     expect(unsub).toHaveBeenCalledOnce()
   })
 })
+
+describe('authStore persistence', () => {
+  it('omits user and error from persisted state', () => {
+    const partialize = useAuthStore.persist.getOptions().partialize
+    const persisted = partialize?.({
+      ...useAuthStore.getState(),
+      user: null,
+      error: 'Failed to fetch',
+    }) as Record<string, unknown>
+
+    expect(persisted).not.toHaveProperty('user')
+    expect(persisted).not.toHaveProperty('error')
+    expect(persisted).toHaveProperty('loading')
+  })
+})

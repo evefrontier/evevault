@@ -253,6 +253,18 @@ describe('authStore.initialize() (extension path)', () => {
       // The stored JWT path is never reached — the UserManager user is used directly
       expect(h.mockGetJwt).not.toHaveBeenCalled()
     })
+
+    it('clears a previous error on success', async () => {
+      h.mockGetUser.mockResolvedValue(makeUser())
+      h.mockUserToJwtResponse.mockReturnValue(makeStoredJwt())
+      h.mockResolveExpiresAt.mockReturnValue(FUTURE)
+      useAuthStore.setState({ error: 'Failed to fetch' })
+
+      await useAuthStore.getState().initialize()
+
+      expect(useAuthStore.getState().user).not.toBeNull()
+      expect(useAuthStore.getState().error).toBeNull()
+    })
   })
 
   describe('concurrent initialize() calls', () => {
