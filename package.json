@@ -57,28 +57,25 @@
     "@testing-library/jest-dom": "^6.10.0",
     "@testing-library/react": "^16.3.3",
     "@vitejs/plugin-react": "^5.2.0",
-    "@vitest/coverage-v8": "4.1.11",
-    "@vitest/ui": "4.1.11",
+    "@vitest/coverage-v8": "4.1.12",
+    "@vitest/ui": "4.1.12",
     "husky": "^9.1.7",
     "jsdom": "^27.4.0",
     "lint-staged": "^16.4.0",
     "turbo": "^2.10.13",
     "typescript": "^5.9.3",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "4.1.11"
+    "vitest": "4.1.12"
   },
   "overrides": {
-    "@vitejs/plugin-react": "^5.2.0",
-    "@vitest/mocker": "^4.1.11",
     "shell-quote": "^1.8.5",
     "tmp": "^0.2.6",
-    "axios": "^1.16.0",
-    "adm-zip": "^0.6.0",
-    "vitest": "^4.1.11",
-    "js-yaml": "^4.3.2",
-    "sharp": "^0.35.4",
+    "axios": "^1.20.0",
+    "adm-zip": "^0.6.1",
     "esbuild": "^0.28.1",
-    "fast-uri": "^3.1.6",
-    "uuid": "^11.1.1"
+    "uuid": "^11.1.1",
+    "glob": "^14.0.2",
+    "minimatch": "^11.0.1",
+    "multimatch": "^8.0.0"
   }
 }

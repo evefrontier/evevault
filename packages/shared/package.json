@@ -1,6 +1,6 @@
 {
   "name": "@evevault/shared",
-  "version": "0.0.20",
+  "version": "0.0.21",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "imports": {
@@ -118,7 +118,7 @@
   "devDependencies": {
     "@testing-library/react": "^16.3.3",
     "@types/node": "^25.9.6",
-    "@vitest/browser-playwright": "4.1.11",
+    "@vitest/browser-playwright": "4.1.12",
     "typescript": "^5.9.3"
   }
 }

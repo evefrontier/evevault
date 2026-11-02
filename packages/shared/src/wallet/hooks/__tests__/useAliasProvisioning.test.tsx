@@ -1,6 +1,4 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, renderHook, waitFor } from '@testing-library/react'
-import type { ReactNode } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockSigningContext = vi.fn()
@@ -29,15 +27,6 @@ const KEY = {
   address: ALIAS,
 }
 
-function wrapper({ children }: { children: ReactNode }) {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
-  })
-  return (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  )
-}
-
 beforeEach(() => {
   mockGenerateAliasKey.mockReset().mockReturnValue(KEY)
   mockRegisterAcknowledgedAlias.mockReset()
@@ -53,7 +42,7 @@ beforeEach(() => {
 
 describe('useAliasProvisioning', () => {
   it('generates and holds a personal access key', () => {
-    const { result } = renderHook(() => useAliasProvisioning(), { wrapper })
+    const { result } = renderHook(() => useAliasProvisioning())
     act(() => {
       result.current.generate()
     })
@@ -61,7 +50,7 @@ describe('useAliasProvisioning', () => {
   })
 
   it('surfaces the error and does not register when acknowledged is false', async () => {
-    const { result } = renderHook(() => useAliasProvisioning(), { wrapper })
+    const { result } = renderHook(() => useAliasProvisioning())
     act(() => {
       result.current.generate()
     })
@@ -78,7 +67,7 @@ describe('useAliasProvisioning', () => {
 
   it('registers and records the tx digest when acknowledged', async () => {
     mockRegisterAcknowledgedAlias.mockResolvedValue({ addDigest: 'digest-1' })
-    const { result } = renderHook(() => useAliasProvisioning(), { wrapper })
+    const { result } = renderHook(() => useAliasProvisioning())
     act(() => {
       result.current.generate()
     })
