@@ -25,7 +25,12 @@ import { useWalletSigningContext } from './useWalletSigningContext'
 
 const NORMALIZED_ADDRESS_ALIASES_TYPE = normalizeStructTag(ADDRESS_ALIASES_TYPE)
 
-const appendAlias = (aliases: string[], alias: string) => [...aliases, alias]
+// Skips the append when a refetch that completed before the update already
+// includes the alias.
+const appendAlias = (aliases: string[], alias: string) =>
+  aliases.some((existing) => normalizeSuiAddress(existing) === alias)
+    ? aliases
+    : [...aliases, alias]
 
 const withoutAlias = (aliases: string[], alias: string) =>
   aliases.filter((existing) => normalizeSuiAddress(existing) !== alias)

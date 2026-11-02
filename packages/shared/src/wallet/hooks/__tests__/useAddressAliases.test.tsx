@@ -68,7 +68,7 @@ async function renderAliases() {
   )
   const rendered = renderHook(() => useAddressAliases(), { wrapper })
   await waitFor(() => expect(rendered.result.current.isReading).toBe(false))
-  return rendered
+  return { ...rendered, queryClient }
 }
 
 beforeEach(() => {
@@ -177,6 +177,22 @@ describe('useAddressAliases cache updates', () => {
 
     await act(async () => {
       await result.current.addAddressAlias(` ${ALIAS_A} `)
+    })
+
+    expect(result.current.addressAliases).toEqual([OWNER, ALIAS_A])
+  })
+
+  it('does not duplicate an added alias a completed refetch already includes', async () => {
+    setAliases([OWNER])
+    const { result, queryClient } = await renderAliases()
+    mockWaitForTransaction.mockImplementation(async () => {
+      setAliases([OWNER, ALIAS_A])
+      await queryClient.refetchQueries({ queryKey: ['address-aliases'] })
+      return { $kind: 'Transaction', Transaction: {} }
+    })
+
+    await act(async () => {
+      await result.current.addAddressAlias(ALIAS_A)
     })
 
     expect(result.current.addressAliases).toEqual([OWNER, ALIAS_A])
