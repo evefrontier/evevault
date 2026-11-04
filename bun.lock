@@ -5,7 +5,7 @@
     "": {
       "name": "eve-frontier-vault",
       "dependencies": {
-        "@evefrontier/wallet-core": "0.0.13",
+        "@evefrontier/wallet-core": "^0.0.16",
         "@mysten/sui": "^2.31.1",
         "@mysten/wallet-standard": "^0.20.3",
         "jose": "6.0.12",
@@ -451,7 +451,7 @@
 
     "@esbuild/win32-x64": ["@esbuild/win32-x64@0.28.2", "", { "os": "win32", "cpu": "x64" }, "sha512-5ebpxr3nWMzrL/rnUI755Jkuee0bHL/Gq0WTF9lvcpv73wAp5eu8MfBUgWK9bhWvZjj7yX8etf/8tI8Ney695g=="],
 
-    "@evefrontier/wallet-core": ["@evefrontier/wallet-core@0.0.13", "https://npm.pkg.github.com/download/@evefrontier/wallet-core/0.0.13/e78cce727156e78b873d3f77caf18f6fdf28ec53", { "dependencies": { "@mysten/sui": "^2.31.0", "@mysten/wallet-standard": "^0.20.3", "@mysten/webcrypto-signer": "^0.1.2", "@scure/bip39": "^2.4.0" }, "peerDependencies": { "@ledgerhq/hw-transport-webhid": "^6.0.0", "@mysten/ledgerjs-hw-app-sui": "^0.9.1", "@mysten/signers": "^1.1.18" } }, "sha512-LfA85FZWK9FLQgWPf+C+hewG995qBwRP/JCFw3hZjByq8kvXgLFkEvy2uFMTBE2Idz3ZfY8xbb1V7NEpG5Vv4Q=="],
+    "@evefrontier/wallet-core": ["@evefrontier/wallet-core@0.0.16", "https://npm.pkg.github.com/download/@evefrontier/wallet-core/0.0.16/3be728b044e726d5917e276fc2dbb658cc95103f", { "dependencies": { "@mysten/sui": "^2.33.1", "@mysten/wallet-standard": "^0.20.3", "@mysten/webcrypto-signer": "^0.1.2", "@scure/bip39": "^2.4.0" }, "peerDependencies": { "@ledgerhq/hw-transport-webhid": "^6.0.0", "@mysten/ledgerjs-hw-app-sui": "^0.9.1", "@mysten/signers": "^1.1.18" } }, "sha512-qzv6iFGwJiNwRxPJI3NfHqgasF8UBZUVQ1nLNDzoVs8aeLxZrRKA1OaZPEohsVIyqRhZUG3M8dxf+fzlxg1JcQ=="],
 
     "@evevault/extension": ["@evevault/extension@workspace:apps/extension"],
 
@@ -571,7 +571,7 @@
 
     "@mysten/aws-kms-signer": ["@mysten/aws-kms-signer@0.3.22", "", { "dependencies": { "@noble/curves": "^2.3.0", "asn1-ts": "^11.1.0" }, "peerDependencies": { "@mysten/sui": "^2.31.1" } }, "sha512-iU6u8RAT/IJlJaNJcESa/aAYtWJ5SvtJrqNkv1GWp/sjY2FJg8MRK+FmbcQoXfJNu/cFnEbn6roJb88phLIA4w=="],
 
-    "@mysten/bcs": ["@mysten/bcs@2.1.1", "", { "dependencies": { "@mysten/utils": "^0.4.1", "@scure/base": "^2.3.0" } }, "sha512-IDYomoQ6+yvOIClBHmNdScttv+h/HbGGHLEdUmGQptR3YdqqLM5vJD28wf2QP/UXCEBkCoG7TOT6pFNw8ExYmA=="],
+    "@mysten/bcs": ["@mysten/bcs@2.1.3", "", { "dependencies": { "@mysten/utils": "^0.4.2", "@scure/base": "^2.3.0" } }, "sha512-sg3hstwDLQQmQTpiX8Vzs13bEEGTqnhp1gUzBLlVQ493xyTTCDwB/jXGzT0g2I/GXd2o1B3s7Bd67Ua3VZo+Jw=="],
 
     "@mysten/gcp-kms-signer": ["@mysten/gcp-kms-signer@0.2.25", "", { "dependencies": { "@google-cloud/kms": "^6.0.0", "@noble/curves": "^2.3.0", "asn1-ts": "^11.1.0" }, "peerDependencies": { "@mysten/sui": "^2.31.1" } }, "sha512-NmnLhIpFKHd+YgS7Rvulgnceyt5+atLQqxRZaKgFhrpqyzetyhDrU/87MpdHM0mVCNk8K7llg9WFXKfW435KuQ=="],
 
@@ -581,9 +581,9 @@
 
     "@mysten/signers": ["@mysten/signers@1.1.25", "", { "dependencies": { "@mysten/aws-kms-signer": "^0.3.22", "@mysten/gcp-kms-signer": "^0.2.25", "@mysten/ledger-signer": "^0.2.25", "@mysten/webcrypto-signer": "^0.2.25" }, "peerDependencies": { "@mysten/sui": "^2.31.1" } }, "sha512-WmKemx6Jl5n+9cuIn4a3wwQGy/3y1TvNVIYsgDEtdLsP7WjK7mrjTkmXY6t/2s9ebZGU4Lt7SGNko0zKd5Konw=="],
 
-    "@mysten/sui": ["@mysten/sui@2.31.1", "", { "dependencies": { "@graphql-typed-document-node/core": "^3.2.0", "@mysten/bcs": "^2.1.1", "@mysten/utils": "^0.4.1", "@noble/curves": "^2.3.0", "@noble/hashes": "^2.3.0", "@protobuf-ts/grpcweb-transport": "^2.11.1", "@protobuf-ts/runtime": "^2.11.1", "@protobuf-ts/runtime-rpc": "^2.11.1", "@scure/base": "^2.3.0", "@scure/bip32": "^2.3.0", "@scure/bip39": "^2.3.0", "gql.tada": "^1.11.3", "graphql": "^17.0.2", "poseidon-lite": "0.3.0", "valibot": "^1.4.2" } }, "sha512-M5dMO1xkSPr+u9t6JIsPiCgEFAjNQvkkCKPkgBvKUiAozsRvaoYfxCI/KYnF2LjGH8CkXP6WPQy1WG7vjSpHGg=="],
+    "@mysten/sui": ["@mysten/sui@2.39.0", "", { "dependencies": { "@graphql-typed-document-node/core": "^3.2.0", "@mysten/bcs": "^2.1.3", "@mysten/utils": "^0.4.2", "@noble/curves": "^2.3.0", "@noble/hashes": "^2.3.0", "@noble/post-quantum": "^0.7.1", "@protobuf-ts/grpcweb-transport": "^2.11.1", "@protobuf-ts/runtime": "^2.11.1", "@protobuf-ts/runtime-rpc": "^2.11.1", "@scure/base": "^2.3.0", "@scure/bip32": "^2.3.0", "@scure/bip39": "^2.3.0", "gql.tada": "^1.11.3", "graphql": "^17.0.2", "poseidon-lite": "0.3.0", "valibot": "^1.4.2" } }, "sha512-smMBKxPGdK485i8i8Y3f1UEMSy3ybO3TZtyn2VXYnaxiz40IHYLjuPGFlfnxp6f/q/XkhmoXFabuUNhf3bryUg=="],
 
-    "@mysten/utils": ["@mysten/utils@0.4.1", "", { "dependencies": { "@scure/base": "^2.3.0" } }, "sha512-gffLJ84CbqG/CcOPuVlwXIRu37tFn0BtUx7CQtbLwJzWjUE7FU2Gq8BXWjzxImnvufcyLTaNWtCPG6wq22Zhog=="],
+    "@mysten/utils": ["@mysten/utils@0.4.2", "", {}, "sha512-K/5eBuYKxUFCrYcic1lvYvWE9OVSH581cjVjwsSJGUqPit91nZq2acUwes+B4lo98VE/CILIUeBcyEIvuNxMhA=="],
 
     "@mysten/wallet-standard": ["@mysten/wallet-standard@0.20.3", "", { "dependencies": { "@wallet-standard/core": "1.1.1" }, "peerDependencies": { "@mysten/sui": "*" } }, "sha512-Kp1EpWaQAwANuMoTCJKVdZnEOaE9aJ5PPvIC7qg+J3u6Uf20VsVsQngZllyaS2OQHm+iLlJzcLXHff7ttvQJYw=="],
 
@@ -591,9 +591,13 @@
 
     "@napi-rs/lzma-linux-x64-gnu": ["@napi-rs/lzma-linux-x64-gnu@1.5.1", "", { "os": "linux", "cpu": "x64" }, "sha512-oTXEIha4SsuXdTA4Iyskj0kpdx2yVXdhd75c2v3xGrHFfVMsbhTPZU/nMPL4sWKo4pBHm3aucLaqGlF696dTyQ=="],
 
+    "@noble/ciphers": ["@noble/ciphers@2.4.0", "", {}, "sha512-AnjFn0Jv92laAkvMrghlFZq4qQCIN/4DxFV/eooqtC2YTjB7kBeLMS2T9KJX4Dn+ZVXLOwK0lSgqDtx9gvxtiw=="],
+
     "@noble/curves": ["@noble/curves@2.4.0", "", { "dependencies": { "@noble/hashes": "2.4.0" } }, "sha512-P4/62zrgfH33CneE3Dn4WhJVA22YUU0eR51wKIan4NVRvwsA0YnPTwWGpNbpuacSujmSFLvyzpyuR30+fbq2Ew=="],
 
     "@noble/hashes": ["@noble/hashes@2.4.0", "", {}, "sha512-X5XaVWZIBCT7HHZGm5I7ZQXDwLG+bGXuSrMQAW+7Zvl87h1kmc1ZB1VSRJcpUfoUrGQp4Fkoxm5kZ+Ms+aW+eA=="],
+
+    "@noble/post-quantum": ["@noble/post-quantum@0.7.1", "", { "dependencies": { "@noble/ciphers": "2.4.0", "@noble/curves": "2.4.0", "@noble/hashes": "2.4.0" } }, "sha512-+P9981IiAnVh+rmcubozzVwrEy3XsN/tMhTnvsjV9VDaYpOnNCqWqKo2FLWxbu92YHfjGIlE5XnW175UK+ln+Q=="],
 
     "@nodelib/fs.scandir": ["@nodelib/fs.scandir@2.1.5", "", { "dependencies": { "@nodelib/fs.stat": "2.0.5", "run-parallel": "^1.1.9" } }, "sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g=="],
 

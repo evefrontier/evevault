@@ -30,6 +30,10 @@ vi.mock('@evefrontier/wallet-core/address-alias', async (importActual) => {
   }
 })
 
+import {
+  addAddressAliasTxBytes,
+  addressAliasesObjectId,
+} from '@evefrontier/wallet-core/address-alias'
 import { useAddressAliases } from '#/wallet/hooks/useAddressAliases'
 
 const OWNER = `0x${'a'.repeat(64)}`
@@ -50,11 +54,11 @@ function setContext(chain = 'sui:devnet') {
 }
 
 // The chain read keeps returning this list after writes, like a lagging
-// owned-object index.
+// fullnode.
 function setAliases(addressAliases: string[]) {
   mockGetAddressAliases.mockResolvedValue({
     enabled: true,
-    objectId: '0xobj',
+    objectId: addressAliasesObjectId(OWNER),
     addressAliases,
   })
 }
@@ -228,27 +232,12 @@ describe('useAddressAliases cache updates', () => {
     )
   })
 
-  it('marks aliasing enabled from the created object in the effects', async () => {
+  it('marks aliasing enabled and adds against the derived object id', async () => {
     mockGetAddressAliases.mockResolvedValue({
       enabled: false,
       addressAliases: [],
     })
-    mockWaitForTransaction.mockResolvedValue({
-      $kind: 'Transaction',
-      Transaction: {
-        effects: {
-          changedObjects: [
-            { objectId: '0xgas', idOperation: 'None' },
-            { objectId: '0xnew', idOperation: 'Created' },
-          ],
-        },
-        objectTypes: {
-          '0xgas': '0x2::coin::Coin<0x2::sui::SUI>',
-          '0xnew': '0x2::address_alias::AddressAliases',
-        },
-      },
-    })
-    const { result } = await renderAliases()
+    const { result, queryClient } = await renderAliases()
 
     await act(async () => {
       await result.current.enable()
@@ -260,5 +249,16 @@ describe('useAddressAliases cache updates', () => {
       await result.current.addAddressAlias(ALIAS_A)
     })
     expect(mockExecuteAddressAliasTx).toHaveBeenCalledTimes(2)
+    expect(
+      queryClient.getQueryData(['address-aliases', OWNER, 'sui:devnet']),
+    ).toMatchObject({ objectId: addressAliasesObjectId(OWNER) })
+    const [{ buildBytes }] = mockExecuteAddressAliasTx.mock.calls[1]
+    await buildBytes(OWNER, {})
+    expect(addAddressAliasTxBytes).toHaveBeenCalledWith(
+      OWNER,
+      addressAliasesObjectId(OWNER),
+      ALIAS_A,
+      {},
+    )
   })
 })

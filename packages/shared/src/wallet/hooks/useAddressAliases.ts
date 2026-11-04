@@ -1,6 +1,6 @@
 import {
-  ADDRESS_ALIASES_TYPE,
   addAddressAliasTxBytes,
+  addressAliasesObjectId,
   enableAddressAliasTxBytes,
   executeAddressAliasTx,
   removeAddressAliasTxBytes,
@@ -10,7 +10,7 @@ import {
   validateNewAddressAlias,
 } from '@evefrontier/wallet-core/address-alias'
 import type { ClientWithCoreApi } from '@mysten/sui/client'
-import { normalizeStructTag, normalizeSuiAddress } from '@mysten/sui/utils'
+import { normalizeSuiAddress } from '@mysten/sui/utils'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo } from 'react'
 import { useToast } from '#/components'
@@ -22,8 +22,6 @@ import {
 } from './useAddressAliases.query'
 import { useTransactionWrite } from './useTransactionWrite'
 import { useWalletSigningContext } from './useWalletSigningContext'
-
-const NORMALIZED_ADDRESS_ALIASES_TYPE = normalizeStructTag(ADDRESS_ALIASES_TYPE)
 
 // Skips the append when a refetch that completed before the update already
 // includes the alias.
@@ -103,7 +101,6 @@ export function useAddressAliases(): UseAddressAliasesResult {
     data,
     isLoading: isReading,
     error: readQueryError,
-    refetch,
   } = useAddressAliasesQuery({ owner: senderAddress, suiClient, chain })
 
   const enabled = data?.enabled ?? false
@@ -111,14 +108,12 @@ export function useAddressAliases(): UseAddressAliasesResult {
     () => data?.addressAliases ?? [],
     [data?.addressAliases],
   )
-  const objectId = data?.objectId
 
   const enable = useCallback(async () => {
     if (!senderAddress) {
       setError('Connect wallet first')
       return
     }
-    let createdObjectId: string | undefined
     await run(
       async () => {
         const digest = await executeAddressAliasTx({
@@ -127,33 +122,14 @@ export function useAddressAliases(): UseAddressAliasesResult {
           signer,
           buildBytes: enableAddressAliasTxBytes,
         })
-        // The owned-object read can miss a just-created object, so take its
-        // id from the effects.
-        const { Transaction: transaction } =
-          await suiClient.core.waitForTransaction({
-            digest,
-            include: { effects: true, objectTypes: true },
-          })
-        createdObjectId = transaction?.effects?.changedObjects.find(
-          (object) => {
-            const type = transaction.objectTypes?.[object.objectId]
-            return (
-              object.idOperation === 'Created' &&
-              type != null &&
-              normalizeStructTag(type) === NORMALIZED_ADDRESS_ALIASES_TYPE
-            )
-          },
-        )?.objectId
+        // Wait for finality so the next alias transaction builds against
+        // the created object and updated gas coin.
+        await suiClient.core.waitForTransaction({ digest })
         return digest
       },
       {
         fallbackMessage: 'Failed to enable address aliasing',
         onSuccess: async () => {
-          if (!createdObjectId) {
-            await refetch()
-            return
-          }
-          const objectId = createdObjectId
           // `enable` registers the owner as the first alias.
           await setAddressAliasesData(
             queryClient,
@@ -161,23 +137,14 @@ export function useAddressAliases(): UseAddressAliasesResult {
             chain,
             () => ({
               enabled: true,
-              objectId,
+              objectId: addressAliasesObjectId(senderAddress),
               addressAliases: [normalizeSuiAddress(senderAddress)],
             }),
           )
         },
       },
     )
-  }, [
-    senderAddress,
-    run,
-    setError,
-    suiClient,
-    signer,
-    refetch,
-    queryClient,
-    chain,
-  ])
+  }, [senderAddress, run, setError, suiClient, signer, queryClient, chain])
 
   // Add and remove share the same guard → validate → build → sign → cache
   // update pipeline; only the validator, bytes builder, list change, and error
@@ -199,10 +166,11 @@ export function useAddressAliases(): UseAddressAliasesResult {
         setError('Connect wallet first')
         return false
       }
-      if (!objectId) {
+      if (!enabled) {
         setError('Enable address aliasing first')
         return false
       }
+      const objectId = addressAliasesObjectId(senderAddress)
       const validationError = validate({
         addressAlias,
         existing: addressAliases,
@@ -247,7 +215,7 @@ export function useAddressAliases(): UseAddressAliasesResult {
     },
     [
       senderAddress,
-      objectId,
+      enabled,
       addressAliases,
       run,
       setError,
@@ -285,10 +253,14 @@ export function useAddressAliases(): UseAddressAliasesResult {
       return validateAddressAliasRemoval({
         addressAlias: params.addressAlias,
         owner: senderAddress,
-        info: { enabled, objectId, addressAliases: params.existing },
+        info: {
+          enabled,
+          objectId: enabled ? addressAliasesObjectId(senderAddress) : undefined,
+          addressAliases: params.existing,
+        },
       })
     },
-    [chain, senderAddress, enabled, objectId],
+    [chain, senderAddress, enabled],
   )
 
   const removeAddressAlias = useCallback(
