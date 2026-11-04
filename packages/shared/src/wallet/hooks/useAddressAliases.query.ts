@@ -15,9 +15,10 @@ const addressAliasesQueryKey = (
 ) => ['address-aliases', owner, chain] as const
 
 /**
- * Writes a confirmed alias change into the cache instead of refetching. The
- * owned-object read can lag a confirmed write, so a refetch can return the
- * pre-change list. Returning `undefined` from `update` leaves the cache as is.
+ * Writes a confirmed alias change into the cache instead of refetching. A
+ * fullnode or indexer behind the write can still return the pre-change object,
+ * so a refetch can return the pre-change list. Returning `undefined` from
+ * `update` leaves the cache as is.
  */
 export async function setAddressAliasesData(
   queryClient: QueryClient,

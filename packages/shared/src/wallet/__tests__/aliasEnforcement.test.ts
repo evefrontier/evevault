@@ -1,11 +1,11 @@
 import { SUI_DEVNET_CHAIN, SUI_LOCALNET_CHAIN } from '@mysten/wallet-standard'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const mockListOwnedObjects = vi.fn()
+const mockGetObject = vi.fn()
 
 vi.mock('#/sui', () => ({
   createSuiClient: vi.fn(() => ({
-    core: { listOwnedObjects: mockListOwnedObjects },
+    core: { getObject: mockGetObject },
   })),
 }))
 
@@ -22,6 +22,7 @@ vi.mock('@mysten/sui/transactions', () => ({
   Transaction: { from: vi.fn() },
 }))
 
+import { addressAliasesObjectId } from '@evefrontier/wallet-core/address-alias'
 import { Transaction } from '@mysten/sui/transactions'
 import {
   assertAliasEnforced,
@@ -32,9 +33,13 @@ import {
 const OWNER = `0x${'a'.repeat(64)}`
 const ALIAS = `0x${'c'.repeat(64)}`
 
-function objectsWith(aliases: string[]) {
+function aliasesObjectWith(aliases: string[]) {
   return {
-    objects: [{ objectId: '0x1', json: { aliases: { contents: aliases } } }],
+    object: {
+      objectId: addressAliasesObjectId(OWNER),
+      type: '0x2::address_alias::AddressAliases',
+      json: { aliases: { contents: aliases } },
+    },
   }
 }
 
@@ -53,7 +58,7 @@ function stubDecodedModules(modules: string[]) {
 }
 
 beforeEach(() => {
-  mockListOwnedObjects.mockReset()
+  mockGetObject.mockReset()
   vi.mocked(Transaction.from).mockReset()
 })
 
@@ -64,7 +69,7 @@ afterEach(() => {
 describe('assertAliasEnforced', () => {
   it('is a no-op when the feature flag is staged off', async () => {
     vi.stubEnv('VITE_ADDRESS_ALIAS_ENFORCEMENT', 'false')
-    mockListOwnedObjects.mockResolvedValue(objectsWith([OWNER]))
+    mockGetObject.mockResolvedValue(aliasesObjectWith([OWNER]))
     await expect(
       assertAliasEnforced({
         chain: SUI_DEVNET_CHAIN,
@@ -73,11 +78,11 @@ describe('assertAliasEnforced', () => {
         msgBytes: new Uint8Array([1]),
       }),
     ).resolves.toBeUndefined()
-    expect(mockListOwnedObjects).not.toHaveBeenCalled()
+    expect(mockGetObject).not.toHaveBeenCalled()
   })
 
   it('throws when the owner has no non-self alias', async () => {
-    mockListOwnedObjects.mockResolvedValue(objectsWith([OWNER]))
+    mockGetObject.mockResolvedValue(aliasesObjectWith([OWNER]))
     await expect(
       assertAliasEnforced({
         chain: SUI_DEVNET_CHAIN,
@@ -88,8 +93,29 @@ describe('assertAliasEnforced', () => {
     ).rejects.toMatchObject({ code: 'alias_enforcement_required' })
   })
 
+  it('throws when the owner has no AddressAliases object', async () => {
+    mockGetObject.mockRejectedValue(
+      Object.assign(new Error('Object not found'), {
+        code: 'notFound',
+        reason: 'notFound',
+      }),
+    )
+    stubDecodedModule('coin')
+    await expect(
+      assertAliasEnforced({
+        chain: SUI_DEVNET_CHAIN,
+        owner: OWNER,
+        scope: 'TransactionData',
+        msgBytes: new Uint8Array([1]),
+      }),
+    ).rejects.toMatchObject({
+      code: 'alias_enforcement_required',
+      status: { satisfied: false, reason: 'no-aliases-object' },
+    })
+  })
+
   it('resolves when a distinct alias exists', async () => {
-    mockListOwnedObjects.mockResolvedValue(objectsWith([ALIAS]))
+    mockGetObject.mockResolvedValue(aliasesObjectWith([ALIAS]))
     stubDecodedModule('coin')
     await expect(
       assertAliasEnforced({
@@ -102,7 +128,7 @@ describe('assertAliasEnforced', () => {
   })
 
   it('bypasses an address-alias setup transaction even when unsatisfied', async () => {
-    mockListOwnedObjects.mockResolvedValue(objectsWith([OWNER]))
+    mockGetObject.mockResolvedValue(aliasesObjectWith([OWNER]))
     stubDecodedModule('address_alias')
     await expect(
       assertAliasEnforced({
@@ -112,11 +138,11 @@ describe('assertAliasEnforced', () => {
         msgBytes: new Uint8Array([1]),
       }),
     ).resolves.toBeUndefined()
-    expect(mockListOwnedObjects).not.toHaveBeenCalled()
+    expect(mockGetObject).not.toHaveBeenCalled()
   })
 
   it('still exempts a pure multi-command alias setup tx', async () => {
-    mockListOwnedObjects.mockResolvedValue(objectsWith([OWNER]))
+    mockGetObject.mockResolvedValue(aliasesObjectWith([OWNER]))
     stubDecodedModules(['address_alias', 'address_alias'])
     await expect(
       assertAliasEnforced({
@@ -126,11 +152,11 @@ describe('assertAliasEnforced', () => {
         msgBytes: new Uint8Array([1]),
       }),
     ).resolves.toBeUndefined()
-    expect(mockListOwnedObjects).not.toHaveBeenCalled()
+    expect(mockGetObject).not.toHaveBeenCalled()
   })
 
   it('does NOT exempt an alias call bundled with other commands (enforces it)', async () => {
-    mockListOwnedObjects.mockResolvedValue(objectsWith([OWNER]))
+    mockGetObject.mockResolvedValue(aliasesObjectWith([OWNER]))
     // A dApp bundling an alias call with a transfer must not claim the exemption.
     stubDecodedModules(['address_alias', 'coin'])
     await expect(
@@ -144,7 +170,7 @@ describe('assertAliasEnforced', () => {
   })
 
   it('does NOT exempt an empty-command tx', async () => {
-    mockListOwnedObjects.mockResolvedValue(objectsWith([OWNER]))
+    mockGetObject.mockResolvedValue(aliasesObjectWith([OWNER]))
     stubDecodedModules([])
     await expect(
       assertAliasEnforced({
@@ -157,7 +183,7 @@ describe('assertAliasEnforced', () => {
   })
 
   it('never gates personal messages (off-chain signatures)', async () => {
-    mockListOwnedObjects.mockResolvedValue(objectsWith([OWNER]))
+    mockGetObject.mockResolvedValue(aliasesObjectWith([OWNER]))
     await expect(
       assertAliasEnforced({
         chain: SUI_DEVNET_CHAIN,
@@ -166,7 +192,7 @@ describe('assertAliasEnforced', () => {
         msgBytes: new Uint8Array([1]),
       }),
     ).resolves.toBeUndefined()
-    expect(mockListOwnedObjects).not.toHaveBeenCalled()
+    expect(mockGetObject).not.toHaveBeenCalled()
   })
 
   it('is a no-op on localnet', async () => {
@@ -178,11 +204,11 @@ describe('assertAliasEnforced', () => {
         msgBytes: new Uint8Array([1]),
       }),
     ).resolves.toBeUndefined()
-    expect(mockListOwnedObjects).not.toHaveBeenCalled()
+    expect(mockGetObject).not.toHaveBeenCalled()
   })
 
   it('reads on-chain state fresh on every call (no caching)', async () => {
-    mockListOwnedObjects.mockResolvedValue(objectsWith([ALIAS]))
+    mockGetObject.mockResolvedValue(aliasesObjectWith([ALIAS]))
     stubDecodedModule('coin')
     const params = {
       chain: SUI_DEVNET_CHAIN,
@@ -193,7 +219,7 @@ describe('assertAliasEnforced', () => {
 
     await assertAliasEnforced(params)
     await assertAliasEnforced(params)
-    expect(mockListOwnedObjects).toHaveBeenCalledTimes(2)
+    expect(mockGetObject).toHaveBeenCalledTimes(2)
   })
 })
 
