@@ -30,9 +30,9 @@ export const TENANT_KEYS: Record<TenantId, TenantConfig> = {
     webOrigin: 'https://evevault.evefrontier.com',
   },
   liminality: {
-    clientId: 'e0b7a1f4-d0a2-4566-83b1-4059c9cbbdf6',
-    serverUrl: 'https://auth.evefrontier.com',
-    webOrigin: 'https://evevault.evefrontier.com',
+    clientId: '24067e95-48ea-4c4c-8736-089b8a230c5b',
+    serverUrl: 'https://ptu.auth.evefrontier.com',
+    webOrigin: 'https://ptu.evevault.evefrontier.com',
   },
   utopia: {
     clientId: '00d3ce5b-4cab-4970-a9dc-e122fc1d30ce',
