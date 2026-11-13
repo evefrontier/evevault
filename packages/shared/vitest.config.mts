@@ -5,6 +5,12 @@ import { playwright } from '@vitest/browser-playwright'
 import tsconfigPaths from 'vite-tsconfig-paths'
 import { defineConfig } from 'vitest/config'
 
+// Amount formatting uses the runtime's default locale, which Node takes from
+// the environment, so on e.g. is_IS `12.3456` renders as `12,3456` and the
+// formatting tests fail. Pin it here, before Vitest forks its workers, so they
+// inherit it and results don't depend on the developer's system locale.
+process.env.LC_ALL = 'en_US.UTF-8'
+
 const viteEnvDefine = {
   'import.meta.env.MODE': JSON.stringify('test'),
   'import.meta.env.VITE_LOG_LEVEL': JSON.stringify('warn'),
