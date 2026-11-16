@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-nvm use 25 --silent
+nvm use --silent
 export TURBO_UI=false
 export PATH="$HOME/.bun/bin:$PATH"
 # GHSA-3v7f-55p6-f55p / GHSA-c2c7-rcm5-vvqj: picomatch 2.3.1 nested inside micromatch/anymatch/readdirp.
