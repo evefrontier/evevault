@@ -11,6 +11,12 @@ import { defineConfig } from 'vitest/config'
 // inherit it and results don't depend on the developer's system locale.
 process.env.LC_ALL = 'en_US.UTF-8'
 
+// Node 25+ enables its own Web Storage by default, and without
+// --localstorage-file its global `localStorage` is undefined, which hides
+// jsdom's. Disable it for the forked workers so tests get jsdom's storage.
+process.env.NODE_OPTIONS =
+  `${process.env.NODE_OPTIONS ?? ''} --no-experimental-webstorage`.trim()
+
 const viteEnvDefine = {
   'import.meta.env.MODE': JSON.stringify('test'),
   'import.meta.env.VITE_LOG_LEVEL': JSON.stringify('warn'),
