@@ -1,3 +1,4 @@
+import { isEveCoinType } from '@evefrontier/wallet-core/eve-token'
 import type { SuiChain } from '@mysten/wallet-standard'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
@@ -39,6 +40,11 @@ export const useTokenListStore = create<TokenListState>()(
         })
       },
       removeToken: (chain: SuiChain, coinType: string) => {
+        // EVE is pinned to the token list
+        if (isEveCoinType(coinType)) {
+          return
+        }
+
         const current = get().tokens[chain] ?? getDefaultTokensForChain(chain)
         set({
           tokens: {

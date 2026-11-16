@@ -1,3 +1,4 @@
+import { TenantId } from '@evefrontier/wallet-core/tenant'
 import { SUI_DEVNET_CHAIN, SUI_TESTNET_CHAIN } from '@mysten/wallet-standard'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -58,6 +59,18 @@ describe('tokenListStore', () => {
     useTokenListStore.getState().removeToken(SUI_DEVNET_CHAIN, '0x9::m::X')
     expect(useTokenListStore.getState().tokens[SUI_DEVNET_CHAIN]).not.toContain(
       '0x9::m::X',
+    )
+  })
+
+  it('removeToken ignores EVE coin types', async () => {
+    const { getEveCoinType } = await vi.importActual<
+      typeof import('@evefrontier/wallet-core/eve-token')
+    >('@evefrontier/wallet-core/eve-token')
+    const eveCoinType = getEveCoinType(TenantId.STILLNESS)
+    useTokenListStore.getState().addToken(SUI_TESTNET_CHAIN, eveCoinType)
+    useTokenListStore.getState().removeToken(SUI_TESTNET_CHAIN, eveCoinType)
+    expect(useTokenListStore.getState().tokens[SUI_TESTNET_CHAIN]).toContain(
+      eveCoinType,
     )
   })
 

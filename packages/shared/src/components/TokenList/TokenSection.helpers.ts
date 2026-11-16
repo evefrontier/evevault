@@ -123,7 +123,8 @@ export function useRefreshBalances(
 
 /**
  * Rewrites tenant-scoped EVE coin aliases after reading persisted tokens so
- * stored token lists remain portable across tenants.
+ * stored token lists remain portable across tenants. Re-adds EVE on chains
+ * whose defaults include it.
  */
 export function useTokensForChain(
   chain: SuiChain | null,
@@ -135,10 +136,14 @@ export function useTokensForChain(
   return useMemo(() => {
     if (!chain) return []
 
-    const stored = tokens[chain] ?? getDefaultTokensForChain(chain, tenantId)
+    const defaults = getDefaultTokensForChain(chain, tenantId)
+    const stored = tokens[chain] ?? defaults
     const mapped = stored.map((token) =>
       isEveCoinType(token) ? currentEveCoinType : token,
     )
+    if (defaults.some(isEveCoinType) && !mapped.includes(currentEveCoinType)) {
+      mapped.push(currentEveCoinType)
+    }
 
     return [...new Set(mapped)]
   }, [chain, tokens, tenantId, currentEveCoinType])

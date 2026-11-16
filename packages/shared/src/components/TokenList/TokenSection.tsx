@@ -1,3 +1,4 @@
+import { isEveCoinType } from '@evefrontier/wallet-core/eve-token'
 import { useQueryClient } from '@tanstack/react-query'
 import type React from 'react'
 import { useState } from 'react'
@@ -82,7 +83,9 @@ export const TokenSection: React.FC<
       </div>
 
       <TokenActions
-        canRemove={Boolean(selectedToken && chain)}
+        canRemove={Boolean(
+          selectedToken && chain && !isEveCoinType(selectedToken),
+        )}
         onAddToken={onAddToken}
         onRemoveToken={handleRemoveToken}
       />
