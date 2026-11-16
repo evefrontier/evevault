@@ -58,6 +58,7 @@ export function useOutsideClick(
 }
 
 const MENU_VIEWPORT_MARGIN_PX = 8
+const MENU_MIN_HEIGHT_PX = 96
 
 /**
  * Returns the smallest of the window bottom, the page body bottom, and the
@@ -88,8 +89,10 @@ function getVisibleBottom(element: HTMLElement) {
 
 /**
  * Sets the menu's max height to the space between its top and the visible
- * bottom, minus a margin, then stores its rendered height. Runs when the menu
- * opens and when the item count changes while open.
+ * bottom, minus a margin, with a floor of the smaller of MENU_MIN_HEIGHT_PX
+ * and its content height, then stores its rendered height. Runs when the menu
+ * opens, when the item count changes while open, and on window resize while
+ * open.
  */
 export function useMeasuredMenuHeight(isOpen: boolean, itemCount = 0) {
   const [menuHeight, setMenuHeight] = useState(0)
@@ -99,11 +102,20 @@ export function useMeasuredMenuHeight(isOpen: boolean, itemCount = 0) {
   useEffect(() => {
     const menu = menuRef.current
     if (!isOpen || !menu) return
-    const visibleBottom = getVisibleBottom(menu)
-    const availableHeight =
-      visibleBottom - menu.getBoundingClientRect().top - MENU_VIEWPORT_MARGIN_PX
-    menu.style.maxHeight = `${Math.max(availableHeight, 0)}px`
-    setMenuHeight(menu.offsetHeight)
+
+    const measure = () => {
+      const availableHeight =
+        getVisibleBottom(menu) -
+        menu.getBoundingClientRect().top -
+        MENU_VIEWPORT_MARGIN_PX
+      const minHeight = Math.min(menu.scrollHeight, MENU_MIN_HEIGHT_PX)
+      menu.style.maxHeight = `${Math.max(availableHeight, minHeight)}px`
+      setMenuHeight(menu.offsetHeight)
+    }
+
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
   }, [isOpen, itemCount])
 
   return { menuHeight, menuRef }
