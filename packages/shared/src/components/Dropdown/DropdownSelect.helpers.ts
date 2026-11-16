@@ -57,18 +57,54 @@ export function useOutsideClick(
   }, [])
 }
 
+const MENU_VIEWPORT_MARGIN_PX = 8
+
 /**
- * Measures the rendered menu after opening so the trigger corner decoration can
- * animate to the actual menu height instead of a hard-coded value.
+ * Returns the smallest of the window bottom, the page body bottom, and the
+ * client-area bottom of the element's nearest clipping or scrolling ancestor.
  */
-export function useMeasuredMenuHeight(isOpen: boolean) {
+function getVisibleBottom(element: HTMLElement) {
+  let visibleBottom = Math.min(
+    window.innerHeight,
+    document.body.getBoundingClientRect().bottom,
+  )
+
+  for (
+    let ancestor = element.parentElement;
+    ancestor && ancestor !== document.body;
+    ancestor = ancestor.parentElement
+  ) {
+    if (getComputedStyle(ancestor).overflowY === 'visible') continue
+    const clientBottom =
+      ancestor.getBoundingClientRect().top +
+      ancestor.clientTop +
+      ancestor.clientHeight
+    visibleBottom = Math.min(visibleBottom, clientBottom)
+    break
+  }
+
+  return visibleBottom
+}
+
+/**
+ * Sets the menu's max height to the space between its top and the visible
+ * bottom, minus a margin, then stores its rendered height. Runs when the menu
+ * opens and when the item count changes while open.
+ */
+export function useMeasuredMenuHeight(isOpen: boolean, itemCount = 0) {
   const [menuHeight, setMenuHeight] = useState(0)
   const menuRef = useRef<HTMLDivElement>(null)
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: itemCount triggers re-measuring when items change while open.
   useEffect(() => {
-    if (!isOpen || !menuRef.current) return
-    setMenuHeight(menuRef.current.offsetHeight)
-  }, [isOpen])
+    const menu = menuRef.current
+    if (!isOpen || !menu) return
+    const visibleBottom = getVisibleBottom(menu)
+    const availableHeight =
+      visibleBottom - menu.getBoundingClientRect().top - MENU_VIEWPORT_MARGIN_PX
+    menu.style.maxHeight = `${Math.max(availableHeight, 0)}px`
+    setMenuHeight(menu.offsetHeight)
+  }, [isOpen, itemCount])
 
   return { menuHeight, menuRef }
 }

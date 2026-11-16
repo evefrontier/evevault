@@ -141,6 +141,12 @@
   font-family: var(--font-body);
 }
 
+/* Thin themed scrollbars for every scroll container */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--quantum-50) transparent;
+}
+
 /* Headings use headline font */
 h1,
 h2,

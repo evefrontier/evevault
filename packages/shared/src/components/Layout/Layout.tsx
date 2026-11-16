@@ -83,8 +83,8 @@ export const Layout: React.FC<LayoutProps> = ({
     }
 
     return (
-      <div className="flex h-full min-h-screen w-full flex-col overflow-hidden">
-        <Background>
+      <div className="flex h-full w-full flex-col overflow-hidden">
+        <Background fillViewport={false}>
           <div
             className="flex h-full flex-1 flex-col overflow-hidden"
             style={{ ...extensionPaddingStyle, gap: EXTENSION_CONTENT_GAP }}

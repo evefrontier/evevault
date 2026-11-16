@@ -133,6 +133,9 @@
   flex-direction: column;
   align-items: stretch;
   gap: 0;
+  /* max-height is set from the space below the menu in useMeasuredMenuHeight */
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 /* Match trigger width on narrow viewports (extension popup, mobile) so each item covers full line */
