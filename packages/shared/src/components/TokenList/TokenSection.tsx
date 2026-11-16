@@ -1,4 +1,3 @@
-import { isEveCoinType } from '@evefrontier/wallet-core/eve-token'
 import { useQueryClient } from '@tanstack/react-query'
 import type React from 'react'
 import { useState } from 'react'
@@ -6,6 +5,7 @@ import { useToast } from '#/components/Toast'
 import { useResponsive } from '#/hooks'
 import { useTokenListStore } from '#/stores'
 import type { TokenListProps } from '#/types'
+import { isPinnedToken } from '#/types/networks'
 import {
   removeSelectedToken,
   useCopyAddress,
@@ -84,7 +84,7 @@ export const TokenSection: React.FC<
 
       <TokenActions
         canRemove={Boolean(
-          selectedToken && chain && !isEveCoinType(selectedToken),
+          selectedToken && chain && !isPinnedToken(chain, selectedToken),
         )}
         onAddToken={onAddToken}
         onRemoveToken={handleRemoveToken}

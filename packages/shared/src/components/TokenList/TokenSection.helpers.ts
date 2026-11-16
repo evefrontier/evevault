@@ -7,7 +7,7 @@ import type { QueryClient } from '@tanstack/react-query'
 import type React from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useContext } from '#/hooks'
-import { getDefaultTokensForChain } from '#/types/networks'
+import { chainPinsEve, getDefaultTokensForChain } from '#/types/networks'
 import { createLogger } from '#/utils'
 
 const SCRAMBLE_INTERVAL_MS = 200
@@ -141,7 +141,7 @@ export function useTokensForChain(
     const mapped = stored.map((token) =>
       isEveCoinType(token) ? currentEveCoinType : token,
     )
-    if (defaults.some(isEveCoinType) && !mapped.includes(currentEveCoinType)) {
+    if (chainPinsEve(chain) && !mapped.includes(currentEveCoinType)) {
       mapped.push(currentEveCoinType)
     }
 
