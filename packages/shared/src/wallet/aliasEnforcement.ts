@@ -148,14 +148,11 @@ export async function assertAliasEnforced({
   msgBytes,
 }: AssertAliasEnforcedParams): Promise<void> {
   if (!isAliasEnforcementFeatureEnabled()) return
-  if (!chain || isLocalnetChain(chain)) return
-  if (!owner) return
+  if (!chain || isLocalnetChain(chain) || !owner) return
 
   // Only on-chain transactions are gated; off-chain signatures pass through.
-  if (scope !== 'TransactionData') return
-
   // Exempt the alias-setup transaction so the first alias can be registered.
-  if (isAliasSetupBytes(msgBytes)) return
+  if (scope !== 'TransactionData' || isAliasSetupBytes(msgBytes)) return
 
   if (isEnforcementOverridden(owner)) return
 

@@ -44,6 +44,45 @@ function errorMessageFrom(error: unknown): string {
   return error instanceof Error ? error.message : 'Unknown error occurred'
 }
 
+// Reads and parses the popup's pending action; rejects when there is none.
+async function loadPendingAction<TPending>(
+  parsePending: PendingParser<TPending>,
+  missingError: string,
+): Promise<TPending> {
+  const { pendingAction } = await browser.storage.local.get('pendingAction')
+  if (!pendingAction) throw new Error(missingError)
+  return parsePending(pendingAction)
+}
+
+// Writes the popup's result to storage, always stamping the windowId and the
+// per-request id so the background can bind the result to the request that
+// opened this popup.
+async function writePopupResult<TPending extends { requestId?: string }>(
+  result: PopupResultPayload,
+  targetPending: TPending | null,
+  getWindowId: (pending: TPending) => number,
+): Promise<boolean> {
+  if (!targetPending) return false
+
+  const { requestId } = targetPending
+  if (!requestId) {
+    // The background drops any result whose requestId doesn't match the
+    // request, so writing one without a requestId would leave the request
+    // hanging forever with no error. Fail loud instead of failing silently.
+    log.error('Refusing to store sign result: pending action has no requestId')
+    return false
+  }
+
+  await browser.storage.local.set({
+    transactionResult: {
+      ...result,
+      windowId: getWindowId(targetPending),
+      requestId,
+    },
+  })
+  return true
+}
+
 export function usePendingSignAction<TPending extends { requestId?: string }>({
   parsePending,
   missingError,
@@ -58,62 +97,24 @@ export function usePendingSignAction<TPending extends { requestId?: string }>({
   const auth = useSignPopupAuth()
 
   useEffect(() => {
-    browser.storage.local
-      .get('pendingAction')
-      .then(async (data) => {
-        const pendingAction = data.pendingAction
-        if (!pendingAction) {
-          setError(missingError)
-          return
-        }
-
-        try {
-          setPending(await parsePending(pendingAction))
-        } catch (err) {
-          setError(errorMessageFrom(err))
-        }
-      })
+    loadPendingAction(parsePending, missingError)
+      .then(setPending)
       .catch((err) => {
         setError(errorMessageFrom(err))
       })
   }, [missingError, parsePending])
 
-  // Writes the popup's result to storage, always stamping the windowId and the
-  // per-request id so the background can bind the result to the request that
-  // opened this popup. All result writers must go through here.
-  const storeResult = async (
+  // All result writers must go through here.
+  const storeResult = (
     result: PopupResultPayload,
     targetPending = pending,
-  ): Promise<boolean> => {
-    if (!targetPending) return false
+  ): Promise<boolean> => writePopupResult(result, targetPending, getWindowId)
 
-    const { requestId } = targetPending
-    if (!requestId) {
-      // The background drops any result whose requestId doesn't match the
-      // request, so writing one without a requestId would leave the request
-      // hanging forever with no error. Fail loud instead of failing silently.
-      log.error(
-        'Refusing to store sign result: pending action has no requestId',
-      )
-      return false
-    }
-
-    await browser.storage.local.set({
-      transactionResult: {
-        ...result,
-        windowId: getWindowId(targetPending),
-        requestId,
-      },
-    })
-    return true
-  }
-
-  const storeErrorResult = async (
+  const storeErrorResult = (
     errorMessage: string,
     targetPending = pending,
-  ): Promise<boolean> => {
-    return storeResult({ status: 'error', error: errorMessage }, targetPending)
-  }
+  ): Promise<boolean> =>
+    storeResult({ status: 'error', error: errorMessage }, targetPending)
 
   // If a sign attempt reaches the keeper after its unlock window expired, flip
   // this popup to the lock screen and keep the request pending instead of
@@ -135,9 +136,9 @@ export function usePendingSignAction<TPending extends { requestId?: string }>({
       // refused write would leave the dApp request hanging with no response.
       if (await storeErrorResult(rejectError, pending)) {
         window.close()
-        return
+      } else {
+        setError(rejectFailureError)
       }
-      setError(rejectFailureError)
     } catch (err) {
       log.error(rejectLogMessage, err)
       setError(rejectFailureError)

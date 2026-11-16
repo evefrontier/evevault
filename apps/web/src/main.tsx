@@ -9,7 +9,7 @@ import '@evevault/shared/theme/global.css'
 import { applyTheme } from '@evevault/shared/theme'
 import './styles/index.css'
 import { Button, ToastProvider } from '@evevault/shared/components'
-import { createLogger } from '@evevault/shared/utils'
+import { createLogger, renderBootError } from '@evevault/shared/utils'
 import { requestPersistentStorage } from '@/lib/persistentStorage'
 
 const log = createLogger()
@@ -86,20 +86,5 @@ try {
   )
 } catch (error) {
   log.error('Failed to render app', error)
-  // Built via DOM APIs (not innerHTML) so the error message is inert text —
-  // also keeps this compatible with require-trusted-types-for 'script'.
-  const container = document.createElement('div')
-  container.style.padding = '20px'
-  const heading = document.createElement('h1')
-  heading.textContent = 'EVE Vault'
-  const message = document.createElement('p')
-  message.style.color = 'red'
-  message.textContent = `Failed to initialize: ${
-    error instanceof Error ? error.message : String(error)
-  }`
-  const reloadButton = document.createElement('button')
-  reloadButton.textContent = 'Reload'
-  reloadButton.addEventListener('click', () => window.location.reload())
-  container.append(heading, message, reloadButton)
-  rootElement.replaceChildren(container)
+  renderBootError(rootElement, error)
 }

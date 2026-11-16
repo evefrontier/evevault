@@ -68,6 +68,21 @@ export function getSponsoredApproveError(
   return null
 }
 
+// Decodes the backend payload once. `null` bytes means undecodable base64.
+// Approve is blocked (with a warning) when the payload carries an alias call or
+// can't be decoded.
+function decodeSponsoredPayload(sponsoredTxB64: unknown): {
+  bytes: Uint8Array | null
+  blockReason: string | null
+} {
+  if (typeof sponsoredTxB64 !== 'string') {
+    return { bytes: null, blockReason: null }
+  }
+  const bytes = b64ToBytesOrNull(sponsoredTxB64)
+  const blocked = bytes === null || transactionContainsAddressAliasCall(bytes)
+  return { bytes, blockReason: blocked ? ADDRESS_ALIAS_SIGNING_BLOCKED : null }
+}
+
 function SponsoredDetail({
   label,
   value,
@@ -87,6 +102,83 @@ function SponsoredDetail({
       </span>
     </div>
   )
+}
+
+function SponsoredRequestDetails({
+  pending,
+}: {
+  pending: ParsedSponsoredTransaction | null
+}) {
+  return (
+    <div className="w-[320px] max-w-[88vw] border border-(--matter-05) p-3">
+      <Text size="small" color="grey-neutral">
+        Sponsored request
+      </Text>
+      <div className="mt-2 flex flex-col gap-2">
+        <SponsoredDetail label="Action" value={pending?.sponsoredAction} />
+        <SponsoredDetail
+          label="Assembly"
+          value={
+            pending?.assembly != null ? String(pending.assembly) : undefined
+          }
+        />
+        <SponsoredDetail label="Type" value={pending?.assemblyType} />
+        <SponsoredDetail label="URL" value={pending?.metadata?.url} />
+        <SponsoredDetail label="Name" value={pending?.metadata?.name} />
+        <SponsoredDetail
+          label="Description"
+          value={pending?.metadata?.description}
+        />
+      </div>
+    </div>
+  )
+}
+
+function buildSponsoredTabs({
+  simulation,
+  senderAddress,
+  riskFindings,
+  needsRiskAck,
+  displayValue,
+}: {
+  simulation: ReturnType<typeof useTransactionSimulation>
+  senderAddress: string | undefined
+  riskFindings: ReturnType<typeof reviewTransaction>
+  needsRiskAck: boolean
+  displayValue: string | undefined
+}): ApprovalTab[] {
+  return [
+    {
+      id: 'outcome',
+      label: 'Outcome',
+      content: (
+        <TransactionSimulationPanel
+          state={simulation}
+          senderAddress={senderAddress}
+          gasPaidBySponsor
+        />
+      ),
+    },
+    ...(riskFindings.length > 0
+      ? [
+          {
+            id: 'warnings',
+            label: `Warnings (${riskFindings.length})`,
+            tone: needsRiskAck ? ('danger' as const) : ('default' as const),
+            content: <TransactionRiskPanel findings={riskFindings} />,
+          },
+        ]
+      : []),
+    ...(displayValue
+      ? [
+          {
+            id: 'payload',
+            label: 'Payload',
+            content: <Json value={displayValue} className="max-h-52 text-xs" />,
+          },
+        ]
+      : []),
+  ]
 }
 
 function SignSponsoredTransaction() {
@@ -119,26 +211,13 @@ function SignSponsoredTransaction() {
     getWindowId: (pending) => pending.windowId,
   })
 
-  // Decode the backend payload once. `null` means undecodable base64, which we
-  // treat as blocked below.
-  const sponsoredBytes =
-    typeof pending?.sponsoredTxB64 === 'string'
-      ? b64ToBytesOrNull(pending.sponsoredTxB64)
-      : null
-
-  // Block Approve (with a warning) when the payload carries an alias call or
-  // can't be decoded.
-  const aliasBlockReason =
-    typeof pending?.sponsoredTxB64 === 'string' &&
-    (sponsoredBytes === null ||
-      transactionContainsAddressAliasCall(sponsoredBytes))
-      ? ADDRESS_ALIAS_SIGNING_BLOCKED
-      : null
+  const { bytes: sponsoredBytes, blockReason: aliasBlockReason } =
+    decodeSponsoredPayload(pending?.sponsoredTxB64)
 
   const handleApprove = async () => {
-    if (!pending) return
     // Never sign an alias call, even if the disabled button is bypassed.
-    if (aliasBlockReason) return
+    // sponsoredBytes is only null when aliasBlockReason is set.
+    if (!pending || aliasBlockReason || !sponsoredBytes) return
     const validationError = getSponsoredApproveError(isLocalnet, auth)
     if (validationError) {
       setError(validationError)
@@ -146,10 +225,6 @@ function SignSponsoredTransaction() {
     }
 
     if (!(await ensureAlias())) return
-
-    // sponsoredBytes is non-null here: a null decode sets aliasBlockReason, which
-    // the guard above already returned on.
-    if (!sponsoredBytes) return
 
     try {
       setLoading(true)
@@ -167,18 +242,19 @@ function SignSponsoredTransaction() {
       })
       // A refused write (e.g. missing requestId) would strand the sponsored
       // request, so keep the popup open and surface the error instead of closing.
-      if (!stored) {
+      if (stored) {
+        window.close()
+      } else {
         setError('Failed to record the signing result. Please try again.')
-        return
       }
-      window.close()
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Unknown error occurred'
-      if (await recoverIfLocked(errorMessage)) return
-      log.error('Sponsored transaction signing failed', err)
-      setError(errorMessage)
-      await storeErrorResult(errorMessage)
+      if (!(await recoverIfLocked(errorMessage))) {
+        log.error('Sponsored transaction signing failed', err)
+        setError(errorMessage)
+        await storeErrorResult(errorMessage)
+      }
     } finally {
       setLoading(false)
     }
@@ -201,40 +277,13 @@ function SignSponsoredTransaction() {
     simulation?.status === 'ready' && simulation.simulation.status === 'failure'
   const needsRiskAck = requiresAcknowledgement(riskFindings)
 
-  const tabs: ApprovalTab[] = [
-    {
-      id: 'outcome',
-      label: 'Outcome',
-      content: (
-        <TransactionSimulationPanel
-          state={simulation}
-          senderAddress={senderAddress ?? undefined}
-          gasPaidBySponsor
-        />
-      ),
-    },
-    ...(riskFindings.length > 0
-      ? [
-          {
-            id: 'warnings',
-            label: `Warnings (${riskFindings.length})`,
-            tone: needsRiskAck ? ('danger' as const) : ('default' as const),
-            content: <TransactionRiskPanel findings={riskFindings} />,
-          },
-        ]
-      : []),
-    ...(pending?.displayValue
-      ? [
-          {
-            id: 'payload',
-            label: 'Payload',
-            content: (
-              <Json value={pending.displayValue} className="max-h-52 text-xs" />
-            ),
-          },
-        ]
-      : []),
-  ]
+  const tabs = buildSponsoredTabs({
+    simulation,
+    senderAddress: senderAddress ?? undefined,
+    riskFindings,
+    needsRiskAck,
+    displayValue: pending?.displayValue,
+  })
 
   return (
     <>
@@ -259,32 +308,7 @@ function SignSponsoredTransaction() {
         onReject={handleReject}
       >
         <div className="flex w-full flex-col items-center gap-2">
-          <div className="w-[320px] max-w-[88vw] border border-(--matter-05) p-3">
-            <Text size="small" color="grey-neutral">
-              Sponsored request
-            </Text>
-            <div className="mt-2 flex flex-col gap-2">
-              <SponsoredDetail
-                label="Action"
-                value={pending?.sponsoredAction}
-              />
-              <SponsoredDetail
-                label="Assembly"
-                value={
-                  pending?.assembly != null
-                    ? String(pending.assembly)
-                    : undefined
-                }
-              />
-              <SponsoredDetail label="Type" value={pending?.assemblyType} />
-              <SponsoredDetail label="URL" value={pending?.metadata?.url} />
-              <SponsoredDetail label="Name" value={pending?.metadata?.name} />
-              <SponsoredDetail
-                label="Description"
-                value={pending?.metadata?.description}
-              />
-            </div>
-          </div>
+          <SponsoredRequestDetails pending={pending} />
 
           {pending && (
             <ApprovalTabs

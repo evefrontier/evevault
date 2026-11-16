@@ -1,22 +1,13 @@
-import type { FC, MouseEvent } from 'react'
+import type { FC, MouseEvent, RefObject } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import './Button.css'
 import { Corners } from '#/components/Corners'
 import type { ButtonProps } from '#/types'
 
-export const Button: FC<ButtonProps> = ({
-  size = 'medium',
-  variant = 'primary',
-  children,
-  className = '',
-  disabled,
-  isLoading = false,
-  onClick,
-  ...props
-}) => {
-  const sizeClass = `button--${size}`
-  const variantClass = `button--${variant}`
+type ClickHandler = ButtonProps['onClick']
 
+// Wraps onClick so a returned promise shows the spinner until it settles.
+function useAsyncClickLoading(onClick: ClickHandler) {
   const [selfLoading, setSelfLoading] = useState(false)
   const mountedRef = useRef(true)
   useEffect(() => {
@@ -41,20 +32,19 @@ export const Button: FC<ButtonProps> = ({
       }
     : undefined
 
-  const loading = isLoading || selfLoading
-  const isDisabled = disabled || loading
-  const disabledClass = isDisabled ? 'button--disabled' : ''
-  const showDecorations = variant === 'primary' || variant === 'secondary'
+  return { selfLoading, handleClick }
+}
 
-  const contentRef = useRef<HTMLSpanElement>(null)
-  const [contentWidth, setContentWidth] = useState<number | undefined>()
+// Tracks the element's rendered width, re-measured on window resize.
+function useElementWidth(ref: RefObject<HTMLElement | null>) {
+  const [width, setWidth] = useState<number | undefined>()
 
   useEffect(() => {
     let rafId: number | null = null
 
     const updateWidth = () => {
-      if (contentRef.current) {
-        setContentWidth(contentRef.current.offsetWidth)
+      if (ref.current) {
+        setWidth(ref.current.offsetWidth)
       }
     }
 
@@ -77,7 +67,33 @@ export const Button: FC<ButtonProps> = ({
         cancelAnimationFrame(rafId)
       }
     }
-  }, [])
+  }, [ref])
+
+  return width
+}
+
+export const Button: FC<ButtonProps> = ({
+  size = 'medium',
+  variant = 'primary',
+  children,
+  className = '',
+  disabled,
+  isLoading = false,
+  onClick,
+  ...props
+}) => {
+  const sizeClass = `button--${size}`
+  const variantClass = `button--${variant}`
+
+  const { selfLoading, handleClick } = useAsyncClickLoading(onClick)
+
+  const loading = isLoading || selfLoading
+  const isDisabled = disabled || loading
+  const disabledClass = isDisabled ? 'button--disabled' : ''
+  const showDecorations = variant === 'primary' || variant === 'secondary'
+
+  const contentRef = useRef<HTMLSpanElement>(null)
+  const contentWidth = useElementWidth(contentRef)
 
   return (
     <button
