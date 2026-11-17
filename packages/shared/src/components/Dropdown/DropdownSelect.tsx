@@ -27,7 +27,7 @@ export const DropdownSelect: React.FC<DropdownSelectProps> = ({
     controlledIsOpen,
     onOpenChange,
   })
-  const { menuHeight, menuRef } = useMeasuredMenuHeight(isOpen)
+  const { menuHeight, menuRef } = useMeasuredMenuHeight(isOpen, items?.length)
   const showIconOnly = useShowIconOnly()
   useOutsideClick(dropdownRef, () => setIsOpen(false))
 

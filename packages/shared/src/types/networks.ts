@@ -1,4 +1,7 @@
-import { getEveCoinType } from '@evefrontier/wallet-core/eve-token'
+import {
+  getEveCoinType,
+  isEveCoinType,
+} from '@evefrontier/wallet-core/eve-token'
 import { TenantId } from '@evefrontier/wallet-core/tenant'
 import {
   SUI_DEVNET_CHAIN,
@@ -98,4 +101,14 @@ export function getDefaultTokensForChain(
     return [SUI_COIN_TYPE, getEveCoinType(tenantId)]
   }
   return [...(DEFAULT_TOKENS_BY_CHAIN[chain] ?? [SUI_COIN_TYPE])]
+}
+
+/** True when the chain's default tokens include an EVE coin type. */
+export function chainPinsEve(chain: string): boolean {
+  return getDefaultTokensForChain(chain).some(isEveCoinType)
+}
+
+/** True for EVE coin types on chains whose default tokens include EVE. */
+export function isPinnedToken(chain: string, coinType: string): boolean {
+  return isEveCoinType(coinType) && chainPinsEve(chain)
 }

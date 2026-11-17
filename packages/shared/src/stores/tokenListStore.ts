@@ -6,6 +6,7 @@ import type { TokenListState } from '#/types'
 import {
   DEFAULT_TOKENS_BY_CHAIN,
   getDefaultTokensForChain,
+  isPinnedToken,
 } from '#/types/networks'
 import { isWeb } from '#/utils/environment'
 import { TOKENLIST_STORAGE_KEY } from '#/utils/storageKeys'
@@ -39,6 +40,10 @@ export const useTokenListStore = create<TokenListState>()(
         })
       },
       removeToken: (chain: SuiChain, coinType: string) => {
+        if (isPinnedToken(chain, coinType)) {
+          return
+        }
+
         const current = get().tokens[chain] ?? getDefaultTokensForChain(chain)
         set({
           tokens: {

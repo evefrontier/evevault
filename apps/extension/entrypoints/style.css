@@ -66,3 +66,12 @@ main {
   height: var(--extension-height);
 }
 
+/* Standalone windows taller than the 600px toolbar popup limit fill the window height */
+@media (min-height: 601px) {
+  html,
+  body,
+  #root {
+    height: 100vh;
+  }
+}
+

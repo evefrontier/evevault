@@ -5,6 +5,7 @@ import { useToast } from '#/components/Toast'
 import { useResponsive } from '#/hooks'
 import { useTokenListStore } from '#/stores'
 import type { TokenListProps } from '#/types'
+import { isPinnedToken } from '#/types/networks'
 import {
   removeSelectedToken,
   useCopyAddress,
@@ -82,7 +83,9 @@ export const TokenSection: React.FC<
       </div>
 
       <TokenActions
-        canRemove={Boolean(selectedToken && chain)}
+        canRemove={Boolean(
+          selectedToken && chain && !isPinnedToken(chain, selectedToken),
+        )}
         onAddToken={onAddToken}
         onRemoveToken={handleRemoveToken}
       />

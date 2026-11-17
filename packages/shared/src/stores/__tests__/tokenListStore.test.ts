@@ -1,3 +1,5 @@
+import { getEveCoinType } from '@evefrontier/wallet-core/eve-token'
+import { TenantId } from '@evefrontier/wallet-core/tenant'
 import { SUI_DEVNET_CHAIN, SUI_TESTNET_CHAIN } from '@mysten/wallet-standard'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -5,16 +7,6 @@ vi.mock('#/utils/environment', () => ({
   isWeb: vi.fn(() => true),
   isExtension: vi.fn(() => false),
 }))
-
-vi.mock('@evefrontier/wallet-core/eve-token', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('@evefrontier/wallet-core/eve-token')>()
-
-  return {
-    ...actual,
-    getEveCoinType: vi.fn(() => '0xmock::EVE::EVE'),
-  }
-})
 
 import { useTokenListStore } from '#/stores/tokenListStore'
 import { DEFAULT_TOKENS_BY_CHAIN } from '#/types/networks'
@@ -58,6 +50,23 @@ describe('tokenListStore', () => {
     useTokenListStore.getState().removeToken(SUI_DEVNET_CHAIN, '0x9::m::X')
     expect(useTokenListStore.getState().tokens[SUI_DEVNET_CHAIN]).not.toContain(
       '0x9::m::X',
+    )
+  })
+
+  it('removeToken ignores EVE on chains whose defaults include it', () => {
+    const eveCoinType = getEveCoinType(TenantId.STILLNESS)
+    useTokenListStore.getState().removeToken(SUI_TESTNET_CHAIN, eveCoinType)
+    expect(useTokenListStore.getState().tokens[SUI_TESTNET_CHAIN]).toContain(
+      eveCoinType,
+    )
+  })
+
+  it('removeToken removes EVE on chains whose defaults exclude it', () => {
+    const eveCoinType = getEveCoinType(TenantId.STILLNESS)
+    useTokenListStore.getState().addToken(SUI_DEVNET_CHAIN, eveCoinType)
+    useTokenListStore.getState().removeToken(SUI_DEVNET_CHAIN, eveCoinType)
+    expect(useTokenListStore.getState().tokens[SUI_DEVNET_CHAIN]).not.toContain(
+      eveCoinType,
     )
   })
 

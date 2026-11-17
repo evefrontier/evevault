@@ -12,6 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DropdownSelect } from '../DropdownSelect'
 import {
   useDropdownOpenState,
+  useMeasuredMenuHeight,
   useShowIconOnly,
 } from '../DropdownSelect.helpers'
 import { DropdownSelectMenu } from '../DropdownSelect.parts'
@@ -193,5 +194,62 @@ describe('DropdownSelect', () => {
         )
       }
     }
+  })
+})
+
+describe('useMeasuredMenuHeight', () => {
+  let menu: HTMLDivElement
+  let menuTop: number
+
+  beforeEach(() => {
+    menu = document.createElement('div')
+    document.body.appendChild(menu)
+    menuTop = 100
+    vi.spyOn(menu, 'getBoundingClientRect').mockImplementation(
+      () => ({ top: menuTop }) as DOMRect,
+    )
+    Object.defineProperty(menu, 'scrollHeight', {
+      configurable: true,
+      value: 500,
+    })
+    vi.spyOn(document.body, 'getBoundingClientRect').mockReturnValue({
+      bottom: Number.POSITIVE_INFINITY,
+    } as DOMRect)
+    vi.stubGlobal('innerHeight', 600)
+  })
+
+  afterEach(() => {
+    menu.remove()
+    vi.restoreAllMocks()
+    vi.unstubAllGlobals()
+  })
+
+  /** Renders the hook open with menuRef pointing at the stubbed menu element. */
+  function renderOpenMenu() {
+    return renderHook(() => {
+      const result = useMeasuredMenuHeight(true)
+      result.menuRef.current = menu
+      return result
+    })
+  }
+
+  it('caps the max height at the space below the menu, minus a margin', () => {
+    renderOpenMenu()
+    expect(menu.style.maxHeight).toBe('492px')
+  })
+
+  it('keeps a minimum height when there is no space below the menu', () => {
+    menuTop = 590
+    renderOpenMenu()
+    expect(menu.style.maxHeight).toBe('96px')
+  })
+
+  it('re-measures on window resize while open', () => {
+    renderOpenMenu()
+    act(() => {
+      vi.stubGlobal('innerHeight', 400)
+      window.dispatchEvent(new Event('resize'))
+    })
+    expect(menu.style.maxHeight).toBe('292px')
   })
 })
