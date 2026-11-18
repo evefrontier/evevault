@@ -1,0 +1,39 @@
+name: zizmor
+
+# Audits the workflows and actions under .github/ for security issues
+# (unpinned actions, cache poisoning, credential leaks, template injection).
+# Same triggers as ci.yml. No path filter, so it can be a required status
+# check.
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions: {}
+
+jobs:
+  zizmor:
+    runs-on: ubuntu-latest
+    permissions:
+      # Only needed for private repos; kept so this file matches the other
+      # evefrontier repos.
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: Run zizmor
+        uses: zizmorcore/zizmor-action@45d7276c9ca790aabd705e31ca99c6185c3e76dd # v0.8.1
+        with:
+          # Pinned so a new zizmor release can't fail PRs that don't touch
+          # workflows; upgrade it on purpose.
+          version: 1.32.0
+          # SARIF upload (code scanning) never fails the job; annotations show
+          # findings on the PR and the job fails on any finding.
+          advanced-security: false
+          annotations: true
