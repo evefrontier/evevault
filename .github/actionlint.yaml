@@ -1,0 +1,14 @@
+# actionlint config. Qlty runs actionlint on pull requests.
+#
+# This file exists because actionlint does not yet support some GitHub
+# Actions features we use. Those features improve security, which matters
+# more than an incorrect message from a linter. Only the specific messages
+# below are ignored; actionlint still checks everything else.
+#
+# - `cache-mode: none` (workflow level) stops every action in the workflow
+#   from restoring or saving caches, so release builds can't use caches that
+#   other workflows could have written (cache poisoning).
+paths:
+  .github/workflows/**/*.{yml,yaml}:
+    ignore:
+      - 'unexpected key "cache-mode" for "workflow" section'
