@@ -1,5 +1,5 @@
 import type { SuiChain } from '@mysten/wallet-standard'
-import { User } from 'oidc-client-ts'
+import { User, type UserManager } from 'oidc-client-ts'
 import { userToJwtResponse } from '#/auth/userToJwtResponse'
 import { resolveExpiresAt } from '#/auth/utils/authStoreUtils'
 import { verifyIdTokenForTenant } from '#/auth/verifyJwt'
@@ -16,6 +16,55 @@ import {
 
 const log = createLogger()
 
+// Returns the stored user, re-deriving the salt if it was stripped.
+async function resumeWebSession(
+  webUser: User | null,
+  webUserManager: UserManager,
+): Promise<User | null> {
+  if (!webUser) return null
+  // Salt is stripped from sessionStorage for security. The user is loaded
+  // from storage without salt, so it is re-derived via the API Gateway before returning
+  // so the in-memory auth store is always fully enriched for signing.
+  const hasSalt =
+    typeof (webUser.profile as Record<string, unknown>)?.salt === 'string'
+  if (!hasSalt) return persistEnrichedUser(new User(webUser), webUserManager)
+  return webUser
+}
+
+// Silently renews an expired session when a refresh token is present.
+async function renewWebSession(
+  webUser: User | null,
+  webUserManager: UserManager,
+  network: SuiChain,
+): Promise<User | null> {
+  if (!webUser?.refresh_token?.trim()) {
+    log.info('Web init: no session or refresh token, not logged in', {
+      network,
+    })
+    return null
+  }
+
+  try {
+    const renewedUser = await webUserManager.signinSilent()
+
+    if (!renewedUser) {
+      return null
+    }
+
+    if (renewedUser.id_token) {
+      await verifyIdTokenForTenant(renewedUser.id_token, getCurrentTenantId())
+    }
+
+    return persistEnrichedUser(new User(renewedUser), webUserManager)
+  } catch (error) {
+    log.warn('Web init: silent renew failed, not logged in', {
+      network,
+      error: error instanceof Error ? error.message : String(error),
+    })
+    return null
+  }
+}
+
 export async function initializeWebSession(
   getUserManagerInstance: GetUserManagerInstance,
   network: SuiChain,
@@ -26,49 +75,14 @@ export async function initializeWebSession(
    * clean null user so callers can render the logged-out state.
    */
   const webUserManager = getUserManagerInstance()
-  let webUser = await webUserManager.getUser()
+  const webUser = await webUserManager.getUser()
 
   const webJwt = userToJwtResponse(webUser)
   const now = Math.floor(Date.now() / 1000)
   const isExpired = !webJwt || now >= resolveExpiresAt(webJwt)
 
-  if (!isExpired) {
-    if (!webUser) return null
-    // Salt is stripped from sessionStorage for security. The user is loaded
-    // from storage without salt, so it is re-derived via the API Gateway before returning
-    // so the in-memory auth store is always fully enriched for signing.
-    const hasSalt =
-      typeof (webUser.profile as Record<string, unknown>)?.salt === 'string'
-    if (!hasSalt) return persistEnrichedUser(new User(webUser), webUserManager)
-    return webUser
-  }
-
-  if (!webUser?.refresh_token?.trim()) {
-    log.info('Web init: no session or refresh token, not logged in', {
-      network,
-    })
-    return null
-  }
-
-  try {
-    webUser = await webUserManager.signinSilent()
-
-    if (!webUser) {
-      return null
-    }
-
-    if (webUser.id_token) {
-      await verifyIdTokenForTenant(webUser.id_token, getCurrentTenantId())
-    }
-
-    return persistEnrichedUser(new User(webUser), webUserManager)
-  } catch (error) {
-    log.warn('Web init: silent renew failed, not logged in', {
-      network,
-      error: error instanceof Error ? error.message : String(error),
-    })
-    return null
-  }
+  if (!isExpired) return resumeWebSession(webUser, webUserManager)
+  return renewWebSession(webUser, webUserManager, network)
 }
 
 async function ensureDeviceDataForLogin(

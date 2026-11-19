@@ -7,6 +7,7 @@ import {
   resolveAliasEnforcementStatus,
   useWalletSigningContext,
 } from '#/wallet'
+import type { WalletSigningMode } from '#/wallet/hooks/useWalletSigningContext'
 import { AliasRecoverySetupScreen } from './AliasRecoverySetupScreen'
 
 export interface UseRequireAliasResult {
@@ -19,6 +20,20 @@ export interface UseRequireAliasResult {
   ensureAlias: () => Promise<boolean>
   /** Render this in the component tree so the setup modal can appear. */
   aliasSetupModal: React.ReactNode
+}
+
+function isAliasGateBypassed(
+  mode: WalletSigningMode,
+  senderAddress: string,
+): boolean {
+  return (
+    // Do not gate if feature staged off
+    !isAliasEnforcementFeatureEnabled() ||
+    // Non-zklogin (localnet) accounts are never gated.
+    mode !== 'zklogin' ||
+    // Ops break-glass active (audit-logged); mirror the signing backstop.
+    isEnforcementOverridden(senderAddress)
+  )
 }
 
 /**
@@ -41,23 +56,8 @@ export function useRequireAlias(): UseRequireAliasResult {
   }
 
   const ensureAlias = async (): Promise<boolean> => {
-    if (!isAliasEnforcementFeatureEnabled()) {
-      // Do not gate if feature staged off
-      return true
-    }
-
-    if (mode !== 'zklogin') {
-      // Non-zklogin (localnet) accounts are never gated.
-      return true
-    }
-
-    if (!senderAddress) {
+    if (!senderAddress || isAliasGateBypassed(mode, senderAddress)) {
       // No account to gate; let the downstream no-sender handling take over.
-      return true
-    }
-
-    if (isEnforcementOverridden(senderAddress)) {
-      // Ops break-glass active (audit-logged); mirror the signing backstop.
       return true
     }
 

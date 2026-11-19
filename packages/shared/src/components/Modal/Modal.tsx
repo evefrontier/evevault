@@ -31,6 +31,73 @@ export interface ModalProps {
   fullWidthActions?: boolean
 }
 
+// Close on Escape key
+function useEscapeToClose(isOpen: boolean, onClose?: () => void) {
+  useEffect(() => {
+    if (!isOpen || !onClose) return
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose()
+      }
+    }
+
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [isOpen, onClose])
+}
+
+// Prevent body scroll when modal is open
+function useBodyScrollLock(isOpen: boolean) {
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [isOpen])
+}
+
+function ModalActions({
+  primaryAction,
+  secondaryAction,
+  fullWidthActions,
+}: Pick<ModalProps, 'primaryAction' | 'secondaryAction'> & {
+  fullWidthActions: boolean
+}) {
+  const actionsClass = fullWidthActions ? 'modal__actions--full' : ''
+  const buttonSize = fullWidthActions ? 'fill' : 'medium'
+
+  return (
+    <div className={`modal__actions ${actionsClass}`}>
+      {secondaryAction && (
+        <Button
+          variant="secondary"
+          size={buttonSize}
+          onClick={secondaryAction.onClick}
+          disabled={secondaryAction.disabled}
+        >
+          {secondaryAction.label}
+        </Button>
+      )}
+      {primaryAction && (
+        <Button
+          variant="primary"
+          size={buttonSize}
+          onClick={primaryAction.onClick}
+          isLoading={primaryAction.isLoading}
+          disabled={primaryAction.disabled}
+        >
+          {primaryAction.label}
+        </Button>
+      )}
+    </div>
+  )
+}
+
 export const Modal: React.FC<ModalProps> = ({
   isOpen,
   onClose,
@@ -46,31 +113,8 @@ export const Modal: React.FC<ModalProps> = ({
 }) => {
   const modalRef = useRef<HTMLDivElement>(null)
 
-  // Close on Escape key
-  useEffect(() => {
-    if (!isOpen || !onClose) return
-
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose()
-      }
-    }
-
-    document.addEventListener('keydown', handleEscape)
-    return () => document.removeEventListener('keydown', handleEscape)
-  }, [isOpen, onClose])
-
-  // Prevent body scroll when modal is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
-    return () => {
-      document.body.style.overflow = ''
-    }
-  }, [isOpen])
+  useEscapeToClose(isOpen, onClose)
+  useBodyScrollLock(isOpen)
 
   if (!isOpen) return null
 
@@ -86,7 +130,6 @@ export const Modal: React.FC<ModalProps> = ({
 
   const hasActions = primaryAction || secondaryAction
   const sizeClass = `modal--${size}`
-  const actionsClass = fullWidthActions ? 'modal__actions--full' : ''
 
   return (
     <div
@@ -107,29 +150,11 @@ export const Modal: React.FC<ModalProps> = ({
           {children || (message && <Text color="grey-neutral">{message}</Text>)}
 
           {hasActions && (
-            <div className={`modal__actions ${actionsClass}`}>
-              {secondaryAction && (
-                <Button
-                  variant="secondary"
-                  size={fullWidthActions ? 'fill' : 'medium'}
-                  onClick={secondaryAction.onClick}
-                  disabled={secondaryAction.disabled}
-                >
-                  {secondaryAction.label}
-                </Button>
-              )}
-              {primaryAction && (
-                <Button
-                  variant="primary"
-                  size={fullWidthActions ? 'fill' : 'medium'}
-                  onClick={primaryAction.onClick}
-                  isLoading={primaryAction.isLoading}
-                  disabled={primaryAction.disabled}
-                >
-                  {primaryAction.label}
-                </Button>
-              )}
-            </div>
+            <ModalActions
+              primaryAction={primaryAction}
+              secondaryAction={secondaryAction}
+              fullWidthActions={fullWidthActions}
+            />
           )}
         </div>
       </div>

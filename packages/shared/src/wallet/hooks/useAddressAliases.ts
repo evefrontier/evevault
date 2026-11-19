@@ -33,6 +33,43 @@ const appendAlias = (aliases: string[], alias: string) =>
 const withoutAlias = (aliases: string[], alias: string) =>
   aliases.filter((existing) => normalizeSuiAddress(existing) !== alias)
 
+// Waits for finality so the next alias transaction builds against the
+// updated object and gas coin.
+async function executeAliasTxAndWait(
+  params: Parameters<typeof executeAddressAliasTx>[0],
+): Promise<string> {
+  const digest = await executeAddressAliasTx(params)
+  await params.suiClient.core.waitForTransaction({ digest })
+  return digest
+}
+
+// Blocks removing the last non-self alias where enforcement applies;
+// otherwise only checks membership.
+function validateRemovalFor(
+  params: ValidateAddressAliasParams,
+  chain: string | null | undefined,
+  owner: string | null,
+  enabled: boolean,
+): string | null {
+  if (
+    !isAliasEnforcementFeatureEnabled() ||
+    !chain ||
+    isLocalnetChain(chain) ||
+    !owner
+  ) {
+    return validateExistingAddressAlias(params)
+  }
+  return validateAddressAliasRemoval({
+    addressAlias: params.addressAlias,
+    owner,
+    info: {
+      enabled,
+      objectId: enabled ? addressAliasesObjectId(owner) : undefined,
+      addressAliases: params.existing,
+    },
+  })
+}
+
 interface UseAddressAliasesResult {
   // State
   isAuthenticated: boolean
@@ -115,18 +152,13 @@ export function useAddressAliases(): UseAddressAliasesResult {
       return
     }
     await run(
-      async () => {
-        const digest = await executeAddressAliasTx({
+      () =>
+        executeAliasTxAndWait({
           suiClient,
           sender: senderAddress,
           signer,
           buildBytes: enableAddressAliasTxBytes,
-        })
-        // Wait for finality so the next alias transaction builds against
-        // the created object and updated gas coin.
-        await suiClient.core.waitForTransaction({ digest })
-        return digest
-      },
+        }),
       {
         fallbackMessage: 'Failed to enable address aliasing',
         onSuccess: async () => {
@@ -162,12 +194,12 @@ export function useAddressAliases(): UseAddressAliasesResult {
       applyChange: (aliases: string[], alias: string) => string[],
       fallbackMessage: string,
     ): Promise<boolean> => {
-      if (!senderAddress) {
-        setError('Connect wallet first')
-        return false
-      }
-      if (!enabled) {
-        setError('Enable address aliasing first')
+      if (!senderAddress || !enabled) {
+        setError(
+          senderAddress
+            ? 'Enable address aliasing first'
+            : 'Connect wallet first',
+        )
         return false
       }
       const objectId = addressAliasesObjectId(senderAddress)
@@ -181,19 +213,14 @@ export function useAddressAliases(): UseAddressAliasesResult {
       }
       const trimmed = addressAlias.trim()
       const digest = await run(
-        async () => {
-          const digest = await executeAddressAliasTx({
+        () =>
+          executeAliasTxAndWait({
             suiClient,
             sender: senderAddress,
             signer,
             buildBytes: (sender, client) =>
               buildBytes(sender, objectId, trimmed, client),
-          })
-          // Wait for finality so the next alias transaction builds against
-          // the updated object and gas coin.
-          await suiClient.core.waitForTransaction({ digest })
-          return digest
-        },
+          }),
         {
           fallbackMessage,
           onSuccess: async () => {
@@ -238,28 +265,9 @@ export function useAddressAliases(): UseAddressAliasesResult {
     [submitAliasChange],
   )
 
-  // Blocks removing the last non-self alias where enforcement applies;
-  // otherwise only checks membership.
   const validateRemoval = useCallback(
-    (params: ValidateAddressAliasParams): string | null => {
-      if (
-        !isAliasEnforcementFeatureEnabled() ||
-        !chain ||
-        isLocalnetChain(chain) ||
-        !senderAddress
-      ) {
-        return validateExistingAddressAlias(params)
-      }
-      return validateAddressAliasRemoval({
-        addressAlias: params.addressAlias,
-        owner: senderAddress,
-        info: {
-          enabled,
-          objectId: enabled ? addressAliasesObjectId(senderAddress) : undefined,
-          addressAliases: params.existing,
-        },
-      })
-    },
+    (params: ValidateAddressAliasParams) =>
+      validateRemovalFor(params, chain, senderAddress, enabled),
     [chain, senderAddress, enabled],
   )
 

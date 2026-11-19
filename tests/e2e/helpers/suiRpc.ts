@@ -1,66 +1,66 @@
-import type { Page } from "@playwright/test";
+import type { Page, Request } from '@playwright/test'
 
 interface SuiRpcMockOptions {
-  balance?: string;
+  balance?: string
+}
+
+interface RpcRequestBody {
+  id?: unknown
+  method: string
+  params?: any[]
+}
+
+function parseRpcBody(request: Request): RpcRequestBody | null {
+  if (request.method() !== 'POST') return null
+
+  try {
+    const body = request.postDataJSON()
+    return body?.method ? body : null
+  } catch {
+    return null
+  }
+}
+
+// Returns the mocked result for the RPC method, or undefined to pass it through.
+function mockRpcResult(body: RpcRequestBody, balance: string): unknown {
+  switch (body.method) {
+    case 'sui_getLatestSuiSystemState':
+      return {
+        epoch: '1000',
+        epochDurationMs: '60000',
+        epochStartTimestampMs: '0',
+        storageFundTotal: '0',
+        referenceGasPrice: '1',
+        safeMode: false,
+        protocolVersion: '1',
+      }
+    case 'suix_getBalance':
+      return {
+        totalBalance: balance,
+        coinType: body.params?.[1]?.coinType ?? '0x2::sui::SUI',
+        coinObjectCount: 1,
+        lockedBalance: [],
+      }
+    default:
+      return undefined
+  }
 }
 
 export async function mockSuiRpc(page: Page, options?: SuiRpcMockOptions) {
-  const { balance = "1234567890" } = options ?? {};
+  const { balance = '1234567890' } = options ?? {}
 
-  await page.route("**/fullnode.devnet.sui.io/**", async (route) => {
-    if (route.request().method() !== "POST") {
-      return route.continue();
+  await page.route('**/fullnode.devnet.sui.io/**', async (route) => {
+    const body = parseRpcBody(route.request())
+    const result = body ? mockRpcResult(body, balance) : undefined
+
+    if (!body || result === undefined) {
+      return route.continue()
     }
 
-    let body: any;
-    try {
-      body = route.request().postDataJSON();
-    } catch {
-      return route.continue();
-    }
-
-    if (!body?.method) {
-      return route.continue();
-    }
-
-    if (body.method === "sui_getLatestSuiSystemState") {
-      return route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          jsonrpc: "2.0",
-          id: body.id,
-          result: {
-            epoch: "1000",
-            epochDurationMs: "60000",
-            epochStartTimestampMs: "0",
-            storageFundTotal: "0",
-            referenceGasPrice: "1",
-            safeMode: false,
-            protocolVersion: "1",
-          },
-        }),
-      });
-    }
-
-    if (body.method === "suix_getBalance") {
-      const responseCoinType = body.params?.[1]?.coinType ?? "0x2::sui::SUI";
-      return route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          jsonrpc: "2.0",
-          id: body.id,
-          result: {
-            totalBalance: balance,
-            coinType: responseCoinType,
-            coinObjectCount: 1,
-            lockedBalance: [],
-          },
-        }),
-      });
-    }
-
-    return route.continue();
-  });
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ jsonrpc: '2.0', id: body.id, result }),
+    })
+  })
 }

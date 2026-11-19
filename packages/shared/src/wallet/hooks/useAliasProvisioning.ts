@@ -26,6 +26,26 @@ export interface UseAliasProvisioningResult {
   txDigest: string | null
 }
 
+// Message for the first unmet register precondition.
+function registerPreconditionError(
+  senderAddress: string | null,
+  aliasKey: GeneratedAliasKey | null,
+): string {
+  if (!senderAddress) return 'Connect wallet first'
+  if (!aliasKey) return 'Generate a personal access key first'
+  return 'Confirm you have saved your personal access key first'
+}
+
+async function registerAliasAndWait(
+  params: Parameters<typeof registerAcknowledgedAlias>[0],
+): Promise<string> {
+  const { addDigest } = await registerAcknowledgedAlias(params)
+  // Wait for finality, else the next sign's on-chain enforcement check
+  // can race the write.
+  await params.suiClient.core.waitForTransaction({ digest: addDigest })
+  return addDigest
+}
+
 /**
  * Drives one-time recovery-alias provisioning: generate a client-only key
  * (shown once, never persisted), then register it on-chain once the user
@@ -58,32 +78,19 @@ export function useAliasProvisioning(): UseAliasProvisioningResult {
 
   const register = useCallback(
     async (acknowledged: boolean): Promise<boolean> => {
-      if (!senderAddress) {
-        setError('Connect wallet first')
-        return false
-      }
-      if (!aliasKey) {
-        setError('Generate a personal access key first')
-        return false
-      }
-      if (!acknowledged) {
-        setError('Confirm you have saved your personal access key first')
+      if (!senderAddress || !aliasKey || !acknowledged) {
+        setError(registerPreconditionError(senderAddress, aliasKey))
         return false
       }
       const digest = await run(
-        async () => {
-          const { addDigest } = await registerAcknowledgedAlias({
+        () =>
+          registerAliasAndWait({
             suiClient,
             owner: senderAddress,
             signer,
             aliasAddress: aliasKey.address,
             acknowledged,
-          })
-          // Wait for finality, else the next sign's on-chain enforcement check
-          // can race the write.
-          await suiClient.core.waitForTransaction({ digest: addDigest })
-          return addDigest
-        },
+          }),
         {
           fallbackMessage: 'Failed to register personal access alias',
           onSuccess: () => {

@@ -152,15 +152,17 @@ function hasStringIdAndType(data: Record<string, unknown>): boolean {
   return isValidRequestId(data.id) && typeof data.type === 'string'
 }
 
+function isOptionalString(value: unknown): boolean {
+  return value === undefined || typeof value === 'string'
+}
+
 function isPublicAuthSuccess(data: Record<string, unknown>): boolean {
   return (
     hasStringIdAndType(data) &&
     data.type === 'auth_success' &&
     // chain/address are present on dApp connect success but absent on the bare
     // web-unlock auth_success ({ id, type }); both are valid, token-free shapes.
-    (data.chain === undefined || typeof data.chain === 'string') &&
-    (data.address === undefined || typeof data.address === 'string') &&
-    (data.publicKey === undefined || typeof data.publicKey === 'string')
+    [data.chain, data.address, data.publicKey].every(isOptionalString)
   )
 }
 
@@ -172,12 +174,19 @@ function isPublicAuthError(data: Record<string, unknown>): boolean {
   )
 }
 
+// Carries bytes or a digest, plus a signature or effects.
+function hasSignatureOutput(data: Record<string, unknown>): boolean {
+  return (
+    (typeof data.bytes === 'string' || typeof data.digest === 'string') &&
+    (typeof data.signature === 'string' || typeof data.effects === 'string')
+  )
+}
+
 function isSignatureSuccess(data: Record<string, unknown>): boolean {
   return (
     hasStringIdAndType(data) &&
     data.type === 'sign_success' &&
-    (typeof data.bytes === 'string' || typeof data.digest === 'string') &&
-    (typeof data.signature === 'string' || typeof data.effects === 'string')
+    hasSignatureOutput(data)
   )
 }
 

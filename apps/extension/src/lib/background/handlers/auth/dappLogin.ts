@@ -156,18 +156,9 @@ function checkHasDeviceData(): boolean {
   return ['iv', 'data'].every((field) => field in key)
 }
 
-// Checks that the keeper is unlocked, retrying briefly if device data exists
-// (handles the race where the background script wakes before keeper is ready).
-// If still locked, declines a silent request, otherwise opens the vault popup
-// and deduplicates concurrent requests.
-async function ensureKeeperReady(
-  hasDeviceData: boolean,
-  id: string,
-  target: TabDocument,
-  chain: ReturnType<typeof getCurrentChain>,
-  dappContext: DappRequestContext,
-  silent: boolean,
-): Promise<KeeperReadyResult> {
+// Checks the keeper, retrying briefly if device data exists (handles the race
+// where the background script wakes before keeper is ready).
+async function waitForKeeperUnlock(hasDeviceData: boolean) {
   let keeperStatus = await checkKeeperUnlocked()
 
   if (!keeperStatus.unlocked && hasDeviceData) {
@@ -178,28 +169,18 @@ async function ensureKeeperReady(
     }
   }
 
-  if (keeperStatus.unlocked) {
-    return { ready: true, publicKeyBytes: keeperStatus.publicKeyBytes }
-  }
+  return keeperStatus
+}
 
-  if (silent) {
-    declineSilentConnect(
-      target,
-      [id],
-      dappContext,
-      hasDeviceData ? 'vault is locked' : 'vault is not set up',
-    )
-    return { ready: false }
-  }
-
-  log.error('Cannot login: vault not set up or locked', {
-    chain,
-    hasDeviceData,
-  })
-
+// Opens the vault popup for a locked or unset vault and deduplicates
+// concurrent requests. The request is answered after unlock, or with an error.
+async function openVaultForConnect(
+  { id, target, dappContext }: DappConnectRequest,
+  hasDeviceData: boolean,
+): Promise<void> {
   if (addPendingDappId(target, id, dappContext)) {
     log.debug('Connect deduplicated for tab', { tabId: target.tabId, id })
-    return { ready: false }
+    return
   }
 
   useDeviceStore.setState({ isLocked: true })
@@ -221,20 +202,45 @@ async function ensureKeeperReady(
       const pending = takePendingAttempt(attempt)
       if (pending) sendPendingAuthError(pending, message)
     }
-    return { ready: false }
-  }
-
-  if (attempt !== undefined) {
+  } else if (attempt !== undefined) {
     setPendingAuthWindowId(attempt, windowId)
-    return { ready: false }
+  } else {
+    sendAuthErrorToTab(
+      target,
+      id,
+      'Please set up or unlock the vault in the window we opened, then try again.',
+      { vaultOpened: true },
+    )
+  }
+}
+
+// Checks that the keeper is unlocked. If still locked, declines a silent
+// request, otherwise opens the vault popup.
+async function ensureKeeperReady(
+  request: DappConnectRequest,
+  chain: ReturnType<typeof getCurrentChain>,
+  hasDeviceData: boolean,
+): Promise<KeeperReadyResult> {
+  const keeperStatus = await waitForKeeperUnlock(hasDeviceData)
+
+  if (keeperStatus.unlocked) {
+    return { ready: true, publicKeyBytes: keeperStatus.publicKeyBytes }
   }
 
-  sendAuthErrorToTab(
-    target,
-    id,
-    'Please set up or unlock the vault in the window we opened, then try again.',
-    { vaultOpened: true },
-  )
+  if (request.silent) {
+    declineSilentConnect(
+      request.target,
+      [request.id],
+      request.dappContext,
+      hasDeviceData ? 'vault is locked' : 'vault is not set up',
+    )
+  } else {
+    log.error('Cannot login: vault not set up or locked', {
+      chain,
+      hasDeviceData,
+    })
+    await openVaultForConnect(request, hasDeviceData)
+  }
   return { ready: false }
 }
 
@@ -396,12 +402,8 @@ async function completeDappConnect({
 // If the tab already has a valid JWT, sends auth_success immediately without
 // going through the OAuth flow. Returns true if handled (caller should return).
 async function checkExistingAuth(
-  target: TabDocument,
-  id: string,
-  additionalIds: string[],
+  { id, additionalIds, target, dappContext, silent }: DappConnectRequest,
   chain: ReturnType<typeof getCurrentChain>,
-  dappContext: DappRequestContext,
-  silent: boolean,
 ): Promise<boolean> {
   const existingJwt = await getJwt()
   if (!existingJwt?.id_token) return false
@@ -574,39 +576,22 @@ export async function handleDappLogin(
   })
 }
 
-// Runs a dapp connect: waits for the vault, then replies from the existing
-// session or the OAuth flow. Every reply goes only to the request's document.
-// A silent connect only replies from the existing session for an origin already
-// permitted on the current chain, and is declined otherwise.
-export async function connectDapp({
-  id,
-  additionalIds,
-  target,
-  dappContext,
-  silent = false,
-}: DappConnectRequest): Promise<void> {
-  const tenant = useContextStore.getState().tenantId
-  const chain = getCurrentChain()
-
-  if (silent && !(await hasDappPermission(dappContext.origin, chain))) {
-    declineSilentConnect(target, [id], dappContext, 'site not connected')
-    return
-  }
-
-  const hasDeviceData = checkHasDeviceData()
-
+// Waits for the keeper and syncs its public key into deviceStore. Returns false
+// (after replying to the tab) when the vault isn't ready to connect.
+async function prepareVaultForConnect(
+  request: DappConnectRequest,
+  chain: ReturnType<typeof getCurrentChain>,
+): Promise<boolean> {
+  const { id, target } = request
   const keeperResult = await ensureKeeperReady(
-    hasDeviceData,
-    id,
-    target,
+    request,
     chain,
-    dappContext,
-    silent,
+    checkHasDeviceData(),
   )
-  if (!keeperResult.ready) return
+  if (!keeperResult.ready) return false
 
   if (!(await syncPublicKeyFromKeeper(keeperResult.publicKeyBytes, id, target)))
-    return
+    return false
 
   if (
     !useDeviceStore.getState().ephemeralPublicKey &&
@@ -618,26 +603,17 @@ export async function connectDapp({
       id,
       'Vault state is inconsistent. Please unlock the vault again.',
     )
-    return
+    return false
   }
+  return true
+}
 
-  if (
-    await checkExistingAuth(
-      target,
-      id,
-      additionalIds,
-      chain,
-      dappContext,
-      silent,
-    )
-  )
-    return
-
-  if (silent) {
-    declineSilentConnect(target, [id], dappContext, 'not signed in')
-    return
-  }
-
+// Starts the OAuth flow; the callback replies to the tab.
+async function launchOAuthConnect(
+  { id, additionalIds, target, dappContext }: DappConnectRequest,
+  chain: ReturnType<typeof getCurrentChain>,
+  tenant: string,
+): Promise<void> {
   const nonce = await ensureNonce(chain, id, target)
   if (!nonce) return
 
@@ -662,4 +638,30 @@ export async function connectDapp({
     .launchWebAuthFlow({ url: authUrl.toString(), interactive: true })
     .then((responseUrl) => handleOAuthCallback(responseUrl, ctx))
     .catch((error) => handleOAuthCallback(undefined, ctx, error))
+}
+
+// Runs a dapp connect: waits for the vault, then replies from the existing
+// session or the OAuth flow. Every reply goes only to the request's document.
+// A silent connect only replies from the existing session for an origin already
+// permitted on the current chain, and is declined otherwise.
+export async function connectDapp(request: DappConnectRequest): Promise<void> {
+  const { id, target, dappContext, silent = false } = request
+  const tenant = useContextStore.getState().tenantId
+  const chain = getCurrentChain()
+
+  if (silent && !(await hasDappPermission(dappContext.origin, chain))) {
+    declineSilentConnect(target, [id], dappContext, 'site not connected')
+    return
+  }
+
+  if (!(await prepareVaultForConnect(request, chain))) return
+
+  if (await checkExistingAuth(request, chain)) return
+
+  if (silent) {
+    declineSilentConnect(target, [id], dappContext, 'not signed in')
+    return
+  }
+
+  await launchOAuthConnect(request, chain, tenant)
 }
