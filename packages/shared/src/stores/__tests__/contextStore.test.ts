@@ -1,3 +1,4 @@
+import { TenantId } from '@evefrontier/wallet-core/tenant'
 import { SUI_DEVNET_CHAIN, SUI_TESTNET_CHAIN } from '@mysten/wallet-standard'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -43,7 +44,11 @@ vi.mock('#/stores/deviceStore', () => ({
 // Import mocked modules after vi.mock calls
 // Using workspace alias in test files due to Vite resolution limitations with relative imports
 import { hasJwt } from '#/auth'
-import { useContextStore } from '#/stores/contextStore'
+import {
+  getCurrentContextTenantId,
+  useContextStore,
+} from '#/stores/contextStore'
+import { setWindowLocation } from '#/testing'
 
 describe('contextStore', () => {
   beforeEach(() => {
@@ -206,6 +211,32 @@ describe('contextStore', () => {
       expect(mockDeviceStoreState.initializeForChain).toHaveBeenCalledWith(
         SUI_TESTNET_CHAIN,
       )
+    })
+  })
+
+  describe('getCurrentContextTenantId', () => {
+    const originalNodeEnv = process.env.NODE_ENV
+    const originalLocation = window.location
+
+    afterEach(() => {
+      process.env.NODE_ENV = originalNodeEnv
+      setWindowLocation(originalLocation)
+    })
+
+    it('falls back to a tenant served on the current origin', () => {
+      process.env.NODE_ENV = 'production'
+      setWindowLocation({ origin: 'https://ptu.evevault.evefrontier.com' })
+      useContextStore.setState({ tenantId: TenantId.STILLNESS, devMode: false })
+
+      expect(getCurrentContextTenantId()).toBe(TenantId.LIMINALITY)
+    })
+
+    it('returns the stored tenant when it is available', () => {
+      process.env.NODE_ENV = 'production'
+      setWindowLocation({ origin: 'https://evevault.evefrontier.com' })
+      useContextStore.setState({ tenantId: TenantId.STILLNESS, devMode: false })
+
+      expect(getCurrentContextTenantId()).toBe(TenantId.STILLNESS)
     })
   })
 })

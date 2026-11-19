@@ -108,7 +108,9 @@ if (browser?.storage && !isWeb()) {
 
 export function getCurrentContextTenantId(): TenantId {
   const state = useContextStore.getState()
-  return isAvailableTenantId(state.tenantId, state.devMode)
-    ? state.tenantId
-    : DEFAULT_TENANT
+  if (isAvailableTenantId(state.tenantId, state.devMode)) {
+    return state.tenantId
+  }
+  // Fall back to the first tenant served on this origin (e.g. liminality on PTU).
+  return getAvailableTenantIds(state.devMode)[0] ?? DEFAULT_TENANT
 }
