@@ -5,7 +5,7 @@
     "": {
       "name": "eve-frontier-vault",
       "dependencies": {
-        "@evefrontier/wallet-core": "file:/Users/CherylK/Documents/Code/fenris/sui/wallet-core/evefrontier-wallet-core-0.1.1.tgz",
+        "@evefrontier/wallet-core": "^0.1.1",
         "@mysten/sui": "^2.31.1",
         "@mysten/wallet-standard": "^0.20.3",
         "jose": "6.0.12",
@@ -33,7 +33,7 @@
     },
     "apps/extension": {
       "name": "@evevault/extension",
-      "version": "0.0.21",
+      "version": "0.1.0",
       "dependencies": {
         "@evevault/shared": "workspace:*",
         "@mysten/sui": "^2.31.1",
@@ -56,7 +56,7 @@
     },
     "apps/web": {
       "name": "@evevault/web",
-      "version": "0.0.21",
+      "version": "0.1.0",
       "dependencies": {
         "@evevault/shared": "workspace:*",
         "@tanstack/react-query": "^5.102.8",
@@ -81,7 +81,7 @@
     },
     "packages/shared": {
       "name": "@evevault/shared",
-      "version": "0.0.21",
+      "version": "0.1.0",
       "dependencies": {
         "@mysten/signers": "^1.1.25",
         "@wxt-dev/browser": "0.2.5",
@@ -452,7 +452,7 @@
 
     "@esbuild/win32-x64": ["@esbuild/win32-x64@0.28.2", "", { "os": "win32", "cpu": "x64" }, "sha512-5ebpxr3nWMzrL/rnUI755Jkuee0bHL/Gq0WTF9lvcpv73wAp5eu8MfBUgWK9bhWvZjj7yX8etf/8tI8Ney695g=="],
 
-    "@evefrontier/wallet-core": ["@evefrontier/wallet-core@/Users/CherylK/Documents/Code/fenris/sui/wallet-core/evefrontier-wallet-core-0.1.1.tgz", { "dependencies": { "@mysten/sui": "^2.33.1", "@mysten/wallet-standard": "^0.21.38", "@mysten/webcrypto-signer": "^0.2.38", "@scure/bip39": "^2.4.0" }, "peerDependencies": { "@ledgerhq/hw-transport-webhid": "^6.0.0", "@mysten/ledgerjs-hw-app-sui": "^0.9.1", "@mysten/signers": "^1.1.18" }, "optionalPeers": ["@ledgerhq/hw-transport-webhid", "@mysten/ledgerjs-hw-app-sui", "@mysten/signers"], "hasInstallScript": true }, "sha512-/UHryX6+seA8FGHRMl9pJXYFqCuWkaj52ooh2yTjMCNxBtXwiqJLn3TSsFDRU91DjDytuf0FuOuVYWNS/+vqtg=="],
+    "@evefrontier/wallet-core": ["@evefrontier/wallet-core@0.1.1", "https://npm.pkg.github.com/download/@evefrontier/wallet-core/0.1.1/5dacbe89558d59d958c8ef6ed346041a5b74498c", { "dependencies": { "@mysten/sui": "^2.33.1", "@mysten/wallet-standard": "^0.21.38", "@mysten/webcrypto-signer": "^0.2.38", "@scure/bip39": "^2.4.0" }, "peerDependencies": { "@ledgerhq/hw-transport-webhid": "^6.0.0", "@mysten/ledgerjs-hw-app-sui": "^0.9.1", "@mysten/signers": "^1.1.18" } }, "sha512-dEuaNQflSH5zToIcRtP+7+w5xyFdnY8rFqMLHddQjmFLhJwQTqqnVaUGNNHB3cLeFIWDQldsC6jIR/YZhcnv0g=="],
 
     "@evevault/extension": ["@evevault/extension@workspace:apps/extension"],
 
@@ -546,13 +546,15 @@
 
     "@js-sdsl/ordered-map": ["@js-sdsl/ordered-map@4.4.2", "", {}, "sha512-iUKgm52T8HOE/makSxjqoWhe95ZJA1/G1sYsGev2JDKUSS14KAgg1LHb+Ba+IPow0xflbnSkOsZcO08C7w1gYw=="],
 
-    "@ledgerhq/devices": ["@ledgerhq/devices@8.18.0", "", { "dependencies": { "semver": "7.7.3" } }, "sha512-90qS23wtqdviis+8pDWRbgyp4jE4YLK24CyAmH79rLySaPbgEJX5mZzbEKlDQ6cXvSA/51Z2/PtzmlAi26rzug=="],
+    "@ledgerhq/devices": ["@ledgerhq/devices@8.16.0", "", { "dependencies": { "semver": "7.7.3" } }, "sha512-brXLPzkvGM3D5YNsWQ25P5G4SmWdSNBed9W8wKoOIRLGdRfvE+bg9mzFty0iZ+aRLBkLoXwX7xKIL9zUi6LBKQ=="],
 
-    "@ledgerhq/errors": ["@ledgerhq/errors@7.0.0", "", {}, "sha512-+Q/vykUlNeIxiM+I3cu1B660WLkzlmIsHLTV9QNV5D2/Ocplx3QMg52NYq2X7OAfGQnfH1rQvhn/NrjT+t9wBA=="],
+    "@ledgerhq/errors": ["@ledgerhq/errors@6.37.0", "", {}, "sha512-T5yiKI5UX7ugeocdTF3TUsCIN2BH41Bio4ZeN410YFjFOf3es08n/5JyMzzKwzRgP0blG3HfBf7s7vJKqCSAeg=="],
 
     "@ledgerhq/hw-bolos": ["@ledgerhq/hw-bolos@6.36.7", "", { "dependencies": { "@ledgerhq/hw-transport": "6.35.7" } }, "sha512-ixtFCDYW59bT5KTR6EjxLMvzRKtVApkBoVZGwdXX4dJEQCwesGxVCfgUZdq9I8MwzkpSdawbB/smXvMDO3KQ5w=="],
 
-    "@ledgerhq/hw-transport": ["@ledgerhq/hw-transport@6.36.0", "", { "dependencies": { "@ledgerhq/devices": "8.18.0", "@ledgerhq/logs": "6.19.0", "events": "^3.3.0" } }, "sha512-fU1rNnn6TgI9CrtynakAkhH09Tu4fTS5QEukO+71n0C5bFBL2Mee5WMQsuGaXBB8Ana3iJwbqZnm+0msssmY3g=="],
+    "@ledgerhq/hw-transport": ["@ledgerhq/hw-transport@6.35.5", "", { "dependencies": { "@ledgerhq/devices": "8.16.0", "@ledgerhq/errors": "^6.37.0", "@ledgerhq/logs": "^6.17.0", "events": "^3.3.0" } }, "sha512-P4+wtLewLWgxPtIb90h5kjpzXVlC6f4IBQBmvowVFkInvZt34ffXkX7wa5KfMzu4l3cqCcpNSqtPSCMp+0vuqg=="],
+
+    "@ledgerhq/hw-transport-webhid": ["@ledgerhq/hw-transport-webhid@6.36.0", "", { "dependencies": { "@ledgerhq/devices": "8.16.0", "@ledgerhq/errors": "^6.37.0", "@ledgerhq/hw-transport": "6.35.5", "@ledgerhq/logs": "^6.17.0" } }, "sha512-1mKWm3LyGOgmaYlAiqbmaGoupOZHbj2Kow5sXLxKZzQa4kFvQuUdinYOWhs7T8hqJyAkz9WlHYyKM7aIs8kjNg=="],
 
     "@ledgerhq/ledger-cal-service": ["@ledgerhq/ledger-cal-service@1.18.2", "", { "dependencies": { "@ledgerhq/live-env": "2.40.0", "@ledgerhq/live-network": "2.6.6" } }, "sha512-EtX6YmNutqhitMyES7iwXGi8jY79/HAZQYVwxYiPSsZW0F5ksM5/ZSxgTvP/c9hXfdVF5+gRcHjKT9HciFWnzw=="],
 
@@ -2232,8 +2234,6 @@
 
     "@ledgerhq/hw-bolos/@ledgerhq/hw-transport": ["@ledgerhq/hw-transport@6.35.7", "", { "dependencies": { "@ledgerhq/devices": "8.17.0", "@ledgerhq/errors": "^7.0.0", "@ledgerhq/logs": "^6.17.0", "events": "^3.3.0" } }, "sha512-vVhAVQ56+7A5FY5Mr09HY+bmf3H6TXpwsj+/xbadNkjl//e/YzTWfpXk4eBnj3hwk1PQ9Mn6pKFH0BHjS2BKlg=="],
 
-    "@ledgerhq/live-network/@ledgerhq/errors": ["@ledgerhq/errors@6.37.0", "", {}, "sha512-T5yiKI5UX7ugeocdTF3TUsCIN2BH41Bio4ZeN410YFjFOf3es08n/5JyMzzKwzRgP0blG3HfBf7s7vJKqCSAeg=="],
-
     "@ledgerhq/live-network/@ledgerhq/live-env": ["@ledgerhq/live-env@2.42.0", "", { "dependencies": { "rxjs": "7.8.2", "utility-types": "^3.10.0" } }, "sha512-GFQ/GTML8hT2Nm2RaRig7YrXJC1GIxvdXuOW4EvaXFMmF+1OedmQ4x9DMRnhS5if2tBDeiBiRNyHQXgVI7voiQ=="],
 
     "@ledgerhq/live-network/lru-cache": ["lru-cache@7.18.3", "", {}, "sha512-jumlc0BIUrS3qJGgIkWZsyfAM7NCWiBcCDhnd+3NNM5KbBmLTgHVfWBcg6W+rLUsIpzpERPsvwUP7CckAQSOoA=="],
@@ -2245,6 +2245,10 @@
     "@manypkg/get-packages/@changesets/types": ["@changesets/types@4.1.0", "", {}, "sha512-LDQvVDv5Kb50ny2s25Fhm3d9QSZimsoUGBsUioj6MC3qbMUCuC8GPIvk/M6IvXx3lYhAs0lwWUQLb+VIEUCECw=="],
 
     "@manypkg/get-packages/fs-extra": ["fs-extra@8.1.0", "", { "dependencies": { "graceful-fs": "^4.2.0", "jsonfile": "^4.0.0", "universalify": "^0.1.0" } }, "sha512-yhlQgA6mnOJUKOsRUFsgJdQCvkKhcz8tlZG5HBQfReYZy46OwLcY+Zia0mtdHsOo9y/hP+CxMN0TU9QxoOtG4g=="],
+
+    "@mysten/ledgerjs-hw-app-sui/@ledgerhq/devices": ["@ledgerhq/devices@8.18.0", "", { "dependencies": { "semver": "7.7.3" } }, "sha512-90qS23wtqdviis+8pDWRbgyp4jE4YLK24CyAmH79rLySaPbgEJX5mZzbEKlDQ6cXvSA/51Z2/PtzmlAi26rzug=="],
+
+    "@mysten/ledgerjs-hw-app-sui/@ledgerhq/hw-transport": ["@ledgerhq/hw-transport@6.36.0", "", { "dependencies": { "@ledgerhq/devices": "8.18.0", "@ledgerhq/logs": "6.19.0", "events": "^3.3.0" } }, "sha512-fU1rNnn6TgI9CrtynakAkhH09Tu4fTS5QEukO+71n0C5bFBL2Mee5WMQsuGaXBB8Ana3iJwbqZnm+0msssmY3g=="],
 
     "@mysten/signers/@mysten/webcrypto-signer": ["@mysten/webcrypto-signer@0.2.25", "", { "dependencies": { "@noble/curves": "^2.3.0" }, "peerDependencies": { "@mysten/sui": "^2.31.1" } }, "sha512-tn7ReYIXJOf20UBkcFQmmr1WyR4UPjIvfXcBOAZqf0s/IReP5kv040rCZoVpGLhA7ByKdY8dz1tbDMzRLQ6IDQ=="],
 
@@ -2417,6 +2421,10 @@
     "@evefrontier/wallet-core/@mysten/wallet-standard/@wallet-standard/core": ["@wallet-standard/core@1.1.2", "", { "dependencies": { "@wallet-standard/app": "^1.1.1", "@wallet-standard/base": "^1.1.1", "@wallet-standard/errors": "^0.1.2", "@wallet-standard/features": "^1.1.1", "@wallet-standard/wallet": "^1.1.1" } }, "sha512-QcVLGDkFtsWjTpkej2jx4FyP2cu+qOAW/lVnvlWjyhCkSEje6z+vEKURV5v+7L6IXjbze5pyFBe24yrPyoUuyw=="],
 
     "@ledgerhq/hw-bolos/@ledgerhq/hw-transport/@ledgerhq/devices": ["@ledgerhq/devices@8.17.0", "", { "dependencies": { "semver": "7.7.3" } }, "sha512-l+rrVQEjR1hSWOLD00LFX4zbS8yB1M/Mb6UYPmSHGO7TmE1CFbZ4CmDJC/kZSl3hdrXCJ+YUNpvaLCcSWDwA+Q=="],
+
+    "@ledgerhq/hw-bolos/@ledgerhq/hw-transport/@ledgerhq/errors": ["@ledgerhq/errors@7.0.0", "", {}, "sha512-+Q/vykUlNeIxiM+I3cu1B660WLkzlmIsHLTV9QNV5D2/Ocplx3QMg52NYq2X7OAfGQnfH1rQvhn/NrjT+t9wBA=="],
+
+    "@mysten/ledgerjs-hw-app-sui/@ledgerhq/devices/semver": ["semver@7.7.3", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-SdsKMrI9TdgjdweUSR9MweHA4EJ8YxHn8DFaDisvhVlUOe4BF1tLD7GAj0lIqWVl+dPb/rExr0Btby5loQm20Q=="],
 
     "@tailwindcss/node/lightningcss/lightningcss-android-arm64": ["lightningcss-android-arm64@1.32.0", "", { "os": "android", "cpu": "arm64" }, "sha512-YK7/ClTt4kAK0vo6w3X+Pnm0D2cf2vPHbhOXdoNti1Ga0al1P4TBZhwjATvjNwLEBCnKvjJc2jQgHXH0NEwlAg=="],
 
