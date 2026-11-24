@@ -214,6 +214,22 @@ describe('SignSponsoredTransaction', () => {
     expect(screen.getByText('Desc')).toBeInTheDocument()
   })
 
+  it('marks empty metadata fields as cleared', async () => {
+    stubPending({
+      windowId: 1,
+      requestId: 'req-2b',
+      sponsoredTxB64: btoa('bytes'),
+      preparationId: 'prep-2b',
+      sponsoredAction: 'update-metadata',
+      entityId: '42',
+      metadata: { name: 'My Item', description: '', url: '' },
+      chain: 'sui:testnet',
+    })
+    await renderSignSponsored()
+    expect(screen.getByText('My Item')).toBeInTheDocument()
+    expect(screen.getAllByText('(cleared)')).toHaveLength(2)
+  })
+
   it('shows acknowledgement gate when parsed transaction cannot be verified', async () => {
     // reviewTransaction returns unverified (danger) for undefined reviewValue
     stubPending({

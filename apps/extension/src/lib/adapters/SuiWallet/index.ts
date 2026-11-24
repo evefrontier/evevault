@@ -52,6 +52,29 @@ import {
 
 const log = createLogger()
 
+// Builds the bridge message with only the fields the action uses. Throws on
+// unknown actions.
+function toSponsoredMessage(input: SponsoredTransactionInput) {
+  switch (input.txAction) {
+    case SponsoredTransactionActions.UPDATE_METADATA:
+      return {
+        action: input.txAction,
+        entityId: input.entityId,
+        metadata: {
+          name: input.metadata.name,
+          description: input.metadata.description,
+          url: input.metadata.url,
+        },
+      }
+    case SponsoredTransactionActions.SET_POWER_GRID:
+      return { action: input.txAction, entityId: input.entityId, on: input.on }
+    default:
+      throw new Error(
+        `Unsupported sponsored transaction action: ${(input as { txAction: unknown }).txAction}`,
+      )
+  }
+}
+
 export class EveVaultWallet implements Wallet {
   readonly #version = '1.0.0' as const
   readonly #name = 'Eve Vault' as const
@@ -384,6 +407,7 @@ export class EveVaultWallet implements Wallet {
   ) => {
     const id = crypto.randomUUID()
     log.debug('[SuiWallet] #signEveFrontierSponsoredTransaction input', input)
+    const message = toSponsoredMessage(input)
     return waitForVaultMessage({
       id,
       successType: 'sign_success',
@@ -393,19 +417,7 @@ export class EveVaultWallet implements Wallet {
         id,
         action:
           WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION,
-        message: {
-          action: input.txAction,
-          entityId: input.entityId,
-          ...(input.txAction === SponsoredTransactionActions.SET_POWER_GRID
-            ? { on: input.on }
-            : {
-                metadata: {
-                  name: input.metadata.name,
-                  description: input.metadata.description,
-                  url: input.metadata.url,
-                },
-              }),
-        },
+        message,
       },
       mapSuccess: (m) => ({
         digest: m.digest as string,

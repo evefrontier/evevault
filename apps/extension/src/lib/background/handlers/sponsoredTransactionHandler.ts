@@ -1,6 +1,7 @@
 import {
   executeSponsoredTransaction,
   fetchUnsignedSponsoredTransaction,
+  SponsoredTransactionActions,
   type SponsoredTransactionApiContext,
   type SponsoredTransactionInput,
 } from '@evefrontier/wallet-core/sponsored-transaction'
@@ -30,6 +31,26 @@ function sponsoredApiContext(
     getApiGatewayUrl: (path) => `${apiBaseUrl}${pathPrefix}/${path}`,
     getApiGatewayToken: () => idToken,
   }
+}
+
+// Builds the wallet-core input with only the fields the action uses. Throws
+// when the action is unknown or its field is missing.
+function toSponsoredInput({
+  action,
+  entityId,
+  metadata,
+  on,
+}: EveFrontierSponsoredTransactionMessage['message']): SponsoredTransactionInput {
+  if (action === SponsoredTransactionActions.UPDATE_METADATA && metadata) {
+    return { txAction: action, entityId, metadata }
+  }
+  if (
+    action === SponsoredTransactionActions.SET_POWER_GRID &&
+    on !== undefined
+  ) {
+    return { txAction: action, entityId, on }
+  }
+  throw new Error(`Invalid sponsored transaction request: ${action}`)
 }
 
 // Options for executeSponsoredTx — bundles the API context and the signed result
@@ -99,8 +120,6 @@ async function handleSponsoredTransaction(
   _sendResponse: (response?: unknown) => void,
 ): Promise<boolean> {
   const senderTabId = sender.tab?.id
-  const { action, entityId, metadata, on } = message.message
-
   try {
     const chain = await getStoredChain()
     const jwt = await getJwt()
@@ -113,36 +132,22 @@ async function handleSponsoredTransaction(
       return true
     }
 
-    if (!entityId) {
-      throw new Error(`Entity not found: ${entityId}`)
-    }
-
     const permission = await requireSigningPermission(sender, chain)
     if (!permission.allowed) {
       sendSponsoredError(senderTabId, message.id, permission.error)
       return true
     }
 
+    const input = toSponsoredInput(message.message)
     log.info('Eve Frontier sponsored transaction request received', {
-      action,
-      entityId,
       chain,
-      metadata,
-      on,
+      ...input,
     })
-
-    if (metadata) {
-      log.info('Sponsored transaction metadata', {
-        name: metadata?.name,
-        description: metadata?.description,
-        url: metadata?.url,
-      })
-    }
 
     const { apiBaseUrl, tenant } = getApiContext(jwt.id_token)
 
     const sponsoredTxReturn = await fetchUnsignedSponsoredTransaction(
-      { txAction: action, entityId, metadata, on } as SponsoredTransactionInput,
+      input,
       sponsoredApiContext(apiBaseUrl, jwt.id_token, ''),
     )
 
@@ -167,10 +172,11 @@ async function handleSponsoredTransaction(
       preparationId: sponsoredTxReturn.preparationId,
       chain,
       dapp: permission.context,
-      sponsoredAction: action,
-      entityId,
-      metadata,
-      on,
+      sponsoredAction: input.txAction,
+      entityId: input.entityId,
+      ...(input.txAction === SponsoredTransactionActions.SET_POWER_GRID
+        ? { on: input.on }
+        : { metadata: input.metadata }),
     }
 
     await browser.storage.local.set({ pendingAction })
@@ -264,4 +270,4 @@ async function handleSponsoredTransaction(
   }
 }
 
-export { handleSponsoredTransaction }
+export { handleSponsoredTransaction, toSponsoredInput }

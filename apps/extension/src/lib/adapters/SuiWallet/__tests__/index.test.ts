@@ -1,4 +1,7 @@
-import { SponsoredTransactionActions } from '@evefrontier/wallet-core/sponsored-transaction'
+import {
+  SponsoredTransactionActions,
+  type SponsoredTransactionInput,
+} from '@evefrontier/wallet-core/sponsored-transaction'
 import { EVEFRONTIER_SPONSORED_TRANSACTION } from '@evefrontier/wallet-core/wallet-features'
 import { WalletStandardMessageTypes } from '@evevault/shared'
 import {
@@ -616,5 +619,21 @@ describe('EveVaultWallet', () => {
       digest: 'digest',
       executionStatus: 'success',
     })
+  })
+
+  it('rejects a sponsored transaction with an unsupported action', async () => {
+    const wallet = new EveVaultWallet()
+    vi.mocked(window.postMessage).mockClear()
+
+    await expect(
+      wallet.features[
+        EVEFRONTIER_SPONSORED_TRANSACTION
+      ].signSponsoredTransaction({
+        txAction: 'online',
+        assembly: '1',
+        assemblyType: 'SmartStorageUnit',
+      } as unknown as SponsoredTransactionInput),
+    ).rejects.toThrow('Unsupported sponsored transaction action: online')
+    expect(window.postMessage).not.toHaveBeenCalled()
   })
 })
