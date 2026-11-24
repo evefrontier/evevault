@@ -25,9 +25,9 @@ export type BackgroundMessage = {
 export type EveFrontierSponsoredTransactionMessage = BackgroundMessage & {
   message: {
     action: string
-    assembly: string
-    assemblyType: string
+    entityId: string
     metadata?: SponsoredTransactionMetadata
+    on?: boolean
   }
 }
 

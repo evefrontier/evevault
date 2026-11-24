@@ -10,11 +10,7 @@ const PUBLIC_WALLET_ACTIONS = new Set<string>([
   WalletStandardMessageTypes.SIGN_AND_EXECUTE_TRANSACTION,
   WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION,
 ])
-const SPONSORED_MESSAGE_STRING_FIELDS = [
-  'action',
-  'assembly',
-  'assemblyType',
-] as const
+const SPONSORED_MESSAGE_STRING_FIELDS = ['action', 'entityId'] as const
 
 type PageMessageValidator = (data: Record<string, unknown>) => boolean
 
@@ -56,6 +52,10 @@ function hasStringFields(
 
 function hasOptionalObjectMetadata(data: Record<string, unknown>): boolean {
   return data.metadata === undefined || isRecord(data.metadata)
+}
+
+function hasOptionalBooleanOn(data: Record<string, unknown>): boolean {
+  return data.on === undefined || typeof data.on === 'boolean'
 }
 
 function isEveVaultRequest(data: unknown): data is Record<string, unknown> {
@@ -109,7 +109,8 @@ function isSponsoredTransactionRequest(data: Record<string, unknown>): boolean {
   return (
     isValidRequestId(data.id) &&
     hasStringFields(message, SPONSORED_MESSAGE_STRING_FIELDS) &&
-    hasOptionalObjectMetadata(message)
+    hasOptionalObjectMetadata(message) &&
+    hasOptionalBooleanOn(message)
   )
 }
 

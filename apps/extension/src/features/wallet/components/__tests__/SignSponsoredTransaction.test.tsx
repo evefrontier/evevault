@@ -184,15 +184,15 @@ describe('SignSponsoredTransaction', () => {
       requestId: 'req-1',
       sponsoredTxB64: btoa('bytes'),
       preparationId: 'prep-1',
-      sponsoredAction: 'mine',
-      assembly: 42,
-      assemblyType: 'basic',
+      sponsoredAction: 'set-power-grid',
+      entityId: '42',
+      on: false,
       chain: 'sui:testnet',
     })
     await renderSignSponsored()
-    expect(screen.getByText('mine')).toBeInTheDocument()
+    expect(screen.getByText('set-power-grid')).toBeInTheDocument()
     expect(screen.getByText('42')).toBeInTheDocument()
-    expect(screen.getByText('basic')).toBeInTheDocument()
+    expect(screen.getByText('Off')).toBeInTheDocument()
   })
 
   it('shows metadata fields when present', async () => {
@@ -212,6 +212,22 @@ describe('SignSponsoredTransaction', () => {
     expect(screen.getByText('https://example.com')).toBeInTheDocument()
     expect(screen.getByText('My Item')).toBeInTheDocument()
     expect(screen.getByText('Desc')).toBeInTheDocument()
+  })
+
+  it('marks empty metadata fields as cleared', async () => {
+    stubPending({
+      windowId: 1,
+      requestId: 'req-2b',
+      sponsoredTxB64: btoa('bytes'),
+      preparationId: 'prep-2b',
+      sponsoredAction: 'update-metadata',
+      entityId: '42',
+      metadata: { name: 'My Item', description: '', url: '' },
+      chain: 'sui:testnet',
+    })
+    await renderSignSponsored()
+    expect(screen.getByText('My Item')).toBeInTheDocument()
+    expect(screen.getAllByText('(cleared)')).toHaveLength(2)
   })
 
   it('shows acknowledgement gate when parsed transaction cannot be verified', async () => {

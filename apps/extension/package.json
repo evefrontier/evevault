@@ -1,6 +1,6 @@
 {
   "name": "@evevault/extension",
-  "version": "0.0.21",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "wxt",
@@ -22,8 +22,8 @@
   },
   "dependencies": {
     "@evevault/shared": "workspace:*",
-    "@mysten/sui": "^2.31.1",
-    "@mysten/wallet-standard": "^0.20.3",
+    "@mysten/sui": "^2.39.1",
+    "@mysten/wallet-standard": "^0.21.38",
     "@tanstack/react-query": "^5.102.8",
     "@tanstack/react-router": "^1.170.36",
     "oidc-client-ts": "^3.5.0",

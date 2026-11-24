@@ -5,9 +5,9 @@
     "": {
       "name": "eve-frontier-vault",
       "dependencies": {
-        "@evefrontier/wallet-core": "^0.0.16",
-        "@mysten/sui": "^2.31.1",
-        "@mysten/wallet-standard": "^0.20.3",
+        "@evefrontier/wallet-core": "^0.1.1",
+        "@mysten/sui": "^2.39.1",
+        "@mysten/wallet-standard": "^0.21.38",
         "jose": "6.0.12",
         "react": "^19.3.0",
         "react-dom": "^19.3.0",
@@ -33,11 +33,11 @@
     },
     "apps/extension": {
       "name": "@evevault/extension",
-      "version": "0.0.21",
+      "version": "0.1.0",
       "dependencies": {
         "@evevault/shared": "workspace:*",
-        "@mysten/sui": "^2.31.1",
-        "@mysten/wallet-standard": "^0.20.3",
+        "@mysten/sui": "^2.39.1",
+        "@mysten/wallet-standard": "^0.21.38",
         "@tanstack/react-query": "^5.102.8",
         "@tanstack/react-router": "^1.170.36",
         "oidc-client-ts": "^3.5.0",
@@ -56,7 +56,7 @@
     },
     "apps/web": {
       "name": "@evevault/web",
-      "version": "0.0.21",
+      "version": "0.1.0",
       "dependencies": {
         "@evevault/shared": "workspace:*",
         "@tanstack/react-query": "^5.102.8",
@@ -81,7 +81,7 @@
     },
     "packages/shared": {
       "name": "@evevault/shared",
-      "version": "0.0.21",
+      "version": "0.1.0",
       "dependencies": {
         "@mysten/signers": "^1.1.25",
         "@wxt-dev/browser": "0.2.5",
@@ -94,8 +94,8 @@
         "typescript": "^5.9.3",
       },
       "peerDependencies": {
-        "@mysten/sui": "^2.31.1",
-        "@mysten/wallet-standard": "^0.20.3",
+        "@mysten/sui": "^2.39.1",
+        "@mysten/wallet-standard": "^0.21.38",
         "@tanstack/react-query": "^5.102.8",
         "@tanstack/react-router": "^1.170.36",
         "@types/react": "^19.3.0",
@@ -452,7 +452,7 @@
 
     "@esbuild/win32-x64": ["@esbuild/win32-x64@0.28.2", "", { "os": "win32", "cpu": "x64" }, "sha512-5ebpxr3nWMzrL/rnUI755Jkuee0bHL/Gq0WTF9lvcpv73wAp5eu8MfBUgWK9bhWvZjj7yX8etf/8tI8Ney695g=="],
 
-    "@evefrontier/wallet-core": ["@evefrontier/wallet-core@0.0.16", "https://npm.pkg.github.com/download/@evefrontier/wallet-core/0.0.16/3be728b044e726d5917e276fc2dbb658cc95103f", { "dependencies": { "@mysten/sui": "^2.33.1", "@mysten/wallet-standard": "^0.20.3", "@mysten/webcrypto-signer": "^0.1.2", "@scure/bip39": "^2.4.0" }, "peerDependencies": { "@ledgerhq/hw-transport-webhid": "^6.0.0", "@mysten/ledgerjs-hw-app-sui": "^0.9.1", "@mysten/signers": "^1.1.18" } }, "sha512-qzv6iFGwJiNwRxPJI3NfHqgasF8UBZUVQ1nLNDzoVs8aeLxZrRKA1OaZPEohsVIyqRhZUG3M8dxf+fzlxg1JcQ=="],
+    "@evefrontier/wallet-core": ["@evefrontier/wallet-core@0.1.1", "https://npm.pkg.github.com/download/@evefrontier/wallet-core/0.1.1/5dacbe89558d59d958c8ef6ed346041a5b74498c", { "dependencies": { "@mysten/sui": "^2.33.1", "@mysten/wallet-standard": "^0.21.38", "@mysten/webcrypto-signer": "^0.2.38", "@scure/bip39": "^2.4.0" }, "peerDependencies": { "@ledgerhq/hw-transport-webhid": "^6.0.0", "@mysten/ledgerjs-hw-app-sui": "^0.9.1", "@mysten/signers": "^1.1.18" } }, "sha512-dEuaNQflSH5zToIcRtP+7+w5xyFdnY8rFqMLHddQjmFLhJwQTqqnVaUGNNHB3cLeFIWDQldsC6jIR/YZhcnv0g=="],
 
     "@evevault/extension": ["@evevault/extension@workspace:apps/extension"],
 
@@ -572,7 +572,7 @@
 
     "@mysten/aws-kms-signer": ["@mysten/aws-kms-signer@0.3.22", "", { "dependencies": { "@noble/curves": "^2.3.0", "asn1-ts": "^11.1.0" }, "peerDependencies": { "@mysten/sui": "^2.31.1" } }, "sha512-iU6u8RAT/IJlJaNJcESa/aAYtWJ5SvtJrqNkv1GWp/sjY2FJg8MRK+FmbcQoXfJNu/cFnEbn6roJb88phLIA4w=="],
 
-    "@mysten/bcs": ["@mysten/bcs@2.1.3", "", { "dependencies": { "@mysten/utils": "^0.4.2", "@scure/base": "^2.3.0" } }, "sha512-sg3hstwDLQQmQTpiX8Vzs13bEEGTqnhp1gUzBLlVQ493xyTTCDwB/jXGzT0g2I/GXd2o1B3s7Bd67Ua3VZo+Jw=="],
+    "@mysten/bcs": ["@mysten/bcs@2.1.4", "", { "dependencies": { "@mysten/utils": "^0.4.2", "@scure/base": "^2.3.0" } }, "sha512-ksfm0HGy82iDcuLaf4kAduaeTNqALH8D8WCdxxwU/L2Gpk4SnqoC7D8R4qMoMpCSkh56CFVG3Tme343Iz2P8PA=="],
 
     "@mysten/gcp-kms-signer": ["@mysten/gcp-kms-signer@0.2.25", "", { "dependencies": { "@google-cloud/kms": "^6.0.0", "@noble/curves": "^2.3.0", "asn1-ts": "^11.1.0" }, "peerDependencies": { "@mysten/sui": "^2.31.1" } }, "sha512-NmnLhIpFKHd+YgS7Rvulgnceyt5+atLQqxRZaKgFhrpqyzetyhDrU/87MpdHM0mVCNk8K7llg9WFXKfW435KuQ=="],
 
@@ -582,13 +582,13 @@
 
     "@mysten/signers": ["@mysten/signers@1.1.25", "", { "dependencies": { "@mysten/aws-kms-signer": "^0.3.22", "@mysten/gcp-kms-signer": "^0.2.25", "@mysten/ledger-signer": "^0.2.25", "@mysten/webcrypto-signer": "^0.2.25" }, "peerDependencies": { "@mysten/sui": "^2.31.1" } }, "sha512-WmKemx6Jl5n+9cuIn4a3wwQGy/3y1TvNVIYsgDEtdLsP7WjK7mrjTkmXY6t/2s9ebZGU4Lt7SGNko0zKd5Konw=="],
 
-    "@mysten/sui": ["@mysten/sui@2.39.0", "", { "dependencies": { "@graphql-typed-document-node/core": "^3.2.0", "@mysten/bcs": "^2.1.3", "@mysten/utils": "^0.4.2", "@noble/curves": "^2.3.0", "@noble/hashes": "^2.3.0", "@noble/post-quantum": "^0.7.1", "@protobuf-ts/grpcweb-transport": "^2.11.1", "@protobuf-ts/runtime": "^2.11.1", "@protobuf-ts/runtime-rpc": "^2.11.1", "@scure/base": "^2.3.0", "@scure/bip32": "^2.3.0", "@scure/bip39": "^2.3.0", "gql.tada": "^1.11.3", "graphql": "^17.0.2", "poseidon-lite": "0.3.0", "valibot": "^1.4.2" } }, "sha512-smMBKxPGdK485i8i8Y3f1UEMSy3ybO3TZtyn2VXYnaxiz40IHYLjuPGFlfnxp6f/q/XkhmoXFabuUNhf3bryUg=="],
+    "@mysten/sui": ["@mysten/sui@2.39.1", "", { "dependencies": { "@graphql-typed-document-node/core": "^3.2.0", "@mysten/bcs": "^2.1.4", "@mysten/utils": "^0.4.2", "@noble/curves": "^2.3.0", "@noble/hashes": "^2.3.0", "@noble/post-quantum": "^0.7.1", "@protobuf-ts/grpcweb-transport": "^2.11.1", "@protobuf-ts/runtime": "^2.11.1", "@protobuf-ts/runtime-rpc": "^2.11.1", "@scure/base": "^2.3.0", "@scure/bip32": "^2.3.0", "@scure/bip39": "^2.3.0", "gql.tada": "^1.11.3", "graphql": "^17.0.2", "poseidon-lite": "0.3.0", "valibot": "^1.4.2" } }, "sha512-cFhIn7WJcT6thzKlBO2OtqyLX5uigY/1IK0PRTa6o50Bcy0qLhacu+fjhqY7uHeXlXGrjc/kIsXs5o4KtPcieg=="],
 
     "@mysten/utils": ["@mysten/utils@0.4.2", "", {}, "sha512-K/5eBuYKxUFCrYcic1lvYvWE9OVSH581cjVjwsSJGUqPit91nZq2acUwes+B4lo98VE/CILIUeBcyEIvuNxMhA=="],
 
-    "@mysten/wallet-standard": ["@mysten/wallet-standard@0.20.3", "", { "dependencies": { "@wallet-standard/core": "1.1.1" }, "peerDependencies": { "@mysten/sui": "*" } }, "sha512-Kp1EpWaQAwANuMoTCJKVdZnEOaE9aJ5PPvIC7qg+J3u6Uf20VsVsQngZllyaS2OQHm+iLlJzcLXHff7ttvQJYw=="],
+    "@mysten/wallet-standard": ["@mysten/wallet-standard@0.21.38", "", { "dependencies": { "@wallet-standard/core": "1.1.2" }, "peerDependencies": { "@mysten/sui": "^2.39.1" } }, "sha512-JPmrqnNTTIL2fklJu+P9pht29he7fAV7oBhH2zG2l8WibYWPfLfesWa4jVRvvV7+AhyKqhzYY58nC7CFCpddHw=="],
 
-    "@mysten/webcrypto-signer": ["@mysten/webcrypto-signer@0.1.2", "", { "dependencies": { "@noble/curves": "^2.0.1" }, "peerDependencies": { "@mysten/sui": "^2.16.2" } }, "sha512-MFI64BrUoyI05zZ1GXskZc8ohqCS9fM6StS/RO71YtX9pi7ZLTLdhUM7FEfgCYoSNsJHahG23JxvG0cfgiX/DQ=="],
+    "@mysten/webcrypto-signer": ["@mysten/webcrypto-signer@0.2.38", "", { "dependencies": { "@noble/curves": "^2.3.0" }, "peerDependencies": { "@mysten/sui": "^2.39.1" } }, "sha512-bI0ZaX0HpniP4D7cXopr7bTDM68Y5q98DBoVFSp1ucI/+8S2+/kVlNLlJQ026N1TQz3KsCoTiYHPS1gbKB6TIQ=="],
 
     "@napi-rs/lzma-linux-x64-gnu": ["@napi-rs/lzma-linux-x64-gnu@1.5.1", "", { "os": "linux", "cpu": "x64" }, "sha512-oTXEIha4SsuXdTA4Iyskj0kpdx2yVXdhd75c2v3xGrHFfVMsbhTPZU/nMPL4sWKo4pBHm3aucLaqGlF696dTyQ=="],
 
@@ -878,7 +878,7 @@
 
     "@wallet-standard/base": ["@wallet-standard/base@1.1.1", "", {}, "sha512-gggIHTtxicF9XFMQ12DkfS6NAG92Ak795JeSA7f2whAQ6Y3AkMWWuCMxSZXG2NIPN42kEaZSNVjqMsJRaJRxMQ=="],
 
-    "@wallet-standard/core": ["@wallet-standard/core@1.1.1", "", { "dependencies": { "@wallet-standard/app": "^1.1.0", "@wallet-standard/base": "^1.1.0", "@wallet-standard/errors": "^0.1.1", "@wallet-standard/features": "^1.1.0", "@wallet-standard/wallet": "^1.1.0" } }, "sha512-5Xmjc6+Oe0hcPfVc5n8F77NVLwx1JVAoCVgQpLyv/43/bhtIif+Gx3WUrDlaSDoM8i2kA2xd6YoFbHCxs+e0zA=="],
+    "@wallet-standard/core": ["@wallet-standard/core@1.1.2", "", { "dependencies": { "@wallet-standard/app": "^1.1.1", "@wallet-standard/base": "^1.1.1", "@wallet-standard/errors": "^0.1.2", "@wallet-standard/features": "^1.1.1", "@wallet-standard/wallet": "^1.1.1" } }, "sha512-QcVLGDkFtsWjTpkej2jx4FyP2cu+qOAW/lVnvlWjyhCkSEje6z+vEKURV5v+7L6IXjbze5pyFBe24yrPyoUuyw=="],
 
     "@wallet-standard/errors": ["@wallet-standard/errors@0.1.2", "", { "dependencies": { "chalk": "^5.4.1", "commander": "^13.1.0" }, "bin": { "errors": "bin/cli.mjs" } }, "sha512-oEzKUqJefKby6wcIvaJgrSEe/uNn/rnqkJ0P/85K+h0i5Tdo9E3L22VWq/j5K1e8hHMnZd6LgaIr8m/Wn7X/Ng=="],
 

@@ -1,3 +1,7 @@
+import {
+  SponsoredTransactionActions,
+  type SponsoredTransactionInput,
+} from '@evefrontier/wallet-core/sponsored-transaction'
 import { EVEFRONTIER_SPONSORED_TRANSACTION } from '@evefrontier/wallet-core/wallet-features'
 import { WalletStandardMessageTypes } from '@evevault/shared'
 import {
@@ -551,19 +555,14 @@ describe('EveVaultWallet', () => {
     await expect(promise).resolves.toBe(result)
   })
 
-  it('signs a sponsored transaction with metadata when any metadata field is present', async () => {
+  it('signs an update-metadata sponsored transaction with all metadata fields', async () => {
     const wallet = new EveVaultWallet()
     const promise = wallet.features[
       EVEFRONTIER_SPONSORED_TRANSACTION
     ].signSponsoredTransaction({
-      txAction: 'mine',
-      assembly: '1',
-      assemblyType: 'type',
-      metadata: {
-        name: 'Name',
-        description: undefined,
-        url: undefined,
-      },
+      txAction: SponsoredTransactionActions.UPDATE_METADATA,
+      entityId: '1',
+      metadata: { name: 'Name', description: '', url: '' },
     })
 
     expect(lastPostedMessage()).toEqual({
@@ -571,14 +570,9 @@ describe('EveVaultWallet', () => {
       id: 'request-id',
       action: WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION,
       message: {
-        action: 'mine',
-        assembly: '1',
-        assemblyType: 'type',
-        metadata: {
-          name: 'Name',
-          description: undefined,
-          url: undefined,
-        },
+        action: SponsoredTransactionActions.UPDATE_METADATA,
+        entityId: '1',
+        metadata: { name: 'Name', description: '', url: '' },
       },
     })
 
@@ -594,15 +588,14 @@ describe('EveVaultWallet', () => {
     })
   })
 
-  it('omits sponsored transaction metadata when metadata has no populated fields', async () => {
+  it('signs a set-power-grid sponsored transaction without metadata', async () => {
     const wallet = new EveVaultWallet()
     const promise = wallet.features[
       EVEFRONTIER_SPONSORED_TRANSACTION
     ].signSponsoredTransaction({
-      txAction: 'mine',
-      assembly: '1',
-      assemblyType: 'type',
-      metadata: {},
+      txAction: SponsoredTransactionActions.SET_POWER_GRID,
+      entityId: '1',
+      on: false,
     })
 
     expect(lastPostedMessage()).toEqual({
@@ -610,9 +603,9 @@ describe('EveVaultWallet', () => {
       id: 'request-id',
       action: WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION,
       message: {
-        action: 'mine',
-        assembly: '1',
-        assemblyType: 'type',
+        action: SponsoredTransactionActions.SET_POWER_GRID,
+        entityId: '1',
+        on: false,
       },
     })
 
@@ -628,31 +621,19 @@ describe('EveVaultWallet', () => {
     })
   })
 
-  it('normalizes sponsored transaction assembly ids to strings', async () => {
+  it('rejects a sponsored transaction with an unsupported action', async () => {
     const wallet = new EveVaultWallet()
-    const promise = wallet.features[
-      EVEFRONTIER_SPONSORED_TRANSACTION
-    ].signSponsoredTransaction({
-      txAction: 'mine',
-      assembly: 1 as unknown as string,
-      assemblyType: 'type',
-    })
+    vi.mocked(window.postMessage).mockClear()
 
-    expect(lastPostedMessage()).toMatchObject({
-      message: {
+    await expect(
+      wallet.features[
+        EVEFRONTIER_SPONSORED_TRANSACTION
+      ].signSponsoredTransaction({
+        txAction: 'online',
         assembly: '1',
-      },
-    })
-
-    dispatchVaultMessage({
-      type: 'sign_success',
-      digest: 'digest',
-      executionStatus: 'success',
-    })
-
-    await expect(promise).resolves.toEqual({
-      digest: 'digest',
-      executionStatus: 'success',
-    })
+        assemblyType: 'SmartStorageUnit',
+      } as unknown as SponsoredTransactionInput),
+    ).rejects.toThrow('Unsupported sponsored transaction action: online')
+    expect(window.postMessage).not.toHaveBeenCalled()
   })
 })

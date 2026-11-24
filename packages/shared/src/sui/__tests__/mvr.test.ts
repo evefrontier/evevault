@@ -1,5 +1,9 @@
 import { getEveCoinType } from '@evefrontier/wallet-core/eve-token'
-import { TENANT_CONFIG, TenantId } from '@evefrontier/wallet-core/tenant'
+import {
+  getWorldPackageId,
+  TenantId,
+  worldMvrName,
+} from '@evefrontier/wallet-core/tenant'
 import {
   SUI_DEVNET_CHAIN,
   SUI_LOCALNET_CHAIN,
@@ -39,20 +43,23 @@ describe('MVR resolution on real clients', () => {
       client.core.mvr.resolveType({ type: EVE_MVR_TYPE }),
     ).resolves.toEqual({ type: getEveCoinType(TenantId.STILLNESS) })
     await expect(
-      client.core.mvr.resolvePackage({ package: '@evefrontier/world' }),
-    ).resolves.toEqual({ package: TENANT_CONFIG.stillness.packageId })
+      client.core.mvr.resolvePackage({ package: worldMvrName('core', 'dev') }),
+    ).resolves.toEqual({ package: getWorldPackageId('dev', 'core') })
     expect(fetchSpy).not.toHaveBeenCalled()
   })
 })
 
 describe('getMvrTypeName', () => {
-  it.each([
-    TenantId.STILLNESS,
-    TenantId.LIMINALITY,
-  ])('names the %s EVE coin type', (tenant) => {
-    expect(getMvrTypeName(getEveCoinType(tenant), SUI_TESTNET_CHAIN)).toBe(
-      EVE_MVR_TYPE,
-    )
+  it('names the stillness EVE coin type', () => {
+    expect(
+      getMvrTypeName(getEveCoinType(TenantId.STILLNESS), SUI_TESTNET_CHAIN),
+    ).toBe(EVE_MVR_TYPE)
+  })
+
+  it('names the liminality EVE coin type by its tier', () => {
+    expect(
+      getMvrTypeName(getEveCoinType(TenantId.LIMINALITY), SUI_TESTNET_CHAIN),
+    ).toBe('@evefrontier/currency-ptu::EVE::EVE')
   })
 
   it('names the utopia EVE coin type by its tier', () => {

@@ -1,5 +1,11 @@
 # @evevault/shared
 
+## 0.1.0
+
+### Minor Changes
+
+- breaking change: use new sponsored transaction shape for entity model
+
 ## 0.0.21
 
 ### Patch Changes
