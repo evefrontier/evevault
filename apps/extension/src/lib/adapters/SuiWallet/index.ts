@@ -1,6 +1,7 @@
-import type {
-  SponsoredTransactionInput,
-  SponsoredTransactionMethod,
+import {
+  SponsoredTransactionActions,
+  type SponsoredTransactionInput,
+  type SponsoredTransactionMethod,
 } from '@evefrontier/wallet-core/sponsored-transaction'
 import { EVEFRONTIER_SPONSORED_TRANSACTION } from '@evefrontier/wallet-core/wallet-features'
 import { WalletStandardMessageTypes } from '@evevault/shared'
@@ -383,11 +384,6 @@ export class EveVaultWallet implements Wallet {
   ) => {
     const id = crypto.randomUUID()
     log.debug('[SuiWallet] #signEveFrontierSponsoredTransaction input', input)
-    const hasMetadata =
-      input.metadata &&
-      (input.metadata.name != null ||
-        input.metadata.description != null ||
-        input.metadata.url != null)
     return waitForVaultMessage({
       id,
       successType: 'sign_success',
@@ -399,15 +395,16 @@ export class EveVaultWallet implements Wallet {
           WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION,
         message: {
           action: input.txAction,
-          assembly: String(input.assembly),
-          assemblyType: input.assemblyType,
-          ...(hasMetadata && {
-            metadata: {
-              name: input.metadata?.name,
-              description: input.metadata?.description,
-              url: input.metadata?.url,
-            },
-          }),
+          entityId: input.entityId,
+          ...(input.txAction === SponsoredTransactionActions.SET_POWER_GRID
+            ? { on: input.on }
+            : {
+                metadata: {
+                  name: input.metadata.name,
+                  description: input.metadata.description,
+                  url: input.metadata.url,
+                },
+              }),
         },
       },
       mapSuccess: (m) => ({

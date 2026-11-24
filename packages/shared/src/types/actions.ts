@@ -56,9 +56,9 @@ export interface PendingSponsoredTransaction {
   chain: SuiChain
   dapp?: DappRequestContext
   sponsoredAction?: string
-  assembly?: string
-  assemblyType?: string
+  entityId?: string
   metadata?: PendingSponsoredTransactionMetadata
+  on?: boolean
 }
 
 export type PendingAction =

@@ -99,7 +99,7 @@ async function handleSponsoredTransaction(
   _sendResponse: (response?: unknown) => void,
 ): Promise<boolean> {
   const senderTabId = sender.tab?.id
-  const { action, assembly, assemblyType, metadata } = message.message
+  const { action, entityId, metadata, on } = message.message
 
   try {
     const chain = await getStoredChain()
@@ -113,8 +113,8 @@ async function handleSponsoredTransaction(
       return true
     }
 
-    if (assembly == null || !assemblyType) {
-      throw new Error(`Assembly not found: ${assembly}, ${assemblyType}`)
+    if (!entityId) {
+      throw new Error(`Entity not found: ${entityId}`)
     }
 
     const permission = await requireSigningPermission(sender, chain)
@@ -125,10 +125,10 @@ async function handleSponsoredTransaction(
 
     log.info('Eve Frontier sponsored transaction request received', {
       action,
-      assembly,
-      assemblyType,
+      entityId,
       chain,
       metadata,
+      on,
     })
 
     if (metadata) {
@@ -142,12 +142,7 @@ async function handleSponsoredTransaction(
     const { apiBaseUrl, tenant } = getApiContext(jwt.id_token)
 
     const sponsoredTxReturn = await fetchUnsignedSponsoredTransaction(
-      {
-        txAction: action as SponsoredTransactionInput['txAction'],
-        assembly: assembly,
-        assemblyType,
-        metadata,
-      },
+      { txAction: action, entityId, metadata, on } as SponsoredTransactionInput,
       sponsoredApiContext(apiBaseUrl, jwt.id_token, ''),
     )
 
@@ -173,9 +168,9 @@ async function handleSponsoredTransaction(
       chain,
       dapp: permission.context,
       sponsoredAction: action,
-      assembly,
-      assemblyType,
+      entityId,
       metadata,
+      on,
     }
 
     await browser.storage.local.set({ pendingAction })

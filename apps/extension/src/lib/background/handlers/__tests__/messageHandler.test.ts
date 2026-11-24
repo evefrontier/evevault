@@ -400,7 +400,7 @@ describe('handleMessage route policy', () => {
     const message = {
       action: WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION,
       id: 'sponsored-id',
-      message: { action: 'mine', assembly: '1', assemblyType: 'type' },
+      message: { action: 'set-power-grid', entityId: '1', on: true },
     }
     // Sponsored results are sent to the tab out-of-band, not via sendResponse.
     expect(handleMessage(message, sender, sendResponse)).toBeUndefined()

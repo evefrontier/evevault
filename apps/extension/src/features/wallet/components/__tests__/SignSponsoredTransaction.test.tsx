@@ -184,15 +184,15 @@ describe('SignSponsoredTransaction', () => {
       requestId: 'req-1',
       sponsoredTxB64: btoa('bytes'),
       preparationId: 'prep-1',
-      sponsoredAction: 'mine',
-      assembly: 42,
-      assemblyType: 'basic',
+      sponsoredAction: 'set-power-grid',
+      entityId: '42',
+      on: false,
       chain: 'sui:testnet',
     })
     await renderSignSponsored()
-    expect(screen.getByText('mine')).toBeInTheDocument()
+    expect(screen.getByText('set-power-grid')).toBeInTheDocument()
     expect(screen.getByText('42')).toBeInTheDocument()
-    expect(screen.getByText('basic')).toBeInTheDocument()
+    expect(screen.getByText('Off')).toBeInTheDocument()
   })
 
   it('shows metadata fields when present', async () => {

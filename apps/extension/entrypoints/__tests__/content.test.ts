@@ -85,7 +85,7 @@ describe('content bridge message validation', () => {
     ).toBe(false)
   })
 
-  it('allows sponsored transaction requests with string assembly ids', () => {
+  it('allows sponsored transaction requests with string entity ids', () => {
     expect(
       content.isAllowedPageMessage({
         __to: 'Eve Vault',
@@ -93,9 +93,9 @@ describe('content bridge message validation', () => {
         action:
           WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION,
         message: {
-          action: 'mine',
-          assembly: '1',
-          assemblyType: 'type',
+          action: 'set-power-grid',
+          entityId: '1',
+          on: true,
         },
       }),
     ).toBe(true)
@@ -132,9 +132,23 @@ describe('content bridge message validation', () => {
         action:
           WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION,
         message: {
-          action: 'mine',
-          assembly: 1,
-          assemblyType: 'type',
+          action: 'set-power-grid',
+          entityId: 1,
+          on: true,
+        },
+      }),
+    ).toBe(false)
+
+    expect(
+      content.isAllowedPageMessage({
+        __to: 'Eve Vault',
+        id: 'sponsored-id',
+        action:
+          WalletStandardMessageTypes.EVEFRONTIER_SIGN_SPONSORED_TRANSACTION,
+        message: {
+          action: 'set-power-grid',
+          entityId: '1',
+          on: 'true',
         },
       }),
     ).toBe(false)

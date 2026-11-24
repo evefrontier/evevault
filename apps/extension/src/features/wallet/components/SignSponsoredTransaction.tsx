@@ -116,13 +116,17 @@ function SponsoredRequestDetails({
       </Text>
       <div className="mt-2 flex flex-col gap-2">
         <SponsoredDetail label="Action" value={pending?.sponsoredAction} />
+        <SponsoredDetail label="Entity" value={pending?.entityId} />
         <SponsoredDetail
-          label="Assembly"
+          label="Power"
           value={
-            pending?.assembly != null ? String(pending.assembly) : undefined
+            typeof pending?.on === 'boolean'
+              ? pending.on
+                ? 'On'
+                : 'Off'
+              : undefined
           }
         />
-        <SponsoredDetail label="Type" value={pending?.assemblyType} />
         <SponsoredDetail label="URL" value={pending?.metadata?.url} />
         <SponsoredDetail label="Name" value={pending?.metadata?.name} />
         <SponsoredDetail
