@@ -6,8 +6,8 @@
       "name": "eve-frontier-vault",
       "dependencies": {
         "@evefrontier/wallet-core": "^0.1.1",
-        "@mysten/sui": "^2.31.1",
-        "@mysten/wallet-standard": "^0.20.3",
+        "@mysten/sui": "^2.39.1",
+        "@mysten/wallet-standard": "^0.21.38",
         "jose": "6.0.12",
         "react": "^19.3.0",
         "react-dom": "^19.3.0",
@@ -36,8 +36,8 @@
       "version": "0.1.0",
       "dependencies": {
         "@evevault/shared": "workspace:*",
-        "@mysten/sui": "^2.31.1",
-        "@mysten/wallet-standard": "^0.20.3",
+        "@mysten/sui": "^2.39.1",
+        "@mysten/wallet-standard": "^0.21.38",
         "@tanstack/react-query": "^5.102.8",
         "@tanstack/react-router": "^1.170.36",
         "oidc-client-ts": "^3.5.0",
@@ -94,8 +94,8 @@
         "typescript": "^5.9.3",
       },
       "peerDependencies": {
-        "@mysten/sui": "^2.31.1",
-        "@mysten/wallet-standard": "^0.20.3",
+        "@mysten/sui": "^2.39.1",
+        "@mysten/wallet-standard": "^0.21.38",
         "@tanstack/react-query": "^5.102.8",
         "@tanstack/react-router": "^1.170.36",
         "@types/react": "^19.3.0",
@@ -572,7 +572,7 @@
 
     "@mysten/aws-kms-signer": ["@mysten/aws-kms-signer@0.3.22", "", { "dependencies": { "@noble/curves": "^2.3.0", "asn1-ts": "^11.1.0" }, "peerDependencies": { "@mysten/sui": "^2.31.1" } }, "sha512-iU6u8RAT/IJlJaNJcESa/aAYtWJ5SvtJrqNkv1GWp/sjY2FJg8MRK+FmbcQoXfJNu/cFnEbn6roJb88phLIA4w=="],
 
-    "@mysten/bcs": ["@mysten/bcs@2.1.3", "", { "dependencies": { "@mysten/utils": "^0.4.2", "@scure/base": "^2.3.0" } }, "sha512-sg3hstwDLQQmQTpiX8Vzs13bEEGTqnhp1gUzBLlVQ493xyTTCDwB/jXGzT0g2I/GXd2o1B3s7Bd67Ua3VZo+Jw=="],
+    "@mysten/bcs": ["@mysten/bcs@2.1.4", "", { "dependencies": { "@mysten/utils": "^0.4.2", "@scure/base": "^2.3.0" } }, "sha512-ksfm0HGy82iDcuLaf4kAduaeTNqALH8D8WCdxxwU/L2Gpk4SnqoC7D8R4qMoMpCSkh56CFVG3Tme343Iz2P8PA=="],
 
     "@mysten/gcp-kms-signer": ["@mysten/gcp-kms-signer@0.2.25", "", { "dependencies": { "@google-cloud/kms": "^6.0.0", "@noble/curves": "^2.3.0", "asn1-ts": "^11.1.0" }, "peerDependencies": { "@mysten/sui": "^2.31.1" } }, "sha512-NmnLhIpFKHd+YgS7Rvulgnceyt5+atLQqxRZaKgFhrpqyzetyhDrU/87MpdHM0mVCNk8K7llg9WFXKfW435KuQ=="],
 
@@ -582,11 +582,11 @@
 
     "@mysten/signers": ["@mysten/signers@1.1.25", "", { "dependencies": { "@mysten/aws-kms-signer": "^0.3.22", "@mysten/gcp-kms-signer": "^0.2.25", "@mysten/ledger-signer": "^0.2.25", "@mysten/webcrypto-signer": "^0.2.25" }, "peerDependencies": { "@mysten/sui": "^2.31.1" } }, "sha512-WmKemx6Jl5n+9cuIn4a3wwQGy/3y1TvNVIYsgDEtdLsP7WjK7mrjTkmXY6t/2s9ebZGU4Lt7SGNko0zKd5Konw=="],
 
-    "@mysten/sui": ["@mysten/sui@2.39.0", "", { "dependencies": { "@graphql-typed-document-node/core": "^3.2.0", "@mysten/bcs": "^2.1.3", "@mysten/utils": "^0.4.2", "@noble/curves": "^2.3.0", "@noble/hashes": "^2.3.0", "@noble/post-quantum": "^0.7.1", "@protobuf-ts/grpcweb-transport": "^2.11.1", "@protobuf-ts/runtime": "^2.11.1", "@protobuf-ts/runtime-rpc": "^2.11.1", "@scure/base": "^2.3.0", "@scure/bip32": "^2.3.0", "@scure/bip39": "^2.3.0", "gql.tada": "^1.11.3", "graphql": "^17.0.2", "poseidon-lite": "0.3.0", "valibot": "^1.4.2" } }, "sha512-smMBKxPGdK485i8i8Y3f1UEMSy3ybO3TZtyn2VXYnaxiz40IHYLjuPGFlfnxp6f/q/XkhmoXFabuUNhf3bryUg=="],
+    "@mysten/sui": ["@mysten/sui@2.39.1", "", { "dependencies": { "@graphql-typed-document-node/core": "^3.2.0", "@mysten/bcs": "^2.1.4", "@mysten/utils": "^0.4.2", "@noble/curves": "^2.3.0", "@noble/hashes": "^2.3.0", "@noble/post-quantum": "^0.7.1", "@protobuf-ts/grpcweb-transport": "^2.11.1", "@protobuf-ts/runtime": "^2.11.1", "@protobuf-ts/runtime-rpc": "^2.11.1", "@scure/base": "^2.3.0", "@scure/bip32": "^2.3.0", "@scure/bip39": "^2.3.0", "gql.tada": "^1.11.3", "graphql": "^17.0.2", "poseidon-lite": "0.3.0", "valibot": "^1.4.2" } }, "sha512-cFhIn7WJcT6thzKlBO2OtqyLX5uigY/1IK0PRTa6o50Bcy0qLhacu+fjhqY7uHeXlXGrjc/kIsXs5o4KtPcieg=="],
 
     "@mysten/utils": ["@mysten/utils@0.4.2", "", {}, "sha512-K/5eBuYKxUFCrYcic1lvYvWE9OVSH581cjVjwsSJGUqPit91nZq2acUwes+B4lo98VE/CILIUeBcyEIvuNxMhA=="],
 
-    "@mysten/wallet-standard": ["@mysten/wallet-standard@0.20.3", "", { "dependencies": { "@wallet-standard/core": "1.1.1" }, "peerDependencies": { "@mysten/sui": "*" } }, "sha512-Kp1EpWaQAwANuMoTCJKVdZnEOaE9aJ5PPvIC7qg+J3u6Uf20VsVsQngZllyaS2OQHm+iLlJzcLXHff7ttvQJYw=="],
+    "@mysten/wallet-standard": ["@mysten/wallet-standard@0.21.38", "", { "dependencies": { "@wallet-standard/core": "1.1.2" }, "peerDependencies": { "@mysten/sui": "^2.39.1" } }, "sha512-JPmrqnNTTIL2fklJu+P9pht29he7fAV7oBhH2zG2l8WibYWPfLfesWa4jVRvvV7+AhyKqhzYY58nC7CFCpddHw=="],
 
     "@mysten/webcrypto-signer": ["@mysten/webcrypto-signer@0.2.38", "", { "dependencies": { "@noble/curves": "^2.3.0" }, "peerDependencies": { "@mysten/sui": "^2.39.1" } }, "sha512-bI0ZaX0HpniP4D7cXopr7bTDM68Y5q98DBoVFSp1ucI/+8S2+/kVlNLlJQ026N1TQz3KsCoTiYHPS1gbKB6TIQ=="],
 
@@ -878,7 +878,7 @@
 
     "@wallet-standard/base": ["@wallet-standard/base@1.1.1", "", {}, "sha512-gggIHTtxicF9XFMQ12DkfS6NAG92Ak795JeSA7f2whAQ6Y3AkMWWuCMxSZXG2NIPN42kEaZSNVjqMsJRaJRxMQ=="],
 
-    "@wallet-standard/core": ["@wallet-standard/core@1.1.1", "", { "dependencies": { "@wallet-standard/app": "^1.1.0", "@wallet-standard/base": "^1.1.0", "@wallet-standard/errors": "^0.1.1", "@wallet-standard/features": "^1.1.0", "@wallet-standard/wallet": "^1.1.0" } }, "sha512-5Xmjc6+Oe0hcPfVc5n8F77NVLwx1JVAoCVgQpLyv/43/bhtIif+Gx3WUrDlaSDoM8i2kA2xd6YoFbHCxs+e0zA=="],
+    "@wallet-standard/core": ["@wallet-standard/core@1.1.2", "", { "dependencies": { "@wallet-standard/app": "^1.1.1", "@wallet-standard/base": "^1.1.1", "@wallet-standard/errors": "^0.1.2", "@wallet-standard/features": "^1.1.1", "@wallet-standard/wallet": "^1.1.1" } }, "sha512-QcVLGDkFtsWjTpkej2jx4FyP2cu+qOAW/lVnvlWjyhCkSEje6z+vEKURV5v+7L6IXjbze5pyFBe24yrPyoUuyw=="],
 
     "@wallet-standard/errors": ["@wallet-standard/errors@0.1.2", "", { "dependencies": { "chalk": "^5.4.1", "commander": "^13.1.0" }, "bin": { "errors": "bin/cli.mjs" } }, "sha512-oEzKUqJefKby6wcIvaJgrSEe/uNn/rnqkJ0P/85K+h0i5Tdo9E3L22VWq/j5K1e8hHMnZd6LgaIr8m/Wn7X/Ng=="],
 
@@ -2228,8 +2228,6 @@
 
     "@devicefarmer/adbkit/debug": ["debug@4.3.7", "", { "dependencies": { "ms": "^2.1.3" }, "peerDependencies": { "supports-color": "*" }, "optionalPeers": ["supports-color"] }, "sha512-Er2nc/H7RrMXZBFCEim6TCmMk02Z8vLC2Rbi1KEBggpo0fS6l0S1nnapwmIi3yW/+GOJap1Krg4w0Hg80oCqgQ=="],
 
-    "@evefrontier/wallet-core/@mysten/wallet-standard": ["@mysten/wallet-standard@0.21.38", "", { "dependencies": { "@wallet-standard/core": "1.1.2" }, "peerDependencies": { "@mysten/sui": "^2.39.1" } }, "sha512-JPmrqnNTTIL2fklJu+P9pht29he7fAV7oBhH2zG2l8WibYWPfLfesWa4jVRvvV7+AhyKqhzYY58nC7CFCpddHw=="],
-
     "@ledgerhq/devices/semver": ["semver@7.7.3", "", { "bin": { "semver": "bin/semver.js" } }, "sha512-SdsKMrI9TdgjdweUSR9MweHA4EJ8YxHn8DFaDisvhVlUOe4BF1tLD7GAj0lIqWVl+dPb/rExr0Btby5loQm20Q=="],
 
     "@ledgerhq/hw-bolos/@ledgerhq/hw-transport": ["@ledgerhq/hw-transport@6.35.7", "", { "dependencies": { "@ledgerhq/devices": "8.17.0", "@ledgerhq/errors": "^7.0.0", "@ledgerhq/logs": "^6.17.0", "events": "^3.3.0" } }, "sha512-vVhAVQ56+7A5FY5Mr09HY+bmf3H6TXpwsj+/xbadNkjl//e/YzTWfpXk4eBnj3hwk1PQ9Mn6pKFH0BHjS2BKlg=="],
@@ -2417,8 +2415,6 @@
     "@aklinker1/rollup-plugin-visualizer/open/define-lazy-prop": ["define-lazy-prop@2.0.0", "", {}, "sha512-Ds09qNh8yw3khSjiJjiUInaGX9xlqZDY7JVryGxdxV7NPeuqQfplOpQ66yJFZut3jLa5zOwkXw1g9EI2uKh4Og=="],
 
     "@aklinker1/rollup-plugin-visualizer/open/is-wsl": ["is-wsl@2.2.0", "", { "dependencies": { "is-docker": "^2.0.0" } }, "sha512-fKzAra0rGJUUBwGBgNkHZuToZcn+TtXHpeCgmkMJMMYx1sQDYaCSyjJBSCa2nH1DGm7s3n1oBnohoVTBaN7Lww=="],
-
-    "@evefrontier/wallet-core/@mysten/wallet-standard/@wallet-standard/core": ["@wallet-standard/core@1.1.2", "", { "dependencies": { "@wallet-standard/app": "^1.1.1", "@wallet-standard/base": "^1.1.1", "@wallet-standard/errors": "^0.1.2", "@wallet-standard/features": "^1.1.1", "@wallet-standard/wallet": "^1.1.1" } }, "sha512-QcVLGDkFtsWjTpkej2jx4FyP2cu+qOAW/lVnvlWjyhCkSEje6z+vEKURV5v+7L6IXjbze5pyFBe24yrPyoUuyw=="],
 
     "@ledgerhq/hw-bolos/@ledgerhq/hw-transport/@ledgerhq/devices": ["@ledgerhq/devices@8.17.0", "", { "dependencies": { "semver": "7.7.3" } }, "sha512-l+rrVQEjR1hSWOLD00LFX4zbS8yB1M/Mb6UYPmSHGO7TmE1CFbZ4CmDJC/kZSl3hdrXCJ+YUNpvaLCcSWDwA+Q=="],
 
