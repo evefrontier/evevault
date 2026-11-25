@@ -257,7 +257,6 @@ const WalletDashboard = ({
       <TokenListSection
         user={user}
         chain={chain}
-        walletAddress={address}
         onAddToken={actions.onAddToken}
         onSendToken={actions.onSendToken}
       />

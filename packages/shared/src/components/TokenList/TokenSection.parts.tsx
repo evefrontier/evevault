@@ -1,9 +1,11 @@
-import type React from 'react'
+import { isEveCoinType } from '@evefrontier/wallet-core/eve-token'
 import Button from '#/components/Button'
 import Icon from '#/components/Icon'
 import Text from '#/components/Text'
 import type { ExtendedTokenRowProps } from '#/types'
-import { formatAddress } from '#/utils'
+import { SUI_COIN_TYPE } from '#/utils/constants'
+import { useBalance } from '#/wallet'
+import { getKnownTokenDisplay } from '#/wallet/utils/balanceMetadata'
 import { TokenRow } from './TokenRow'
 
 type TokenRowsProps = Pick<
@@ -22,95 +24,136 @@ type TokenRowsProps = Pick<
   tokensForChain: string[]
 }
 
-/**
- * Reserves the same vertical space when no wallet address is available so the
- * token list header does not jump between auth and loading states.
- */
-export function WalletAddressRow({
-  walletAddress,
-  onCopyAddress,
+/** One readout cell: label over a large balance. */
+function ReadoutCell({
+  label,
+  value,
+  unit,
 }: {
-  walletAddress?: string
-  onCopyAddress: (address: string) => void
+  label: string
+  value: string
+  unit?: string
 }) {
-  if (!walletAddress) return <div className="h-6 shrink-0" />
-
   return (
-    <div className="flex justify-end items-center gap-2 w-full shrink-0">
-      <div className="flex items-center gap-1">
-        <Text variant="regular" size="small" color="neutral-80">
-          Wallet address:
-        </Text>
-        <button
-          type="button"
-          className="flex items-center gap-1 px-1 py-0.5 bg-transparent border-none cursor-pointer hover:opacity-80"
-          onClick={() => onCopyAddress(walletAddress)}
-        >
-          <Text variant="light" size="small" color="grey-neutral">
-            {formatAddress(walletAddress)}
-          </Text>
-          <Icon name="Copy" size="small" color="grey-neutral" />
-        </button>
-      </div>
+    <div className="assets__readout-cell">
+      <span className="c-label">{label}</span>
+      <b className="assets__readout-value" title={value}>
+        {value}
+        {unit ? <small>{unit}</small> : null}
+      </b>
     </div>
   )
 }
 
-/**
- * Keeps the refresh button in the balance column because refreshing affects
- * amounts, not token metadata or addresses.
- */
-export function TokenListHeader({
+/** Balance cell for one coin type, labelled "Balance" or "Gas". */
+function BalanceCell({
+  coinType,
+  label,
+  user,
+  chain,
+  balanceAddress,
+  localnetUrl,
+}: Pick<
+  ExtendedTokenRowProps,
+  'coinType' | 'user' | 'chain' | 'balanceAddress' | 'localnetUrl'
+> & { label: string }) {
+  const { data, isLoading } = useBalance({
+    user,
+    chain,
+    coinType,
+    address: balanceAddress,
+    localnetUrl,
+  })
+  const symbol =
+    data?.metadata?.symbol || getKnownTokenDisplay(coinType)?.symbol || ''
+  return (
+    <ReadoutCell
+      label={symbol ? `${label} · ${symbol}` : label}
+      value={isLoading ? '…' : (data?.formattedBalance ?? '0')}
+      unit={symbol}
+    />
+  )
+}
+
+/** Headline balances: EVE when tracked, SUI for gas, and the token count on web. */
+export function BalanceReadout({
+  tokensForChain,
+  showCount,
+  user,
+  chain,
+  balanceAddress,
+  localnetUrl,
+}: Pick<
+  ExtendedTokenRowProps,
+  'user' | 'chain' | 'balanceAddress' | 'localnetUrl'
+> & { tokensForChain: string[]; showCount: boolean }) {
+  const eveCoinType = tokensForChain.find(isEveCoinType)
+  const balanceProps = { user, chain, balanceAddress, localnetUrl }
+  return (
+    <div className="assets__readout">
+      {eveCoinType && (
+        <BalanceCell coinType={eveCoinType} label="Balance" {...balanceProps} />
+      )}
+      <BalanceCell coinType={SUI_COIN_TYPE} label="Gas" {...balanceProps} />
+      {showCount && (
+        <ReadoutCell
+          label="Tokens tracked"
+          value={String(tokensForChain.length)}
+        />
+      )}
+    </div>
+  )
+}
+
+/** List header: eyebrow with the count in the popup, panel header bar on web. */
+export function AssetsHeader({
+  count,
+  inPopup,
   isRefreshing,
   onRefreshBalances,
+  onAddToken,
+  canRemove,
+  onRemoveToken,
 }: {
+  count: number
+  inPopup: boolean
   isRefreshing: boolean
   onRefreshBalances: () => void
+  onAddToken?: () => void
+  canRemove: boolean
+  onRemoveToken: () => void
 }) {
   return (
-    <div className="flex justify-between items-start gap-2 w-full flex-shrink-0">
-      <div className="flex items-center gap-[60px]">
-        <Text
-          variant="label-semi"
-          size="small"
-          color="neutral-50"
-          className="w-[140px]"
+    <div className={inPopup ? 'assets__head' : 'c-panel__head'}>
+      {inPopup ? <span className="c-eyebrow">Assets · {count}</span> : 'Assets'}
+      <div className="assets__tools">
+        <button
+          type="button"
+          className="c-icon-btn"
+          onClick={onRefreshBalances}
+          disabled={isRefreshing}
+          title="Refresh balances"
+          aria-label="Refresh balances"
         >
-          TOKEN
-        </Text>
-        <Text
-          variant="label-semi"
-          size="small"
-          color="neutral-50"
-          className="w-[60px]"
-        >
-          ADDRESS
-        </Text>
+          <Icon
+            name="Refresh"
+            width={14}
+            height={14}
+            color="currentColor"
+            className={isRefreshing ? 'animate-spin' : undefined}
+          />
+        </button>
+        {canRemove && (
+          <Button variant="secondary" size="small" onClick={onRemoveToken}>
+            Remove
+          </Button>
+        )}
+        {onAddToken && (
+          <Button variant="secondary" size="small" onClick={onAddToken}>
+            + Add token
+          </Button>
+        )}
       </div>
-      <button
-        type="button"
-        className="flex items-center justify-end gap-1 bg-transparent border-none cursor-pointer rounded opacity-90 hover:opacity-100 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed text-left min-w-0"
-        onClick={onRefreshBalances}
-        disabled={isRefreshing}
-        title="Refresh balances"
-        aria-label="Refresh balances"
-      >
-        <Text
-          variant="label-semi"
-          size="small"
-          color="neutral-50"
-          className="text-right"
-        >
-          BALANCE
-        </Text>
-        <Icon
-          name="Refresh"
-          width={12}
-          height={12}
-          color="grey-neutral"
-          className={`flex-shrink-0 -mt-1 ${isRefreshing ? 'animate-spin' : ''}`}
-        />
-      </button>
     </div>
   )
 }
@@ -121,10 +164,8 @@ export function TokenListHeader({
  */
 function EmptyTokenList() {
   return (
-    <div className="flex justify-center items-center py-6 w-full">
-      <Text size="large" color="grey-neutral">
-        No tokens added yet
-      </Text>
+    <div className="assets__empty">
+      <Text color="grey-neutral">No tokens added yet</Text>
     </div>
   )
 }
@@ -174,49 +215,4 @@ export function TokenRows({
       refreshTick={refreshTick}
     />
   ))
-}
-
-/**
- * Keeps add/remove controls outside the scrolling token rows so destructive
- * actions do not move as the list length changes.
- */
-export function TokenActions({
-  canRemove,
-  onAddToken,
-  onRemoveToken,
-}: {
-  canRemove: boolean
-  onAddToken?: () => void
-  onRemoveToken: () => void
-}) {
-  return (
-    <div className="flex justify-center items-center gap-1 w-full shrink-0">
-      {onAddToken ? (
-        <Button variant="primary" size="small" onClick={onAddToken}>
-          Add token
-        </Button>
-      ) : null}
-      <Button
-        variant="secondary"
-        size="small"
-        onClick={onRemoveToken}
-        disabled={!canRemove}
-      >
-        Remove token
-      </Button>
-    </div>
-  )
-}
-
-/**
- * Uses a fixed extension height but flexible web height to preserve the popup
- * layout while still letting web pages fill the available space.
- */
-export function getTokenListContainerProps(isMobile: boolean) {
-  return {
-    className: `flex flex-col items-start p-4 px-2 gap-3 w-full bg-crude-dark border border-quantum-60 overflow-hidden ${isMobile ? '' : 'flex-1 min-h-[300px]'}`,
-    style: isMobile
-      ? ({ height: '207px', flexShrink: 0 } as React.CSSProperties)
-      : undefined,
-  }
 }

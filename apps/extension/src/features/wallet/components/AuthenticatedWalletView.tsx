@@ -130,7 +130,6 @@ export function AuthenticatedWalletView({
       <TokenListSection
         user={user}
         chain={chain}
-        walletAddress={activeAddress ?? ''}
         balanceAddress={activeAddress}
         localnetUrl={localnetUrl}
         onAddToken={() => navigate({ to: '/add-token' })}

@@ -1,11 +1,12 @@
+import { isEveCoinType } from '@evefrontier/wallet-core/eve-token'
 import type { SuiChain } from '@mysten/wallet-standard'
 import type React from 'react'
 import { type KeyboardEvent, useMemo } from 'react'
 import Button from '#/components/Button'
 import Icon from '#/components/Icon'
-import Text from '#/components/Text'
 import { getMvrTypeName } from '#/sui/mvr'
 import type { ExtendedTokenRowProps } from '#/types'
+import { SUI_COIN_TYPE } from '#/utils/constants'
 import { useBalance } from '#/wallet'
 import { getKnownTokenDisplay } from '#/wallet/utils/balanceMetadata'
 import {
@@ -26,6 +27,7 @@ function getShortAddress(coinType: string, chain: SuiChain | null) {
 
 type TokenRowDisplay = {
   balance: string
+  detail: string
   displayBalance: string
   displaySymbol: string
   shortAddress: string
@@ -54,6 +56,15 @@ function getTokenSymbol(
   metadata?: { symbol?: string | null } | null,
 ) {
   return metadata?.symbol || getKnownTokenDisplay(coinType)?.symbol || ''
+}
+
+/** Line under the balance: "gas" for SUI, else the token's decimals. */
+function getBalanceDetail(
+  coinType: string,
+  metadata?: { decimals?: number | null } | null,
+) {
+  if (coinType === SUI_COIN_TYPE) return 'gas'
+  return metadata?.decimals != null ? `${metadata.decimals} decimals` : ''
 }
 
 /**
@@ -109,6 +120,7 @@ function useTokenRowDisplay({
 
   return {
     balance,
+    detail: getBalanceDetail(coinType, data?.metadata),
     displayBalance,
     displaySymbol,
     shortAddress: getShortAddress(coinType, chain),
@@ -117,97 +129,20 @@ function useTokenRowDisplay({
   }
 }
 
-/**
- * Shares selected and hover classes between mouse and keyboard activation
- * paths for the whole token row.
- */
-function getContainerClasses(isSelected: boolean) {
-  return [
-    'flex flex-col w-full p-2 gap-4',
-    'border-none cursor-pointer text-left transition-colors',
-    isSelected
-      ? 'bg-quantum-40 hover:bg-quantum-40'
-      : 'bg-transparent hover:bg-quantum-10',
-  ].join(' ')
-}
-
-/**
- * Stops propagation on copy so copying the coin type does not also select or
- * deselect the token row.
- */
-function TokenAddress({
-  coinType,
-  shortAddress,
-  onCopyAddress,
-}: {
-  coinType: string
-  shortAddress: string
-  onCopyAddress: (address: string) => void
-}) {
+/** Diamond icon with the token's first letter; brand-filled for EVE. */
+function TokenIcon({ coinType, name }: { coinType: string; name: string }) {
+  const brand = isEveCoinType(coinType)
   return (
-    <div className="flex items-center gap-1">
-      <Text variant="light" size="small" color="grey-neutral" title={coinType}>
-        {shortAddress}
-      </Text>
-      <button
-        type="button"
-        title={`Copy ${coinType}`}
-        aria-label="Copy coin type"
-        className="flex items-center justify-center w-4 h-4 p-0 bg-transparent border-none cursor-pointer opacity-70 hover:opacity-100 transition-opacity"
-        onClick={(event) => {
-          event.stopPropagation()
-          onCopyAddress(coinType)
-        }}
-      >
-        <Icon name="Copy" size="small" color="grey-neutral" />
-      </button>
-    </div>
-  )
-}
-
-/**
- * Keeps the loading dots attached to the balance value while symbols scramble
- * independently during refresh.
- */
-function TokenBalance({
-  displayBalance,
-  displaySymbol,
-  isRefreshing,
-}: {
-  displayBalance: string
-  displaySymbol: string
-  isRefreshing: boolean
-}) {
-  return (
-    <div className="flex items-center gap-6 text-right">
-      <Text variant="regular" size="medium">
-        {displayBalance}
-        {isRefreshing ? <LoadingDots /> : null} {displaySymbol}
-      </Text>
-    </div>
-  )
-}
-
-/**
- * Stops propagation on transfer so the row remains selected while launching the
- * send-token flow.
- */
-function TransferAction({ onTransfer }: { onTransfer?: () => void }) {
-  if (!onTransfer) return null
-
-  return (
-    <div className="flex justify-end w-full">
-      <Button
-        variant="secondary"
-        size="small"
-        onClick={(event) => {
-          event.stopPropagation()
-          onTransfer()
-        }}
-      >
-        Transfer
-      </Button>
-    </div>
+    <svg
+      viewBox="0 0 28 28"
+      aria-hidden="true"
+      className={`token-row__icon${brand ? ' token-row__icon--brand' : ''}`}
+    >
+      <path className="token-row__icon-frame" d="M14 1 27 14 14 27 1 14Z" />
+      <text x="14" y="17.5" textAnchor="middle">
+        {name.charAt(0).toUpperCase()}
+      </text>
+    </svg>
   )
 }
 
@@ -249,35 +184,56 @@ export const TokenRow: React.FC<ExtendedTokenRowProps> = ({
   }
 
   return (
-    // biome-ignore lint/a11y/useSemanticElements: This needs to nest another button
+    // biome-ignore lint/a11y/useSemanticElements: This needs to nest other buttons
     <div
       role="button"
       tabIndex={0}
-      className={getContainerClasses(isSelected)}
+      className={`token-row${isSelected ? ' token-row--selected' : ''}`}
       onClick={onSelect}
       onKeyDown={handleKeyDown}
       aria-pressed={isSelected}
     >
-      <div className="flex w-full items-center justify-between gap-1">
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 w-[140px]">
-            <Text variant="bold" size="medium">
-              {display.tokenName}
-            </Text>
-          </div>
-          <TokenAddress
-            coinType={coinType}
-            shortAddress={display.shortAddress}
-            onCopyAddress={onCopyAddress}
-          />
-        </div>
-        <TokenBalance
-          displayBalance={display.displayBalance}
-          displaySymbol={display.displaySymbol}
-          isRefreshing={isRefreshing}
-        />
-      </div>
-      {isSelected ? <TransferAction onTransfer={onTransfer} /> : null}
+      <TokenIcon
+        coinType={coinType}
+        name={display.symbol || display.tokenName}
+      />
+      <span className="token-row__name">
+        <b>{display.displaySymbol || display.tokenName}</b>
+        <span title={coinType}>{display.shortAddress}</span>
+      </span>
+      <span className="token-row__value">
+        <b>
+          {display.displayBalance}
+          {isRefreshing ? <LoadingDots /> : null}
+        </b>
+        <span>{display.detail}</span>
+      </span>
+      <span className="token-row__actions">
+        <button
+          type="button"
+          title={`Copy ${coinType}`}
+          aria-label="Copy coin type"
+          className="c-icon-btn"
+          onClick={(event) => {
+            event.stopPropagation()
+            onCopyAddress(coinType)
+          }}
+        >
+          <Icon name="Copy" width={14} height={14} color="currentColor" />
+        </button>
+        {onTransfer && (
+          <Button
+            variant={isSelected ? 'primary' : 'secondary'}
+            size="small"
+            onClick={(event) => {
+              event.stopPropagation()
+              onTransfer()
+            }}
+          >
+            Send
+          </Button>
+        )}
+      </span>
     </div>
   )
 }

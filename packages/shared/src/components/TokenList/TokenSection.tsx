@@ -2,32 +2,24 @@ import { useQueryClient } from '@tanstack/react-query'
 import type React from 'react'
 import { useState } from 'react'
 import { useToast } from '#/components/Toast'
-import { useResponsive } from '#/hooks'
 import { useTokenListStore } from '#/stores'
 import type { TokenListProps } from '#/types'
 import { isPinnedToken } from '#/types/networks'
+import { isExtension } from '#/utils/environment'
 import {
   removeSelectedToken,
   useCopyAddress,
   useRefreshBalances,
   useTokensForChain,
 } from './TokenSection.helpers'
-import {
-  getTokenListContainerProps,
-  TokenActions,
-  TokenListHeader,
-  TokenRows,
-  WalletAddressRow,
-} from './TokenSection.parts'
+import { AssetsHeader, BalanceReadout, TokenRows } from './TokenSection.parts'
+import './TokenSection.css'
 
-export const TokenSection: React.FC<
-  TokenListProps & { walletAddress?: string }
-> = ({
+export const TokenSection: React.FC<TokenListProps> = ({
   user,
   chain,
   onAddToken,
   onSendToken,
-  walletAddress,
   balanceAddress,
   localnetUrl,
 }) => {
@@ -35,15 +27,14 @@ export const TokenSection: React.FC<
   const { tokens, removeToken } = useTokenListStore()
   const [selectedToken, setSelectedToken] = useState<string | null>(null)
   const { showToast } = useToast()
-  const { isMobile } = useResponsive()
   const { isRefreshing, refreshBalances, refreshTick } = useRefreshBalances(
     queryClient,
     showToast,
   )
   const tokensForChain = useTokensForChain(chain, tokens)
   const handleCopyAddress = useCopyAddress(showToast)
-
-  const tokenListContainerProps = getTokenListContainerProps(isMobile)
+  // Popup: eyebrow header; web: framed panel with the token count in the readout
+  const inPopup = isExtension()
   const handleRemoveToken = () =>
     removeSelectedToken({
       chain,
@@ -53,19 +44,32 @@ export const TokenSection: React.FC<
     })
 
   return (
-    <div className="flex flex-col items-start gap-2 w-full flex-1 min-h-0">
-      <WalletAddressRow
-        walletAddress={walletAddress}
-        onCopyAddress={handleCopyAddress}
+    <div className="assets">
+      <BalanceReadout
+        tokensForChain={tokensForChain}
+        showCount={!inPopup}
+        user={user}
+        chain={chain}
+        balanceAddress={balanceAddress}
+        localnetUrl={localnetUrl}
       />
 
-      <div {...tokenListContainerProps}>
-        <TokenListHeader
+      <div
+        className={`assets__list${inPopup ? '' : ' assets__list--panel c-panel'}`}
+      >
+        <AssetsHeader
+          count={tokensForChain.length}
+          inPopup={inPopup}
           isRefreshing={isRefreshing}
           onRefreshBalances={refreshBalances}
+          onAddToken={onAddToken}
+          canRemove={Boolean(
+            selectedToken && chain && !isPinnedToken(chain, selectedToken),
+          )}
+          onRemoveToken={handleRemoveToken}
         />
 
-        <div className="flex flex-col items-start gap-1 w-full flex-1 min-h-0 overflow-y-auto">
+        <div className="assets__rows">
           <TokenRows
             balanceAddress={balanceAddress}
             chain={chain}
@@ -81,14 +85,6 @@ export const TokenSection: React.FC<
           />
         </div>
       </div>
-
-      <TokenActions
-        canRemove={Boolean(
-          selectedToken && chain && !isPinnedToken(chain, selectedToken),
-        )}
-        onAddToken={onAddToken}
-        onRemoveToken={handleRemoveToken}
-      />
     </div>
   )
 }

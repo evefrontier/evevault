@@ -1,0 +1,192 @@
+/* Wallet assets: balance readout, list header, token rows */
+.assets {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  min-height: 0;
+}
+
+/* Readout: one cell per headline balance */
+.assets__readout {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  flex-shrink: 0;
+  border: 1px solid var(--n20);
+}
+
+.assets__readout-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 10px 12px;
+  border-right: 1px solid var(--n10);
+}
+
+.assets__readout-cell:last-child {
+  border-right: 0;
+}
+
+.assets__readout-value {
+  overflow: hidden;
+  font-family: var(--font-headline);
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.assets__readout-value small {
+  margin-left: 4px;
+  color: var(--n60);
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 300;
+}
+
+/* List: eyebrow header in the popup, framed panel on web */
+.assets__list {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.assets__head {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.assets__tools {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.assets__rows {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.assets__list--panel .assets__rows {
+  padding: 10px;
+}
+
+.assets__empty {
+  padding: 24px 0;
+  color: var(--n50);
+  text-align: center;
+}
+
+/* Token row: icon, name and coin type, balance, actions */
+.token-row {
+  display: grid;
+  flex-shrink: 0;
+  grid-template-columns: 28px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--n10);
+  background: var(--bg);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease;
+}
+
+.token-row:hover {
+  border-color: var(--n30);
+}
+
+.token-row:focus-visible {
+  outline: 1px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.token-row--selected,
+.token-row--selected:hover {
+  border-color: var(--brand-40);
+  background: var(--brand-10);
+}
+
+.token-row__icon {
+  display: block;
+  width: 28px;
+  height: 28px;
+}
+
+.token-row__icon-frame {
+  fill: none;
+  stroke: var(--n40);
+}
+
+.token-row__icon--brand .token-row__icon-frame {
+  fill: rgba(255, 71, 0, 0.15);
+  stroke: var(--brand);
+}
+
+.token-row__icon text {
+  fill: var(--ink);
+  font-family: var(--font-headline);
+  font-size: 9px;
+}
+
+.token-row__name,
+.token-row__value {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.token-row__name b {
+  overflow: hidden;
+  font-family: var(--font-headline);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.token-row__name span,
+.token-row__value span {
+  overflow: hidden;
+  color: var(--n50);
+  font-size: 11.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.token-row__value {
+  align-items: flex-end;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.token-row__value b {
+  font-family: var(--font-headline);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.token-row__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
