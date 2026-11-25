@@ -63,11 +63,10 @@ describe('getAvailableTenantIds', () => {
   })
 
   describe('when outside web-production context (no URL filter)', () => {
-    it('returns default tenant plus non-dev tenants when isWeb is false', () => {
+    it('returns only the default tenant when isWeb is false and devMode is off', () => {
       vi.mocked(isWeb).mockReturnValue(false)
       const ids = getAvailableTenantIds(false)
-      expect(ids).toContain(getDefaultTenantId())
-      expect(ids.length).toBeGreaterThan(1)
+      expect(ids).toEqual([getDefaultTenantId()])
     })
 
     it('returns all tenants including dev tenants when devMode is true', () => {
@@ -78,15 +77,31 @@ describe('getAvailableTenantIds', () => {
       expect(ids.length).toBeGreaterThan(1)
     })
 
-    it('excludes isDev tenants when devMode is false and not web production', () => {
+    it('excludes non-default tenants when devMode is false and not web production', () => {
       vi.mocked(isWeb).mockReturnValue(false)
       const ids = getAvailableTenantIds(false)
       expect(ids).toContain('stillness')
-      expect(ids).toContain('utopia')
+      expect(ids).not.toContain('utopia')
       expect(ids).not.toContain('tesseract')
       expect(ids).not.toContain('tiaki')
       expect(ids).not.toContain('tetra')
       expect(ids).not.toContain('tauceti')
+    })
+
+    it('lists a non-dev tenant without devMode when the site serves it', () => {
+      vi.mocked(isWeb).mockReturnValue(true)
+      process.env.NODE_ENV = 'development'
+      setWindowLocation({ origin: UAT_ORIGIN })
+      const ids = getAvailableTenantIds(false)
+      expect(ids).toEqual(['stillness', 'utopia'])
+    })
+
+    it('never lists a dev-only tenant without devMode, even on its own site', () => {
+      vi.mocked(isWeb).mockReturnValue(true)
+      process.env.NODE_ENV = 'development'
+      setWindowLocation({ origin: TEST_ORIGIN })
+      const ids = getAvailableTenantIds(false)
+      expect(ids).toEqual(['stillness'])
     })
   })
 

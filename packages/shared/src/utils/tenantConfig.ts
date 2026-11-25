@@ -24,6 +24,15 @@ function isWebProduction(): boolean {
   return mode === 'production'
 }
 
+/** True when the web app is running on the tenant's own site (e.g. the PTU site). */
+function isServedFromCurrentOrigin(tenantId: TenantId): boolean {
+  if (!isWeb() || typeof window === 'undefined') return false
+  return (
+    normalizeOrigin(TENANT_KEYS[tenantId].webOrigin) ===
+    normalizeOrigin(window.location.origin)
+  )
+}
+
 /**
  * Returns FusionAuth client config for the given tenant.
  */
@@ -36,17 +45,19 @@ export function getDefaultTenantId(): TenantId {
 }
 
 /**
- * Returns available tenant ids. Dev-only tenants (isDev: true) are excluded unless
- * devMode is true. The default tenant is included before URL filtering, but in web
- * production mode all tenants (including the default) are filtered to only those whose
- * webOrigin matches window.location.origin.
+ * Returns available tenant ids. The default tenant is always listed. Other tenants
+ * are listed when devMode is true, or when they are not dev-only (isDev) and the
+ * web app is running on their webOrigin. In web production mode all tenants
+ * (including the default) are then filtered to those whose webOrigin matches
+ * window.location.origin.
  */
 export function getAvailableTenantIds(devMode = false): TenantId[] {
   const ids: TenantId[] = [DEFAULT_TENANT_ID]
 
   for (const id of KNOWN_TENANT_IDS) {
     if (id === DEFAULT_TENANT_ID) continue
-    if (!devMode && TENANT_KEYS[id].isDev) continue
+    if (!devMode && (TENANT_KEYS[id].isDev || !isServedFromCurrentOrigin(id)))
+      continue
     ids.push(id)
   }
 
