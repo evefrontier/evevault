@@ -5,7 +5,6 @@ import {
   getBalanceChangeAmount,
   getBalanceChangeTitle,
   getNextExpandedDigest,
-  getSummaryClasses,
   getTransactionRowSummary,
   getTransactionStatusMessage,
   getTransactionsFromPages,
@@ -106,14 +105,8 @@ describe('transaction list helpers', () => {
     expect(getNextExpandedDigest('digest-1', 'digest-2')).toBe('digest-2')
   })
 
-  it('returns summary classes for expanded and collapsed rows', () => {
-    expect(getSummaryClasses(true)).toContain('bg-quantum-40')
-    expect(getSummaryClasses(false)).toContain('hover:bg-quantum-10')
-  })
-
   it('formats received and sent row summaries', () => {
     expect(getTransactionRowSummary(createTransaction())).toEqual({
-      iconName: 'ArrowLeft',
       shortCounterparty: '0x1234•••abcdef',
       shortDigest: '0xabcdef•••abcdef12',
       summaryAmounts: '12.3456 TKN',

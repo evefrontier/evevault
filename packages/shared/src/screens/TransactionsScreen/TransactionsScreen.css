@@ -1,0 +1,165 @@
+/* Transaction history: panel table with expandable rows */
+.tx-screen {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  min-height: 0;
+}
+
+.tx-panel {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-top: 10px;
+}
+
+/* Date, direction, counterparty, amount */
+.tx-head,
+.tx-row {
+  display: grid;
+  grid-template-columns: 88px 22px minmax(0, 1fr) auto;
+  gap: 14px;
+}
+
+.tx-head {
+  padding: 0 14px 8px;
+}
+
+.tx-head__counterparty {
+  grid-column: 3;
+}
+
+.tx-head__amount {
+  text-align: right;
+}
+
+.tx-row {
+  align-items: center;
+  width: 100%;
+  padding: 11px 14px;
+  border: 0;
+  border-top: 1px solid var(--n10);
+  background: none;
+  color: var(--ink);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tx-row:hover {
+  background: rgba(250, 250, 229, 0.04);
+}
+
+.tx-row:focus-visible {
+  outline: 1px solid var(--ink);
+  outline-offset: -1px;
+}
+
+.tx-row[aria-expanded="true"] {
+  border-top-color: var(--brand-40);
+  background: var(--brand-10);
+}
+
+.tx-row__date {
+  color: var(--n60);
+}
+
+.tx-row__who {
+  overflow: hidden;
+  color: rgba(250, 250, 229, 0.9);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tx-row__amount {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.tx-row__amount--in {
+  color: var(--relate);
+}
+
+/* Expanded details sit under the counterparty column */
+.tx-details {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 6px 14px 14px 138px;
+  background: var(--brand-10);
+  font-size: 12.5px;
+}
+
+.tx-details__changes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.tx-details__change {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tx-details__label {
+  color: var(--n60);
+  font-size: 11.5px;
+}
+
+.tx-details__value {
+  font-variant-numeric: tabular-nums;
+}
+
+.tx-details__link {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.tx-details__digest {
+  color: rgba(250, 250, 229, 0.9);
+}
+
+.tx-status {
+  padding: 24px 0;
+  text-align: center;
+}
+
+.tx-load-more {
+  display: flex;
+  flex-shrink: 0;
+  justify-content: center;
+}
+
+/* Narrow widths and the extension popup */
+@media (max-width: 640px) {
+  .tx-head,
+  .tx-row {
+    grid-template-columns: 56px 22px minmax(0, 1fr) auto;
+    gap: 10px;
+  }
+
+  .tx-head {
+    padding: 0 12px 6px;
+  }
+
+  .tx-row {
+    padding: 9px 12px;
+    font-size: 12.5px;
+  }
+
+  .tx-details {
+    padding: 4px 12px 12px 78px;
+    font-size: 12px;
+  }
+
+  .tx-load-more > * {
+    width: 100%;
+  }
+}

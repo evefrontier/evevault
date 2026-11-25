@@ -65,20 +65,6 @@ export function getTransactionStatusMessage({
   return null
 }
 
-/**
- * Builds the row class list in one place because the summary row is reused by
- * both collapsed and expanded states.
- */
-export function getSummaryClasses(isExpanded: boolean) {
-  return [
-    'flex w-full p-2 items-center justify-between gap-2',
-    'border-none cursor-pointer text-left transition-colors',
-    isExpanded
-      ? 'bg-quantum-40 hover:bg-quantum-40'
-      : 'bg-transparent hover:bg-quantum-10',
-  ].join(' ')
-}
-
 function formatBalanceChangeSummary(balanceChange: TransactionBalanceChange) {
   return `${formatDisplayAmount(balanceChange.amount, 5)} ${
     balanceChange.tokenSymbol
@@ -114,11 +100,10 @@ function formatCounterparty(counterparty: string) {
  */
 export function getTransactionRowSummary(transaction: Transaction) {
   return {
-    iconName: transaction.direction === 'sent' ? 'ArrowRight' : 'ArrowLeft',
     shortCounterparty: formatCounterparty(transaction.counterparty),
     shortDigest: formatAddress(transaction.digest, 8, 8),
     summaryAmounts: getSummaryAmounts(transaction),
-  } as const
+  }
 }
 
 /**

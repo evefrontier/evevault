@@ -1,6 +1,6 @@
 import type React from 'react'
 import Button from '#/components/Button'
-import Icon from '#/components/Icon'
+import { DirectionIcon } from '#/components/DirectionIcon'
 import Text from '#/components/Text'
 import { useExplorer } from '#/hooks/useExplorer'
 import type {
@@ -13,35 +13,16 @@ import { formatShortDate } from '#/utils'
 import {
   getBalanceChangeAmount,
   getBalanceChangeTitle,
-  getSummaryClasses,
   getTransactionRowSummary,
   openExternalUrl,
 } from './TransactionsScreen.helpers'
 
 export function TransactionsTableHeader() {
   return (
-    <div className="flex justify-between items-start gap-2 w-full px-2">
-      <div className="flex items-center">
-        <Text
-          variant="label-semi"
-          size="small"
-          color="neutral-50"
-          className="w-[72px] shrink-0"
-        >
-          Date
-        </Text>
-        <Text variant="label-semi" size="small" color="neutral-50">
-          Sender / Recipient
-        </Text>
-      </div>
-      <Text
-        variant="label-semi"
-        size="small"
-        color="neutral-50"
-        className="text-right shrink-0"
-      >
-        Amount
-      </Text>
+    <div className="tx-head c-label">
+      <span>Date</span>
+      <span className="tx-head__counterparty">Sender / Recipient</span>
+      <span className="tx-head__amount">Amount</span>
     </div>
   )
 }
@@ -52,10 +33,8 @@ export function TransactionsStatus({
   statusMessage: TransactionStatusMessage
 }) {
   return (
-    <div className="flex justify-center items-center py-6 w-full">
-      <Text size="large" color={statusMessage.color}>
-        {statusMessage.text}
-      </Text>
+    <div className="tx-status">
+      <Text color={statusMessage.color}>{statusMessage.text}</Text>
     </div>
   )
 }
@@ -68,15 +47,11 @@ function TransactionBalanceChangeRow({
   const title = getBalanceChangeTitle(balanceChange)
 
   return (
-    <div className="flex flex-col gap-0.5">
-      {title ? (
-        <Text variant="light" size="xsmall" color="neutral-50">
-          {title}
-        </Text>
-      ) : null}
-      <Text variant="light" size="small" color="neutral-90">
+    <div className="tx-details__change">
+      {title ? <span className="tx-details__label">{title}</span> : null}
+      <span className="tx-details__value">
         {getBalanceChangeAmount(balanceChange)}
-      </Text>
+      </span>
     </div>
   )
 }
@@ -87,7 +62,7 @@ function TransactionBalanceChanges({
   transaction: Transaction
 }) {
   return (
-    <div className="flex flex-col gap-1 min-w-0">
+    <div className="tx-details__changes">
       {transaction.balanceChanges.map((balanceChange) => (
         <TransactionBalanceChangeRow
           key={`${balanceChange.coinType}-${balanceChange.amount}-${String(
@@ -96,19 +71,6 @@ function TransactionBalanceChanges({
           balanceChange={balanceChange}
         />
       ))}
-    </div>
-  )
-}
-
-function TransactionDigest({ shortDigest }: { shortDigest: string }) {
-  return (
-    <div className="flex flex-col gap-0.5 items-end">
-      <Text variant="light" size="xsmall" color="neutral-50">
-        Transaction:
-      </Text>
-      <Text variant="light" size="small" color="neutral-90">
-        {shortDigest}
-      </Text>
     </div>
   )
 }
@@ -125,13 +87,16 @@ function TransactionDetails({
   transaction: Transaction
 }) {
   return (
-    <div className="flex items-start justify-between w-full px-2 pb-2 gap-4 bg-quantum-40">
+    <div className="tx-details">
       <TransactionBalanceChanges transaction={transaction} />
-      <div className="flex flex-col gap-2 items-end shrink-0">
-        <TransactionDigest shortDigest={shortDigest} />
+      <div className="tx-details__link">
+        <span className="tx-details__label">
+          Transaction <span className="tx-details__digest">{shortDigest}</span>
+        </span>
         <Button
           variant="secondary"
           size="small"
+          iconNameRight="ArrowRight"
           onClick={() => openExternalUrl(explorerUrl)}
         >
           View on {explorerName}
@@ -152,34 +117,23 @@ function TransactionSummary({
   onToggle: () => void
   transaction: Transaction
 }) {
-  const { iconName, shortCounterparty, summaryAmounts } =
+  const { shortCounterparty, summaryAmounts } =
     getTransactionRowSummary(transaction)
+  const sent = transaction.direction === 'sent'
 
   return (
     <button
       type="button"
-      className={getSummaryClasses(isExpanded)}
+      className="tx-row"
       onClick={onToggle}
       aria-expanded={isExpanded}
     >
-      <div className="flex items-center">
-        <div className="flex items-center w-[72px] shrink-0">
-          <Text variant="light" size="small">
-            {formattedDate}
-          </Text>
-        </div>
-        <div className="flex items-center gap-1 min-w-0">
-          <Icon name={iconName} size="small" color="neutral-50" aria-hidden />
-          <Text variant="light" size="small" color="neutral-90">
-            {shortCounterparty}
-          </Text>
-        </div>
-      </div>
-      <div className="flex items-center text-right shrink-0">
-        <Text variant="regular" size="small">
-          {summaryAmounts}
-        </Text>
-      </div>
+      <span className="tx-row__date">{formattedDate}</span>
+      <DirectionIcon out={sent} />
+      <span className="tx-row__who">{shortCounterparty}</span>
+      <span className={`tx-row__amount${sent ? '' : ' tx-row__amount--in'}`}>
+        {summaryAmounts}
+      </span>
     </button>
   )
 }
@@ -197,7 +151,7 @@ export const TransactionRow: React.FC<TransactionRowProps> = ({
   const { shortDigest } = getTransactionRowSummary(transaction)
 
   return (
-    <div className="flex flex-col w-full">
+    <div>
       <TransactionSummary
         formattedDate={formattedDate}
         isExpanded={isExpanded}
@@ -265,7 +219,7 @@ export function LoadMoreTransactionsButton({
   if (!hasNextPage || isLoading) return null
 
   return (
-    <div className="flex justify-center w-full pt-2">
+    <div className="tx-load-more">
       <Button
         variant="secondary"
         size="small"

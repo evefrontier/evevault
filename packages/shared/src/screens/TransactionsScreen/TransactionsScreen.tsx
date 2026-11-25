@@ -15,6 +15,7 @@ import {
   TransactionsList,
   TransactionsTableHeader,
 } from './TransactionsScreen.parts'
+import './TransactionsScreen.css'
 
 export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
   user,
@@ -64,7 +65,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
   const { email, address } = getHeaderIdentity(user)
 
   return (
-    <div className="flex flex-col gap-4 w-full">
+    <div className="tx-screen">
       <SubpageHeader
         title="Transactions"
         email={email}
@@ -72,28 +73,25 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
         onBack={onBack}
       />
 
-      <div className="flex flex-col items-start p-4 px-2 gap-4 w-full min-h-[207px] bg-crude-dark border border-quantum-60">
+      <div className="tx-panel c-panel">
         <TransactionsTableHeader />
-
-        <div className="flex flex-col items-start gap-1 w-full max-h-[350px] overflow-y-auto">
-          <TransactionsList
-            chain={chain}
-            expandedTx={expandedTx}
-            localnetUrl={localnetUrl ?? undefined}
-            onToggleExpand={handleToggleExpand}
-            senderAddress={senderAddress ?? undefined}
-            statusMessage={statusMessage}
-            transactions={transactions}
-          />
-        </div>
-
-        <LoadMoreTransactionsButton
-          hasNextPage={hasNextPage}
-          isFetchingNextPage={isFetchingNextPage}
-          isLoading={isLoading}
-          onLoadMore={handleLoadMore}
+        <TransactionsList
+          chain={chain}
+          expandedTx={expandedTx}
+          localnetUrl={localnetUrl ?? undefined}
+          onToggleExpand={handleToggleExpand}
+          senderAddress={senderAddress ?? undefined}
+          statusMessage={statusMessage}
+          transactions={transactions}
         />
       </div>
+
+      <LoadMoreTransactionsButton
+        hasNextPage={hasNextPage}
+        isFetchingNextPage={isFetchingNextPage}
+        isLoading={isLoading}
+        onLoadMore={handleLoadMore}
+      />
     </div>
   )
 }
