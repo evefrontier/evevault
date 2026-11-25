@@ -111,11 +111,14 @@ const buildDropdownItems = ({
     })
   }
 
-  // Copy Address (always)
-  items.push({
-    label: 'Copy Address',
-    onClick: () => copy(address),
-  })
+  // Wallet address (always); clicking copies it
+  if (address) {
+    items.push({
+      label: formatAddress(address),
+      icon: 'Copy',
+      onClick: () => copy(address),
+    })
+  }
 
   // Transaction History (optional)
   if (onTransactionsClick) {
