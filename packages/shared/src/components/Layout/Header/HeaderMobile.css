@@ -1,0 +1,97 @@
+/* Shell top bar: 48px row with the mark and account menu, then a status strip */
+.app-topbar {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.app-topbar__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  height: 48px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.app-topbar__logo {
+  display: block;
+  width: auto;
+  height: 24px;
+}
+
+.app-topbar__strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 16px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(250, 250, 229, 0.03);
+  color: var(--n60);
+  font-size: 12px;
+}
+
+.app-topbar__strip b {
+  flex: none;
+  font-family: var(--font-headline);
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+/* Strip tones: dev mode (amber) and sign approval (brand) */
+.app-topbar__strip--dev {
+  background: rgba(255, 182, 81, 0.06);
+}
+
+.app-topbar__strip--dev b {
+  color: var(--amber);
+}
+
+.app-topbar__strip--approval {
+  background: var(--brand-10);
+  color: var(--ink);
+}
+
+.app-topbar__strip--approval b {
+  color: var(--brand);
+}
+
+/* Full-height frames (sign-in, lock, sign) supply their own spacing */
+.app-topbar--flush {
+  margin-bottom: 0;
+}
+
+/* In the extension popup the bar runs edge to edge over the page padding */
+.layout--extension main .app-topbar {
+  width: auto;
+  margin-top: -16px;
+  margin-right: -16px;
+  margin-left: -16px;
+}
+
+/* The account trigger sits in a 48px bar, so it drops its minimum width */
+.app-topbar .dropdown-select__trigger {
+  min-width: 0;
+  height: 30px;
+}
+
+.app-topbar__group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* Long emails shorten rather than push the chips out of the bar */
+.app-topbar .dropdown-select__text {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

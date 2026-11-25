@@ -298,3 +298,276 @@ h4 {
 .loading-dots span:nth-child(3) {
   animation-delay: 0.4s;
 }
+
+/* ========================
+   Console patterns
+   ======================== */
+
+/* Card with 8px corner brackets. --on is brand, --wait amber, --main red. */
+.c-card {
+  --c-card-corner: var(--n20);
+  --c-card-frame: var(--n10);
+  position: relative;
+  padding: 12px;
+  border: 1px solid var(--c-card-frame);
+  background:
+    linear-gradient(var(--c-card-corner), var(--c-card-corner)) left top / 8px
+      1px no-repeat,
+    linear-gradient(var(--c-card-corner), var(--c-card-corner)) left top / 1px
+      8px no-repeat,
+    linear-gradient(var(--c-card-corner), var(--c-card-corner)) right top / 8px
+      1px no-repeat,
+    linear-gradient(var(--c-card-corner), var(--c-card-corner)) right top / 1px
+      8px no-repeat,
+    linear-gradient(var(--c-card-corner), var(--c-card-corner)) left bottom /
+      8px 1px no-repeat,
+    linear-gradient(var(--c-card-corner), var(--c-card-corner)) left bottom /
+      1px 8px no-repeat,
+    linear-gradient(var(--c-card-corner), var(--c-card-corner)) right bottom /
+      8px 1px no-repeat,
+    linear-gradient(var(--c-card-corner), var(--c-card-corner)) right bottom /
+      1px 8px no-repeat,
+    rgba(11, 11, 11, 0.6);
+}
+
+.c-card--on {
+  --c-card-corner: var(--brand-60);
+  --c-card-frame: var(--brand-40);
+}
+
+.c-card--wait {
+  --c-card-corner: rgba(255, 182, 81, 0.5);
+  --c-card-frame: var(--amber-30);
+}
+
+.c-card--main {
+  --c-card-corner: var(--offline);
+  --c-card-frame: rgba(255, 77, 77, 0.3);
+}
+
+.c-card--bright {
+  --c-card-corner: var(--n60);
+}
+
+/* Direction box: arrow out (brand) or in (teal) */
+.c-dir {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--n20);
+}
+
+.c-dir svg {
+  width: 10px;
+  height: 10px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+}
+
+.c-dir--in {
+  border-color: rgba(79, 208, 218, 0.4);
+  color: var(--relate);
+}
+
+.c-dir--out {
+  border-color: var(--brand-40);
+  color: var(--brand);
+}
+
+/* Bordered list: icon, label, value per row */
+.c-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--n10);
+}
+
+.c-rows > li {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--n10);
+  font-size: 12.5px;
+}
+
+.c-rows > li:last-child {
+  border-bottom: 0;
+}
+
+/* Key/value list: Disket caps keys, values right-aligned */
+.c-kv {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px 16px;
+  align-items: baseline;
+  margin: 0;
+}
+
+.c-kv dt {
+  color: var(--n50);
+  font-family: var(--font-headline);
+  font-size: 10px;
+  line-height: 1.6;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.c-kv dd {
+  margin: 0;
+  text-align: right;
+  font-size: 12.5px;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Notice: brand by default, amber for warnings, red for errors */
+.c-banner {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--brand);
+  color: var(--n60);
+  font-size: 12px;
+}
+
+.c-banner--amber {
+  border-color: var(--amber-30);
+  background: rgba(255, 182, 81, 0.06);
+}
+
+.c-banner--red {
+  border-color: var(--offline);
+  background: var(--offline-bg);
+}
+
+/* Small Disket caps label: column heads, readout labels, keys */
+.c-label {
+  color: var(--n50);
+  font-family: var(--font-headline);
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Static status chip; selector chips share its look */
+.c-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 7px;
+  border: 1px solid var(--n30);
+  color: var(--n60);
+  font-family: var(--font-headline);
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Square status lamp: --on brand, --wait amber, --off red; bare is unlit */
+.c-lamp {
+  display: inline-block;
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--n30);
+}
+
+.c-lamp--on {
+  background: var(--brand);
+  border-color: var(--brand);
+}
+
+.c-lamp--wait {
+  background: var(--amber);
+  border-color: var(--amber);
+}
+
+.c-lamp--off {
+  background: var(--offline-bg);
+  border-color: var(--offline);
+}
+
+/* Framed panel with an optional n10 header bar */
+.c-panel {
+  border: 1px solid var(--n20);
+  background: var(--bg);
+}
+
+.c-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 32px;
+  margin: 0;
+  padding: 4px 12px;
+  background: var(--n10);
+  color: var(--ink);
+  font-family: var(--font-headline);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.c-panel__head span {
+  color: var(--n60);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  text-transform: none;
+}
+
+/* 28px icon-only button: n50, brand on hover */
+.c-icon-btn {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--n50);
+  cursor: pointer;
+}
+
+.c-icon-btn:hover {
+  color: var(--brand);
+}
+
+.c-icon-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.c-icon-btn:focus-visible {
+  outline: 1px solid var(--ink);
+  outline-offset: -2px;
+}
+
+/* Small caps label above a section */
+.c-eyebrow {
+  font-family: var(--font-headline);
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--n50);
+}
