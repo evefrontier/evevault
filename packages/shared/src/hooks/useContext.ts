@@ -10,6 +10,8 @@ export const useContext = () => {
     checkNetworkSwitch,
     forceSetChain,
     setChain,
+    explorer,
+    setExplorer,
   } = useContextStore()
 
   return {
@@ -21,5 +23,7 @@ export const useContext = () => {
     checkNetworkSwitch,
     forceSetChain,
     setChain,
+    explorer,
+    setExplorer,
   }
 }

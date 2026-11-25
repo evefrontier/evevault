@@ -53,6 +53,7 @@ interface DropdownItemsParams {
   devHandlers: Partial<Record<DevActionHandlerKey, () => void>>
   onTransactionsClick?: () => void
   onAddressAliasesClick?: () => void
+  onSettingsClick?: () => void
   version?: string
   unlockRemainingLabel?: string
   copy: (value: string) => void
@@ -86,6 +87,7 @@ const buildDropdownItems = ({
   devHandlers,
   onTransactionsClick,
   onAddressAliasesClick,
+  onSettingsClick,
   version,
   unlockRemainingLabel,
   copy,
@@ -129,6 +131,11 @@ const buildDropdownItems = ({
       label: 'Manage Address Aliases',
       onClick: onAddressAliasesClick,
     })
+  }
+
+  // Settings (optional)
+  if (onSettingsClick) {
+    items.push({ label: 'Settings', onClick: onSettingsClick })
   }
 
   // Lock Wallet and Logout (always)
@@ -175,6 +182,7 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
   logoSrc = '/images/logo.png',
   onTransactionsClick,
   onAddressAliasesClick,
+  onSettingsClick,
   showDevActions = false,
   onDevModeToggle,
   onSignSubmitTxClick,
@@ -202,6 +210,7 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
         },
         onTransactionsClick,
         onAddressAliasesClick,
+        onSettingsClick,
         version,
         unlockRemainingLabel,
         copy,
@@ -211,6 +220,7 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
     [
       onTransactionsClick,
       onAddressAliasesClick,
+      onSettingsClick,
       showDevActions,
       onDevModeToggle,
       onSignSubmitTxClick,

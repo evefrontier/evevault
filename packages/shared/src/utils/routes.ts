@@ -11,6 +11,7 @@ export const FILE_ROUTE_PATHS = [
   '/wallet/send-token',
   '/wallet/transactions',
   '/wallet/address-aliases',
+  '/wallet/settings',
 ] as const
 
 export type RoutePath = (typeof FILE_ROUTE_PATHS)[number]
@@ -43,6 +44,7 @@ export const EXTENSION_ROUTES = {
   TRANSACTIONS: '/transactions',
   ADDRESS_ALIASES: '/address-aliases',
   LOCALNET_SETTINGS: '/localnet-settings',
+  SETTINGS: '/settings',
 } as const
 
 /**
@@ -58,6 +60,7 @@ export const WEB_ROUTES = {
   WALLET_SEND_TOKEN: '/wallet/send-token',
   WALLET_TRANSACTIONS: '/wallet/transactions',
   WALLET_ADDRESS_ALIASES: '/wallet/address-aliases',
+  WALLET_SETTINGS: '/wallet/settings',
 } as const
 
 /** Navigation items for the sidebar/bottom bar */
@@ -79,5 +82,11 @@ export const NAV_ITEMS: readonly {
     path: '/wallet/address-aliases',
     icon: 'Tokens',
     label: 'Address Aliases',
+  },
+  {
+    name: 'settings',
+    path: '/wallet/settings',
+    icon: 'Settings',
+    label: 'Settings',
   },
 ] as const

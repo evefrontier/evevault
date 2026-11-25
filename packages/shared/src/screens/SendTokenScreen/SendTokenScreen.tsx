@@ -2,10 +2,10 @@ import type React from 'react'
 import { useEffect, useState } from 'react'
 import { useToast } from '#/components/Toast'
 import { useContext } from '#/hooks/useContext'
+import { useExplorer } from '#/hooks/useExplorer'
 import { useDeviceStore } from '#/stores/deviceStore'
 import { getFaucetUrlForChain } from '#/sui'
 import type { SendTokenScreenProps } from '#/types'
-import { getSuiscanUrl } from '#/utils'
 import { useSendToken } from '#/wallet'
 import { useRequireAlias } from '../AliasRecoverySetupScreen/useRequireAlias'
 import { TransferForm, TransferSuccessScreen } from './SendTokenScreen.parts'
@@ -17,6 +17,7 @@ export const SendTokenScreen: React.FC<SendTokenScreenProps> = ({
   const { showToast } = useToast()
   const { ensureAlias, aliasSetupModal } = useRequireAlias()
   const { chain: currentChain } = useContext()
+  const { urlFor, nameFor } = useExplorer()
   const {
     localnet: { url: localnetUrl },
   } = useDeviceStore()
@@ -89,8 +90,8 @@ export const SendTokenScreen: React.FC<SendTokenScreenProps> = ({
 
   // Show success/confirmation screen
   if (txDigest) {
-    const suiscanUrl = currentChain
-      ? getSuiscanUrl(currentChain, txDigest, {
+    const explorerUrl = currentChain
+      ? urlFor(currentChain, txDigest, {
           localnetUrl: localnetUrl ?? undefined,
         })
       : null
@@ -101,7 +102,8 @@ export const SendTokenScreen: React.FC<SendTokenScreenProps> = ({
         recipient={submittedRecipient}
         tokenSymbol={tokenSymbol}
         txDigest={txDigest}
-        suiscanUrl={suiscanUrl}
+        explorerUrl={explorerUrl}
+        explorerName={currentChain ? nameFor(currentChain) : 'Suiscan'}
         onCancel={onCancel}
       />
     )

@@ -1,0 +1,124 @@
+.settings-radios {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.settings-radio {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-top: 1px solid var(--n10);
+  background: none;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.settings-radio:first-of-type {
+  border-top: 0;
+}
+
+.settings-radio:hover {
+  background: var(--n05);
+}
+
+.settings-radio:has(input:checked) {
+  background: var(--brand-10);
+}
+
+.settings-radio:has(input:focus-visible) {
+  outline: 1px solid var(--ink);
+  outline-offset: -1px;
+}
+
+.settings-radio__dot {
+  display: grid;
+  place-items: center;
+  width: 12px;
+  height: 12px;
+  margin: 1px;
+  border: 1px solid var(--n40);
+  transform: rotate(45deg);
+}
+
+.settings-radio:has(input:checked) .settings-radio__dot {
+  border-color: var(--brand);
+}
+
+.settings-radio:has(input:checked) .settings-radio__dot::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  background: var(--brand);
+}
+
+.settings-radio__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.settings-radio__text b {
+  font-family: var(--font-headline);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.settings-radio__text span,
+.settings-radio__tag,
+.settings-hint {
+  font-size: 11.5px;
+  color: var(--n50);
+}
+
+.settings-panel__custom {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--n10);
+  background: rgba(255, 71, 0, 0.05);
+}
+
+.settings-panel__foot {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--n10);
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-top: 1px solid var(--n10);
+  background: none;
+  color: var(--ink);
+  font-size: 12.5px;
+  text-align: left;
+}
+
+.settings-row:first-of-type {
+  border-top: 0;
+}
+
+.settings-row--link {
+  cursor: pointer;
+}
+
+.settings-row--link:hover {
+  background: var(--n05);
+}

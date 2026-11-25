@@ -21,6 +21,7 @@ import {
   cleanupOidcStorage,
 } from '#/utils/authCleanup'
 import { isExtension, isWeb } from '#/utils/environment'
+import { DEFAULT_EXPLORER } from '#/utils/explorer'
 import { createLogger } from '#/utils/logger'
 import {
   EVEVAULT_STORAGE_KEYS,
@@ -85,6 +86,7 @@ function resetStoresToInitial(): void {
     devMode: false,
     chain: SUI_TESTNET_CHAIN,
     loading: false,
+    explorer: DEFAULT_EXPLORER,
   })
 
   useTokenListStore.setState({

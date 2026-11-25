@@ -9,7 +9,8 @@ interface TransferSuccessScreenProps {
   recipient: string
   tokenSymbol: string
   txDigest: string
-  suiscanUrl: string | null
+  explorerUrl: string | null
+  explorerName: string
   onCancel?: () => void
 }
 
@@ -19,7 +20,8 @@ export const TransferSuccessScreen: React.FC<TransferSuccessScreenProps> = ({
   recipient,
   tokenSymbol,
   txDigest,
-  suiscanUrl,
+  explorerUrl,
+  explorerName,
   onCancel,
 }) => (
   <div className="flex flex-col gap-20">
@@ -59,14 +61,14 @@ export const TransferSuccessScreen: React.FC<TransferSuccessScreenProps> = ({
     {/* Buttons - Centered */}
     <div className="flex justify-center gap-1">
       <Button onClick={onCancel}>close</Button>
-      {suiscanUrl && (
+      {explorerUrl && (
         <Button
           variant="secondary"
           onClick={() =>
-            window.open(suiscanUrl, '_blank', 'noopener,noreferrer')
+            window.open(explorerUrl, '_blank', 'noopener,noreferrer')
           }
         >
-          View on Suiscan
+          View on {explorerName}
         </Button>
       )}
     </div>

@@ -1,6 +1,7 @@
 import type { ZKEd25519Keypair } from '@evefrontier/wallet-core/crypto'
 import type { PublicKey } from '@mysten/sui/cryptography'
 import type { SuiChain } from '@mysten/wallet-standard'
+import type { ExplorerState } from './explorer'
 import type { ZkLoginSuiChain } from './networks'
 import type { TenantState } from './tenant'
 import type { ZkProofResponse } from './zkLogin'
@@ -99,7 +100,7 @@ export interface NetworkState {
   checkNetworkSwitch: (chain: SuiChain) => Promise<{ requiresReauth: boolean }>
 }
 
-export type ContextState = NetworkState & TenantState
+export type ContextState = NetworkState & TenantState & ExplorerState
 
 export type PersistedDeviceStoreState = {
   jwtRandomness?: string | null

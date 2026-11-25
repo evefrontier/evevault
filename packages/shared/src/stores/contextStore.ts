@@ -4,8 +4,9 @@ import { browser } from '@wxt-dev/browser'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { chromeStorageAdapter, localStorageAdapter } from '#/adapters'
-import type { ContextState } from '#/types'
+import type { ContextState, ExplorerPreference } from '#/types'
 import { isWeb } from '#/utils'
+import { DEFAULT_EXPLORER } from '#/utils/explorer'
 import { CONTEXT_STORAGE_KEY } from '#/utils/storageKeys'
 import {
   getAvailableTenantIds,
@@ -24,6 +25,7 @@ type PersistedContextState = Partial<{
   tenantId: TenantId
   devMode: boolean
   chain: SuiChain
+  explorer: ExplorerPreference
 }>
 
 type PersistedStore<TState> = {
@@ -70,6 +72,9 @@ export const useContextStore = create<ContextState>()(
       chain: initialState.chain ?? SUI_TESTNET_CHAIN,
       loading: false,
 
+      explorer: initialState.explorer ?? DEFAULT_EXPLORER,
+      setExplorer: (explorer) => set({ explorer }),
+
       checkNetworkSwitch: async (
         chain: SuiChain,
       ): Promise<{ requiresReauth: boolean }> => {
@@ -93,6 +98,7 @@ export const useContextStore = create<ContextState>()(
         tenantId: state.tenantId,
         devMode: state.devMode,
         chain: state.chain,
+        explorer: state.explorer,
       }),
     },
   ),

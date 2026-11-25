@@ -192,6 +192,8 @@ export interface HeaderMobileProps {
   onTransactionsClick?: () => void
   /** Callback when "Manage Address Aliases" menu item is clicked */
   onAddressAliasesClick?: () => void
+  /** Callback when "Settings" menu item is clicked */
+  onSettingsClick?: () => void
   /** When true, show "Sign and submit test" (when callbacks provided) */
   showDevActions?: boolean
   /** Callback when "Dev mode" toggle menu item is clicked (may be async). */

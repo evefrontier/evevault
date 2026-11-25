@@ -7,8 +7,8 @@ import {
   TokenListSection,
   useToast,
 } from '@evevault/shared/components'
-import { useUnlockTimeRemaining } from '@evevault/shared/hooks'
-import { EXTENSION_ROUTES, getSuiscanUrl } from '@evevault/shared/utils'
+import { useExplorer, useUnlockTimeRemaining } from '@evevault/shared/hooks'
+import { EXTENSION_ROUTES } from '@evevault/shared/utils'
 import type { SuiChain } from '@mysten/wallet-standard'
 import { useNavigate } from '@tanstack/react-router'
 import type { User } from 'oidc-client-ts'
@@ -28,9 +28,8 @@ function TransactionDigestLink({
   txDigest: string
   localnetUrl?: string
 }) {
-  const href = getSuiscanUrl(chain, txDigest, {
-    localnetUrl,
-  })
+  const { urlFor } = useExplorer()
+  const href = urlFor(chain, txDigest, { localnetUrl })
 
   return (
     <Text>
@@ -106,6 +105,7 @@ export function AuthenticatedWalletView({
         onAddressAliasesClick={() =>
           navigate({ to: EXTENSION_ROUTES.ADDRESS_ALIASES })
         }
+        onSettingsClick={() => navigate({ to: EXTENSION_ROUTES.SETTINGS })}
         showDevActions={devMode}
         onDevModeToggle={onDevModeToggle}
         onSignSubmitTxClick={devMode ? onTestTransaction : undefined}

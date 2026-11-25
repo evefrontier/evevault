@@ -13,11 +13,12 @@ import Icon from '@evevault/shared/components/Icon'
 import {
   useContext,
   useDevice,
+  useExplorer,
   useUnlockTimeRemaining,
 } from '@evevault/shared/hooks'
 import { getCurrentTenantId, getTenantLabel } from '@evevault/shared/stores'
 import { createSuiClient, getFaucetUrlForChain } from '@evevault/shared/sui'
-import { createLogger, getSuiscanUrl, WEB_ROUTES } from '@evevault/shared/utils'
+import { createLogger, WEB_ROUTES } from '@evevault/shared/utils'
 import {
   signAndExecuteTransaction,
   TransactionFailedError,
@@ -87,6 +88,7 @@ interface WalletDashboardActions {
   onSignSubmitTx: () => void | Promise<void>
   onTransactions: () => void
   onAddressAliases: () => void
+  onSettings: () => void
   onAddToken: () => void
   onSendToken: (coinType: string) => void
 }
@@ -215,6 +217,7 @@ const WalletDashboard = ({
   const address = user.profile?.sui_address as string
   // Display only of the vault unlock window.
   const unlockRemainingLabel = useUnlockTimeRemaining(devMode) ?? undefined
+  const { urlFor } = useExplorer()
 
   return (
     <div>
@@ -223,6 +226,7 @@ const WalletDashboard = ({
         email={user.profile?.email as string}
         onTransactionsClick={actions.onTransactions}
         onAddressAliasesClick={actions.onAddressAliases}
+        onSettingsClick={actions.onSettings}
         showDevActions={devMode}
         onDevModeToggle={actions.onDevModeToggle}
         onSignSubmitTxClick={devMode ? actions.onSignSubmitTx : undefined}
@@ -275,7 +279,7 @@ const WalletDashboard = ({
               <Text>
                 Tx digest:{' '}
                 <a
-                  href={getSuiscanUrl(chain, txDigest)}
+                  href={urlFor(chain, txDigest)}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{ color: 'var(--quantum)' }}
@@ -406,6 +410,7 @@ export const WalletScreen = () => {
         onTransactions: () => navigate({ to: WEB_ROUTES.WALLET_TRANSACTIONS }),
         onAddressAliases: () =>
           navigate({ to: WEB_ROUTES.WALLET_ADDRESS_ALIASES }),
+        onSettings: () => navigate({ to: WEB_ROUTES.WALLET_SETTINGS }),
         onAddToken: () => navigate({ to: WEB_ROUTES.WALLET_ADD_TOKEN }),
         onSendToken: (coinType) =>
           navigate({

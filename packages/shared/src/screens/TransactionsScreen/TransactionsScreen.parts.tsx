@@ -2,13 +2,14 @@ import type React from 'react'
 import Button from '#/components/Button'
 import Icon from '#/components/Icon'
 import Text from '#/components/Text'
+import { useExplorer } from '#/hooks/useExplorer'
 import type {
   Transaction,
   TransactionBalanceChange,
   TransactionRowProps,
   TransactionStatusMessage,
 } from '#/types/components'
-import { formatShortDate, getSuiscanUrl } from '#/utils'
+import { formatShortDate } from '#/utils'
 import {
   getBalanceChangeAmount,
   getBalanceChangeTitle,
@@ -114,11 +115,13 @@ function TransactionDigest({ shortDigest }: { shortDigest: string }) {
 
 function TransactionDetails({
   shortDigest,
-  suiscanUrl,
+  explorerUrl,
+  explorerName,
   transaction,
 }: {
   shortDigest: string
-  suiscanUrl: string
+  explorerUrl: string
+  explorerName: string
   transaction: Transaction
 }) {
   return (
@@ -129,9 +132,9 @@ function TransactionDetails({
         <Button
           variant="secondary"
           size="small"
-          onClick={() => openExternalUrl(suiscanUrl)}
+          onClick={() => openExternalUrl(explorerUrl)}
         >
-          View on Suiscan
+          View on {explorerName}
         </Button>
       </div>
     </div>
@@ -188,9 +191,8 @@ export const TransactionRow: React.FC<TransactionRowProps> = ({
   isExpanded,
   onToggle,
 }) => {
-  const suiscanUrl = getSuiscanUrl(chain, transaction.digest, {
-    localnetUrl,
-  })
+  const { urlFor, nameFor } = useExplorer()
+  const explorerUrl = urlFor(chain, transaction.digest, { localnetUrl })
   const formattedDate = formatShortDate(transaction.timestamp)
   const { shortDigest } = getTransactionRowSummary(transaction)
 
@@ -206,7 +208,8 @@ export const TransactionRow: React.FC<TransactionRowProps> = ({
       {isExpanded ? (
         <TransactionDetails
           shortDigest={shortDigest}
-          suiscanUrl={suiscanUrl}
+          explorerUrl={explorerUrl}
+          explorerName={nameFor(chain)}
           transaction={transaction}
         />
       ) : null}
