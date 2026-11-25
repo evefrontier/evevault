@@ -1,0 +1,146 @@
+/* Sign approval popup: top bar, approval strip, request, tabs, actions */
+.sign-view {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.sign-view__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 18px;
+}
+
+.sign-view__heading {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sign-view__context dd {
+  overflow: hidden;
+  overflow-wrap: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sign-view__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* Tabs: brand underline on the open tab, amber or red for warnings */
+.approval-tabs {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.approval-tabs__list {
+  display: flex;
+  border-bottom: 1px solid var(--line);
+}
+
+.approval-tabs__tab {
+  flex: 1;
+  height: 32px;
+  margin-bottom: -1px;
+  padding: 0 8px;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  background: none;
+  color: var(--n50);
+  font-family: var(--font-headline);
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.approval-tabs__tab:hover {
+  color: var(--ink);
+}
+
+.approval-tabs__tab:focus-visible {
+  outline: 1px solid var(--ink);
+  outline-offset: -2px;
+}
+
+.approval-tabs__tab--warn {
+  color: var(--amber);
+}
+
+.approval-tabs__tab--danger {
+  color: var(--offline);
+}
+
+.approval-tabs__tab[aria-selected="true"] {
+  border-bottom-color: var(--brand);
+  background: var(--brand-10);
+  color: var(--brand);
+}
+
+.approval-tabs__panel {
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 12px;
+  text-align: left;
+}
+
+/* Outcome tab */
+.sim-outcome {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sim-outcome__section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sim-outcome__muted {
+  color: var(--n50);
+}
+
+.sim-outcome__amount {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.sim-outcome__amount--in {
+  color: var(--relate);
+}
+
+.sim-outcome__ok {
+  color: var(--relate);
+}
+
+.sim-outcome__fail {
+  color: var(--offline);
+}
+
+.approval-tabs__tab--static {
+  display: grid;
+  place-items: center;
+  border-bottom-color: var(--brand);
+  background: var(--brand-10);
+  color: var(--brand);
+  cursor: default;
+}
+
+.sign-view__message {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 300;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

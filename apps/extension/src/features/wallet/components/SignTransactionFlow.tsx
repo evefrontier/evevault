@@ -98,7 +98,7 @@ export function SignTransactionFlow({
               {
                 id: 'warnings',
                 label: `Warnings (${riskFindings.length})`,
-                tone: needsRiskAck ? ('danger' as const) : ('default' as const),
+                tone: needsRiskAck ? ('danger' as const) : ('warn' as const),
                 content: <TransactionRiskPanel findings={riskFindings} />,
               },
             ]
@@ -140,7 +140,7 @@ export function SignTransactionFlow({
         onReject={handleReject}
       >
         {pendingTransaction && (
-          <div className="flex w-full flex-col items-center gap-2">
+          <div className="flex flex-col">
             <ApprovalTabs
               tabs={tabs}
               initialId={

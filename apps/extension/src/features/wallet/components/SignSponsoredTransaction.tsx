@@ -4,7 +4,7 @@ import {
   reviewTransaction,
 } from '@evefrontier/wallet-core/transaction'
 import { useRequireAlias } from '@evevault/shared'
-import { Text } from '@evevault/shared/components'
+import { KvRow } from '@evevault/shared/components'
 import Json from '@evevault/shared/components/Json'
 import type { PendingSponsoredTransaction } from '@evevault/shared/types'
 import {
@@ -86,41 +86,18 @@ function decodeSponsoredPayload(sponsoredTxB64: unknown): {
 // Shown for an empty metadata field.
 const CLEARED_VALUE = '(cleared)'
 
-function SponsoredDetail({
-  label,
-  value,
-}: {
-  label: string
-  value: string | undefined
-}) {
-  if (!value) return null
-
-  return (
-    <div className="grid grid-cols-[82px_minmax(0,1fr)] gap-2 text-left">
-      <span className="text-[10px] uppercase text-(--grey-neutral)">
-        {label}
-      </span>
-      <span className="truncate text-xs text-(--neutral)" title={value}>
-        {value}
-      </span>
-    </div>
-  )
-}
-
 function SponsoredRequestDetails({
   pending,
 }: {
   pending: ParsedSponsoredTransaction | null
 }) {
   return (
-    <div className="w-[320px] max-w-[88vw] border border-(--matter-05) p-3">
-      <Text size="small" color="grey-neutral">
-        Sponsored request
-      </Text>
-      <div className="mt-2 flex flex-col gap-2">
-        <SponsoredDetail label="Action" value={pending?.sponsoredAction} />
-        <SponsoredDetail label="Entity" value={pending?.entityId} />
-        <SponsoredDetail
+    <div className="c-card">
+      <span className="c-eyebrow">Sponsored request</span>
+      <dl className="c-kv sign-view__context mt-3">
+        <KvRow label="Action" value={pending?.sponsoredAction} />
+        <KvRow label="Entity" value={pending?.entityId} />
+        <KvRow
           label="Power"
           value={
             typeof pending?.on === 'boolean'
@@ -132,21 +109,18 @@ function SponsoredRequestDetails({
         />
         {pending?.metadata && (
           <>
-            <SponsoredDetail
+            <KvRow
               label="Name"
               value={pending.metadata.name || CLEARED_VALUE}
             />
-            <SponsoredDetail
+            <KvRow
               label="Description"
               value={pending.metadata.description || CLEARED_VALUE}
             />
-            <SponsoredDetail
-              label="URL"
-              value={pending.metadata.url || CLEARED_VALUE}
-            />
+            <KvRow label="URL" value={pending.metadata.url || CLEARED_VALUE} />
           </>
         )}
-      </div>
+      </dl>
     </div>
   )
 }
@@ -181,7 +155,7 @@ function buildSponsoredTabs({
           {
             id: 'warnings',
             label: `Warnings (${riskFindings.length})`,
-            tone: needsRiskAck ? ('danger' as const) : ('default' as const),
+            tone: needsRiskAck ? ('danger' as const) : ('warn' as const),
             content: <TransactionRiskPanel findings={riskFindings} />,
           },
         ]
@@ -324,7 +298,7 @@ function SignSponsoredTransaction() {
         onApprove={handleApprove}
         onReject={handleReject}
       >
-        <div className="flex w-full flex-col items-center gap-2">
+        <div className="flex flex-col gap-3">
           <SponsoredRequestDetails pending={pending} />
 
           {pending && (

@@ -17,7 +17,10 @@ export function TransactionRiskPanel({
             (b.severity === 'danger' ? 0 : 1),
         )
         .map((finding) => (
-          <div key={`${finding.severity}:${finding.title}`}>
+          <div
+            key={`${finding.severity}:${finding.title}`}
+            className={`c-banner ${finding.severity === 'danger' ? 'c-banner--red' : 'c-banner--amber'}`}
+          >
             <Text
               size="small"
               variant="bold"
@@ -25,7 +28,7 @@ export function TransactionRiskPanel({
             >
               {finding.title}
             </Text>
-            <Text size="xsmall" color="grey-neutral">
+            <Text size="xsmall" color="n60">
               {finding.detail}
             </Text>
           </div>

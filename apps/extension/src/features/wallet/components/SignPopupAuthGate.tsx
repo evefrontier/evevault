@@ -1,7 +1,15 @@
-import { Button, Heading, Text } from '@evevault/shared/components'
+import {
+  AuthMark,
+  AuthShell,
+  Button,
+  Heading,
+  Text,
+} from '@evevault/shared/components'
 import { LockScreen } from '@evevault/shared/screens'
 import type { User } from 'oidc-client-ts'
 import type { ReactNode } from 'react'
+import { APP_VERSION } from '@/lib/appVersion'
+import './SignRequestView.css'
 
 export interface SignPopupAuthGateProps {
   isLocked: boolean
@@ -33,28 +41,40 @@ export function SignPopupAuthGate({
   children,
 }: SignPopupAuthGateProps) {
   if (isLocked) {
-    return <LockScreen isPinSet={isPinSet} unlock={unlock} />
+    return (
+      <LockScreen isPinSet={isPinSet} unlock={unlock} version={APP_VERSION} />
+    )
   }
 
   if (!user) {
     return (
-      <div className="flex flex-col items-center justify-center gap-6 h-full">
-        <img src="/images/logo.png" alt="EVE Vault" className="h-20" />
-        <Heading level={2}>{title}</Heading>
-        <Text variant="light">You need to log in before signing.</Text>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <Button onClick={() => login()} disabled={loading} variant="primary">
-            {loading ? 'Logging in...' : 'Log In'}
-          </Button>
+      <AuthShell status="Signed out">
+        <AuthMark variant="vault" />
+        <header className="flex flex-col items-center gap-2 text-center">
+          <Heading level={2}>{title}</Heading>
+          <Text variant="light" color="n60">
+            You need to log in before signing.
+          </Text>
+        </header>
+        <div className="sign-view__actions w-full max-w-[320px]">
           <Button
             onClick={onCancel}
             disabled={cancelDisabled}
             variant="secondary"
+            size="fill"
           >
             Cancel
           </Button>
+          <Button
+            onClick={() => login()}
+            disabled={loading}
+            variant="primary"
+            size="fill"
+          >
+            {loading ? 'Logging in...' : 'Log In'}
+          </Button>
         </div>
-      </div>
+      </AuthShell>
     )
   }
 

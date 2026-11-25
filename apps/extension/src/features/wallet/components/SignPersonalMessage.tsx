@@ -1,4 +1,3 @@
-import { Text } from '@evevault/shared/components'
 import type { PendingPersonalMessage } from '@evevault/shared/types'
 import { createLogger, toErrorMessage } from '@evevault/shared/utils'
 import { useWalletSigningContext } from '@evevault/shared/wallet'
@@ -125,13 +124,17 @@ function SignPersonalMessage() {
       onReject={handleReject}
     >
       {pendingMessage && (
-        <div className="w-[320px] max-w-[88vw] border border-(--matter-05) p-3">
-          <Text size="small" color="grey-neutral">
-            Message
-          </Text>
-          <Text className="mt-2 max-h-28 overflow-y-auto wrap-break-word text-left">
-            {decodeMessageBytes(toMessageBytes(pendingMessage.message))}
-          </Text>
+        <div className="approval-tabs c-panel">
+          <div className="approval-tabs__list">
+            <span className="approval-tabs__tab approval-tabs__tab--static">
+              Message
+            </span>
+          </div>
+          <div className="approval-tabs__panel">
+            <pre className="sign-view__message">
+              {decodeMessageBytes(toMessageBytes(pendingMessage.message))}
+            </pre>
+          </div>
         </div>
       )}
     </SignRequestView>

@@ -1,16 +1,21 @@
 import {
   Button,
   Checkbox,
+  ContextChips,
   Heading,
-  NetworkSelector,
+  KvRow,
   Text,
+  TopBar,
+  TopBarStrip,
 } from '@evevault/shared/components'
+import { getCurrentTenantId } from '@evevault/shared/stores'
 import type { DappRequestContext } from '@evevault/shared/types'
 import { formatAddress } from '@evevault/shared/utils'
 import type { SuiChain } from '@mysten/wallet-standard'
 import { type ReactNode, useState } from 'react'
 import type { useSignPopupAuth } from '@/features/wallet/hooks'
 import { SignPopupAuthGate } from './SignPopupAuthGate'
+import './SignRequestView.css'
 
 const DEFAULT_ACKNOWLEDGEMENT_LABEL =
   'I understand the risks and want to approve this request.'
@@ -47,30 +52,6 @@ function formatConnectedAt(connectedAt: number | undefined): string | null {
   })
 }
 
-function ContextRow({
-  label,
-  value,
-  title,
-}: {
-  label: string
-  value: string
-  title?: string
-}) {
-  return (
-    <div className="grid grid-cols-[72px_minmax(0,1fr)] gap-2 items-baseline">
-      <span className="text-[10px] uppercase text-(--grey-neutral)">
-        {label}
-      </span>
-      <span
-        className="text-xs leading-4 text-(--neutral) truncate"
-        title={title ?? value}
-      >
-        {value}
-      </span>
-    </div>
-  )
-}
-
 function RequestContextPanel({
   dapp,
   accountAddress,
@@ -84,22 +65,33 @@ function RequestContextPanel({
   if (!dapp && !accountAddress && !requestKind) return null
 
   return (
-    <div className="w-[320px] max-w-[88vw] border border-(--matter-05) p-3">
-      <div className="flex flex-col gap-2">
-        {dapp && (
-          <ContextRow label="Site" value={dapp.origin} title={dapp.url} />
-        )}
-        {accountAddress && (
-          <ContextRow
-            label="Account"
-            value={formatAddress(accountAddress, 10, 8)}
-            title={accountAddress}
-          />
-        )}
-        {requestKind && <ContextRow label="Request" value={requestKind} />}
-        {connectedAt && <ContextRow label="Connected" value={connectedAt} />}
-      </div>
+    <div className="c-card c-card--bright">
+      <dl className="c-kv sign-view__context">
+        <KvRow label="Site" value={dapp?.origin} title={dapp?.url} />
+        <KvRow
+          label="Account"
+          value={accountAddress && formatAddress(accountAddress, 10, 8)}
+          title={accountAddress}
+        />
+        <KvRow label="Request" value={requestKind} />
+        <KvRow label="Connected" value={connectedAt} />
+      </dl>
     </div>
+  )
+}
+
+/** Top bar with the server and network chips, then the approval strip. */
+function SignTopBar({ chain }: { chain?: SuiChain }) {
+  return (
+    <TopBar
+      flush
+      end={<ContextChips tenantId={getCurrentTenantId()} chain={chain} />}
+      strip={
+        <TopBarStrip label="Approval" tone="approval">
+          A site is asking you to sign
+        </TopBarStrip>
+      }
+    />
   )
 }
 
@@ -147,28 +139,28 @@ export function SignRequestView({
           {error && <Text color="error">Error: {error}</Text>}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-between h-full">
-          <div className="flex flex-col items-center justify-center gap-6">
-            <img src="/images/logo.png" alt="EVE Vault" className="h-20" />
-            <div className="flex flex-col items-center justify-center gap-3">
+        <div className="sign-view">
+          <SignTopBar chain={chain} />
+
+          <div className="sign-view__body">
+            <div className="sign-view__heading">
+              <span className="c-eyebrow">Request</span>
               <Heading level={2}>{title}</Heading>
-              <RequestContextPanel
-                dapp={dapp}
-                accountAddress={accountAddress}
-                requestKind={requestKind}
-              />
-              {children}
             </div>
 
-            {error && (
-              <div className="mb-5">
-                <Text color="error">Error: {error}</Text>
-              </div>
-            )}
+            <RequestContextPanel
+              dapp={dapp}
+              accountAddress={accountAddress}
+              requestKind={requestKind}
+            />
+
+            {children}
+
+            {error && <Text color="error">Error: {error}</Text>}
 
             {approveBlockedReason && (
               <div
-                className="w-[320px] max-w-[88vw] rounded border border-critical bg-critical/50 p-2"
+                className="c-banner c-banner--red"
                 role="alert"
                 data-testid="approve-blocked-reason"
               >
@@ -185,30 +177,28 @@ export function SignRequestView({
                 isDisabled={loading}
                 text={acknowledgementLabel}
                 onChange={setAcknowledged}
-                containerStyle={{ maxWidth: 320 }}
               />
             )}
 
-            <div className="flex gap-2">
+            <div className="sign-view__actions">
+              <Button
+                onClick={onReject}
+                disabled={loading}
+                variant="secondary"
+                size="fill"
+              >
+                Reject
+              </Button>
               <Button
                 onClick={onApprove}
                 disabled={approveDisabled}
                 variant="primary"
+                size="fill"
               >
                 {loading ? 'Signing...' : 'Approve'}
               </Button>
-
-              <Button onClick={onReject} disabled={loading} variant="secondary">
-                Reject
-              </Button>
             </div>
           </div>
-          {chain && (
-            <NetworkSelector
-              className="justify-start w-full items-end"
-              chain={chain}
-            />
-          )}
         </div>
       )}
     </SignPopupAuthGate>
