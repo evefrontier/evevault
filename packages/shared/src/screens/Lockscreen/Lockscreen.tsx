@@ -1,15 +1,13 @@
 import type { SuiChain } from '@mysten/wallet-standard'
 import type React from 'react'
-import { useCallback, useState } from 'react'
-import { resetVaultOnDevice } from '#/auth/resetVaultOnDevice'
+import { useState } from 'react'
 import {
   Button,
   Heading,
   Input,
-  Modal,
   NetworkSelector,
+  ResetVaultDialog,
   Text,
-  useToast,
 } from '#/components'
 import { useContext } from '#/hooks/useContext'
 import { useDevice } from '#/hooks/useDevice'
@@ -28,9 +26,7 @@ export function LockScreen({
   const [pin, setPin] = useState('')
   const [pinError, setPinError] = useState<string | null>(null)
   const [showResetConfirm, setShowResetConfirm] = useState(false)
-  const [isResetting, setIsResetting] = useState(false)
   const { initialize: initializeDevice, error: deviceError } = useDevice()
-  const { showToast } = useToast()
 
   const handlePinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPin(e.target.value.replace(/\D/g, ''))
@@ -48,23 +44,6 @@ export function LockScreen({
     }
     await unlock(pin)
   }
-
-  const handleConfirmReset = useCallback(async () => {
-    setIsResetting(true)
-    try {
-      await resetVaultOnDevice()
-      setShowResetConfirm(false)
-      onResetComplete?.()
-    } catch (error: unknown) {
-      const message =
-        error instanceof Error && error.message
-          ? error.message
-          : 'Something went wrong while resetting the vault. Please try again.'
-      showToast("Couldn't reset vault", message)
-    } finally {
-      setIsResetting(false)
-    }
-  }, [onResetComplete, showToast])
 
   const title = isPinSet ? 'Enter pin' : 'Create pin'
   const description = isPinSet
@@ -118,7 +97,7 @@ export function LockScreen({
             }}
             className="text-sm underline text-grey-neutral hover:text-neutral focus:outline-none focus:ring-2 focus:ring-primary rounded"
           >
-            {isPinSet ? 'Forgot PIN' : 'Reset and try again'}
+            {isPinSet ? 'Forgot PIN? Reset vault' : 'Reset and try again'}
           </button>
         )}
 
@@ -128,30 +107,11 @@ export function LockScreen({
         />
       </section>
 
-      <Modal
+      <ResetVaultDialog
         isOpen={showResetConfirm}
-        onClose={() => !isResetting && setShowResetConfirm(false)}
-        title="Reset EVE Vault on this device?"
-        className="modal--card"
-        secondaryAction={{
-          label: 'Cancel',
-          onClick: () => setShowResetConfirm(false),
-          disabled: isResetting,
-        }}
-        primaryAction={{
-          label: 'Reset',
-          onClick: handleConfirmReset,
-          isLoading: isResetting,
-        }}
-        closeOnOverlayClick={!isResetting}
-      >
-        <div className="modal__divider" />
-        <Text className="modal__card-message" color="grey-neutral">
-          This will reset your PIN and remove all EVE Vault data from this
-          device. Your wallet will be available after you recreate your PIN and
-          sign back in.
-        </Text>
-      </Modal>
+        onClose={() => setShowResetConfirm(false)}
+        onResetComplete={onResetComplete}
+      />
     </div>
   )
 }

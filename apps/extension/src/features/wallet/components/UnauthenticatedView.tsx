@@ -1,6 +1,12 @@
 import type { TenantId } from '@evefrontier/wallet-core/tenant'
-import { Button, Heading, TenantSelector } from '@evevault/shared/components'
+import {
+  Button,
+  Heading,
+  ResetVaultDialog,
+  TenantSelector,
+} from '@evevault/shared/components'
 import Icon from '@evevault/shared/components/Icon'
+import { useState } from 'react'
 
 /**
  * Leaves the dev-mode toggle visible while signed out so testers can switch
@@ -37,7 +43,7 @@ export function UnauthenticatedView({
   devMode,
   onLoginClick,
   onTenantChange,
-  onResetVault,
+  onResetComplete,
   onDevModeToggle,
 }: {
   authLoading: boolean
@@ -47,9 +53,11 @@ export function UnauthenticatedView({
   devMode: boolean
   onLoginClick: () => Promise<void>
   onTenantChange: (tenantId: string) => void
-  onResetVault: () => Promise<void>
+  onResetComplete: () => void
   onDevModeToggle: () => void
 }) {
+  const [showResetConfirm, setShowResetConfirm] = useState(false)
+
   return (
     <div className="flex flex-col items-center justify-between gap-4 w-full h-full">
       <section className="flex flex-col items-center gap-10 w-full flex-1">
@@ -70,14 +78,19 @@ export function UnauthenticatedView({
         {isPinSet && (
           <button
             type="button"
-            onClick={() => void onResetVault()}
+            onClick={() => setShowResetConfirm(true)}
             className="text-sm underline text-grey-neutral hover:text-neutral focus:outline-none focus:ring-2 focus:ring-primary rounded"
           >
-            Reset Vault
+            Reset vault
           </button>
         )}
       </section>
       <DevModeButton devMode={devMode} onClick={onDevModeToggle} />
+      <ResetVaultDialog
+        isOpen={showResetConfirm}
+        onClose={() => setShowResetConfirm(false)}
+        onResetComplete={onResetComplete}
+      />
     </div>
   )
 }

@@ -5,11 +5,7 @@ import {
   getCurrentTenantId,
   switchTenantAndReload,
 } from '@evevault/shared'
-import {
-  redirectToFusionAuthLogout,
-  resetVaultOnDevice,
-  useAuth,
-} from '@evevault/shared/auth'
+import { redirectToFusionAuthLogout, useAuth } from '@evevault/shared/auth'
 import { Button, Heading, Text } from '@evevault/shared/components'
 import {
   useContext,
@@ -159,14 +155,7 @@ function App() {
         onTenantChange={(tenantId) =>
           switchTenantAndReload(tenantId as TenantId)
         }
-        onResetVault={async () => {
-          try {
-            await resetVaultOnDevice()
-            navigate({ to: '/' })
-          } catch (error) {
-            log.error('Failed to reset vault', error)
-          }
-        }}
+        onResetComplete={() => navigate({ to: '/' })}
         onDevModeToggle={handleDevModeToggle}
       />
     )
