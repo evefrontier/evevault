@@ -18,13 +18,13 @@ const TenantSelectorViewOnly = ({
 }: TenantSelectorPropsBase & { viewOnly: true }) => {
   return (
     <div
-      className={`dropdown-selector dropdown-selector--inline ${className}`.trim()}
+      className={`dropdown-selector dropdown-selector--inline dropdown-selector--brand ${className}`.trim()}
       role="presentation"
     >
       <div className="dropdown-selector__trigger">
-        <Text size="medium" variant="regular" color="neutral">
+        <span className="dropdown-selector__value">
           {getTenantLabel(currentTenantId)}
-        </Text>
+        </span>
       </div>
     </div>
   )
@@ -52,7 +52,7 @@ const TenantSelectorInteractive = ({
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: div is for event capture only, not interactive content
     <div
-      className={`dropdown-selector ${className}`.trim()}
+      className={`dropdown-selector dropdown-selector--brand ${className}`.trim()}
       onClick={(e: React.MouseEvent) => e.stopPropagation()}
       onKeyDown={(e: React.KeyboardEvent) => e.stopPropagation()}
       role="presentation"
@@ -66,17 +66,12 @@ const TenantSelectorInteractive = ({
         aria-haspopup="listbox"
         aria-label="Tenant"
       >
-        <Icon name="Network" color="quantum" />
-        <div className="flex flex-col gap-0.5">
-          <Text variant="label-medium" size="medium">
-            {currentLabel}
-          </Text>
-        </div>
+        <span className="dropdown-selector__value">{currentLabel}</span>
         <Icon
           name="ChevronArrowDown"
-          width={16}
-          height={16}
-          color="neutral"
+          width={10}
+          height={10}
+          color="currentColor"
           className={`dropdown-selector__chevron ${isOpen ? 'dropdown-selector__chevron--open' : ''}`}
         />
       </button>

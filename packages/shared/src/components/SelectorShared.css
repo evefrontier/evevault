@@ -1,6 +1,6 @@
 /**
  * Shared styles for dropdown-trigger selectors (TenantSelector, NetworkSelector).
- * Both components use the dropdown-selector class names for the common root, trigger, and chevron.
+ * Triggers render as console chips: a square 22px frame with Disket caps.
  */
 
 .dropdown-selector {
@@ -10,24 +10,61 @@
 }
 
 .dropdown-selector__trigger {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 22px;
+  padding: 0 7px;
+  border: 1px solid var(--n30);
+  background: none;
+  color: var(--n60);
   cursor: pointer;
-  background: transparent;
-  border: none;
-  padding: 0;
-  transition: opacity 0.2s ease;
+  white-space: nowrap;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease;
 }
 
-.dropdown-selector__trigger:hover {
-  opacity: 0.8;
+.dropdown-selector__trigger:hover:not(:disabled),
+.dropdown-selector__trigger[aria-expanded="true"] {
+  border-color: var(--n60);
+  color: var(--ink);
+}
+
+.dropdown-selector__trigger:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.dropdown-selector__trigger:focus-visible {
+  outline: 1px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.dropdown-selector__value {
+  font-family: var(--font-headline);
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: inherit;
+}
+
+/* Brand chip, used for the server */
+.dropdown-selector--brand .dropdown-selector__trigger {
+  background: var(--brand-40);
+  border-color: var(--brand-60);
+  color: var(--ink);
+}
+
+.dropdown-selector--brand .dropdown-selector__trigger:hover:not(:disabled) {
+  background: var(--brand-60);
 }
 
 .dropdown-selector__chevron {
-  transition: transform 0.2s ease;
-  margin-left: auto;
   flex-shrink: 0;
+  transition: transform 0.2s ease;
 }
 
 .dropdown-selector__chevron--open {

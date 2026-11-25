@@ -17,6 +17,7 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
   onNetworkSwitchStart,
   onRequiresReauth,
   onLocalnetSelected,
+  menuPlacement,
 }) => {
   const { setChain, forceSetChain, loading, devMode } = useContext()
 
@@ -71,7 +72,7 @@ export const NetworkSelector: React.FC<NetworkSelectorProps> = ({
           availableNetworks={availableNetworks}
           chain={chain}
           disabled={isDisabled}
-          isExtensionContext={isExtensionContext}
+          placement={menuPlacement ?? (isExtensionContext ? 'top' : 'bottom')}
           onClose={() => setIsOpen(false)}
           onNetworkSelect={handleNetworkSelect}
           triggerRef={triggerRef}

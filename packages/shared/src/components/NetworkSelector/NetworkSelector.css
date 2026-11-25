@@ -1,25 +1,30 @@
 @import "../SelectorShared.css";
 
-/* Compact badge mode */
+/* Compact badge mode: the same chip as the full trigger */
 .network-selector__badge {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  padding: 4px 8px;
-  background: var(--quantum-20);
-  border: 1px solid var(--quantum-30);
-  border-radius: 4px;
+  gap: 6px;
+  height: 22px;
+  padding: 0 7px;
+  border: 1px solid var(--n30);
+  background: none;
+  color: var(--n60);
   cursor: pointer;
-  transition: all 0.2s ease;
+  white-space: nowrap;
+  transition:
+  border-color 0.15s ease,
+  color 0.15s ease;
 }
 
 .network-selector__badge:hover:not(:disabled) {
-  background: var(--quantum-30);
+  border-color: var(--n60);
+  color: var(--ink);
 }
 
 .network-selector__badge:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  cursor: default;
+  opacity: 0.6;
 }
 
 .network-selector__dropdown {
@@ -27,10 +32,8 @@
   top: calc(100% + 4px);
   left: 0;
   min-width: 160px;
-  background: var(--matter-02);
-  border: 1px solid var(--matter-04);
-  border-radius: 4px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  background: #111112;
+  border: 1px solid var(--n20);
   z-index: 100;
   overflow: hidden;
 }
@@ -55,7 +58,7 @@
 }
 
 .network-selector__option:hover:not(:disabled) {
-  background: var(--matter-03);
+  background: var(--brand-10);
 }
 
 .network-selector__option--active {
@@ -87,9 +90,8 @@
 }
 
 .network-selector__dialog {
-  background: var(--matter-01);
-  border: 1px solid var(--matter-04);
-  border-radius: 8px;
+  background: #111112;
+  border: 1px solid var(--n20);
   padding: 24px;
   max-width: 400px;
   width: 90%;

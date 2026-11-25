@@ -1,224 +1,179 @@
-/* Button wrapper - transparent with corner decorations */
+/* Console bracket button: a framed surface with short brackets on the left
+   and right edges. Small is 28px; medium, large and fill are 44px. */
 .button {
-  display: flex;
-  width: fit-content;
-  flex-direction: row;
-  align-items: center;
-  padding: 3px;
-  gap: 0;
-  isolation: isolate;
+  --button-bracket: var(--n30);
+  --button-bg: var(--brand-40);
+  --button-bg-hover: var(--brand-60);
+  --button-border: var(--n10);
+  --button-fg: var(--ink);
   position: relative;
-  border: none;
+  display: inline-flex;
+  width: fit-content;
+  height: 44px;
+  align-items: stretch;
+  padding: 0;
+  border: 1px solid var(--button-border);
   border-radius: 0;
-  background: transparent;
+  background: var(--button-bg);
+  color: var(--button-fg);
   cursor: pointer;
-  font-family: var(--font-headline, "Headline", "Disket Mono", monospace);
+  font-family: var(--font-headline);
+  transition: background-color 0.15s ease;
 }
 
-/* Inner content - the actual button surface */
+.button::before,
+.button::after {
+  content: "";
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  width: 3px;
+  border: 1px solid var(--button-bracket);
+  pointer-events: none;
+}
+
+.button::before {
+  left: -1px;
+  border-right: 0;
+}
+
+.button::after {
+  right: -1px;
+  border-left: 0;
+}
+
+.button:hover {
+  background: var(--button-bg-hover);
+}
+
 .button__content {
   display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  padding: 15px 40px;
-  gap: 10px;
   flex: 1;
-  z-index: 0;
-  font-weight: 700;
-  font-size: 14px;
-  line-height: 16px;
-  text-transform: uppercase;
-}
-
-/* Left and right edge lines */
-.button__edge-left,
-.button__edge-right {
-  position: absolute;
-  width: 1px;
-  top: 5px;
-  bottom: 5px;
-  background: rgba(250, 250, 229, 0.3);
-  z-index: 3;
-}
-
-.button__edge-left {
-  left: 0;
-}
-
-.button__edge-right {
-  right: 0;
-}
-
-/* Hover overlay */
-.button__hover {
-  position: absolute;
-  inset: 3px;
-  overflow: hidden;
-  background: transparent;
-  width: 0;
-  height: calc(100% - 6px);
-  transition: width 0.3s ease-in-out;
-  z-index: 2;
-}
-
-.button:hover .button__hover,
-.button:active .button__hover {
-  width: calc(100% - 6px);
-}
-
-.button__hover-content {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 15px 40px;
-  background-color: var(--neutral, #ffffd6);
-  color: var(--crude, #000000);
-  font-weight: 700;
-  font-size: 14px;
-  line-height: 16px;
+  gap: 8px;
+  padding: 0 18px;
+  font-family: var(--font-headline);
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
   white-space: nowrap;
 }
 
+/* The old corner, edge and hover-wipe decorations stay in the DOM but are
+   not drawn; the brackets above replace them. */
+.button .corners__corner,
+.button__edge-left,
+.button__edge-right,
+.button__hover {
+  display: none;
+}
+
 /* Sizes */
-.button--small .button__content,
-.button--small .button__hover-content {
-  padding: 8px 10px;
-  font-size: 14px;
+.button--small {
+  height: 28px;
 }
 
-.button--medium .button__content,
-.button--medium .button__hover-content {
-  padding: 10px 32px;
-  font-size: 14px;
-}
-
-.button--large .button__content,
-.button--large .button__hover-content {
-  padding: 16px 32px;
-  font-size: 14px;
+.button--small .button__content {
+  padding: 0 12px;
+  font-family: var(--font-body);
+  font-weight: 300;
+  font-size: 12.5px;
+  letter-spacing: -0.02em;
+  text-transform: none;
 }
 
 .button--fill {
   width: 100%;
 }
 
-.button--fill .button__content,
-.button--fill .button__hover-content {
-  padding: 10px 32px;
-  line-height: 20px;
-}
-
 /* Variants */
-
-/* Primary - orange background, black text */
-.button--primary .button__content {
-  background: #ff4700;
-  color: #000000;
+.button--secondary {
+  --button-bracket: var(--n10);
+  --button-bg: var(--n05);
+  --button-bg-hover: rgba(250, 250, 229, 0.12);
+  --button-border: var(--n05);
 }
 
-.button--primary .button__hover-content {
-  background: var(--neutral, #ffffd6);
-  color: #000000;
+.button--text,
+.button--plain,
+.button--icon {
+  --button-bg: transparent;
+  --button-bg-hover: transparent;
+  --button-border: transparent;
+  height: auto;
 }
 
-.button--primary:hover .corners__corner span {
-  background: var(--neutral, #ffffd6) !important;
+.button--text::before,
+.button--text::after,
+.button--plain::before,
+.button--plain::after,
+.button--icon::before,
+.button--icon::after {
+  display: none;
 }
 
-/* Secondary - semi-transparent background */
-.button--secondary .button__content {
-  background: rgba(255, 255, 214, 0.1);
-  color: rgba(255, 255, 214, 0.8);
+.button--text .button__content,
+.button--plain .button__content,
+.button--icon .button__content {
+  padding: 8px;
 }
 
-.button--secondary .button__hover-content {
-  background: var(--neutral, #ffffd6);
-  color: #000000;
-}
-
-/* Secondary corners - neutral color with opacity */
-.button--secondary .corners__corner span {
-  background: rgba(250, 250, 229, 0.7) !important;
-}
-
-/* Text - no background */
 .button--text {
-  padding: 0;
+  --button-fg: var(--brand);
 }
 
-.button--text .button__content {
-  background: transparent;
-  color: #ff4700;
-  padding: 8px;
+.button--text:hover {
+  --button-fg: var(--ink);
 }
 
-.button--text:hover .button__content {
-  color: var(--neutral, #ffffd6);
+.button--plain,
+.button--icon {
+  --button-fg: var(--n60);
 }
 
-.button--text .corners__corner,
-.button--text .button__edge-left,
-.button--text .button__edge-right,
-.button--text .button__hover {
-  display: none;
+.button--plain:hover,
+.button--icon:hover {
+  --button-fg: var(--brand);
 }
 
-/* Plain - minimal styling */
-.button--plain {
-  padding: 0;
-}
-
-.button--plain .button__content {
-  background: transparent;
-  color: var(--neutral, #ffffd6);
-  padding: 8px;
-}
-
-.button--plain:hover .button__content {
-  color: #ff4700;
-}
-
-.button--plain .corners__corner,
-.button--plain .button__edge-left,
-.button--plain .button__edge-right,
-.button--plain .button__hover {
-  display: none;
-}
-
-/* Disabled state */
+/* Disabled */
 .button--disabled,
 .button:disabled {
-  opacity: 0.5;
+  --button-bracket: var(--n10);
+  --button-bg: var(--n05);
+  --button-bg-hover: var(--n05);
+  --button-border: var(--n05);
+  --button-fg: var(--n50);
   cursor: not-allowed;
 }
 
-.button:disabled:hover .button__hover {
-  width: 0;
+.button--text.button--disabled,
+.button--text:disabled,
+.button--plain.button--disabled,
+.button--plain:disabled,
+.button--icon.button--disabled,
+.button--icon:disabled {
+  --button-bg: transparent;
+  --button-bg-hover: transparent;
+  --button-border: transparent;
 }
 
-/* Focus state */
 .button:focus-visible {
-  outline: 2px solid #ff4700;
+  outline: 1px solid var(--ink);
   outline-offset: 2px;
 }
 
 /* Loading spinner (rendered when isLoading is set) */
 .button__spinner {
+  flex: none;
   display: inline-block;
-  width: 1em;
-  height: 1em;
-  margin-right: 0.5em;
-  vertical-align: -0.125em;
-  border: 2px solid currentColor;
-  border-top-color: transparent;
+  width: 10px;
+  height: 10px;
+  border: 1px solid var(--brand);
+  border-right-color: transparent;
   border-radius: 50%;
   animation: button-spin 0.6s linear infinite;
 }

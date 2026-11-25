@@ -152,6 +152,23 @@ describe('NetworkSelector', () => {
     expect(onLocalnetSelected).toHaveBeenCalledTimes(1)
   })
 
+  it('opens the extension menu downward when placed in the top bar', () => {
+    mockUtils.isExtension.mockReturnValue(true)
+
+    const { container } = render(
+      <NetworkSelector
+        chain={SUI_TESTNET_CHAIN}
+        compact
+        menuPlacement="bottom"
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'TEST' }))
+
+    expect(container.querySelector('.dropdown')).toBeInTheDocument()
+    expect(container.querySelector('.dropdown--placement-top')).toBeNull()
+  })
+
   it('does not open while the context is loading', () => {
     mockContext.loading = true
 

@@ -7,214 +7,180 @@
   flex-direction: column;
   align-items: flex-start;
   padding: 0;
-  gap: 6px;
+  gap: 5px;
   width: 100%;
 }
 
+/* Square field: 1px n20 frame, ink frame on focus, red frame on error */
 .input-field {
   box-sizing: border-box;
   display: flex;
   flex-direction: row;
   align-items: center;
-  padding: 12px 16px;
-  gap: 1px;
-  isolation: isolate;
+  padding: 0 12px;
   position: relative;
   width: 100%;
   height: 56px;
-  background: #0c0c0c;
-  border: 1px solid rgba(250, 250, 229, 0.2);
+  background: var(--bg);
+  border: 1px solid var(--n20);
+  transition: border-color 0.15s ease;
 }
 
-.input-field--focused {
-  border-color: rgba(255, 71, 0, 0.5);
+.input-field:hover {
+  border-color: var(--n30);
 }
 
-.input-field--error {
-  /* Border stays the same - don't change it */
+.input-field--focused,
+.input-field--focused:hover {
+  border-color: var(--ink);
 }
 
-/* Red accent line when error */
-.input-field--error .input-field__accent {
-  background: rgba(255, 25, 41, 1);
+.input-field--error,
+.input-field--error:hover {
+  border-color: var(--offline);
 }
 
 .input-field--disabled {
-  opacity: 0.5;
+  background: var(--n05);
+  border-color: var(--n10);
   cursor: not-allowed;
 }
 
-/* Orange accent line - positioned inside */
+/* Corner and accent decorations stay in the DOM but are not drawn */
+.input-field .corners__corner,
 .input-field__accent {
-  position: absolute;
-  width: 2px;
-  left: 4px;
-  top: 4px;
-  bottom: 4px;
-  background: #ff4700;
-  z-index: 7;
+  display: none;
 }
 
-/* Content area */
 .input-field__content {
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: flex-start;
-  padding: 8px 0 8px 12px;
-  gap: 2px;
+  gap: 4px;
   flex: 1;
   min-width: 0;
-  z-index: 0;
   height: 100%;
 }
 
 .input-field__label {
   display: block;
-  color: rgba(250, 250, 229, 0.5);
-  font-size: 9px;
-  font-style: normal;
-  font-weight: 700;
-  line-height: 10px;
-  letter-spacing: 0.81px;
-  text-transform: uppercase;
-  font-family: var(--font-body, "Body", "FavoritMonoStd", monospace);
   flex-shrink: 0;
+  color: var(--n50);
+  font-family: var(--font-headline);
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
 }
 
 .input-field__label--error {
-  color: rgba(255, 25, 41, 1);
+  color: var(--offline);
 }
 
 .input-field__input {
   width: 100%;
+  padding: 0;
   background: transparent;
   border: none;
   outline: none;
-  color: #fafae5;
-  font-family: var(--font-body, "Body", "FavoritMonoStd", monospace);
-  font-size: 16px;
-  font-style: normal;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 14px;
   font-weight: 300;
-  line-height: 16px;
-  padding: 0;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
 }
 
 .input-field__input::placeholder {
-  color: rgba(250, 250, 229, 0.3);
-}
-
-.input-field__input::-webkit-input-placeholder {
-  color: rgba(250, 250, 229, 0.3);
-}
-
-.input-field__input:-moz-placeholder {
-  color: rgba(250, 250, 229, 0.3);
-}
-
-.input-field__input::-moz-placeholder {
-  color: rgba(250, 250, 229, 0.3);
-}
-
-.input-field__input:-ms-input-placeholder {
-  color: rgba(250, 250, 229, 0.3);
+  color: var(--n50);
 }
 
 .input-field__input:disabled {
-  opacity: 0.5;
+  color: var(--n50);
   cursor: not-allowed;
 }
 
 /* Size variants */
 .input-field__input--small {
-  font-size: 14px;
-  line-height: 14px;
+  font-size: 13px;
 }
 
 .input-field__input--base {
-  font-size: 16px;
-  line-height: 16px;
+  font-size: 14px;
 }
 
 .input-field__input--large {
   font-size: 18px;
-  line-height: 18px;
 }
 
 /* Status/Error messages */
 .input-status {
   margin-top: 0;
+  font-size: 11.5px !important;
 }
 
 .input-error {
   margin-top: 0;
-  color: rgba(255, 25, 41, 1) !important;
+  font-size: 12px !important;
+  color: var(--offline) !important;
 }
 
 /* ========================
-   Checkbox Styles
+   Checkbox Styles (native)
    ======================== */
 
 .checkbox-container {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  align-items: flex-start;
+  gap: 10px;
 }
 
 .checkbox-container input[type="checkbox"] {
   position: relative;
-  appearance: none;
-  cursor: pointer;
-  width: 20px;
-  height: 20px;
-  border: 1px solid rgba(250, 250, 229, 0.3);
-  background: transparent;
   flex-shrink: 0;
-  margin-top: 2px;
+  width: 14px;
+  height: 14px;
+  margin: 3px 0 0;
+  appearance: none;
+  border: 1px solid var(--n40);
+  background: var(--bg);
+  cursor: pointer;
 }
 
 .checkbox-container input[type="checkbox"]:checked {
-  background: #ff4700;
-  border-color: #ff4700;
-}
-
-.checkbox-container input[type="checkbox"]:checked::after {
-  content: "";
-  position: absolute;
-  left: 6px;
-  top: 2px;
-  width: 6px;
-  height: 12px;
-  border: solid white;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
+  background: var(--brand);
+  border-color: var(--brand);
+  box-shadow: inset 0 0 0 2px var(--bg);
 }
 
 .checkbox-container input[type="checkbox"]:hover {
-  border-color: #ff4700;
+  border-color: var(--n60);
 }
 
-.checkbox-container input[type="checkbox"]:focus {
-  outline: none;
-  border-color: #ff4700;
+.checkbox-container input[type="checkbox"]:focus-visible {
+  outline: 1px solid var(--ink);
+  outline-offset: 2px;
 }
 
 .checkbox-container input[type="checkbox"].error-input {
-  border: 1px solid rgb(255, 25, 41);
+  border-color: var(--offline);
 }
 
 .checkbox-container span {
-  font-size: 14px;
-  color: rgba(250, 250, 229, 0.8);
+  font-size: 12.5px;
+  color: var(--n60);
 }
 
 .checkbox-container span a {
-  color: #ff4700;
-  text-decoration: none;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .checkbox-container span a:hover {
-  text-decoration: underline;
+  color: var(--brand);
 }
 
 /* ========================
@@ -224,7 +190,7 @@
 .checkbox {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   position: relative;
   cursor: pointer;
 }
@@ -237,15 +203,19 @@
 
 .checkbox__control {
   box-sizing: border-box;
-  width: 32px;
-  height: 32px;
-  padding: 4px;
-  background: var(--matter-02);
-  border: 1px solid var(--neutral-50);
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 2px;
+  background: var(--bg);
+  border: 1px solid var(--n40);
+}
+
+.checkbox__control--hovered {
+  border-color: var(--n60);
 }
 
 .checkbox__input {
@@ -257,66 +227,58 @@
 }
 
 .checkbox__inner {
-  width: 100%;
-  height: 100%;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
+  width: 100%;
+  height: 100%;
   background: transparent;
 }
 
 .checkbox__input:focus-visible + .checkbox__inner {
-  outline: 2px solid var(--quantum-50);
-  outline-offset: 2px;
+  outline: 1px solid var(--ink);
+  outline-offset: 4px;
 }
 
 .checkbox__box {
-  width: 24px;
-  height: 24px;
+  width: 100%;
+  height: 100%;
   background: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
-.checkbox__control--hovered {
-  border-color: var(--quantum);
-}
-
+/* Checked shows a filled brand square, so the tick icon is not drawn */
 .checkbox__check {
-  width: 16px;
-  height: 16px;
-  display: none;
-  position: absolute;
+  display: none !important;
 }
 
 .checkbox__input:checked + .checkbox__inner .checkbox__box {
-  background: var(--quantum);
+  background: var(--brand);
 }
 
-.checkbox__input:checked + .checkbox__inner .checkbox__check {
-  display: block;
+.checkbox__control:has(.checkbox__input:checked) {
+  border-color: var(--brand);
 }
 
 .checkbox__label {
-  color: var(--neutral);
+  color: var(--ink);
+  font-size: 12.5px;
   user-select: none;
 }
 
 .checkbox--disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: default;
 }
 
 /* ========================
-   Radio Styles
+   Radio Styles (diamond)
    ======================== */
 
 .radio {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   position: relative;
   cursor: pointer;
 }
@@ -329,20 +291,26 @@
 
 .radio__control {
   box-sizing: border-box;
-  width: 32px;
-  height: 32px;
-  padding: 4px;
-  background: var(--matter-02);
-  border: 1px solid var(--neutral-50);
-  border-radius: 100px;
   position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+  margin: 2px;
+  padding: 0;
+  background: var(--bg);
+  border: 1px solid var(--n40);
+  transform: rotate(45deg);
 }
 
 .radio__control--hovered {
-  border-color: var(--quantum);
+  border-color: var(--n60);
+}
+
+.radio__control:has(.radio__input:checked) {
+  border-color: var(--brand);
 }
 
 .radio__input {
@@ -354,30 +322,32 @@
 }
 
 .radio__inner {
-  width: 100%;
-  height: 100%;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
+  width: 100%;
+  height: 100%;
   background: transparent;
-  border-radius: 50%;
+}
+
+.radio__input:focus-visible + .radio__inner {
+  outline: 1px solid var(--ink);
+  outline-offset: 4px;
 }
 
 .radio__dot {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
   display: block;
+  width: 6px;
+  height: 6px;
   background: transparent;
 }
 
 .radio__input:checked + .radio__inner .radio__dot {
-  display: block;
-  background: var(--quantum);
+  background: var(--brand);
 }
 
 .radio__label {
-  color: var(--neutral);
+  color: var(--ink);
   user-select: none;
 }

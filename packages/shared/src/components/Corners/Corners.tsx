@@ -1,19 +1,22 @@
 import type { CSSProperties } from 'react'
 import type { CornersColor, CornersProps } from '#/types'
 
+// Card corner tones: neutral-50/grey are the resting card, quantum is "on",
+// wait is "wait" and error is "main".
 const colorMap: Record<CornersColor, string> = {
-  quantum: '#ff4700',
-  'quantum-50': 'rgba(255, 71, 0, 0.5)',
-  neutral: 'rgba(255, 255, 214, 1)',
-  'neutral-50': 'rgba(255, 255, 214, 0.5)',
-  grey: '#d9d9d9',
-  error: 'rgb(255, 25, 41)',
-  success: '#5ee39c',
+  quantum: 'var(--brand-60)',
+  'quantum-50': 'var(--brand-40)',
+  neutral: 'var(--n60)',
+  'neutral-50': 'var(--n20)',
+  grey: 'var(--n20)',
+  wait: 'rgba(255, 182, 81, 0.5)',
+  error: 'var(--offline)',
+  success: 'var(--relate)',
 }
 /// Has to be in a position:relative parent to work properly
 export const Corners = ({
   color = 'quantum',
-  size = 5,
+  size = 8,
   thickness = 1,
   className = '',
   style,

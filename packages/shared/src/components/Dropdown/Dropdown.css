@@ -1,10 +1,12 @@
-/* Simple Dropdown Menu Container */
+/* Square menu: 1px n20 frame on a raised surface */
 .dropdown {
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
   min-width: 160px;
   z-index: 100;
+  border: 1px solid var(--n20);
+  background: #111112;
 }
 
 .dropdown--placement-top {
@@ -12,28 +14,13 @@
   bottom: calc(100% + 4px);
 }
 
-/* Edge lines */
+/* Corner and edge decorations stay in the DOM but are not drawn */
+.dropdown > .corners__corner,
 .dropdown__edge {
-  position: absolute;
-  width: 1px;
-  background: rgba(250, 250, 229, 0.3);
-  z-index: 2;
-  top: 5px;
-  bottom: 5px;
+  display: none;
 }
 
-.dropdown__edge--left {
-  left: 0;
-}
-
-.dropdown__edge--right {
-  right: 0;
-}
-
-/* Content area */
 .dropdown__content {
-  background: rgba(11, 11, 11, 0.9);
-  margin: 3px;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -47,17 +34,24 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 12px 16px;
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 12px;
   background: transparent;
   border: none;
+  border-top: 1px solid var(--line);
+  color: var(--ink);
   cursor: pointer;
   text-align: left;
-  width: 100%;
   transition: background-color 0.15s ease;
 }
 
+.dropdown__item:first-child {
+  border-top: 0;
+}
+
 .dropdown__item:hover:not(:disabled) {
-  background: rgba(255, 71, 0, 0.2);
+  background: var(--brand-10);
 }
 
 .dropdown__item:disabled {
@@ -65,15 +59,16 @@
   cursor: not-allowed;
 }
 
-.dropdown__item--active {
-  background: rgba(255, 71, 0, 0.1);
+.dropdown__item:focus-visible {
+  outline: 1px solid var(--ink);
+  outline-offset: -1px;
 }
 
+.dropdown__item--active,
 .dropdown__item--active:hover:not(:disabled) {
-  background: rgba(255, 71, 0, 0.2);
+  background: var(--brand-10);
 }
 
 .dropdown__check {
-  color: var(--quantum);
-  font-weight: bold;
+  color: var(--brand);
 }

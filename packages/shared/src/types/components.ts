@@ -221,6 +221,7 @@ export type CornersColor =
   | 'neutral'
   | 'neutral-50'
   | 'grey'
+  | 'wait'
   | 'error'
   | 'success'
 
@@ -250,6 +251,11 @@ export interface NetworkSelectorProps {
   onRequiresReauth?: (targetNetwork: string) => void
   /** Extension-only callback for localnet setup after successful selection */
   onLocalnetSelected?: () => void | Promise<void>
+  /**
+   * Where the menu opens. Defaults to "top" in the extension (selector sits at
+   * the bottom of the popup) and "bottom" on web.
+   */
+  menuPlacement?: 'top' | 'bottom'
 }
 
 export interface AddTokenScreenProps {

@@ -2,6 +2,7 @@ import type { SuiChain } from '@mysten/wallet-standard'
 import type React from 'react'
 import { Dropdown } from '#/components/Dropdown'
 import Icon from '#/components/Icon'
+import { Lamp } from '#/components/StatusChip'
 import Text from '#/components/Text'
 import type { NetworkOption } from '#/types'
 
@@ -45,9 +46,10 @@ export function NetworkTrigger({
         onClick={onToggle}
         disabled={disabled}
       >
-        <Text size="small" variant="bold" color="neutral">
+        <Lamp tone="on" />
+        <span className="dropdown-selector__value">
           {currentNetwork.shortLabel}
-        </Text>
+        </span>
       </button>
     )
   }
@@ -60,25 +62,14 @@ export function NetworkTrigger({
       onClick={onToggle}
       disabled={disabled}
     >
-      <Icon name="Network" color="quantum" />
-      <div className="flex flex-col gap-0.5">
-        <Text
-          className="text-start"
-          variant="label-small"
-          color="neutral-50"
-          size="small"
-        >
-          NETWORK
-        </Text>
-        <Text variant="label-medium" size="medium">
-          {chain.toUpperCase()}
-        </Text>
-      </div>
+      <Lamp tone="on" />
+      <span className="sr-only">NETWORK</span>{' '}
+      <span className="dropdown-selector__value">{chain.toUpperCase()}</span>
       <Icon
         name="ChevronArrowDown"
-        width={16}
-        height={16}
-        color="neutral"
+        width={10}
+        height={10}
+        color="currentColor"
         className={getChevronClassName(isOpen)}
       />
     </button>
@@ -121,15 +112,12 @@ function NetworkMenuItem({
   )
 }
 
-/**
- * Chooses dropdown placement from runtime context because extension popups open
- * the network menu upward from the footer area.
- */
+/** Network options in a dropdown that opens above or below the trigger. */
 export function NetworkMenu({
   availableNetworks,
   chain,
   disabled,
-  isExtensionContext,
+  placement,
   onClose,
   onNetworkSelect,
   triggerRef,
@@ -137,7 +125,7 @@ export function NetworkMenu({
   availableNetworks: NetworkOption[]
   chain: string
   disabled: boolean
-  isExtensionContext: boolean
+  placement: 'top' | 'bottom'
   onClose: () => void
   onNetworkSelect: (chain: SuiChain) => void
   triggerRef: React.RefObject<HTMLButtonElement | null>
@@ -146,7 +134,7 @@ export function NetworkMenu({
     <Dropdown
       onClickOutside={onClose}
       triggerRef={triggerRef}
-      placement={isExtensionContext ? 'top' : 'bottom'}
+      placement={placement}
     >
       {availableNetworks.map((network) => (
         <NetworkMenuItem

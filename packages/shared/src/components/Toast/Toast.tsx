@@ -54,9 +54,9 @@ export const Toast: React.FC<ToastProps> = ({
           >
             <Icon
               name="Close"
-              width={16}
-              height={16}
-              color="neutral"
+              width={12}
+              height={12}
+              color="currentColor"
               aria-hidden
             />
           </button>

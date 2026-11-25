@@ -8,15 +8,16 @@ const Switch: React.FC<SwitchProps> = ({
   className = '',
   style,
 }) => {
-  const baseClasses =
-    'w-[47px] h-8 inline-flex items-center justify-start p-1 bg-(--matter-02) border border-[rgba(255,255,214,0.2)] cursor-pointer'
+  const baseClasses = `w-[30px] h-4 inline-flex items-center justify-start p-[2px] bg-(--bg) border cursor-pointer ${
+    isChecked ? 'border-(--brand)' : 'border-(--n30)'
+  }`
   const disabledClasses = disabled ? 'opacity-60 cursor-default' : ''
 
   const thumbBaseClasses =
-    'w-[19px] h-full block transition-transform duration-200 ease-out'
+    'w-[10px] h-[10px] block transition-transform duration-200 ease-out'
   const thumbStateClasses = isChecked
-    ? 'bg-(--quantum) translate-x-[20px]'
-    : 'bg-(--matter-06) translate-x-0'
+    ? 'bg-(--brand) translate-x-[14px]'
+    : 'bg-(--n50) translate-x-0'
 
   return (
     <button
