@@ -1,6 +1,7 @@
 export * from './AuthShell'
 export * from './Background'
 export * from './Button'
+export * from './ContextChips'
 export * from './Corners'
 export * from './DirectionIcon'
 export * from './Dropdown'

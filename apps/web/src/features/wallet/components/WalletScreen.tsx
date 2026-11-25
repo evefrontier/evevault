@@ -1,22 +1,22 @@
 import type { TenantId } from '@evefrontier/wallet-core/tenant'
-import { HeaderMobile, LockScreen, NetworkSelector } from '@evevault/shared'
+import { HeaderMobile, LockScreen } from '@evevault/shared'
 import { switchTenantAndReload, useAuth } from '@evevault/shared/auth'
 import {
   Background,
   Button,
+  ContextChips,
   Heading,
   TenantSelector,
   Text,
   TokenListSection,
 } from '@evevault/shared/components'
-import Icon from '@evevault/shared/components/Icon'
 import {
   useContext,
   useDevice,
   useExplorer,
   useUnlockTimeRemaining,
 } from '@evevault/shared/hooks'
-import { getCurrentTenantId, getTenantLabel } from '@evevault/shared/stores'
+import { getCurrentTenantId } from '@evevault/shared/stores'
 import { createSuiClient, getFaucetUrlForChain } from '@evevault/shared/sui'
 import { createLogger, WEB_ROUTES } from '@evevault/shared/utils'
 import {
@@ -220,8 +220,20 @@ const WalletDashboard = ({
   const { urlFor } = useExplorer()
 
   return (
-    <div>
+    <div className="flex flex-col h-full">
       <HeaderMobile
+        chips={
+          <ContextChips
+            tenantId={tenantId}
+            chain={chain}
+            onNetworkSwitchStart={(previousNetwork, targetNetwork) => {
+              log.info('Network switch started', {
+                previousNetwork,
+                targetNetwork,
+              })
+            }}
+          />
+        }
         address={address}
         email={user.profile?.email as string}
         onTransactionsClick={actions.onTransactions}
@@ -249,50 +261,25 @@ const WalletDashboard = ({
         onAddToken={actions.onAddToken}
         onSendToken={actions.onSendToken}
       />
-      {/* Network selector and test tx result */}
-      <div className="justify-between pt-8 flex gap-4 flex-col sm:flex-row">
-        <div className="flex justify-between items-center gap-2 w-full">
-          <NetworkSelector
-            chain={chain}
-            onNetworkSwitchStart={(previousNetwork, targetNetwork) => {
-              log.info('Network switch started', {
-                previousNetwork,
-                targetNetwork,
-              })
-            }}
-          />
-          <div className="dropdown-selector--inline">
-            <div
-              className="dropdown-selector__trigger"
-              style={{ cursor: 'default' }}
-            >
-              <Icon name="Network" color="quantum" />
-              <Text variant="label-medium" size="medium">
-                {getTenantLabel(tenantId)}
-              </Text>
-            </div>
-          </div>
-        </div>
-        <div>
+      {(txDigest || authError || deviceError) && (
+        <div className="pt-4">
           {txDigest && (
-            <div>
-              <Text>
-                Tx digest:{' '}
-                <a
-                  href={urlFor(chain, txDigest)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ color: 'var(--quantum)' }}
-                >
-                  {txDigest}
-                </a>
-              </Text>
-            </div>
+            <Text>
+              Tx digest:{' '}
+              <a
+                href={urlFor(chain, txDigest)}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: 'var(--brand)' }}
+              >
+                {txDigest}
+              </a>
+            </Text>
           )}
           {authError && <Text color="error">Error: {authError}</Text>}
           {deviceError && <Text color="error">Error: {deviceError}</Text>}
         </div>
-      </div>
+      )}
     </div>
   )
 }

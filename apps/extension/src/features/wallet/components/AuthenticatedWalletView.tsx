@@ -1,8 +1,7 @@
 import type { TenantId } from '@evefrontier/wallet-core/tenant'
 import {
+  ContextChips,
   HeaderMobile,
-  NetworkSelector,
-  TenantSelector,
   Text,
   TokenListSection,
   useToast,
@@ -97,6 +96,14 @@ export function AuthenticatedWalletView({
   return (
     <div className="flex flex-col h-full">
       <HeaderMobile
+        chips={
+          <ContextChips
+            tenantId={tenantId}
+            chain={chain}
+            onLocalnetSelected={onLocalnetSelected}
+            onNetworkSwitchStart={onNetworkSwitchStart}
+          />
+        }
         address={activeAddress ?? ''}
         email={user.profile?.email ?? ''}
         onTransactionsClick={() =>
@@ -131,16 +138,6 @@ export function AuthenticatedWalletView({
           navigate({ to: '/send-token', search: { coinType } })
         }
       />
-
-      <div className="justify-between flex items-center gap-4">
-        <NetworkSelector
-          chain={chain}
-          onLocalnetSelected={onLocalnetSelected}
-          onNetworkSwitchStart={onNetworkSwitchStart}
-        />
-
-        <TenantSelector currentTenantId={tenantId} viewOnly={true} />
-      </div>
 
       {txDigest && (
         <TransactionDigestLink

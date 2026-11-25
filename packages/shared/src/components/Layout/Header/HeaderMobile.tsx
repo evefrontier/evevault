@@ -180,6 +180,7 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
   address,
   email,
   logoSrc = '/images/logo.png',
+  chips,
   onTransactionsClick,
   onAddressAliasesClick,
   onSettingsClick,
@@ -243,6 +244,7 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
       logoSrc={logoSrc}
       end={
         <>
+          {chips}
           <DropdownSelect items={dropdownItems} trigger={displayText} />
         </>
       }

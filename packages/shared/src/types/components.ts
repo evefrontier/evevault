@@ -188,6 +188,8 @@ export interface HeaderMobileProps {
   address: string
   email: string
   logoSrc?: string
+  /** Status chips (server, network) shown in the bar before the account menu */
+  chips?: ReactNode
   /** Callback when "Transaction History" menu item is clicked */
   onTransactionsClick?: () => void
   /** Callback when "Manage Address Aliases" menu item is clicked */
