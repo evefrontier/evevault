@@ -41,7 +41,7 @@ export const AliasRecoverySetupScreen: React.FC<
   }
 
   return (
-    <div className="flex flex-col gap-10">
+    <div className="flex flex-col gap-6">
       <StepDots steps={STEP_ORDER} current={STEP_ORDER.indexOf(step) + 1} />
 
       {step === 'terms' && (
@@ -73,7 +73,7 @@ export const AliasRecoverySetupScreen: React.FC<
       )}
 
       {error && (
-        <div className="w-full rounded border border-red-10/30 bg-red-10/10 p-2">
+        <div className="c-banner c-banner--red">
           <Text variant="light" size="xsmall" color="error">
             {error}
           </Text>

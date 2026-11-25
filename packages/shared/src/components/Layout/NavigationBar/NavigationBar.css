@@ -1,0 +1,119 @@
+/* Diamond tab: the console's rail item. Active is brand; idle is ink. */
+.diamond-tab {
+  position: relative;
+  display: block;
+  flex: none;
+  width: var(--diamond-size, 56px);
+  height: var(--diamond-size, 56px);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.diamond-tab__frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.diamond-tab__dia {
+  fill: rgba(11, 11, 12, 0.55);
+  transition: fill 0.15s ease;
+}
+
+.diamond-tab:hover .diamond-tab__dia {
+  fill: rgba(255, 255, 255, 0.04);
+}
+
+.diamond-tab__icon {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+.diamond-tab__label {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-headline);
+  font-size: 9.5px;
+  line-height: 1;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--n50);
+}
+
+.diamond-tab[aria-current="page"],
+.diamond-tab[aria-selected="true"] {
+  color: var(--brand);
+}
+
+.diamond-tab[aria-current="page"] .diamond-tab__label,
+.diamond-tab[aria-selected="true"] .diamond-tab__label {
+  color: var(--brand);
+}
+
+.diamond-tab:focus-visible {
+  outline: 1px solid var(--ink);
+  outline-offset: 4px;
+}
+
+/* Desktop column: mark on top, vertical rail of diamonds */
+.side-rail {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+  width: 136px;
+  height: 100vh;
+  padding: 24px 0;
+  border-right: 1px solid var(--line);
+  background: var(--bg);
+}
+
+.side-rail__logo {
+  display: block;
+  width: auto;
+  height: 32px;
+}
+
+.side-rail__nav {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 34px;
+}
+
+/* Phone: the same diamonds docked at the bottom */
+.tab-dock {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-around;
+  height: 84px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  background: var(--bg);
+  --diamond-size: 44px;
+}
+
+/* Four slots share a phone's width, so labels wrap within their slot */
+.tab-dock .diamond-tab__label {
+  width: 80px;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.15;
+  letter-spacing: 0.06em;
+}

@@ -61,7 +61,7 @@ export const AddTokenScreen: React.FC<AddTokenScreenProps> = ({
   const { email, address } = getHeaderIdentity(user)
 
   return (
-    <div className="mt-10 flex flex-col gap-10">
+    <div className="flex flex-col gap-6">
       <SubpageHeader
         title="Add custom token"
         email={email}
@@ -69,7 +69,7 @@ export const AddTokenScreen: React.FC<AddTokenScreenProps> = ({
         onBack={onCancel}
       />
       <div>
-        <Text variant="light" size="large" className="mb-2">
+        <Text variant="light" size="medium" color="n60" className="mb-2">
           Enter the full coin type identifier to track custom token balance.{' '}
         </Text>
         <Text variant="light" size="xsmall">
@@ -85,7 +85,7 @@ export const AddTokenScreen: React.FC<AddTokenScreenProps> = ({
         value={inputValue}
         errorText={error || undefined}
         onChange={handleInputChange}
-        className="w-full rounded border border-(--matter-05) bg-transparent px-3 py-2.5 text-(--neutral) outline-none focus:border-(--matter-05)"
+        className="w-full"
       />
       <div className="flex gap-2">
         <Button disabled={!canAdd} onClick={handleAddToken}>

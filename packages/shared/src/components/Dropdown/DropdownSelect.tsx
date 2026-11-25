@@ -17,7 +17,6 @@ export const DropdownSelect: React.FC<DropdownSelectProps> = ({
   items,
   trigger,
   className = '',
-  identicon = 0,
   children,
   isOpen: controlledIsOpen,
   onOpenChange,
@@ -45,7 +44,6 @@ export const DropdownSelect: React.FC<DropdownSelectProps> = ({
       style={{ '--menu-height': `${menuHeight}px` } as React.CSSProperties}
     >
       <DropdownSelectTrigger
-        identicon={identicon}
         isOpen={isOpen}
         menuHeight={menuHeight}
         onToggle={() => setIsOpen(!isOpen)}

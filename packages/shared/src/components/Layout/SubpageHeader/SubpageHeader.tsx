@@ -16,14 +16,19 @@ export function SubpageHeader({
   return (
     <>
       <HeaderMobile address={address} email={email} />
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2">
         {onBack && (
           <button
             type="button"
             onClick={onBack}
-            className="flex items-center justify-center p-1 bg-transparent border-none cursor-pointer hover:opacity-80"
+            className="-ml-2 grid size-7 place-items-center border-none bg-transparent text-(--n50) cursor-pointer hover:text-(--brand) focus-visible:outline focus-visible:outline-1 focus-visible:outline-(--ink)"
           >
-            <Icon name="ArrowLeft" size="medium" color="quantum" />
+            <Icon
+              name="ArrowLeft"
+              width={16}
+              height={16}
+              color="currentColor"
+            />
           </button>
         )}
         <Heading level={2}>{title}</Heading>

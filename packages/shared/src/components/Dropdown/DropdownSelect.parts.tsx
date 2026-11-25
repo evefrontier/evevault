@@ -1,23 +1,19 @@
 import type React from 'react'
 import { Corners } from '#/components/Corners'
 import Icon from '#/components/Icon'
-import Text from '#/components/Text'
 import type { DropdownItem } from '#/types'
-import { getIdenticon } from './Identicons'
 
 /**
  * Keeps the trigger decoration colocated with the measured menu height so the
  * corner animation remains aligned with custom menu content.
  */
 export function DropdownSelectTrigger({
-  identicon,
   isOpen,
   menuHeight,
   onToggle,
   showIconOnly,
   trigger,
 }: {
-  identicon: number
   isOpen: boolean
   menuHeight: number
   onToggle: () => void
@@ -34,7 +30,6 @@ export function DropdownSelectTrigger({
     >
       <div className="dropdown-select__inner">
         <div className="dropdown-select__content">
-          {getIdenticon(identicon)}
           {!showIconOnly ? (
             <span className="dropdown-select__text">{trigger}</span>
           ) : null}
@@ -42,7 +37,12 @@ export function DropdownSelectTrigger({
         <span
           className={`dropdown-select__arrow ${isOpen ? 'dropdown-select__arrow--open' : ''}`}
         >
-          <Icon name="ChevronArrowDown" size="small" color="quantum" />
+          <Icon
+            name="ChevronArrowDown"
+            width={10}
+            height={10}
+            color="currentColor"
+          />
         </span>
       </div>
 
@@ -66,11 +66,9 @@ export function DropdownSelectTrigger({
  */
 function DropdownSelectItem({
   item,
-  itemIdenticon,
   onItemClick,
 }: {
   item: DropdownItem
-  itemIdenticon: number
   onItemClick: (item: DropdownItem) => void
 }) {
   return (
@@ -84,12 +82,11 @@ function DropdownSelectItem({
       tabIndex={0}
     >
       {item.customContent ?? (
-        <>
-          {getIdenticon(itemIdenticon)}
-          <Text variant="label" color={item.devMode ? 'quantum' : undefined}>
-            {item.label}
-          </Text>
-        </>
+        <span
+          className={`dropdown-select__item-text ${item.devMode ? 'dropdown-select__item-text--dev' : ''}`.trim()}
+        >
+          {item.label}
+        </span>
       )}
     </div>
   )
@@ -113,11 +110,10 @@ export function DropdownSelectMenu({
   return (
     <div className="dropdown-select__menu" ref={menuRef}>
       {children ||
-        items?.map((item, index) => (
+        items?.map((item) => (
           <DropdownSelectItem
             key={item.label}
             item={item}
-            itemIdenticon={index}
             onItemClick={onItemClick}
           />
         ))}

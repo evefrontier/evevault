@@ -188,7 +188,6 @@ export interface HeaderMobileProps {
   address: string
   email: string
   logoSrc?: string
-  identicon?: number
   /** Callback when "Transaction History" menu item is clicked */
   onTransactionsClick?: () => void
   /** Callback when "Manage Address Aliases" menu item is clicked */
@@ -290,8 +289,6 @@ export interface DropdownSelectProps {
   items?: DropdownItem[]
   trigger: React.ReactNode
   className?: string
-  /** Identicon index (0-3) for avatar display */
-  identicon?: number
   /** Custom menu content (overrides items) */
   children?: React.ReactNode
   /** Controlled open state */

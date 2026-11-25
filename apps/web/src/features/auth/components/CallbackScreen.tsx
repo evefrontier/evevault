@@ -86,7 +86,7 @@ const completeOAuthCallback = async (): Promise<RoutePath> => {
 const CallbackLayout = ({ children }: { children: ReactNode }) => (
   <div className="flex flex-col items-center justify-between gap-4 w-full h-full">
     <section className="flex flex-col items-center gap-10 w-full flex-1">
-      <img src="/images/logo.png" alt="EVE Vault" className="h-20 w-auto" />
+      <img src="/images/logo.png" alt="EVE Vault" className="h-14 w-auto" />
       <header className="flex flex-col items-center gap-4 text-center">
         {children}
       </header>
@@ -132,7 +132,7 @@ export const CallbackScreen = () => {
   return (
     <CallbackLayout>
       <Heading level={2}>Completing authentication...</Heading>
-      <Text variant="light" size="large">
+      <Text variant="light" size="medium" color="n60">
         Please wait while we finish signing you in.
       </Text>
     </CallbackLayout>

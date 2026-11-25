@@ -23,7 +23,7 @@ export const StepDots: React.FC<{
     {steps.map((step, i) => (
       <span
         key={step}
-        className={`h-2 w-2 rounded-full ${i < current ? 'bg-neutral' : 'bg-neutral/20'}`}
+        className={`h-2 w-2 rotate-45 ${i < current ? 'bg-(--brand)' : 'bg-(--n20)'}`}
       />
     ))}
   </div>
@@ -31,7 +31,7 @@ export const StepDots: React.FC<{
 
 /** Critical warning about the co-owner semantics of a personal access alias. */
 export const RecoveryWarningBanner: React.FC = () => (
-  <div className="w-full rounded border border-critical bg-critical/50 p-2">
+  <div className="c-banner c-banner--red">
     <Text variant="light" size="xsmall">
       Anyone with this recovery phrase or personal access key has complete,
       unilateral control over your account and can take all of its coins,
@@ -97,7 +97,7 @@ const SecretField: React.FC<{
           {formatHint}
         </Text>
       )}
-      <div className="w-full rounded border border-(--quantum-30) bg-(--quantum-10) p-2">
+      <div className="c-banner">
         <Text
           variant="light"
           size="xsmall"
@@ -116,12 +116,12 @@ export const TermsStep: React.FC<{
   onContinue: () => void
   onCancel?: () => void
 }> = ({ onContinue, onCancel }) => (
-  <div className="flex flex-col gap-10">
+  <div className="flex flex-col gap-6">
     <div className="flex flex-col gap-4">
       <Heading level={2} variant="bold" color="neutral">
         Set up your personal access key
       </Heading>
-      <Text variant="light" size="large" color="neutral-90">
+      <Text variant="light" size="medium" color="n60">
         Before you can sign transactions, register a personal access key as an
         address alias. This key co-owns your account and lets you keep access if
         you lose this device. The next step generates it, shows your recovery
@@ -230,12 +230,12 @@ export const RevealStep: React.FC<{
 export const RecoverySuccess: React.FC<{ onContinue: () => void }> = ({
   onContinue,
 }) => (
-  <div className="flex flex-col gap-10">
+  <div className="flex flex-col gap-6">
     <div className="flex flex-col gap-4">
       <Heading level={2} variant="bold" color="neutral">
         Recovery alias registered
       </Heading>
-      <Text variant="light" size="large" color="neutral-90">
+      <Text variant="light" size="medium" color="n60">
         Your personal access key is now a co-owner of your account. You can sign
         transactions.
       </Text>

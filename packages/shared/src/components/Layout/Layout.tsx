@@ -15,7 +15,7 @@ import DesktopLeftSideBar from './NavigationBar/DesktopLeftSideBar'
 /** Padding configuration for responsive layout */
 const PADDING_CONFIG: PaddingConfig = {
   desktop: {
-    top: spacing.xs * 30, // 120px
+    top: spacing.xl, // 32px
     sides: spacing.xxl, // 48px
   },
   mobile: {
@@ -25,10 +25,13 @@ const PADDING_CONFIG: PaddingConfig = {
     horizontalVh: 4, // 4vh
   },
 }
-/** Extension popup margins: py-24px (6 * 4px), px-16px (4 * 4px) */
-const EXTENSION_MARGIN = { vertical: spacing.lg, horizontal: spacing.md }
-/** Gap between header and content in extension: 40px (10 * 4px) */
-const EXTENSION_CONTENT_GAP = spacing.xxl - spacing.sm
+/** Extension popup content padding: 16px, with 24px at the bottom */
+const EXTENSION_PADDING = {
+  paddingTop: spacing.md,
+  paddingLeft: spacing.md,
+  paddingRight: spacing.md,
+  paddingBottom: spacing.lg,
+}
 
 export const Layout: React.FC<LayoutProps> = ({
   children,
@@ -75,32 +78,23 @@ export const Layout: React.FC<LayoutProps> = ({
 
   // Extension variant: compact layout for browser popup
   if (variant === 'extension') {
-    const extensionPaddingStyle = {
-      paddingTop: EXTENSION_MARGIN.vertical,
-      paddingBottom: EXTENSION_MARGIN.vertical,
-      paddingLeft: EXTENSION_MARGIN.horizontal,
-      paddingRight: EXTENSION_MARGIN.horizontal,
-    }
-
     return (
-      <div className="flex h-full w-full flex-col overflow-hidden">
+      <div className="layout--extension flex h-full w-full flex-col overflow-hidden">
         <Background fillViewport={false}>
-          <div
-            className="flex h-full flex-1 flex-col overflow-hidden"
-            style={{ ...extensionPaddingStyle, gap: EXTENSION_CONTENT_GAP }}
-          >
+          <div className="flex h-full flex-1 flex-col overflow-hidden">
             {/* Extension header */}
             {headerProps && (
               <HeaderMobile
                 address={headerProps.address}
                 email={headerProps.email}
                 logoSrc={headerProps.logoSrc}
-                identicon={headerProps.identicon}
                 onTransactionsClick={headerProps.onTransactionsClick}
               />
             )}
             {/* Scrollable content */}
-            <main className="flex-1 overflow-y-auto">{children}</main>
+            <main className="flex-1 overflow-y-auto" style={EXTENSION_PADDING}>
+              {children}
+            </main>
           </div>
         </Background>
       </div>

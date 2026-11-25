@@ -41,7 +41,7 @@ export const AddressAliasesScreen: React.FC<AddressAliasesScreenProps> = ({
 
   const { email, address } = getHeaderIdentity(user)
   return (
-    <div className="flex flex-col gap-10">
+    <div className="flex flex-col gap-6">
       <SubpageHeader
         title="Manage Address Aliases"
         email={email}
@@ -49,13 +49,13 @@ export const AddressAliasesScreen: React.FC<AddressAliasesScreenProps> = ({
         onBack={onBack}
       />
       <div className="flex flex-col gap-4">
-        <Text variant="light" size="large" color="neutral-90">
+        <Text variant="light" size="medium" color="n60">
           Address aliases let you set which keys are authorized to sign
           transactions for this Sui address.
         </Text>
       </div>
 
-      <div className="w-full rounded border border-critical bg-critical/50 p-2">
+      <div className="c-banner c-banner--red">
         <Text variant="light" size="xsmall">
           Any alias has complete, unilateral control over the address and can
           take all of its coins, balances, and other resources. Treat alias
@@ -131,7 +131,7 @@ export const AddressAliasesScreen: React.FC<AddressAliasesScreenProps> = ({
       )}
 
       {(error || readError) && (
-        <div className="w-full rounded border border-red-10/30 bg-red-10/10 p-2">
+        <div className="c-banner c-banner--red">
           <Text variant="light" size="xsmall" color="error">
             {error ?? readError}
           </Text>

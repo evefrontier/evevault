@@ -1,16 +1,13 @@
 import type React from 'react'
+import './HeaderMobile.css'
 import { useMemo } from 'react'
 import { useAuth } from '#/auth'
-import {
-  type DropdownItem,
-  DropdownSelect,
-  getIdenticon,
-} from '#/components/Dropdown'
+import { type DropdownItem, DropdownSelect } from '#/components/Dropdown'
 import Switch from '#/components/Switch'
-import Text from '#/components/Text'
 import { useCopyToClipboard, useDevice } from '#/hooks'
 import type { HeaderMobileProps, IconName } from '#/types'
 import { formatAddress } from '#/utils'
+import { TopBar, TopBarStrip } from './TopBar'
 
 /**
  * Dev-only actions (shown under "Dev mode" when the toggle is on). Each is
@@ -72,9 +69,12 @@ const DevModeToggleContent = ({
   onToggle: () => void | Promise<void>
 }) => (
   <>
-    {getIdenticon(0)}
-    <Text variant="label">Dev mode</Text>
-    <Switch isChecked={showDevActions} onChange={() => onToggle()} />
+    <span className="dropdown-select__item-text">Dev mode</span>
+    <Switch
+      isChecked={showDevActions}
+      onChange={() => onToggle()}
+      className="ml-auto"
+    />
   </>
 )
 
@@ -173,7 +173,6 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
   address,
   email,
   logoSrc = '/images/logo.png',
-  identicon = 0,
   onTransactionsClick,
   onAddressAliasesClick,
   showDevActions = false,
@@ -230,23 +229,21 @@ export const HeaderMobile: React.FC<HeaderMobileProps> = ({
   const displayText = email || formatAddress(address)
 
   return (
-    <header className="flex flex-col w-full">
-      <div className="flex justify-between items-start w-full">
-        <img
-          src={logoSrc}
-          alt="EVE Vault"
-          className="w-auto"
-          style={{
-            height: 'clamp(3rem, calc(5rem - (500px - 100vw) * 0.08), 5rem)',
-          }}
-        />
-        <DropdownSelect
-          items={dropdownItems}
-          trigger={displayText}
-          identicon={identicon}
-        />
-      </div>
-    </header>
+    <TopBar
+      logoSrc={logoSrc}
+      end={
+        <>
+          <DropdownSelect items={dropdownItems} trigger={displayText} />
+        </>
+      }
+      strip={
+        <TopBarStrip label="Unlocked" lamp="on">
+          {unlockRemainingLabel ? (
+            <span>Locks in {unlockRemainingLabel}</span>
+          ) : null}
+        </TopBarStrip>
+      }
+    />
   )
 }
 

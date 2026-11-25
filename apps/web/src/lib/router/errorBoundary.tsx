@@ -15,7 +15,7 @@ export function RouteErrorBoundary({ error, reset }: ErrorComponentProps) {
     <Background>
       <div className="app-shell">
         <main className="app-shell__content">
-          <div className="card">
+          <div className="c-card c-card--main flex flex-col gap-4">
             <Heading level={1} variant="bold">
               Something went wrong
             </Heading>
@@ -24,7 +24,7 @@ export function RouteErrorBoundary({ error, reset }: ErrorComponentProps) {
                 ? error.message
                 : 'An unexpected error occurred'}
             </Text>
-            <div style={{ marginTop: '16px', display: 'flex', gap: '8px' }}>
+            <div style={{ display: 'flex', gap: '12px' }}>
               <Button onClick={handleReset}>Go Home</Button>
               <Button
                 onClick={() => window.location.reload()}

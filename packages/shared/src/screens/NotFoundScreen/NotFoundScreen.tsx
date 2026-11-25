@@ -11,11 +11,11 @@ export function NotFoundScreen() {
   }
 
   return (
-    <div>
+    <div className="c-card flex flex-col items-start gap-4">
       <Heading level={1} variant="bold">
         404 - Page Not Found
       </Heading>
-      <Text>The page you're looking for doesn't exist.</Text>
+      <Text color="n60">The page you're looking for doesn't exist.</Text>
       <Button onClick={handleGoHome}>Go to Home</Button>
     </div>
   )
