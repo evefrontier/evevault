@@ -11,6 +11,9 @@ import {
 } from '#/utils'
 import { HeaderMobile } from './Header/HeaderMobile'
 import DesktopLeftSideBar from './NavigationBar/DesktopLeftSideBar'
+import MobileBottomTabBar, {
+  DEFAULT_TABBAR_HEIGHT,
+} from './NavigationBar/MobileBottomTabBar'
 
 /** Padding configuration for responsive layout */
 const PADDING_CONFIG: PaddingConfig = {
@@ -101,12 +104,14 @@ export const Layout: React.FC<LayoutProps> = ({
     )
   }
 
-  const showSidebar = !isMobile
-
   return (
     <div className="flex h-screen w-full overflow-hidden">
-      {/* Sidebar - visible on tablet and desktop */}
-      {showSidebar && <DesktopLeftSideBar items={NAV_ITEMS} />}
+      {/* Sidebar on tablet and desktop; the same items dock at the bottom on phones */}
+      {isMobile ? (
+        <MobileBottomTabBar items={NAV_ITEMS} />
+      ) : (
+        <DesktopLeftSideBar items={NAV_ITEMS} />
+      )}
 
       {/* Main content area with background */}
       <Background>
@@ -114,7 +119,15 @@ export const Layout: React.FC<LayoutProps> = ({
           {/* Scrollable content */}
           <main
             className="flex-1 overflow-y-auto w-full max-w-4xl mx-auto"
-            style={paddingStyle}
+            style={
+              isMobile
+                ? {
+                    ...paddingStyle,
+                    paddingBottom:
+                      paddingStyle.paddingBottom + DEFAULT_TABBAR_HEIGHT,
+                  }
+                : paddingStyle
+            }
           >
             {children}
           </main>
