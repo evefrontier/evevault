@@ -21,6 +21,7 @@ import { useActiveSuiAddress, useBalance } from '@evevault/shared/wallet'
 import { useNavigate } from '@tanstack/react-router'
 import { type ReactNode, useCallback, useMemo } from 'react'
 import { useAppInitialization, useLogin } from '@/features/wallet/hooks'
+import { APP_VERSION } from '@/lib/appVersion'
 import { AuthenticatedWalletView } from './AuthenticatedWalletView'
 import { UnauthenticatedView } from './UnauthenticatedView'
 
@@ -135,6 +136,7 @@ function App() {
       <LockScreen
         isPinSet={isPinSet}
         unlock={unlock}
+        version={APP_VERSION}
         onResetComplete={() => {
           redirectToFusionAuthLogout()
           navigate({ to: '/' })

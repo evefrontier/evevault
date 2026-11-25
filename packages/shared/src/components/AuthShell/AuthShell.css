@@ -1,0 +1,114 @@
+/* Signed-out and locked screens: top bar, centred body, footer */
+.auth-shell {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+
+.auth-shell__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 12px 0;
+}
+
+.auth-shell__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 47px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--line);
+}
+
+/* Right-hand item stays right when there is nothing on the left */
+.auth-shell__footer > :last-child {
+  margin-left: auto;
+}
+
+.auth-shell__link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--n60);
+  font-size: 12px;
+  text-decoration: underline dotted var(--n40);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.auth-shell__link:hover {
+  color: var(--ink);
+}
+
+.auth-shell__link:focus-visible,
+.auth-shell__dev:focus-visible {
+  outline: 1px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.auth-shell__dev {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--n10);
+  background: none;
+  color: var(--n60);
+  font-family: var(--font-headline);
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.auth-shell__dev:hover {
+  border-color: var(--n30);
+}
+
+.auth-shell__dev[aria-pressed="true"] {
+  border-color: var(--amber-30);
+  color: var(--amber);
+}
+
+.auth-shell__dev svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.3;
+}
+
+.auth-shell__version {
+  color: var(--n50);
+  font-size: 11px;
+}
+
+.auth-shell__icon {
+  width: 52px;
+  height: 52px;
+  fill: none;
+  stroke: var(--brand);
+  stroke-width: 1.3;
+  stroke-linejoin: round;
+}
+
+.auth-shell__icon-frame {
+  fill: var(--brand-10);
+}
+
+/* In the extension popup the footer runs edge to edge over the page padding */
+.layout--extension main .auth-shell__footer {
+  margin: 0 -16px -24px;
+}
+
+.auth-shell__icon-core {
+  fill: var(--brand);
+}

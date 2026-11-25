@@ -1,25 +1,32 @@
 import type React from 'react'
 import { useState } from 'react'
 import {
+  AuthMark,
+  AuthShell,
+  AuthShellLink,
+  AuthShellVersion,
   Button,
   Heading,
-  Input,
   ResetVaultDialog,
   SignInContextLine,
   Text,
 } from '#/components'
 import { useDevice } from '#/hooks/useDevice'
 import { getCurrentTenantId } from '#/stores/tenantStore'
+import { PinCells } from './PinCells'
 
 export function LockScreen({
   isPinSet,
   unlock,
   onResetComplete,
+  version,
 }: {
   isPinSet: boolean
   unlock: (pin: string) => void
   /** Called after reset completes; use to redirect to `/` (e.g. window.location.href = "/") */
   onResetComplete?: () => void
+  /** App version shown in the footer */
+  version?: string
 }) {
   const [pin, setPin] = useState('')
   const [pinError, setPinError] = useState<string | null>(null)
@@ -48,67 +55,61 @@ export function LockScreen({
     ? 'Enter your 6-digit PIN to open your account'
     : 'Create a 6-digit PIN to secure your account'
 
+  const showReset = isPinSet || !!deviceError
+
   return (
-    <div className="flex flex-col items-center justify-between gap-4 w-full h-full">
-      <section className="flex flex-col items-center gap-6 w-full flex-1 justify-between">
-        <img
-          src="/images/logo.png"
-          alt="Evevault Logo"
-          className="h-20 w-auto"
+    <AuthShell
+      status="Locked"
+      lamp="off"
+      footer={
+        (showReset || version) && (
+          <>
+            {showReset && (
+              <AuthShellLink onClick={() => setShowResetConfirm(true)}>
+                {isPinSet ? 'Forgot PIN? Reset vault' : 'Reset and try again'}
+              </AuthShellLink>
+            )}
+            {version && <AuthShellVersion version={version} />}
+          </>
+        )
+      }
+    >
+      <AuthMark variant="lock" />
+
+      <header className="flex flex-col items-center gap-2 text-center">
+        <Heading level={2}>{title}</Heading>
+        <Text variant="light" size="medium" color="n60">
+          {description}
+        </Text>
+      </header>
+
+      <form
+        onSubmit={handleSubmit}
+        id="pin-input"
+        className="flex flex-col items-center gap-5 w-full"
+      >
+        <PinCells
+          label="6-digit PIN"
+          onChange={handlePinChange}
+          value={pin}
+          errorText={pinError || deviceError || undefined}
         />
+        <div className="w-full max-w-[288px]">
+          <Button type="submit" size="fill">
+            Submit
+          </Button>
+        </div>
+      </form>
 
-        <header className="flex flex-col items-center gap-4 text-center">
-          <Heading level={2}>{title}</Heading>
-          <Text variant="light" size="large">
-            {description}
-          </Text>
-        </header>
-
-        <form
-          onSubmit={handleSubmit}
-          id="pin-input"
-          className="flex flex-col items-center gap-6 w-full"
-        >
-          <Input
-            type="password"
-            placeholder="6-digit PIN"
-            onChange={handlePinChange}
-            value={pin}
-            errorText={pinError || deviceError || undefined}
-          />
-          <div className="w-full max-w-[300px]">
-            <Button type="submit" size="fill">
-              Submit
-            </Button>
-          </div>
-        </form>
-
-        {(isPinSet || !!deviceError) && (
-          <button
-            type="button"
-            onClick={() => setShowResetConfirm(true)}
-            onMouseDown={(e) => {
-              if (e.button === 1) {
-                e.preventDefault()
-                setShowResetConfirm(true)
-              }
-            }}
-            className="text-sm underline text-grey-neutral hover:text-neutral focus:outline-none focus:ring-2 focus:ring-primary rounded"
-          >
-            {isPinSet ? 'Forgot PIN? Reset vault' : 'Reset and try again'}
-          </button>
-        )}
-
-        <SignInContextLine
-          tenant={{ currentTenantId: getCurrentTenantId(), viewOnly: true }}
-        />
-      </section>
+      <SignInContextLine
+        tenant={{ currentTenantId: getCurrentTenantId(), viewOnly: true }}
+      />
 
       <ResetVaultDialog
         isOpen={showResetConfirm}
         onClose={() => setShowResetConfirm(false)}
         onResetComplete={onResetComplete}
       />
-    </div>
+    </AuthShell>
   )
 }

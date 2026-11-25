@@ -1,3 +1,4 @@
+export * from './AuthShell'
 export * from './Background'
 export * from './Button'
 export * from './Corners'

@@ -370,6 +370,7 @@ export const WalletScreen = () => {
       <LockScreen
         isPinSet={isPinSet}
         unlock={unlock}
+        version={APP_VERSION}
         onResetComplete={() => {
           window.location.href = '/'
         }}

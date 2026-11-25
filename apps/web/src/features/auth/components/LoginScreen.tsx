@@ -1,13 +1,7 @@
 import type { TenantId } from '@evefrontier/wallet-core/tenant'
 import { LockScreen, switchTenantAndReload } from '@evevault/shared'
 import { redirectToFusionAuthLogout, useAuth } from '@evevault/shared/auth'
-import {
-  Button,
-  Heading,
-  SignInContextLine,
-  Text,
-} from '@evevault/shared/components'
-import Icon from '@evevault/shared/components/Icon'
+import { SignInView, Text } from '@evevault/shared/components'
 import { useContext, useDevice } from '@evevault/shared/hooks'
 import {
   getAvailableTenantIds,
@@ -15,6 +9,7 @@ import {
 } from '@evevault/shared/stores'
 import { useSearch } from '@tanstack/react-router'
 import { useMemo } from 'react'
+import { APP_VERSION } from '@/lib/appVersion'
 
 export const LoginScreen = () => {
   const { login, loading } = useAuth()
@@ -36,48 +31,32 @@ export const LoginScreen = () => {
       <LockScreen
         isPinSet={isPinSet}
         unlock={unlock}
+        version={APP_VERSION}
         onResetComplete={() => redirectToFusionAuthLogout()}
       />
     )
   }
 
   return (
-    <div className="flex flex-col items-center justify-between gap-4 w-full h-full">
-      <section className="flex flex-col items-center gap-10 w-full flex-1">
-        <img src="/images/logo.png" alt="EVE Vault" className="h-20 w-auto" />
-        <header className="flex flex-col items-center gap-4 text-center">
-          <Heading level={2}>Sign in</Heading>
-          {sessionExpired && (
-            <Text variant="light" color="grey-neutral">
-              For your security, this browser cleared your local session. Sign
-              in again to continue.
-            </Text>
-          )}
-        </header>
-        <div className="w-full max-w-75">
-          <Button size="fill" onClick={() => login()} disabled={loading}>
-            {loading ? 'Loading...' : 'Login'}
-          </Button>
-        </div>
-        <SignInContextLine
-          tenant={{
-            currentTenantId: currentTenantId as TenantId,
-            availableTenantIds,
-            onServerChange: (tenantId) =>
-              switchTenantAndReload(tenantId as TenantId),
-          }}
-        />
-      </section>
-      <Button
-        variant="secondary"
-        size="small"
-        className="absolute! bottom-4 right-4"
-        onClick={() => {
-          setDevMode(!devMode)
-        }}
-      >
-        <Icon name={devMode ? 'Eye' : 'HideEye'} color="#ED4136" size="small" />
-      </Button>
-    </div>
+    <SignInView
+      loading={loading}
+      onLogin={() => login()}
+      tenant={{
+        currentTenantId: currentTenantId as TenantId,
+        availableTenantIds,
+        onServerChange: (tenantId) =>
+          switchTenantAndReload(tenantId as TenantId),
+      }}
+      devMode={devMode}
+      onDevModeToggle={() => setDevMode(!devMode)}
+      notice={
+        sessionExpired && (
+          <Text variant="light" color="n60">
+            For your security, this browser cleared your local session. Sign in
+            again to continue.
+          </Text>
+        )
+      }
+    />
   )
 }
