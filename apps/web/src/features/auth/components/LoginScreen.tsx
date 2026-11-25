@@ -4,7 +4,7 @@ import { redirectToFusionAuthLogout, useAuth } from '@evevault/shared/auth'
 import {
   Button,
   Heading,
-  TenantSelector,
+  SignInContextLine,
   Text,
 } from '@evevault/shared/components'
 import Icon from '@evevault/shared/components/Icon'
@@ -59,12 +59,13 @@ export const LoginScreen = () => {
             {loading ? 'Loading...' : 'Login'}
           </Button>
         </div>
-        <TenantSelector
-          currentTenantId={currentTenantId as TenantId}
-          availableTenantIds={availableTenantIds}
-          onServerChange={(tenantId) =>
-            switchTenantAndReload(tenantId as TenantId)
-          }
+        <SignInContextLine
+          tenant={{
+            currentTenantId: currentTenantId as TenantId,
+            availableTenantIds,
+            onServerChange: (tenantId) =>
+              switchTenantAndReload(tenantId as TenantId),
+          }}
         />
       </section>
       <Button

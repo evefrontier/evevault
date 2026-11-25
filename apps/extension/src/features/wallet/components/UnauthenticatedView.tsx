@@ -3,7 +3,7 @@ import {
   Button,
   Heading,
   ResetVaultDialog,
-  TenantSelector,
+  SignInContextLine,
 } from '@evevault/shared/components'
 import Icon from '@evevault/shared/components/Icon'
 import { useState } from 'react'
@@ -70,10 +70,12 @@ export function UnauthenticatedView({
             {authLoading ? 'Loading...' : 'Login'}
           </Button>
         </div>
-        <TenantSelector
-          currentTenantId={tenantId}
-          availableTenantIds={availableTenantIds}
-          onServerChange={onTenantChange}
+        <SignInContextLine
+          tenant={{
+            currentTenantId: tenantId,
+            availableTenantIds,
+            onServerChange: onTenantChange,
+          }}
         />
         {isPinSet && (
           <button

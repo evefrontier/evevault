@@ -1,0 +1,12 @@
+.sign-in-context {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.sign-in-context__sep {
+  color: var(--n30);
+  font-size: 12px;
+}
