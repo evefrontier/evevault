@@ -22,6 +22,10 @@ import {
 import { useTransactionWrite } from './useTransactionWrite'
 import { useWalletSigningContext } from './useWalletSigningContext'
 
+/** Shown when the wallet has no SUI to pay transaction fees. */
+export const NO_SUI_FOR_GAS_WARNING =
+  'You have no SUI balance. SUI is required to pay for transaction fees.'
+
 const log = createLogger()
 
 interface UseSendTokenParams {
@@ -180,7 +184,7 @@ export function useSendToken({
 
   const suiForGasWarning =
     !suiBalanceLoading && !isSuiCoinType(coinType) && hasZeroSui
-      ? 'You have no SUI balance. SUI is required to pay for transaction fees.'
+      ? NO_SUI_FOR_GAS_WARNING
       : null
   const showFaucetTestSui = !suiBalanceLoading && hasZeroSui
 

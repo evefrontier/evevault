@@ -3,6 +3,7 @@ import Button from '#/components/Button'
 import { Input } from '#/components/Inputs'
 import Text from '#/components/Text'
 import { formatAddress } from '#/utils'
+import { NO_SUI_FOR_GAS_WARNING } from '#/wallet/hooks/useSendToken'
 
 interface TransferSuccessScreenProps {
   amount: string
@@ -24,42 +25,22 @@ export const TransferSuccessScreen: React.FC<TransferSuccessScreenProps> = ({
   explorerName,
   onCancel,
 }) => (
-  <div className="flex flex-col gap-20">
-    {/* Header + Transaction Details */}
-    <div className="flex flex-col gap-6">
-      {/* Transaction Details */}
-      <div className="flex flex-col gap-2">
-        <div className="flex justify-between items-center">
-          <Text variant="bold" size="small" color="neutral-90">
-            Amount sent
-          </Text>
-          <Text variant="light" size="small" color="neutral-90">
-            {amount} {tokenSymbol}
-          </Text>
-        </div>
-
-        <div className="flex justify-between items-center">
-          <Text variant="bold" size="small" color="neutral-90">
-            Recipient address
-          </Text>
-          <Text variant="light" size="small" color="neutral-90">
-            {formatAddress(recipient, 8, 8)}
-          </Text>
-        </div>
-
-        <div className="flex justify-between items-center">
-          <Text variant="bold" size="small" color="neutral-90">
-            Transaction
-          </Text>
-          <Text variant="light" size="small" color="neutral-90">
-            {formatAddress(txDigest, 8, 8)}
-          </Text>
-        </div>
-      </div>
+  <div className="flex flex-col gap-6">
+    <div className="c-card c-card--on">
+      <dl className="c-kv">
+        <dt>Amount sent</dt>
+        <dd>
+          {amount} {tokenSymbol}
+        </dd>
+        <dt>Recipient address</dt>
+        <dd>{formatAddress(recipient, 8, 8)}</dd>
+        <dt>Transaction</dt>
+        <dd>{formatAddress(txDigest, 8, 8)}</dd>
+      </dl>
     </div>
 
     {/* Buttons - Centered */}
-    <div className="flex justify-center gap-1">
+    <div className="flex justify-center gap-3">
       <Button onClick={onCancel}>close</Button>
       {explorerUrl && (
         <Button
@@ -77,28 +58,26 @@ export const TransferSuccessScreen: React.FC<TransferSuccessScreenProps> = ({
 
 interface TransferNoticesProps {
   systemErrors: string[]
-  suiForGasWarning?: string | null
+  noSuiWarning: string | null
   gasFeeWarning?: string | null
   estimatedGasFee?: string | null
   estimatedGasFeeLoading: boolean
-  showFaucetTestSui: boolean
   faucetUrl: string | null
 }
 
-/** Validation errors, gas warnings/estimate and the faucet shortcut. */
+/** Validation errors, the no-SUI notice with its faucet, and the gas estimate. */
 const TransferNotices: React.FC<TransferNoticesProps> = ({
   systemErrors,
-  suiForGasWarning,
+  noSuiWarning,
   gasFeeWarning,
   estimatedGasFee,
   estimatedGasFeeLoading,
-  showFaucetTestSui,
   faucetUrl,
 }) => (
   <>
     {/* System Validation Errors */}
     {systemErrors.length > 0 && (
-      <div className="p-2 bg-red-10/10 border border-red-10/30 w-full">
+      <div className="c-banner c-banner--red">
         {systemErrors.map((err) => (
           <Text key={err} variant="light" size="xsmall" color="error">
             {err}
@@ -107,17 +86,33 @@ const TransferNotices: React.FC<TransferNoticesProps> = ({
       </div>
     )}
 
-    {/* SUI for gas warning (non-blocking) */}
-    {suiForGasWarning && (
-      <div className="w-full rounded border border-(--quantum-30) bg-(--quantum-10) p-2">
-        <Text variant="light" size="xsmall" color="neutral-90">
-          {suiForGasWarning}
+    {/* No SUI for gas: one notice, with the faucet where the network has one */}
+    {noSuiWarning && (
+      <div className="c-banner c-banner--amber flex-row! items-center gap-3">
+        <Text
+          variant="light"
+          size="xsmall"
+          color="neutral-90"
+          className="flex-1"
+        >
+          {noSuiWarning}
         </Text>
+        {faucetUrl && (
+          <Button
+            variant="secondary"
+            size="small"
+            onClick={() =>
+              window.open(faucetUrl, '_blank', 'noopener,noreferrer')
+            }
+          >
+            Open Sui faucet
+          </Button>
+        )}
       </div>
     )}
 
     {/* Gas fee warning (all transfers) + optional estimate */}
-    <div className="w-full rounded border border-(--quantum-30) bg-(--quantum-10) p-2">
+    <div className="c-banner">
       <Text variant="light" size="xsmall" color="neutral-90">
         {gasFeeWarning}
       </Text>
@@ -126,7 +121,7 @@ const TransferNotices: React.FC<TransferNoticesProps> = ({
           variant="light"
           size="xsmall"
           color="neutral-90"
-          className="mt-1 block"
+          className="block"
         >
           Estimating fee…
         </Text>
@@ -136,30 +131,12 @@ const TransferNotices: React.FC<TransferNoticesProps> = ({
           variant="light"
           size="xsmall"
           color="neutral-90"
-          className="mt-1 block"
+          className="block"
         >
           Estimated fee: ~{estimatedGasFee} SUI
         </Text>
       )}
     </div>
-
-    {/* Faucet when 0 SUI balance – only show when current network has a faucet (e.g. devnet/testnet) */}
-    {showFaucetTestSui && faucetUrl && (
-      <div className="flex w-full flex-col gap-2">
-        <Text variant="light" size="small" color="neutral-90">
-          Faucet test SUI
-        </Text>
-        <Button
-          variant="secondary"
-          size="medium"
-          onClick={() =>
-            window.open(faucetUrl, '_blank', 'noopener,noreferrer')
-          }
-        >
-          Open Sui faucet
-        </Button>
-      </div>
-    )}
   </>
 )
 
@@ -209,27 +186,35 @@ export const TransferForm: React.FC<{
     values.amount && !status.isValidAmount
       ? 'Invalid amount or exceeds balance'
       : undefined
+  const { suiForGasWarning, showFaucetTestSui, ...gasNotices } = notices
+  // Zero SUI (when sending SUI too) gets one notice; its validation error is
+  // folded into it rather than listed again.
+  const noSuiWarning =
+    suiForGasWarning ?? (showFaucetTestSui ? NO_SUI_FOR_GAS_WARNING : null)
   const systemErrors = status.validationErrors.filter(
-    (e) => !e.includes('Invalid Sui address') && !e.includes('Invalid amount'),
+    (e) =>
+      !e.includes('Invalid Sui address') &&
+      !e.includes('Invalid amount') &&
+      !(noSuiWarning && e.includes('No SUI for gas')),
   )
 
   return (
-    <div className="flex flex-col gap-10">
-      {/* Header Section - gap-4 between title and description */}
+    <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-4">
-        <Text variant="light" size="large" color="neutral-90">
+        <Text variant="light" size="medium" color="n60">
           Enter the recipient address and amount
         </Text>
       </div>
 
-      {/* Form Section - gap-10 between form groups */}
-      <div className="flex flex-col gap-10 items-end">
-        <TransferNotices systemErrors={systemErrors} {...notices} />
+      <div className="flex flex-col gap-4 items-end">
+        <TransferNotices
+          systemErrors={systemErrors}
+          noSuiWarning={noSuiWarning}
+          {...gasNotices}
+        />
 
-        {/* Input Row + Balance - gap-4 */}
-        <div className="flex flex-col gap-4 w-full items-end">
-          {/* Input Row: Recipient Address + Amount - gap-6 */}
-          <div className="flex gap-6 items-start w-full">
+        <div className="flex flex-col gap-2 w-full items-end">
+          <div className="flex gap-3 items-start w-full">
             <div className="flex-1">
               <Input
                 type="text"
@@ -254,11 +239,11 @@ export const TransferForm: React.FC<{
           <Text
             variant="light"
             size="small"
-            color="neutral-90"
+            color="n60"
             className="whitespace-nowrap"
           >
             Wallet balance:{' '}
-            <span className="font-medium">
+            <span className="text-(--ink) tabular-nums">
               {values.currentBalance} {values.tokenSymbol}
             </span>
           </Text>
@@ -266,15 +251,14 @@ export const TransferForm: React.FC<{
 
         {/* Error Display */}
         {status.error && (
-          <div className="p-2 bg-red-10/10 border border-red-10/30 w-full">
+          <div className="c-banner c-banner--red">
             <Text variant="light" size="xsmall" color="error">
               {status.error}
             </Text>
           </div>
         )}
 
-        {/* Action Buttons - gap-1 (DuoButton style) */}
-        <div className="flex gap-1">
+        <div className="flex gap-3">
           <Button
             disabled={!status.canSend || status.isLoading}
             isLoading={status.isLoading}

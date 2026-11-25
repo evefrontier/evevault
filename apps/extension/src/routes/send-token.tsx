@@ -31,7 +31,7 @@ function SendTokenPage() {
   const identity = user ? getHeaderIdentity(user) : { email: '', address: '' }
 
   return (
-    <div className="flex flex-col gap-10">
+    <div className="flex flex-col gap-4">
       <SubpageHeader
         title="Transfer token"
         email={identity.email}
