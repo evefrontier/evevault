@@ -16,10 +16,7 @@ const Background = ({
     <div
       className={`relative h-full w-full flex-1 overflow-hidden ${fillViewport ? 'min-h-screen' : 'min-h-0'}`}
       style={{
-        backgroundImage: `url("/images/evevault-background.png")`,
-        backgroundSize: 'cover',
-        backgroundRepeat: 'no-repeat',
-        backgroundPosition: 'center center',
+        backgroundColor: 'var(--bg)',
         paddingBottom: bottomOffset,
       }}
     >

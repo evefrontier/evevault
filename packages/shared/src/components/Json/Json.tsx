@@ -55,7 +55,7 @@ const Json: React.FC<JsonProps> = ({
     `font-mono whitespace-pre-wrap break-words overflow-y-auto ${className}`.trim()
 
   const computedStyle: React.CSSProperties = {
-    fontFamily: '"M42_FLIGHT 721", monospace',
+    fontFamily: 'var(--font-body)',
     ...style,
   }
 

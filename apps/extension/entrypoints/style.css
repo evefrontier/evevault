@@ -7,22 +7,31 @@
 @theme {
   --font-body: "Body", "FavoritMonoStd", monospace;
   --font-headline: "Headline", "Disket Mono", monospace;
-  --color-neutral: #ffffd6;
-  --color-crude: #130904;
-  --color-quantum: #c64f05;
-  --color-matter-01: #181716;
-  --color-matter-02: #2b2827;
-  --color-matter-03: #3c3836;
-  --color-matter-04: #44413f;
-  --color-matter-05: #524e4b;
-  --color-matter-06: #6d6965;
-  --color-error: #942922;
-  --color-critical: #0C27D8;
-  --color-red-10: #ed4136;
+  --color-neutral: #fafae5;
+  --color-crude: #0b0b0c;
+  --color-quantum: #ff4700;
+  --color-matter-01: #171717;
+  --color-matter-02: #2a2a2b;
+  --color-matter-03: #3b3b37;
+  --color-matter-04: #474742;
+  --color-matter-05: #53534d;
+  --color-matter-06: #6b6b63;
+  --color-error: #ff4d4d;
+  --color-critical: #2350d8;
+  --color-red-10: #ff4d4d;
   --color-quantum-40: rgba(255, 71, 0, 0.4);
   --color-quantum-10: rgba(255, 71, 0, 0.1);
   --color-quantum-60: rgba(255, 71, 0, 0.6);
-  --color-crude-dark: #0b0b0b;
+  --color-crude-dark: #0b0b0c;
+  --color-bg: #0b0b0c;
+  --color-ink: #fafae5;
+  --color-line: #2a2a2b;
+  --color-brand: #ff4700;
+  --color-amber: #ffb651;
+  --color-offline: #ff4d4d;
+  --color-offline-bg: #3a1515;
+  --color-relate: #4fd0da;
+  --color-power: #2350d8;
   --extension-width: 500px;
   --extension-height: 500px;
 }
@@ -38,11 +47,11 @@
 
 a {
   font-weight: 500;
-  color: var(--quantum, #c64f05);
+  color: var(--quantum, #ff4700);
   text-decoration: inherit;
 }
 a:hover {
-  color: var(--bright-quantum, #dd5807);
+  color: var(--bright-quantum, #ff6c33);
 }
 
 html,
@@ -50,8 +59,8 @@ body {
   margin: 0;
   width: 500px;
   height: 500px;
-  background-color: var(--crude, #130904);
-  color: var(--neutral, #ffffd6);
+  background-color: var(--crude, #0b0b0c);
+  color: var(--neutral, #fafae5);
 }
 
 main {
@@ -60,8 +69,8 @@ main {
 
 
 #root {
-  background-color: var(--crude, #130904);
-  color: var(--neutral, #ffffd6);
+  background-color: var(--crude, #0b0b0c);
+  color: var(--neutral, #fafae5);
   width: var(--extension-width);
   height: var(--extension-height);
 }

@@ -1,10 +1,11 @@
 import React from 'react'
 import type { HeadingProps } from '#/types'
 
+// Disket display type is drawn at 400; bold no longer thickens it
 const variantClasses: Record<string, string> = {
   regular: 'font-normal',
-  bold: 'font-bold',
-  secondary: 'font-normal',
+  bold: 'font-normal',
+  secondary: 'font-light',
 }
 
 export const Heading: React.FC<HeadingProps> = ({
@@ -23,7 +24,7 @@ export const Heading: React.FC<HeadingProps> = ({
   const computedStyle: React.CSSProperties = {
     color: color ? `var(--${color})` : undefined,
     ...(variant === 'secondary' && {
-      fontFamily: '"M42_FLIGHT 721", monospace',
+      fontFamily: 'var(--font-body)',
     }),
     ...style,
   }

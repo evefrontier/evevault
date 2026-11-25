@@ -9,25 +9,32 @@ const sizeClasses: Record<string, string> = {
   large: 'text-base leading-[22px] tracking-[-0.02em]',
 }
 
-// Weight classes for regular variants
+// Weight classes for regular variants: Favorit 300 body, 400 for emphasis
 const variantClasses: Record<string, string> = {
-  light: 'font-light',
-  regular: 'font-normal',
-  bold: 'font-bold',
-  secondary: 'font-normal',
+  light: 'font-extralight',
+  regular: 'font-light',
+  bold: 'font-normal',
+  secondary: 'font-light',
 }
 
-// Label variants are complete styles (include size, weight, etc.)
+// Label variants are complete styles (include size, weight, etc.): Disket caps
 const labelClasses: Record<string, string> = {
-  label: 'text-sm leading-5 font-bold uppercase tracking-[0.07em]',
+  label: 'text-[11px] leading-[1.3] font-normal uppercase tracking-[0.1em]',
   'label-semi':
-    'text-sm leading-[120%] font-semibold uppercase tracking-[0.05em]',
-  'label-medium': 'text-sm leading-4 font-normal uppercase tracking-[0.06em]',
-  'label-small': 'text-[10px] leading-none font-normal tracking-normal',
+    'text-[11px] leading-[1.3] font-normal uppercase tracking-[0.08em]',
+  'label-medium':
+    'text-xs leading-[1.3] font-normal uppercase tracking-[0.08em]',
+  'label-small':
+    'text-[10px] leading-[1.2] font-normal uppercase tracking-[0.09em]',
 }
 
 // Label variants that use headline font
-const headlineLabelVariants = ['label-medium', 'label-small']
+const headlineLabelVariants = [
+  'label',
+  'label-semi',
+  'label-medium',
+  'label-small',
+]
 
 const Text: React.FC<TextProps> = ({
   size = 'medium',
@@ -50,9 +57,7 @@ const Text: React.FC<TextProps> = ({
   // Fonts are CSS variables from global.css, applied via inline style
   const fontFamily = useHeadlineFont
     ? 'var(--font-headline)'
-    : variant === 'secondary'
-      ? '"M42_FLIGHT 721", monospace'
-      : 'var(--font-body)'
+    : 'var(--font-body)'
 
   const computedStyle: React.CSSProperties = {
     fontFamily,

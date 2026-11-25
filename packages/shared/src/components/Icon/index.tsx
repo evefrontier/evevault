@@ -95,7 +95,7 @@ const resolveColor = (c?: string) => {
 const BaseIcon: FC<BaseIconProps> = ({
   name,
   size = 'small',
-  color = '#FFFFD6',
+  color = 'neutral',
   width,
   height,
   ...rest
