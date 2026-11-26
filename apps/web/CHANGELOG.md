@@ -1,5 +1,15 @@
 # @evevault/web
 
+## 0.1.1
+
+### Patch Changes
+
+- :qa!
+- build image for web
+- Updated dependencies
+- Updated dependencies
+  - @evevault/shared@0.1.1
+
 ## 0.1.0
 
 ### Patch Changes
