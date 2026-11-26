@@ -1,5 +1,12 @@
 # @evevault/shared
 
+## 0.1.1
+
+### Patch Changes
+
+- :qa!
+- build image for web
+
 ## 0.1.0
 
 ### Minor Changes
