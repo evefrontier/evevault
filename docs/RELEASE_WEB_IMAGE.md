@@ -2,7 +2,7 @@
 
 Workflow: [`.github/workflows/image-web.yml`](../.github/workflows/image-web.yml). Image: [`apps/web/Dockerfile`](../apps/web/Dockerfile).
 
-**Runs on:** pushing a `v*` release tag, which must match the `apps/web/package.json` version, or **Run workflow** in Actions.
+**Runs on:** publishing a GitHub Release whose `v*` tag must match the `apps/web/package.json` version, or **Run workflow** in Actions.
 
 **Output:** one image per tier and architecture, pushed to ECR `frontier/eve-frontier-evevault-web` as `<version>-<tier>-<arch>` (tiers `dev test uat ptu live`, arches `amd64 arm64`). Each arch job builds and Grype-scans every tier, and pushes only once all of them pass. A manual run builds and scans every image but never pushes.
 
