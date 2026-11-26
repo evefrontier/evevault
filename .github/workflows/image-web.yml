@@ -116,39 +116,17 @@ jobs:
         id: ecr
         uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd # v2.1.7
 
-      - name: Resolve tags
-        id: tags
+      # Push the image Grype passed; a rebuild could pick up newer base images.
+      - name: Push scanned image
         env:
           IMAGE: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}
           VERSION: ${{ needs.version.outputs.version }}
           ARCH: ${{ matrix.arch }}
         run: |
-          {
-            echo "tags<<EOF"
-            for tier in $TIERS; do echo "${IMAGE}:${VERSION}-${tier}-${ARCH}"; done
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
-
-      # Same inputs as the scanned build, so every layer is a cache hit and the
-      # pushed image is the one Grype passed.
-      - name: Push image
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
-        with:
-          context: .
-          file: apps/web/Dockerfile
-          platforms: linux/${{ matrix.arch }}
-          push: true
-          provenance: false
-          tags: ${{ steps.tags.outputs.tags }}
-          build-args: BUILD_COMMIT=${{ github.sha }}
-          secrets: |
-            github_token=${{ secrets.GITHUB_TOKEN }}
-
-      - name: Summary
-        env:
-          TAGS: ${{ steps.tags.outputs.tags }}
-        run: |
-          {
-            echo "Pushed:"
-            while read -r tag; do echo "- \`${tag}\`"; done <<< "$TAGS"
-          } >> "$GITHUB_STEP_SUMMARY"
+          echo "Pushed:" >> "$GITHUB_STEP_SUMMARY"
+          for tier in $TIERS; do
+            tag="${IMAGE}:${VERSION}-${tier}-${ARCH}"
+            docker tag evevault-web:grype "$tag"
+            docker push "$tag"
+            echo "- \`${tag}\`" >> "$GITHUB_STEP_SUMMARY"
+          done
