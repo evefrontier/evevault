@@ -1,0 +1,12 @@
+.git
+**/node_modules
+**/dist
+**/dev-dist
+**/.wxt
+**/.output
+**/.turbo
+coverage
+**/coverage
+**/.env
+**/.env.*
+.npmrc
