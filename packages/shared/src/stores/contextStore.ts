@@ -1,4 +1,4 @@
-import { DEFAULT_TENANT, type TenantId } from '@evefrontier/wallet-core/tenant'
+import type { TenantId } from '@evefrontier/wallet-core/tenant'
 import { SUI_TESTNET_CHAIN, type SuiChain } from '@mysten/wallet-standard'
 import { browser } from '@wxt-dev/browser'
 import { create } from 'zustand'
@@ -9,6 +9,7 @@ import { isWeb } from '#/utils'
 import { CONTEXT_STORAGE_KEY } from '#/utils/storageKeys'
 import {
   getAvailableTenantIds,
+  getDefaultTenantId,
   isAvailableTenantId,
 } from '#/utils/tenantConfig'
 import {
@@ -57,7 +58,7 @@ const initialState = getInitialStateFromLocalStorage()
 export const useContextStore = create<ContextState>()(
   persist(
     (set, get) => ({
-      tenantId: initialState.tenantId ?? DEFAULT_TENANT,
+      tenantId: initialState.tenantId ?? getDefaultTenantId(),
       devMode: initialState.devMode ?? false,
       setTenantId: async (id: TenantId) => {
         if (!getAvailableTenantIds(true).includes(id)) {
@@ -112,5 +113,5 @@ export function getCurrentContextTenantId(): TenantId {
     return state.tenantId
   }
   // Fall back to the first tenant served on this origin (e.g. liminality on PTU).
-  return getAvailableTenantIds(state.devMode)[0] ?? DEFAULT_TENANT
+  return getAvailableTenantIds(state.devMode)[0] ?? getDefaultTenantId()
 }

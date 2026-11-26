@@ -121,6 +121,10 @@ export default defineConfig(() => {
       ],
       // Configure Vite to load env vars from monorepo root
       envDir: rootDir,
+      // The extension is a single all-tier build; ignore the web-only VITE_TIER.
+      define: {
+        'import.meta.env.VITE_TIER': '""',
+      },
       optimizeDeps: {
         include: ['@evevault/shared/utils'],
       },

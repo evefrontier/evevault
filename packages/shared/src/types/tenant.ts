@@ -1,9 +1,14 @@
 import type { TenantId } from '@evefrontier/wallet-core/tenant'
 
+/** Deployment tier a web image is built for. */
+export type Tier = 'dev' | 'test' | 'uat' | 'ptu' | 'live'
+
 export interface TenantConfig {
   clientId: string
   serverUrl: string
   webOrigin: string
+  /** Tier whose web build serves this tenant. The dev tier serves all of them. */
+  tier: Exclude<Tier, 'dev'>
   isDev?: boolean
 }
 
