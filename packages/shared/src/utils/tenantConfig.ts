@@ -1,11 +1,27 @@
 import { TenantId } from '@evefrontier/wallet-core/tenant'
-import type { TenantConfig } from '#/types'
+import type { TenantConfig, Tier } from '#/types'
 import { TENANT_KEYS } from './constants'
 import { isWeb } from './environment'
 
 export const DEFAULT_TENANT_ID = TenantId.STILLNESS
 
 const KNOWN_TENANT_IDS: TenantId[] = Object.keys(TENANT_KEYS) as TenantId[]
+
+const TIERS: readonly Tier[] = ['dev', 'test', 'uat', 'ptu', 'live']
+
+/**
+ * Returns the tier the web image was built for (VITE_TIER), or undefined for
+ * builds without one (extension, local dev). Throws on an unknown value rather
+ * than falling back to every tenant.
+ */
+export function getBuildTier(): Tier | undefined {
+  const tier = import.meta.env.VITE_TIER
+  if (!tier) return undefined
+  if (!TIERS.includes(tier as Tier)) {
+    throw new Error(`Unknown VITE_TIER: ${tier}`)
+  }
+  return tier as Tier
+}
 
 function normalizeOrigin(url: string): string {
   return url.replace(/\/$/, '')
@@ -28,20 +44,34 @@ function isWebProduction(): boolean {
  * Returns FusionAuth client config for the given tenant.
  */
 export function getTenantConfig(tenantId: TenantId): TenantConfig {
-  return TENANT_KEYS[tenantId] ?? TENANT_KEYS[DEFAULT_TENANT_ID]
-}
-
-export function getDefaultTenantId(): TenantId {
-  return DEFAULT_TENANT_ID
+  return TENANT_KEYS[tenantId] ?? TENANT_KEYS[getDefaultTenantId()]
 }
 
 /**
- * Returns available tenant ids. Dev-only tenants (isDev: true) are excluded unless
- * devMode is true. The default tenant is included before URL filtering, but in web
- * production mode all tenants (including the default) are filtered to only those whose
- * webOrigin matches window.location.origin.
+ * Returns the default tenant: the build tier's first tenant, or stillness for
+ * builds without a tier.
+ */
+export function getDefaultTenantId(): TenantId {
+  if (!getBuildTier()) return DEFAULT_TENANT_ID
+  return getAvailableTenantIds()[0] ?? DEFAULT_TENANT_ID
+}
+
+/**
+ * Returns available tenant ids. With a build tier, returns that tier's tenants
+ * (every tenant for dev) regardless of devMode. Otherwise dev-only tenants
+ * (isDev: true) are excluded unless devMode is true. The default tenant is
+ * included before URL filtering, but in web production mode all tenants
+ * (including the default) are filtered to only those whose webOrigin matches
+ * window.location.origin.
  */
 export function getAvailableTenantIds(devMode = false): TenantId[] {
+  const tier = getBuildTier()
+  if (tier) {
+    return KNOWN_TENANT_IDS.filter(
+      (id) => tier === 'dev' || TENANT_KEYS[id].tier === tier,
+    )
+  }
+
   const ids: TenantId[] = [DEFAULT_TENANT_ID]
 
   for (const id of KNOWN_TENANT_IDS) {

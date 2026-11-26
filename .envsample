@@ -2,3 +2,8 @@ EXTENSION_ID=
 
 # App-side rollout gate for address-alias enforcement.
 VITE_ADDRESS_ALIAS_ENFORCEMENT=true
+
+# Web only; the extension ignores it. Limits the server list to one tier's
+# tenants (dev test uat ptu live; dev lists all). Unset keeps dev-mode and
+# origin-based filtering. Images set it via the TIER build arg.
+# VITE_TIER=dev

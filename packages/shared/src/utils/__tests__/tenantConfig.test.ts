@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { getAvailableTenantIds, getDefaultTenantId } from '#/utils/tenantConfig'
+import {
+  getAvailableTenantIds,
+  getBuildTier,
+  getDefaultTenantId,
+  isAvailableTenantId,
+} from '#/utils/tenantConfig'
 
 vi.mock('#/utils/environment', () => ({
   isWeb: vi.fn(),
@@ -11,34 +16,46 @@ vi.mock('#/utils/constants', () => ({
       clientId: 'stillness-client',
       serverUrl: 'https://auth.evefrontier.com',
       webOrigin: 'https://evevault.evefrontier.com',
+      tier: 'live',
+    },
+    liminality: {
+      clientId: 'liminality-client',
+      serverUrl: 'https://ptu.auth.evefrontier.com',
+      webOrigin: 'https://ptu.evevault.evefrontier.com',
+      tier: 'ptu',
     },
     utopia: {
       clientId: 'utopia-client',
       serverUrl: 'https://test.auth.evefrontier.com',
       webOrigin: 'https://uat.evevault.evefrontier.com',
+      tier: 'uat',
     },
     tauceti: {
       clientId: 'tauceti-client',
       serverUrl: 'https://test.auth.evefrontier.com',
       webOrigin: 'https://test.evevault.evefrontier.com',
+      tier: 'test',
       isDev: true,
     },
     tesseract: {
       clientId: 'tesseract-client',
       serverUrl: 'https://test.auth.evefrontier.com',
       webOrigin: 'https://test.evevault.evefrontier.com',
+      tier: 'test',
       isDev: true,
     },
     tetra: {
       clientId: 'tetra-client',
       serverUrl: 'https://test.auth.evefrontier.com',
       webOrigin: 'https://test.evevault.evefrontier.com',
+      tier: 'test',
       isDev: true,
     },
     tiaki: {
       clientId: 'tiaki-client',
       serverUrl: 'https://test.auth.evefrontier.com',
       webOrigin: 'https://test.evevault.evefrontier.com',
+      tier: 'test',
       isDev: true,
     },
   },
@@ -141,5 +158,83 @@ describe('getAvailableTenantIds', () => {
       const ids = getAvailableTenantIds(false)
       expect(ids).toEqual(['stillness'])
     })
+  })
+})
+
+describe('build tier (VITE_TIER)', () => {
+  const originalNodeEnv = process.env.NODE_ENV
+  const originalLocation = window.location
+
+  beforeEach(() => {
+    vi.mocked(isWeb).mockReturnValue(true)
+  })
+
+  afterEach(() => {
+    process.env.NODE_ENV = originalNodeEnv
+    setWindowLocation(originalLocation)
+    vi.unstubAllEnvs()
+    vi.clearAllMocks()
+  })
+
+  it('is undefined when VITE_TIER is unset', () => {
+    vi.stubEnv('VITE_TIER', '')
+    expect(getBuildTier()).toBeUndefined()
+  })
+
+  it('throws on an unknown tier', () => {
+    vi.stubEnv('VITE_TIER', 'prod')
+    expect(() => getBuildTier()).toThrow('Unknown VITE_TIER: prod')
+  })
+
+  it.each([
+    ['live', ['stillness']],
+    ['ptu', ['liminality']],
+    ['uat', ['utopia']],
+    ['test', ['tauceti', 'tesseract', 'tetra', 'tiaki']],
+  ])('returns only %s tenants, regardless of devMode', (tier, expected) => {
+    vi.stubEnv('VITE_TIER', tier)
+    expect(getAvailableTenantIds(false)).toEqual(expected)
+    expect(getAvailableTenantIds(true)).toEqual(expected)
+  })
+
+  it('returns every tenant for the dev tier', () => {
+    vi.stubEnv('VITE_TIER', 'dev')
+    expect(getAvailableTenantIds(false)).toEqual([
+      'stillness',
+      'liminality',
+      'utopia',
+      'tauceti',
+      'tesseract',
+      'tetra',
+      'tiaki',
+    ])
+  })
+
+  it('ignores window.location.origin', () => {
+    vi.stubEnv('VITE_TIER', 'ptu')
+    process.env.NODE_ENV = 'production'
+    setWindowLocation({ origin: STILLNESS_ORIGIN })
+    expect(getAvailableTenantIds(false)).toEqual(['liminality'])
+  })
+
+  it('rejects tenants from another tier', () => {
+    vi.stubEnv('VITE_TIER', 'live')
+    expect(isAvailableTenantId('stillness')).toBe(true)
+    expect(isAvailableTenantId('liminality', true)).toBe(false)
+  })
+
+  it.each([
+    ['live', 'stillness'],
+    ['ptu', 'liminality'],
+    ['test', 'tauceti'],
+    ['dev', 'stillness'],
+  ])('defaults %s to %s', (tier, expected) => {
+    vi.stubEnv('VITE_TIER', tier)
+    expect(getDefaultTenantId()).toBe(expected)
+  })
+
+  it('defaults to stillness without a tier', () => {
+    vi.stubEnv('VITE_TIER', '')
+    expect(getDefaultTenantId()).toBe('stillness')
   })
 })

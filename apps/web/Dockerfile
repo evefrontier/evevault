@@ -1,7 +1,8 @@
 # syntax=docker/dockerfile:1
 # Static build of the EVE Vault web app served by Caddy on a patched BCI Micro root.
 # Build context is the repository root:
-#   docker build -f apps/web/Dockerfile --secret id=github_token,env=GITHUB_TOKEN .
+#   docker build -f apps/web/Dockerfile --build-arg TIER=live \
+#     --secret id=github_token,env=GITHUB_TOKEN .
 
 # The bundle is architecture-independent: build it once on the build platform.
 FROM --platform=$BUILDPLATFORM node:26.13.1-slim AS build
@@ -15,6 +16,13 @@ RUN --mount=type=secret,id=github_token,env=GITHUB_TOKEN \
 # There is no .git in the context; the app reports this as its build commit.
 ARG BUILD_COMMIT=unknown
 ENV BUILD_COMMIT=$BUILD_COMMIT
+# The tier limits the server list to that tier's tenants (dev: all of them).
+ARG TIER
+RUN case "$TIER" in \
+      dev|test|uat|ptu|live) ;; \
+      *) echo "TIER must be one of dev test uat ptu live, got '${TIER}'" >&2; exit 1 ;; \
+    esac
+ENV VITE_TIER=$TIER
 WORKDIR /src/apps/web
 RUN env -u NODE_OPTIONS bunx --bun vite build
 
